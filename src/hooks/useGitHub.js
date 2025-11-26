@@ -1,3 +1,11 @@
+/*
+ * GitHub Repo Manager
+ * GitHub data and actions hook
+ *
+ * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Licensed under the MIT License. See LICENSE in the project root.
+ */
+
 import { useState, useEffect, useCallback } from 'react'
 import {
     safeParseJson,

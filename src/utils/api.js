@@ -1,3 +1,11 @@
+/*
+ * GitHub Repo Manager
+ * HTTP helpers, retry logic, and error normalization
+ *
+ * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Licensed under the MIT License. See LICENSE in the project root.
+ */
+
 // ============ Error Types ============
 
 export const ErrorType = {

@@ -1,3 +1,11 @@
+/*
+ * GitHub Repo Manager
+ * React entry point and theme wiring
+ *
+ * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Licensed under the MIT License. See LICENSE in the project root.
+ */
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'

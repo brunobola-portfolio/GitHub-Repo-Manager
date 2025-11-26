@@ -1,4 +1,10 @@
-/* eslint-env node */
+/*
+ * GitHub Repo Manager
+ * Backend API server
+ *
+ * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Licensed under the MIT License. See LICENSE in the project root.
+ */
 
 import express from 'express';
 import session from 'express-session';
@@ -271,33 +277,31 @@ app.post('/api/mirror', requireAuth, async (req, res) => {
 
 // List user's organizations
 app.get('/api/orgs', requireAuth, async (req, res) => {
-	try {
-	    const { data } = await githubApi('/user/orgs', req.session.accessToken);
+    try {
+        const { data } = await githubApi('/user/orgs', req.session.accessToken);
 
-	    // Enrich orgs with repo counts from org details endpoint
-	    const orgsWithCounts = await Promise.all(
-	        data.map(async (org) => {
-	            try {
-	                const { data: orgDetails } = await githubApi(
-	                    `/orgs/${org.login}`,
-	                    req.session.accessToken
-	                );
-	                return {
-	                    ...org,
-	                    public_repos: orgDetails.public_repos || 0,
-	                    total_private_repos: orgDetails.total_private_repos || 0,
-	                };
-	            } catch {
-	                return org;
-	            }
-	        })
-	    );
+	    // Get repo count for each org using org details endpoint
+	    const orgsWithCounts = await Promise.all(data.map(async (org) => {
+	        try {
+	            const { data: orgDetails } = await githubApi(
+	                `/orgs/${org.login}`,
+	                req.session.accessToken
+	            );
+                return {
+                    ...org,
+                    public_repos: orgDetails.public_repos || 0,
+                    total_private_repos: orgDetails.total_private_repos || 0
+                };
+            } catch {
+                return org;
+            }
+        }));
 
-	    res.json(orgsWithCounts);
-	} catch (error) {
-	    console.error('Get orgs error:', error);
-	    res.status(error.status || 500).json({ error: error.message });
-	}
+        res.json(orgsWithCounts);
+    } catch (error) {
+        console.error('Get orgs error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
 });
 
 // Get organization details
