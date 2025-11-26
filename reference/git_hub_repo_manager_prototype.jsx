@@ -11,12 +11,12 @@ export default function GitHubRepoManagerApp() {
   const [perPage, setPerPage] = useState(30)
   const [totalPages, setTotalPages] = useState(null)
   const [isPerforming, setIsPerforming] = useState(false)
-  const [results, setResults] = useState([])
-  const headerCheckboxRef = useRef(null)
-  const DEV_MOCK = typeof window !== 'undefined' && (window.__REACT_APP_DEV_MOCK === '1' || window.localStorage.getItem('REACT_APP_DEV_MOCK') === '1')
+	  const [results, setResults] = useState([])
+	  const headerCheckboxRef = useRef(null)
+		  const DEV_MOCK = typeof window !== 'undefined' && (window.__REACT_APP_DEV_MOCK === '1' || window.localStorage.getItem('REACT_APP_DEV_MOCK') === '1')
 
-  useEffect(() => {
-    if (DEV_MOCK) {
+		  useEffect(() => {
+		    if (DEV_MOCK) {
       const mockUser = { login: 'dev-user' }
       const mockRepos = Array.from({ length: 17 }).map((_, i) => ({
         id: i + 1,
@@ -31,29 +31,31 @@ export default function GitHubRepoManagerApp() {
       setRepos(mockRepos)
       setTotalPages(1)
       return
-    }
-    fetchUser()
-  }, [])
+		    }
+		    fetchUser()
+		  // eslint-disable-next-line react-hooks/exhaustive-deps
+		  }, [DEV_MOCK])
 
-  useEffect(() => {
-    if (!DEV_MOCK) fetchRepos(page, perPage)
-  }, [page, perPage])
+		  useEffect(() => {
+		    if (!DEV_MOCK) fetchRepos(page, perPage)
+		  // eslint-disable-next-line react-hooks/exhaustive-deps
+		  }, [DEV_MOCK, page, perPage])
 
-  const safeParseJson = useCallback(async (response) => {
+	  const safeParseJson = useCallback(async (response) => {
     const ct = response && response.headers && response.headers.get ? response.headers.get('content-type') || '' : ''
-    if (ct.includes('application/json') || ct.includes('application/vnd.github')) {
-      try {
-        return await response.json()
-      } catch (err) {
-        const txt = await response.text()
-        throw new Error('Invalid JSON: ' + (txt ? txt.slice(0, 500) : 'empty'))
-      }
-    }
+	    if (ct.includes('application/json') || ct.includes('application/vnd.github')) {
+	      try {
+	        return await response.json()
+	      } catch {
+	        const txt = await response.text()
+	        throw new Error('Invalid JSON: ' + (txt ? txt.slice(0, 500) : 'empty'))
+	      }
+	    }
     const text = await response.text()
     return { __rawText: text, __contentType: ct }
   }, [])
 
-  async function fetchUser() {
+	  async function fetchUser() {
     setLoading(true)
     try {
       const r = await fetch('/api/user', { credentials: 'include' })
@@ -81,7 +83,7 @@ export default function GitHubRepoManagerApp() {
     }
   }
 
-  async function fetchRepos(pageToLoad = 1, per = 30) {
+	  async function fetchRepos(pageToLoad = 1, per = 30) {
     setLoading(true)
     try {
       const url = `/api/repos?page=${pageToLoad}&per_page=${per}`
@@ -210,9 +212,9 @@ export default function GitHubRepoManagerApp() {
     }
   }
 
-  const quickMakePrivate = useCallback(async (repoFullName) => {
-    await performAction('visibility', [repoFullName])
-  }, [org, selectedIds, repos])
+	  const quickMakePrivate = async (repoFullName) => {
+	    await performAction('visibility', [repoFullName])
+	  }
 
   const headerInfo = useMemo(() => ({ selectedCount: selectedIds.size, total: repos.length }), [selectedIds, repos])
 

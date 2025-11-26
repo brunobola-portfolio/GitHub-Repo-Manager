@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import {
-	    Github, LogOut, RefreshCw, FlaskConical, LayoutDashboard, FolderGit2, Plus, Cloud,
-	    Bell, Settings, User, ChevronDown, Building2, Shield, ExternalLink, Loader2,
-	    CheckCircle2, AlertCircle, Sparkles, Moon, Sun
-	} from 'lucide-react'
+	import {
+		    Github, LogOut, RefreshCw, FlaskConical, LayoutDashboard, FolderGit2, Plus, Cloud,
+		    Bell, Settings, User, ChevronDown, Building2, Shield,
+		    CheckCircle2, AlertCircle, Sparkles, Moon, Sun
+		} from 'lucide-react'
 import { Button } from './ui/Button'
 import { useTheme } from '../hooks/useTheme.jsx'
 
@@ -143,13 +143,12 @@ export function HeaderNew({
 	                                    )}
 	                                </Button>
 
-                                {showNotifications && (
-                                    <NotificationsDropdown
-                                        syncStatus={syncStatus}
-                                        orgs={orgs}
-                                        onClose={() => setShowNotifications(false)}
-                                    />
-                                )}
+	                                {showNotifications && (
+	                                    <NotificationsDropdown
+	                                        syncStatus={syncStatus}
+	                                        orgs={orgs}
+	                                    />
+	                                )}
                             </div>
 
 	                            {/* User Menu */}
@@ -170,17 +169,16 @@ export function HeaderNew({
                                     <ChevronDown className={`w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
                                 </button>
 
-                                {showUserMenu && (
-                                    <UserDropdown
-                                        user={user}
-                                        orgs={orgs}
-                                        onLogout={onLogout}
-                                        onReauthorize={onReauthorize}
-                                        onOpenOrgManager={onOpenOrgManager}
-                                        onClose={() => setShowUserMenu(false)}
-                                        isMockMode={isMockMode}
-                                    />
-                                )}
+	                                {showUserMenu && (
+	                                    <UserDropdown
+	                                        user={user}
+	                                        orgs={orgs}
+	                                        onLogout={onLogout}
+	                                        onReauthorize={onReauthorize}
+	                                        onOpenOrgManager={onOpenOrgManager}
+	                                        onClose={() => setShowUserMenu(false)}
+	                                    />
+	                                )}
                             </div>
                         </>
 	                    ) : (
@@ -234,8 +232,9 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
     )
 }
 
-// Navigation Button Component
-function NavButton({ active, onClick, icon: Icon, label }) {
+	// Navigation Button Component
+	function NavButton({ active, onClick, icon, label }) {
+	    const IconComponent = icon
     return (
         <button
             onClick={onClick}
@@ -245,14 +244,14 @@ function NavButton({ active, onClick, icon: Icon, label }) {
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
         >
-            <Icon className="w-4 h-4" />
+	            {IconComponent && <IconComponent className="w-4 h-4" />}
             {label}
         </button>
     )
 }
 
-// User Dropdown Menu
-function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, onClose, isMockMode }) {
+	// User Dropdown Menu
+	function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, onClose }) {
     return (
         <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-slate-800 rounded-xl shadow-xl dark:shadow-slate-900/50 border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
             {/* User Info */}
@@ -318,25 +317,26 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
     )
 }
 
-// Menu Button Component
-function MenuButton({ icon: Icon, onClick, children, danger }) {
+	// Menu Button Component
+	function MenuButton({ icon, onClick, children, danger }) {
+	    const IconComponent = icon
     return (
         <button
             onClick={onClick}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+	            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                 danger
                     ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30'
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
             }`}
         >
-            <Icon className="w-4 h-4" />
+	            {IconComponent && <IconComponent className="w-4 h-4" />}
             {children}
         </button>
     )
 }
 
-// Notifications Dropdown
-function NotificationsDropdown({ syncStatus, orgs, onClose }) {
+	// Notifications Dropdown
+	function NotificationsDropdown({ syncStatus, orgs }) {
     return (
         <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-xl dark:shadow-slate-900/50 border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
             <div className="p-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
@@ -345,7 +345,7 @@ function NotificationsDropdown({ syncStatus, orgs, onClose }) {
             </div>
 
             <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
-                {syncStatus?.lastSync ? (
+	                {syncStatus?.lastSync ? (
                     <NotificationItem
                         icon={CheckCircle2}
                         iconColor="text-green-500 dark:text-green-400"
@@ -361,7 +361,7 @@ function NotificationsDropdown({ syncStatus, orgs, onClose }) {
                     />
                 )}
 
-                {orgs.length > 0 && (
+	                {orgs.length > 0 && (
                     <NotificationItem
                         icon={Building2}
                         iconColor="text-indigo-500 dark:text-indigo-400"
@@ -381,11 +381,12 @@ function NotificationsDropdown({ syncStatus, orgs, onClose }) {
     )
 }
 
-// Notification Item Component
-function NotificationItem({ icon: Icon, iconColor, title, desc }) {
+	// Notification Item Component
+	function NotificationItem({ icon, iconColor, title, desc }) {
+	    const IconComponent = icon
     return (
         <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700">
-            <Icon className={`w-5 h-5 ${iconColor} mt-0.5`} />
+	            {IconComponent && <IconComponent className={`w-5 h-5 ${iconColor} mt-0.5`} />}
             <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-slate-900 dark:text-slate-100">{title}</div>
                 <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{desc}</div>

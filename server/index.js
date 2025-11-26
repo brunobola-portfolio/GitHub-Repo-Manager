@@ -1,3 +1,5 @@
+/* eslint-env node */
+
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
@@ -269,36 +271,33 @@ app.post('/api/mirror', requireAuth, async (req, res) => {
 
 // List user's organizations
 app.get('/api/orgs', requireAuth, async (req, res) => {
-    try {
-        const { data } = await githubApi('/user/orgs', req.session.accessToken);
+	try {
+	    const { data } = await githubApi('/user/orgs', req.session.accessToken);
 
-        // Get repo count for each org
-        const orgsWithCounts = await Promise.all(data.map(async (org) => {
-            try {
-                const { data: repos } = await githubApi(
-                    `/orgs/${org.login}/repos?per_page=1`,
-                    req.session.accessToken
-                );
-                // GitHub returns repo count in org data, but let's use a simpler approach
-                const { data: orgDetails } = await githubApi(
-                    `/orgs/${org.login}`,
-                    req.session.accessToken
-                );
-                return {
-                    ...org,
-                    public_repos: orgDetails.public_repos || 0,
-                    total_private_repos: orgDetails.total_private_repos || 0
-                };
-            } catch {
-                return org;
-            }
-        }));
+	    // Enrich orgs with repo counts from org details endpoint
+	    const orgsWithCounts = await Promise.all(
+	        data.map(async (org) => {
+	            try {
+	                const { data: orgDetails } = await githubApi(
+	                    `/orgs/${org.login}`,
+	                    req.session.accessToken
+	                );
+	                return {
+	                    ...org,
+	                    public_repos: orgDetails.public_repos || 0,
+	                    total_private_repos: orgDetails.total_private_repos || 0,
+	                };
+	            } catch {
+	                return org;
+	            }
+	        })
+	    );
 
-        res.json(orgsWithCounts);
-    } catch (error) {
-        console.error('Get orgs error:', error);
-        res.status(error.status || 500).json({ error: error.message });
-    }
+	    res.json(orgsWithCounts);
+	} catch (error) {
+	    console.error('Get orgs error:', error);
+	    res.status(error.status || 500).json({ error: error.message });
+	}
 });
 
 // Get organization details

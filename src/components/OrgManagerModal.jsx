@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { 
     Building2, X, Settings, Globe, Lock, Users, GitFork, 
     ExternalLink, RefreshCw, Camera, Edit3, Check, AlertTriangle,
@@ -20,13 +20,7 @@ export function OrgManagerModal({
     const [editForm, setEditForm] = useState({})
     const [activeTab, setActiveTab] = useState('overview')
 
-    useEffect(() => {
-        if (isOpen && org) {
-            fetchOrgDetails()
-        }
-    }, [isOpen, org])
-
-    const fetchOrgDetails = async () => {
+	    const fetchOrgDetails = useCallback(async () => {
         setLoading(true)
         try {
             const [orgRes, membersRes] = await Promise.all([
@@ -52,12 +46,18 @@ export function OrgManagerModal({
             }
         } catch (e) {
             console.error('Error fetching org details:', e)
-        } finally {
-            setLoading(false)
-        }
-    }
+	        } finally {
+	            setLoading(false)
+	        }
+	    }, [org])
 
-    const handleSave = async () => {
+	    useEffect(() => {
+	        if (isOpen && org) {
+	            fetchOrgDetails()
+	        }
+	    }, [isOpen, org, fetchOrgDetails])
+
+	    const handleSave = async () => {
         setLoading(true)
         try {
             const res = await fetch(`/api/orgs/${org.login}`, {
@@ -67,12 +67,13 @@ export function OrgManagerModal({
                 body: JSON.stringify(editForm)
             })
             
-            if (res.ok) {
-                const updated = await res.json()
-                setOrgDetails(updated)
-                setEditing(false)
-                onUpdateOrg?.(updated)
-            }
+	            if (res.ok) {
+	                const updated = await res.json()
+	                setOrgDetails(updated)
+	                setEditing(false)
+	                onUpdateOrg?.(updated)
+	                onRefresh?.()
+	            }
         } catch (e) {
             console.error('Error updating org:', e)
         } finally {
@@ -85,13 +86,13 @@ export function OrgManagerModal({
     const displayOrg = orgDetails || org
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl dark:shadow-slate-900/50 max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-indigo-500 to-purple-600">
+                <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-gradient-to-r from-indigo-500 to-purple-600">
                     <div className="flex items-center gap-4">
-                        <img
-                            src={displayOrg.avatar_url}
+                        <img 
+                            src={displayOrg.avatar_url} 
                             alt={displayOrg.login}
                             className="w-16 h-16 rounded-xl ring-4 ring-white/30 shadow-lg"
                         />
@@ -104,16 +105,16 @@ export function OrgManagerModal({
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button
-                            variant="ghost"
-                            size="sm"
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
                             onClick={fetchOrgDetails}
                             className="text-white hover:bg-white/20"
                             disabled={loading}
                         >
                             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         </Button>
-                        <button
+                        <button 
                             onClick={onClose}
                             className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
                         >
@@ -123,15 +124,15 @@ export function OrgManagerModal({
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b border-slate-200 dark:border-slate-700 px-6 bg-white dark:bg-slate-800">
+                <div className="flex border-b border-slate-200 px-6">
                     {['overview', 'members', 'settings'].map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors capitalize ${
-                                activeTab === tab
-                                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                                activeTab === tab 
+                                    ? 'border-indigo-500 text-indigo-600' 
+                                    : 'border-transparent text-slate-500 hover:text-slate-700'
                             }`}
                         >
                             {tab}
@@ -140,14 +141,14 @@ export function OrgManagerModal({
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-slate-800">
+                <div className="flex-1 overflow-y-auto p-6">
                     {loading && !orgDetails ? (
                         <div className="flex items-center justify-center py-12">
                             <RefreshCw className="w-8 h-8 text-slate-400 animate-spin" />
                         </div>
                     ) : activeTab === 'overview' ? (
-                        <OverviewTab
-                            org={displayOrg}
+                        <OverviewTab 
+                            org={displayOrg} 
                             editing={editing}
                             editForm={editForm}
                             setEditForm={setEditForm}
@@ -180,9 +181,9 @@ function OverviewTab({ org, editing, editForm, setEditForm, onEdit, onSave, onCa
             </div>
 
             {/* Details */}
-            <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 space-y-4">
+            <div className="bg-slate-50 rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Organization Details</h3>
+                    <h3 className="font-semibold text-slate-900">Organization Details</h3>
                     {!editing ? (
                         <Button variant="ghost" size="sm" onClick={onEdit}>
                             <Edit3 className="w-4 h-4 mr-1" /> Edit
@@ -222,7 +223,7 @@ function OverviewTab({ org, editing, editForm, setEditForm, onEdit, onSave, onCa
                     href={org.html_url || `https://github.com/${org.login}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 dark:bg-slate-700 text-white rounded-lg hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
                 >
                     <ExternalLink className="w-4 h-4" />
                     View on GitHub
@@ -231,7 +232,7 @@ function OverviewTab({ org, editing, editForm, setEditForm, onEdit, onSave, onCa
                     href={`https://github.com/organizations/${org.login}/settings/profile`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
                 >
                     <Settings className="w-4 h-4" />
                     GitHub Settings
@@ -246,13 +247,13 @@ function MembersTab({ members, orgLogin }) {
     if (members.length === 0) {
         return (
             <div className="text-center py-12">
-                <Users className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <p className="text-slate-500 dark:text-slate-400">No members found or not authorized to view</p>
+                <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <p className="text-slate-500">No members found or not authorized to view</p>
                 <a
                     href={`https://github.com/orgs/${orgLogin}/people`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-indigo-600 dark:text-indigo-400 hover:underline text-sm mt-2 inline-block"
+                    className="text-indigo-600 hover:underline text-sm mt-2 inline-block"
                 >
                     View members on GitHub
                 </a>
@@ -263,17 +264,17 @@ function MembersTab({ members, orgLogin }) {
     return (
         <div className="space-y-3">
             {members.map(member => (
-                <div key={member.id} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <div key={member.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
                     <img src={member.avatar_url} alt={member.login} className="w-10 h-10 rounded-full" />
                     <div className="flex-1">
-                        <div className="font-medium text-slate-900 dark:text-slate-100">{member.login}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 capitalize">{member.role || 'member'}</div>
+                        <div className="font-medium text-slate-900">{member.login}</div>
+                        <div className="text-xs text-slate-500 capitalize">{member.role || 'member'}</div>
                     </div>
                     <a
                         href={member.html_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                        className="text-slate-400 hover:text-slate-600"
                     >
                         <ExternalLink className="w-4 h-4" />
                     </a>
@@ -287,12 +288,12 @@ function MembersTab({ members, orgLogin }) {
 function SettingsTab({ org }) {
     return (
         <div className="space-y-4">
-            <div className="p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
                 <div className="flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                    <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
                     <div>
-                        <h4 className="font-medium text-amber-800 dark:text-amber-200">Advanced Settings</h4>
-                        <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                        <h4 className="font-medium text-amber-800">Advanced Settings</h4>
+                        <p className="text-sm text-amber-700 mt-1">
                             Para configurações avançadas como billing, webhooks, ou danger zone, use as configurações no GitHub.
                         </p>
                     </div>
@@ -324,78 +325,91 @@ function SettingsTab({ org }) {
 }
 
 // Helper Components
-function StatCard({ icon: Icon, label, value, color }) {
-    const colors = {
-        blue: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
-        purple: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
-        green: 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400',
-        orange: 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
-    }
-    return (
-        <div className={`p-4 rounded-lg ${colors[color]} text-center`}>
-            <Icon className="w-5 h-5 mx-auto mb-1 opacity-70" />
-            <div className="text-2xl font-bold">{value}</div>
-            <div className="text-xs opacity-70">{label}</div>
-        </div>
-    )
+function StatCard({ icon, label, value, color }) {
+	const IconComponent = icon
+	const colors = {
+	    blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-200',
+	    purple: 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-200',
+	    green: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-200',
+	    orange: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-200',
+	}
+	return (
+	    <div className={`p-4 rounded-lg ${colors[color]} text-center`}>
+	        {IconComponent && <IconComponent className="w-5 h-5 mx-auto mb-1 opacity-70" />}
+	        <div className="text-2xl font-bold">{value}</div>
+	        <div className="text-xs opacity-70">{label}</div>
+	    </div>
+	)
 }
 
-function DetailRow({ label, value, icon: Icon, isLink }) {
-    if (!value) return null
-    return (
-        <div className="flex items-center gap-2">
-            {Icon && <Icon className="w-4 h-4 text-slate-400 dark:text-slate-500" />}
-            <span className="text-slate-500 dark:text-slate-400 w-24">{label}:</span>
-            {isLink ? (
-                <a href={value} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline truncate">{value}</a>
-            ) : (
-                <span className="text-slate-900 dark:text-slate-100 truncate">{value}</span>
-            )}
-        </div>
-    )
+function DetailRow({ label, value, icon, isLink }) {
+	if (!value) return null
+	const IconComponent = icon
+	return (
+	    <div className="flex items-center gap-2">
+	        {IconComponent && <IconComponent className="w-4 h-4 text-slate-400 dark:text-slate-500" />}
+	        <span className="text-slate-500 dark:text-slate-400 w-24">{label}:</span>
+	        {isLink ? (
+	            <a
+	                href={value}
+	                target="_blank"
+	                rel="noopener noreferrer"
+	                className="text-indigo-600 dark:text-indigo-300 hover:underline truncate"
+	            >
+	                {value}
+	            </a>
+	        ) : (
+	            <span className="text-slate-900 dark:text-slate-100 truncate">{value}</span>
+	        )}
+	    </div>
+	)
 }
 
-function EditField({ label, value, onChange, icon: Icon, multiline }) {
-    return (
-        <div>
-            <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">{label}</label>
-            <div className="relative">
-                {Icon && <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />}
-                {multiline ? (
-                    <textarea
-                        value={value}
-                        onChange={e => onChange(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        rows={3}
-                    />
-                ) : (
-                    <input
-                        type="text"
-                        value={value}
-                        onChange={e => onChange(e.target.value)}
-                        className={`w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${Icon ? 'pl-10' : ''}`}
-                    />
-                )}
-            </div>
-        </div>
-    )
+function EditField({ label, value, onChange, icon, multiline }) {
+	const IconComponent = icon
+	return (
+	    <div>
+	        <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">{label}</label>
+	        <div className="relative">
+	            {IconComponent && (
+	                <IconComponent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
+	            )}
+	            {multiline ? (
+	                <textarea
+	                    value={value}
+	                    onChange={e => onChange(e.target.value)}
+	                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+	                    rows={3}
+	                />
+	            ) : (
+	                <input
+	                    type="text"
+	                    value={value}
+	                    onChange={e => onChange(e.target.value)}
+	                    className={`w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${IconComponent ? 'pl-10' : ''}`}
+	                />
+	            )}
+	        </div>
+	    </div>
+	)
 }
 
-function SettingsLink({ href, icon: Icon, title, desc }) {
-    return (
-        <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
-        >
-            <Icon className="w-5 h-5 text-slate-400 dark:text-slate-500" />
-            <div className="flex-1">
-                <div className="font-medium text-slate-900 dark:text-slate-100">{title}</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">{desc}</div>
-            </div>
-            <ExternalLink className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-        </a>
-    )
+function SettingsLink({ href, icon, title, desc }) {
+	const IconComponent = icon
+	return (
+	    <a
+	        href={href}
+	        target="_blank"
+	        rel="noopener noreferrer"
+	        className="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:border-slate-300 dark:hover:border-slate-500 transition-colors"
+	    >
+	        {IconComponent && <IconComponent className="w-5 h-5 text-slate-400 dark:text-slate-300" />}
+	        <div className="flex-1">
+	            <div className="font-medium text-slate-900 dark:text-slate-100">{title}</div>
+	            <div className="text-xs text-slate-500 dark:text-slate-400">{desc}</div>
+	        </div>
+	        <ExternalLink className="w-4 h-4 text-slate-400 dark:text-slate-300" />
+	    </a>
+	)
 }
 
