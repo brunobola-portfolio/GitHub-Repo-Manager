@@ -19,7 +19,7 @@ function App() {
     repos,
     loading,
     error,
-    errorInfo,
+	    errorInfo,
     message,
     selectedIds,
     page,
@@ -274,7 +274,7 @@ function App() {
                 repos={displayRepos}
                 loading={loading}
                 error={error}
-                errorInfo={errorInfo}
+	                errorInfo={errorInfo}
                 selectedIds={selectedIds}
                 toggleSelect={toggleSelect}
                 selectAllVisible={selectAllVisible}
@@ -287,6 +287,7 @@ function App() {
                 org={org}
                 setOrg={setOrg}
                 onRefresh={refresh}
+	                onLogin={handleLogin}
                 orgs={orgs}
                 selectedOrg={selectedOrg}
                 onQuickAction={handleQuickAction}
