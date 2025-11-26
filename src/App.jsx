@@ -10,8 +10,7 @@ import { CreateRepoModal } from './components/CreateRepoModal'
 import { TransferModal } from './components/TransferModal'
 import { OrgManagerModal } from './components/OrgManagerModal'
 import { ConfirmModal } from './components/ui/ConfirmModal'
-import { ToastContainer } from './components/ui/Toast'
-import { useToast } from './hooks/useToast'
+import { ToastContainer, useToast } from './components/ui/Toast'
 import { AUTH_ENDPOINTS } from './config'
 
 function App() {
@@ -63,17 +62,17 @@ function App() {
   const [syncStatus, setSyncStatus] = useState({ lastSync: null, hasUpdates: false })
   const { toasts, toast, dismissToast } = useToast()
 
-	  // Sync organizations and data
-	  const handleRefreshOrgs = useCallback(async () => {
-	    try {
-	      await Promise.all([fetchOrgs(), fetchStats()])
-	      setSyncStatus({ lastSync: new Date().toISOString(), hasUpdates: false })
-	      toast.success('Organizations synced successfully')
-	    } catch (err) {
+  // Sync organizations and data
+  const handleRefreshOrgs = useCallback(async () => {
+    try {
+      await Promise.all([fetchOrgs(), fetchStats()])
+      setSyncStatus({ lastSync: new Date().toISOString(), hasUpdates: false })
+      toast.success('Organizations synced successfully')
+    } catch (err) {
 	      console.error('Failed to sync organizations', err)
 	      toast.error('Failed to sync organizations')
-	    }
-	  }, [fetchOrgs, fetchStats, toast])
+    }
+  }, [fetchOrgs, fetchStats, toast])
 
   // Re-authorize OAuth permissions
   const handleReauthorize = useCallback(() => {
@@ -106,8 +105,8 @@ function App() {
     }
   }
 
-	  // Handle quick actions from repo row
-	  const handleQuickAction = async (action, repo, value) => {
+  // Handle quick actions from repo row
+  const handleQuickAction = async (action, repo, value) => {
     switch (action) {
       case 'visibility':
         setConfirmModal({
