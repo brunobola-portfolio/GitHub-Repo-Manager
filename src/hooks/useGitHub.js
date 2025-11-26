@@ -69,20 +69,20 @@ function getErrorInfo(error) {
     }
 }
 
-export function useGitHub() {
-    const [user, setUser] = useState(null)
-    const [repos, setRepos] = useState([])
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState(null)
-    const [errorInfo, setErrorInfo] = useState(null)
-    const [message, setMessage] = useState('')
-    const [selectedIds, setSelectedIds] = useState(new Set())
-    const [page, setPage] = useState(1)
-    const [perPage, setPerPage] = useState(PAGINATION.defaultPerPage)
-    const [totalPages, setTotalPages] = useState(null)
-    const [isPerforming, setIsPerforming] = useState(false)
-    const [results, setResults] = useState([])
-    const [retryCount, setRetryCount] = useState(0)
+	export function useGitHub() {
+	    const [user, setUser] = useState(null)
+	    const [repos, setRepos] = useState([])
+	    const [loading, setLoading] = useState(false)
+	    const [error, setError] = useState(null)
+	    const [errorInfo, setErrorInfo] = useState(null)
+	    const [message, setMessage] = useState('')
+	    const [selectedIds, setSelectedIds] = useState(new Set())
+	    const [page, setPage] = useState(1)
+	    const [perPage, setPerPage] = useState(PAGINATION.defaultPerPage)
+	    const [totalPages, setTotalPages] = useState(null)
+	    const [isPerforming, setIsPerforming] = useState(false)
+	    const [results, setResults] = useState([])
+	    const [retryCount, setRetryCount] = useState(0)
 
     // Initialize with mock data or fetch user
     useEffect(() => {
@@ -101,16 +101,25 @@ export function useGitHub() {
         fetchUser()
     }, [])
 
-    // Fetch repos when page or perPage changes (non-mock mode)
-    useEffect(() => {
-        if (MOCK_MODE) {
-            const { repos: mockRepos, totalPages: mockTotalPages } = generateMockData(page, perPage)
-            setRepos(mockRepos)
-            setTotalPages(mockTotalPages)
-            return
-        }
-        fetchRepos(page, perPage)
-    }, [page, perPage])
+	    // Fetch repos when page or perPage changes (non-mock mode).
+	    // When unauthenticated, avoid calling the repos API and instead
+	    // clear the current list so the UI can show an auth empty state.
+	    useEffect(() => {
+	        if (MOCK_MODE) {
+	            const { repos: mockRepos, totalPages: mockTotalPages } = generateMockData(page, perPage)
+	            setRepos(mockRepos)
+	            setTotalPages(mockTotalPages)
+	            return
+	        }
+
+	        if (!user) {
+	            setRepos([])
+	            setTotalPages(null)
+	            return
+	        }
+
+	        fetchRepos(page, perPage)
+	    }, [page, perPage, user])
 
     /**
      * Fetch current user from API with retry logic
@@ -136,10 +145,9 @@ export function useGitHub() {
                 return
             }
 
-            setUser(parsed)
-            setMessage('')
-            setRetryCount(0)
-            await fetchRepos(1, perPage)
+	            setUser(parsed)
+	            setMessage('')
+	            setRetryCount(0)
         } catch (e) {
             console.error('fetchUser', e)
             const info = getErrorInfo(e)
@@ -316,15 +324,26 @@ export function useGitHub() {
     /**
      * Refresh the current page
      */
-    const refresh = useCallback(() => {
-        if (MOCK_MODE) {
-            const { repos: mockRepos, totalPages: mockTotalPages } = generateMockData(page, perPage)
-            setRepos(mockRepos)
-            setTotalPages(mockTotalPages)
-        } else {
-            fetchRepos(page, perPage)
-        }
-    }, [page, perPage])
+	    const refresh = useCallback(() => {
+	        if (MOCK_MODE) {
+	            const { repos: mockRepos, totalPages: mockTotalPages } = generateMockData(page, perPage)
+	            setRepos(mockRepos)
+	            setTotalPages(mockTotalPages)
+	            return
+	        }
+
+	        if (!user) {
+	            // Avoid unnecessary API calls when the user is not authenticated.
+	            // This keeps the console free of repeated 401 errors and lets the
+	            // UI show a clear authentication-required empty state instead.
+	            setRepos([])
+	            setTotalPages(null)
+	            setMessage('Authentication required. Login with GitHub to load your repositories.')
+	            return
+	        }
+
+	        fetchRepos(page, perPage)
+	    }, [page, perPage, user])
 
     // ============ ORGANIZATIONS ============
     const [orgs, setOrgs] = useState([])
