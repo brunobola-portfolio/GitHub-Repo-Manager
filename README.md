@@ -332,9 +332,17 @@ Use this app to organize your GitHub repositories into a clean portfolio:
 - **Lucide React** - Icons
 - **clsx & tailwind-merge** - Class utilities
 
+## 🤝 Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on setting up your environment, coding style, and how to propose changes.
+
+## 👤 Author
+
+Maintained by **Bruno Marques – Bola Labs, Inc.**
+
 ## 📄 License
 
-MIT License - See [LICENSE](LICENSE) for details.
+MIT License – see [LICENSE](LICENSE) for details.
 
 ---
 
