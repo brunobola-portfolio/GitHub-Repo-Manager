@@ -10,7 +10,8 @@ import { CreateRepoModal } from './components/CreateRepoModal'
 import { TransferModal } from './components/TransferModal'
 import { OrgManagerModal } from './components/OrgManagerModal'
 import { ConfirmModal } from './components/ui/ConfirmModal'
-import { ToastContainer, useToast } from './components/ui/Toast'
+import { ToastContainer } from './components/ui/Toast'
+import { useToast } from './hooks/useToast'
 import { AUTH_ENDPOINTS } from './config'
 
 function App() {
@@ -19,7 +20,6 @@ function App() {
     repos,
     loading,
     error,
-	    errorInfo,
     message,
     selectedIds,
     page,
@@ -63,16 +63,17 @@ function App() {
   const [syncStatus, setSyncStatus] = useState({ lastSync: null, hasUpdates: false })
   const { toasts, toast, dismissToast } = useToast()
 
-  // Sync organizations and data
-  const handleRefreshOrgs = useCallback(async () => {
-    try {
-      await Promise.all([fetchOrgs(), fetchStats()])
-      setSyncStatus({ lastSync: new Date().toISOString(), hasUpdates: false })
-      toast.success('Organizations synced successfully')
-    } catch (err) {
-      toast.error('Failed to sync organizations')
-    }
-  }, [fetchOrgs, fetchStats, toast])
+	  // Sync organizations and data
+	  const handleRefreshOrgs = useCallback(async () => {
+	    try {
+	      await Promise.all([fetchOrgs(), fetchStats()])
+	      setSyncStatus({ lastSync: new Date().toISOString(), hasUpdates: false })
+	      toast.success('Organizations synced successfully')
+	    } catch (err) {
+	      console.error('Failed to sync organizations', err)
+	      toast.error('Failed to sync organizations')
+	    }
+	  }, [fetchOrgs, fetchStats, toast])
 
   // Re-authorize OAuth permissions
   const handleReauthorize = useCallback(() => {
@@ -105,10 +106,8 @@ function App() {
     }
   }
 
-  // Handle quick actions from repo row
-  const handleQuickAction = async (action, repo, value) => {
-    const displayRepos = selectedOrg ? orgRepos : repos
-
+	  // Handle quick actions from repo row
+	  const handleQuickAction = async (action, repo, value) => {
     switch (action) {
       case 'visibility':
         setConfirmModal({
@@ -218,8 +217,8 @@ function App() {
   // Display repos based on selected org
   const displayRepos = selectedOrg ? orgRepos : repos
 
-  return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-12">
+	  return (
+	    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-50 pb-12">
       <HeaderNew
         user={user}
         isMockMode={isMockMode}
@@ -274,7 +273,6 @@ function App() {
                 repos={displayRepos}
                 loading={loading}
                 error={error}
-	                errorInfo={errorInfo}
                 selectedIds={selectedIds}
                 toggleSelect={toggleSelect}
                 selectAllVisible={selectAllVisible}
@@ -287,7 +285,6 @@ function App() {
                 org={org}
                 setOrg={setOrg}
                 onRefresh={refresh}
-	                onLogin={handleLogin}
                 orgs={orgs}
                 selectedOrg={selectedOrg}
                 onQuickAction={handleQuickAction}

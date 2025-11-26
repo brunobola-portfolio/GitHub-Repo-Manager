@@ -13,9 +13,8 @@ export function TransferModal({
     isPerforming = false,
     progress = null
 }) {
-    const [targetOrg, setTargetOrg] = useState('')
-    const [action, setAction] = useState('transfer') // 'transfer' | 'mirror'
-    const [newNames, setNewNames] = useState({})
+	    const [targetOrg, setTargetOrg] = useState('')
+	    const [action, setAction] = useState('transfer') // 'transfer' | 'mirror'
 
     if (!isOpen) return null
 
@@ -31,10 +30,8 @@ export function TransferModal({
         }
     }
 
-    const canCreate = orgs.length === 0
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+	    return (
+	        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4">
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl dark:shadow-slate-900/50 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-5 text-white">

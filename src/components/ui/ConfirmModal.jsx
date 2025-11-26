@@ -1,4 +1,4 @@
-import { AlertTriangle, Trash2, X } from 'lucide-react'
+import { AlertTriangle, X } from 'lucide-react'
 import { Button } from './Button'
 
 export function ConfirmModal({
@@ -7,14 +7,15 @@ export function ConfirmModal({
     onConfirm,
     title = 'Confirm Action',
     message = 'Are you sure?',
-    confirmText = 'Confirm',
-    cancelText = 'Cancel',
-    variant = 'danger', // danger, warning, info
-    requiresInput = null, // e.g., 'DELETE' to type
-    icon: Icon = AlertTriangle,
-    isLoading = false
-}) {
-    if (!isOpen) return null
+	    confirmText = 'Confirm',
+	    cancelText = 'Cancel',
+	    variant = 'danger', // danger, warning, info
+	    requiresInput = null, // e.g., 'DELETE' to type
+	    icon = AlertTriangle,
+	    isLoading = false
+	}) {
+	    const IconComponent = icon
+	    if (!isOpen) return null
 
     const handleConfirm = () => {
         if (requiresInput) {
@@ -50,13 +51,13 @@ export function ConfirmModal({
 
     const styles = variantStyles[variant] || variantStyles.danger
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+	    return (
+	        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm">
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl dark:shadow-slate-900/50 max-w-md w-full mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 {/* Header */}
-                <div className={`${styles.bg} ${styles.border} border-b p-4 flex items-center gap-3`}>
-                    <div className={`p-2 rounded-full ${styles.bg}`}>
-                        <Icon className={`w-6 h-6 ${styles.iconColor}`} />
+	                <div className={`${styles.bg} ${styles.border} border-b p-4 flex items-center gap-3`}>
+	                    <div className={`p-2 rounded-full ${styles.bg}`}>
+	                        {IconComponent && <IconComponent className={`w-6 h-6 ${styles.iconColor}`} />}
                     </div>
                     <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex-1">{title}</h2>
                     <button

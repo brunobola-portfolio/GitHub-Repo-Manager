@@ -4,8 +4,7 @@ import {
     parseLinkHeaderTotal,
     fetchWithRetry,
     ApiError,
-    ErrorType,
-    categorizeError
+	    ErrorType
 } from '../utils/api'
 import { MOCK_MODE, API_ENDPOINTS, PAGINATION } from '../config'
 
@@ -84,22 +83,22 @@ function getErrorInfo(error) {
 	    const [results, setResults] = useState([])
 	    const [retryCount, setRetryCount] = useState(0)
 
-    // Initialize with mock data or fetch user
-    useEffect(() => {
-        if (MOCK_MODE) {
-            const mockUser = {
-                login: 'dev-user',
-                avatar_url: 'https://github.com/ghost.png',
-                name: 'Development User'
-            }
-            const { repos: mockRepos, totalPages: mockTotalPages } = generateMockData(1, perPage)
-            setUser(mockUser)
-            setRepos(mockRepos)
-            setTotalPages(mockTotalPages)
-            return
-        }
-        fetchUser()
-    }, [])
+	    // Initialize with mock data or fetch user
+	    useEffect(() => {
+	        if (MOCK_MODE) {
+	            const mockUser = {
+	                login: 'dev-user',
+	                avatar_url: 'https://github.com/ghost.png',
+	                name: 'Development User'
+	            }
+	            const { repos: mockRepos, totalPages: mockTotalPages } = generateMockData(1, perPage)
+	            setUser(mockUser)
+	            setRepos(mockRepos)
+	            setTotalPages(mockTotalPages)
+	            return
+	        }
+	        fetchUser()
+	    }, [perPage])
 
 	    // Fetch repos when page or perPage changes (non-mock mode).
 	    // When unauthenticated, avoid calling the repos API and instead
@@ -617,13 +616,13 @@ function getErrorInfo(error) {
         }
     }
 
-    // Load orgs when user is loaded
-    useEffect(() => {
-        if (user) {
-            fetchOrgs()
-            fetchStats()
-        }
-    }, [user])
+	    // Load orgs and stats when user is loaded
+	    useEffect(() => {
+	        if (user) {
+	            fetchOrgs()
+	            fetchStats()
+	        }
+	    }, [user])
 
     return {
         // State

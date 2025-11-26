@@ -12,19 +12,18 @@ const ACTION_LABELS = {
     'import-azure': 'Azure Import'
 }
 
-export function Sidebar({
-    selectedCount,
-    isPerforming,
-    performAction,
-    message,
-    results,
-    org,
-    onArchive,
-    onDelete,
-    selectedRepos = [],
-    onTransfer,
-    orgs = []
-}) {
+	export function Sidebar({
+	    selectedCount,
+	    isPerforming,
+	    performAction,
+	    message,
+	    results,
+	    onArchive,
+	    onDelete,
+	    selectedRepos = [],
+	    onTransfer,
+	    orgs = []
+	}) {
     const hasSelection = selectedCount > 0
     const hasOrgs = orgs.length > 0
 

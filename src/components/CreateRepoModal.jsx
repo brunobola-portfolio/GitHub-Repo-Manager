@@ -25,8 +25,8 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming 
         }
     }
 
-    return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+	    return (
+	        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <Card className="w-full max-w-md p-6">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">

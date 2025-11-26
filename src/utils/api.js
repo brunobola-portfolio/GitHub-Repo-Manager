@@ -166,12 +166,12 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
 
 // ============ JSON Parsing ============
 
-export const safeParseJson = async (response) => {
+	export const safeParseJson = async (response) => {
     const ct = response && response.headers && response.headers.get ? response.headers.get('content-type') || '' : ''
     if (ct.includes('application/json') || ct.includes('application/vnd.github')) {
-        try {
-            return await response.json()
-        } catch (err) {
+	        try {
+	            return await response.json()
+	        } catch {
             const txt = await response.text()
             throw new Error('Invalid JSON: ' + (txt ? txt.slice(0, 500) : 'empty'))
         }
