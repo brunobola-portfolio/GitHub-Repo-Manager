@@ -1,6 +1,6 @@
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
-import { ArrowRightLeft, Lock, Unlock, Copy, History, Zap, CheckCircle, XCircle, Loader2, AlertTriangle, Archive, Trash2 } from 'lucide-react'
+import { ArrowRightLeft, Lock, Unlock, Copy, History, Zap, CheckCircle, XCircle, Loader2, AlertTriangle, Archive, Trash2, Cloud, Sparkles } from 'lucide-react'
 
 const ACTION_LABELS = {
     visibility: 'Change Visibility',
@@ -22,13 +22,44 @@ const ACTION_LABELS = {
 	    onDelete,
 	    selectedRepos = [],
 	    onTransfer,
-	    orgs = []
+	    orgs = [],
+	    onAzureImport
 	}) {
     const hasSelection = selectedCount > 0
     const hasOrgs = orgs.length > 0
 
     return (
-        <aside className="space-y-6 sticky top-24">
+        <aside className="space-y-4 sticky top-24">
+            {/* Migrate from DevOps - Featured Action */}
+            <Card className="p-4 bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50 dark:from-sky-900/40 dark:via-indigo-900/40 dark:to-purple-900/40 border-2 border-indigo-200 dark:border-indigo-700/50 shadow-lg shadow-indigo-100/50 dark:shadow-indigo-900/30">
+                <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 bg-gradient-to-br from-sky-500 to-indigo-600 rounded-lg shadow-md">
+                        <Cloud className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                            Migrate from DevOps
+                            <Sparkles className="w-4 h-4 text-amber-500" />
+                        </h3>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">Import repos from Azure DevOps</p>
+                    </div>
+                </div>
+                <Button
+                    onClick={onAzureImport}
+                    disabled={isPerforming}
+                    className="w-full justify-center bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500 hover:from-sky-600 hover:via-indigo-600 hover:to-purple-600 text-white font-semibold shadow-md hover:shadow-lg transition-all border-0"
+                    size="md"
+                    title="Import repositories from Azure DevOps to GitHub"
+                >
+                    <Cloud className="w-4 h-4 mr-2" />
+                    Start Migration
+                </Button>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 text-center">
+                    Seamlessly migrate your Azure DevOps repos to GitHub
+                </p>
+            </Card>
+
+            {/* Quick Actions */}
             <Card className="p-4 space-y-4">
                 <div>
                     <h3 className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">

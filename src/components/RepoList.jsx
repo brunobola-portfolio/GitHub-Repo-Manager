@@ -107,14 +107,14 @@ export function RepoList({
     return (
         <Card className="flex flex-col">
             {/* Toolbar */}
-            <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
-                    <label className="text-sm text-slate-600 font-medium">Target Org:</label>
+                    <label className="text-sm text-slate-600 dark:text-slate-300 font-medium">Target Org:</label>
                     {orgs && orgs.length > 0 ? (
                         <select
                             value={org}
                             onChange={e => setOrg(e.target.value)}
-                            className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-48"
+                            className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-48"
                         >
                             <option value="">Select organization...</option>
                             {orgs.map(o => (
@@ -126,7 +126,7 @@ export function RepoList({
                             value={org}
                             onChange={e => setOrg(e.target.value)}
                             placeholder="e.g. my-organization"
-                            className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-48"
+                            className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-48"
                         />
                     )}
                     {selectedOrg && (
@@ -158,13 +158,13 @@ export function RepoList({
             {/* Table */}
             <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
+                    <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 font-medium border-b border-slate-200 dark:border-slate-700">
                         <tr>
                             <th className="p-4 w-10">
                                 <input
                                     ref={headerCheckboxRef}
                                     type="checkbox"
-                                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                    className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 dark:bg-slate-700"
                                     onChange={(ev) => ev.target.checked ? selectAllVisible() : clearSelection()}
                                     disabled={loading || repos.length === 0}
                                 />
@@ -175,11 +175,11 @@ export function RepoList({
                             <th className="p-4 text-center">Actions</th>
                         </tr>
                     </thead>
-	                    <tbody className="divide-y divide-slate-100">
+	                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                         {loading ? (
                             <tr>
                                 <td colSpan={5} className="p-12 text-center">
-                                    <div className="flex flex-col items-center gap-2 text-slate-500">
+                                    <div className="flex flex-col items-center gap-2 text-slate-500 dark:text-slate-400">
                                         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
                                         <span>Loading repositories...</span>
                                     </div>
@@ -188,7 +188,7 @@ export function RepoList({
                         ) : error ? (
                             <tr>
                                 <td colSpan={5} className="p-12 text-center">
-                                    <div className="flex flex-col items-center gap-2 text-red-500">
+                                    <div className="flex flex-col items-center gap-2 text-red-500 dark:text-red-400">
                                         <AlertCircle className="w-8 h-8" />
                                         <span>{error}</span>
                                         <Button variant="secondary" size="sm" onClick={onRefresh}>
@@ -199,7 +199,7 @@ export function RepoList({
                             </tr>
 	                        ) : repos.length === 0 ? (
                             <tr>
-                                <td colSpan={5} className="p-12 text-center text-slate-500">
+                                <td colSpan={5} className="p-12 text-center text-slate-500 dark:text-slate-400">
                                     No repositories found.
                                 </td>
                             </tr>
@@ -217,29 +217,29 @@ export function RepoList({
                                         type="checkbox"
                                         checked={selectedIds.has(repo.id)}
                                         onChange={() => toggleSelect(repo.id)}
-                                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                        className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 dark:bg-slate-700"
                                     />
                                 </td>
                                 <td className="p-4">
                                     <div className="flex items-center gap-2">
-                                        <div className="font-medium text-slate-900">{repo.name}</div>
+                                        <div className="font-medium text-slate-900 dark:text-slate-100">{repo.name}</div>
                                         {repo.archived && (
                                             <Badge variant="default" className="gap-1 text-[10px]">
                                                 <Archive className="w-2.5 h-2.5" /> Archived
                                             </Badge>
                                         )}
                                     </div>
-                                    <div className="text-xs text-slate-500">{repo.owner?.login}</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400">{repo.owner?.login}</div>
                                     {repo.description && (
-                                        <div className="text-xs text-slate-400 mt-1 line-clamp-1">{repo.description}</div>
+                                        <div className="text-xs text-slate-400 dark:text-slate-500 mt-1 line-clamp-1">{repo.description}</div>
                                     )}
                                     {repo.language && (
                                         <div className="flex items-center gap-2 mt-1">
-                                            <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                                            <span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
                                                 {repo.language}
                                             </span>
                                             {repo.stargazers_count > 0 && (
-                                                <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
+                                                <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-0.5">
                                                     <Star className="w-2.5 h-2.5" /> {repo.stargazers_count}
                                                 </span>
                                             )}
@@ -265,8 +265,8 @@ export function RepoList({
                                             onClick={() => onQuickAction?.('visibility', repo, repo.private ? 'public' : 'private')}
                                             className={`p-1.5 rounded transition-colors ${
                                                 repo.private
-                                                    ? 'text-amber-500 hover:bg-amber-50 hover:text-amber-600'
-                                                    : 'text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600'
+                                                    ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-600 dark:hover:text-amber-400'
+                                                    : 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-600 dark:hover:text-emerald-400'
                                             }`}
                                             title={repo.private ? 'Make Public' : 'Make Private'}
                                         >
@@ -278,8 +278,8 @@ export function RepoList({
                                             onClick={() => onQuickAction?.('archive', repo, !repo.archived)}
                                             className={`p-1.5 rounded transition-colors ${
                                                 repo.archived
-                                                    ? 'text-slate-500 hover:bg-slate-100'
-                                                    : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+                                                    ? 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                                    : 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300'
                                             }`}
                                             title={repo.archived ? 'Unarchive' : 'Archive'}
                                         >
@@ -291,7 +291,7 @@ export function RepoList({
                                             href={repo.html_url}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="p-1.5 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-100"
+                                            className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
                                             title="Open on GitHub"
                                         >
                                             <ExternalLink className="w-4 h-4" />
@@ -318,7 +318,7 @@ export function RepoList({
 
 	            {/* Pagination */}
 	            <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/40">
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-slate-500 dark:text-slate-400">
 	                    <span className="font-medium text-slate-700 dark:text-slate-200">{visibleSelectedCount}</span> selected on this page
                     {selectedIds.size > visibleSelectedCount && (
 	                        <span className="ml-1 text-slate-500 dark:text-slate-400">({selectedIds.size} total)</span>
