@@ -240,93 +240,132 @@ function getErrorInfo(error) {
      * @param {string} org - Target organization for transfer/mirror
      * @param {object} options - Additional options like { makePublic: true }
      */
-    async function performAction(action, items = null, org = '', options = {}) {
-        // Get target repos
-        const repoNames = items || Array.from(selectedIds).map(id => {
-            const r = repos.find(x => x.id === id)
-            return r ? r.full_name : null
-        }).filter(Boolean)
+	    async function performAction(action, items = null, org = '', options = {}) {
+	        // Get target repos
+	        const repoNames = items || Array.from(selectedIds).map(id => {
+	            const r = repos.find(x => x.id === id)
+	            return r ? r.full_name : null
+	        }).filter(Boolean)
 
-        if (repoNames.length === 0) {
-            setMessage('Select at least 1 repository')
-            return
-        }
+	        if (repoNames.length === 0) {
+	            const msg = 'Select at least 1 repository'
+	            setMessage(msg)
+	            return { success: false, message: msg, skipped: true }
+	        }
 
-        // Mock mode simulation
-        if (MOCK_MODE) {
-            setIsPerforming(true)
-            setMessage(`Processing ${repoNames.length} repositories...`)
-            await new Promise(r => setTimeout(r, 1500))
+	        // Mock mode simulation
+	        if (MOCK_MODE) {
+	            setIsPerforming(true)
+	            setMessage(`Processing ${repoNames.length} repositories...`)
+	            await new Promise(r => setTimeout(r, 1500))
 
-            const actionLabels = {
-                visibility: options.makePublic ? 'Made public' : 'Made private',
-                transfer: `Transferred to ${org || 'organization'}`,
-                mirror: `Created mirror in ${org || 'organization'}`
-            }
-            const msg = `${actionLabels[action] || action}: ${repoNames.length} repositories`
+	            const actionLabels = {
+	                visibility: options.makePublic ? 'Made public' : 'Made private',
+	                transfer: `Transferred to ${org || 'organization'}`,
+	                mirror: `Created mirror in ${org || 'organization'}`
+	            }
+	            const msg = `${actionLabels[action] || action}: ${repoNames.length} repositories`
 
-            setMessage(msg)
-            setResults(prev => [{
-                at: new Date().toISOString(),
-                action,
-                message: msg,
-                count: repoNames.length,
-                success: true
-            }, ...prev])
-            setIsPerforming(false)
-            clearSelection()
-            return
-        }
+	            const entry = {
+	                at: new Date().toISOString(),
+	                action,
+	                message: msg,
+	                count: repoNames.length,
+	                success: true
+	            }
+	            setMessage(msg)
+	            setResults(prev => [entry, ...prev])
+	            setIsPerforming(false)
+	            clearSelection()
+	            return {
+	                success: true,
+	                message: msg,
+	                action,
+	                count: repoNames.length,
+	                results: [],
+	            }
+	        }
 
-        // Real API call with retry
-        setIsPerforming(true)
-        setMessage(`Processing ${repoNames.length} repositories...`)
+	        // Real API call with retry
+	        setIsPerforming(true)
+	        setMessage(`Processing ${repoNames.length} repositories...`)
+	
+	        try {
+	            const body = {
+	                repos: repoNames,
+	                toOrg: org,
+	                ...options
+	            }
 
-        try {
-            const body = {
-                repos: repoNames,
-                toOrg: org,
-                ...options
-            }
+	            const endpoint = API_ENDPOINTS[action] || `${API_ENDPOINTS.repos.replace('/repos', '')}/${action}`
+	            const resp = await fetchWithRetry(endpoint, {
+	                method: 'POST',
+	                credentials: 'include',
+	                headers: { 'Content-Type': 'application/json' },
+	                body: JSON.stringify(body)
+	            }, { maxRetries: 2 })
+	
+	            const parsed = await safeParseJson(resp)
+	            const apiResults = Array.isArray(parsed?.results) ? parsed.results : []
+	            const failed = apiResults.filter(r => r && r.success === false)
+	            const successCount = apiResults.length
+	                ? apiResults.filter(r => r && r.success !== false).length
+	                : repoNames.length
+	
+	            const msg = parsed?.message
+	                || (failed.length
+	                    ? `Completed with ${successCount} success${successCount === 1 ? '' : 'es'} and ${failed.length} failure${failed.length === 1 ? '' : 's'}`
+	                    : `Operation completed for ${successCount} repositories`)
+	
+	            const entry = {
+	                at: new Date().toISOString(),
+	                action,
+	                message: msg,
+	                count: repoNames.length,
+	                success: failed.length === 0,
+	                failedCount: failed.length || 0,
+	            }
+	
+	            setMessage(msg)
+	            setResults(prev => [entry, ...prev])
 
-            const endpoint = API_ENDPOINTS[action] || `${API_ENDPOINTS.repos.replace('/repos', '')}/${action}`
-            const resp = await fetchWithRetry(endpoint, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            }, { maxRetries: 2 })
-
-            const parsed = await safeParseJson(resp)
-            const msg = parsed?.message || `Operation completed for ${repoNames.length} repositories`
-            setMessage(msg)
-            setResults(prev => [{
-                at: new Date().toISOString(),
-                action,
-                message: msg,
-                count: repoNames.length,
-                success: true
-            }, ...prev])
-
-            // Refresh repos list
-            await fetchRepos(page, perPage)
-            clearSelection()
-        } catch (e) {
-            console.error('performAction', e)
-            const info = getErrorInfo(e)
-            setMessage(info.message)
-            setErrorInfo(info)
-            setResults(prev => [{
-                at: new Date().toISOString(),
-                action,
-                message: info.message,
-                success: false,
-                errorType: info.type
-            }, ...prev])
-        } finally {
-            setIsPerforming(false)
-        }
-    }
+	            // Refresh repos list
+	            await fetchRepos(page, perPage)
+	            clearSelection()
+	
+	            return {
+	                success: failed.length === 0,
+	                message: msg,
+	                action,
+	                count: repoNames.length,
+	                results: apiResults,
+	                failedCount: failed.length || 0,
+	                successCount,
+	                raw: parsed,
+	            }
+	        } catch (e) {
+	            console.error('performAction', e)
+	            const info = getErrorInfo(e)
+	            setMessage(info.message)
+	            setErrorInfo(info)
+	            const entry = {
+	                at: new Date().toISOString(),
+	                action,
+	                message: info.message,
+	                success: false,
+	                errorType: info.type
+	            }
+	            setResults(prev => [entry, ...prev])
+	            return {
+	                success: false,
+	                message: info.message,
+	                action,
+	                error: info,
+	            }
+	        } finally {
+	            setIsPerforming(false)
+	        }
+	    }
 
     /**
      * Refresh the current page
@@ -446,79 +485,100 @@ function getErrorInfo(error) {
     /**
      * Archive/unarchive repositories
      */
-    async function archiveRepos(repoNames, archive = true) {
-        if (repoNames.length === 0) {
-            setMessage('Select at least 1 repository')
-            return
-        }
+	    async function archiveRepos(repoNames, archive = true) {
+	        if (!repoNames || repoNames.length === 0) {
+	            const msg = 'Select at least 1 repository'
+	            setMessage(msg)
+	            return { success: false, message: msg }
+	        }
 
-        if (MOCK_MODE) {
-            setIsPerforming(true)
-            await new Promise(r => setTimeout(r, 1000))
-            const msg = `${archive ? 'Archived' : 'Unarchived'} ${repoNames.length} repositories`
-            setMessage(msg)
-            setResults(prev => [{ at: new Date().toISOString(), action: 'archive', message: msg, success: true }, ...prev])
-            setIsPerforming(false)
-            return
-        }
+	        if (MOCK_MODE) {
+	            setIsPerforming(true)
+	            await new Promise(r => setTimeout(r, 1000))
+	            const msg = `${archive ? 'Archived' : 'Unarchived'} ${repoNames.length} repositories`
+	            const entry = { at: new Date().toISOString(), action: 'archive', message: msg, success: true }
+	            setMessage(msg)
+	            setResults(prev => [entry, ...prev])
+	            setIsPerforming(false)
+	            return { success: true, message: msg }
+	        }
 
-        setIsPerforming(true)
-        try {
-            const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/archive`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ repos: repoNames, archive })
-            })
-            const data = await safeParseJson(r)
-            setMessage(data.message || 'Operation completed')
-            setResults(prev => [{ at: new Date().toISOString(), action: 'archive', message: data.message, success: r.ok }, ...prev])
-            await fetchRepos(page, perPage)
-        } catch (e) {
-            setMessage('Error: ' + e.message)
-        } finally {
-            setIsPerforming(false)
-        }
-    }
+	        setIsPerforming(true)
+	        try {
+	            const resp = await fetchWithRetry(`${API_ENDPOINTS.repos.replace('/repos', '')}/archive`, {
+	                method: 'POST',
+	                credentials: 'include',
+	                headers: { 'Content-Type': 'application/json' },
+	                body: JSON.stringify({ repos: repoNames, archive })
+	            }, { maxRetries: 2 })
+	            const data = await safeParseJson(resp)
+	            const msg = data?.message || `${archive ? 'Archived' : 'Unarchived'} ${repoNames.length} repositories`
+	            const entry = { at: new Date().toISOString(), action: 'archive', message: msg, success: true }
+	            setMessage(msg)
+	            setResults(prev => [entry, ...prev])
+	            await fetchRepos(page, perPage)
+	            return { success: true, message: msg, data }
+	        } catch (e) {
+	            const info = getErrorInfo(e)
+	            setMessage(info.message)
+	            setErrorInfo(info)
+	            const entry = { at: new Date().toISOString(), action: 'archive', message: info.message, success: false, errorType: info.type }
+	            setResults(prev => [entry, ...prev])
+	            // Surface a simple Error so UI try/catch blocks receive a user-friendly message
+	            throw new Error(info.message)
+	        } finally {
+	            setIsPerforming(false)
+	        }
+	    }
 
     /**
      * Delete repositories (dangerous!)
      */
-    async function deleteRepos(repoNames, confirm) {
-        if (confirm !== 'DELETE') {
-            setMessage('Must confirm with "DELETE"')
-            return
-        }
+	    async function deleteRepos(repoNames, confirmToken = 'DELETE') {
+	        if (!repoNames || repoNames.length === 0) {
+	            const msg = 'Select at least 1 repository'
+	            setMessage(msg)
+	            return { success: false, message: msg }
+	        }
 
-        if (MOCK_MODE) {
-            setIsPerforming(true)
-            await new Promise(r => setTimeout(r, 1500))
-            const msg = `Deleted ${repoNames.length} repositories`
-            setMessage(msg)
-            setResults(prev => [{ at: new Date().toISOString(), action: 'delete', message: msg, success: true }, ...prev])
-            setIsPerforming(false)
-            return
-        }
+	        if (MOCK_MODE) {
+	            setIsPerforming(true)
+	            await new Promise(r => setTimeout(r, 1500))
+	            const msg = `Deleted ${repoNames.length} repositories`
+	            const entry = { at: new Date().toISOString(), action: 'delete', message: msg, success: true }
+	            setMessage(msg)
+	            setResults(prev => [entry, ...prev])
+	            setIsPerforming(false)
+	            return { success: true, message: msg }
+	        }
 
-        setIsPerforming(true)
-        try {
-            const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/delete`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ repos: repoNames, confirm })
-            })
-            const data = await safeParseJson(r)
-            setMessage(data.message || 'Operation completed')
-            setResults(prev => [{ at: new Date().toISOString(), action: 'delete', message: data.message, success: r.ok }, ...prev])
-            await fetchRepos(page, perPage)
-            clearSelection()
-        } catch (e) {
-            setMessage('Error: ' + e.message)
-        } finally {
-            setIsPerforming(false)
-        }
-    }
+	        setIsPerforming(true)
+	        try {
+	            const resp = await fetchWithRetry(`${API_ENDPOINTS.repos.replace('/repos', '')}/delete`, {
+	                method: 'POST',
+	                credentials: 'include',
+	                headers: { 'Content-Type': 'application/json' },
+	                body: JSON.stringify({ repos: repoNames, confirm: confirmToken })
+	            }, { maxRetries: 2 })
+	            const data = await safeParseJson(resp)
+	            const msg = data?.message || `Deleted ${repoNames.length} repositories`
+	            const entry = { at: new Date().toISOString(), action: 'delete', message: msg, success: true }
+	            setMessage(msg)
+	            setResults(prev => [entry, ...prev])
+	            await fetchRepos(page, perPage)
+	            clearSelection()
+	            return { success: true, message: msg, data }
+	        } catch (e) {
+	            const info = getErrorInfo(e)
+	            setMessage(info.message)
+	            setErrorInfo(info)
+	            const entry = { at: new Date().toISOString(), action: 'delete', message: info.message, success: false, errorType: info.type }
+	            setResults(prev => [entry, ...prev])
+	            throw new Error(info.message)
+	        } finally {
+	            setIsPerforming(false)
+	        }
+	    }
 
     /**
      * Create a new repository
@@ -531,7 +591,7 @@ function getErrorInfo(error) {
             setMessage(msg)
             setResults(prev => [{ at: new Date().toISOString(), action: 'create', message: msg, success: true }, ...prev])
             setIsPerforming(false)
-            return { success: true }
+	            return { success: true, message: msg }
         }
 
         setIsPerforming(true)
@@ -542,19 +602,22 @@ function getErrorInfo(error) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, ...options })
             })
-            const data = await safeParseJson(r)
-            if (r.ok) {
-                setMessage(`Created: ${data.repo?.full_name || name}`)
-                setResults(prev => [{ at: new Date().toISOString(), action: 'create', message: `Created ${name}`, success: true }, ...prev])
-                await fetchRepos(page, perPage)
-                return { success: true, repo: data.repo }
-            } else {
-                setMessage(data.error || 'Failed to create repository')
-                return { success: false, error: data.error }
-            }
+	            const data = await safeParseJson(r)
+	            if (r.ok) {
+	                const msg = `Created: ${data.repo?.full_name || name}`
+	                setMessage(msg)
+	                setResults(prev => [{ at: new Date().toISOString(), action: 'create', message: msg, success: true }, ...prev])
+	                await fetchRepos(page, perPage)
+	                return { success: true, repo: data.repo, message: msg }
+	            } else {
+	                const msg = data.error || 'Failed to create repository'
+	                setMessage(msg)
+	                return { success: false, error: data.error, message: msg }
+	            }
         } catch (e) {
-            setMessage('Error: ' + e.message)
-            return { success: false, error: e.message }
+	            const msg = 'Error: ' + e.message
+	            setMessage(msg)
+	            return { success: false, error: e.message, message: msg }
         } finally {
             setIsPerforming(false)
         }
@@ -572,7 +635,7 @@ function getErrorInfo(error) {
             setMessage(msg)
             setResults(prev => [{ at: new Date().toISOString(), action: 'import-azure', message: msg, success: true }, ...prev])
             setIsPerforming(false)
-            return { success: true }
+	            return { success: true, message: msg }
         }
 
         setIsPerforming(true)
@@ -590,20 +653,22 @@ function getErrorInfo(error) {
                     ...options
                 })
             })
-            const data = await safeParseJson(r)
-            if (r.ok) {
-                const msg = `Import started: ${data.repo?.full_name || azureRepo}`
-                setMessage(msg)
-                setResults(prev => [{ at: new Date().toISOString(), action: 'import-azure', message: msg, success: true }, ...prev])
-                return { success: true, repo: data.repo, import: data.import }
-            } else {
-                setMessage(data.error || 'Import failed')
-                setResults(prev => [{ at: new Date().toISOString(), action: 'import-azure', message: data.error, success: false }, ...prev])
-                return { success: false, error: data.error }
-            }
+	            const data = await safeParseJson(r)
+	            if (r.ok) {
+	                const msg = `Import started: ${data.repo?.full_name || azureRepo}`
+	                setMessage(msg)
+	                setResults(prev => [{ at: new Date().toISOString(), action: 'import-azure', message: msg, success: true }, ...prev])
+	                return { success: true, repo: data.repo, import: data.import, message: msg }
+	            } else {
+	                const msg = data.error || 'Import failed'
+	                setMessage(msg)
+	                setResults(prev => [{ at: new Date().toISOString(), action: 'import-azure', message: msg, success: false }, ...prev])
+	                return { success: false, error: data.error, message: msg }
+	            }
         } catch (e) {
-            setMessage('Error: ' + e.message)
-            return { success: false, error: e.message }
+	            const msg = 'Error: ' + e.message
+	            setMessage(msg)
+	            return { success: false, error: e.message, message: msg }
         } finally {
             setIsPerforming(false)
         }

@@ -9,10 +9,14 @@ const ICONS = {
 }
 
 const STYLES = {
-    success: 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200',
-    error: 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200',
-    info: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200',
-    warning: 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
+	success:
+		'bg-emerald-50/90 dark:bg-emerald-900/60 border-emerald-300 dark:border-emerald-500 text-emerald-900 dark:text-emerald-100 border-l-4 border-l-emerald-500',
+	error:
+		'bg-red-50/90 dark:bg-red-900/60 border-red-300 dark:border-red-500 text-red-900 dark:text-red-100 border-l-4 border-l-red-500',
+	info:
+		'bg-blue-50/90 dark:bg-blue-900/60 border-blue-300 dark:border-blue-500 text-blue-900 dark:text-blue-100 border-l-4 border-l-blue-500',
+	warning:
+		'bg-amber-50/90 dark:bg-amber-900/60 border-amber-300 dark:border-amber-500 text-amber-900 dark:text-amber-100 border-l-4 border-l-amber-500'
 }
 
 const ICON_STYLES = {
@@ -41,12 +45,12 @@ export function Toast({ id, type = 'info', message, onDismiss, duration = 5000 }
         setTimeout(() => onDismiss(id), 300)
     }
 
-    return (
-        <div
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg dark:shadow-slate-900/50 transition-all duration-300 backdrop-blur-sm ${
-                STYLES[type]
-            } ${isLeaving ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'}`}
-        >
+	return (
+		<div
+			className={`flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl dark:shadow-black/70 transition-all duration-300 backdrop-blur-md pointer-events-auto ${
+				STYLES[type]
+			} ${isLeaving ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'}`}
+		>
             <Icon className={`w-5 h-5 shrink-0 ${ICON_STYLES[type]}`} />
             <p className="flex-1 text-sm font-medium">{message}</p>
             <button
@@ -60,12 +64,12 @@ export function Toast({ id, type = 'info', message, onDismiss, duration = 5000 }
 }
 
 export function ToastContainer({ toasts, onDismiss }) {
-    return (
-        <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm w-full">
-            {toasts.map(toast => (
-                <Toast key={toast.id} {...toast} onDismiss={onDismiss} />
-            ))}
-        </div>
-    )
+	return (
+		<div className="fixed inset-x-0 bottom-4 z-50 flex flex-col items-end px-4 space-y-2 pointer-events-none sm:items-end sm:right-4 sm:left-auto sm:max-w-sm">
+			{toasts.map(toast => (
+				<Toast key={toast.id} {...toast} onDismiss={onDismiss} />
+			))}
+		</div>
+	)
 }
 
