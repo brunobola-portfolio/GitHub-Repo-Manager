@@ -38,11 +38,11 @@ export function AzureImportModal({ isOpen, onClose, onImport, orgs, isPerforming
 	        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
 	            <Card className="w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold flex items-center gap-2">
+                    <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
                         <span className="text-2xl">☁️</span>
                         Import from Azure DevOps
                     </h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-2xl">
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 text-2xl">
                         ×
                     </button>
                 </div>
@@ -148,7 +148,7 @@ export function AzureImportModal({ isOpen, onClose, onImport, orgs, isPerforming
                                     type="checkbox"
                                     checked={makePrivate}
                                     onChange={(e) => setMakePrivate(e.target.checked)}
-                                    className="w-4 h-4 rounded border-slate-300"
+                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500"
                                 />
 	                                <span className="text-sm text-slate-700 dark:text-slate-300">Make repository private</span>
                             </label>

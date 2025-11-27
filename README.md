@@ -294,7 +294,7 @@ localStorage.setItem('MOCK_MODE', 'false')
 location.reload()
 ```
 
-## � Portfolio Organization Tips
+## 💼 Portfolio Organization Tips
 
 Use this app to organize your GitHub repositories into a clean portfolio:
 
@@ -331,6 +331,39 @@ Use this app to organize your GitHub repositories into a clean portfolio:
 - **Tailwind CSS 4** - Styling
 - **Lucide React** - Icons
 - **clsx & tailwind-merge** - Class utilities
+
+## 🗺️ Roadmap
+
+### 🤖 AI-Powered Features (Planned)
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Smart Repository Categorization** | AI analyzes code, README, and languages to suggest which organization/category a repo belongs to | 🔮 Planned |
+| **Duplicate Repository Detection** | AI finds repos with similar code or functionality to help cleanup | 🔮 Planned |
+| **Repository Health Score** | AI analyzes activity, code quality, and dependencies to provide a maintenance health score | 🔮 Planned |
+| **AI README Generator** | Generate or improve README files automatically using AI | 🔮 Planned |
+| **Natural Language Search** | Search repos using queries like "find my Python projects with tests" | 🔮 Planned |
+| **Smart Cleanup Suggestions** | AI identifies stale/unused repos that could be archived | 🔮 Planned |
+
+### ⚡ Platform Features (Planned)
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Scheduled Operations** | Schedule bulk operations for off-peak hours | 🔮 Planned |
+| **GitHub Actions Integration** | View and manage GitHub Actions workflows | 🔮 Planned |
+| **Repository Templates** | Create and manage repository templates | 🔮 Planned |
+| **Advanced Statistics Dashboard** | Charts, trends, and detailed analytics about your repos | 🔮 Planned |
+| **Backup to Cloud Storage** | Export repos to AWS S3, Azure Blob, Google Cloud | 🔮 Planned |
+| **Webhook Notifications** | Get notified about operations via Slack, Discord, Email | 🔮 Planned |
+
+### 🔧 Developer Tools (Planned)
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **CLI Tool** | Command-line interface for automation and scripting | 🔮 Planned |
+| **VSCode Extension** | Manage repos directly from your IDE | 🔮 Planned |
+| **Public API** | Expose REST API for custom integrations | 🔮 Planned |
+| **GitLab/Bitbucket Support** | Migrate from other Git platforms | 🔮 Planned |
 
 ## 🤝 Contributing
 

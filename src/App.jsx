@@ -306,6 +306,7 @@ function App() {
                 selectedRepos={selectedRepos}
                 onTransfer={handleBulkTransfer}
                 orgs={orgs}
+                onAzureImport={() => setShowAzureImport(true)}
               />
             </div>
           </div>
