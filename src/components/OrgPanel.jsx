@@ -77,37 +77,37 @@ export function OrgPanel({
     return (
         <Card className="overflow-hidden">
             {/* Header with gradient */}
-            <div className="px-4 py-3 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700/80 border-b border-slate-200 dark:border-slate-700">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide flex items-center gap-2">
-                        <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg">
+            <div className="px-4 py-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700/80 border-b border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide flex items-center gap-2.5">
+                        <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg shadow-sm">
                             <Building2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                         </div>
                         Organizations
                     </h3>
                     <Button
-                        variant="ghost"
+                        variant="secondary"
                         size="sm"
                         onClick={handleCreateOrg}
-                        className="text-xs hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400"
+                        className="text-xs bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-700/50 shadow-sm"
                         title="Create new organization on GitHub"
                     >
-                        <Plus className="w-3 h-3 mr-1" />
+                        <Plus className="w-3.5 h-3.5 mr-1" />
                         New
                     </Button>
                 </div>
             </div>
 
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-5">
 
             {/* Create Hint */}
             {showCreateHint && (
-                <div className="p-3 bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-700 rounded-lg text-sm text-amber-800 dark:text-amber-200">
-                    <p className="font-medium mb-1">Creating organization...</p>
+                <div className="p-3.5 bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-700 rounded-xl text-sm text-amber-800 dark:text-amber-200 shadow-sm">
+                    <p className="font-medium mb-1.5">Creating organization...</p>
                     <p className="text-xs text-amber-700 dark:text-amber-300">After creating on GitHub, refresh this page to see it here.</p>
                     <button
                         onClick={() => window.location.reload()}
-                        className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline mt-2"
+                        className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline mt-2.5 font-medium"
                     >
                         Refresh now
                     </button>
@@ -115,25 +115,25 @@ export function OrgPanel({
             )}
 
             {/* User's Personal Account */}
-            <div className="space-y-1">
+            <div className="space-y-2">
                 <button
                     onClick={() => onSelectOrg(null)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
+                    className={`w-full flex items-center gap-3.5 p-3.5 rounded-xl transition-all duration-200 ${
                         selectedOrg === null
-                            ? 'bg-indigo-50 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200 border-2 border-indigo-200 dark:border-indigo-700 shadow-sm'
-                            : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-2 border-transparent'
+                            ? 'bg-indigo-50 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200 border-2 border-indigo-200 dark:border-indigo-700 shadow-md'
+                            : 'hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 border-2 border-transparent hover:border-slate-200 dark:hover:border-slate-600'
                     }`}
                 >
                     {user?.avatar_url && (
-                        <img src={user.avatar_url} alt={user.login} className="w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-600 shadow" />
+                        <img src={user.avatar_url} alt={user.login} className="w-11 h-11 rounded-full ring-2 ring-white dark:ring-slate-600 shadow-md" />
                     )}
                     <div className="text-left flex-1 min-w-0">
-                        <div className="font-medium truncate">{user?.name || user?.login || 'My Account'}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">@{user?.login}</div>
+                        <div className="font-semibold truncate">{user?.name || user?.login || 'My Account'}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">@{user?.login}</div>
                     </div>
                     {stats && (
-                        <div className="text-right text-xs text-slate-500 dark:text-slate-400">
-                            <div>{stats.totalRepos || 0} repos</div>
+                        <div className="text-right text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700/50 px-2.5 py-1.5 rounded-lg">
+                            <div className="font-medium">{stats.totalRepos || 0} repos</div>
                         </div>
                     )}
                 </button>
@@ -141,15 +141,15 @@ export function OrgPanel({
 
             {/* Divider */}
             {orgs.length > 0 && (
-                <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+                <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 py-1">
                     <div className="flex-1 border-t border-slate-200 dark:border-slate-700" />
-                    <span>Organizations</span>
+                    <span className="font-medium uppercase tracking-wider text-[10px]">Organizations</span>
                     <div className="flex-1 border-t border-slate-200 dark:border-slate-700" />
                 </div>
             )}
 
 	            {/* Organizations List */}
-	            <div className="space-y-1 max-h-64 overflow-y-auto">
+	            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
 	                {orgs.map(org => (
 	                    <div
 	                        key={org.login}
@@ -158,40 +158,40 @@ export function OrgPanel({
 	                    >
 	                        <button
 	                            onClick={() => onSelectOrg(org.login)}
-	                            className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
+	                            className={`w-full flex items-center gap-3.5 p-3.5 rounded-xl transition-all duration-200 ${
 	                                selectedOrg === org.login
-	                                    ? 'bg-indigo-50 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200 border-2 border-indigo-200 dark:border-indigo-700 shadow-sm'
-	                                    : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-2 border-transparent'
+	                                    ? 'bg-indigo-50 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-200 border-2 border-indigo-200 dark:border-indigo-700 shadow-md'
+	                                    : 'hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 border-2 border-transparent hover:border-slate-200 dark:hover:border-slate-600'
 	                            }`}
 	                        >
 	                            <img
 	                                src={org.avatar_url}
 	                                alt={org.login}
-	                                className="w-10 h-10 rounded-lg ring-2 ring-white dark:ring-slate-600 shadow"
+	                                className="w-11 h-11 rounded-xl ring-2 ring-white dark:ring-slate-600 shadow-md"
 	                            />
 	                            <div className="text-left flex-1 min-w-0">
-	                                <div className="font-medium truncate">{org.login}</div>
-	                                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-	                                    <span className="flex items-center gap-1">
+	                                <div className="font-semibold truncate">{org.login}</div>
+	                                <div className="flex items-center gap-2.5 text-xs text-slate-500 dark:text-slate-400 mt-1">
+	                                    <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-md">
 	                                        <Globe className="w-3 h-3" />
 	                                        {org.public_repos || 0}
 	                                    </span>
 	                                    {org.total_private_repos > 0 && (
-	                                        <span className="flex items-center gap-1">
+	                                        <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-md">
 	                                            <Lock className="w-3 h-3" />
 	                                            {org.total_private_repos}
 	                                        </span>
 	                                    )}
 	                                </div>
 	                            </div>
-	                            <ChevronRight className="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
+	                            <ChevronRight className="w-5 h-5 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors" />
 	                        </button>
 
 	                        {/* Org Quick Menu trigger (opens overlay) */}
 	                        <button
 	                            type="button"
 	                            onClick={(event) => handleOrgMenuClick(event, org)}
-	                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-700/70 transition-all"
+	                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-700/70 transition-all shadow-sm"
 	                            title="More actions"
 	                        >
 	                            <MoreVertical className="w-4 h-4 text-slate-500 dark:text-slate-300" />
@@ -202,27 +202,34 @@ export function OrgPanel({
 
             {/* Empty State */}
             {orgs.length === 0 && (
-                <div className="text-center py-6 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg">
-                    <Building2 className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">No organizations yet</p>
-                    <Button variant="secondary" size="sm" onClick={handleCreateOrg}>
-                        <Plus className="w-4 h-4 mr-1" />
+                <div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/30">
+                    <div className="p-3 bg-slate-100 dark:bg-slate-700/50 rounded-full w-fit mx-auto mb-3">
+                        <Building2 className="w-8 h-8 text-slate-400 dark:text-slate-500" />
+                    </div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 font-medium">No organizations yet</p>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleCreateOrg}
+                        className="bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-700/50"
+                    >
+                        <Plus className="w-4 h-4 mr-1.5" />
                         Create Organization
                     </Button>
                 </div>
             )}
 
 	            {/* Quick Links */}
-	            <div className="pt-3 border-t border-slate-200 dark:border-slate-700 space-y-1">
+	            <div className="pt-4 border-t border-slate-200 dark:border-slate-700 space-y-1">
 	                <a
 	                    href="https://github.com/settings/organizations"
 	                    target="_blank"
 	                    rel="noopener noreferrer"
-	                    className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-2 rounded hover:bg-slate-50 dark:hover:bg-slate-700"
+	                    className="flex items-center gap-2.5 text-xs text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/80 font-medium"
 	                >
-	                    <Settings className="w-3 h-3" />
+	                    <Settings className="w-3.5 h-3.5" />
 	                    Manage organizations
-	                    <ExternalLink className="w-3 h-3 ml-auto" />
+	                    <ExternalLink className="w-3.5 h-3.5 ml-auto" />
 	                </a>
 	            </div>
             </div>
