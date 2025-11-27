@@ -1,61 +1,14 @@
 @import "tailwindcss";
 
+/* Make Tailwind's `dark:` variant follow the `.dark` class on <html> (Tailwind v4) */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
-  html {
-    @apply transition-colors duration-150;
-  }
+	body {
+	  @apply bg-slate-50 text-slate-900 antialiased;
+	}
 
-  body {
-    @apply bg-slate-50 text-slate-900 antialiased;
-    @apply dark:bg-slate-900 dark:text-slate-100;
-  }
-
-  /* Smooth transitions for theme switching */
-  *, *::before, *::after {
-    transition-property: background-color, border-color, color, fill, stroke;
-    transition-duration: 150ms;
-    transition-timing-function: ease-out;
-  }
-
-  /* Custom scrollbar for dark mode */
-  .dark ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  .dark ::-webkit-scrollbar-track {
-    background: #1e293b;
-  }
-
-  .dark ::-webkit-scrollbar-thumb {
-    background: #475569;
-    border-radius: 4px;
-  }
-
-  .dark ::-webkit-scrollbar-thumb:hover {
-    background: #64748b;
-  }
-}
-
-/* Skeleton shimmer animation */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.2) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+	.dark body {
+	  @apply bg-slate-900 text-slate-50;
+	}
 }

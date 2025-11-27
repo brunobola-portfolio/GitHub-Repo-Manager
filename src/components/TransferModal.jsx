@@ -4,33 +4,35 @@ import { Button } from './ui/Button'
 import { ProgressBar } from './ui/ProgressBar'
 
 export function TransferModal({
-    isOpen,
-    onClose,
-    repos = [],
-    orgs = [],
-    onTransfer,
-    onMirror,
-    isPerforming = false,
-    progress = null
+	isOpen,
+	onClose,
+	repos = [],
+	orgs = [],
+	onTransfer,
+	onMirror,
+	isPerforming = false,
+	progress = null
 }) {
-	    const [targetOrg, setTargetOrg] = useState('')
-	    const [action, setAction] = useState('transfer') // 'transfer' | 'mirror'
+	const [targetOrg, setTargetOrg] = useState('')
+	const [action, setAction] = useState('transfer') // 'transfer' | 'mirror'
+	const [formError, setFormError] = useState('')
 
-    if (!isOpen) return null
+	if (!isOpen) return null
 
-    const handleSubmit = () => {
-        if (!targetOrg) {
-            alert('Please select a target organization')
-            return
-        }
-        if (action === 'transfer') {
-            onTransfer?.(repos.map(r => r.full_name), targetOrg)
-        } else {
-            onMirror?.(repos.map(r => r.full_name), targetOrg)
-        }
-    }
+	const handleSubmit = () => {
+		if (!targetOrg) {
+			setFormError('Please select a target organization')
+			return
+		}
+		setFormError('')
+		if (action === 'transfer') {
+			onTransfer?.(repos.map(r => r.full_name), targetOrg)
+		} else {
+			onMirror?.(repos.map(r => r.full_name), targetOrg)
+		}
+	}
 
-	    return (
+		    return (
 	        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4">
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl dark:shadow-slate-900/50 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
@@ -121,7 +123,10 @@ export function TransferModal({
                                 {orgs.map(org => (
                                     <button
                                         key={org.login}
-                                        onClick={() => setTargetOrg(org.login)}
+	                                        onClick={() => {
+	                                            setTargetOrg(org.login)
+	                                            setFormError('')
+	                                        }}
                                         className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
                                             targetOrg === org.login
                                                 ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
@@ -156,6 +161,12 @@ export function TransferModal({
                                 </a>
                             </div>
                         )}
+	                        {formError && (
+	                            <p className="mt-2 flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+	                                <AlertTriangle className="w-4 h-4" />
+	                                <span>{formError}</span>
+	                            </p>
+	                        )}
                     </div>
 
                     {/* Repository Preview */}

@@ -1,11 +1,3 @@
-/*
- * GitHub Repo Manager
- * Root application component
- *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
- * Licensed under the MIT License. See LICENSE in the project root.
- */
-
 import { useState, useCallback } from 'react'
 import { useGitHub } from './hooks/useGitHub'
 import { HeaderNew } from './components/HeaderNew'
@@ -72,16 +64,15 @@ function App() {
   const { toasts, toast, dismissToast } = useToast()
 
   // Sync organizations and data
-	  const handleRefreshOrgs = useCallback(async () => {
-	    try {
-	      await Promise.all([fetchOrgs(), fetchStats()])
-	      setSyncStatus({ lastSync: new Date().toISOString(), hasUpdates: false })
-	      toast.success('Organizations synced successfully')
-	    } catch (err) {
-	      console.error('Failed to sync organizations:', err)
-	      toast.error('Failed to sync organizations')
-	    }
-	  }, [fetchOrgs, fetchStats, toast])
+  const handleRefreshOrgs = useCallback(async () => {
+    try {
+      await Promise.all([fetchOrgs(), fetchStats()])
+      setSyncStatus({ lastSync: new Date().toISOString(), hasUpdates: false })
+      toast.success('Organizations synced successfully')
+    } catch (err) {
+      toast.error('Failed to sync organizations')
+    }
+  }, [fetchOrgs, fetchStats, toast])
 
   // Re-authorize OAuth permissions
   const handleReauthorize = useCallback(() => {
@@ -115,7 +106,9 @@ function App() {
   }
 
   // Handle quick actions from repo row
-	  const handleQuickAction = async (action, repo, value) => {
+  const handleQuickAction = async (action, repo, value) => {
+    const displayRepos = selectedOrg ? orgRepos : repos
+
     switch (action) {
       case 'visibility':
         setConfirmModal({
@@ -225,8 +218,8 @@ function App() {
   // Display repos based on selected org
   const displayRepos = selectedOrg ? orgRepos : repos
 
-  return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-12">
+	return (
+		<div className="min-h-screen bg-slate-50 text-slate-900 pb-12 font-sans dark:bg-slate-900 dark:text-slate-50">
       <HeaderNew
         user={user}
         isMockMode={isMockMode}
