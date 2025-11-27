@@ -22,10 +22,7 @@ export function RepoList({
     perPage,
     setPerPage,
     totalPages,
-    org,
-    setOrg,
     onRefresh,
-    orgs = [],
     selectedOrg,
     onQuickAction
 }) {
@@ -109,28 +106,8 @@ export function RepoList({
             {/* Toolbar */}
             <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
-                    <label className="text-sm text-slate-600 dark:text-slate-300 font-medium">Target Org:</label>
-                    {orgs && orgs.length > 0 ? (
-                        <select
-                            value={org}
-                            onChange={e => setOrg(e.target.value)}
-                            className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-48"
-                        >
-                            <option value="">Select organization...</option>
-                            {orgs.map(o => (
-                                <option key={o.login} value={o.login}>{o.login}</option>
-                            ))}
-                        </select>
-                    ) : (
-                        <input
-                            value={org}
-                            onChange={e => setOrg(e.target.value)}
-                            placeholder="e.g. my-organization"
-                            className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-48"
-                        />
-                    )}
                     {selectedOrg && (
-                        <Badge variant="info" className="ml-2">
+                        <Badge variant="info">
                             Viewing: {selectedOrg}
                         </Badge>
                     )}

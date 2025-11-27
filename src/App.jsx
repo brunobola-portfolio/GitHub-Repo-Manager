@@ -283,10 +283,7 @@ function App() {
                 perPage={perPage}
                 setPerPage={setPerPage}
                 totalPages={totalPages}
-                org={org}
-                setOrg={setOrg}
                 onRefresh={refresh}
-                orgs={orgs}
                 selectedOrg={selectedOrg}
                 onQuickAction={handleQuickAction}
               />
