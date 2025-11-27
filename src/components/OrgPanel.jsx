@@ -102,12 +102,12 @@ export function OrgPanel({
 
             {/* Create Hint */}
             {showCreateHint && (
-                <div className="p-3.5 bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-700 rounded-xl text-sm text-amber-800 dark:text-amber-200 shadow-sm">
-                    <p className="font-medium mb-1.5">Creating organization...</p>
-                    <p className="text-xs text-amber-700 dark:text-amber-300">After creating on GitHub, refresh this page to see it here.</p>
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-600 rounded-xl shadow-sm">
+                    <p className="font-semibold text-amber-900 dark:text-amber-100 text-sm mb-2">Creating organization...</p>
+                    <p className="text-sm text-amber-800 dark:text-amber-200 leading-relaxed">After creating on GitHub, refresh this page to see it here.</p>
                     <button
                         onClick={() => window.location.reload()}
-                        className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 underline mt-2.5 font-medium"
+                        className="mt-3 text-sm font-semibold text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 underline underline-offset-2 transition-colors"
                     >
                         Refresh now
                     </button>
@@ -141,10 +141,10 @@ export function OrgPanel({
 
             {/* Divider */}
             {orgs.length > 0 && (
-                <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 py-1">
-                    <div className="flex-1 border-t border-slate-200 dark:border-slate-700" />
-                    <span className="font-medium uppercase tracking-wider text-[10px]">Organizations</span>
-                    <div className="flex-1 border-t border-slate-200 dark:border-slate-700" />
+                <div className="flex items-center gap-3 py-2">
+                    <div className="flex-1 border-t border-slate-200 dark:border-slate-600" />
+                    <span className="font-semibold uppercase tracking-wide text-xs text-slate-500 dark:text-slate-400">Organizations</span>
+                    <div className="flex-1 border-t border-slate-200 dark:border-slate-600" />
                 </div>
             )}
 
@@ -202,11 +202,11 @@ export function OrgPanel({
 
             {/* Empty State */}
             {orgs.length === 0 && (
-                <div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/30">
-                    <div className="p-3 bg-slate-100 dark:bg-slate-700/50 rounded-full w-fit mx-auto mb-3">
-                        <Building2 className="w-8 h-8 text-slate-400 dark:text-slate-500" />
+                <div className="text-center py-8 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50/50 dark:bg-slate-800/30">
+                    <div className="p-4 bg-slate-100 dark:bg-slate-700/50 rounded-full w-fit mx-auto mb-4">
+                        <Building2 className="w-8 h-8 text-slate-500 dark:text-slate-400" />
                     </div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 font-medium">No organizations yet</p>
+                    <p className="text-base font-medium text-slate-600 dark:text-slate-300 mb-4">No organizations yet</p>
                     <Button
                         variant="secondary"
                         size="sm"
@@ -220,16 +220,16 @@ export function OrgPanel({
             )}
 
 	            {/* Quick Links */}
-	            <div className="pt-4 border-t border-slate-200 dark:border-slate-700 space-y-1">
+	            <div className="pt-4 border-t border-slate-200 dark:border-slate-600">
 	                <a
 	                    href="https://github.com/settings/organizations"
 	                    target="_blank"
 	                    rel="noopener noreferrer"
-	                    className="flex items-center gap-2.5 text-xs text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/80 font-medium"
+	                    className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/80 font-medium"
 	                >
-	                    <Settings className="w-3.5 h-3.5" />
+	                    <Settings className="w-4 h-4" />
 	                    Manage organizations
-	                    <ExternalLink className="w-3.5 h-3.5 ml-auto" />
+	                    <ExternalLink className="w-4 h-4 ml-auto opacity-60" />
 	                </a>
 	            </div>
             </div>

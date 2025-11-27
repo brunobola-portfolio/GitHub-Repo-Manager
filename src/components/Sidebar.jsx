@@ -31,17 +31,17 @@ const ACTION_LABELS = {
     return (
         <aside className="space-y-4 sticky top-24">
             {/* Migrate from DevOps - Featured Action */}
-            <Card className="p-4 bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50 dark:from-sky-900/40 dark:via-indigo-900/40 dark:to-purple-900/40 border-2 border-indigo-200 dark:border-indigo-700/50 shadow-lg shadow-indigo-100/50 dark:shadow-indigo-900/30">
-                <div className="flex items-center gap-2 mb-3">
-                    <div className="p-2 bg-gradient-to-br from-sky-500 to-indigo-600 rounded-lg shadow-md">
+            <Card className="p-5 bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50 dark:from-sky-900/40 dark:via-indigo-900/40 dark:to-purple-900/40 border-2 border-indigo-200 dark:border-indigo-600/60 shadow-lg shadow-indigo-100/50 dark:shadow-indigo-900/30">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2.5 bg-gradient-to-br from-sky-500 to-indigo-600 rounded-xl shadow-md">
                         <Cloud className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                        <h3 className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                        <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                             Migrate from DevOps
                             <Sparkles className="w-4 h-4 text-amber-500" />
                         </h3>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">Import repos from Azure DevOps</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-300">Import repos from Azure DevOps</p>
                     </div>
                 </div>
                 <Button
@@ -54,19 +54,19 @@ const ACTION_LABELS = {
                     <Cloud className="w-4 h-4 mr-2" />
                     Start Migration
                 </Button>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 text-center">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 text-center leading-relaxed">
                     Seamlessly migrate your Azure DevOps repos to GitHub
                 </p>
             </Card>
 
             {/* Quick Actions */}
-            <Card className="p-4 space-y-4">
+            <Card className="p-5 space-y-4">
                 <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                    <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
                         Quick Actions
                     </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-1.5">
                         {hasSelection
                             ? `${selectedCount} repo${selectedCount > 1 ? 's' : ''} selected`
                             : 'Select repositories to perform actions'
@@ -142,26 +142,26 @@ const ACTION_LABELS = {
                 </div>
 
                 {!hasSelection && (
-                    <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-xs">
-                        <AlertTriangle className="w-4 h-4 shrink-0" />
-                        Select repositories from the list to enable actions
+                    <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 text-amber-800 dark:text-amber-200 rounded-lg text-sm">
+                        <AlertTriangle className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                        <span>Select repositories from the list to enable actions</span>
                     </div>
                 )}
             </Card>
 
-            <Card className="p-4">
-                <h3 className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-3">
-                    <History className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+            <Card className="p-5">
+                <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-4">
+                    <History className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                     Activity
                 </h3>
                 <div className="space-y-3">
                     {/* Current Status */}
-                    <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${
+                    <div className={`p-3.5 rounded-lg text-sm font-medium flex items-center gap-2.5 ${
                         isPerforming
-                            ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800'
+                            ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700'
                             : message
-                                ? 'bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-100 dark:border-slate-600'
-                                : 'bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                                ? 'bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
+                                : 'bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
                     }`}>
                         {isPerforming && <Loader2 className="w-4 h-4 animate-spin" />}
                         {message || 'Ready for action'}
@@ -170,29 +170,29 @@ const ACTION_LABELS = {
                     {/* History */}
                     <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
                         {results.length === 0 && (
-                            <div className="text-xs text-slate-400 dark:text-slate-500 text-center py-4">
+                            <div className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
                                 No activity yet
                             </div>
                         )}
                         {results.map((r, i) => (
                             <div
                                 key={i}
-                                className={`text-xs p-2 rounded border ${
+                                className={`text-sm p-3 rounded-lg border ${
                                     r.success
-                                        ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-100 dark:border-emerald-800'
-                                        : 'bg-red-50 dark:bg-red-900/30 border-red-100 dark:border-red-800'
+                                        ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-700'
+                                        : 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700'
                                 }`}
                             >
-                                <div className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
+                                <div className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-200">
                                     {r.success
-                                        ? <CheckCircle className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />
-                                        : <XCircle className="w-3 h-3 text-red-500 dark:text-red-400" />
+                                        ? <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                                        : <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
                                     }
                                     {ACTION_LABELS[r.action] || r.action}
-                                    {r.count && <span className="text-slate-400 dark:text-slate-500">({r.count})</span>}
+                                    {r.count && <span className="text-slate-500 dark:text-slate-400 font-normal">({r.count})</span>}
                                 </div>
-                                <div className="text-slate-500 dark:text-slate-400 mt-0.5 pl-4">{r.message}</div>
-                                <div className="text-slate-400 dark:text-slate-500 mt-1 pl-4 text-[10px]">
+                                <div className="text-slate-600 dark:text-slate-400 mt-1 pl-6">{r.message}</div>
+                                <div className="text-slate-500 dark:text-slate-500 mt-1.5 pl-6 text-xs">
                                     {new Date(r.at).toLocaleTimeString()}
                                 </div>
                             </div>
