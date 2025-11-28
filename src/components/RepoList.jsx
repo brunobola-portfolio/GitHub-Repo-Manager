@@ -5,7 +5,7 @@ import { Button } from './ui/Button'
 import {
 	GitFork, Lock, Globe, ExternalLink, RefreshCw, Loader2, AlertCircle,
 	ChevronLeft, ChevronRight, Archive, Star, Unlock, Eye, Trash2,
-	MoreHorizontal, ArrowRightLeft, Copy, Settings
+	MoreHorizontal, ArrowRightLeft, Copy, Settings, ChevronDown
 } from 'lucide-react'
 import { PAGINATION } from '../config'
 
@@ -15,7 +15,9 @@ export function RepoList({
 	error,
 	selectedIds,
 	toggleSelect,
-	selectAllVisible,
+	selectRepos,
+	deselectRepos,
+	invertSelection,
 	clearSelection,
 	page,
 	setPage,
@@ -27,6 +29,7 @@ export function RepoList({
 	onQuickAction
 }) {
 	const [repoMenu, setRepoMenu] = useState(null) // { repo, x, y, width } | null
+	const [selectionMenuOpen, setSelectionMenuOpen] = useState(false)
 	const [searchQuery, setSearchQuery] = useState('')
 	const [typeFilter, setTypeFilter] = useState('all') // all, source, fork, archived
 	const [visibilityFilter, setVisibilityFilter] = useState('all') // all, public, private
@@ -130,10 +133,13 @@ export function RepoList({
 	}
 
 	const handleSelectAll = () => {
-		if (headerCheckboxRef.current?.checked) {
-			clearSelection()
+		// Check if all filtered repos are currently selected
+		const allFilteredSelected = filteredRepos.length > 0 && filteredRepos.every(r => selectedIds.has(r.id))
+
+		if (allFilteredSelected) {
+			deselectRepos(filteredRepos)
 		} else {
-			selectAllVisible(filteredRepos)
+			selectRepos(filteredRepos)
 		}
 	}
 
@@ -219,14 +225,74 @@ export function RepoList({
 				<table className="w-full text-sm text-left">
 					<thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 font-medium border-b border-slate-200 dark:border-slate-700">
 						<tr>
-							<th className="p-4 w-10">
-								<input
-									ref={headerCheckboxRef}
-									type="checkbox"
-									className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 dark:bg-slate-700 cursor-pointer"
-									onChange={handleSelectAll}
-									disabled={loading || filteredRepos.length === 0}
-								/>
+							<th className="p-4 w-10 relative">
+								<div className="flex items-center gap-1">
+									<input
+										ref={headerCheckboxRef}
+										type="checkbox"
+										className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 dark:bg-slate-700 cursor-pointer w-4 h-4"
+										onChange={handleSelectAll}
+										disabled={loading || filteredRepos.length === 0}
+									/>
+									<button
+										onClick={(e) => {
+											e.stopPropagation()
+											setSelectionMenuOpen(!selectionMenuOpen)
+										}}
+										className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
+										disabled={loading || filteredRepos.length === 0}
+									>
+										<ChevronDown size={14} />
+									</button>
+								</div>
+
+								{selectionMenuOpen && (
+									<>
+										<div
+											className="fixed inset-0 z-40"
+											onClick={() => setSelectionMenuOpen(false)}
+										/>
+										<div className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 shadow-xl rounded-lg border border-slate-200 dark:border-slate-700 z-50 py-1 text-left">
+											<button
+												className="w-full px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-left"
+												onClick={() => {
+													selectRepos(filteredRepos)
+													setSelectionMenuOpen(false)
+												}}
+											>
+												Select All (Filtered)
+											</button>
+											<button
+												className="w-full px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-left"
+												onClick={() => {
+													deselectRepos(filteredRepos)
+													setSelectionMenuOpen(false)
+												}}
+											>
+												Deselect (Filtered)
+											</button>
+											<button
+												className="w-full px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-left"
+												onClick={() => {
+													invertSelection(filteredRepos)
+													setSelectionMenuOpen(false)
+												}}
+											>
+												Invert Selection
+											</button>
+											<div className="my-1 border-t border-slate-100 dark:border-slate-700" />
+											<button
+												className="w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-left"
+												onClick={() => {
+													clearSelection()
+													setSelectionMenuOpen(false)
+												}}
+											>
+												Clear All Selection
+											</button>
+										</div>
+									</>
+								)}
 							</th>
 							<th className="p-4">Repository</th>
 							<th className="p-4 hidden sm:table-cell">Type</th>

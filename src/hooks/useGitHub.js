@@ -223,13 +223,32 @@ export function useGitHub() {
         })
     }, [])
 
-    const selectAllVisible = useCallback((reposToSelect) => {
-        // If no specific list provided, use all current repos
+    const selectRepos = useCallback((reposToSelect) => {
         const targetRepos = Array.isArray(reposToSelect) ? reposToSelect : repos
-
         setSelectedIds(prev => {
             const copy = new Set(prev)
             targetRepos.forEach(r => copy.add(r.id))
+            return copy
+        })
+    }, [repos])
+
+    const deselectRepos = useCallback((reposToDeselect) => {
+        const targetRepos = Array.isArray(reposToDeselect) ? reposToDeselect : repos
+        setSelectedIds(prev => {
+            const copy = new Set(prev)
+            targetRepos.forEach(r => copy.delete(r.id))
+            return copy
+        })
+    }, [repos])
+
+    const invertSelection = useCallback((reposToInvert) => {
+        const targetRepos = Array.isArray(reposToInvert) ? reposToInvert : repos
+        setSelectedIds(prev => {
+            const copy = new Set(prev)
+            targetRepos.forEach(r => {
+                if (copy.has(r.id)) copy.delete(r.id)
+                else copy.add(r.id)
+            })
             return copy
         })
     }, [repos])
@@ -727,7 +746,9 @@ export function useGitHub() {
         setPage,
         setPerPage,
         toggleSelect,
-        selectAllVisible,
+        selectRepos,
+        deselectRepos,
+        invertSelection,
         clearSelection,
         performAction,
         fetchUser,
