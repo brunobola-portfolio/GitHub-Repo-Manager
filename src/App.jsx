@@ -218,8 +218,8 @@ function App() {
   // Display repos based on selected org
   const displayRepos = selectedOrg ? orgRepos : repos
 
-	return (
-		<div className="min-h-screen bg-slate-50 text-slate-900 pb-12 font-sans dark:bg-slate-900 dark:text-slate-50">
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-12 font-sans dark:bg-slate-900 dark:text-slate-50">
       <HeaderNew
         user={user}
         isMockMode={isMockMode}
@@ -237,7 +237,7 @@ function App() {
         onOpenOrgManager={handleOpenOrgManager}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Dashboard View */}
         {activeView === 'dashboard' && user && (
           <Dashboard
@@ -252,10 +252,10 @@ function App() {
 
         {/* Repos View */}
         {activeView === 'repos' && (
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-[320px_1fr_320px] gap-6">
             {/* Left: Organization Panel */}
             {user && (
-              <div className="lg:col-span-1">
+              <div className="lg:col-span-3 xl:col-span-1">
                 <OrgPanel
                   orgs={orgs}
                   selectedOrg={selectedOrg}
@@ -269,7 +269,7 @@ function App() {
             )}
 
             {/* Center: Repository List */}
-            <div className={`${user ? 'lg:col-span-3' : 'lg:col-span-4'} space-y-6`}>
+            <div className={`${user ? 'lg:col-span-6 xl:col-span-1' : 'lg:col-span-12 xl:col-span-3'} space-y-6 min-w-0`}>
               <RepoList
                 repos={displayRepos}
                 loading={loading}
@@ -290,22 +290,24 @@ function App() {
             </div>
 
             {/* Right: Actions Sidebar */}
-            <div className="lg:col-span-1">
-              <Sidebar
-                selectedCount={selectedIds.size}
-                isPerforming={isPerforming}
-                performAction={handleAction}
-                message={message}
-                results={results}
-                org={org}
-                onArchive={archiveRepos}
-                onDelete={deleteRepos}
-                selectedRepos={selectedRepos}
-                onTransfer={handleBulkTransfer}
-                orgs={orgs}
-                onAzureImport={() => setShowAzureImport(true)}
-              />
-            </div>
+            {user && (
+              <div className="lg:col-span-3 xl:col-span-1">
+                <Sidebar
+                  selectedCount={selectedIds.size}
+                  isPerforming={isPerforming}
+                  performAction={handleAction}
+                  message={message}
+                  results={results}
+                  org={org}
+                  onArchive={archiveRepos}
+                  onDelete={deleteRepos}
+                  selectedRepos={selectedRepos}
+                  onTransfer={handleBulkTransfer}
+                  orgs={orgs}
+                  onAzureImport={() => setShowAzureImport(true)}
+                />
+              </div>
+            )}
           </div>
         )}
       </main>
