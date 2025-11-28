@@ -12,8 +12,8 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 export const MOCK_MODE =
     import.meta.env.VITE_MOCK_MODE !== 'false' &&
     (import.meta.env.VITE_MOCK_MODE === 'true' ||
-     (typeof window !== 'undefined' && window.localStorage?.getItem('MOCK_MODE') === 'true') ||
-     import.meta.env.VITE_MOCK_MODE === undefined)
+        (typeof window !== 'undefined' && window.localStorage?.getItem('MOCK_MODE') === 'true') ||
+        import.meta.env.VITE_MOCK_MODE === undefined)
 
 // GitHub OAuth endpoints
 export const AUTH_ENDPOINTS = {
@@ -35,4 +35,3 @@ export const PAGINATION = {
     defaultPerPage: 30,
     perPageOptions: [10, 30, 50, 100],
 }
-
