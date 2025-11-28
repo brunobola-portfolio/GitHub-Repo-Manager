@@ -31,7 +31,9 @@ function App() {
     setPage,
     setPerPage,
     toggleSelect,
-    selectAllVisible,
+    selectRepos,
+    deselectRepos,
+    invertSelection,
     clearSelection,
     performAction,
     fetchUser,
@@ -276,7 +278,9 @@ function App() {
                 error={error}
                 selectedIds={selectedIds}
                 toggleSelect={toggleSelect}
-                selectAllVisible={selectAllVisible}
+                selectRepos={selectRepos}
+                deselectRepos={deselectRepos}
+                invertSelection={invertSelection}
                 clearSelection={clearSelection}
                 page={page}
                 setPage={setPage}
