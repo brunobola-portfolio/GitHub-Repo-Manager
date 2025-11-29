@@ -2,13 +2,22 @@
 
 /* Make Tailwind's `dark:` variant follow the `.dark` class on <html> (Tailwind v4) */
 @custom-variant dark (&:where(.dark, .dark *));
+@import "tailwindcss";
+
+/* Make Tailwind's `dark:` variant follow the `.dark` class on <html> (Tailwind v4) */
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
 	body {
-	  @apply bg-slate-50 text-slate-900 antialiased;
+		@apply bg-slate-50 text-slate-900 antialiased;
 	}
 
 	.dark body {
-	  @apply bg-slate-900 text-slate-50;
+		@apply bg-slate-950 text-slate-50;
+	}
+
+	/* Global Dark Mode Polish */
+	.dark .card-border {
+		@apply border border-white/10 shadow-xl shadow-black/20;
 	}
 }

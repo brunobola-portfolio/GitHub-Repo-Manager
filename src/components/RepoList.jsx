@@ -5,7 +5,8 @@ import { Button } from './ui/Button'
 import {
 	GitFork, Lock, Globe, ExternalLink, RefreshCw, Loader2, AlertCircle,
 	ChevronLeft, ChevronRight, Archive, Star, Unlock, Eye, Trash2,
-	MoreHorizontal, ArrowRightLeft, Copy, Settings, ChevronDown
+	MoreHorizontal, ArrowRightLeft, Copy, Settings, ChevronDown, Search, Filter,
+	LayoutGrid, List as ListIcon, CheckSquare, X, GitPullRequest, CircleDot
 } from 'lucide-react'
 import { PAGINATION } from '../config'
 
@@ -28,605 +29,518 @@ export function RepoList({
 	selectedOrg,
 	onQuickAction
 }) {
-	const [repoMenu, setRepoMenu] = useState(null) // { repo, x, y, width } | null
-	const [selectionMenuOpen, setSelectionMenuOpen] = useState(false)
+	const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
 	const [searchQuery, setSearchQuery] = useState('')
-	const [typeFilter, setTypeFilter] = useState('all') // all, source, fork, archived
-	const [visibilityFilter, setVisibilityFilter] = useState('all') // all, public, private
+	const [typeFilter, setTypeFilter] = useState('all')
+	const [visibilityFilter, setVisibilityFilter] = useState('all')
 	const [languageFilter, setLanguageFilter] = useState('all')
-	const headerCheckboxRef = useRef(null)
+	const [repoMenu, setRepoMenu] = useState(null) // { repo, x, y }
+	const [showSelectionMenu, setShowSelectionMenu] = useState(false)
 
-	// Derive available languages from current repos
+	// Derive available languages
 	const availableLanguages = [...new Set(repos.map(r => r.language).filter(Boolean))].sort()
 
 	// Filter repositories
 	const filteredRepos = repos.filter(repo => {
-		// Search
 		if (searchQuery) {
 			const query = searchQuery.toLowerCase()
 			const matchesName = repo.name.toLowerCase().includes(query)
 			const matchesDesc = repo.description?.toLowerCase().includes(query)
 			if (!matchesName && !matchesDesc) return false
 		}
-
-		// Type
 		if (typeFilter === 'source' && repo.fork) return false
 		if (typeFilter === 'fork' && !repo.fork) return false
 		if (typeFilter === 'archived' && !repo.archived) return false
-
-		// Visibility
 		if (visibilityFilter === 'public' && repo.private) return false
 		if (visibilityFilter === 'private' && !repo.private) return false
-
-		// Language
 		if (languageFilter !== 'all' && repo.language !== languageFilter) return false
-
 		return true
 	})
 
-	// Handle indeterminate state for header checkbox
-	useEffect(() => {
-		const header = headerCheckboxRef.current
-		if (!header) return
-		const totalRows = filteredRepos.length
-		const selectedCount = Array.from(selectedIds).filter(id => filteredRepos.some(r => r.id === id)).length
-		header.indeterminate = selectedCount > 0 && selectedCount < totalRows
-		header.checked = totalRows > 0 && selectedCount === totalRows
-	}, [filteredRepos, selectedIds])
-
-	// Close repo context menu on Escape or scroll
-	useEffect(() => {
-		if (!repoMenu) return
-
-		const handleKeyDown = (event) => {
-			if (event.key === 'Escape') {
-				setRepoMenu(null)
-			}
-		}
-
-		const handleScroll = () => {
-			setRepoMenu(null)
-		}
-
-		window.addEventListener('keydown', handleKeyDown)
-		window.addEventListener('scroll', handleScroll, true)
-
-		return () => {
-			window.removeEventListener('keydown', handleKeyDown)
-			window.removeEventListener('scroll', handleScroll, true)
-		}
-	}, [repoMenu])
-
-	const openRepoMenuAtPosition = (repo, clientX, clientY) => {
-		let x = clientX
-		let y = clientY
-		let width = 260
-
-		if (typeof window !== 'undefined') {
-			const margin = 8
-			const { innerWidth, innerHeight } = window
-			width = Math.min(width, innerWidth - margin * 2)
-			const estimatedHeight = 260
-			if (x + width > innerWidth - margin) {
-				x = innerWidth - width - margin
-			}
-			if (y + estimatedHeight > innerHeight - margin) {
-				y = innerHeight - estimatedHeight - margin
-			}
-			if (x < margin) x = margin
-			if (y < margin) y = margin
-		}
-
-		setRepoMenu({ repo, x, y, width })
-	}
-
-	const handleRowContextMenu = (event, repo) => {
-		event.preventDefault()
-		openRepoMenuAtPosition(repo, event.clientX, event.clientY)
-	}
-
-	const handleMoreActionsClick = (event, repo) => {
-		event.preventDefault()
-		event.stopPropagation()
-		const rect = event.currentTarget.getBoundingClientRect()
-		openRepoMenuAtPosition(repo, rect.right, rect.bottom + 4)
-	}
+	const allFilteredSelected = filteredRepos.length > 0 && filteredRepos.every(r => selectedIds.has(r.id))
+	const someFilteredSelected = filteredRepos.some(r => selectedIds.has(r.id)) && !allFilteredSelected
 
 	const handleSelectAll = () => {
-		// Check if all filtered repos are currently selected
-		const allFilteredSelected = filteredRepos.length > 0 && filteredRepos.every(r => selectedIds.has(r.id))
-
 		if (allFilteredSelected) {
 			deselectRepos(filteredRepos)
 		} else {
 			selectRepos(filteredRepos)
 		}
+		setShowSelectionMenu(false)
 	}
 
-	const visibleSelectedCount = Array.from(selectedIds).filter(id => repos.some(r => r.id === id)).length
+	const handleInvertSelection = () => {
+		// Invert selection only for the currently filtered repos
+		const newSelectedIds = new Set(selectedIds)
+		filteredRepos.forEach(repo => {
+			if (newSelectedIds.has(repo.id)) {
+				newSelectedIds.delete(repo.id)
+			} else {
+				newSelectedIds.add(repo.id)
+			}
+		})
+		// We need a way to update parent state with new Set. 
+		// Assuming invertSelection prop does this globally, but here we want filtered inversion.
+		// Let's use the parent's invertSelection if it supports it, or manually toggle.
+		// Since we don't have a direct "setAllSelected" prop, we iterate.
+		// Actually, the best way is to use the props we have.
+		// If we want to invert *visible* selection:
+		filteredRepos.forEach(repo => toggleSelect(repo.id))
+		setShowSelectionMenu(false)
+	}
+
+	const handleContextMenu = (e, repo) => {
+		e.preventDefault()
+		setRepoMenu({ repo, x: e.clientX, y: e.clientY })
+	}
+
+	// Close menu on click outside or scroll
+	useEffect(() => {
+		const closeMenu = () => {
+			setRepoMenu(null)
+			setShowSelectionMenu(false)
+		}
+		window.addEventListener('click', closeMenu)
+		window.addEventListener('scroll', closeMenu, true)
+		return () => {
+			window.removeEventListener('click', closeMenu)
+			window.removeEventListener('scroll', closeMenu, true)
+		}
+	}, [])
+
 	const canGoBack = page > 1
 	const canGoNext = totalPages ? page < totalPages : repos.length === perPage
 
 	return (
-		<Card className="flex flex-col">
-			{/* Toolbar */}
-			<div className="p-4 border-b border-slate-200 dark:border-slate-700 space-y-4">
-				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-					<div className="flex items-center gap-2">
-						{selectedOrg && (
-							<Badge variant="info">
-								Viewing: {selectedOrg}
-							</Badge>
+		<div className="space-y-6 relative min-h-[600px]">
+			{/* Glassmorphic Toolbar */}
+			<div className="sticky top-4 z-30 p-2 rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-lg shadow-slate-200/50 dark:shadow-black/40 flex flex-col lg:flex-row gap-3 items-center justify-between transition-all duration-300">
+
+				{/* Search & View Toggle */}
+				<div className="flex items-center gap-2 w-full lg:w-auto">
+					{/* Advanced Selection Menu */}
+					<div className="relative z-40">
+						<div className="flex items-center rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-1">
+							<div
+								className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+								onClick={(e) => { e.stopPropagation(); handleSelectAll(); }}
+								title={allFilteredSelected ? "Deselect All" : "Select All"}
+							>
+								<div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${allFilteredSelected
+									? 'bg-indigo-600 border-indigo-600'
+									: someFilteredSelected
+										? 'bg-indigo-600 border-indigo-600'
+										: 'border-slate-400 dark:border-slate-500'
+									}`}>
+									{allFilteredSelected && <CheckSquare className="w-3 h-3 text-white" />}
+									{someFilteredSelected && <div className="w-2 h-0.5 bg-white rounded-full" />}
+								</div>
+							</div>
+							<div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+							<button
+								onClick={(e) => { e.stopPropagation(); setShowSelectionMenu(!showSelectionMenu) }}
+								className="w-6 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
+							>
+								<ChevronDown className="w-3.5 h-3.5" />
+							</button>
+						</div>
+
+						{/* Dropdown */}
+						{showSelectionMenu && (
+							<div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+								<button onClick={handleSelectAll} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2">
+									<CheckSquare className="w-4 h-4" />
+									{allFilteredSelected ? 'Deselect All' : 'Select All'}
+								</button>
+								<button onClick={handleInvertSelection} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2">
+									<ArrowRightLeft className="w-4 h-4" />
+									Invert Selection
+								</button>
+								<div className="my-1 border-t border-slate-100 dark:border-slate-700"></div>
+								<button onClick={() => { clearSelection(); setShowSelectionMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2">
+									<X className="w-4 h-4" />
+									Clear Selection
+								</button>
+							</div>
 						)}
-						<span className="text-sm text-slate-500 dark:text-slate-400">
-							{filteredRepos.length} repositories
-						</span>
+					</div>
+
+					<div className="relative flex-1 lg:w-64 group">
+						<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+						<input
+							type="text"
+							placeholder="Search repositories..."
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none text-sm transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+						/>
+					</div>
+					<div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
+						<button
+							onClick={() => setViewMode('grid')}
+							className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+						>
+							<LayoutGrid className="w-4 h-4" />
+						</button>
+						<button
+							onClick={() => setViewMode('list')}
+							className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+						>
+							<ListIcon className="w-4 h-4" />
+						</button>
+					</div>
+				</div>
+
+				{/* Filters */}
+				<div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 no-scrollbar">
+					<SelectFilter value={typeFilter} onChange={setTypeFilter} options={[
+						{ value: 'all', label: 'All Types' },
+						{ value: 'source', label: 'Sources' },
+						{ value: 'fork', label: 'Forks' },
+						{ value: 'archived', label: 'Archived' }
+					]} />
+					<SelectFilter value={visibilityFilter} onChange={setVisibilityFilter} options={[
+						{ value: 'all', label: 'All Visibility' },
+						{ value: 'public', label: 'Public' },
+						{ value: 'private', label: 'Private' }
+					]} />
+					<SelectFilter value={languageFilter} onChange={setLanguageFilter} options={[
+						{ value: 'all', label: 'All Languages' },
+						...availableLanguages.map(l => ({ value: l, label: l }))
+					]} />
+
+					<div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden lg:block"></div>
+
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={onRefresh}
+						disabled={loading}
+						className="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
+					>
+						<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+					</Button>
+				</div>
+			</div>
+
+			{/* Content Area */}
+			{loading ? (
+				<div className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
+					<Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-4" />
+					<p>Loading repositories...</p>
+				</div>
+			) : error ? (
+				<div className="flex flex-col items-center justify-center py-20 text-red-500 dark:text-red-400">
+					<AlertCircle className="w-10 h-10 mb-4" />
+					<p>{error}</p>
+					<Button variant="secondary" className="mt-4" onClick={onRefresh}>Try Again</Button>
+				</div>
+			) : filteredRepos.length === 0 ? (
+				<div className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
+					<Search className="w-12 h-12 mb-4 opacity-20" />
+					<p>No repositories found matching your filters.</p>
+					<Button variant="ghost" className="mt-2" onClick={() => { setSearchQuery(''); setTypeFilter('all'); setVisibilityFilter('all'); setLanguageFilter('all'); }}>
+						Clear Filters
+					</Button>
+				</div>
+			) : (
+				<div className={viewMode === 'grid'
+					? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+					: "flex flex-col gap-3"
+				}>
+					{filteredRepos.map(repo => (
+						<RepoCard
+							key={repo.id}
+							repo={repo}
+							viewMode={viewMode}
+							isSelected={selectedIds.has(repo.id)}
+							onToggle={() => toggleSelect(repo.id)}
+							onAction={onQuickAction}
+							onContextMenu={(e) => handleContextMenu(e, repo)}
+						/>
+					))}
+				</div>
+			)}
+
+			{/* Pagination */}
+			{!loading && filteredRepos.length > 0 && (
+				<div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 pb-20">
+					<div className="text-sm text-slate-500 dark:text-slate-400">
+						Showing <span className="font-medium text-slate-900 dark:text-white">{filteredRepos.length}</span> repositories
 					</div>
 					<div className="flex items-center gap-2">
 						<Button
 							variant="secondary"
 							size="sm"
-							onClick={onRefresh}
-							disabled={loading}
-							title="Refresh repositories"
+							disabled={!canGoBack || loading}
+							onClick={() => setPage(p => p - 1)}
+							className="rounded-xl"
 						>
-							<RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
-							Refresh
+							<ChevronLeft className="w-4 h-4 mr-1" /> Prev
 						</Button>
-						<Button variant="ghost" size="sm" onClick={clearSelection} disabled={selectedIds.size === 0}>
-							Clear ({selectedIds.size})
+						<span className="text-sm font-medium text-slate-700 dark:text-slate-200 px-2">
+							{page} / {totalPages || 1}
+						</span>
+						<Button
+							variant="secondary"
+							size="sm"
+							disabled={!canGoNext || loading}
+							onClick={() => setPage(p => p + 1)}
+							className="rounded-xl"
+						>
+							Next <ChevronRight className="w-4 h-4 ml-1" />
 						</Button>
-					</div>
-				</div>
-
-				{/* Filters */}
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-					<input
-						type="text"
-						placeholder="Search repositories..."
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-						className="w-full text-sm px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
-					/>
-					<select
-						value={typeFilter}
-						onChange={(e) => setTypeFilter(e.target.value)}
-						className="w-full text-sm px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
-					>
-						<option value="all">All Types</option>
-						<option value="source">Sources</option>
-						<option value="fork">Forks</option>
-						<option value="archived">Archived</option>
-					</select>
-					<select
-						value={visibilityFilter}
-						onChange={(e) => setVisibilityFilter(e.target.value)}
-						className="w-full text-sm px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
-					>
-						<option value="all">All Visibility</option>
-						<option value="public">Public</option>
-						<option value="private">Private</option>
-					</select>
-					<select
-						value={languageFilter}
-						onChange={(e) => setLanguageFilter(e.target.value)}
-						className="w-full text-sm px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
-					>
-						<option value="all">All Languages</option>
-						{availableLanguages.map(lang => (
-							<option key={lang} value={lang}>{lang}</option>
-						))}
-					</select>
-				</div>
-			</div>
-
-			{/* Table */}
-			<div className="overflow-x-auto">
-				<table className="w-full text-sm text-left">
-					<thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 font-medium border-b border-slate-200 dark:border-slate-700">
-						<tr>
-							<th className="p-4 w-10 relative">
-								<div className="flex items-center gap-1">
-									<input
-										ref={headerCheckboxRef}
-										type="checkbox"
-										className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 dark:bg-slate-700 cursor-pointer w-4 h-4"
-										onChange={handleSelectAll}
-										disabled={loading || filteredRepos.length === 0}
-									/>
-									<button
-										onClick={(e) => {
-											e.stopPropagation()
-											setSelectionMenuOpen(!selectionMenuOpen)
-										}}
-										className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
-										disabled={loading || filteredRepos.length === 0}
-									>
-										<ChevronDown size={14} />
-									</button>
-								</div>
-
-								{selectionMenuOpen && (
-									<>
-										<div
-											className="fixed inset-0 z-40"
-											onClick={() => setSelectionMenuOpen(false)}
-										/>
-										<div className="absolute left-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 shadow-xl rounded-lg border border-slate-200 dark:border-slate-700 z-50 py-1 text-left">
-											<button
-												className="w-full px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-left"
-												onClick={() => {
-													selectRepos(filteredRepos)
-													setSelectionMenuOpen(false)
-												}}
-											>
-												Select All (Filtered)
-											</button>
-											<button
-												className="w-full px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-left"
-												onClick={() => {
-													deselectRepos(filteredRepos)
-													setSelectionMenuOpen(false)
-												}}
-											>
-												Deselect (Filtered)
-											</button>
-											<button
-												className="w-full px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-left"
-												onClick={() => {
-													invertSelection(filteredRepos)
-													setSelectionMenuOpen(false)
-												}}
-											>
-												Invert Selection
-											</button>
-											<div className="my-1 border-t border-slate-100 dark:border-slate-700" />
-											<button
-												className="w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-left"
-												onClick={() => {
-													clearSelection()
-													setSelectionMenuOpen(false)
-												}}
-											>
-												Clear All Selection
-											</button>
-										</div>
-									</>
-								)}
-							</th>
-							<th className="p-4">Repository</th>
-							<th className="p-4 hidden sm:table-cell">Type</th>
-							<th className="p-4">Visibility</th>
-							<th className="p-4 text-center">Actions</th>
-						</tr>
-					</thead>
-					<tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-						{loading ? (
-							<tr>
-								<td colSpan={5} className="p-12 text-center">
-									<div className="flex flex-col items-center gap-2 text-slate-500 dark:text-slate-400">
-										<Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-										<span>Loading repositories...</span>
-									</div>
-								</td>
-							</tr>
-						) : error ? (
-							<tr>
-								<td colSpan={5} className="p-12 text-center">
-									<div className="flex flex-col items-center gap-2 text-red-500 dark:text-red-400">
-										<AlertCircle className="w-8 h-8" />
-										<span>{error}</span>
-										<Button variant="secondary" size="sm" onClick={onRefresh}>
-											Try Again
-										</Button>
-									</div>
-								</td>
-							</tr>
-						) : filteredRepos.length === 0 ? (
-							<tr>
-								<td colSpan={5} className="p-12 text-center text-slate-500 dark:text-slate-400">
-									{repos.length === 0 ? 'No repositories found.' : 'No repositories match your filters.'}
-								</td>
-							</tr>
-						) : filteredRepos.map(repo => {
-							const isSelected = selectedIds.has(repo.id)
-							return (
-								<tr
-									key={repo.id}
-									className={`transition-all cursor-pointer border-l-4 ${isSelected
-										? 'bg-indigo-50/80 dark:bg-indigo-900/30 border-indigo-500'
-										: 'hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent'
-										}`}
-									onClick={() => toggleSelect(repo.id)}
-									onContextMenu={(event) => handleRowContextMenu(event, repo)}
-								>
-									<td className="p-4" onClick={e => e.stopPropagation()}>
-										<input
-											type="checkbox"
-											checked={isSelected}
-											onChange={() => toggleSelect(repo.id)}
-											className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 dark:bg-slate-700 cursor-pointer w-4 h-4"
-										/>
-									</td>
-									<td className="p-4">
-										<div className="flex items-center gap-2">
-											<div className={`font-medium ${isSelected ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-900 dark:text-slate-100'}`}>
-												{repo.name}
-											</div>
-											{repo.archived && (
-												<Badge variant="default" className="gap-1 text-[10px]">
-													<Archive className="w-2.5 h-2.5" /> Archived
-												</Badge>
-											)}
-										</div>
-										<div className="text-xs text-slate-500 dark:text-slate-400">{repo.owner?.login}</div>
-										{repo.description && (
-											<div className="text-xs text-slate-400 dark:text-slate-500 mt-1 line-clamp-1">{repo.description}</div>
-										)}
-										{repo.language && (
-											<div className="flex items-center gap-2 mt-1">
-												<span className="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
-													{repo.language}
-												</span>
-												{repo.stargazers_count > 0 && (
-													<span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-0.5">
-														<Star className="w-2.5 h-2.5" /> {repo.stargazers_count}
-													</span>
-												)}
-											</div>
-										)}
-									</td>
-									<td className="p-4 hidden sm:table-cell">
-										{repo.fork
-											? <Badge variant="info" className="gap-1"><GitFork className="w-3 h-3" /> Fork</Badge>
-											: <Badge variant="default">Source</Badge>
-										}
-									</td>
-									<td className="p-4">
-										{repo.private
-											? <Badge variant="warning" className="gap-1"><Lock className="w-3 h-3" /> Private</Badge>
-											: <Badge variant="success" className="gap-1"><Globe className="w-3 h-3" /> Public</Badge>
-										}
-									</td>
-									<td className="p-4" onClick={e => e.stopPropagation()}>
-										<div className="flex items-center justify-center gap-1">
-											{/* Quick visibility toggle */}
-											<button
-												onClick={() => onQuickAction?.('visibility', repo, repo.private ? 'public' : 'private')}
-												className={`p-1.5 rounded transition-colors ${repo.private
-													? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-600 dark:hover:text-amber-400'
-													: 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-600 dark:hover:text-emerald-400'
-													}`}
-												title={repo.private ? 'Make Public' : 'Make Private'}
-											>
-												{repo.private ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-											</button>
-
-											{/* Archive toggle */}
-											<button
-												onClick={() => onQuickAction?.('archive', repo, !repo.archived)}
-												className={`p-1.5 rounded transition-colors ${repo.archived
-													? 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-													: 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-slate-300'
-													}`}
-												title={repo.archived ? 'Unarchive' : 'Archive'}
-											>
-												<Archive className="w-4 h-4" />
-											</button>
-
-											{/* Open on GitHub */}
-											<a
-												href={repo.html_url}
-												target="_blank"
-												rel="noreferrer"
-												className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
-												title="Open on GitHub"
-											>
-												<ExternalLink className="w-4 h-4" />
-											</a>
-
-											{/* More actions menu trigger (opens overlay context menu) */}
-											<div className="relative">
-												<button
-													type="button"
-													onClick={(event) => handleMoreActionsClick(event, repo)}
-													className="p-1.5 text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200 rounded hover:bg-slate-100 dark:hover:bg-slate-800/70"
-													title="More actions"
-												>
-													<MoreHorizontal className="w-4 h-4" />
-												</button>
-											</div>
-										</div>
-									</td>
-								</tr>
-							)
-						})}
-					</tbody>
-				</table>
-			</div>
-
-			{/* Pagination */}
-			<div className="p-4 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/40">
-				<div className="text-xs text-slate-500 dark:text-slate-400">
-					<span className="font-medium text-slate-700 dark:text-slate-200">{visibleSelectedCount}</span> selected on this page
-					{selectedIds.size > visibleSelectedCount && (
-						<span className="ml-1 text-slate-500 dark:text-slate-400">({selectedIds.size} total)</span>
-					)}
-					<span className="mx-2">•</span>
-					<span className="text-slate-600 dark:text-slate-300">{filteredRepos.length} visible</span>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button
-						variant="secondary"
-						size="sm"
-						disabled={!canGoBack || loading}
-						onClick={() => setPage(p => p - 1)}
-					>
-						<ChevronLeft className="w-4 h-4" />
-						Prev
-					</Button>
-					<span className="text-xs font-medium text-slate-700 dark:text-slate-200 px-2">
-						Page {page} {totalPages ? `of ${totalPages}` : ''}
-					</span>
-					<Button
-						variant="secondary"
-						size="sm"
-						disabled={!canGoNext || loading}
-						onClick={() => setPage(p => p + 1)}
-					>
-						Next
-						<ChevronRight className="w-4 h-4" />
-					</Button>
-					<select
-						value={perPage}
-						onChange={e => { setPerPage(Number(e.target.value)); setPage(1) }}
-						className="ml-2 border border-slate-300 dark:border-slate-600 rounded text-xs py-1.5 px-2 outline-none focus:border-indigo-500 bg-white dark:bg-slate-900/60 dark:text-slate-100"
-						disabled={loading}
-					>
-						{PAGINATION.perPageOptions.map(n => (
-							<option key={n} value={n}>{n} per page</option>
-						))}
-					</select>
-				</div>
-			</div>
-
-			{/* Repo context menu overlay */}
-			{repoMenu && (
-				<div
-					className="fixed inset-0 z-40 bg-black/10 dark:bg-black/30 backdrop-blur-[1px]"
-					onClick={() => setRepoMenu(null)}
-					onContextMenu={(event) => {
-						event.preventDefault()
-						setRepoMenu(null)
-					}}
-				>
-					<div
-						className="absolute z-50"
-						style={{ top: repoMenu.y, left: repoMenu.x, width: repoMenu.width }}
-						onClick={(event) => event.stopPropagation()}
-					>
-						<RepoActionsMenu
-							repo={repoMenu.repo}
-							onQuickAction={onQuickAction}
-							onClose={() => setRepoMenu(null)}
-						/>
 					</div>
 				</div>
 			)}
-		</Card>
+
+			{/* Floating Selection Bar */}
+			{selectedIds.size > 0 && (
+				<div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
+					<div className="flex items-center gap-3 pl-4 pr-2 py-2 bg-slate-900/90 dark:bg-white/90 backdrop-blur-md text-white dark:text-slate-900 rounded-full shadow-2xl border border-white/10 dark:border-slate-200/20">
+						<div className="flex items-center gap-2 text-sm font-medium pr-3 border-r border-white/20 dark:border-slate-900/10">
+							<CheckSquare className="w-4 h-4" />
+							<span>{selectedIds.size}</span>
+						</div>
+						<div className="flex items-center gap-1">
+							<TooltipButton icon={CheckSquare} label="Select All" onClick={() => selectRepos(filteredRepos)} />
+							<TooltipButton icon={Archive} label="Archive" onClick={() => onQuickAction('archive_selected')} />
+							<TooltipButton icon={Trash2} label="Delete" onClick={() => onQuickAction('delete_selected')} className="text-red-400 dark:text-red-600 hover:bg-red-500/20" />
+							<TooltipButton icon={X} label="Clear" onClick={clearSelection} />
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Context Menu */}
+			{repoMenu && (
+				<RepoActionsMenu
+					repo={repoMenu.repo}
+					x={repoMenu.x}
+					y={repoMenu.y}
+					onClose={() => setRepoMenu(null)}
+					onQuickAction={onQuickAction}
+				/>
+			)}
+		</div>
 	)
 }
 
-function RepoActionsMenu({ repo, onQuickAction, onClose }) {
-	const handleAction = (type, value) => {
-		onQuickAction?.(type, repo, value)
-		onClose?.()
-	}
+function SelectFilter({ value, onChange, options }) {
+	return (
+		<div className="relative group">
+			<select
+				value={value}
+				onChange={(e) => onChange(e.target.value)}
+				className="appearance-none pl-3 pr-8 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-indigo-500/50 outline-none cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-w-[120px]"
+			>
+				{options.map(opt => (
+					<option key={opt.value} value={opt.value}>{opt.label}</option>
+				))}
+			</select>
+			<ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+		</div>
+	)
+}
 
-	const toggleVisibilityLabel = repo.private ? 'Make public' : 'Make private'
-	const toggleArchiveLabel = repo.archived ? 'Unarchive' : 'Archive'
+function TooltipButton({ icon: Icon, label, onClick, className = "" }) {
+	return (
+		<button
+			onClick={onClick}
+			className={`p-2 rounded-full hover:bg-white/10 dark:hover:bg-slate-900/10 transition-colors ${className}`}
+			title={label}
+		>
+			<Icon className="w-4 h-4" />
+		</button>
+	)
+}
+
+function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMenu }) {
+	const isGrid = viewMode === 'grid'
 
 	return (
 		<div
-			data-testid="repo-actions-menu"
-			className="rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 shadow-xl dark:shadow-slate-900/50 border border-slate-200 dark:border-slate-700 overflow-hidden"
+			onClick={onToggle}
+			onContextMenu={onContextMenu}
+			className={`
+                group relative transition-all duration-200 cursor-pointer
+                bg-white/80 dark:bg-slate-900/40 backdrop-blur-md
+                border border-slate-200 dark:border-slate-700/60
+                shadow-sm dark:shadow-xl dark:shadow-black/40
+                hover:border-indigo-400 dark:hover:border-indigo-500/50
+                hover:shadow-md dark:hover:shadow-indigo-500/10
+                ${isSelected
+					? 'ring-2 ring-indigo-500 border-transparent dark:bg-indigo-900/10'
+					: ''
+				}
+                ${isGrid ? 'rounded-2xl p-5 flex flex-col h-full' : 'rounded-xl p-4 flex items-center gap-4'}
+            `}
 		>
-			<div className="px-4 pt-3 pb-2 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3">
-				<div className="flex-1 min-w-0">
-					<div className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">
-						Repository
-					</div>
-					<div className="font-medium text-sm text-slate-900 dark:text-slate-50 truncate">
-						{repo.owner?.login}/{repo.name}
+			{/* Selection Checkbox */}
+			{/* In Grid: Top Right. In List: Left side, static. */}
+			{isGrid ? (
+				<div className={`absolute top-4 right-4 z-10 transition-opacity duration-200 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+					<div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}>
+						{isSelected && <CheckSquare className="w-3.5 h-3.5 text-white" />}
 					</div>
 				</div>
+			) : (
+				<div className="flex-shrink-0">
+					<div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}>
+						{isSelected && <CheckSquare className="w-3.5 h-3.5 text-white" />}
+					</div>
+				</div>
+			)}
+
+			{/* Icon & Title */}
+			<div className={`flex ${isGrid ? 'flex-col items-start gap-3' : 'items-center gap-4 flex-1'}`}>
+				<div className="flex items-center gap-3 w-full">
+					<div className={`p-2.5 rounded-xl ${repo.private ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'}`}>
+						{repo.private ? <Lock className="w-5 h-5" /> : <Globe className="w-5 h-5" />}
+					</div>
+					<div className="flex-1 min-w-0">
+						<div className="flex items-center gap-2">
+							<h3 className="font-semibold text-slate-900 dark:text-white truncate group-hover:text-indigo-500 transition-colors">
+								{repo.name}
+							</h3>
+							{repo.archived && (
+								<Badge variant="secondary" className="text-[10px] py-0 h-5">Archived</Badge>
+							)}
+						</div>
+						<p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+							{repo.owner?.login}
+						</p>
+					</div>
+				</div>
+
+				{/* Description */}
+				{isGrid && (
+					<p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 min-h-[2.5em] mt-1">
+						{repo.description || <span className="italic opacity-50">No description provided</span>}
+					</p>
+				)}
 			</div>
 
-			<div className="px-2 py-2 border-b border-slate-100 dark:border-slate-700/80">
-				<div className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500 px-2 mb-1">
-					Quick actions
+			{/* Stats & Meta */}
+			<div className={`flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 ${isGrid ? 'mt-auto pt-4 border-t border-slate-100 dark:border-white/5' : ''}`}>
+				{repo.language && (
+					<div className="flex items-center gap-1.5">
+						<span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+						{repo.language}
+					</div>
+				)}
+				<div className="flex items-center gap-1">
+					<Star className="w-3.5 h-3.5" />
+					{repo.stargazers_count}
 				</div>
-				<div className="space-y-0.5">
+				<div className="flex items-center gap-1">
+					<GitFork className="w-3.5 h-3.5" />
+					{repo.forks_count}
+				</div>
+				<div className="flex-1"></div>
+
+				{/* Actions (Grid: Bottom Right, List: Right Side) */}
+				<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 					<button
-						type="button"
-						onClick={() => handleAction('visibility', repo.private ? 'public' : 'private')}
-						className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70"
-					>
-						{repo.private ? (
-							<Unlock className="w-4 h-4 text-amber-500" />
-						) : (
-							<Lock className="w-4 h-4 text-emerald-500" />
-						)}
-						<span className="flex-1 text-left">{toggleVisibilityLabel}</span>
-					</button>
-					<button
-						type="button"
-						onClick={() => handleAction('archive', !repo.archived)}
-						className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70"
-					>
-						<Archive className="w-4 h-4 text-slate-500" />
-						<span className="flex-1 text-left">{toggleArchiveLabel}</span>
-					</button>
-					<button
-						type="button"
-						onClick={() => {
-							window.open(repo.html_url, '_blank', 'noopener,noreferrer')
-							onClose?.()
-						}}
-						className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70"
+						onClick={(e) => { e.stopPropagation(); window.open(repo.html_url, '_blank') }}
+						className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-500"
+						title="Open on GitHub"
 					>
 						<ExternalLink className="w-4 h-4" />
-						<span className="flex-1 text-left">Open on GitHub</span>
+					</button>
+					<button
+						onClick={(e) => { e.stopPropagation(); onAction('archive', repo, !repo.archived) }}
+						className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-500"
+						title={repo.archived ? "Unarchive" : "Archive"}
+					>
+						<Archive className="w-4 h-4" />
+					</button>
+					<button
+						onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
+						className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-500 md:hidden"
+						title="More Actions"
+					>
+						<MoreHorizontal className="w-4 h-4" />
 					</button>
 				</div>
 			</div>
+		</div>
+	)
+}
 
-			<div className="px-2 py-2 border-b border-slate-100 dark:border-slate-700/80">
-				<div className="text-[11px] uppercase tracking-wide text-slate-400 dark:text-slate-500 px-2 mb-1">
-					Management
-				</div>
-				<div className="space-y-0.5">
-					<button
-						type="button"
-						onClick={() => handleAction('transfer')}
-						className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70"
-					>
-						<ArrowRightLeft className="w-4 h-4" />
-						<span className="flex-1 text-left">Transfer to organization</span>
-					</button>
-					<button
-						type="button"
-						onClick={() => handleAction('mirror')}
-						className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70"
-					>
-						<Copy className="w-4 h-4" />
-						<span className="flex-1 text-left">Mirror (fork)</span>
-					</button>
-					<button
-						type="button"
-						onClick={() => {
-							window.open(`${repo.html_url}/settings`, '_blank', 'noopener,noreferrer')
-							onClose?.()
-						}}
-						className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70"
-					>
-						<Settings className="w-4 h-4" />
-						<span className="flex-1 text-left">Repository settings</span>
-					</button>
-				</div>
+function RepoActionsMenu({ repo, x, y, onClose, onQuickAction }) {
+	// Adjust position to keep in viewport
+	const style = {
+		top: y,
+		left: x,
+	}
+
+	// Simple adjustment to prevent overflow (could be more robust)
+	if (typeof window !== 'undefined') {
+		if (x + 200 > window.innerWidth) style.left = x - 200
+		if (y + 300 > window.innerHeight) style.top = y - 300
+	}
+
+	const copyCloneUrl = () => {
+		navigator.clipboard.writeText(repo.clone_url)
+		onClose()
+		// Ideally show a toast here
+	}
+
+	return (
+		<div
+			className="fixed z-50 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1 animate-in fade-in zoom-in-95 duration-100"
+			style={style}
+			onClick={(e) => e.stopPropagation()}
+		>
+			<div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
+				<p className="text-xs font-medium text-slate-900 dark:text-white truncate max-w-[180px]">{repo.name}</p>
+				<Badge variant={repo.private ? "secondary" : "success"} className="text-[10px] py-0 h-4">
+					{repo.private ? 'Private' : 'Public'}
+				</Badge>
 			</div>
 
-			<div className="px-2 py-2 bg-red-50/60 dark:bg-red-950/40">
-				<div className="text-[11px] uppercase tracking-wide text-red-500 dark:text-red-300 px-2 mb-1">
-					Danger zone
-				</div>
-				<button
-					type="button"
-					onClick={() => handleAction('delete')}
-					className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/60"
-				>
+			<div className="p-1 space-y-0.5">
+				<button onClick={() => { window.open(repo.html_url, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+					<ExternalLink className="w-4 h-4 text-slate-400" />
+					Open on GitHub
+				</button>
+				<button onClick={copyCloneUrl} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+					<Copy className="w-4 h-4 text-slate-400" />
+					Copy Clone URL
+				</button>
+				<button onClick={() => { window.open(`${repo.html_url}/settings`, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+					<Settings className="w-4 h-4 text-slate-400" />
+					Settings
+				</button>
+			</div>
+
+			<div className="border-t border-slate-100 dark:border-slate-700/50 p-1 space-y-0.5">
+				<button onClick={() => { window.open(`${repo.html_url}/issues`, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+					<CircleDot className="w-4 h-4 text-slate-400" />
+					Issues
+				</button>
+				<button onClick={() => { window.open(`${repo.html_url}/pulls`, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+					<GitPullRequest className="w-4 h-4 text-slate-400" />
+					Pull Requests
+				</button>
+			</div>
+
+			<div className="border-t border-slate-100 dark:border-slate-700/50 p-1 space-y-0.5">
+				<button onClick={() => { onQuickAction('visibility', repo, repo.private ? 'public' : 'private'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+					{repo.private ? <Unlock className="w-4 h-4 text-slate-400" /> : <Lock className="w-4 h-4 text-slate-400" />}
+					{repo.private ? 'Make Public' : 'Make Private'}
+				</button>
+				<button onClick={() => { onQuickAction('archive', repo, !repo.archived); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+					<Archive className="w-4 h-4 text-slate-400" />
+					{repo.archived ? 'Unarchive' : 'Archive'}
+				</button>
+			</div>
+
+			<div className="border-t border-slate-100 dark:border-slate-700/50 p-1">
+				<button onClick={() => { onQuickAction('delete', repo); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
 					<Trash2 className="w-4 h-4" />
-					<span className="flex-1 text-left">Delete repository</span>
+					Delete Repository
 				</button>
 			</div>
 		</div>
