@@ -51,6 +51,7 @@ function App() {
     setSelectedOrg,
     fetchOrgs,
     fetchStats,
+    activity,
   } = useGitHub()
 
   const [org, setOrg] = useState('')
@@ -245,6 +246,7 @@ function App() {
           <Dashboard
             stats={stats}
             orgs={orgs}
+            repos={repos}
             onOrgClick={(orgLogin) => {
               handleOrgSelect(orgLogin)
               setActiveView('repos')
@@ -309,6 +311,7 @@ function App() {
                   onTransfer={handleBulkTransfer}
                   orgs={orgs}
                   onAzureImport={() => setShowAzureImport(true)}
+                  activity={activity}
                 />
               </div>
             )}

@@ -1,6 +1,6 @@
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
-import { ArrowRightLeft, Lock, Unlock, Copy, History, Zap, CheckCircle, XCircle, Loader2, AlertTriangle, Archive, Trash2, Cloud, Sparkles, MoreHorizontal } from 'lucide-react'
+import { ArrowRightLeft, Lock, Unlock, History, Zap, CheckCircle, XCircle, Loader2, Archive, Trash2, Cloud, Sparkles, MoreHorizontal } from 'lucide-react'
 
 const ACTION_LABELS = {
     visibility: 'Change Visibility',
@@ -23,10 +23,10 @@ export function Sidebar({
     selectedRepos = [],
     onTransfer,
     orgs = [],
-    onAzureImport
+    onAzureImport,
+    activity = []
 }) {
     const hasSelection = selectedCount > 0
-    const hasOrgs = orgs.length > 0
 
     return (
         <aside className="space-y-6 sticky top-24 min-w-0">
@@ -153,7 +153,7 @@ export function Sidebar({
                 <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between sticky top-0">
                     <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
                         <History className="w-4 h-4 text-slate-400" />
-                        Activity
+                        Action History
                     </h3>
                     {isPerforming && <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500" />}
                 </div>
@@ -161,7 +161,7 @@ export function Sidebar({
                 <div className="flex-1 overflow-y-auto p-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
                     {results.length === 0 ? (
                         <div className="text-xs text-slate-400 text-center py-8">
-                            No recent activity
+                            No recent actions
                         </div>
                     ) : (
                         <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -193,6 +193,67 @@ export function Sidebar({
                 {/* Status Bar */}
                 <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 truncate">
                     {message || 'Ready'}
+                </div>
+            </Card>
+
+            {/* Recent Events Feed */}
+            <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm flex flex-col max-h-[400px]">
+                <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between sticky top-0">
+                    <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <History className="w-4 h-4 text-blue-400" />
+                        Recent Activity
+                    </h3>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+                    {(() => {
+                        console.log('Sidebar rendering activity:', activity);
+                        if (!Array.isArray(activity) || activity.length === 0) {
+                            return (
+                                <div className="text-xs text-slate-400 text-center py-8">
+                                    No recent activity found
+                                </div>
+                            )
+                        }
+                        return (
+                            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                                {activity.map((event) => {
+                                    if (!event) return null
+                                    return (
+                                        <div key={event.id} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                            <div className="flex items-start gap-3">
+                                                <div className="mt-1">
+                                                    {event.type === 'PushEvent' && <div className="w-2 h-2 rounded-full bg-emerald-400 ring-4 ring-emerald-400/20" />}
+                                                    {event.type === 'PullRequestEvent' && <div className="w-2 h-2 rounded-full bg-purple-400 ring-4 ring-purple-400/20" />}
+                                                    {event.type === 'IssuesEvent' && <div className="w-2 h-2 rounded-full bg-amber-400 ring-4 ring-amber-400/20" />}
+                                                    {event.type === 'CreateEvent' && <div className="w-2 h-2 rounded-full bg-blue-400 ring-4 ring-blue-400/20" />}
+                                                    {!['PushEvent', 'PullRequestEvent', 'IssuesEvent', 'CreateEvent'].includes(event.type) && (
+                                                        <div className="w-2 h-2 rounded-full bg-slate-400 ring-4 ring-slate-400/20" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate">
+                                                        {event.repo?.name || 'Unknown Repo'}
+                                                    </div>
+                                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
+                                                        {event.type === 'PushEvent' && `Pushed ${event.payload?.size || 0} commit(s)`}
+                                                        {event.type === 'PullRequestEvent' && `${event.payload?.action} PR #${event.payload?.number}`}
+                                                        {event.type === 'IssuesEvent' && `${event.payload?.action} issue #${event.payload?.issue?.number}`}
+                                                        {event.type === 'CreateEvent' && `Created ${event.payload?.ref_type} ${event.payload?.ref || ''}`}
+                                                        {!['PushEvent', 'PullRequestEvent', 'IssuesEvent', 'CreateEvent'].includes(event.type) && event.type?.replace('Event', '')}
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+                                                        <span>{event.created_at ? new Date(event.created_at).toLocaleDateString() : ''}</span>
+                                                        <span className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-500">View</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )
+                    })()}
                 </div>
             </Card>
         </aside>

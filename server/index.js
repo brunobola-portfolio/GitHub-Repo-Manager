@@ -280,13 +280,13 @@ app.get('/api/orgs', requireAuth, async (req, res) => {
     try {
         const { data } = await githubApi('/user/orgs', req.session.accessToken);
 
-	    // Get repo count for each org using org details endpoint
-	    const orgsWithCounts = await Promise.all(data.map(async (org) => {
-	        try {
-	            const { data: orgDetails } = await githubApi(
-	                `/orgs/${org.login}`,
-	                req.session.accessToken
-	            );
+        // Get repo count for each org using org details endpoint
+        const orgsWithCounts = await Promise.all(data.map(async (org) => {
+            try {
+                const { data: orgDetails } = await githubApi(
+                    `/orgs/${org.login}`,
+                    req.session.accessToken
+                );
                 return {
                     ...org,
                     public_repos: orgDetails.public_repos || 0,
@@ -666,6 +666,48 @@ app.get('/api/stats', requireAuth, async (req, res) => {
         console.error('Get stats error:', error);
         res.status(error.status || 500).json({ error: error.message });
     }
+});
+
+// Mock Activity Endpoint
+app.get('/api/mock/activity', (req, res) => {
+    const mockActivity = [
+        {
+            id: '1',
+            type: 'PushEvent',
+            created_at: new Date().toISOString(),
+            repo: { name: 'owner/repo-1' },
+            payload: { size: 3 }
+        },
+        {
+            id: '2',
+            type: 'PullRequestEvent',
+            created_at: new Date(Date.now() - 3600000).toISOString(),
+            repo: { name: 'owner/repo-2' },
+            payload: { action: 'opened', number: 42 }
+        },
+        {
+            id: '3',
+            type: 'IssuesEvent',
+            created_at: new Date(Date.now() - 7200000).toISOString(),
+            repo: { name: 'owner/repo-3' },
+            payload: { action: 'closed', issue: { number: 15 } }
+        },
+        {
+            id: '4',
+            type: 'CreateEvent',
+            created_at: new Date(Date.now() - 86400000).toISOString(),
+            repo: { name: 'owner/new-repo' },
+            payload: { ref_type: 'repository' }
+        },
+        {
+            id: '5',
+            type: 'WatchEvent',
+            created_at: new Date(Date.now() - 172800000).toISOString(),
+            repo: { name: 'facebook/react' },
+            payload: { action: 'started' }
+        }
+    ];
+    res.json(mockActivity);
 });
 
 // ============ START SERVER ============

@@ -719,6 +719,32 @@ export function useGitHub() {
         }
     }, [user])
 
+
+
+    const [activity, setActivity] = useState([])
+
+    const fetchActivity = useCallback(async (username) => {
+        if (!username) return
+        try {
+            const endpoint = MOCK_MODE ? '/api/mock/activity' : `https://api.github.com/users/${username}/events`
+            const headers = MOCK_MODE ? {} : { Authorization: `token ${localStorage.getItem('github_token')}` }
+
+            const res = await fetch(endpoint, { headers })
+            if (res.ok) {
+                const data = await res.json()
+                setActivity(data.slice(0, 20)) // Keep last 20 events
+            }
+        } catch (error) {
+            console.error('Failed to fetch activity:', error)
+        }
+    }, [MOCK_MODE])
+
+    useEffect(() => {
+        if (user?.login) {
+            fetchActivity(user.login)
+        }
+    }, [user, fetchActivity])
+
     return {
         // State
         user,
@@ -735,6 +761,7 @@ export function useGitHub() {
         results,
         isMockMode: MOCK_MODE,
         retryCount,
+        activity, // Expose activity
 
         // Organizations
         orgs,
@@ -766,5 +793,6 @@ export function useGitHub() {
         setSelectedOrg,
         setMessage,
         setErrorInfo,
+        fetchActivity
     }
 }
