@@ -225,9 +225,17 @@ export function RepoList({
 
 			{/* Content Area */}
 			{loading ? (
-				<div className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
-					<Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-4" />
-					<p>Loading repositories...</p>
+				<div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl transition-all duration-300">
+					<div className="relative">
+						<div className="w-16 h-16 rounded-full border-4 border-indigo-100 dark:border-indigo-900/30 animate-pulse"></div>
+						<div className="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+						<div className="absolute inset-0 flex items-center justify-center">
+							<RefreshCw className="w-6 h-6 text-indigo-500 animate-spin-slow" />
+						</div>
+					</div>
+					<p className="mt-4 text-slate-600 dark:text-slate-300 font-medium animate-pulse">
+						Loading repositories...
+					</p>
 				</div>
 			) : error ? (
 				<div className="flex flex-col items-center justify-center py-20 text-red-500 dark:text-red-400">

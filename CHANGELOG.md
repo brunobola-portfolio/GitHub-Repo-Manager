@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is inspired by [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-12-03
+
+### Added
+- **Premium UI/UX**: Complete visual overhaul with Glassmorphism design system.
+- **New Dashboard**: Interactive charts, skeleton loading states, and improved organization selector.
+- **Enhanced OrgPanel**: Redesigned sidebar with search, view toggles, and user profile management.
+- **Loading States**: Integrated `Skeleton` components for a smoother perceived performance.
+
+### Changed
+- Refactored `Dashboard` and `OrgPanel` to use `framer-motion` for complex animations.
+- Updated `App.jsx` layout to support the new sidebar-based navigation structure.
+- Improved organization selection logic to handle data refreshing more gracefully.
+
+## [2.1.0] - 2025-12-02
+
+### Added
+- **AI Assistant**: Integrated Google Gemini Flash for intelligent repository management and chat.
+- **Smart Descriptions**: "Magic Button" in Create Repo modal to auto-generate descriptions.
+- **Dashboard Filtering**: Filter statistics and charts by specific organizations.
+- **Enhanced UX**: Added `framer-motion` animations for smooth transitions and interactions.
+- **AI Configuration**: Graceful error handling for missing API keys with helpful UI feedback.
+
+### Fixed
+- Resolved issues with organization data fetching in the Dashboard.
+- Fixed server-side error handling for unconfigured AI endpoints.
+
 ## [2.0.0] - 2025-11-26
 
 ### Added

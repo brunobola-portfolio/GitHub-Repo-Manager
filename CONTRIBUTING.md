@@ -1,81 +1,66 @@
 # Contributing to GitHub Repo Manager
 
-Thank you for your interest in contributing! This project is open source under the MIT License and welcomes improvements from the community.
+First off, thanks for taking the time to contribute! 🎉
+
+The following is a set of guidelines for contributing to GitHub Repo Manager. These are mostly guidelines, not rules. Use your best judgment, and feel free to propose changes to this document in a pull request.
 
 ## Code of Conduct
 
-Be respectful, constructive, and kind. Assume good intent and collaborate in good faith.
+This project and everyone participating in it is governed by our Code of Conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to [bruno@bolalabs.com](mailto:bruno@bolalabs.com).
 
-## Getting Started
+## How Can I Contribute?
 
-1. **Fork** the repository on GitHub.
-2. **Clone** your fork locally:
-   ```bash
-   git clone https://github.com/<your-username>/github-repo-manager.git
-   cd github-repo-manager
-   ```
-3. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-4. **Create a feature branch**:
-   ```bash
-   git checkout -b feat/my-feature
-   ```
+### Reporting Bugs
 
-## Development Workflow
+This section guides you through submitting a bug report. Following these guidelines helps maintainers and the community understand your report, reproduce the behavior, and find related reports.
 
-- Start the full dev environment:
-  ```bash
-  npm run dev:all
-  ```
-- Frontend runs on `http://localhost:5173`.
-- Backend API runs on `http://localhost:3001`.
+- **Use a clear and descriptive title** for the issue to identify the problem.
+- **Describe the exact steps which reproduce the problem** in as many details as possible.
+- **Provide specific examples** to demonstrate the steps. Include links to files or GitHub projects, or copy/pasteable snippets, which you use in those examples.
 
-Before opening a PR:
+### Suggesting Enhancements
 
-- Ensure **lint** passes:
-  ```bash
-  npm run lint
-  ```
-- Optionally run a production **build**:
-  ```bash
-  npm run build
-  ```
+This section guides you through submitting an enhancement suggestion, including completely new features and minor improvements to existing functionality.
 
-## Commit Messages
+- **Use a clear and descriptive title** for the issue to identify the suggestion.
+- **Provide a step-by-step description of the suggested enhancement** in as many details as possible.
+- **Explain why this enhancement would be useful** to most GitHub Repo Manager users.
 
-This project uses **Conventional Commits** for a readable history and better tooling support.
+### Pull Requests
 
-Examples:
+The process described here has several goals:
 
-- `feat(ui): add bulk archive button to repo table`
-- `fix(api): handle GitHub 403 rate limit responses`
-- `docs: update README with Azure import notes`
-- `chore: bump dependencies`
+- Maintain the quality of GitHub Repo Manager.
+- Fix problems that are important to users.
+- Engage the community in working toward the best possible GitHub Repo Manager.
 
-## Coding Guidelines
+1.  Fork the repo and create your branch from `main`.
+2.  If you've added code that should be tested, add tests.
+3.  If you've changed APIs, update the documentation.
+4.  Ensure the test suite passes.
+5.  Make sure your code lints.
+6.  Issue that pull request!
 
-- Use **React functional components** and **hooks**.
-- Keep **stateful logic** in hooks (e.g. `useGitHub`, `useTheme`, `useToast`) and keep components mostly presentational.
-- Respect the existing **dark/light theme** implementation and ensure new UI elements work in both themes.
-- Do not commit secrets. Use `.env` locally and follow `.env.example`.
-- Prefer small, focused components with clear responsibilities.
-- Keep API error messages user-friendly and avoid leaking sensitive details.
+## Styleguides
 
-## Adding Features
+### Git Commit Messages
 
-When adding a feature:
+- Use the present tense ("Add feature" not "Added feature")
+- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
+- Limit the first line to 72 characters or less
+- Reference issues and pull requests liberally after the first line
 
-1. Discuss large changes first via an issue or draft PR.
-2. Include any necessary updates to **README**, **CHANGELOG**, or `docs/`.
-3. Add or update tests if/when a test harness is added.
+### JavaScript Styleguide
 
-## Pull Requests
+- All JavaScript must adhere to [Standard JS](https://standardjs.com/).
+- Prefer `const` over `let`.
+- Use async/await for asynchronous operations.
 
-- Keep PRs focused and reasonably small.
-- Describe **what** you changed and **why**.
-- Mention any breaking changes or migration steps.
+## Development Setup
 
-Thank you again for contributing to GitHub Repo Manager!
+1.  Clone the repository
+2.  Install dependencies: `npm install` (root) and `cd server && npm install`
+3.  Create `.env` files in root and server directories based on examples.
+4.  Start development server: `npm run dev`
 
+Happy coding! 🚀

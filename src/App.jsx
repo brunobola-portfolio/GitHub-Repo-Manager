@@ -12,6 +12,7 @@ import { OrgManagerModal } from './components/OrgManagerModal'
 import { ConfirmModal } from './components/ui/ConfirmModal'
 import { ToastContainer } from './components/ui/Toast'
 import { useToast } from './hooks/useToast'
+import { AIAssistant } from './components/AIAssistant'
 import { AUTH_ENDPOINTS } from './config'
 
 function App() {
@@ -207,15 +208,24 @@ function App() {
     }
   }
 
-  const handleOrgSelect = (orgLogin) => {
+  const [isSwitchingOrg, setIsSwitchingOrg] = useState(false)
+
+  const handleOrgSelect = async (orgLogin) => {
+    setIsSwitchingOrg(true)
     setSelectedOrg(orgLogin)
-    if (orgLogin) {
-      fetchOrgRepos(orgLogin)
-      setOrg(orgLogin) // Auto-set target org
-    } else {
-      refresh()
-    }
     clearSelection()
+
+    try {
+      if (orgLogin) {
+        setOrg(orgLogin) // Auto-set target org
+        await fetchOrgRepos(orgLogin)
+      } else {
+        await refresh()
+      }
+    } finally {
+      // Small delay for smooth transition
+      setTimeout(() => setIsSwitchingOrg(false), 300)
+    }
   }
 
   // Display repos based on selected org
@@ -240,43 +250,50 @@ function App() {
         onOpenOrgManager={handleOpenOrgManager}
       />
 
-      <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300">
         {/* Dashboard View */}
         {activeView === 'dashboard' && user && (
-          <Dashboard
-            stats={stats}
-            orgs={orgs}
-            repos={repos}
-            onOrgClick={(orgLogin) => {
-              handleOrgSelect(orgLogin)
-              setActiveView('repos')
-            }}
-          />
+          <div className="animate-in fade-in duration-500">
+            <Dashboard
+              stats={stats}
+              orgs={orgs}
+              repos={displayRepos}
+              selectedOrg={selectedOrg}
+              onSelectOrg={handleOrgSelect}
+              loading={loading || isSwitchingOrg}
+              onOrgClick={(orgLogin) => {
+                handleOrgSelect(orgLogin)
+                setActiveView('repos')
+              }}
+            />
+          </div>
         )}
 
         {/* Repos View */}
         {activeView === 'repos' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 xl:grid-cols-[320px_1fr_320px] gap-6">
+          <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)]">
             {/* Left: Organization Panel */}
             {user && (
-              <div className="lg:col-span-3 xl:col-span-1">
-                <OrgPanel
-                  orgs={orgs}
-                  selectedOrg={selectedOrg}
-                  onSelectOrg={handleOrgSelect}
-                  user={user}
-                  stats={stats}
-                  onManageOrg={handleOpenOrgManager}
-                  onRefresh={handleRefreshOrgs}
-                />
+              <div className="hidden lg:block w-80 flex-shrink-0 h-full">
+                <div className="h-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                  <OrgPanel
+                    orgs={orgs}
+                    selectedOrg={selectedOrg}
+                    onSelectOrg={handleOrgSelect}
+                    user={user}
+                    stats={stats}
+                    onManageOrg={handleOpenOrgManager}
+                    onRefresh={handleRefreshOrgs}
+                  />
+                </div>
               </div>
             )}
 
             {/* Center: Repository List */}
-            <div className={`${user ? 'lg:col-span-6 xl:col-span-1' : 'lg:col-span-12 xl:col-span-3'} space-y-6 min-w-0`}>
+            <div className="flex-1 min-w-0 h-full overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
               <RepoList
                 repos={displayRepos}
-                loading={loading}
+                loading={loading || isSwitchingOrg}
                 error={error}
                 selectedIds={selectedIds}
                 toggleSelect={toggleSelect}
@@ -297,7 +314,7 @@ function App() {
 
             {/* Right: Actions Sidebar */}
             {user && (
-              <div className="lg:col-span-3 xl:col-span-1">
+              <div className="hidden xl:block w-80 flex-shrink-0 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
                 <Sidebar
                   selectedCount={selectedIds.size}
                   isPerforming={isPerforming}
@@ -390,6 +407,7 @@ function App() {
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      <AIAssistant />
     </div>
   )
 }
