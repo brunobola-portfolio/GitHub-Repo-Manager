@@ -1,263 +1,373 @@
-import React, { useMemo, useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    AreaChart,
-    Area,
-    PieChart,
-    Pie,
-    Cell
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    PieChart, Pie, Cell, LineChart, Line
 } from 'recharts'
+import {
+    GitFork, Star, Eye, Archive, Folder,
+    Activity, Building2, Code2, Loader2, ChevronDown, Check
+} from 'lucide-react'
 import { Card } from './ui/Card'
-import { ArrowUpRight, ArrowDownRight, Calendar, Filter } from 'lucide-react'
+import { Skeleton } from './ui/Skeleton'
+import { motion, AnimatePresence } from 'framer-motion'
+import * as Popover from '@radix-ui/react-popover'
 
-export function Dashboard({ stats, orgs, repos = [], onOrgClick }) {
+const COLORS = ['#6366f1', '#ec4899', '#8b5cf6', '#14b8a6', '#f59e0b', '#ef4444']
+
+export function Dashboard({ stats, orgs, repos = [], onOrgClick, selectedOrg, onSelectOrg, loading }) {
     const [timeRange, setTimeRange] = useState('7d')
 
-    // Mock data for activity - in a real app this would be filtered by timeRange
-    const activityData = [
-        { name: 'Mon', commits: 4, prs: 2 },
-        { name: 'Tue', commits: 3, prs: 1 },
-        { name: 'Wed', commits: 7, prs: 3 },
-        { name: 'Thu', commits: 2, prs: 4 },
-        { name: 'Fri', commits: 6, prs: 2 },
-        { name: 'Sat', commits: 1, prs: 0 },
-        { name: 'Sun', commits: 0, prs: 1 },
-    ]
+    const orgData = useMemo(() => {
+        if (!orgs || !repos) return []
+        const data = orgs.map(org => ({
+            name: org.login,
+            repos: repos.filter(r => r.owner.login === org.login).length
+        })).sort((a, b) => b.repos - a.repos).slice(0, 5)
+        return data
+    }, [orgs, repos])
 
     const languageData = useMemo(() => {
-        if (!repos || repos.length === 0) return []
-        const languages = {}
+        if (!repos) return []
+        const langs = {}
         repos.forEach(repo => {
             if (repo.language) {
-                languages[repo.language] = (languages[repo.language] || 0) + 1
+                langs[repo.language] = (langs[repo.language] || 0) + 1
             }
         })
-        return Object.entries(languages)
+        return Object.entries(langs)
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value)
-            .slice(0, 5)
+            .slice(0, 6)
     }, [repos])
 
-    const orgData = useMemo(() => {
-        if (!orgs) return []
-        return orgs
-            .map(org => ({
-                name: org.login,
-                repos: (org.public_repos || 0) + (org.total_private_repos || 0)
-            }))
-            .sort((a, b) => b.repos - a.repos)
-            .slice(0, 5)
-    }, [orgs])
+    const containerVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: { duration: 0.5, staggerChildren: 0.1 }
+        }
+    }
 
-    const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316']
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 }
+    }
+
+    const selectedOrgData = orgs?.find(o => o.login === selectedOrg)
 
     return (
-        <div className="space-y-6">
-            {/* Header & Controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-8"
+        >
+            {/* Header with Premium Org Selector */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Overview</h2>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Global metrics across all organizations</p>
+                    <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 tracking-tight">
+                        Dashboard
+                    </h1>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg">
+                        Overview of your GitHub ecosystem
+                    </p>
                 </div>
-                <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800">
-                    {['7d', '30d', '90d'].map((range) => (
-                        <button
-                            key={range}
-                            onClick={() => setTimeRange(range)}
-                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${timeRange === range
-                                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                                }`}
-                        >
-                            {range}
-                        </button>
-                    ))}
-                </div>
-            </div>
 
-            {/* Bento Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Key Metrics - Row 1 */}
-                <StatCard
-                    label="Total Repositories"
-                    value={stats?.totalRepos || 0}
-                    trend="+12%"
-                    trendUp={true}
-                    className="md:col-span-2 lg:col-span-1"
-                />
-                <StatCard
-                    label="Total Stars"
-                    value={stats?.totalStars || 0}
-                    trend="+5%"
-                    trendUp={true}
-                />
-                <StatCard
-                    label="Total Forks"
-                    value={stats?.totalForks || 0}
-                    trend="-2%"
-                    trendUp={false}
-                />
-                <StatCard
-                    label="Active Issues"
-                    value="24"
-                    trend="+4"
-                    trendUp={false} // More issues might be bad, or just neutral
-                    inverseTrend // Red if goes up? Let's keep simple for now
-                />
-
-                {/* Main Chart - Large Area */}
-                <Card className="md:col-span-2 lg:col-span-3 row-span-2 p-6 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-xl dark:shadow-black/40 bg-white/50 dark:bg-slate-900/60 backdrop-blur-xl">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="font-semibold text-slate-900 dark:text-white">Activity Trends</h3>
-                        <div className="flex items-center gap-4 text-sm">
-                            <div className="flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full bg-indigo-500"></span>
-                                <span className="text-slate-500 dark:text-slate-400">Commits</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full bg-emerald-400"></span>
-                                <span className="text-slate-500 dark:text-slate-400">PRs</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="h-[300px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={activityData}>
-                                <defs>
-                                    <linearGradient id="colorCommits" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                                    </linearGradient>
-                                    <linearGradient id="colorPRs" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#34d399" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'currentColor' }} className="text-slate-400 text-xs" dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: 'currentColor' }} className="text-slate-400 text-xs" />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: 'none', borderRadius: '8px', color: '#fff' }}
-                                    itemStyle={{ color: '#fff' }}
-                                />
-                                <Area type="monotone" dataKey="commits" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorCommits)" />
-                                <Area type="monotone" dataKey="prs" stroke="#34d399" strokeWidth={3} fillOpacity={1} fill="url(#colorPRs)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </Card>
-
-                {/* Top Orgs - Side Bar */}
-                <Card className="md:col-span-2 lg:col-span-1 row-span-2 p-6 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-xl dark:shadow-black/40 bg-white/50 dark:bg-slate-900/60 backdrop-blur-xl flex flex-col">
-                    <h3 className="font-semibold text-slate-900 dark:text-white mb-6">Top Organizations</h3>
-                    <div className="flex-1 min-h-[200px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={orgData} layout="vertical" margin={{ left: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="currentColor" className="text-slate-200 dark:text-slate-800" />
-                                <XAxis type="number" hide />
-                                <YAxis dataKey="name" type="category" width={100} tick={{ fill: 'currentColor', fontSize: 12 }} className="text-slate-500 dark:text-slate-400" />
-                                <Tooltip
-                                    cursor={{ fill: 'transparent' }}
-                                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: 'none', borderRadius: '8px', color: '#fff' }}
-                                />
-                                <Bar dataKey="repos" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={20} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </Card>
-
-                {/* Language Distribution - Bottom Row */}
-                <Card className="md:col-span-2 lg:col-span-2 p-6 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-xl dark:shadow-black/40 bg-white/50 dark:bg-slate-900/60 backdrop-blur-xl">
-                    <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Languages</h3>
-                    <div className="h-[200px] flex items-center justify-center">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={languageData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                    stroke="none"
-                                >
-                                    {languageData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: 'none', borderRadius: '8px', color: '#fff' }}
-                                />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div className="ml-8 grid grid-cols-2 gap-x-8 gap-y-2">
-                            {languageData.map((entry, index) => (
-                                <div key={entry.name} className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                                    <span className="text-sm text-slate-600 dark:text-slate-300">{entry.name}</span>
-                                    <span className="text-sm font-medium text-slate-900 dark:text-white">{Math.round((entry.value / repos.length) * 100)}%</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </Card>
-
-                {/* Your Organizations List - Bottom Row */}
-                <Card className="md:col-span-2 lg:col-span-2 p-6 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-xl dark:shadow-black/40 bg-white/50 dark:bg-slate-900/60 backdrop-blur-xl">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold text-slate-900 dark:text-white">Your Organizations</h3>
-                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                            {orgs?.length || 0} Total
-                        </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-                        {orgs?.map(org => (
-                            <div
-                                key={org.id}
-                                onClick={() => onOrgClick(org.login)}
-                                className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                <div className="relative z-20">
+                    <Popover.Root>
+                        <Popover.Trigger asChild>
+                            <button
+                                disabled={loading}
+                                className="flex items-center gap-3 px-4 py-3 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-all min-w-[240px] justify-between group"
                             >
-                                <img
-                                    src={org.avatar_url}
-                                    alt={org.login}
-                                    className="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-800"
-                                />
-                                <div className="flex-1 min-w-0">
-                                    <h4 className="font-medium text-slate-900 dark:text-white truncate group-hover:text-indigo-500 transition-colors">
-                                        {org.login}
-                                    </h4>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                        {org.description || 'No description'}
-                                    </p>
+                                <div className="flex items-center gap-3">
+                                    {selectedOrgData ? (
+                                        <img src={selectedOrgData.avatar_url} alt={selectedOrg} className="w-8 h-8 rounded-lg ring-2 ring-white dark:ring-slate-700 shadow-sm" />
+                                    ) : (
+                                        <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                                            <Building2 size={18} />
+                                        </div>
+                                    )}
+                                    <span className="font-semibold text-slate-700 dark:text-slate-200">
+                                        {selectedOrg || 'All Organizations'}
+                                    </span>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                </Card>
+                                {loading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+                                ) : (
+                                    <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                                )}
+                            </button>
+                        </Popover.Trigger>
+                        <Popover.Portal>
+                            <Popover.Content
+                                className="w-[280px] p-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 z-50"
+                                sideOffset={8}
+                            >
+                                <div className="max-h-[300px] overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 pr-1">
+                                    <button
+                                        onClick={() => onSelectOrg('')}
+                                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${!selectedOrg
+                                            ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300'
+                                            : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                                            }`}
+                                    >
+                                        <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                                            <Building2 size={16} />
+                                        </div>
+                                        <span className="font-medium flex-1 text-left">All Organizations</span>
+                                        {!selectedOrg && <Check size={16} className="text-indigo-500" />}
+                                    </button>
+
+                                    <div className="h-px bg-slate-100 dark:bg-slate-800 my-1" />
+
+                                    {orgs?.map(org => (
+                                        <button
+                                            key={org.login}
+                                            onClick={() => onSelectOrg(org.login)}
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${selectedOrg === org.login
+                                                ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300'
+                                                : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                                                }`}
+                                        >
+                                            <img src={org.avatar_url} alt={org.login} className="w-8 h-8 rounded-lg object-cover" />
+                                            <span className="font-medium flex-1 text-left truncate">{org.login}</span>
+                                            {selectedOrg === org.login && <Check size={16} className="text-indigo-500" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            </Popover.Content>
+                        </Popover.Portal>
+                    </Popover.Root>
+                </div>
             </div>
-        </div>
+
+            {/* Key Metrics Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {loading ? (
+                    Array(4).fill(0).map((_, i) => (
+                        <Skeleton key={i} className="h-32 rounded-2xl" />
+                    ))
+                ) : (
+                    <>
+                        <StatCard
+                            title="Total Repositories"
+                            value={stats?.totalRepos || 0}
+                            icon={Folder}
+                            color="text-blue-500"
+                            bg="bg-blue-500/10"
+                            trend="+12% from last month"
+                        />
+                        <StatCard
+                            title="Public / Private"
+                            value={`${stats?.publicRepos || 0} / ${stats?.privateRepos || 0}`}
+                            icon={Archive}
+                            color="text-purple-500"
+                            bg="bg-purple-500/10"
+                            trend="Distribution"
+                        />
+                        <StatCard
+                            title="Total Forks"
+                            value={stats?.forks || 0}
+                            icon={GitFork}
+                            color="text-indigo-500"
+                            bg="bg-indigo-500/10"
+                            trend="Across all repos"
+                        />
+                        <StatCard
+                            title="Organizations"
+                            value={stats?.organizations || 0}
+                            icon={Building2}
+                            color="text-emerald-500"
+                            bg="bg-emerald-500/10"
+                            trend="Active memberships"
+                        />
+                    </>
+                )}
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Activity Chart */}
+                <motion.div variants={itemVariants}>
+                    <Card className="p-6 h-[420px] bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl">
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <Activity className="w-5 h-5 text-indigo-500" />
+                                Activity Trends
+                            </h3>
+                            <select
+                                value={timeRange}
+                                onChange={(e) => setTimeRange(e.target.value)}
+                                className="text-sm border-none bg-slate-100 dark:bg-slate-800/50 rounded-lg px-3 py-1.5 focus:ring-0 cursor-pointer font-medium text-slate-600 dark:text-slate-300"
+                            >
+                                <option value="7d">Last 7 days</option>
+                                <option value="30d">Last 30 days</option>
+                                <option value="90d">Last 3 months</option>
+                            </select>
+                        </div>
+                        {loading ? (
+                            <Skeleton className="w-full h-[300px] rounded-xl" />
+                        ) : (
+                            <ResponsiveContainer width="100%" height="85%">
+                                <LineChart data={[
+                                    { name: 'Mon', commits: 4, pulls: 2 },
+                                    { name: 'Tue', commits: 7, pulls: 3 },
+                                    { name: 'Wed', commits: 5, pulls: 1 },
+                                    { name: 'Thu', commits: 12, pulls: 5 },
+                                    { name: 'Fri', commits: 8, pulls: 2 },
+                                    { name: 'Sat', commits: 3, pulls: 0 },
+                                    { name: 'Sun', commits: 2, pulls: 0 },
+                                ]}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
+                                    <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} dy={10} />
+                                    <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} dx={-10} />
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                                            border: 'none',
+                                            borderRadius: '12px',
+                                            color: '#f8fafc',
+                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                                        }}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="commits"
+                                        stroke="#6366f1"
+                                        strokeWidth={4}
+                                        dot={{ fill: '#6366f1', strokeWidth: 0, r: 4 }}
+                                        activeDot={{ r: 8, strokeWidth: 0 }}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="pulls"
+                                        stroke="#ec4899"
+                                        strokeWidth={4}
+                                        dot={{ fill: '#ec4899', strokeWidth: 0, r: 4 }}
+                                        activeDot={{ r: 8, strokeWidth: 0 }}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        )}
+                    </Card>
+                </motion.div>
+
+                {/* Language Distribution */}
+                <motion.div variants={itemVariants}>
+                    <Card className="p-6 h-[420px] bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-8 flex items-center gap-2">
+                            <Code2 className="w-5 h-5 text-pink-500" />
+                            Language Distribution
+                        </h3>
+                        {loading ? (
+                            <div className="flex items-center justify-center h-[300px]">
+                                <Skeleton className="w-64 h-64 rounded-full" />
+                            </div>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="85%">
+                                <PieChart>
+                                    <Pie
+                                        data={languageData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={80}
+                                        outerRadius={120}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                        cornerRadius={6}
+                                    >
+                                        {languageData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                                            border: 'none',
+                                            borderRadius: '12px',
+                                            color: '#f8fafc',
+                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                                        }}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        )}
+                    </Card>
+                </motion.div>
+
+                {/* Top Organizations */}
+                <motion.div variants={itemVariants} className="lg:col-span-2">
+                    <Card className="p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-8 flex items-center gap-2">
+                            <Building2 className="w-5 h-5 text-emerald-500" />
+                            Top Organizations
+                        </h3>
+                        <div className="h-[300px]">
+                            {loading ? (
+                                <Skeleton className="w-full h-full rounded-xl" />
+                            ) : (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={orgData} layout="vertical" margin={{ left: 20, right: 20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} horizontal={false} />
+                                        <XAxis type="number" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis
+                                            dataKey="name"
+                                            type="category"
+                                            stroke="#94a3b8"
+                                            fontSize={12}
+                                            tickLine={false}
+                                            axisLine={false}
+                                            width={120}
+                                        />
+                                        <Tooltip
+                                            cursor={{ fill: '#334155', opacity: 0.1 }}
+                                            contentStyle={{
+                                                backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                                                border: 'none',
+                                                borderRadius: '12px',
+                                                color: '#f8fafc',
+                                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                                            }}
+                                        />
+                                        <Bar dataKey="repos" fill="#14b8a6" radius={[0, 6, 6, 0]} barSize={24} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            )}
+                        </div>
+                    </Card>
+                </motion.div>
+            </div>
+        </motion.div>
     )
 }
 
-function StatCard({ label, value, trend, trendUp, className }) {
+function StatCard({ title, value, icon: Icon, color, bg, trend }) {
     return (
-        <Card className={`p-6 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-xl dark:shadow-black/40 bg-white/50 dark:bg-slate-900/60 backdrop-blur-xl flex flex-col justify-between ${className}`}>
-            <div>
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
-                <h3 className="text-3xl font-bold text-slate-900 dark:text-white mt-2 tracking-tight">{value}</h3>
-            </div>
-            <div className={`flex items-center gap-1 mt-4 text-sm font-medium ${trendUp ? 'text-emerald-500' : 'text-rose-500'}`}>
-                {trendUp ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                <span>{trend}</span>
-                <span className="text-slate-400 dark:text-slate-500 font-normal ml-1">vs last period</span>
-            </div>
-        </Card>
+        <motion.div
+            whileHover={{ y: -4 }}
+            transition={{ type: "spring", stiffness: 300 }}
+        >
+            <Card className="p-6 hover:shadow-xl transition-all duration-300 border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl group">
+                <div className="flex items-start justify-between">
+                    <div>
+                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{title}</p>
+                        <h3 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-3 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-500 group-hover:to-purple-500 transition-all">
+                            {value}
+                        </h3>
+                        {trend && (
+                            <p className="text-xs text-slate-400 mt-3 flex items-center gap-1.5 font-medium">
+                                <span className="text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]">↑ 12%</span>
+                                {trend}
+                            </p>
+                        )}
+                    </div>
+                    <div className={`p-4 rounded-2xl ${bg} group-hover:scale-110 transition-transform duration-300`}>
+                        <Icon className={`w-6 h-6 ${color}`} />
+                    </div>
+                </div>
+            </Card>
+        </motion.div>
     )
 }

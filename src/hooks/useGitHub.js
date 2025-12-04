@@ -479,22 +479,29 @@ export function useGitHub() {
     /**
      * Fetch dashboard statistics
      */
-    async function fetchStats() {
+    /**
+     * Fetch dashboard statistics
+     */
+    async function fetchStats(org = '') {
         if (MOCK_MODE) {
             setStats({
-                totalRepos: 87,
-                publicRepos: 45,
-                privateRepos: 42,
-                forks: 23,
-                sources: 64,
-                archived: 5,
+                totalRepos: org ? 15 : 87,
+                publicRepos: org ? 10 : 45,
+                privateRepos: org ? 5 : 42,
+                forks: org ? 2 : 23,
+                sources: org ? 13 : 64,
+                archived: org ? 1 : 5,
                 organizations: 3,
                 user: { login: 'dev-user', avatar_url: 'https://github.com/ghost.png' }
             })
             return
         }
         try {
-            const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/stats`, { credentials: 'include' })
+            const url = org
+                ? `${API_ENDPOINTS.repos.replace('/repos', '')}/stats?org=${org}`
+                : `${API_ENDPOINTS.repos.replace('/repos', '')}/stats`
+
+            const r = await fetch(url, { credentials: 'include' })
             if (r.ok) {
                 const data = await safeParseJson(r)
                 setStats(data)
@@ -503,6 +510,16 @@ export function useGitHub() {
             console.error('fetchStats', e)
         }
     }
+
+    // Auto-refresh stats when selectedOrg changes
+    useEffect(() => {
+        if (!MOCK_MODE && user) {
+            fetchStats(selectedOrg)
+        } else if (MOCK_MODE) {
+            fetchStats(selectedOrg)
+        }
+    }, [selectedOrg, user])
+
 
     /**
      * Archive/unarchive repositories
@@ -723,16 +740,50 @@ export function useGitHub() {
 
     const [activity, setActivity] = useState([])
 
+    /**
+     * Generate mock activity data
+     */
+    function generateMockActivity() {
+        const actions = ['PushEvent', 'PullRequestEvent', 'IssuesEvent', 'CreateEvent', 'WatchEvent']
+        const repos = ['frontend-app', 'backend-api', 'docs', 'design-system', 'mobile-app']
+
+        return Array.from({ length: 15 }, (_, i) => {
+            const type = actions[Math.floor(Math.random() * actions.length)]
+            const repoName = repos[Math.floor(Math.random() * repos.length)]
+            const timeOffset = Math.floor(Math.random() * 1000 * 60 * 60 * 24 * 3) // Random time within last 3 days
+
+            return {
+                id: `evt-${i}`,
+                type,
+                actor: { login: 'dev-user', avatar_url: 'https://github.com/ghost.png' },
+                repo: { name: `dev-user/${repoName}` },
+                created_at: new Date(Date.now() - timeOffset).toISOString(),
+                payload: {
+                    commits: type === 'PushEvent' ? [{ message: 'Update documentation' }, { message: 'Fix bug in login' }] : [],
+                    action: type === 'PullRequestEvent' ? 'opened' : (type === 'IssuesEvent' ? 'opened' : null),
+                    issue: type === 'IssuesEvent' ? { title: 'Bug: Login fails on mobile', number: 42 } : null,
+                    pull_request: type === 'PullRequestEvent' ? { title: 'Feat: Add dark mode', number: 101 } : null,
+                    ref_type: type === 'CreateEvent' ? 'branch' : null,
+                    ref: type === 'CreateEvent' ? 'feature/new-ui' : null
+                }
+            }
+        }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    }
+
     const fetchActivity = useCallback(async (username) => {
         if (!username) return
-        try {
-            const endpoint = MOCK_MODE ? '/api/mock/activity' : `https://api.github.com/users/${username}/events`
-            const headers = MOCK_MODE ? {} : { Authorization: `token ${localStorage.getItem('github_token')}` }
 
-            const res = await fetch(endpoint, { headers })
-            if (res.ok) {
-                const data = await res.json()
-                setActivity(data.slice(0, 20)) // Keep last 20 events
+        if (MOCK_MODE) {
+            setActivity(generateMockActivity())
+            return
+        }
+
+        try {
+            // Use backend proxy to avoid exposing token or CORS issues
+            const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/activity?username=${username}`, { credentials: 'include' })
+            if (r.ok) {
+                const data = await safeParseJson(r)
+                setActivity(Array.isArray(data) ? data.slice(0, 20) : [])
             }
         } catch (error) {
             console.error('Failed to fetch activity:', error)
@@ -745,54 +796,108 @@ export function useGitHub() {
         }
     }, [user, fetchActivity])
 
+    // ============ AI FEATURES ============
+
+    async function askAI(message, context) {
+        if (MOCK_MODE) {
+            await new Promise(r => setTimeout(r, 1000))
+            return { message: "I am a mock AI. I can't really help you, but I look good doing it!" }
+        }
+        try {
+            const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/ai/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message, context }),
+                credentials: 'include'
+            })
+            return await safeParseJson(r)
+        } catch (e) {
+            console.error('askAI', e)
+            throw e
+        }
+    }
+
+    async function suggestAI(repo) {
+        if (MOCK_MODE) {
+            await new Promise(r => setTimeout(r, 1500))
+            return {
+                suggestions: [
+                    { title: "Add a License", description: "Your project is missing a license file.", type: "improvement" },
+                    { title: "Improve Description", description: "Add more keywords to your description for better SEO.", type: "improvement" }
+                ],
+                analysis: "This is a mock analysis."
+            }
+        }
+        try {
+            const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/ai/suggest`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ repo }),
+                credentials: 'include'
+            })
+            return await safeParseJson(r)
+        } catch (e) {
+            console.error('suggestAI', e)
+            throw e
+        }
+    }
+
+    async function generateReadmeAI(details) {
+        if (MOCK_MODE) {
+            await new Promise(r => setTimeout(r, 2000))
+            return { readme: "# Mock README\n\nThis is a generated readme." }
+        }
+        try {
+            const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/ai/readme`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(details),
+                credentials: 'include'
+            })
+            return await safeParseJson(r)
+        } catch (e) {
+            console.error('generateReadmeAI', e)
+            throw e
+        }
+    }
+
     return {
-        // State
         user,
         repos,
         loading,
         error,
         errorInfo,
         message,
-        selectedIds,
         page,
         perPage,
         totalPages,
+        selectedIds,
         isPerforming,
         results,
-        isMockMode: MOCK_MODE,
-        retryCount,
-        activity, // Expose activity
-
-        // Organizations
-        orgs,
-        selectedOrg,
-        orgRepos,
-        stats,
-
-        // Actions
-        setPage,
-        setPerPage,
         toggleSelect,
         selectRepos,
         deselectRepos,
         invertSelection,
         clearSelection,
-        performAction,
-        fetchUser,
+        setPage,
+        setPerPage,
         refresh,
-
-        // New actions
-        fetchOrgs,
-        fetchOrgRepos,
-        fetchStats,
-        archiveRepos,
-        deleteRepos,
+        performAction,
         createRepo,
         importFromAzure,
         checkImportStatus,
-        setSelectedOrg,
-        setMessage,
-        setErrorInfo,
-        fetchActivity
+        orgs,
+        selectedOrg,
+        orgRepos,
+        stats,
+        fetchOrgRepos,
+        fetchOrgs,
+        fetchStats,
+        activity,
+        askAI,
+        suggestAI,
+        generateReadmeAI,
+        setSelectedOrg
     }
 }
+
