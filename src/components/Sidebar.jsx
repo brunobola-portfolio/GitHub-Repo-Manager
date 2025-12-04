@@ -213,7 +213,7 @@ function ActionHistory({ results, isPerforming, message }) {
                 )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+            <div className="flex-1 overflow-y-auto p-0 custom-scrollbar">
                 {results.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-8 text-slate-400">
                         <History className="w-8 h-8 mb-2 opacity-20" />
@@ -266,7 +266,7 @@ function ActivityFeed({ activity }) {
                 </h3>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-0 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+            <div className="flex-1 overflow-y-auto p-0 custom-scrollbar">
                 {(!Array.isArray(activity) || activity.length === 0) ? (
                     <div className="flex flex-col items-center justify-center py-10 text-slate-400">
                         <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">

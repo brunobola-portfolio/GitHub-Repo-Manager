@@ -105,7 +105,7 @@ export function Dashboard({ stats, orgs, repos = [], onOrgClick, selectedOrg, on
                                 className="w-[280px] p-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 z-50"
                                 sideOffset={8}
                             >
-                                <div className="max-h-[300px] overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 pr-1">
+                                <div className="max-h-[300px] overflow-y-auto space-y-1 custom-scrollbar pr-1">
                                     <button
                                         onClick={() => onSelectOrg('')}
                                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${!selectedOrg

@@ -67,7 +67,7 @@ export function OrgPanel({
 			</div>
 
 			{/* Org List */}
-			<div className="flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+			<div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
 				<div className={viewMode === 'grid' ? "grid grid-cols-2 gap-2" : "space-y-2"}>
 					<AnimatePresence mode="popLayout">
 						<motion.button
