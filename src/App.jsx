@@ -290,7 +290,7 @@ function App() {
             )}
 
             {/* Center: Repository List */}
-            <div className="flex-1 min-w-0 h-full overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+            <div className="flex-1 min-w-0 h-full overflow-y-auto pr-2 custom-scrollbar">
               <RepoList
                 repos={displayRepos}
                 loading={loading || isSwitchingOrg}
@@ -314,7 +314,7 @@ function App() {
 
             {/* Right: Actions Sidebar */}
             {user && (
-              <div className="hidden xl:block w-80 flex-shrink-0 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+              <div className="hidden xl:block w-80 flex-shrink-0 h-full overflow-y-auto custom-scrollbar">
                 <Sidebar
                   selectedCount={selectedIds.size}
                   isPerforming={isPerforming}

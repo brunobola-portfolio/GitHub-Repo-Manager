@@ -2,10 +2,6 @@
 
 /* Make Tailwind's `dark:` variant follow the `.dark` class on <html> (Tailwind v4) */
 @custom-variant dark (&:where(.dark, .dark *));
-@import "tailwindcss";
-
-/* Make Tailwind's `dark:` variant follow the `.dark` class on <html> (Tailwind v4) */
-@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
 	body {
@@ -19,5 +15,64 @@
 	/* Global Dark Mode Polish */
 	.dark .card-border {
 		@apply border border-white/10 shadow-xl shadow-black/20;
+	}
+}
+
+@layer utilities {
+
+	/* Smart Glass Overlay Scrollbar */
+	.custom-scrollbar {
+		scrollbar-width: thin;
+		scrollbar-color: transparent transparent;
+		/* Hidden by default for Firefox */
+		transition: scrollbar-color 0.3s ease;
+	}
+
+	/* Show on hover */
+	.custom-scrollbar:hover {
+		scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+		/* Slate-400/50 */
+	}
+
+	/* Webkit (Chrome, Edge, Safari) */
+	.custom-scrollbar::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+
+	.custom-scrollbar::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.custom-scrollbar::-webkit-scrollbar-thumb {
+		background-color: transparent;
+		border-radius: 20px;
+		border: 2px solid transparent;
+		/* Creates padding effect */
+		background-clip: content-box;
+		transition: background-color 0.3s ease;
+	}
+
+	.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+		background-color: rgba(148, 163, 184, 0.5);
+		/* Slate-400/50 */
+	}
+
+	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+		background-color: rgba(148, 163, 184, 0.8);
+		/* Slate-400/80 */
+	}
+
+	/* Dark mode adjustments */
+	.dark .custom-scrollbar:hover {
+		scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+	}
+
+	.dark .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+		background-color: rgba(255, 255, 255, 0.2);
+	}
+
+	.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+		background-color: rgba(255, 255, 255, 0.4);
 	}
 }
