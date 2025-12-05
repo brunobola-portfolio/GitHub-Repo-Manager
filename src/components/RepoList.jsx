@@ -340,7 +340,7 @@ function SelectFilter({ value, onChange, options }) {
 			<select
 				value={value}
 				onChange={(e) => onChange(e.target.value)}
-				className="appearance-none pl-3 pr-8 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-indigo-500/50 outline-none cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-w-[120px]"
+				className="appearance-none pl-3 pr-8 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500/20 outline-none cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-w-[120px]"
 			>
 				{options.map(opt => (
 					<option key={opt.value} value={opt.value}>{opt.label}</option>
