@@ -42,7 +42,21 @@ Managing hundreds of repositories on GitHub can be tedious. Whether you're clean
 
 ---
 
-## 🛠️ Quick Start
+## � Screenshots
+
+| Dashboard | Repository List |
+|:---:|:---:|
+| <img src="docs/images/dashboard_view.png" width="400" /> | <img src="docs/images/repo_list_view.png" width="400" /> |
+| **Global Insights** | **Bulk Management** |
+
+| AI Assistant | Organization Settings |
+|:---:|:---:|
+| <img src="docs/images/ai_assistant_view.png" width="400" /> | <img src="docs/images/commit_generator_modal_1765291495095.png" width="400" /> |
+| **Smart Chat** | **Commit Generator** |
+
+---
+
+## �🛠️ Quick Start
 
 ### Prerequisites
 *   Node.js 18+
