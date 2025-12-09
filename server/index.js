@@ -179,14 +179,35 @@ const requireAuth = (req, res, next) => {
 
 // Middleware to check if AI is configured
 const requireAI = (req, res, next) => {
-    if (!GEMINI_API_KEY || !genAI) {
+    const serverKey = process.env.GEMINI_API_KEY;
+    const clientKey = req.headers['x-gemini-api-key'];
+
+    if (!serverKey && !clientKey) {
         return res.status(503).json({
             error: 'AI_NOT_CONFIGURED',
-            message: 'AI features are not configured. Please set GEMINI_API_KEY in server/.env'
+            message: 'AI features are not configured. Please set GEMINI_API_KEY in server/.env or in Settings.'
         });
     }
+
+    // If using client key, we need to initialize a fresh instance for this request
+    // Note: In a real app, you might want to cache this or structure it differently
+    if (clientKey && !serverKey) {
+        req.genAI = new GoogleGenerativeAI(clientKey);
+    } else if (genAI) {
+        req.genAI = genAI; // Use global instance if server key exists (or prefer server key)
+    } else if (clientKey) {
+        req.genAI = new GoogleGenerativeAI(clientKey);
+    }
+
     next();
 };
+
+// Check AI Configuration Status
+app.get('/api/config/ai-status', (req, res) => {
+    res.json({
+        configured: !!process.env.GEMINI_API_KEY
+    });
+});
 // ------------------------------------------------------------------
 
 app.get('/api/user', requireAuth, async (req, res) => {
@@ -519,7 +540,7 @@ app.post('/api/delete', requireAuth, async (req, res) => {
 app.post('/api/ai/chat', requireAuth, requireAI, async (req, res) => {
     try {
         const { message, context } = req.body;
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = req.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const systemPrompt = `You are an expert GitHub Repository Manager Assistant.
     Your goal is to help users manage their repositories, analyze code, and suggest improvements.
@@ -557,7 +578,7 @@ app.post('/api/ai/chat', requireAuth, requireAI, async (req, res) => {
 app.post('/api/ai/suggest', requireAuth, requireAI, async (req, res) => {
     try {
         const { repo } = req.body;
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = req.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `Analyze this GitHub repository metadata and suggest 3 concrete improvements.
     Focus on: Description clarity, Topics (SEO), and Community standards (License, Contributing).
@@ -588,7 +609,7 @@ app.post('/api/ai/suggest', requireAuth, requireAI, async (req, res) => {
 app.post('/api/ai/readme', requireAuth, requireAI, async (req, res) => {
     try {
         const { name, description, language, topics } = req.body;
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = req.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `Generate a professional, high-quality README.md for a GitHub repository.
     
