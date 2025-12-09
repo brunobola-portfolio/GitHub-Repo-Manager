@@ -13,23 +13,27 @@ export function AIAssistant() {
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const messagesEndRef = useRef(null)
-    const { askAI, user } = useGitHub()
+    const { askAI, user, checkAIStatus } = useGitHub()
     const [isConfigured, setIsConfigured] = useState(true)
     const [showSettings, setShowSettings] = useState(false)
 
     // Check configuration on mount and when isOpen changes
     useEffect(() => {
-        const checkConfig = () => {
-            const key = localStorage.getItem('GEMINI_API_KEY')
-            // Also check if server has it (we can't easily, but we can assume if no local key, we might need one)
-            // For this UX, let's rely on the local key or a flag. 
-            // If the user hasn't set a local key, we'll assume it might be missing unless they say otherwise.
-            // Actually, let's just check if we have a key in localStorage for the "Setup" UI.
-            // If not, we show the setup UI.
-            setIsConfigured(!!key)
+        const checkConfig = async () => {
+            const localKey = localStorage.getItem('GEMINI_API_KEY')
+            if (localKey) {
+                setIsConfigured(true)
+                return
+            }
+
+            // Check if server is configured
+            const status = await checkAIStatus()
+            setIsConfigured(status.configured)
         }
-        checkConfig()
-    }, [isOpen])
+        if (isOpen) {
+            checkConfig()
+        }
+    }, [isOpen, checkAIStatus])
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })

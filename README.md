@@ -87,6 +87,10 @@ Managing hundreds of repositories on GitHub can be tedious. Whether you're clean
    GITHUB_CLIENT_ID=your_github_client_id
    GITHUB_CLIENT_SECRET=your_github_client_secret
    SESSION_SECRET=your_secret_key
+   
+   # AI Features (Optional - Recommended)
+   # If set here, AI features work for all users using the server key.
+   # Users can also provide their own key via the app Settings.
    GEMINI_API_KEY=your_gemini_api_key
    
    # Setup GitHub OAuth App > Homepage: http://localhost:5173 > Callback: http://localhost:3001/api/auth/github/callback

@@ -802,15 +802,32 @@ export function useGitHub() {
 
     // ============ AI FEATURES ============
 
+    /**
+     * Check if AI is configured on the server
+     */
+    async function checkAIStatus() {
+        if (MOCK_MODE) return { configured: true }
+        try {
+            const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/config/ai-status`)
+            return await safeParseJson(r)
+        } catch (e) {
+            return { configured: false }
+        }
+    }
+
     async function askAI(message, context) {
         if (MOCK_MODE) {
             await new Promise(r => setTimeout(r, 1000))
             return { message: "I am a mock AI. I can't really help you, but I look good doing it!" }
         }
         try {
+            const localKey = localStorage.getItem('GEMINI_API_KEY')
             const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/ai/chat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(localKey ? { 'x-gemini-api-key': localKey } : {})
+                },
                 body: JSON.stringify({ message, context }),
                 credentials: 'include'
             })
@@ -833,9 +850,13 @@ export function useGitHub() {
             }
         }
         try {
+            const localKey = localStorage.getItem('GEMINI_API_KEY')
             const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/ai/suggest`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(localKey ? { 'x-gemini-api-key': localKey } : {})
+                },
                 body: JSON.stringify({ repo }),
                 credentials: 'include'
             })
@@ -852,9 +873,13 @@ export function useGitHub() {
             return { readme: "# Mock README\n\nThis is a generated readme." }
         }
         try {
+            const localKey = localStorage.getItem('GEMINI_API_KEY')
             const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/ai/readme`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(localKey ? { 'x-gemini-api-key': localKey } : {})
+                },
                 body: JSON.stringify(details),
                 credentials: 'include'
             })
@@ -903,7 +928,9 @@ export function useGitHub() {
         generateReadmeAI,
         setSelectedOrg,
         archiveRepos,
-        deleteRepos
+        deleteRepos,
+        checkAIStatus,
+        MOCK_MODE
     }
 }
 
