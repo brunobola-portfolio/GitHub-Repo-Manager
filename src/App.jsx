@@ -9,6 +9,7 @@ import { AzureImportModal } from './components/AzureImportModal'
 import { CreateRepoModal } from './components/CreateRepoModal'
 import { TransferModal } from './components/TransferModal'
 import { OrgManagerModal } from './components/OrgManagerModal'
+import { CommitGeneratorModal } from './components/CommitGeneratorModal'
 import { ConfirmModal } from './components/ui/ConfirmModal'
 import { ToastContainer } from './components/ui/Toast'
 import { useToast } from './hooks/useToast'
@@ -60,6 +61,7 @@ function App() {
   const [showCreateRepo, setShowCreateRepo] = useState(false)
   const [showTransfer, setShowTransfer] = useState(false)
   const [showOrgManager, setShowOrgManager] = useState(false)
+  const [showCommitGen, setShowCommitGen] = useState(false)
   const [selectedOrgForManager, setSelectedOrgForManager] = useState(null)
   const [transferRepos, setTransferRepos] = useState([])
   const [confirmModal, setConfirmModal] = useState({ isOpen: false })
@@ -73,7 +75,7 @@ function App() {
       await Promise.all([fetchOrgs(), fetchStats()])
       setSyncStatus({ lastSync: new Date().toISOString(), hasUpdates: false })
       toast.success('Organizations synced successfully')
-    } catch (err) {
+    } catch {
       toast.error('Failed to sync organizations')
     }
   }, [fetchOrgs, fetchStats, toast])
@@ -111,7 +113,6 @@ function App() {
 
   // Handle quick actions from repo row
   const handleQuickAction = async (action, repo, value) => {
-    const displayRepos = selectedOrg ? orgRepos : repos
 
     switch (action) {
       case 'visibility':
@@ -248,6 +249,7 @@ function App() {
         syncStatus={syncStatus}
         onReauthorize={handleReauthorize}
         onOpenOrgManager={handleOpenOrgManager}
+        onOpenCommitGen={() => setShowCommitGen(true)}
       />
 
       <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300">
@@ -404,6 +406,11 @@ function App() {
           toast.success(`Organization ${updated.login} updated`)
           handleRefreshOrgs()
         }}
+      />
+
+      <CommitGeneratorModal
+        isOpen={showCommitGen}
+        onClose={() => setShowCommitGen(false)}
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />

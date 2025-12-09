@@ -110,36 +110,46 @@ npm run dev:all
 ```
 
 Login with your GitHub account and start managing!
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/your-username/github-repo-manager.git
+   cd github-repo-manager
+   ```
 
----
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-## 🔮 Roadmap
-- [ ] **Smart Tagging**: Auto-tag repositories based on content.
-- [ ] **Dependency Graph**: Visualizing how your projects depend on each other.
-- [ ] **Scheduled Actions**: "Archive this repo if no activity for 6 months."
-- [ ] **Mobile App**: A native experience for managing repos on the go.
+3. **Configure Environment:**
+   Create a `.env` file in the root directory:
+   ```env
+   VITE_GITHUB_CLIENT_ID=your_github_client_id
+   VITE_API_URL=http://localhost:3000
+   GEMINI_API_KEY=your_gemini_api_key
+   ```
+
+4. **Run Development Server:**
+   ```bash
+   npm run dev:all
+   ```
+   This command starts both the React frontend (port 5173) and the Express backend (port 3000).
 
 ## 📸 Screenshots
 
-| Dashboard | AI Assistant |
+*(Add your screenshots here)*
+
+| Dashboard | AI Chat |
 |:---:|:---:|
-| *Overview of all your organizations* | *Chatting with Gemini about your code* |
-| ![Dashboard](https://via.placeholder.com/600x400?text=Dashboard+Preview) | ![AI Chat](https://via.placeholder.com/600x400?text=AI+Assistant+Preview) |
-
-## 🏗️ Architecture
-
-*   **Frontend**: React 19, Vite, Tailwind CSS 4, Framer Motion, Recharts.
-*   **Backend**: Express.js, GitHub REST API, Google Gemini AI.
-*   **Security**: HttpOnly cookies, secure session management.
+| ![Dashboard Placeholder](docs/dashboard.png) | ![AI Chat Placeholder](docs/ai-chat.png) |
 
 ## 🤝 Contributing
 
-Contributions are welcome! We love seeing how others use and improve this tool.
-Check out [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+We welcome contributions! Please check out [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## 📄 License
 
-MIT License – see [LICENSE](LICENSE) for details.
+MIT License.
 
 ---
 

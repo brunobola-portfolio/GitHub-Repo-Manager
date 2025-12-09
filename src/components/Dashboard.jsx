@@ -9,12 +9,13 @@ import {
 } from 'lucide-react'
 import { Card } from './ui/Card'
 import { Skeleton } from './ui/Skeleton'
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion'
 import * as Popover from '@radix-ui/react-popover'
 
 const COLORS = ['#6366f1', '#ec4899', '#8b5cf6', '#14b8a6', '#f59e0b', '#ef4444']
 
-export function Dashboard({ stats, orgs, repos = [], onOrgClick, selectedOrg, onSelectOrg, loading }) {
+export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, loading }) {
     const [timeRange, setTimeRange] = useState('7d')
 
     const orgData = useMemo(() => {
@@ -343,7 +344,8 @@ export function Dashboard({ stats, orgs, repos = [], onOrgClick, selectedOrg, on
     )
 }
 
-function StatCard({ title, value, icon: Icon, color, bg, trend }) {
+// eslint-disable-next-line no-unused-vars
+function StatCard({ title, value, icon: IconComp, color, bg, trend }) {
     return (
         <motion.div
             whileHover={{ y: -4 }}
@@ -353,7 +355,7 @@ function StatCard({ title, value, icon: Icon, color, bg, trend }) {
                 <div className="flex items-start justify-between">
                     <div>
                         <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{title}</p>
-                        <h3 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-3 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-500 group-hover:to-purple-500 transition-all">
+                        <h3 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-3 group-hover:text-transparent bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-500 group-hover:to-purple-500 transition-all">
                             {value}
                         </h3>
                         {trend && (
@@ -364,7 +366,7 @@ function StatCard({ title, value, icon: Icon, color, bg, trend }) {
                         )}
                     </div>
                     <div className={`p-4 rounded-2xl ${bg} group-hover:scale-110 transition-transform duration-300`}>
-                        <Icon className={`w-6 h-6 ${color}`} />
+                        <IconComp className={`w-6 h-6 ${color}`} />
                     </div>
                 </div>
             </Card>

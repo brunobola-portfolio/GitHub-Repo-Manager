@@ -1,0 +1,40 @@
+
+> github-repo-manager@1.0.0 lint
+> eslint .
+
+
+D:\Implementacoes\Git Hub Repo Manager\src\App.jsx
+   76:14  error  'err' is defined but never used                                                               no-unused-vars
+  114:11  error  'displayRepos' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\Implementacoes\Git Hub Repo Manager\src\components\AIAssistant.jsx
+  59:18  error  '_' is defined but never used  no-unused-vars
+
+D:\Implementacoes\Git Hub Repo Manager\src\components\Dashboard.jsx
+   12:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  346:41  error  'Icon' is defined but never used                                               no-unused-vars
+
+D:\Implementacoes\Git Hub Repo Manager\src\components\OrgManagerModal.jsx
+   13:5   error    'onRefresh' is defined but never used                                                                               no-unused-vars
+   27:8   warning  React Hook useEffect has a missing dependency: 'fetchOrgDetails'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  327:27  error    'Icon' is defined but never used                                                                                    no-unused-vars
+  384:37  error    'Icon' is defined but never used                                                                                    no-unused-vars
+
+D:\Implementacoes\Git Hub Repo Manager\src\components\OrgPanel.jsx
+  7:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\Implementacoes\Git Hub Repo Manager\src\components\RepoList.jsx
+  351:32  error  'Icon' is defined but never used  no-unused-vars
+
+D:\Implementacoes\Git Hub Repo Manager\src\components\SettingsModal.jsx
+    3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  115:37  error  'Icon' is defined but never used                                               no-unused-vars
+
+D:\Implementacoes\Git Hub Repo Manager\src\components\Sidebar.jsx
+  30:5  error  Parsing error: Argument name clash
+
+D:\Implementacoes\Git Hub Repo Manager\src\hooks\useGitHub.js
+  788:8  warning  React Hook useCallback has an unnecessary dependency: 'MOCK_MODE'. Either exclude it or remove the dependency array. Outer scope values like 'MOCK_MODE' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+✖ 15 problems (13 errors, 2 warnings)
+

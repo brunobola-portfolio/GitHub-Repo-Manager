@@ -3,17 +3,9 @@ import { X, Moon, Sun, Monitor, Key, ShieldCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export function SettingsModal({ isOpen, onClose }) {
-    const [apiKey, setApiKey] = useState('')
-    const [theme, setTheme] = useState('system') // 'light', 'dark', 'system'
-
-    useEffect(() => {
-        // Load saved settings
-        const savedKey = localStorage.getItem('GEMINI_API_KEY')
-        if (savedKey) setApiKey(savedKey)
-
-        const savedTheme = localStorage.getItem('theme')
-        if (savedTheme) setTheme(savedTheme)
-    }, [])
+    // Initialize state directly from localStorage to avoid useEffect state updates
+    const [apiKey, setApiKey] = useState(() => localStorage.getItem('GEMINI_API_KEY') || '')
+    const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system') // 'light', 'dark', 'system'
 
     // Apply theme whenever it changes (Instant Preview)
     useEffect(() => {
@@ -33,19 +25,6 @@ export function SettingsModal({ isOpen, onClose }) {
         localStorage.setItem('theme', theme)
         onClose()
     }
-
-    const ThemeOption = ({ value, icon: Icon, label }) => (
-        <button
-            onClick={() => setTheme(value)}
-            className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${theme === value
-                ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-200'
-                }`}
-        >
-            <Icon size={20} />
-            <span className="text-sm font-medium">{label}</span>
-        </button>
-    )
 
     return (
         <AnimatePresence>
@@ -84,9 +63,9 @@ export function SettingsModal({ isOpen, onClose }) {
                                     Appearance
                                 </label>
                                 <div className="grid grid-cols-3 gap-3">
-                                    <ThemeOption value="light" icon={Sun} label="Light" />
-                                    <ThemeOption value="dark" icon={Moon} label="Dark" />
-                                    <ThemeOption value="system" icon={Monitor} label="System" />
+                                    <ThemeOption value="light" icon={Sun} label="Light" currentTheme={theme} setTheme={setTheme} />
+                                    <ThemeOption value="dark" icon={Moon} label="Dark" currentTheme={theme} setTheme={setTheme} />
+                                    <ThemeOption value="system" icon={Monitor} label="System" currentTheme={theme} setTheme={setTheme} />
                                 </div>
                             </div>
 
@@ -132,6 +111,20 @@ export function SettingsModal({ isOpen, onClose }) {
         </AnimatePresence>
     )
 }
+
+// eslint-disable-next-line no-unused-vars
+const ThemeOption = ({ value, icon: IconComp, label, currentTheme, setTheme }) => (
+    <button
+        onClick={() => setTheme(value)}
+        className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${currentTheme === value
+            ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-200'
+            }`}
+    >
+        <IconComp size={20} />
+        <span className="text-sm font-medium">{label}</span>
+    </button>
+)
 
 function SettingsIcon({ className }) {
     return (

@@ -1,9 +1,10 @@
+
 import { useState, useRef, useEffect } from 'react'
-	import {
-		    Github, LogOut, RefreshCw, FlaskConical, LayoutDashboard, FolderGit2, Plus, Cloud,
-		    Bell, Settings, User, ChevronDown, Building2, Shield,
-		    CheckCircle2, AlertCircle, Sparkles, Moon, Sun
-		} from 'lucide-react'
+import {
+    Github, LogOut, RefreshCw, FlaskConical, LayoutDashboard, FolderGit2, Plus, Cloud,
+    Bell, Settings, User, ChevronDown, Building2, Shield,
+    CheckCircle2, AlertCircle, Sparkles, Moon, Sun, Wand2
+} from 'lucide-react'
 import { Button } from './ui/Button'
 import { useTheme } from '../hooks/useTheme.jsx'
 
@@ -21,7 +22,8 @@ export function HeaderNew({
     orgs = [],
     syncStatus,
     onReauthorize,
-    onOpenOrgManager
+    onOpenOrgManager,
+    onOpenCommitGen
 }) {
     const [showUserMenu, setShowUserMenu] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
@@ -86,10 +88,10 @@ export function HeaderNew({
                     </nav>
                 )}
 
-	                {/* Right: Actions & User */}
-	                <div className="flex items-center gap-2">
-	                    {user ? (
-	                        <>
+                {/* Right: Actions & User */}
+                <div className="flex items-center gap-2">
+                    {user ? (
+                        <>
                             {/* Quick Actions */}
                             <div className="flex items-center gap-1 mr-2">
                                 <Button
@@ -109,10 +111,19 @@ export function HeaderNew({
                                 >
                                     <Cloud className="w-4 h-4" />
                                 </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={onOpenCommitGen}
+                                    className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
+                                    title="AI Commit Generator"
+                                >
+                                    <Wand2 className="w-4 h-4" />
+                                </Button>
                             </div>
 
-	                            {/* Theme Toggle */}
-	                            <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
+                            {/* Theme Toggle */}
+                            <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
 
                             {/* Sync Button */}
                             <Button
@@ -126,41 +137,41 @@ export function HeaderNew({
                                 <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
                             </Button>
 
-	                            {/* Notifications */}
-	                            <div className="relative" ref={notifRef}>
-	                                <Button
-	                                    variant="ghost"
-	                                    size="sm"
-	                                    onClick={() => setShowNotifications(!showNotifications)}
-	                                    className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 relative"
-	                                    aria-label={showNotifications ? 'Hide notifications' : 'Show notifications'}
-	                                    aria-expanded={showNotifications}
-	                                    aria-haspopup="true"
-	                                >
-	                                    <Bell className="w-4 h-4" />
-	                                    {syncStatus?.hasUpdates && (
-	                                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-indigo-500 rounded-full" />
-	                                    )}
-	                                </Button>
+                            {/* Notifications */}
+                            <div className="relative" ref={notifRef}>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowNotifications(!showNotifications)}
+                                    className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 relative"
+                                    aria-label={showNotifications ? 'Hide notifications' : 'Show notifications'}
+                                    aria-expanded={showNotifications}
+                                    aria-haspopup="true"
+                                >
+                                    <Bell className="w-4 h-4" />
+                                    {syncStatus?.hasUpdates && (
+                                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-indigo-500 rounded-full" />
+                                    )}
+                                </Button>
 
-	                                {showNotifications && (
-	                                    <NotificationsDropdown
-	                                        syncStatus={syncStatus}
-	                                        orgs={orgs}
-	                                    />
-	                                )}
+                                {showNotifications && (
+                                    <NotificationsDropdown
+                                        syncStatus={syncStatus}
+                                        orgs={orgs}
+                                    />
+                                )}
                             </div>
 
-	                            {/* User Menu */}
-	                            <div className="relative" ref={menuRef}>
-	                                <button
-	                                    type="button"
-	                                    onClick={() => setShowUserMenu(!showUserMenu)}
-	                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-800"
-	                                    aria-label={showUserMenu ? 'Close user menu' : 'Open user menu'}
-	                                    aria-haspopup="true"
-	                                    aria-expanded={showUserMenu}
-	                                >
+                            {/* User Menu */}
+                            <div className="relative" ref={menuRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowUserMenu(!showUserMenu)}
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-800"
+                                    aria-label={showUserMenu ? 'Close user menu' : 'Open user menu'}
+                                    aria-haspopup="true"
+                                    aria-expanded={showUserMenu}
+                                >
                                     <img
                                         src={user.avatar_url || 'https://github.com/ghost.png'}
                                         alt={user.login}
@@ -169,40 +180,40 @@ export function HeaderNew({
                                     <ChevronDown className={`w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
                                 </button>
 
-	                                {showUserMenu && (
-	                                    <UserDropdown
-	                                        user={user}
-	                                        orgs={orgs}
-	                                        onLogout={onLogout}
-	                                        onReauthorize={onReauthorize}
-	                                        onOpenOrgManager={onOpenOrgManager}
-	                                        onClose={() => setShowUserMenu(false)}
-	                                    />
-	                                )}
+                                {showUserMenu && (
+                                    <UserDropdown
+                                        user={user}
+                                        orgs={orgs}
+                                        onLogout={onLogout}
+                                        onReauthorize={onReauthorize}
+                                        onOpenOrgManager={onOpenOrgManager}
+                                        onClose={() => setShowUserMenu(false)}
+                                    />
+                                )}
                             </div>
                         </>
-	                    ) : (
-	                        <div className="flex gap-2">
-	                            {/* Theme Toggle for non-logged in users */}
-	                            <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
-	                            <Button
-	                                variant="ghost"
-	                                size="sm"
-	                                onClick={onCheck}
-	                                disabled
-	                                className="text-slate-400 dark:text-slate-500 cursor-not-allowed"
-	                                title="Login with GitHub to check connection status"
-	                                aria-disabled="true"
-	                            >
-	                                <RefreshCw className="w-4 h-4 mr-1" />
-	                                Status
-	                            </Button>
-	                            <Button variant="primary" size="sm" onClick={onLogin}>
-	                                <Github className="w-4 h-4 mr-1" />
-	                                Login with GitHub
-	                            </Button>
-	                        </div>
-	                    )}
+                    ) : (
+                        <div className="flex gap-2">
+                            {/* Theme Toggle for non-logged in users */}
+                            <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={onCheck}
+                                disabled
+                                className="text-slate-400 dark:text-slate-500 cursor-not-allowed"
+                                title="Login with GitHub to check connection status"
+                                aria-disabled="true"
+                            >
+                                <RefreshCw className="w-4 h-4 mr-1" />
+                                Status
+                            </Button>
+                            <Button variant="primary" size="sm" onClick={onLogin}>
+                                <Github className="w-4 h-4 mr-1" />
+                                Login with GitHub
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
         </header>
@@ -223,7 +234,7 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
                     ? 'bg-slate-900 text-slate-100 border-slate-600 shadow-inner'
                     : 'bg-slate-100 text-slate-800 border-slate-200'
                 }
-            `}
+`}
             title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
             {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
@@ -232,26 +243,25 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
     )
 }
 
-	// Navigation Button Component
-	function NavButton({ active, onClick, icon, label }) {
-	    const IconComponent = icon
+// Navigation Button Component
+function NavButton({ active, onClick, icon, label }) {
+    const IconComponent = icon
     return (
         <button
             onClick={onClick}
-	            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100 dark:focus-visible:ring-offset-slate-700 ${
-                active
-                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100 dark:focus-visible:ring-offset-slate-700 ${active
+                ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
+                } `}
         >
-	            {IconComponent && <IconComponent className="w-4 h-4" />}
+            {IconComponent && <IconComponent className="w-4 h-4" />}
             {label}
         </button>
     )
 }
 
-	// User Dropdown Menu
-	function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, onClose }) {
+// User Dropdown Menu
+function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, onClose }) {
     return (
         <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-slate-800 rounded-xl shadow-xl dark:shadow-slate-900/50 border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
             {/* User Info */}
@@ -297,7 +307,7 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
             <div className="p-2">
                 <MenuButton icon={User} onClick={() => window.open(`https://github.com/${user.login}`, '_blank')}>
                     View Profile
-                </MenuButton>
+                </MenuButton >
                 <MenuButton icon={Building2} onClick={() => window.open('https://github.com/organizations/plan', '_blank')}>
                     Create Organization
                 </MenuButton>
@@ -312,31 +322,30 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
                         Logout
                     </MenuButton>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     )
 }
 
-	// Menu Button Component
-	function MenuButton({ icon, onClick, children, danger }) {
-	    const IconComponent = icon
+// Menu Button Component
+function MenuButton({ icon, onClick, children, danger }) {
+    const IconComponent = icon
     return (
         <button
             onClick={onClick}
-	            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                danger
-                    ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-            }`}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${danger
+                ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                }`}
         >
-	            {IconComponent && <IconComponent className="w-4 h-4" />}
+            {IconComponent && <IconComponent className="w-4 h-4" />}
             {children}
         </button>
     )
 }
 
-	// Notifications Dropdown
-	function NotificationsDropdown({ syncStatus, orgs }) {
+// Notifications Dropdown
+function NotificationsDropdown({ syncStatus, orgs }) {
     return (
         <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-xl dark:shadow-slate-900/50 border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
             <div className="p-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
@@ -345,7 +354,7 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
             </div>
 
             <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
-	                {syncStatus?.lastSync ? (
+                {syncStatus?.lastSync ? (
                     <NotificationItem
                         icon={CheckCircle2}
                         iconColor="text-green-500 dark:text-green-400"
@@ -361,7 +370,7 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
                     />
                 )}
 
-	                {orgs.length > 0 && (
+                {orgs.length > 0 && (
                     <NotificationItem
                         icon={Building2}
                         iconColor="text-indigo-500 dark:text-indigo-400"
@@ -381,12 +390,12 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
     )
 }
 
-	// Notification Item Component
-	function NotificationItem({ icon, iconColor, title, desc }) {
-	    const IconComponent = icon
+// Notification Item Component
+function NotificationItem({ icon, iconColor, title, desc }) {
+    const IconComponent = icon
     return (
         <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700">
-	            {IconComponent && <IconComponent className={`w-5 h-5 ${iconColor} mt-0.5`} />}
+            {IconComponent && <IconComponent className={`w-5 h-5 ${iconColor} mt-0.5`} />}
             <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-slate-900 dark:text-slate-100">{title}</div>
                 <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{desc}</div>
