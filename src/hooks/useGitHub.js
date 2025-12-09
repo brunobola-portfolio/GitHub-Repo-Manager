@@ -489,6 +489,13 @@ export function useGitHub() {
                 sources: org ? 13 : 64,
                 archived: org ? 1 : 5,
                 organizations: 3,
+                languages: {
+                    "JavaScript": 45,
+                    "Python": 30,
+                    "TypeScript": 20,
+                    "HTML": 15,
+                    "CSS": 10
+                },
                 user: { login: 'dev-user', avatar_url: 'https://github.com/ghost.png' }
             })
             return

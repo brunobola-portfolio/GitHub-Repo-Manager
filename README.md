@@ -68,86 +68,38 @@ Managing hundreds of repositories on GitHub can be tedious. Whether you're clean
     The app will open at `http://localhost:5173` with mock data so you can explore the UI.
 
 ---
-
-## ⚡ Production Setup (Real GitHub Data)
-
-To manage your actual repositories, you'll need to connect the app to GitHub.
-
-### 1. Create a GitHub OAuth App
-1.  Go to [GitHub Developer Settings](https://github.com/settings/developers).
-2.  Click **New OAuth App**.
-3.  **Homepage URL**: `http://localhost:5173`
-4.  **Callback URL**: `http://localhost:3001/api/auth/callback`
-5.  Copy your **Client ID** and **Client Secret**.
-
-### 2. Configure Environment
-Create a `.env` file in the root directory:
-
-```env
-# Server Configuration
-PORT=3001
-FRONTEND_URL=http://localhost:5173
-
-# GitHub OAuth (Required)
-GITHUB_CLIENT_ID=your_client_id_here
-GITHUB_CLIENT_SECRET=your_client_secret_here
-
-# Security
-SESSION_SECRET=your_random_secret_string
-
-# AI Features (Optional - for Gemini integration)
-GEMINI_API_KEY=your_gemini_api_key
-
-# Frontend Config
-VITE_MOCK_MODE=false
-```
-
-### 3. Run the App
-Start both the backend server and frontend client:
-
-```bash
-npm run dev:all
-```
-
-Login with your GitHub account and start managing!
-1. **Clone the repository:**
+1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/github-repo-manager.git
-   cd github-repo-manager
+   git clone https://github.com/Start-to-Infinite/GitHub-Repo-Manager.git
+   cd GitHub-Repo-Manager
    ```
 
-2. **Install dependencies:**
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-3. **Configure Environment:**
+3. **Configure Environment**
    Create a `.env` file in the root directory:
    ```env
-   VITE_GITHUB_CLIENT_ID=your_github_client_id
-   VITE_API_URL=http://localhost:3000
+   # Server (Backend)
+   PORT=3001
+   GITHUB_CLIENT_ID=your_github_client_id
+   GITHUB_CLIENT_SECRET=your_github_client_secret
+   SESSION_SECRET=your_secret_key
    GEMINI_API_KEY=your_gemini_api_key
+   
+   # Setup GitHub OAuth App > Homepage: http://localhost:5173 > Callback: http://localhost:3001/api/auth/github/callback
+
+   # Client (Frontend)
+   VITE_API_BASE_URL=http://localhost:3001
+   VITE_MOCK_MODE=false
    ```
 
-4. **Run Development Server:**
+4. **Run Development Server**
    ```bash
    npm run dev:all
    ```
-   This command starts both the React frontend (port 5173) and the Express backend (port 3000).
-
-## 📸 Screenshots
-
-*(Add your screenshots here)*
-
-| Dashboard | AI Chat |
-|:---:|:---:|
-| ![Dashboard Placeholder](docs/dashboard.png) | ![AI Chat Placeholder](docs/ai-chat.png) |
-
-## 🤝 Contributing
-
-We welcome contributions! Please check out [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## 📄 License
 
 MIT License.
 

@@ -19,15 +19,25 @@ export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, l
     const [timeRange, setTimeRange] = useState('7d')
 
     const orgData = useMemo(() => {
-        if (!orgs || !repos) return []
+        if (!orgs) return []
+        // Use the counts directly from the org object (enriched by backend)
         const data = orgs.map(org => ({
             name: org.login,
-            repos: repos.filter(r => r.owner.login === org.login).length
+            repos: (org.public_repos || 0) + (org.total_private_repos || 0)
         })).sort((a, b) => b.repos - a.repos).slice(0, 5)
         return data
-    }, [orgs, repos])
+    }, [orgs])
 
     const languageData = useMemo(() => {
+        // Use stats.languages from backend if available for complete picture
+        if (stats?.languages) {
+            return Object.entries(stats.languages)
+                .map(([name, value]) => ({ name, value }))
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 6)
+        }
+
+        // Fallback to client-side calc if stats not available (e.g. initial load)
         if (!repos) return []
         const langs = {}
         repos.forEach(repo => {
@@ -39,7 +49,7 @@ export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, l
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value)
             .slice(0, 6)
-    }, [repos])
+    }, [repos, stats])
 
     const containerVariants = {
         hidden: { opacity: 0, y: 20 },
