@@ -56,7 +56,7 @@ export function AIAssistant() {
             } else {
                 setMessages(prev => [...prev, { role: 'assistant', text: response.message }])
             }
-        } catch (error) {
+        } catch {
             setMessages(prev => [...prev, { role: 'assistant', text: 'Sorry, I encountered an error. Please try again.' }])
         } finally {
             setIsLoading(false)

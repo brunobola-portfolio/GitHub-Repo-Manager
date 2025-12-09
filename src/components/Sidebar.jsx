@@ -27,7 +27,6 @@ export function Sidebar({
     onDelete,
     selectedRepos = [],
     onTransfer,
-    orgs = [],
     onAzureImport,
     activity = []
 }) {
@@ -167,7 +166,8 @@ function QuickActions({
     )
 }
 
-function ActionButton({ icon: Icon, label, subLabel, onClick, disabled, variant = 'secondary', className = '' }) {
+// eslint-disable-next-line no-unused-vars
+function ActionButton({ icon: IconComp, label, subLabel, onClick, disabled, variant = 'secondary', className = '' }) {
     const variants = {
         secondary: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700',
         primary: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40',
@@ -188,7 +188,7 @@ function ActionButton({ icon: Icon, label, subLabel, onClick, disabled, variant 
                 ${className}
             `}
         >
-            <Icon className="w-3.5 h-3.5" />
+            <IconComp className="w-3.5 h-3.5" />
             <div className="flex flex-col items-start leading-none">
                 <span>{label}</span>
                 {subLabel && <span className="text-[9px] opacity-70 font-normal mt-0.5">{subLabel}</span>}

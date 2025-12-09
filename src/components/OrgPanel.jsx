@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
 import {
-	Building2, Plus, Search, ExternalLink,
-	MoreVertical, Settings, Users, Shield,
+	Building2, Plus, Search,
+	Settings, Shield,
 	ChevronRight, LayoutGrid, List
 } from 'lucide-react'
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { SettingsModal } from './SettingsModal'
@@ -14,9 +15,7 @@ export function OrgPanel({
 	onSelectOrg,
 	user,
 	onCreateOrg,
-	stats,
-	onManageOrg,
-	onRefresh
+	stats
 }) {
 	const [searchTerm, setSearchTerm] = useState('')
 	const [viewMode, setViewMode] = useState('list') // 'list' or 'grid'
@@ -215,8 +214,12 @@ function OrgItem({ org, isSelected, onClick, viewMode }) {
 						{totalRepos} Repos
 					</span>
 					{org.total_private_repos > 0 && (
-						<span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30">
-							{org.total_private_repos} Pvt
+						<span
+							className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30 flex items-center gap-1"
+							title={`${org.total_private_repos} Private Repositories`}
+						>
+							<Shield size={10} />
+							{org.total_private_repos}
 						</span>
 					)}
 				</div>

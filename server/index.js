@@ -39,9 +39,8 @@ if (GEMINI_API_KEY) {
 }
 
 if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
-    console.error('❌ Critical Error: GitHub OAuth credentials are missing.');
-    console.error('   Please ensure GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET are set in your .env file.');
-    process.exit(1);
+    console.warn('⚠️ Warning: GitHub OAuth credentials are missing.');
+    console.warn('   OAuth login will not work. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in .env to enable.');
 }
 
 // Middleware Setup
@@ -247,7 +246,7 @@ app.get('/api/stats', requireAuth, async (req, res) => {
         while (hasNextPage && repos.length < 1000) { // Safety limit
             const endpoint = org
                 ? `/orgs/${org}/repos?page=${page}&per_page=100&sort=updated`
-                : `/user/repos?page=${page}&per_page=100&sort=updated&affiliation=owner`;
+                : `/user/repos?page=${page}&per_page=100&sort=updated&affiliation=owner,organization_member`;
 
             const { data, headers } = await githubApi(endpoint, req.session.accessToken);
             repos = [...repos, ...data];

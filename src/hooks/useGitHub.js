@@ -89,7 +89,6 @@ export function useGitHub() {
     const [totalPages, setTotalPages] = useState(null)
     const [isPerforming, setIsPerforming] = useState(false)
     const [results, setResults] = useState([])
-    const [retryCount, setRetryCount] = useState(0)
 
     // Initialize with mock data or fetch user
     useEffect(() => {
@@ -154,7 +153,6 @@ export function useGitHub() {
 
             setUser(parsed)
             setMessage('')
-            setRetryCount(0)
         } catch (e) {
             console.error('fetchUser', e)
             const info = getErrorInfo(e)
@@ -201,7 +199,6 @@ export function useGitHub() {
             setMessage('')
             setPage(pageToLoad)
             setPerPage(per)
-            setRetryCount(0)
         } catch (e) {
             console.error('fetchRepos', e)
             const info = getErrorInfo(e)
@@ -788,7 +785,7 @@ export function useGitHub() {
         } catch (error) {
             console.error('Failed to fetch activity:', error)
         }
-    }, [MOCK_MODE])
+    }, [])
 
     useEffect(() => {
         if (user?.login) {
@@ -897,7 +894,9 @@ export function useGitHub() {
         askAI,
         suggestAI,
         generateReadmeAI,
-        setSelectedOrg
+        setSelectedOrg,
+        archiveRepos,
+        deleteRepos
     }
 }
 

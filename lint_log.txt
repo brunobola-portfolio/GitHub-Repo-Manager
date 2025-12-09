@@ -1,0 +1,150 @@
+
+> github-repo-manager@1.0.0 lint
+> eslint .
+
+
+D:\Implementacoes\Git Hub Repo Manager\src\App.jsx
+   76:14  error  'err' is defined but never used                                                               no-unused-vars
+  114:11  error  'displayRepos' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+D:\Implementacoes\Git Hub Repo Manager\src\components\AIAssistant.jsx
+  59:18  error  'error' is defined but never used  no-unused-vars
+
+D:\Implementacoes\Git Hub Repo Manager\src\components\Dashboard.jsx
+   12:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+   17:54  error  'onOrgClick' is defined but never used                                         no-unused-vars
+  346:41  error  'Icon' is defined but never used                                               no-unused-vars
+
+D:\Implementacoes\Git Hub Repo Manager\src\components\OrgManagerModal.jsx
+   13:5   error    'onRefresh' is defined but never used                                                                               no-unused-vars
+   27:8   warning  React Hook useEffect has a missing dependency: 'fetchOrgDetails'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  327:27  error    'Icon' is defined but never used                                                                                    no-unused-vars
+  384:37  error    'Icon' is defined but never used                                                                                    no-unused-vars
+
+D:\Implementacoes\Git Hub Repo Manager\src\components\OrgPanel.jsx
+   7:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  18:2   error  'onManageOrg' is defined but never used                                        no-unused-vars
+  19:2   error  'onRefresh' is defined but never used                                          no-unused-vars
+
+D:\Implementacoes\Git Hub Repo Manager\src\components\RepoList.jsx
+    1:10  error  'useRef' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+   21:2   error  'invertSelection' is defined but never used                                    no-unused-vars
+   26:2   error  'setPerPage' is defined but never used                                         no-unused-vars
+   29:2   error  'selectedOrg' is defined but never used                                        no-unused-vars
+  354:32  error  'Icon' is defined but never used                                               no-unused-vars
+
+D:\Implementacoes\Git Hub Repo Manager\src\components\SettingsModal.jsx
+   3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    no-unused-vars
+  12:23  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  10 |         // Load saved settings
+  11 |         const savedKey = localStorage.getItem('GEMINI_API_KEY')
+> 12 |         if (savedKey) setApiKey(savedKey)
+     |                       ^^^^^^^^^ Avoid calling setState() directly within an effect
+  13 |
+  14 |         const savedTheme = localStorage.getItem('theme')
+  15 |         if (savedTheme) setTheme(savedTheme)                                                                                                                                            react-hooks/set-state-in-effect
+  37:41  error  'Icon' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 no-unused-vars
+  87:38  error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  85 |                                 </label>
+  86 |                                 <div className="grid grid-cols-3 gap-3">
+> 87 |                                     <ThemeOption value="light" icon={Sun} label="Light" />
+     |                                      ^^^^^^^^^^^ This component is created during render
+  88 |                                     <ThemeOption value="dark" icon={Moon} label="Dark" />
+  89 |                                     <ThemeOption value="system" icon={Monitor} label="System" />
+  90 |                                 </div>
+
+  35 |     }
+  36 |
+> 37 |     const ThemeOption = ({ value, icon: Icon, label }) => (
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 38 |         <button
+     | ^^^^^^^^^^^^^^^
+> 39 |             onClick={() => setTheme(value)}
+     …
+     | ^^^^^^^^^^^^^^^
+> 47 |         </button>
+     | ^^^^^^^^^^^^^^^
+> 48 |     )
+     | ^^^^^^ The component is created during render here
+  49 |
+  50 |     return (
+  51 |         <AnimatePresence>  react-hooks/static-components
+  88:38  error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  86 |                                 <div className="grid grid-cols-3 gap-3">
+  87 |                                     <ThemeOption value="light" icon={Sun} label="Light" />
+> 88 |                                     <ThemeOption value="dark" icon={Moon} label="Dark" />
+     |                                      ^^^^^^^^^^^ This component is created during render
+  89 |                                     <ThemeOption value="system" icon={Monitor} label="System" />
+  90 |                                 </div>
+  91 |                             </div>
+
+  35 |     }
+  36 |
+> 37 |     const ThemeOption = ({ value, icon: Icon, label }) => (
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 38 |         <button
+     | ^^^^^^^^^^^^^^^
+> 39 |             onClick={() => setTheme(value)}
+     …
+     | ^^^^^^^^^^^^^^^
+> 47 |         </button>
+     | ^^^^^^^^^^^^^^^
+> 48 |     )
+     | ^^^^^^ The component is created during render here
+  49 |
+  50 |     return (
+  51 |         <AnimatePresence>        react-hooks/static-components
+  89:38  error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+  87 |                                     <ThemeOption value="light" icon={Sun} label="Light" />
+  88 |                                     <ThemeOption value="dark" icon={Moon} label="Dark" />
+> 89 |                                     <ThemeOption value="system" icon={Monitor} label="System" />
+     |                                      ^^^^^^^^^^^ This component is created during render
+  90 |                                 </div>
+  91 |                             </div>
+  92 |
+
+  35 |     }
+  36 |
+> 37 |     const ThemeOption = ({ value, icon: Icon, label }) => (
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 38 |         <button
+     | ^^^^^^^^^^^^^^^
+> 39 |             onClick={() => setTheme(value)}
+     …
+     | ^^^^^^^^^^^^^^^
+> 47 |         </button>
+     | ^^^^^^^^^^^^^^^
+> 48 |     )
+     | ^^^^^^ The component is created during render here
+  49 |
+  50 |     return (
+  51 |         <AnimatePresence>                                                                                 react-hooks/static-components
+
+D:\Implementacoes\Git Hub Repo Manager\src\components\Sidebar.jsx
+   30:5   error  'orgs' is assigned a value but never used  no-unused-vars
+  170:31  error  'Icon' is defined but never used           no-unused-vars
+
+D:\Implementacoes\Git Hub Repo Manager\src\hooks\useGitHub.js
+   92:12  error    'retryCount' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                no-unused-vars
+  527:20  error    'archiveRepos' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                       no-unused-vars
+  576:20  error    'deleteRepos' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                        no-unused-vars
+  791:8   warning  React Hook useCallback has an unnecessary dependency: 'MOCK_MODE'. Either exclude it or remove the dependency array. Outer scope values like 'MOCK_MODE' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+✖ 30 problems (28 errors, 2 warnings)
+

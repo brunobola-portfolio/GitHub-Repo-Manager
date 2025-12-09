@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card } from './ui/Card'
 import { Badge } from './ui/Badge'
 import { Button } from './ui/Button'
@@ -18,15 +18,12 @@ export function RepoList({
 	toggleSelect,
 	selectRepos,
 	deselectRepos,
-	invertSelection,
 	clearSelection,
 	page,
 	setPage,
 	perPage,
-	setPerPage,
 	totalPages,
 	onRefresh,
-	selectedOrg,
 	onQuickAction
 }) {
 	const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
@@ -351,14 +348,14 @@ function SelectFilter({ value, onChange, options }) {
 	)
 }
 
-function TooltipButton({ icon: Icon, label, onClick, className = "" }) {
+function TooltipButton({ icon: IconComp, label, onClick, className = "" }) {
 	return (
 		<button
 			onClick={onClick}
 			className={`p-2 rounded-full hover:bg-white/10 dark:hover:bg-slate-900/10 transition-colors ${className}`}
 			title={label}
 		>
-			<Icon className="w-4 h-4" />
+			<IconComp className="w-4 h-4" />
 		</button>
 	)
 }
