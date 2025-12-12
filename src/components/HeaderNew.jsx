@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react'
 import {
     Github, LogOut, RefreshCw, FlaskConical, LayoutDashboard, FolderGit2, Plus, Cloud,
-    Bell, Settings, User, ChevronDown, Building2, Shield,
+    Bell, Settings, User, ChevronDown, Building2, Shield, Users,
     CheckCircle2, AlertCircle, Sparkles, Moon, Sun, Wand2
 } from 'lucide-react'
 import { Button } from './ui/Button'
@@ -84,6 +84,12 @@ export function HeaderNew({
                             onClick={() => onViewChange?.('repos')}
                             icon={FolderGit2}
                             label="Repositories"
+                        />
+                        <NavButton
+                            active={activeView === 'teams'}
+                            onClick={() => onViewChange?.('teams')}
+                            icon={Users}
+                            label="Teams"
                         />
                     </nav>
                 )}
