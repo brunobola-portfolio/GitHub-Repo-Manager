@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useGitHub } from './hooks/useGitHub'
 import { HeaderNew } from './components/HeaderNew'
 import { Sidebar } from './components/Sidebar'
@@ -14,14 +14,75 @@ import { ConfirmModal } from './components/ui/ConfirmModal'
 import { ToastContainer } from './components/ui/Toast'
 import { useToast } from './hooks/useToast'
 import { AIAssistant } from './components/AIAssistant'
-import { AUTH_ENDPOINTS } from './config'
+import { TeamHub } from './components/Teams/TeamHub';
+import { TeamDetails } from './components/Teams/TeamDetails';
+import { SystemSetup } from './components/Setup/SystemSetup';
+import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
 
 function App() {
+  const [session, setSession] = useState(null);
+  const [appLoading, setAppLoading] = useState(true); // Renamed to distinguish from hook loading
+  const [error, setError] = useState(null);
+
+  // Navigation State
+  const [activeView, setActiveView] = useState('dashboard'); // dashboard, repos, teams
+  const [selectedTeam, setSelectedTeam] = useState(null);
+
+  // System Setup State
+  const [systemInitialized, setSystemInitialized] = useState(null); // null = checking
+
+  useEffect(() => {
+    checkSystemStatus();
+  }, []);
+
+  const checkSystemStatus = async () => {
+    try {
+      const res = await fetch('/api/system/status');
+      const data = await res.json();
+      setSystemInitialized(data.initialized);
+      if (data.initialized) {
+        checkAuth();
+      } else {
+        setAppLoading(false);
+      }
+    } catch (e) {
+      console.error("Failed to check system status", e);
+      setSystemInitialized(true);
+      checkAuth();
+    }
+  };
+
+  const checkAuth = async () => {
+    try {
+      setAppLoading(true);
+
+      if (MOCK_MODE) {
+        await fetch('/api/auth/mock', { method: 'POST' });
+        setSession({ userId: 999999, accessToken: 'mock_token' });
+        setAppLoading(false);
+        return;
+      }
+
+      const res = await fetch('/api/auth/session');
+      if (res.ok) {
+        const data = await res.json();
+        setSession(data);
+        if (data.accessToken) {
+          fetchGitHubUser(); // No args needed
+        }
+      }
+    } catch (err) {
+      console.error('Auth check failed', err);
+    } finally {
+      setAppLoading(false);
+    }
+  };
+
   const {
-    user,
     repos,
-    loading,
-    error,
+    user, // Use the user from the hook!
+    loading: githubLoading, // Rename exposed loading
+    error: githubError,
     message,
     selectedIds,
     page,
@@ -38,7 +99,7 @@ function App() {
     invertSelection,
     clearSelection,
     performAction,
-    fetchUser,
+    fetchUser: fetchGitHubUser,
     refresh,
     // New features
     orgs,
@@ -54,7 +115,10 @@ function App() {
     fetchOrgs,
     fetchStats,
     activity,
-  } = useGitHub()
+  } = useGitHub() // No args needed as they were ignored anyway
+
+  // Combine loading states
+  const loading = appLoading || githubLoading;
 
   const [org, setOrg] = useState('')
   const [showAzureImport, setShowAzureImport] = useState(false)
@@ -65,7 +129,7 @@ function App() {
   const [selectedOrgForManager, setSelectedOrgForManager] = useState(null)
   const [transferRepos, setTransferRepos] = useState([])
   const [confirmModal, setConfirmModal] = useState({ isOpen: false })
-  const [activeView, setActiveView] = useState('repos') // 'dashboard' | 'repos'
+  // activeView and selectedTeam are already defined above
   const [syncStatus, setSyncStatus] = useState({ lastSync: null, hasUpdates: false })
   const { toasts, toast, dismissToast } = useToast()
 
@@ -232,6 +296,26 @@ function App() {
   // Display repos based on selected org
   const displayRepos = selectedOrg ? orgRepos : repos
 
+  // 1. Show Setup Wizard if system is not initialized
+  if (systemInitialized === false) {
+    return <SystemSetup onComplete={() => {
+      setSystemInitialized(true);
+      checkAuth();
+    }} />;
+  }
+
+  // 2. Show Global Loading State
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-500 dark:text-slate-400 animate-pulse">Loading Workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-12 font-sans dark:bg-slate-900 dark:text-slate-50">
       <HeaderNew
@@ -239,7 +323,7 @@ function App() {
         isMockMode={isMockMode}
         onLogin={handleLogin}
         onLogout={handleLogout}
-        onCheck={fetchUser}
+        onCheck={fetchGitHubUser}
         onAzureImport={() => setShowAzureImport(true)}
         onCreateRepo={() => setShowCreateRepo(true)}
         activeView={activeView}
@@ -253,6 +337,29 @@ function App() {
       />
 
       <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300">
+        {/* Welcome View (Logged Out) */}
+        {!user && activeView === 'dashboard' && (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center animate-in fade-in zoom-in duration-500">
+            <div className="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-3xl mb-8 flex items-center justify-center shadow-2xl shadow-indigo-500/30">
+              <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <h1 className="text-5xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">
+              GitHub <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-600">Repo Manager</span>
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 text-xl max-w-lg mb-10 leading-relaxed">
+              Manage your teams, assign repositories, and monitor workflows with a premium local-first experience.
+            </p>
+            <button
+              onClick={handleLogin}
+              className="px-10 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold text-lg hover:scale-105 active:scale-95 transition-all shadow-xl hover:shadow-2xl"
+            >
+              Get Started
+            </button>
+          </div>
+        )}
+
         {/* Dashboard View */}
         {activeView === 'dashboard' && user && (
           <div className="animate-in fade-in duration-500">
@@ -333,6 +440,25 @@ function App() {
                   activity={activity}
                 />
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Teams View */}
+        {activeView === 'teams' && user && (
+          <div className="animate-in fade-in duration-500">
+            {selectedTeam ? (
+              <TeamDetails
+                team={selectedTeam}
+                onBack={() => setSelectedTeam(null)}
+                userRepos={repos}
+                user={user}
+              />
+            ) : (
+              <TeamHub
+                user={user}
+                onTeamSelect={setSelectedTeam}
+              />
             )}
           </div>
         )}

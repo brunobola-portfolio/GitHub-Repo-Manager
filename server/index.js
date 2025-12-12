@@ -13,6 +13,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import db, { initDB } from './db.js';
+
+initDB();
 
 dotenv.config();
 
@@ -143,6 +146,33 @@ app.get('/api/auth/callback', async (req, res) => {
             return res.redirect(`${FRONTEND_URL}?error=${tokenData.error}&desc=${tokenData.error_description}`);
         }
 
+        // Fetch User Profile to sync with DB
+        const userRes = await fetch('https://api.github.com/user', {
+            headers: {
+                'Authorization': `Bearer ${tokenData.access_token}`,
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+            }
+        });
+
+        if (userRes.ok) {
+            const userData = await userRes.json();
+            // Upsert User
+            const stmt = db.prepare(`
+                INSERT INTO users (id, username, avatar_url, email, last_login)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(id) DO UPDATE SET
+                    username = excluded.username,
+                    avatar_url = excluded.avatar_url,
+                    email = excluded.email,
+                    last_login = CURRENT_TIMESTAMP
+            `);
+            stmt.run(userData.id, userData.login, userData.avatar_url, userData.email || null);
+
+            // Store user ID in session for DB lookups
+            req.session.userId = userData.id;
+        }
+
         // Store the token in the session
         req.session.accessToken = tokenData.access_token;
 
@@ -163,6 +193,32 @@ app.get('/api/auth/callback', async (req, res) => {
 app.get('/api/auth/logout', (req, res) => {
     req.session.destroy();
     res.json({ success: true });
+});
+
+// Mock Login for Dev Mode
+app.post('/api/auth/mock', (req, res) => {
+    // Upsert Mock User
+    const mockUser = {
+        id: 999999,
+        username: 'dev-user',
+        avatar_url: 'https://github.com/ghost.png',
+        email: 'dev@example.com'
+    };
+
+    const stmt = db.prepare(`
+        INSERT INTO users (id, username, avatar_url, email, last_login)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(id) DO UPDATE SET
+            username = excluded.username,
+            avatar_url = excluded.avatar_url,
+            email = excluded.email,
+            last_login = CURRENT_TIMESTAMP
+    `);
+    stmt.run(mockUser.id, mockUser.username, mockUser.avatar_url, mockUser.email);
+
+    req.session.userId = mockUser.id;
+    req.session.accessToken = 'mock_token';
+    req.session.save(() => res.json({ success: true, user: mockUser }));
 });
 
 // ------------------------------------------------------------------
@@ -207,6 +263,20 @@ app.get('/api/config/ai-status', (req, res) => {
     res.json({
         configured: !!process.env.GEMINI_API_KEY
     });
+});
+
+// Search GitHub Users
+app.get('/api/search/users', requireAuth, async (req, res) => {
+    try {
+        const { q } = req.query;
+        if (!q) return res.json([]);
+
+        const { data } = await githubApi(`/search/users?q=${encodeURIComponent(q)}&per_page=5`, req.session.accessToken);
+        res.json(data.items || []);
+    } catch (error) {
+        console.error('User Search Error:', error);
+        res.status(500).json({ error: 'Failed to search users' });
+    }
 });
 // ------------------------------------------------------------------
 
@@ -640,11 +710,420 @@ app.post('/api/ai/readme', requireAuth, requireAI, async (req, res) => {
 });
 
 // -----------------------------------------------------------------------------
+// Team & Collaboration Routes
+// -----------------------------------------------------------------------------
+
+// List my teams
+app.get('/api/teams', requireAuth, (req, res) => {
+    try {
+        const teams = db.prepare(`
+            SELECT t.*, tm.role,
+            (SELECT COUNT(*) FROM team_members WHERE team_id = t.id) as member_count,
+            (SELECT COUNT(*) FROM repo_assignments WHERE team_id = t.id) as repo_count
+            FROM teams t
+            JOIN team_members tm ON t.id = tm.team_id
+            WHERE tm.user_id = ?
+            ORDER BY t.created_at DESC
+        `).all(req.session.userId);
+        res.json(teams);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Create a team
+app.post('/api/teams', requireAuth, (req, res) => {
+    const { name, description } = req.body;
+    if (!name) return res.status(400).json({ error: 'Team name is required' });
+
+    try {
+        const result = db.transaction(() => {
+            const insertTeam = db.prepare('INSERT INTO teams (name, description, owner_id) VALUES (?, ?, ?)');
+            const info = insertTeam.run(name, description, req.session.userId);
+            const teamId = info.lastInsertRowid;
+
+            const insertMember = db.prepare('INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, ?)');
+            insertMember.run(teamId, req.session.userId, 'owner');
+            return teamId;
+        })();
+
+        res.json({ success: true, teamId: result });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Update a team
+app.put('/api/teams/:id', requireAuth, (req, res) => {
+    const { name, description } = req.body;
+    const { id } = req.params;
+
+    try {
+        // Verify ownership/admin
+        const membership = db.prepare('SELECT role FROM team_members WHERE team_id = ? AND user_id = ?').get(id, req.session.userId);
+        if (!membership || membership.role === 'member') return res.status(403).json({ error: 'Admin access required' });
+
+        const updateKey = db.prepare('UPDATE teams SET name = ?, description = ? WHERE id = ?');
+        const info = updateKey.run(name, description, id);
+
+        if (info.changes === 0) return res.status(404).json({ error: 'Team not found' });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete a team
+app.delete('/api/teams/:id', requireAuth, (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Verify ownership (only owner can delete)
+        const membership = db.prepare('SELECT role FROM team_members WHERE team_id = ? AND user_id = ?').get(id, req.session.userId);
+        if (!membership || membership.role !== 'owner') return res.status(403).json({ error: 'Owner access required' });
+
+        const result = db.transaction(() => {
+            db.prepare('DELETE FROM team_members WHERE team_id = ?').run(id);
+            db.prepare('DELETE FROM repo_assignments WHERE team_id = ?').run(id);
+            const info = db.prepare('DELETE FROM teams WHERE id = ?').run(id);
+            return info;
+        })();
+
+        if (result.changes === 0) return res.status(404).json({ error: 'Team not found' });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get team details (members & repos)
+app.get('/api/teams/:id', requireAuth, (req, res) => {
+    try {
+        // Verify membership
+        const membership = db.prepare('SELECT role FROM team_members WHERE team_id = ? AND user_id = ?').get(req.params.id, req.session.userId);
+        if (!membership) return res.status(403).json({ error: 'Access denied' });
+
+        const team = db.prepare('SELECT * FROM teams WHERE id = ?').get(req.params.id);
+        const members = db.prepare(`
+            SELECT u.id, u.username, u.avatar_url, tm.role, tm.joined_at
+            FROM team_members tm
+            JOIN users u ON tm.user_id = u.id
+            WHERE tm.team_id = ?
+        `).all(req.params.id);
+
+        const repos = db.prepare(`
+            SELECT * FROM repo_assignments WHERE team_id = ?
+        `).all(req.params.id);
+
+        res.json({ team, members, repos, currentUserRole: membership.role });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add Member (Simulated Invite by Username)
+app.post('/api/teams/:id/members', requireAuth, async (req, res) => {
+    const { username } = req.body;
+    if (!username) return res.status(400).json({ error: 'Username required' });
+
+    try {
+        // Check Admin/Owner permission
+        const membership = db.prepare('SELECT role FROM team_members WHERE team_id = ? AND user_id = ?').get(req.params.id, req.session.userId);
+        if (!membership || membership.role === 'member') return res.status(403).json({ error: 'Admin access required' });
+
+        // Check if user exists in our local DB
+        // If not, we could search GitHub and add to cache, but for now strict local check or partial add
+        let user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+
+        // If user not found locally, try to fetch from GitHub to "cache" them
+        if (!user) {
+            try {
+                const { data: ghUser } = await githubApi(`/users/${username}`, req.session.accessToken);
+                db.prepare(`
+                    INSERT INTO users (id, username, avatar_url, email)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT(id) DO UPDATE SET username=excluded.username
+                `).run(ghUser.id, ghUser.login, ghUser.avatar_url, ghUser.email);
+                user = { id: ghUser.id };
+            } catch (e) {
+                return res.status(404).json({ error: 'User not found on GitHub' });
+            }
+        }
+
+        // Add to team
+        db.prepare(`
+            INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, 'member')
+        `).run(req.params.id, user.id);
+
+        res.json({ success: true });
+    } catch (error) {
+        if (error.message.includes('UNIQUE constraint failed')) {
+            return res.status(400).json({ error: 'User is already a member' });
+        }
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Update Member Role
+app.put('/api/teams/:id/members/:userId', requireAuth, (req, res) => {
+    const { role } = req.body;
+    if (!['admin', 'member'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
+
+    try {
+        // Check requester permissions (must be owner or admin)
+        const requester = db.prepare('SELECT role FROM team_members WHERE team_id = ? AND user_id = ?').get(req.params.id, req.session.userId);
+        if (!requester || (requester.role !== 'owner' && requester.role !== 'admin')) {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+
+        // Prevent changing owner's role
+        const target = db.prepare('SELECT role FROM team_members WHERE team_id = ? AND user_id = ?').get(req.params.id, req.params.userId);
+        if (target && target.role === 'owner') return res.status(403).json({ error: 'Cannot change owner role' });
+
+        db.prepare('UPDATE team_members SET role = ? WHERE team_id = ? AND user_id = ?')
+            .run(role, req.params.id, req.params.userId);
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Remove Member
+app.delete('/api/teams/:id/members/:userId', requireAuth, (req, res) => {
+    try {
+        // Check requester permissions
+        const requester = db.prepare('SELECT role FROM team_members WHERE team_id = ? AND user_id = ?').get(req.params.id, req.session.userId);
+        if (!requester || (requester.role !== 'owner' && requester.role !== 'admin')) {
+            return res.status(403).json({ error: 'Permission denied' });
+        }
+
+        // Prevent removing owner
+        const target = db.prepare('SELECT role FROM team_members WHERE team_id = ? AND user_id = ?').get(req.params.id, req.params.userId);
+        if (target && target.role === 'owner') return res.status(403).json({ error: 'Cannot remove owner' });
+
+        // Check if removing self (leave team) vs removing others
+        if (req.params.userId != req.session.userId) {
+            if (requester.role === 'member') return res.status(403).json({ error: 'Cannot remove others' });
+        }
+
+        db.prepare('DELETE FROM team_members WHERE team_id = ? AND user_id = ?')
+            .run(req.params.id, req.params.userId);
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Assign Repo to Team
+app.post('/api/teams/:id/repos', requireAuth, (req, res) => {
+    const { repoFullName, repoId } = req.body;
+    try {
+        // Verify membership
+        const membership = db.prepare('SELECT role FROM team_members WHERE team_id = ? AND user_id = ?').get(req.params.id, req.session.userId);
+        if (!membership) return res.status(403).json({ error: 'Access denied' });
+
+        db.prepare(`
+            INSERT INTO repo_assignments (team_id, repo_full_name, repo_id, assigned_by)
+            VALUES (?, ?, ?, ?)
+        `).run(req.params.id, repoFullName, repoId, req.session.userId);
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// -----------------------------------------------------------------------------
+// GitHub Actions Endpoints
+
+// List Workflows
+app.get('/api/repos/:owner/:repo/actions/workflows', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const result = await githubApi(`/repos/${owner}/${repo}/actions/workflows`, req.session.accessToken);
+        res.json(result.data.workflows || []);
+    } catch (error) {
+        console.error('List Workflows Error:', error);
+        res.status(500).json({ error: 'Failed to list workflows' });
+    }
+});
+
+// Trigger Workflow Dispatch
+app.post('/api/repos/:owner/:repo/actions/workflows/:id/dispatches', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, id } = req.params;
+        const { ref = 'main', inputs = {} } = req.body;
+
+        await githubApi(`/repos/${owner}/${repo}/actions/workflows/${id}/dispatches`, req.session.accessToken, {
+            method: 'POST',
+            body: JSON.stringify({ ref, inputs })
+        });
+
+        res.json({ message: 'Workflow triggered successfully' });
+    } catch (error) {
+        console.error('Trigger Workflow Error:', error);
+        res.status(500).json({ error: 'Failed to trigger workflow' });
+    }
+});
+
+// List Workflow Runs
+app.get('/api/repos/:owner/:repo/actions/runs', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const result = await githubApi(`/repos/${owner}/${repo}/actions/runs?per_page=10`, req.session.accessToken);
+        res.json(result.data.workflow_runs || []);
+    } catch (error) {
+        console.error('List Workflow Runs Error:', error);
+        res.status(500).json({ error: 'Failed to list workflow runs' });
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Native GitHub Verification & Collaboration
+// -----------------------------------------------------------------------------
+
+// List Collaborators for a specific Repo
+app.get('/api/repos/:owner/:repo/collaborators', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        // Requires push access to view collaborators usually, or at least read
+        const result = await githubApi(`/repos/${owner}/${repo}/collaborators`, req.session.accessToken);
+        res.json(result.data || []);
+    } catch (error) {
+        // 403 usually means you don't have permission to view collaborators (need push access)
+        if (error.status === 403) {
+            return res.json([]); // Fail gracefully by returning empty
+        }
+        res.status(500).json({ error: 'Failed to fetch collaborators' });
+    }
+});
+
+// Add a Collaborator to a Repo
+app.put('/api/repos/:owner/:repo/collaborators/:username', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, username } = req.params;
+        const { permission = 'push' } = req.body; // default to push (Write) access
+
+        const result = await githubApi(`/repos/${owner}/${repo}/collaborators/${username}`, req.session.accessToken, {
+            method: 'PUT',
+            body: JSON.stringify({ permission })
+        });
+
+        res.json({ success: true, invitation: result.data });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to add collaborator' });
+    }
+});
+
+// Team Activity Stream
+// Aggregates events from all repos assigned to the team
+app.get(['/api/teams/:id/activity', '/api/team/:id/activity'], requireAuth, async (req, res) => {
+    try {
+        // 1. Get Repos assigned to team
+        const repos = db.prepare('SELECT repo_full_name FROM repo_assignments WHERE team_id = ?').all(req.params.id);
+
+        if (!repos.length) {
+            return res.json([]);
+        }
+
+        // 2. Fetch events for each repo (Limit to first 10 repos to avoid rate limits/timeouts for now)
+        // In a production app, this would be a background job with caching.
+        const targetRepos = repos.slice(0, 10);
+        const fetchPromises = targetRepos.map(async (r) => {
+            try {
+                const { data } = await githubApi(`/repos/${r.repo_full_name}/events?per_page=10`, req.session.accessToken);
+                // Attach repo name to event for UI context
+                return data.map(event => ({ ...event, repo_name: r.repo_full_name }));
+            } catch (e) {
+                console.error(`Failed to fetch events for ${r.repo_full_name}:`, e.message);
+                return [];
+            }
+        });
+
+        const results = await Promise.all(fetchPromises);
+
+        // 3. Flatten, Deduplicate (by id), and Sort by Date
+        const allEvents = results.flat();
+        const uniqueEvents = Array.from(new Map(allEvents.map(item => [item.id, item])).values());
+
+        uniqueEvents.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        // Return top 50
+        res.json(uniqueEvents.slice(0, 50));
+
+    } catch (error) {
+        console.error('Team Activity Error:', error);
+        res.status(500).json({ error: 'Failed to fetch team activity' });
+    }
+});
+
+// -----------------------------------------------------------------------------
+// System Setup Routes
+// -----------------------------------------------------------------------------
+
+app.get('/api/system/status', (req, res) => {
+    try {
+        const meta = db.prepare('SELECT value FROM system_meta WHERE key = ?').get('setup_completed');
+        res.json({ initialized: meta?.value === 'true' });
+    } catch (error) {
+        // If table doesn't exist (very fresh), valid to say not initialized
+        res.json({ initialized: false });
+    }
+});
+
+app.post('/api/system/setup', async (req, res) => {
+    try {
+        // Simulate "work" for the UI to show progress (optional, but requested for "demonstrating process")
+        // In verify real-world, we'd run migrations here.
+        // Since initDB() runs at start, we'll verify and maybe seed some data.
+
+        await new Promise(r => setTimeout(r, 1000)); // Simulate "Creating Tables"
+
+        // Ensure tables exist (redundant but safe)
+        initDB();
+
+        await new Promise(r => setTimeout(r, 800)); // Simulate "Verifying Schema"
+
+        // Seed if empty
+        const userCount = db.prepare('SELECT count(*) as count FROM users').get();
+        if (userCount.count === 0) {
+            // We could insert a "System Admin" placeholder or just leave it
+        }
+
+        await new Promise(r => setTimeout(r, 800)); // Simulate "Seeding Data"
+
+        // Mark as completed
+        db.prepare(`
+            INSERT INTO system_meta (key, value) VALUES ('setup_completed', 'true')
+            ON CONFLICT(key) DO UPDATE SET value = 'true', updated_at = CURRENT_TIMESTAMP
+        `).run();
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// -----------------------------------------------------------------------------
 // Start Server
 // -----------------------------------------------------------------------------
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`\n🚀 GitHub Repo Manager API is live on http://localhost:${PORT}`);
     console.log(`   Frontend: ${FRONTEND_URL}`);
     console.log(`   Mode: ${process.env.NODE_ENV || 'development'}`);
 });
+
+server.on('error', (e) => {
+    if (e.code === 'EADDRINUSE') {
+        console.error(`ERROR: Port ${PORT} is already in use!`);
+        process.exit(1);
+    } else {
+        console.error('Server error:', e);
+    }
+});
+
+// Force keep-alive to debug why process exits
+setInterval(() => { }, 10000);
