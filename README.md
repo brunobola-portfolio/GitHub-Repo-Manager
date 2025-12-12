@@ -50,15 +50,17 @@ Managing hundreds of repositories on GitHub can be tedious. Whether you're clean
 
 ## 📸 Screenshots
 
-| Dashboard | Repository List |
-|:---:|:---:|
-| <img src="docs/images/dashboard_view.png" width="400" /> | <img src="docs/images/repo_list_view.png" width="400" /> |
-| **Global Insights** | **Bulk Management** |
+<p align="center">
+  <img src="docs/images/dashboard_view.png" alt="Dashboard View" width="800" />
+</p>
+<p align="center"><b>Global Insights & Analytics</b></p>
 
-| Team Activity | AI Assistant |
+<br />
+
+| Repository List | AI Assistant |
 |:---:|:---:|
-| <img src="docs/images/activity_stream_view.png" width="400" alt="Activity Stream with Date Grouping" /> | <img src="docs/images/ai_assistant_view.png" width="400" /> |
-| **Real-time Updates** | **Smart Chat** |
+| <img src="docs/images/repo_list_view.png" width="400" alt="Bulk Management" /> | <img src="docs/images/ai_assistant_view.png" width="400" alt="Smart Chat" /> |
+| **Bulk Management** | **Smart Chat** |
 
 
 
