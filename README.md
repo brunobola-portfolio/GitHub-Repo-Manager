@@ -35,6 +35,12 @@ Managing hundreds of repositories on GitHub can be tedious. Whether you're clean
 *   **Interactive Dashboard**: Visualized data with beautiful charts and real-time organization filtering.
 *   **Enhanced Navigation**: A redesigned sidebar for effortless switching between organizations and repositories.
 
+### 👥 Team Management & Collaboration
+*   **Teams Hub**: Create, Edit, and Delete teams to organize your workflow.
+*   **Member Management**: Invite GitHub users to your teams directly.
+*   **Repo Assignments**: Manage repository access for specific teams.
+*   **Activity Stream**: A unified timeline of all team activity (Push, PRs, Comments) grouped by date.
+
 ### 🤖 AI-Powered Assistance
 *   **Smart Suggestions**: Get AI-driven tips on how to improve your repository metadata.
 *   **Auto-README**: Generate professional READMEs for your projects in seconds.
@@ -42,17 +48,17 @@ Managing hundreds of repositories on GitHub can be tedious. Whether you're clean
 
 ---
 
-## � Screenshots
+## 📸 Screenshots
 
 | Dashboard | Repository List |
 |:---:|:---:|
 | <img src="docs/images/dashboard_view.png" width="400" /> | <img src="docs/images/repo_list_view.png" width="400" /> |
 | **Global Insights** | **Bulk Management** |
 
-| AI Assistant | Organization Settings |
+| Team Activity | AI Assistant |
 |:---:|:---:|
-| <img src="docs/images/ai_assistant_view.png" width="400" /> | <img src="docs/images/commit_generator_modal_1765291495095.png" width="400" /> |
-| **Smart Chat** | **Commit Generator** |
+| <img src="docs/images/activity_stream_view.png" width="400" alt="Activity Stream with Date Grouping" /> | <img src="docs/images/ai_assistant_view.png" width="400" /> |
+| **Real-time Updates** | **Smart Chat** |
 
 ---
 
@@ -75,49 +81,12 @@ Managing hundreds of repositories on GitHub can be tedious. Whether you're clean
     npm install
     ```
 
-3.  **Start in Demo Mode** (No setup required)
-    ```bash
-    npm run dev
-    ```
-    The app will open at `http://localhost:5173` with mock data so you can explore the UI.
-
----
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Start-to-Infinite/GitHub-Repo-Manager.git
-   cd GitHub-Repo-Manager
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Configure Environment**
-   Create a `.env` file in the root directory:
-   ```env
-   # Server (Backend)
-   PORT=3001
-   GITHUB_CLIENT_ID=your_github_client_id
-   GITHUB_CLIENT_SECRET=your_github_client_secret
-   SESSION_SECRET=your_secret_key
-   
-   # AI Features (Optional - Recommended)
-   # If set here, AI features work for all users using the server key.
-   # Users can also provide their own key via the app Settings.
-   GEMINI_API_KEY=your_gemini_api_key
-   
-   # Setup GitHub OAuth App > Homepage: http://localhost:5173 > Callback: http://localhost:3001/api/auth/github/callback
-
-   # Client (Frontend)
-   VITE_API_BASE_URL=http://localhost:3001
-   VITE_MOCK_MODE=false
-   ```
-
-4. **Run Development Server**
-   ```bash
-   npm run dev:all
-   ```
+### 🚀 Demo Mode
+Want to try it without setup?
+```bash
+npm run dev
+```
+(Runs with Mock Data enabled by default)
 
 MIT License.
 
