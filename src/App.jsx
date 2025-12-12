@@ -187,7 +187,7 @@ function App() {
           variant: value === 'private' ? 'warning' : 'info',
           onConfirm: async () => {
             try {
-              await performAction('visibility', [repo.full_name], null, { visibility: value })
+              await performAction('visibility', [repo.full_name], null, { makePublic: value === 'public' })
               toast.success(`${repo.name} is now ${value}`)
               setConfirmModal({ isOpen: false })
               refresh()
