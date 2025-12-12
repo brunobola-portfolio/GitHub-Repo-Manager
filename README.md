@@ -60,10 +60,7 @@ Managing hundreds of repositories on GitHub can be tedious. Whether you're clean
 | <img src="docs/images/activity_stream_view.png" width="400" alt="Activity Stream with Date Grouping" /> | <img src="docs/images/ai_assistant_view.png" width="400" /> |
 | **Real-time Updates** | **Smart Chat** |
 
-| Teams Hub | Repository Details |
-|:---:|:---:|
-| <img src="docs/images/teams-dark.png" width="400" alt="Teams Management Interface" /> | <img src="docs/images/repo-details-dark.png" width="400" alt="Repository Details View" /> |
-| **Collaborative Workspaces** | **Deep Dive Insights** |
+
 
 ---
 
