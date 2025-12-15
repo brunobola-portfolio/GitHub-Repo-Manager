@@ -15,6 +15,7 @@ dist
 dist-ssr
 *.local
 .augment/
+.agent/
 
 # Environment files (NEVER commit credentials!)
 .env

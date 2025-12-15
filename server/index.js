@@ -387,12 +387,15 @@ app.post('/api/visibility', requireAuth, async (req, res) => {
     // Process sequentially to avoid hitting rate limits too hard
     for (const repoFullName of repos) {
         try {
-            await githubApi(`/repos/${repoFullName}`, req.session.accessToken, {
+            console.log(`[Visibility] Toggling ${repoFullName} to public=${makePublic}`);
+            const response = await githubApi(`/repos/${repoFullName}`, req.session.accessToken, {
                 method: 'PATCH',
                 body: JSON.stringify({ private: !makePublic })
             });
+            console.log(`[Visibility] Success for ${repoFullName}:`, response);
             results.push({ repo: repoFullName, success: true });
         } catch (error) {
+            console.error(`[Visibility] Failed for ${repoFullName}:`, error);
             results.push({ repo: repoFullName, success: false, error: error.message });
         }
     }
