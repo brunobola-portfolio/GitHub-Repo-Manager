@@ -1,99 +1,543 @@
-# GitHub Repository Manager
+# GitHub Repo Manager
 
-**Your personal command center for GitHub.**  
-Manage your repositories, organize your portfolio, and perform bulk operations with ease—all from a beautiful, modern interface.
+![React](https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-20-339933?style=for-the-badge&logo=node.js&logoColor=white)
+![Gemini AI](https://img.shields.io/badge/Gemini_AI-Powered-8E75B2?style=for-the-badge&logo=google-gemini&logoColor=white)
 
-![GitHub Repo Manager](https://img.shields.io/badge/Status-Active-success) ![License](https://img.shields.io/badge/License-MIT-blue) ![Stack](https://img.shields.io/badge/Tech-React_19_•_Vite_•_Tailwind-indigo)
-
-## 🚀 Why this exists
-
-Managing hundreds of repositories on GitHub can be tedious. Whether you're cleaning up old forks, organizing your portfolio into organizations, or just trying to get a bird's-eye view of your code, the default GitHub UI often requires too many clicks.
-
-**GitHub Repo Manager** solves this by giving you a powerful dashboard to:
-*   **Bulk Edit**: Make 50 repos private in one click.
-*   **Organize**: Transfer multiple projects to an organization instantly.
-*   **Clean Up**: Archive or delete stale forks in batches.
-*   **Analyze**: See stats and trends across all your organizations.
+> **A modern, AI-powered dashboard for managing your GitHub ecosystem with style and intelligence.**
 
 ---
 
-## ✨ Key Features
+## ✨ Overview
 
-### 🛡️ Core Management
-*   **Bulk Visibility Control**: Toggle privacy settings for multiple repos at once.
-*   **Mass Transfer**: Move repositories between accounts and organizations seamlessly.
-*   **Smart Archiving**: Quickly identify and archive unused projects.
-*   **Mirroring**: Create backups/forks of repositories into other organizations.
+**GitHub Repo Manager** is a comprehensive workspace designed for developers who manage multiple repositories, organizations, and teams. Built with a stunning **Glassmorphism UI** that combines aesthetic beauty with powerful functionality, it transforms repository management from a chore into an elegant experience.
 
-### 📊 Insights & Dashboard
-*   **Global Overview**: View total stars, forks, and activity across all your accounts.
-*   **Organization Filter**: Drill down into specific organizations to see what's happening.
-*   **Language Breakdown**: See your most used languages visually.
+Whether you're an individual developer with dozens of side projects or a team lead managing an organization's infrastructure, this tool provides the insights and controls you need—all in one beautiful interface.
 
-### 💎 Premium Experience (New!)
-*   **Glassmorphism UI**: A stunning, modern interface with frosted glass effects and smooth animations.
-*   **Interactive Dashboard**: Visualized data with beautiful charts and real-time organization filtering.
-*   **Enhanced Navigation**: A redesigned sidebar for effortless switching between organizations and repositories.
-
-### 👥 Team Management & Collaboration
-*   **Teams Hub**: Create, Edit, and Delete teams to organize your workflow.
-*   **Member Management**: Invite GitHub users to your teams directly.
-*   **Repo Assignments**: Manage repository access for specific teams.
-*   **Activity Stream**: A unified timeline of all team activity (Push, PRs, Comments) grouped by date.
-
-### 🤖 AI-Powered Assistance
-*   **Smart Suggestions**: Get AI-driven tips on how to improve your repository metadata.
-*   **Auto-README**: Generate professional READMEs for your projects in seconds.
-*   **Natural Language Search**: Find "my private react apps" just by typing it.
+![Dashboard View](docs/images/01_dashboard_hd.png)
 
 ---
 
-## 📸 Screenshots
+## 🎯 Key Features
 
-<p align="center">
-  <img src="docs/images/dashboard_view.png" alt="Dashboard View" width="800" />
-</p>
-<p align="center"><b>Global Insights & Analytics</b></p>
+### 🎨 Modern Glassmorphism UI
+Experience a meticulously crafted interface with depth-rich layers, subtle blurs, and smooth animations that make navigating complex data intuitive and delightful.
 
-<br />
+- **🌓 Dark/Light Mode**: Seamlessly switch between themes with system preference detection
+- **📱 Responsive Design**: Works beautifully across desktop, tablet, and mobile devices
+- **⚡ Lightning Fast**: Built with Vite for instant hot-module replacement and blazing-fast builds
+- **🎭 Smooth Animations**: Powered by Framer Motion for fluid, natural interactions
 
-| Repository List | AI Assistant |
-|:---:|:---:|
-| <img src="docs/images/repo_list_view.png" width="400" alt="Bulk Management" /> | <img src="docs/images/ai_assistant_view.png" width="400" alt="Smart Chat" /> |
-| **Bulk Management** | **Smart Chat** |
+### 📊 Comprehensive Dashboard
+Get a bird's-eye view of your entire GitHub ecosystem at a glance.
 
+- **Real-time Statistics**: Track total repos, public/private distribution, forks, and organizations
+- **Activity Trends**: Visual charts showing your development activity over time
+- **Language Distribution**: See which technologies power your projects
+- **Top Organizations**: Quick insights into your most active organizations
 
+![Repository Management](docs/images/02_repositories_hd.png)
+
+### 📦 Advanced Repository Management
+Organize, filter, and manage your repositories with powerful tools built for scale.
+
+- **🔍 Smart Search & Filters**: Find repos instantly by name, language, visibility, or type
+- **🤖 AI Semantic Search**: Natural language search powered by embeddings (requires AI setup)
+- **📋 Bulk Actions**: Archive, delete, transfer, or update multiple repos simultaneously
+- **🏷️ Intelligent Sorting**: Sort by stars, forks, update date, or custom criteria
+- **🎯 Advanced Filters**: Filter by programming language, visibility, archived status, and more
+- **📄 Pagination**: Efficiently navigate large repository collections
+
+### ⚡ Quick Repository Creation
+Streamline your workflow with our intuitive repository creation modal.
+
+![Create Repository](docs/images/03_create_repo_modal_hd.png)
+
+- **📝 Smart Defaults**: Intelligent form pre-population based on your patterns
+- **🏢 Organization Support**: Create repos under personal account or any organization
+- **🤖 AI Description Generator**: Auto-generate professional descriptions (requires AI setup)
+- **🔒 Privacy Controls**: Set repository visibility with a single click
+- **✨ Template Support**: Create from existing templates for faster setup
+
+### 🤖 AI-Powered Intelligence
+Leverage Google Gemini AI to supercharge your repository management.
+
+![AI Assistant](docs/images/04_ai_assistant_hd.png)
+
+#### Conversational AI Assistant
+- **💬 Natural Language Interface**: Ask questions about your repositories in plain English
+- **🎯 Context-Aware Responses**: Get answers tailored to your specific projects
+- **📚 Knowledge Base**: Built-in understanding of best practices and GitHub workflows
+- **🚀 Quick Actions**: Execute common tasks through conversation
+
+#### Repository Insights & Analysis
+- **📊 Quality Reports**: Comprehensive analysis of code health, documentation, and community
+- **🔍 Pattern Detection**: Automatically identify missing README sections, CI/CD, tests, license
+- **📈 Health Scoring**: 0-100 score based on documentation, community, engineering, and polish
+- **💡 Actionable Recommendations**: Priority-ranked suggestions for improvement
+
+#### AI-Enhanced Features
+- **📝 README Generation**: Create professional README files based on your project structure
+- **✨ README Enhancement**: Intelligently add missing sections to existing documentation
+- **🏷️ Smart Topic Suggestions**: AI-generated tags for better discoverability
+- **🔮 Project Classification**: Automatic detection of project type (library, app, tool, etc.)
+
+### 👥 Team Collaboration Hub
+Manage your teams and streamline collaboration across your organization.
+
+![Team Hub](docs/images/05_teams_hub_hd.png)
+
+- **🏢 Team Overview**: Centralized view of all your teams and their repositories
+- **📊 Team Analytics**: Track repository count and member activity per team
+- **👤 Member Management**: Easy team member administration
+- **🔐 Role-Based Access**: Owner, member, and maintainer role tracking
+- **📋 Team Repositories**: Quick access to all team-managed projects
+
+### 🔄 Azure DevOps Migration
+Seamlessly migrate your projects from Azure DevOps to GitHub.
+
+- **📥 Import Wizard**: Step-by-step migration process with progress tracking
+- **🔗 Connection Verification**: Test Azure DevOps connectivity before migration
+- **📊 Batch Migration**: Move multiple projects at once
+- **✅ Status Tracking**: Real-time progress updates during migration
+- **🛡️ Safe Migration**: Read-only imports that preserve your original data
+
+### 🎯 Additional Power Features
+
+- **⭐ Repository Starring**: Quick-star functionality for your favorite projects
+- **📌 Pin Repositories**: Keep important repos at the top of your list
+- **🔔 Smart Notifications**: Stay updated on important repository events
+- **📈 Activity Timeline**: Visual history of recent repository and team activities
+- **🔄 Organization Sync**: Refresh organization data with a single click
+- **💾 Local Caching**: Fast performance with intelligent data caching
+- **🌐 Offline Support**: Continue working even when GitHub is unreachable
 
 ---
 
-## �🛠️ Quick Start
+## 🛠️ Tech Stack
+
+| Category | Technologies |
+|----------|-------------|
+| **Frontend** | React 19, Vite 6, TailwindCSS 4 |
+| **UI/UX** | Framer Motion 12, Lucide Icons, Recharts 2 |
+| **Backend** | Node.js 20+, Express 5 |
+| **Database** | Better-SQLite3 (local) |
+| **AI** | Google Gemini API (@google/generative-ai) |
+| **APIs** | GitHub REST API, Azure DevOps API |
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
-*   Node.js 18+
-*   A GitHub Account
+
+- **Node.js** 18+ (20+ recommended)
+- **npm** or **yarn**
+- **GitHub account** (for OAuth and API access)
+- **Google Gemini API key** (optional, for AI features)
 
 ### Installation
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/your-username/github-repo-manager.git
-    cd github-repo-manager
-    ```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/github-repo-manager.git
+   cd github-repo-manager
+   ```
 
-2.  **Install dependencies**
-    ```bash
-    npm install
-    ```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### 🚀 Demo Mode
-Want to try it without setup?
+3. **Set up environment variables**
+   
+   Copy the example file and configure:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Edit `.env` with your credentials (see [Configuration](#-configuration) below)
+
+### Running the Application
+
+**Option 1: Run Everything Together (Recommended)**
 ```bash
+npm run dev:all
+```
+This launches both frontend (`:5173`) and backend (`:3001`) concurrently.
+
+**Option 2: Run Separately**
+```bash
+# Terminal 1: Backend
+npm run dev:server
+
+# Terminal 2: Frontend
 npm run dev
 ```
-(Runs with Mock Data enabled by default)
 
-MIT License.
+**Access the application**: Open [http://localhost:5173](http://localhost:5173)
 
 ---
 
-*Built by Bruno Marques – Bola Labs, Inc.*
+## ⚙️ Configuration
+
+### Mock Mode vs. Real Mode
+
+The application supports **Mock Mode** for development and demos without external API keys.
+
+#### Mock Mode (Default)
+Perfect for testing the UI and exploring features without setup:
+```env
+VITE_MOCK_MODE=true
+```
+
+Mock mode provides:
+- ✅ Realistic repository data with 87 mock repositories
+- ✅ Simulated organizations and teams
+- ✅ Mock AI responses for all AI features
+- ✅ Full UI functionality without API calls
+
+#### Real Mode
+For production use with actual GitHub and AI integration:
+```env
+VITE_MOCK_MODE=false
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+### Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+# ===================
+# GitHub OAuth (Required for Real Mode)
+# ===================
+GITHUB_CLIENT_ID=your_github_oauth_client_id
+GITHUB_CLIENT_SECRET=your_github_oauth_client_secret
+
+# ===================
+# AI Features (Optional)
+# ===================
+# Get your key from: https://makersuite.google.com/app/apikey
+GEMINI_API_KEY=your_gemini_api_key
+
+# ===================
+# Azure DevOps Migration (Optional)
+# ===================
+AZURE_PAT=your_azure_personal_access_token
+
+# ===================
+# Server Configuration
+# ===================
+PORT=3001
+SESSION_SECRET=your_random_session_secret
+FRONTEND_URL=http://localhost:5173
+
+# ===================
+# Development
+# ===================
+VITE_MOCK_MODE=true
+```
+
+### Setting Up GitHub OAuth
+
+1. Go to **GitHub Settings** → **Developer settings** → **OAuth Apps**
+2. Click **New OAuth App**
+3. Configure:
+   - **Application name**: GitHub Repo Manager
+   - **Homepage URL**: `http://localhost:5173`
+   - **Authorization callback URL**: `http://localhost:3001/api/auth/callback`
+4. Copy the **Client ID** and **Client Secret** to your `.env` file
+
+### Setting Up AI Features
+
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Create a new API key
+3. Add it to `.env` as `GEMINI_API_KEY`
+
+Without an API key, AI features will return mock responses with sample data.
+
+---
+
+## 🔐 GitHub Permissions
+
+The application requires specific GitHub scopes for full functionality:
+
+| Scope | Purpose | Why We Need It |
+|-------|---------|----------------|
+| `repo` | Full repository control | List, create, update, and delete repositories (public and private) |
+| `read:org` | Read organization data | Display your organizations and team memberships |
+| `user` | Read user profile | Fetch profile information and email address |
+| `delete_repo` | Delete repositories | Required explicitly for the bulk delete action |
+| `admin:org` | Organization administration | Create teams and manage organization settings (optional) |
+
+> **🔒 Security Note**: Access tokens are stored in encrypted session cookies and never persisted to disk.
+
+---
+
+## 📚 Architecture
+
+### System Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Frontend (React + Vite)                   │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │  Components │  │    Hooks    │  │    API Utilities    │  │
+│  │  (UI Layer) │  │ (useGitHub) │  │  (src/api/, utils/) │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   Backend (Express Server)                   │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │   Routes    │  │  AI Service │  │   Database (SQLite) │  │
+│  │ /api/*      │  │ (Gemini)    │  │   (Better-SQLite3)  │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    External Services                         │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
+│  │  GitHub API │  │ Gemini API  │  │   Azure DevOps API  │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+For detailed architecture documentation, see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+---
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+#### Port Already in Use
+```bash
+Error: Port 5173 is already in use
+```
+**Solution**: Kill the process using the port or change it in `vite.config.js`:
+```bash
+# Windows
+netstat -ano | findstr :5173
+taskkill /PID <pid> /F
+
+# macOS/Linux
+lsof -ti:5173 | xargs kill -9
+```
+
+#### GitHub OAuth Callback Error
+```
+Error: Invalid callback URL
+```
+**Solution**: Ensure your OAuth app's callback URL matches exactly:
+- Development: `http://localhost:3001/api/auth/callback`
+- Production: `https://yourdomain.com/api/auth/callback`
+
+#### AI Features Not Working
+```
+503 Service Unavailable
+```
+**Solution**: 
+1. Verify `GEMINI_API_KEY` is set in `.env`
+2. Check API key is valid at [Google AI Studio](https://makersuite.google.com/app/apikey)
+3. Without a key, mock responses are returned automatically
+
+#### Session Lost on Refresh
+**Solution**: Check that `SESSION_SECRET` is set in `.env` and the backend is running.
+
+#### npm install Fails
+```bash
+Error: Cannot find module 'some-package'
+```
+**Solution**:
+```bash
+rm -rf node_modules package-lock.json
+npm cache clean --force
+npm install
+```
+
+#### Charts Not Rendering
+**Solution**: Ensure browser window is focused and wait 2-3 seconds for data to load. Charts use lazy rendering for performance.
+
+---
+
+## ❓ FAQ
+
+### General Questions
+
+**Q: Do I need a GitHub account to use this?**  
+A: Yes, for real mode. Mock mode works without any accounts.
+
+**Q: Is my data secure?**  
+A: Yes. We use encrypted session cookies and never store tokens permanently. All data stays on your machine.
+
+**Q: Can I use this with GitHub Enterprise?**  
+A: Not currently, but it's on our roadmap. Contributions welcome!
+
+**Q: Does this work offline?**  
+A: The UI works offline with cached data. Live features like syncing require internet connectivity.
+
+### AI Features
+
+**Q: Do I need to pay for AI features?**  
+A: Google Gemini has a free tier. Check current limits at [ai.google.dev](https://ai.google.dev/).
+
+**Q: What data is sent to AI?**  
+A: Only repository metadata (name, description, topics, README). Never code content.
+
+**Q: Can I use a different AI provider?**  
+A: Currently only Gemini is supported. Other providers can be added—see `server/ai-service.js`.
+
+### Features & Usage
+
+**Q: How many repositories can I manage?**  
+A: Unlimited. Pagination handles large collections efficiently.
+
+**Q: Can I bulk-edit repository settings?**  
+A: Yes! Select multiple repos and use bulk actions in the Quick Actions panel.
+
+**Q: Does this support GitHub Actions?**  
+A: Viewing workflow status is on the roadmap. Triggering workflows is not yet supported.
+
+**Q: Can I export my repository data?**  
+A: Not yet, but it's a planned feature. For now, data is in SQLite (`server/data/manager.db`).
+
+### Development
+
+**Q: Can I contribute?**  
+A: Absolutely! See [`CONTRIBUTING.md`](CONTRIBUTING.md) for guidelines.
+
+**Q: How do I report a bug?**  
+A: Open an issue on GitHub with:
+- Steps to reproduce
+- Expected vs actual behavior  
+- Screenshots if applicable
+- Browser and OS version
+
+**Q: Where are feature requests tracked?**  
+A: In GitHub Issues with the `enhancement` label.
+
+---
+
+## 🗺️ Roadmap
+
+### v2.0 (Q1 2025)
+- [ ] **Advanced Analytics**: Historical trends, commit activity heatmaps, contributor insights
+- [ ] **CI/CD Integration**: View and trigger GitHub Actions directly from the dashboard
+- [ ] **Custom Themes**: User-customizable color schemes and glassmorphism intensity
+- [ ] **Keyboard Shortcuts**: Power-user shortcuts for common actions
+- [ ] **Repository Templates**: Save and reuse repository configurations
+
+### v2.5 (Q2 2025)
+- [ ] **Mobile App**: React Native companion for on-the-go management
+- [ ] **GitHub Enterprise Support**: Connect to self-hosted GitHub instances
+- [ ] **Data Export**: Export repository data to CSV, JSON, or Excel
+- [ ] **Webhooks Dashboard**: Real-time webhook monitoring and debugging
+- [ ] **Collaborative Features**: Share repository collections with team members
+
+### v3.0 (Q3 2025)
+- [ ] **Enhanced AI**:
+  - Automated code review agents
+  - Semantic search across all repositories
+  - "Chat with your codebase" feature
+  - AI-powered issue triage
+- [ ] **Premium Insights**:
+  - Dependency vulnerability scanning
+  - Security best practices checker
+  - Performance optimization suggestions
+- [ ] **Multi-Platform Migration**: Support for GitLab, Bitbucket, and more
+
+---
+
+## 🤝 Contributing
+
+We love contributions! Whether it's bug fixes, new features, or documentation improvements, every contribution makes this project better.
+
+### Quick Start for Contributors
+
+1. **Fork** the repository
+2. **Clone** your fork:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/github-repo-manager.git
+   ```
+3. **Create a feature branch**:
+   ```bash
+   git checkout -b feature/AmazingFeature
+   ```
+4. **Make your changes** and commit:
+   ```bash
+   git commit -m 'feat: Add AmazingFeature'
+   ```
+5. **Push** to your fork:
+   ```bash
+   git push origin feature/AmazingFeature
+   ```
+6. **Open a Pull Request** with a clear description
+
+### Development Guidelines
+
+- **Code Style**: We use ESLint and Prettier. Run `npm run lint` before committing.
+- **Commit Messages**: Follow [Conventional Commits](https://www.conventionalcommits.org/).
+- **Testing**: Add tests for new features. Run `npm test` to verify.
+- **Documentation**: Update README and docs when adding features.
+
+For detailed guidelines, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+---
+
+## 📜 License
+
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
+
+---
+
+## 🙏 Acknowledgments
+
+- **React Team** for the amazing React 19 release
+- **Vite Team** for the blazing-fast build tool
+- **Tailwind Labs** for TailwindCSS 4.0
+- **Google** for the Gemini AI API
+- **GitHub** for their comprehensive REST API
+- **All Contributors** who make this project possible
+
+---
+
+## 📞 Support
+
+- **📖 Documentation**: Full docs at [`/docs`](docs/)
+- **🐛 Bug Reports**: [GitHub Issues](https://github.com/yourusername/github-repo-manager/issues)
+- **💡 Feature Requests**: [GitHub Discussions](https://github.com/yourusername/github-repo-manager/discussions)
+- **💬 Community**: Join our [Discord server](https://discord.gg/your-invite)
+
+---
+
+## 📊 Project Stats
+
+![GitHub stars](https://img.shields.io/github/stars/yourusername/github-repo-manager?style=social)
+![GitHub forks](https://img.shields.io/github/forks/yourusername/github-repo-manager?style=social)
+![GitHub issues](https://img.shields.io/github/issues/yourusername/github-repo-manager)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/yourusername/github-repo-manager)
+![License](https://img.shields.io/github/license/yourusername/github-repo-manager)
+
+---
+
+<p align="center">
+  <strong>Built with ❤️ by Bola Labs</strong><br>
+  <sub>Powered by React 19, Vite 6, and Google Gemini AI</sub>
+</p>
+
+<p align="center">
+  <a href="#-overview">Overview</a> •
+  <a href="#-key-features">Features</a> •
+  <a href="#-getting-started">Getting Started</a> •
+  <a href="#-configuration">Configuration</a> •
+  <a href="#-troubleshooting">Troubleshooting</a> •
+  <a href="#-contributing">Contributing</a>
+</p>
