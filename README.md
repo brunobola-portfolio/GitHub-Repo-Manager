@@ -95,14 +95,46 @@ Manage your teams and streamline collaboration across your organization.
 - **🔐 Role-Based Access**: Owner, member, and maintainer role tracking
 - **📋 Team Repositories**: Quick access to all team-managed projects
 
-### 🔄 Azure DevOps Migration
-Seamlessly migrate your projects from Azure DevOps to GitHub.
+### ⚡ GitHub Actions Statistics
+Monitor CI/CD pipeline performance with comprehensive analytics.
 
-- **📥 Import Wizard**: Step-by-step migration process with progress tracking
-- **🔗 Connection Verification**: Test Azure DevOps connectivity before migration
-- **📊 Batch Migration**: Move multiple projects at once
-- **✅ Status Tracking**: Real-time progress updates during migration
-- **🛡️ Safe Migration**: Read-only imports that preserve your original data
+- **📊 Workflow Metrics**: Success rates, failure tracking, and duration analysis
+- **📈 Daily Trends**: Interactive charts showing workflow performance over time
+- ** Real-time Sync**: Sync workflow runs directly from GitHub API
+- **📥 Export Data**: Download statistics as CSV for reporting
+- **👥 Team Analytics**: Aggregate metrics across all team repositories
+- **🎯 Workflow-Specific Stats**: Detailed analysis per workflow
+
+### 🏥 Community Health Metrics
+Evaluate and improve repository community standards.
+
+- **💯 Health Score**: 0-100 rating based on documentation, files, and activity
+- **📋 File Checklist**: Verify presence of README, LICENSE, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY
+- **📊 Activity Metrics**: Track contributors, commits, and issue resolution
+- **💡 Smart Recommendations**: Priority-ranked suggestions (high/medium/low)
+- **⚡ Performance Cache**: Fast repeated access with intelligent caching
+- **🔍 Multi-Repo Comparison**: Compare health scores across repositories
+
+### 🔄 Azure DevOps Import (Basic)
+Import Git repositories from Azure DevOps to GitHub with a streamlined workflow.
+
+**✅ Currently Supported:**
+- **📥 Git Repository Code**: Complete history, branches, and tags preservation
+- **🔗 Connection Verification**: Validate Azure DevOps credentials before import
+- **🎯 Flexible Targeting**: Import to personal account or organization
+- **🔒 Privacy Controls**: Choose public or private repository visibility
+- **🛡️ Safe Import**: Read-only operation that preserves your original Azure DevOps data
+
+**⚠️ Current Limitations:**
+- **Pull Requests**: Not automatically migrated (manual recreation required)
+- **Work Items/Boards**: Not migrated (Azure Boards → GitHub Issues conversion not available)
+- **Pipelines**: Not converted (Azure Pipelines → GitHub Actions requires manual setup)
+- **Wiki**: Not migrated (requires manual export/import)
+- **Test Plans**: Not supported
+- **Artifacts**: Not supported
+
+**🗺️ Future Roadmap:**
+Full Azure DevOps migration capabilities (Work Items, Pipelines, Wiki) are planned for **v3.0+**. Current version focuses on essential Git repository migration for quick project transfers.
 
 ### 🎯 Additional Power Features
 
@@ -142,7 +174,7 @@ Seamlessly migrate your projects from Azure DevOps to GitHub.
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/github-repo-manager.git
+   git clone https://github.com/YOUR_USERNAME/github-repo-manager.git
    cd github-repo-manager
    ```
 
@@ -403,11 +435,11 @@ A: Unlimited. Pagination handles large collections efficiently.
 **Q: Can I bulk-edit repository settings?**  
 A: Yes! Select multiple repos and use bulk actions in the Quick Actions panel.
 
-**Q: Does this support GitHub Actions?**  
-A: Viewing workflow status is on the roadmap. Triggering workflows is not yet supported.
+**Q: Does this support GitHub Actions?**
+A: Yes! View workflow statistics, success rates, and trends. Triggering workflows is also supported through the Actions tab.
 
-**Q: Can I export my repository data?**  
-A: Not yet, but it's a planned feature. For now, data is in SQLite (`server/data/manager.db`).
+**Q: Can I export my repository data?**
+A: Yes! Actions Statistics can be exported to CSV. Full repository export is planned for a future release.
 
 ### Development
 
@@ -428,21 +460,22 @@ A: In GitHub Issues with the `enhancement` label.
 
 ## 🗺️ Roadmap
 
-### v2.0 (Q1 2025)
+### v2.0 (Q1 2026) - IN PROGRESS
+- [x] **CI/CD Integration**: View and trigger GitHub Actions directly from the dashboard ✅ COMPLETED
+- [x] **Community Health Metrics**: Repository health scoring and recommendations ✅ COMPLETED
 - [ ] **Advanced Analytics**: Historical trends, commit activity heatmaps, contributor insights
-- [ ] **CI/CD Integration**: View and trigger GitHub Actions directly from the dashboard
 - [ ] **Custom Themes**: User-customizable color schemes and glassmorphism intensity
 - [ ] **Keyboard Shortcuts**: Power-user shortcuts for common actions
 - [ ] **Repository Templates**: Save and reuse repository configurations
 
-### v2.5 (Q2 2025)
+### v2.5 (Q2 2026)
 - [ ] **Mobile App**: React Native companion for on-the-go management
 - [ ] **GitHub Enterprise Support**: Connect to self-hosted GitHub instances
 - [ ] **Data Export**: Export repository data to CSV, JSON, or Excel
 - [ ] **Webhooks Dashboard**: Real-time webhook monitoring and debugging
 - [ ] **Collaborative Features**: Share repository collections with team members
 
-### v3.0 (Q3 2025)
+### v3.0 (Q3 2026)
 - [ ] **Enhanced AI**:
   - Automated code review agents
   - Semantic search across all repositories
@@ -512,19 +545,19 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more informa
 ## 📞 Support
 
 - **📖 Documentation**: Full docs at [`/docs`](docs/)
-- **🐛 Bug Reports**: [GitHub Issues](https://github.com/yourusername/github-repo-manager/issues)
-- **💡 Feature Requests**: [GitHub Discussions](https://github.com/yourusername/github-repo-manager/discussions)
-- **💬 Community**: Join our [Discord server](https://discord.gg/your-invite)
+- **🐛 Bug Reports**: [GitHub Issues](https://github.com/YOUR_USERNAME/github-repo-manager/issues)
+- **💡 Feature Requests**: [GitHub Discussions](https://github.com/YOUR_USERNAME/github-repo-manager/discussions)
+- **💬 Community**: Open an issue for support
 
 ---
 
 ## 📊 Project Stats
 
-![GitHub stars](https://img.shields.io/github/stars/yourusername/github-repo-manager?style=social)
-![GitHub forks](https://img.shields.io/github/forks/yourusername/github-repo-manager?style=social)
-![GitHub issues](https://img.shields.io/github/issues/yourusername/github-repo-manager)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/yourusername/github-repo-manager)
-![License](https://img.shields.io/github/license/yourusername/github-repo-manager)
+![GitHub stars](https://img.shields.io/github/stars/YOUR_USERNAME/github-repo-manager?style=social)
+![GitHub forks](https://img.shields.io/github/forks/YOUR_USERNAME/github-repo-manager?style=social)
+![GitHub issues](https://img.shields.io/github/issues/YOUR_USERNAME/github-repo-manager)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/YOUR_USERNAME/github-repo-manager)
+![License](https://img.shields.io/github/license/YOUR_USERNAME/github-repo-manager)
 
 ---
 

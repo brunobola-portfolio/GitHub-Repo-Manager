@@ -13,11 +13,19 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import db, { initDB } from './db.js';
+import db, { initDB, seedMockData } from './db.js';
+import { aiService } from './ai-service.js';
+import { actionsService } from './actions-service.js';
+import { communityHealthService } from './community-health-service.js';
+
+dotenv.config();
 
 initDB();
 
-dotenv.config();
+// Seed mock data if in mock mode (for demo/development)
+if (process.env.VITE_MOCK_MODE !== 'false') {
+    seedMockData();
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -32,10 +40,9 @@ const {
 } = process.env;
 
 // Initialize Google AI only if key is present
-let genAI;
 if (GEMINI_API_KEY) {
     try {
-        genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+        aiService.initialize(GEMINI_API_KEY);
     } catch (e) {
         console.error('Failed to initialize Google AI:', e.message);
     }
@@ -249,8 +256,8 @@ const requireAI = (req, res, next) => {
     // Note: In a real app, you might want to cache this or structure it differently
     if (clientKey && !serverKey) {
         req.genAI = new GoogleGenerativeAI(clientKey);
-    } else if (genAI) {
-        req.genAI = genAI; // Use global instance if server key exists (or prefer server key)
+    } else if (aiService.genAI) {
+        req.genAI = aiService.genAI; // Use global instance if server key exists (or prefer server key)
     } else if (clientKey) {
         req.genAI = new GoogleGenerativeAI(clientKey);
     }
@@ -682,8 +689,6 @@ app.post('/api/ai/suggest', requireAuth, requireAI, async (req, res) => {
 app.post('/api/ai/readme', requireAuth, requireAI, async (req, res) => {
     try {
         const { name, description, language, topics } = req.body;
-        const model = req.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
         const prompt = `Generate a professional, high-quality README.md for a GitHub repository.
     
     Project Name: ${name}
@@ -701,15 +706,259 @@ app.post('/api/ai/readme', requireAuth, requireAI, async (req, res) => {
     
     Make it sound exciting and professional.`;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        const result = await aiService.model.generateContent(prompt);
+        const text = result.response.text();
 
         res.json({ readme: text });
     } catch (error) {
         console.error('AI README Error:', error);
         res.status(500).json({ error: 'Failed to generate README' });
     }
+});
+
+// New AI Indexing & Search Endpoints
+
+// Trigger Indexing (Summarize + Embed)
+app.post('/api/ai/index', requireAuth, requireAI, async (req, res) => {
+    const { repo } = req.body; // Full repo object from GitHub
+    if (!repo) return res.status(400).json({ error: 'Repo data required' });
+
+    try {
+        console.log(`[AI Index] processing ${repo.full_name}...`);
+
+        // 1. Fetch README
+        let readmeContent = '';
+        try {
+            const { data } = await githubApi(`/repos/${repo.full_name}/readme`, req.session.accessToken);
+            readmeContent = Buffer.from(data.content, 'base64').toString('utf-8');
+        } catch (e) {
+            console.warn(`No README for ${repo.full_name}`);
+        }
+
+        // 2. Fetch File Structure (Tree) -> getting top 20 items to save tokens
+        let fileStructure = [];
+        try {
+            const { data } = await githubApi(`/repos/${repo.full_name}/contents`, req.session.accessToken);
+            fileStructure = data.map(f => ({ name: f.name, type: f.type }));
+        } catch (e) {
+            console.warn(`Could not fetch contents for ${repo.full_name}`);
+        }
+
+        // 3. Generate Analysis (Summary, Health Score, Topics)
+        const analysis = await aiService.analyzeRepo(repo, readmeContent, fileStructure);
+
+        // 4. Generate Embedding (Description + Summary + Readme excerpt)
+        const textToEmbed = `${repo.name} ${repo.description || ''} ${analysis.summary} ${analysis.suggested_topics.join(' ')}`;
+        const embedding = await aiService.embedText(textToEmbed);
+
+        // 5. Save to DB
+        const stmtMeta = db.prepare(`
+            INSERT INTO repo_metadata (repo_id, summary, topics, health_score, last_indexed)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(repo_id) DO UPDATE SET
+                summary = excluded.summary,
+                topics = excluded.topics,
+                health_score = excluded.health_score,
+                last_indexed = CURRENT_TIMESTAMP
+        `);
+
+        const stmtEmbed = db.prepare(`
+            INSERT INTO repo_embeddings (repo_id, embedding, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(repo_id) DO UPDATE SET
+                embedding = excluded.embedding,
+                updated_at = CURRENT_TIMESTAMP
+        `);
+
+        db.transaction(() => {
+            stmtMeta.run(repo.id, analysis.summary, JSON.stringify(analysis.suggested_topics), analysis.health_score);
+            stmtEmbed.run(repo.id, JSON.stringify(embedding));
+        })();
+
+        res.json({ success: true, analysis });
+
+    } catch (error) {
+        console.error('Indexing failed:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Semantic Search Endpoint
+app.get('/api/ai/search', requireAuth, requireAI, async (req, res) => {
+    const { q } = req.query;
+    if (!q) return res.json([]);
+
+    try {
+        // Get generic results (repo_ids and scores)
+        const results = await aiService.semanticSearch(q, 10);
+
+        if (results.length === 0) return res.json([]);
+
+        // Determine which IDs to fetch
+        const repoIds = results.map(r => r.repo_id);
+
+        // We technically need the full repo object. 
+        // In a real app we'd fetch from local cache or specific GH endpoints.
+        // For now, we will just return the IDs and let the frontend match them with what it has,
+        // OR we can fetch metadata from our local DB.
+
+        const metas = db.prepare(`SELECT * FROM repo_metadata WHERE repo_id IN (${repoIds.join(',')})`).all();
+
+        // Merge score + metadata
+        const enriched = results.map(r => {
+            const meta = metas.find(m => m.repo_id === r.repo_id);
+            return { ...r, ...meta };
+        });
+
+        res.json(enriched);
+
+    } catch (error) {
+        console.error('Semantic search failed:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get Cached Metadata for a Repo
+app.get('/api/ai/metadata/:repoId', requireAuth, (req, res) => {
+    try {
+        const meta = db.prepare('SELECT * FROM repo_metadata WHERE repo_id = ?').get(req.params.repoId);
+        res.json(meta || null);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Enhanced README endpoint - Improve existing README
+app.post('/api/ai/readme/enhance', requireAuth, requireAI, async (req, res) => {
+    try {
+        const { repo } = req.body;
+        if (!repo) return res.status(400).json({ error: 'Repo data required' });
+
+        // Fetch current README
+        let readmeContent = '';
+        try {
+            const { data } = await githubApi(`/repos/${repo.full_name}/readme`, req.session.accessToken);
+            readmeContent = Buffer.from(data.content, 'base64').toString('utf-8');
+        } catch (e) {
+            console.warn(`No README for ${repo.full_name}`);
+        }
+
+        // Fetch file structure
+        let fileStructure = [];
+        try {
+            const { data } = await githubApi(`/repos/${repo.full_name}/contents`, req.session.accessToken);
+            fileStructure = data.map(f => ({ name: f.name, type: f.type }));
+        } catch (e) {
+            console.warn(`Could not fetch contents for ${repo.full_name}`);
+        }
+
+        const result = await aiService.enhanceReadme(readmeContent, repo, fileStructure);
+        res.json({ success: true, ...result, currentReadme: readmeContent });
+
+    } catch (error) {
+        console.error('README Enhancement Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Quality Report - Comprehensive repo health analysis
+app.post('/api/ai/quality-report', requireAuth, requireAI, async (req, res) => {
+    try {
+        const { repo } = req.body;
+        if (!repo) return res.status(400).json({ error: 'Repo data required' });
+
+        // Fetch README
+        let readmeContent = '';
+        try {
+            const { data } = await githubApi(`/repos/${repo.full_name}/readme`, req.session.accessToken);
+            readmeContent = Buffer.from(data.content, 'base64').toString('utf-8');
+        } catch (e) { /* No README */ }
+
+        // Fetch file structure
+        let fileStructure = [];
+        try {
+            const { data } = await githubApi(`/repos/${repo.full_name}/contents`, req.session.accessToken);
+            fileStructure = data.map(f => ({ name: f.name, type: f.type }));
+        } catch (e) { /* No contents */ }
+
+        const report = await aiService.generateQualityReport(repo, readmeContent, fileStructure);
+        res.json({ success: true, report, repo: repo.full_name });
+
+    } catch (error) {
+        console.error('Quality Report Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Batch Index - Index multiple repos at once
+app.post('/api/ai/batch-index', requireAuth, requireAI, async (req, res) => {
+    const { repos } = req.body; // Array of repo objects
+    if (!repos || !Array.isArray(repos)) {
+        return res.status(400).json({ error: 'Array of repos required' });
+    }
+
+    const results = [];
+    const limit = Math.min(repos.length, 10); // Max 10 at a time
+
+    for (let i = 0; i < limit; i++) {
+        const repo = repos[i];
+        try {
+            // Fetch README
+            let readmeContent = '';
+            try {
+                const { data } = await githubApi(`/repos/${repo.full_name}/readme`, req.session.accessToken);
+                readmeContent = Buffer.from(data.content, 'base64').toString('utf-8');
+            } catch (e) { /* No README */ }
+
+            // Fetch file structure
+            let fileStructure = [];
+            try {
+                const { data } = await githubApi(`/repos/${repo.full_name}/contents`, req.session.accessToken);
+                fileStructure = data.map(f => ({ name: f.name, type: f.type }));
+            } catch (e) { /* No contents */ }
+
+            // Generate analysis
+            const analysis = await aiService.analyzeRepo(repo, readmeContent, fileStructure);
+
+            // Generate and save embedding
+            const textToEmbed = `${repo.name} ${repo.description || ''} ${analysis.summary} ${analysis.suggested_topics?.join(' ') || ''}`;
+            const embedding = await aiService.embedText(textToEmbed);
+
+            // Save to DB
+            db.prepare(`
+                INSERT INTO repo_metadata (repo_id, summary, topics, health_score, last_indexed)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(repo_id) DO UPDATE SET
+                    summary = excluded.summary, topics = excluded.topics,
+                    health_score = excluded.health_score, last_indexed = CURRENT_TIMESTAMP
+            `).run(repo.id, analysis.summary, JSON.stringify(analysis.suggested_topics), analysis.health_score);
+
+            db.prepare(`
+                INSERT INTO repo_embeddings (repo_id, embedding, updated_at)
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(repo_id) DO UPDATE SET embedding = excluded.embedding, updated_at = CURRENT_TIMESTAMP
+            `).run(repo.id, JSON.stringify(embedding));
+
+            results.push({ repo: repo.full_name, success: true, health_score: analysis.health_score });
+
+        } catch (error) {
+            console.error(`Batch index failed for ${repo.full_name}:`, error.message);
+            results.push({ repo: repo.full_name, success: false, error: error.message });
+        }
+    }
+
+    res.json({
+        success: true,
+        processed: results.length,
+        results,
+        skipped: repos.length > 10 ? repos.length - 10 : 0
+    });
+});
+
+// AI Status - Check if AI is configured
+app.get('/api/config/ai-status', (req, res) => {
+    const configured = !!process.env.GEMINI_API_KEY || !!aiService.model;
+    res.json({ configured, provider: configured ? 'gemini' : null });
 });
 
 // -----------------------------------------------------------------------------
@@ -1059,6 +1308,851 @@ app.get(['/api/teams/:id/activity', '/api/team/:id/activity'], requireAuth, asyn
     } catch (error) {
         console.error('Team Activity Error:', error);
         res.status(500).json({ error: 'Failed to fetch team activity' });
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Actions Statistics Endpoints
+// -----------------------------------------------------------------------------
+
+// Sync workflow runs for a repository
+app.post('/api/repos/:owner/:repo/actions/sync', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const repoFullName = `${owner}/${repo}`;
+        
+        const result = await actionsService.syncWorkflowRuns(repoFullName, req.session.accessToken);
+        
+        if (result.success) {
+            res.json({ success: true, message: `Synced ${result.synced} workflow runs` });
+        } else {
+            res.status(500).json({ error: result.error });
+        }
+    } catch (error) {
+        console.error('Sync Workflow Runs Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get statistics for a repository
+app.get('/api/repos/:owner/:repo/actions/stats', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { days = 30 } = req.query;
+        
+        const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
+        const repoId = repoData.id;
+        
+        const stats = actionsService.getRepoStats(repoId, parseInt(days));
+        const trends = actionsService.getDailyTrends(repoId, parseInt(days));
+        
+        res.json({ stats, trends, repo: `${owner}/${repo}` });
+    } catch (error) {
+        console.error('Get Actions Stats Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get workflow-specific statistics
+app.get('/api/repos/:owner/:repo/workflows/:workflowId/stats', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, workflowId } = req.params;
+        
+        const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
+        const repoId = repoData.id;
+        
+        const stats = actionsService.getWorkflowStats(repoId, parseInt(workflowId));
+        
+        res.json(stats);
+    } catch (error) {
+        console.error('Get Workflow Stats Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get statistics for multiple repositories (team view)
+app.post('/api/teams/:id/actions/stats', requireAuth, async (req, res) => {
+    try {
+        const { days = 30 } = req.body;
+        
+        const repos = db.prepare('SELECT repo_id, repo_full_name FROM repo_assignments WHERE team_id = ?')
+            .all(req.params.id);
+        
+        if (repos.length === 0) {
+            return res.json({ repos: [], teamAverages: {} });
+        }
+        
+        const repoIds = repos.map(r => r.repo_id);
+        const statsArray = actionsService.getMultiRepoStats(repoIds, parseInt(days));
+        
+        const enrichedStats = statsArray.map(stat => {
+            const repo = repos.find(r => r.repo_id === stat.repoId);
+            return {
+                ...stat,
+                repoFullName: repo?.repo_full_name || 'unknown'
+            };
+        });
+        
+        const teamAverages = {
+            totalRuns: enrichedStats.reduce((sum, s) => sum + s.totalRuns, 0),
+            avgSuccessRate: enrichedStats.length > 0
+                ? +(enrichedStats.reduce((sum, s) => sum + s.successRate, 0) / enrichedStats.length).toFixed(2)
+                : 0,
+            avgDuration: enrichedStats.length > 0
+                ? Math.round(enrichedStats.reduce((sum, s) => sum + s.avgDuration, 0) / enrichedStats.length)
+                : 0
+        };
+        
+        res.json({ repos: enrichedStats, teamAverages });
+    } catch (error) {
+        console.error('Get Team Actions Stats Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Webhook receiver for GitHub Actions events
+app.post('/api/webhooks/actions', async (req, res) => {
+    try {
+        const payload = req.body;
+        
+        if (payload.action && payload.workflow_run) {
+            actionsService.storeWorkflowRun(payload.workflow_run);
+            actionsService.updateWorkflowMeta(
+                payload.repository.id,
+                payload.workflow_run.workflow_id
+            );
+        }
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Webhook Processing Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Community Health Endpoints
+// -----------------------------------------------------------------------------
+
+// Get community health analysis
+app.get('/api/repos/:owner/:repo/community-health', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { refresh = false } = req.query;
+        
+        const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
+        const repoId = repoData.id;
+        
+        if (!refresh) {
+            const cached = db.prepare('SELECT * FROM community_health_cache WHERE repo_id = ?').get(repoId);
+            if (cached) {
+                return res.json({
+                    score: cached.health_score,
+                    metrics: JSON.parse(cached.metrics),
+                    recommendations: JSON.parse(cached.recommendations),
+                    lastUpdated: cached.analyzed_at,
+                    cached: true
+                });
+            }
+        }
+        
+        const analysis = await communityHealthService.analyzeRepository(owner, repo, req.session.accessToken);
+        communityHealthService.cacheResults(repoId, analysis.metrics, analysis.recommendations);
+        
+        res.json({
+            score: analysis.metrics.healthScore,
+            metrics: analysis.metrics,
+            recommendations: analysis.recommendations,
+            lastUpdated: analysis.analyzedAt,
+            cached: false
+        });
+    } catch (error) {
+        console.error('Community Health Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Compare community health for multiple repos
+app.post('/api/community-health/compare', requireAuth, async (req, res) => {
+    try {
+        const { repos } = req.body;
+        
+        if (!repos || !Array.isArray(repos)) {
+            return res.status(400).json({ error: 'Invalid repos array' });
+        }
+        
+        const comparison = [];
+        
+        for (const repoFullName of repos) {
+            const [owner, repo] = repoFullName.split('/');
+            const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
+            
+            const cached = db.prepare('SELECT health_score FROM community_health_cache WHERE repo_id = ?')
+                .get(repoData.id);
+            
+            comparison.push({
+                repo: repoFullName,
+                score: cached?.health_score || 0,
+                hasCachedData: !!cached
+            });
+        }
+        
+        res.json({ comparison });
+    } catch (error) {
+        console.error('Compare Health Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Enhanced Repository Management
+// -----------------------------------------------------------------------------
+
+// Get single repository details
+app.get('/api/repos/:owner/:repo', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { data } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        console.error('Get Repo Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Update repository settings
+app.patch('/api/repos/:owner/:repo', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { name, description, homepage, private: isPrivate, has_issues, has_projects, has_wiki, default_branch, allow_squash_merge, allow_merge_commit, allow_rebase_merge, delete_branch_on_merge } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken, {
+            method: 'PATCH',
+            body: JSON.stringify({
+                name, description, homepage, private: isPrivate,
+                has_issues, has_projects, has_wiki, default_branch,
+                allow_squash_merge, allow_merge_commit, allow_rebase_merge,
+                delete_branch_on_merge
+            })
+        });
+        res.json(data);
+    } catch (error) {
+        console.error('Update Repo Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Update repository topics
+app.put('/api/repos/:owner/:repo/topics', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { names } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/topics`, req.session.accessToken, {
+            method: 'PUT',
+            headers: { 'Accept': 'application/vnd.github.mercy-preview+json' },
+            body: JSON.stringify({ names })
+        });
+        res.json(data);
+    } catch (error) {
+        console.error('Update Topics Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Create repository from template
+app.post('/api/repos/generate', requireAuth, async (req, res) => {
+    try {
+        const { template_owner, template_repo, owner, name, description, include_all_branches, private: isPrivate } = req.body;
+
+        const { data } = await githubApi(`/repos/${template_owner}/${template_repo}/generate`, req.session.accessToken, {
+            method: 'POST',
+            headers: { 'Accept': 'application/vnd.github.baptiste-preview+json' },
+            body: JSON.stringify({ owner, name, description, include_all_branches, private: isPrivate })
+        });
+        res.json({ success: true, repo: data });
+    } catch (error) {
+        console.error('Generate from Template Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Fork a repository
+app.post('/api/repos/:owner/:repo/forks', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { organization, name, default_branch_only } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/forks`, req.session.accessToken, {
+            method: 'POST',
+            body: JSON.stringify({ organization, name, default_branch_only })
+        });
+        res.json({ success: true, repo: data });
+    } catch (error) {
+        console.error('Fork Repo Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Branch Management
+// -----------------------------------------------------------------------------
+
+// List branches
+app.get('/api/repos/:owner/:repo/branches', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { protected: protectedOnly, per_page = 100 } = req.query;
+
+        let url = `/repos/${owner}/${repo}/branches?per_page=${per_page}`;
+        if (protectedOnly) url += '&protected=true';
+
+        const { data } = await githubApi(url, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        console.error('List Branches Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Get branch details
+app.get('/api/repos/:owner/:repo/branches/:branch', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, branch } = req.params;
+        const { data } = await githubApi(`/repos/${owner}/${repo}/branches/${branch}`, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        console.error('Get Branch Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Create branch (via Git refs)
+app.post('/api/repos/:owner/:repo/branches', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { name, source_branch = 'main' } = req.body;
+
+        // First get the SHA of the source branch
+        const { data: refData } = await githubApi(`/repos/${owner}/${repo}/git/refs/heads/${source_branch}`, req.session.accessToken);
+        const sha = refData.object.sha;
+
+        // Create new branch
+        const { data } = await githubApi(`/repos/${owner}/${repo}/git/refs`, req.session.accessToken, {
+            method: 'POST',
+            body: JSON.stringify({ ref: `refs/heads/${name}`, sha })
+        });
+        res.json({ success: true, ref: data });
+    } catch (error) {
+        console.error('Create Branch Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Delete branch
+app.delete('/api/repos/:owner/:repo/branches/:branch', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, branch } = req.params;
+        await githubApi(`/repos/${owner}/${repo}/git/refs/heads/${branch}`, req.session.accessToken, {
+            method: 'DELETE'
+        });
+        res.json({ success: true, message: `Branch ${branch} deleted` });
+    } catch (error) {
+        console.error('Delete Branch Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Get branch protection
+app.get('/api/repos/:owner/:repo/branches/:branch/protection', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, branch } = req.params;
+        const { data } = await githubApi(`/repos/${owner}/${repo}/branches/${branch}/protection`, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        if (error.status === 404) {
+            res.json({ protected: false });
+        } else {
+            console.error('Get Branch Protection Error:', error);
+            res.status(error.status || 500).json({ error: error.message });
+        }
+    }
+});
+
+// Update branch protection
+app.put('/api/repos/:owner/:repo/branches/:branch/protection', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, branch } = req.params;
+        const { required_status_checks, enforce_admins, required_pull_request_reviews, restrictions } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/branches/${branch}/protection`, req.session.accessToken, {
+            method: 'PUT',
+            body: JSON.stringify({
+                required_status_checks,
+                enforce_admins,
+                required_pull_request_reviews,
+                restrictions
+            })
+        });
+        res.json(data);
+    } catch (error) {
+        console.error('Update Branch Protection Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Delete branch protection
+app.delete('/api/repos/:owner/:repo/branches/:branch/protection', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, branch } = req.params;
+        await githubApi(`/repos/${owner}/${repo}/branches/${branch}/protection`, req.session.accessToken, {
+            method: 'DELETE'
+        });
+        res.json({ success: true, message: 'Branch protection removed' });
+    } catch (error) {
+        console.error('Delete Branch Protection Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Tags and Releases
+// -----------------------------------------------------------------------------
+
+// List tags
+app.get('/api/repos/:owner/:repo/tags', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { per_page = 30 } = req.query;
+        const { data } = await githubApi(`/repos/${owner}/${repo}/tags?per_page=${per_page}`, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        console.error('List Tags Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// List releases
+app.get('/api/repos/:owner/:repo/releases', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { per_page = 30 } = req.query;
+        const { data } = await githubApi(`/repos/${owner}/${repo}/releases?per_page=${per_page}`, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        console.error('List Releases Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Create release
+app.post('/api/repos/:owner/:repo/releases', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { tag_name, target_commitish, name, body, draft, prerelease, generate_release_notes } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/releases`, req.session.accessToken, {
+            method: 'POST',
+            body: JSON.stringify({ tag_name, target_commitish, name, body, draft, prerelease, generate_release_notes })
+        });
+        res.json({ success: true, release: data });
+    } catch (error) {
+        console.error('Create Release Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Delete release
+app.delete('/api/repos/:owner/:repo/releases/:release_id', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, release_id } = req.params;
+        await githubApi(`/repos/${owner}/${repo}/releases/${release_id}`, req.session.accessToken, {
+            method: 'DELETE'
+        });
+        res.json({ success: true, message: 'Release deleted' });
+    } catch (error) {
+        console.error('Delete Release Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Issues Management
+// -----------------------------------------------------------------------------
+
+// List issues
+app.get('/api/repos/:owner/:repo/issues', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { state = 'open', labels, sort = 'created', direction = 'desc', per_page = 30 } = req.query;
+
+        let url = `/repos/${owner}/${repo}/issues?state=${state}&sort=${sort}&direction=${direction}&per_page=${per_page}`;
+        if (labels) url += `&labels=${encodeURIComponent(labels)}`;
+
+        const { data } = await githubApi(url, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        console.error('List Issues Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Create issue
+app.post('/api/repos/:owner/:repo/issues', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { title, body, labels, assignees, milestone } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/issues`, req.session.accessToken, {
+            method: 'POST',
+            body: JSON.stringify({ title, body, labels, assignees, milestone })
+        });
+        res.json({ success: true, issue: data });
+    } catch (error) {
+        console.error('Create Issue Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Update issue
+app.patch('/api/repos/:owner/:repo/issues/:issue_number', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, issue_number } = req.params;
+        const { title, body, state, labels, assignees, milestone } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}`, req.session.accessToken, {
+            method: 'PATCH',
+            body: JSON.stringify({ title, body, state, labels, assignees, milestone })
+        });
+        res.json(data);
+    } catch (error) {
+        console.error('Update Issue Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Add issue comment
+app.post('/api/repos/:owner/:repo/issues/:issue_number/comments', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, issue_number } = req.params;
+        const { body } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}/comments`, req.session.accessToken, {
+            method: 'POST',
+            body: JSON.stringify({ body })
+        });
+        res.json({ success: true, comment: data });
+    } catch (error) {
+        console.error('Add Comment Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Pull Requests Management
+// -----------------------------------------------------------------------------
+
+// List pull requests
+app.get('/api/repos/:owner/:repo/pulls', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { state = 'open', sort = 'created', direction = 'desc', per_page = 30 } = req.query;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls?state=${state}&sort=${sort}&direction=${direction}&per_page=${per_page}`, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        console.error('List PRs Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Create pull request
+app.post('/api/repos/:owner/:repo/pulls', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { title, body, head, base, draft, maintainer_can_modify } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls`, req.session.accessToken, {
+            method: 'POST',
+            body: JSON.stringify({ title, body, head, base, draft, maintainer_can_modify })
+        });
+        res.json({ success: true, pull_request: data });
+    } catch (error) {
+        console.error('Create PR Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Merge pull request
+app.put('/api/repos/:owner/:repo/pulls/:pull_number/merge', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, pull_number } = req.params;
+        const { commit_title, commit_message, merge_method = 'merge' } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls/${pull_number}/merge`, req.session.accessToken, {
+            method: 'PUT',
+            body: JSON.stringify({ commit_title, commit_message, merge_method })
+        });
+        res.json({ success: true, merged: data.merged, message: data.message });
+    } catch (error) {
+        console.error('Merge PR Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Update pull request
+app.patch('/api/repos/:owner/:repo/pulls/:pull_number', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, pull_number } = req.params;
+        const { title, body, state, base, maintainer_can_modify } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls/${pull_number}`, req.session.accessToken, {
+            method: 'PATCH',
+            body: JSON.stringify({ title, body, state, base, maintainer_can_modify })
+        });
+        res.json(data);
+    } catch (error) {
+        console.error('Update PR Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Webhooks Management
+// -----------------------------------------------------------------------------
+
+// List webhooks
+app.get('/api/repos/:owner/:repo/hooks', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { data } = await githubApi(`/repos/${owner}/${repo}/hooks`, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        console.error('List Webhooks Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Create webhook
+app.post('/api/repos/:owner/:repo/hooks', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { config, events, active = true } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/hooks`, req.session.accessToken, {
+            method: 'POST',
+            body: JSON.stringify({ name: 'web', config, events, active })
+        });
+        res.json({ success: true, hook: data });
+    } catch (error) {
+        console.error('Create Webhook Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Update webhook
+app.patch('/api/repos/:owner/:repo/hooks/:hook_id', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, hook_id } = req.params;
+        const { config, events, active, add_events, remove_events } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/hooks/${hook_id}`, req.session.accessToken, {
+            method: 'PATCH',
+            body: JSON.stringify({ config, events, active, add_events, remove_events })
+        });
+        res.json(data);
+    } catch (error) {
+        console.error('Update Webhook Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Delete webhook
+app.delete('/api/repos/:owner/:repo/hooks/:hook_id', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, hook_id } = req.params;
+        await githubApi(`/repos/${owner}/${repo}/hooks/${hook_id}`, req.session.accessToken, {
+            method: 'DELETE'
+        });
+        res.json({ success: true, message: 'Webhook deleted' });
+    } catch (error) {
+        console.error('Delete Webhook Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Ping webhook (test)
+app.post('/api/repos/:owner/:repo/hooks/:hook_id/pings', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, hook_id } = req.params;
+        await githubApi(`/repos/${owner}/${repo}/hooks/${hook_id}/pings`, req.session.accessToken, {
+            method: 'POST'
+        });
+        res.json({ success: true, message: 'Ping sent' });
+    } catch (error) {
+        console.error('Ping Webhook Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Repository Contents & Files
+// -----------------------------------------------------------------------------
+
+// Get file/directory contents (path is optional, use query param for nested paths)
+app.get('/api/repos/:owner/:repo/contents', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { path = '', ref } = req.query;
+
+        let url = `/repos/${owner}/${repo}/contents/${path}`;
+        if (ref) url += `?ref=${ref}`;
+
+        const { data } = await githubApi(url, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        console.error('Get Contents Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Create/Update file (path in query param)
+app.put('/api/repos/:owner/:repo/contents', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { path } = req.query;
+        const { message, content, branch, sha } = req.body;
+
+        if (!path) return res.status(400).json({ error: 'Path query parameter required' });
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/contents/${path}`, req.session.accessToken, {
+            method: 'PUT',
+            body: JSON.stringify({ message, content, branch, sha })
+        });
+        res.json({ success: true, commit: data.commit, content: data.content });
+    } catch (error) {
+        console.error('Create/Update File Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Delete file (path in query param)
+app.delete('/api/repos/:owner/:repo/contents', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { path } = req.query;
+        const { message, sha, branch } = req.body;
+
+        if (!path) return res.status(400).json({ error: 'Path query parameter required' });
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/contents/${path}`, req.session.accessToken, {
+            method: 'DELETE',
+            body: JSON.stringify({ message, sha, branch })
+        });
+        res.json({ success: true, commit: data.commit });
+    } catch (error) {
+        console.error('Delete File Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Get README
+app.get('/api/repos/:owner/:repo/readme', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { data } = await githubApi(`/repos/${owner}/${repo}/readme`, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        if (error.status === 404) {
+            res.json({ exists: false });
+        } else {
+            console.error('Get README Error:', error);
+            res.status(error.status || 500).json({ error: error.message });
+        }
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Labels Management
+// -----------------------------------------------------------------------------
+
+// List labels
+app.get('/api/repos/:owner/:repo/labels', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { data } = await githubApi(`/repos/${owner}/${repo}/labels?per_page=100`, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        console.error('List Labels Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Create label
+app.post('/api/repos/:owner/:repo/labels', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { name, color, description } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/labels`, req.session.accessToken, {
+            method: 'POST',
+            body: JSON.stringify({ name, color, description })
+        });
+        res.json({ success: true, label: data });
+    } catch (error) {
+        console.error('Create Label Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Delete label
+app.delete('/api/repos/:owner/:repo/labels/:name', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, name } = req.params;
+        await githubApi(`/repos/${owner}/${repo}/labels/${encodeURIComponent(name)}`, req.session.accessToken, {
+            method: 'DELETE'
+        });
+        res.json({ success: true, message: 'Label deleted' });
+    } catch (error) {
+        console.error('Delete Label Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// -----------------------------------------------------------------------------
+// Commits & Comparison
+// -----------------------------------------------------------------------------
+
+// List commits
+app.get('/api/repos/:owner/:repo/commits', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { sha, path, author, since, until, per_page = 30 } = req.query;
+
+        let url = `/repos/${owner}/${repo}/commits?per_page=${per_page}`;
+        if (sha) url += `&sha=${sha}`;
+        if (path) url += `&path=${encodeURIComponent(path)}`;
+        if (author) url += `&author=${author}`;
+        if (since) url += `&since=${since}`;
+        if (until) url += `&until=${until}`;
+
+        const { data } = await githubApi(url, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        console.error('List Commits Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+
+// Compare commits
+app.get('/api/repos/:owner/:repo/compare/:basehead', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, basehead } = req.params;
+        const { data } = await githubApi(`/repos/${owner}/${repo}/compare/${basehead}`, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        console.error('Compare Commits Error:', error);
+        res.status(error.status || 500).json({ error: error.message });
     }
 });
 

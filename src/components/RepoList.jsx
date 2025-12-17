@@ -6,9 +6,10 @@ import {
 	GitFork, Lock, Globe, ExternalLink, RefreshCw, Loader2, AlertCircle,
 	ChevronLeft, ChevronRight, Archive, Star, Unlock, Eye, Trash2,
 	MoreHorizontal, ArrowRightLeft, Copy, Settings, ChevronDown, Search, Filter,
-	LayoutGrid, List as ListIcon, CheckSquare, X, GitPullRequest, CircleDot
+	LayoutGrid, List as ListIcon, CheckSquare, X, GitPullRequest, CircleDot, Brain, Sparkles, Shield
 } from 'lucide-react'
 import { PAGINATION } from '../config'
+import { aiApi } from '../api/ai'
 
 export function RepoList({
 	repos,
@@ -24,10 +25,16 @@ export function RepoList({
 	perPage,
 	totalPages,
 	onRefresh,
-	onQuickAction
+	onQuickAction,
+	onOpenInsights,
+	onOpenHealth
 }) {
 	const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
 	const [searchQuery, setSearchQuery] = useState('')
+	const [isAISearch, setIsAISearch] = useState(false)
+	const [aiResults, setAiResults] = useState([])
+	const [isSearchingAI, setIsSearchingAI] = useState(false)
+
 	const [typeFilter, setTypeFilter] = useState('all')
 	const [visibilityFilter, setVisibilityFilter] = useState('all')
 	const [languageFilter, setLanguageFilter] = useState('all')
@@ -38,21 +45,49 @@ export function RepoList({
 	const availableLanguages = [...new Set(repos.map(r => r.language).filter(Boolean))].sort()
 
 	// Filter repositories
-	const filteredRepos = repos.filter(repo => {
-		if (searchQuery) {
-			const query = searchQuery.toLowerCase()
-			const matchesName = repo.name.toLowerCase().includes(query)
-			const matchesDesc = repo.description?.toLowerCase().includes(query)
-			if (!matchesName && !matchesDesc) return false
-		}
-		if (typeFilter === 'source' && repo.fork) return false
-		if (typeFilter === 'fork' && !repo.fork) return false
-		if (typeFilter === 'archived' && !repo.archived) return false
-		if (visibilityFilter === 'public' && repo.private) return false
-		if (visibilityFilter === 'private' && !repo.private) return false
-		if (languageFilter !== 'all' && repo.language !== languageFilter) return false
-		return true
-	})
+	const filteredRepos = isAISearch && searchQuery
+		? repos.filter(r => aiResults.some(res => res.repo_id === r.id))
+			.sort((a, b) => {
+				const scoreA = aiResults.find(res => res.repo_id === a.id)?.score || 0
+				const scoreB = aiResults.find(res => res.repo_id === b.id)?.score || 0
+				return scoreB - scoreA
+			})
+		: repos.filter(repo => {
+			if (searchQuery) {
+				const query = searchQuery.toLowerCase()
+				const matchesName = repo.name.toLowerCase().includes(query)
+				const matchesDesc = repo.description?.toLowerCase().includes(query)
+				if (!matchesName && !matchesDesc) return false
+			}
+			if (typeFilter === 'source' && repo.fork) return false
+			if (typeFilter === 'fork' && !repo.fork) return false
+			if (typeFilter === 'archived' && !repo.archived) return false
+			if (visibilityFilter === 'public' && repo.private) return false
+			if (visibilityFilter === 'private' && !repo.private) return false
+			if (languageFilter !== 'all' && repo.language !== languageFilter) return false
+			return true
+		})
+
+	// AI Search Effect
+	useEffect(() => {
+		const delayDebounce = setTimeout(async () => {
+			if (isAISearch && searchQuery.length > 2) {
+				setIsSearchingAI(true)
+				try {
+					const results = await aiApi.search(searchQuery)
+					setAiResults(results)
+				} catch (e) {
+					console.error("AI Search failed", e)
+				} finally {
+					setIsSearchingAI(false)
+				}
+			} else if (isAISearch && !searchQuery) {
+				setAiResults([])
+			}
+		}, 500)
+
+		return () => clearTimeout(delayDebounce)
+	}, [searchQuery, isAISearch])
 
 	const allFilteredSelected = filteredRepos.length > 0 && filteredRepos.every(r => selectedIds.has(r.id))
 	const someFilteredSelected = filteredRepos.some(r => selectedIds.has(r.id)) && !allFilteredSelected
@@ -166,11 +201,25 @@ export function RepoList({
 						<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
 						<input
 							type="text"
-							placeholder="Search repositories..."
+							placeholder={isAISearch ? "Ask AI (e.g., 'React apps with auth')..." : "Search repositories..."}
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none text-sm transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+							className={`w-full pl-9 pr-10 py-2 rounded-xl border outline-none text-sm transition-all
+								${isAISearch
+									? 'bg-purple-50 dark:bg-purple-900/10 border-purple-200 dark:border-purple-700 focus:ring-purple-500/50 focus:border-purple-500 text-purple-900 dark:text-purple-100 placeholder:text-purple-400'
+									: 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-indigo-500/50 focus:border-indigo-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-400'
+								}`}
 						/>
+						<button
+							onClick={() => { setIsAISearch(!isAISearch); setSearchQuery('') }}
+							className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md transition-all ${isAISearch ? 'text-purple-500 bg-purple-100 dark:bg-purple-900/30' : 'text-slate-400 hover:text-purple-500'}`}
+							title="Toggle AI Semantic Search"
+						>
+							<Sparkles className="w-4 h-4" />
+						</button>
+						{isSearchingAI && (
+							<Loader2 className="absolute right-10 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-purple-500" />
+						)}
 					</div>
 					<div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
 						<button
@@ -262,6 +311,8 @@ export function RepoList({
 							onToggle={() => toggleSelect(repo.id)}
 							onAction={onQuickAction}
 							onContextMenu={(e) => handleContextMenu(e, repo)}
+							onOpenInsights={() => onOpenInsights(repo)}
+							onOpenHealth={() => onOpenHealth?.(repo)}
 						/>
 					))}
 				</div>
@@ -325,6 +376,8 @@ export function RepoList({
 					y={repoMenu.y}
 					onClose={() => setRepoMenu(null)}
 					onQuickAction={onQuickAction}
+					onOpenInsights={() => onOpenInsights(repoMenu.repo)}
+					onOpenHealth={() => onOpenHealth?.(repoMenu.repo)}
 				/>
 			)}
 		</div>
@@ -360,7 +413,7 @@ function TooltipButton({ icon: IconComp, label, onClick, className = "" }) {
 	)
 }
 
-function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMenu }) {
+function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMenu, onOpenInsights, onOpenHealth }) {
 	const isGrid = viewMode === 'grid'
 
 	return (
@@ -467,13 +520,29 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 					>
 						<MoreHorizontal className="w-4 h-4" />
 					</button>
+					<button
+						onClick={(e) => { e.stopPropagation(); onOpenInsights() }}
+						className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-500"
+						title="AI Insights"
+					>
+						<Brain className="w-4 h-4" />
+					</button>
+					{onOpenHealth && (
+						<button
+							onClick={(e) => { e.stopPropagation(); onOpenHealth() }}
+							className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-500"
+							title="Community Health"
+						>
+							<Shield className="w-4 h-4" />
+						</button>
+					)}
 				</div>
 			</div>
 		</div>
 	)
 }
 
-function RepoActionsMenu({ repo, x, y, onClose, onQuickAction }) {
+function RepoActionsMenu({ repo, x, y, onClose, onQuickAction, onOpenInsights, onOpenHealth }) {
 	// Adjust position to keep in viewport
 	const style = {
 		top: y,
@@ -518,6 +587,16 @@ function RepoActionsMenu({ repo, x, y, onClose, onQuickAction }) {
 					<Settings className="w-4 h-4 text-slate-400" />
 					Settings
 				</button>
+				<button onClick={() => { onOpenInsights(); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg">
+					<Sparkles className="w-4 h-4" />
+					AI Insights
+				</button>
+				{onOpenHealth && (
+					<button onClick={() => { onOpenHealth(); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-emerald-600 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg">
+						<Shield className="w-4 h-4" />
+						Community Health
+					</button>
+				)}
 			</div>
 
 			<div className="border-t border-slate-100 dark:border-slate-700/50 p-1 space-y-0.5">

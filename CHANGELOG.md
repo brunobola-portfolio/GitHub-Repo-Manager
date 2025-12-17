@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.1] - 2025-12-17
+
+### Added
+- **Backend Architecture Documentation**: Created [`docs/ARCHITECTURE-BACKEND.md`](docs/ARCHITECTURE-BACKEND.md) documenting monolithic design decision
+- **Azure DevOps Limitations**: Added clear limitations section in README for import feature
+- **UI Warning**: AzureImportModal now displays prominent warning about basic import capabilities
+
+### Fixed
+- **Version Synchronization**: Updated package.json version to match CHANGELOG (2.3.0 → 2.3.1)
+- **Security Enhancement**: Removed hardcoded GitHub Client ID from [`App.jsx`](src/App.jsx:158), delegating OAuth to backend
+- **Code Quality**: Fixed ESLint warnings for unused variables in [`App.jsx`](src/App.jsx:26)
+- **Documentation**: Updated README.md placeholder links from 'yourusername' to 'YOUR_USERNAME'
+- **Repository URLs**: Standardized all GitHub repository references in documentation
+
+### Changed
+- **Azure DevOps Import Section**: Clarified in README that current implementation supports Git repository import only
+- **Transparency**: Set clear expectations for users about Azure DevOps migration capabilities (v3.0+ roadmap)
+
 ## [2.3.0] - 2025-12-15
 
 ### Added
@@ -158,8 +176,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Links
 
-- [v2.3.0](https://github.com/yourusername/github-repo-manager/releases/tag/v2.3.0)
-- [v2.2.0](https://github.com/yourusername/github-repo-manager/releases/tag/v2.2.0)
-- [v2.1.0](https://github.com/yourusername/github-repo-manager/releases/tag/v2.1.0)
-- [v2.0.0](https://github.com/yourusername/github-repo-manager/releases/tag/v2.0.0)
-- [v1.0.0](https://github.com/yourusername/github-repo-manager/releases/tag/v1.0.0)
+- [v2.3.1](https://github.com/YOUR_USERNAME/github-repo-manager/releases/tag/v2.3.1)
+- [v2.3.0](https://github.com/YOUR_USERNAME/github-repo-manager/releases/tag/v2.3.0)
+- [v2.2.0](https://github.com/YOUR_USERNAME/github-repo-manager/releases/tag/v2.2.0)
+- [v2.1.0](https://github.com/YOUR_USERNAME/github-repo-manager/releases/tag/v2.1.0)
+- [v2.0.0](https://github.com/YOUR_USERNAME/github-repo-manager/releases/tag/v2.0.0)
+- [v1.0.0](https://github.com/YOUR_USERNAME/github-repo-manager/releases/tag/v1.0.0)

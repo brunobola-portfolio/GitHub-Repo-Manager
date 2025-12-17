@@ -20,25 +20,53 @@ import { MOCK_MODE, API_ENDPOINTS, PAGINATION } from '../config'
  * Generate mock data for development
  */
 function generateMockData(page = 1, perPage = 30) {
-    const totalRepos = 87 // Simulate having many repos
+    const mockRepoList = [
+        { name: 'fintech-dashboard', lang: 'TypeScript', desc: 'Real-time financial analytics dashboard with React and D3.js' },
+        { name: 'ai-analytics-platform', lang: 'Python', desc: 'Machine learning pipeline for predictive customer behavior analysis' },
+        { name: 'react-component-library', lang: 'TypeScript', desc: 'Enterprise-grade UI component library based on Glassmorphism' },
+        { name: 'serverless-api-gateway', lang: 'Go', desc: 'High-performance API gateway for microservices architecture' },
+        { name: 'mobile-app-flutter', lang: 'Dart', desc: 'Cross-platform mobile application for inventory management' },
+        { name: 'kubernetes-deploy-scripts', lang: 'HCL', desc: 'Terraform modules and Helm charts for production clusters' },
+        { name: 'blockchain-wallet-core', lang: 'Rust', desc: 'Secure crypto wallet core implementation with multi-chain support' },
+        { name: 'e-commerce-microservices', lang: 'Java', desc: 'Spring Boot microservices for high-scale retail platform' },
+        { name: 'docs-portal', lang: 'JavaScript', desc: 'Developer documentation portal built with Docusaurus' },
+        { name: 'auth-service', lang: 'Go', desc: 'Centralized authentication service with OAuth2 and OIDC support' },
+        { name: 'data-lake-processor', lang: 'Python', desc: 'Spark jobs for processing daily terabyte-scale logs' },
+        { name: 'ios-checkout-sdk', lang: 'Swift', desc: 'Native iOS SDK for seamless checkout integration' },
+        { name: 'android-pos-terminal', lang: 'Kotlin', desc: 'Point of Sale application for Android tablets' },
+        { name: 'graphql-federation', lang: 'TypeScript', desc: 'Apollo Federation gateway for unified data graph' },
+        { name: 'legacy-crm-importer', lang: 'PHP', desc: 'Tools for migrating data from legacy CRM systems' },
+        { name: 'design-system-tokens', lang: 'CSS', desc: 'Design tokens and assets for the corporate brand identity' },
+        { name: 'devops-ci-templates', lang: 'YAML', desc: 'Standardized GitHub Actions workflows for all teams' },
+        { name: 'nlp-chatbot-engine', lang: 'Python', desc: 'Natural Language Processing engine for customer support bots' },
+        { name: 'web-assembly-video-editor', lang: 'C++', desc: 'Browser-based video editing core using WASM' },
+        { name: 'marketing-landing-pages', lang: 'HTML', desc: 'High-conversion landing pages for marketing campaigns' }
+    ];
+
+    // Generate more to fill pages
+    const totalRepos = 87
     const totalPages = Math.ceil(totalRepos / perPage)
     const startIndex = (page - 1) * perPage
     const endIndex = Math.min(startIndex + perPage, totalRepos)
 
     const mockRepos = []
     for (let i = startIndex; i < endIndex; i++) {
+        const template = mockRepoList[i % mockRepoList.length];
+        const suffix = Math.floor(i / mockRepoList.length) > 0 ? `-${Math.floor(i / mockRepoList.length) + 1}` : '';
+        
         mockRepos.push({
             id: i + 1,
-            name: `project-${i + 1}`,
-            full_name: `dev-user/project-${i + 1}`,
-            description: i % 2 === 0 ? `Description for project ${i + 1}` : null,
-            fork: i % 3 === 0,
-            private: i % 4 === 0,
+            name: `${template.name}${suffix}`,
+            full_name: `dev-user/${template.name}${suffix}`,
+            description: template.desc,
+            fork: i % 5 === 0,
+            private: i % 3 === 0,
             owner: { login: 'dev-user' },
-            html_url: `https://github.com/dev-user/project-${i + 1}`,
-            updated_at: new Date(Date.now() - i * 86400000).toISOString(),
-            stargazers_count: Math.floor(Math.random() * 100),
-            language: ['JavaScript', 'TypeScript', 'Python', 'Go', null][i % 5],
+            html_url: `https://github.com/dev-user/${template.name}${suffix}`,
+            updated_at: new Date(Date.now() - i * 3600000 * (Math.random() * 10)).toISOString(),
+            stargazers_count: Math.floor(Math.random() * 500) + (i * 10),
+            language: template.lang,
+            topics: ['react', 'typescript', 'dashboard', 'ui', 'finance'].slice(0, Math.floor(Math.random() * 5))
         })
     }
 
@@ -96,7 +124,12 @@ export function useGitHub() {
             const mockUser = {
                 login: 'dev-user',
                 avatar_url: 'https://github.com/ghost.png',
-                name: 'Development User'
+                name: 'Alex Developer',
+                bio: 'Senior Software Engineer | Open Source Enthusiast | AI & React',
+                company: 'TechCorp Inc.',
+                location: 'San Francisco, CA',
+                followers: 1243,
+                following: 89
             }
             const { repos: mockRepos, totalPages: mockTotalPages } = generateMockData(1, perPage)
             setUser(mockUser)
@@ -422,9 +455,9 @@ export function useGitHub() {
     async function fetchOrgs() {
         if (MOCK_MODE) {
             setOrgs([
-                { login: 'org-portfolio', avatar_url: 'https://github.com/ghost.png', public_repos: 12, total_private_repos: 3 },
-                { login: 'org-forks', avatar_url: 'https://github.com/ghost.png', public_repos: 8, total_private_repos: 0 },
-                { login: 'org-experiments', avatar_url: 'https://github.com/ghost.png', public_repos: 5, total_private_repos: 7 },
+                { login: 'acme-corp', avatar_url: 'https://github.com/ghost.png', public_repos: 42, total_private_repos: 15 },
+                { login: 'open-source-collective', avatar_url: 'https://github.com/ghost.png', public_repos: 128, total_private_repos: 0 },
+                { login: 'startup-incubator', avatar_url: 'https://github.com/ghost.png', public_repos: 5, total_private_repos: 27 },
             ])
             return
         }
@@ -446,16 +479,16 @@ export function useGitHub() {
         if (MOCK_MODE) {
             const mockOrgRepos = Array.from({ length: 15 }, (_, i) => ({
                 id: 1000 + i,
-                name: `${orgLogin}-repo-${i + 1}`,
-                full_name: `${orgLogin}/${orgLogin}-repo-${i + 1}`,
-                description: `Repository ${i + 1} in ${orgLogin}`,
+                name: `${orgLogin}-service-${i + 1}`,
+                full_name: `${orgLogin}/${orgLogin}-service-${i + 1}`,
+                description: `Core service ${i + 1} for ${orgLogin} infrastructure`,
                 fork: i % 4 === 0,
                 private: i % 3 === 0,
                 owner: { login: orgLogin },
-                html_url: `https://github.com/${orgLogin}/${orgLogin}-repo-${i + 1}`,
+                html_url: `https://github.com/${orgLogin}/${orgLogin}-service-${i + 1}`,
                 updated_at: new Date(Date.now() - i * 86400000).toISOString(),
-                stargazers_count: Math.floor(Math.random() * 50),
-                language: ['JavaScript', 'TypeScript', 'Python', 'Go', null][i % 5],
+                stargazers_count: Math.floor(Math.random() * 500),
+                language: ['JavaScript', 'TypeScript', 'Python', 'Go', 'Rust'][i % 5],
             }))
             setOrgRepos(mockOrgRepos)
             setSelectedOrg(orgLogin)
@@ -476,25 +509,22 @@ export function useGitHub() {
     /**
      * Fetch dashboard statistics
      */
-    /**
-     * Fetch dashboard statistics
-     */
     async function fetchStats(org = '') {
         if (MOCK_MODE) {
             setStats({
-                totalRepos: org ? 15 : 87,
-                publicRepos: org ? 10 : 45,
-                privateRepos: org ? 5 : 42,
-                forks: org ? 2 : 23,
-                sources: org ? 13 : 64,
-                archived: org ? 1 : 5,
+                totalRepos: org ? 42 : 87,
+                publicRepos: org ? 30 : 65,
+                privateRepos: org ? 12 : 22,
+                forks: org ? 5 : 18,
+                sources: org ? 37 : 69,
+                archived: org ? 2 : 4,
                 organizations: 3,
                 languages: {
-                    "JavaScript": 45,
+                    "TypeScript": 45,
                     "Python": 30,
-                    "TypeScript": 20,
-                    "HTML": 15,
-                    "CSS": 10
+                    "JavaScript": 25,
+                    "Go": 15,
+                    "Rust": 10
                 },
                 user: { login: 'dev-user', avatar_url: 'https://github.com/ghost.png' }
             })
@@ -749,7 +779,7 @@ export function useGitHub() {
      */
     function generateMockActivity() {
         const actions = ['PushEvent', 'PullRequestEvent', 'IssuesEvent', 'CreateEvent', 'WatchEvent']
-        const repos = ['frontend-app', 'backend-api', 'docs', 'design-system', 'mobile-app']
+        const repos = ['fintech-dashboard', 'ai-analytics-platform', 'react-component-library', 'serverless-api-gateway', 'mobile-app-flutter']
 
         return Array.from({ length: 15 }, (_, i) => {
             const type = actions[Math.floor(Math.random() * actions.length)]
@@ -763,12 +793,12 @@ export function useGitHub() {
                 repo: { name: `dev-user/${repoName}` },
                 created_at: new Date(Date.now() - timeOffset).toISOString(),
                 payload: {
-                    commits: type === 'PushEvent' ? [{ message: 'Update documentation' }, { message: 'Fix bug in login' }] : [],
+                    commits: type === 'PushEvent' ? [{ message: 'feat: Add new dashboard widgets' }, { message: 'fix: Resolve memory leak in data processor' }] : [],
                     action: type === 'PullRequestEvent' ? 'opened' : (type === 'IssuesEvent' ? 'opened' : null),
-                    issue: type === 'IssuesEvent' ? { title: 'Bug: Login fails on mobile', number: 42 } : null,
-                    pull_request: type === 'PullRequestEvent' ? { title: 'Feat: Add dark mode', number: 101 } : null,
+                    issue: type === 'IssuesEvent' ? { title: 'Bug: Login fails on mobile devices', number: 42 } : null,
+                    pull_request: type === 'PullRequestEvent' ? { title: 'Feat: Implement Dark Mode Support', number: 101 } : null,
                     ref_type: type === 'CreateEvent' ? 'branch' : null,
-                    ref: type === 'CreateEvent' ? 'feature/new-ui' : null
+                    ref: type === 'CreateEvent' ? 'feature/new-ui-components' : null
                 }
             }
         }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -818,7 +848,7 @@ export function useGitHub() {
     async function askAI(message, context) {
         if (MOCK_MODE) {
             await new Promise(r => setTimeout(r, 1000))
-            return { message: "I am a mock AI. I can't really help you, but I look good doing it!" }
+            return { message: "Based on the analysis of your repository structure, I recommend adding a CONTRIBUTING.md file to guide new contributors. Additionally, your test coverage seems low in the `utils` directory. Would you like me to generate some test templates for you?" }
         }
         try {
             const localKey = localStorage.getItem('GEMINI_API_KEY')
@@ -843,10 +873,11 @@ export function useGitHub() {
             await new Promise(r => setTimeout(r, 1500))
             return {
                 suggestions: [
-                    { title: "Add a License", description: "Your project is missing a license file.", type: "improvement" },
-                    { title: "Improve Description", description: "Add more keywords to your description for better SEO.", type: "improvement" }
+                    { title: "Add Security Policy", description: "Create a SECURITY.md to define how to report vulnerabilities.", type: "security", priority: "high" },
+                    { title: "Improve CI/CD Pipeline", description: "Add GitHub Actions for automated testing on pull requests.", type: "devops", priority: "medium" },
+                    { title: "Update Dependencies", description: "Several dependencies are outdated. Consider running npm update.", type: "maintenance", priority: "low" }
                 ],
-                analysis: "This is a mock analysis."
+                analysis: "The repository shows a solid structure but lacks comprehensive documentation for the API endpoints. Code quality is generally high, with consistent formatting."
             }
         }
         try {
@@ -870,7 +901,7 @@ export function useGitHub() {
     async function generateReadmeAI(details) {
         if (MOCK_MODE) {
             await new Promise(r => setTimeout(r, 2000))
-            return { readme: "# Mock README\n\nThis is a generated readme." }
+            return { readme: "# Project Title\n\n## Overview\nThis is a high-performance application built with React and Node.js.\n\n## Features\n- Real-time data processing\n- AI-powered insights\n- Glassmorphism UI\n\n## Installation\n```bash\nnpm install\nnpm run dev\n```" }
         }
         try {
             const localKey = localStorage.getItem('GEMINI_API_KEY')
@@ -933,4 +964,3 @@ export function useGitHub() {
         MOCK_MODE
     }
 }
-

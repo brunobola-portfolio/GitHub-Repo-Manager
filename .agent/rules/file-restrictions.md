@@ -1,14 +1,30 @@
 # File Creation Restrictions
 
+> **Note**: See [`AGENTS.md`](../../AGENTS.md) for cross-tool agent rules.
+
 ## Prohibited Actions (Unless Explicitly Requested)
 
 - NEVER create mock files, mock data, or stub implementations
 - NEVER create test files or test scripts
 - NEVER create fallback/failover methods or redundant safety mechanisms
-- NEVER create documentation files (README.md, CONTRIBUTING.md, CHANGELOG.md, etc.)
+- NEVER create `.md`, `.txt`, or documentation files
 - NEVER create configuration files beyond what's absolutely necessary
 - NEVER create utility files "just in case" they might be useful
 - NEVER create type definition files (.d.ts) unless TypeScript is being used
+
+## MD Files Policy
+
+**Allowed in Repository:**
+- Root level: `README.md`, `LICENSE.md`, `AGENTS.md`, `CHANGELOG.md`, `CONTRIBUTING.md` (essential for GitHub)
+- `docs/`: Architecture and technical documentation (`ARCHITECTURE-*.md`, `VALIDATION-REPORT.md`)
+
+**Implementation Folder (Hidden from Git):**
+- Only for temporary analysis reports generated on demand
+- Ad-hoc validation reports
+- Temporary architectural notes
+- Will NOT be committed to repository
+
+**Principle**: Do not create MD files unless they are essential project documentation for the GitHub repository.
 
 ## File Creation Principle
 

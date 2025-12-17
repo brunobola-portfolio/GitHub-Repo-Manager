@@ -16,13 +16,15 @@ import { useToast } from './hooks/useToast'
 import { AIAssistant } from './components/AIAssistant'
 import { TeamHub } from './components/Teams/TeamHub';
 import { TeamDetails } from './components/Teams/TeamDetails';
+import RepoInsightsModal from './components/AI/RepoInsightsModal';
+import { ActionsStatsDashboard } from './components/ActionsStatsDashboard';
+import { CommunityHealthDashboard } from './components/CommunityHealthDashboard';
 import { SystemSetup } from './components/Setup/SystemSetup';
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
 
 function App() {
-  const [session, setSession] = useState(null);
-  const [appLoading, setAppLoading] = useState(true); // Renamed to distinguish from hook loading
-  const [error, setError] = useState(null);
+  const [_session, setSession] = useState(null);
+  const [appLoading, setAppLoading] = useState(true);
 
   // Navigation State
   const [activeView, setActiveView] = useState('dashboard'); // dashboard, repos, teams
@@ -80,9 +82,9 @@ function App() {
 
   const {
     repos,
-    user, // Use the user from the hook!
-    loading: githubLoading, // Rename exposed loading
-    error: githubError,
+    user,
+    loading: githubLoading,
+    error,
     message,
     selectedIds,
     page,
@@ -128,6 +130,11 @@ function App() {
   const [showCommitGen, setShowCommitGen] = useState(false)
   const [selectedOrgForManager, setSelectedOrgForManager] = useState(null)
   const [transferRepos, setTransferRepos] = useState([])
+  const [showInsights, setShowInsights] = useState(false)
+  const [selectedInsightsRepo, setSelectedInsightsRepo] = useState(null)
+  const [showActionsStats, setShowActionsStats] = useState(false)
+  const [showCommunityHealth, setShowCommunityHealth] = useState(false)
+  const [selectedHealthRepo, setSelectedHealthRepo] = useState(null)
   const [confirmModal, setConfirmModal] = useState({ isOpen: false })
   // activeView and selectedTeam are already defined above
   const [syncStatus, setSyncStatus] = useState({ lastSync: null, hasUpdates: false })
@@ -147,11 +154,8 @@ function App() {
   // Re-authorize OAuth permissions
   const handleReauthorize = useCallback(() => {
     // Redirect to GitHub OAuth with prompt to re-authorize
-    const clientId = 'Ov23liLFzUuW6mLvnSQi'
-    const scope = 'repo delete_repo read:org admin:org'
-    const redirectUri = `${window.location.origin}/api/auth/callback`
-    const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&prompt=consent`
-    window.location.href = authUrl
+    // Client ID is managed by the backend
+    window.location.href = AUTH_ENDPOINTS.login
   }, [])
 
   // Open org manager modal
@@ -370,6 +374,7 @@ function App() {
               selectedOrg={selectedOrg}
               onSelectOrg={handleOrgSelect}
               loading={loading || isSwitchingOrg}
+              activity={activity}
               onOrgClick={(orgLogin) => {
                 handleOrgSelect(orgLogin)
                 setActiveView('repos')
@@ -418,6 +423,14 @@ function App() {
                 onRefresh={refresh}
                 selectedOrg={selectedOrg}
                 onQuickAction={handleQuickAction}
+                onOpenInsights={(repo) => {
+                  setSelectedInsightsRepo(repo)
+                  setShowInsights(true)
+                }}
+                onOpenHealth={(repo) => {
+                  setSelectedHealthRepo(repo)
+                  setShowCommunityHealth(true)
+                }}
               />
             </div>
 
@@ -453,6 +466,7 @@ function App() {
                 onBack={() => setSelectedTeam(null)}
                 userRepos={repos}
                 user={user}
+                onShowActionsStats={() => setShowActionsStats(true)}
               />
             ) : (
               <TeamHub
@@ -538,6 +552,44 @@ function App() {
         isOpen={showCommitGen}
         onClose={() => setShowCommitGen(false)}
       />
+
+      <RepoInsightsModal
+        isOpen={showInsights}
+        onClose={() => setShowInsights(false)}
+        repo={selectedInsightsRepo}
+      />
+
+      {showCommunityHealth && selectedHealthRepo && (
+        <CommunityHealthDashboard
+          repo={selectedHealthRepo}
+          onClose={() => {
+            setShowCommunityHealth(false)
+            setSelectedHealthRepo(null)
+          }}
+        />
+      )}
+
+      {showActionsStats && selectedTeam && (
+        <div className="fixed inset-0 z-50 bg-slate-50 dark:bg-slate-900 overflow-auto">
+          <div className="min-h-screen">
+            <div className="sticky top-0 z-10 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4">
+              <button
+                onClick={() => setShowActionsStats(false)}
+                className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Team
+              </button>
+            </div>
+            <ActionsStatsDashboard
+              repos={displayRepos}
+              teamId={selectedTeam?.id}
+            />
+          </div>
+        </div>
+      )}
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <AIAssistant />
