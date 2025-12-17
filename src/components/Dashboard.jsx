@@ -15,8 +15,60 @@ import * as Popover from '@radix-ui/react-popover'
 
 const COLORS = ['#6366f1', '#ec4899', '#8b5cf6', '#14b8a6', '#f59e0b', '#ef4444']
 
-export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, loading }) {
+export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, loading, activity = [] }) {
     const [timeRange, setTimeRange] = useState('7d')
+
+    // Transform activity data into chart format
+    const activityChartData = useMemo(() => {
+        if (!activity || activity.length === 0) {
+            // Fallback to mock data if no activity
+            return [
+                { name: 'Mon', commits: 4, pulls: 2 },
+                { name: 'Tue', commits: 7, pulls: 3 },
+                { name: 'Wed', commits: 5, pulls: 1 },
+                { name: 'Thu', commits: 12, pulls: 5 },
+                { name: 'Fri', commits: 8, pulls: 2 },
+                { name: 'Sat', commits: 3, pulls: 0 },
+                { name: 'Sun', commits: 2, pulls: 0 },
+            ]
+        }
+
+        // Get days based on timeRange
+        const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        const now = new Date()
+        const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+
+        // Group activity by day
+        const dailyData = {}
+        for (let i = 0; i < days; i++) {
+            const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000)
+            const key = date.toISOString().split('T')[0]
+            dailyData[key] = { commits: 0, pulls: 0, issues: 0 }
+        }
+
+        activity.forEach(event => {
+            const eventDate = new Date(event.created_at).toISOString().split('T')[0]
+            if (dailyData[eventDate]) {
+                if (event.type === 'PushEvent') {
+                    dailyData[eventDate].commits += event.payload?.commits?.length || 1
+                } else if (event.type === 'PullRequestEvent') {
+                    dailyData[eventDate].pulls += 1
+                } else if (event.type === 'IssuesEvent') {
+                    dailyData[eventDate].issues += 1
+                }
+            }
+        })
+
+        // Convert to array format for chart
+        return Object.entries(dailyData)
+            .slice(-7) // Show last 7 data points for readability
+            .map(([date, data]) => ({
+                name: dayNames[new Date(date).getDay()],
+                commits: data.commits,
+                pulls: data.pulls,
+            }))
+    }, [activity, timeRange])
 
     const orgData = useMemo(() => {
         if (!orgs) return []
@@ -221,16 +273,8 @@ export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, l
                         {loading ? (
                             <Skeleton className="w-full h-[300px] rounded-xl" />
                         ) : (
-                            <ResponsiveContainer width="100%" height="85%">
-                                <LineChart data={[
-                                    { name: 'Mon', commits: 4, pulls: 2 },
-                                    { name: 'Tue', commits: 7, pulls: 3 },
-                                    { name: 'Wed', commits: 5, pulls: 1 },
-                                    { name: 'Thu', commits: 12, pulls: 5 },
-                                    { name: 'Fri', commits: 8, pulls: 2 },
-                                    { name: 'Sat', commits: 3, pulls: 0 },
-                                    { name: 'Sun', commits: 2, pulls: 0 },
-                                ]}>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <LineChart data={activityChartData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
                                     <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} dy={10} />
                                     <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} dx={-10} />
@@ -277,7 +321,7 @@ export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, l
                                 <Skeleton className="w-64 h-64 rounded-full" />
                             </div>
                         ) : (
-                            <ResponsiveContainer width="100%" height="85%">
+                            <ResponsiveContainer width="100%" height={300}>
                                 <PieChart>
                                     <Pie
                                         data={languageData}

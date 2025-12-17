@@ -37,15 +37,32 @@ export function AzureImportModal({ isOpen, onClose, onImport, orgs, isPerforming
 	    return (
 	        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
 	            <Card className="w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                        <span className="text-2xl">☁️</span>
-                        Import from Azure DevOps
-                    </h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 text-2xl">
-                        ×
-                    </button>
-                </div>
+	               <div className="flex items-center justify-between mb-4">
+	                   <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
+	                       <span className="text-2xl">☁️</span>
+	                       Import from Azure DevOps
+	                   </h2>
+	                   <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 text-2xl">
+	                       ×
+	                   </button>
+	               </div>
+
+	               {/* Limitations Warning */}
+	               <div className="mb-6 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+	                   <div className="flex gap-2">
+	                       <span className="text-amber-600 dark:text-amber-400 text-lg">⚠️</span>
+	                       <div className="flex-1">
+	                           <h3 className="font-semibold text-amber-800 dark:text-amber-300 text-sm mb-1">
+	                               Basic Git Import Only
+	                           </h3>
+	                           <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+	                               This imports <strong>Git repository code and history only</strong>.
+	                               Pull Requests, Work Items, Pipelines, and Wikis are not migrated.
+	                               See documentation for manual migration steps.
+	                           </p>
+	                       </div>
+	                   </div>
+	               </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
 	                    {/* Azure DevOps Source */}

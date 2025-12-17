@@ -16,6 +16,10 @@ dist-ssr
 *.local
 .augment/
 .agent/
+augment rules/
+rules/
+plans/
+Implementation/
 
 # Environment files (NEVER commit credentials!)
 .env
@@ -34,3 +38,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.roo/

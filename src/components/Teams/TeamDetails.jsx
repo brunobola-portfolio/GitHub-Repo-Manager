@@ -4,7 +4,7 @@ import { Users, Github, ArrowLeft, Plus, Trash2, Shield, UserPlus, BookCopy, Zap
 import { useToast } from '../../hooks/useToast';
 import { ActivityTab } from './ActivityTab';
 
-export function TeamDetails({ team, onBack, userRepos = [], user }) {
+export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsStats }) {
     const [activeTab, setActiveTab] = useState('activity');
     const [members, setMembers] = useState([]);
     const [assignedRepos, setAssignedRepos] = useState([]);
@@ -363,7 +363,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user }) {
                 )}
 
                 {activeTab === 'actions' && (
-                    <ActionsTab assignedRepos={assignedRepos} />
+                    <ActionsTab assignedRepos={assignedRepos} onShowStats={onShowActionsStats} />
                 )}
             </AnimatePresence>
         </div>
@@ -598,7 +598,7 @@ function RepoCard({ repo, teamMembers, currentUser }) {
     );
 }
 
-function ActionsTab({ assignedRepos }) {
+function ActionsTab({ assignedRepos, onShowStats }) {
     const [selectedRepo, setSelectedRepo] = useState(null);
     const [workflows, setWorkflows] = useState([]);
     const [runs, setRuns] = useState([]);
@@ -656,11 +656,25 @@ function ActionsTab({ assignedRepos }) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="grid grid-cols-1 lg:grid-cols-4 gap-8"
+            className="space-y-6"
         >
-            {/* Repo List Sidebar */}
-            <div className="lg:col-span-1 space-y-2">
-                <h3 className="font-semibold text-slate-900 dark:text-white mb-4 px-2">Select Repository</h3>
+            {/* Statistics Button */}
+            {onShowStats && (
+                <div className="flex justify-end">
+                    <button
+                        onClick={onShowStats}
+                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/20"
+                    >
+                        <Activity className="w-5 h-5" />
+                        <span className="font-semibold">View Actions Statistics</span>
+                    </button>
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                {/* Repo List Sidebar */}
+                <div className="lg:col-span-1 space-y-2">
+                    <h3 className="font-semibold text-slate-900 dark:text-white mb-4 px-2">Select Repository</h3>
                 {assignedRepos.map(repo => (
                     <button
                         key={repo.id}
@@ -750,6 +764,7 @@ function ActionsTab({ assignedRepos }) {
                         </div>
                     </div>
                 )}
+            </div>
             </div>
         </motion.div>
     );
