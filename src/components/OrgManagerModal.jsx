@@ -339,7 +339,7 @@ function StatCard({ icon: IconComp, label, value, color }) {
     )
 }
 
-// eslint-disable-next-line no-unused-vars
+ 
 function DetailRow({ label, value, icon: IconComp, isLink }) {
     if (!value) return null
     return (
@@ -355,7 +355,7 @@ function DetailRow({ label, value, icon: IconComp, isLink }) {
     )
 }
 
-// eslint-disable-next-line no-unused-vars
+ 
 function EditField({ label, value, onChange, icon: IconComp, multiline }) {
     return (
         <div>
