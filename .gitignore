@@ -20,6 +20,7 @@ augment rules/
 rules/
 plans/
 Implementation/
+.roo/
 
 # Environment files (NEVER commit credentials!)
 .env
