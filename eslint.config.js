@@ -26,7 +26,14 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['warn', {
+        varsIgnorePattern: '^_|^[A-Z]',
+        argsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_|e$|error$|err$',
+        destructuredArrayIgnorePattern: '^_',
+        ignoreRestSiblings: true
+      }],
+      'react-hooks/exhaustive-deps': 'warn',
     },
   },
 ])
