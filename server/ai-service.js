@@ -13,12 +13,39 @@ class AIService {
             console.warn('AI Service: No API key provided.');
             return;
         }
-        this.genAI = new GoogleGenerativeAI(apiKey);
-        // Use model from env or default to gemini-2.5-flash (stable)
-        const model = modelName || process.env.GEMINI_MODEL || "gemini-2.5-flash";
-        this.model = this.genAI.getGenerativeModel({ model });
-        this.embeddingModel = this.genAI.getGenerativeModel({ model: "text-embedding-004" });
-        console.log(`AI Service: Initialized with model: ${model}`);
+        
+        try {
+            this.genAI = new GoogleGenerativeAI(apiKey);
+            
+            // Use model from env or default to gemini-2.5-flash (stable)
+            const model = modelName || process.env.GEMINI_MODEL || "gemini-2.5-flash";
+            
+            // Initialize models with error handling
+            try {
+                this.model = this.genAI.getGenerativeModel({ model });
+                console.log(`✓ AI Service: Initialized with model: ${model}`);
+            } catch (modelError) {
+                console.error(`✗ AI Service: Failed to initialize model "${model}":`, modelError.message);
+                console.warn(`  Suggestion: Verify GEMINI_MODEL in .env or try: gemini-2.0-flash-exp, gemini-1.5-flash, gemini-1.5-pro`);
+                this.model = null;
+            }
+            
+            // Initialize embedding model (separate from main model)
+            try {
+                const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || "text-embedding-004";
+                this.embeddingModel = this.genAI.getGenerativeModel({ model: embeddingModel });
+                console.log(`✓ AI Service: Embedding model initialized (${embeddingModel})`);
+            } catch (embedError) {
+                console.error(`✗ AI Service: Failed to initialize embedding model:`, embedError.message);
+                console.warn(`  Suggestion: Verify GEMINI_EMBEDDING_MODEL in .env or try: text-embedding-004, embedding-001`);
+                this.embeddingModel = null;
+            }
+        } catch (error) {
+            console.error('✗ AI Service: Initialization failed:', error.message);
+            this.genAI = null;
+            this.model = null;
+            this.embeddingModel = null;
+        }
     }
 
     /**
@@ -109,17 +136,23 @@ class AIService {
 
     /**
      * Generate an embedding for a given text.
-     * @param {string} text 
+     * @param {string} text
      * @returns {Promise<number[]>} Vector array
      */
     async embedText(text) {
-        if (!this.embeddingModel) throw new Error('AI not initialized');
+        if (!this.embeddingModel) {
+            throw new Error('AI embedding model not initialized. Please check GEMINI_API_KEY configuration.');
+        }
 
         try {
             const result = await this.embeddingModel.embedContent(text);
             return result.embedding.values;
         } catch (error) {
             console.error('Embedding generation failed:', error);
+            if (error.message?.includes('not found') || error.status === 404) {
+                const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || "text-embedding-004";
+                throw new Error(`Embedding model "${embeddingModel}" is not available. Please verify your API access and GEMINI_EMBEDDING_MODEL configuration.`);
+            }
             throw error;
         }
     }
@@ -176,7 +209,9 @@ class AIService {
      * @param {object} fileStructure - truncated file tree
      */
     async analyzeRepo(repoData, readmeContent, fileStructure) {
-        if (!this.model) throw new Error('AI not initialized');
+        if (!this.model) {
+            throw new Error('AI model not initialized. Please check GEMINI_API_KEY and GEMINI_MODEL configuration.');
+        }
 
         // Detect patterns first
         const patterns = this.detectPatterns(readmeContent, fileStructure);
@@ -218,17 +253,25 @@ class AIService {
             Return ONLY valid JSON (no markdown, no explanation):
         `;
 
-        const result = await this.model.generateContent(prompt);
-        const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-        const aiAnalysis = JSON.parse(text);
+        try {
+            const result = await this.model.generateContent(prompt);
+            const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+            const aiAnalysis = JSON.parse(text);
 
-        // Merge AI analysis with computed metrics
-        return {
-            ...aiAnalysis,
-            health_score: quality.overall,
-            quality_breakdown: quality.breakdown,
-            patterns: quality.patterns
-        };
+            // Merge AI analysis with computed metrics
+            return {
+                ...aiAnalysis,
+                health_score: quality.overall,
+                quality_breakdown: quality.breakdown,
+                patterns: quality.patterns
+            };
+        } catch (error) {
+            console.error('Repository analysis failed:', error);
+            if (error.message?.includes('not found') || error.status === 404) {
+                throw new Error(`AI model not available. Please verify GEMINI_MODEL configuration in .env file.`);
+            }
+            throw error;
+        }
     }
 
     /**
@@ -238,7 +281,9 @@ class AIService {
      * @param {object} fileStructure - File tree
      */
     async enhanceReadme(currentReadme, repoData, fileStructure) {
-        if (!this.model) throw new Error('AI not initialized');
+        if (!this.model) {
+            throw new Error('AI model not initialized. Please check GEMINI_API_KEY and GEMINI_MODEL configuration.');
+        }
 
         const patterns = this.detectPatterns(currentReadme, fileStructure);
         const missingSections = [];
@@ -270,12 +315,20 @@ class AIService {
             Return ONLY the markdown for missing sections (no existing content, no JSON wrapper).
         `;
 
-        const result = await this.model.generateContent(prompt);
-        return {
-            enhancement: result.response.text(),
-            missingSections,
-            patterns
-        };
+        try {
+            const result = await this.model.generateContent(prompt);
+            return {
+                enhancement: result.response.text(),
+                missingSections,
+                patterns
+            };
+        } catch (error) {
+            console.error('README enhancement failed:', error);
+            if (error.message?.includes('not found') || error.status === 404) {
+                throw new Error(`AI model not available. Please verify GEMINI_MODEL configuration in .env file.`);
+            }
+            throw error;
+        }
     }
 
     /**

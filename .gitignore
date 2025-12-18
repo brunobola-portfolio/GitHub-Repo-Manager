@@ -29,6 +29,12 @@ Implementation/
 .env.production
 .env.development
 
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+server/data/*.db
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
