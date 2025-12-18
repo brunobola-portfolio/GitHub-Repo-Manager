@@ -174,8 +174,8 @@ Full Azure DevOps migration capabilities (Work Items, Pipelines, Wiki) are plann
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/github-repo-manager.git
-   cd github-repo-manager
+   git clone https://github.com/brunobola-portfolio/GitHub-Repo-Manager.git
+   cd GitHub-Repo-Manager
    ```
 
 2. **Install dependencies**
@@ -498,7 +498,7 @@ We love contributions! Whether it's bug fixes, new features, or documentation im
 1. **Fork** the repository
 2. **Clone** your fork:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/github-repo-manager.git
+   git clone https://github.com/YOUR-USERNAME/GitHub-Repo-Manager.git
    ```
 3. **Create a feature branch**:
    ```bash
@@ -569,19 +569,19 @@ Every coffee makes a difference! Even small contributions fuel development and s
 ## 📞 Support
 
 - **📖 Documentation**: Full docs at [`/docs`](docs/)
-- **🐛 Bug Reports**: [GitHub Issues](https://github.com/YOUR_USERNAME/github-repo-manager/issues)
-- **💡 Feature Requests**: [GitHub Discussions](https://github.com/YOUR_USERNAME/github-repo-manager/discussions)
+- **🐛 Bug Reports**: [GitHub Issues](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/issues)
+- **💡 Feature Requests**: [GitHub Discussions](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/discussions)
 - **💬 Community**: Open an issue for support
 
 ---
 
 ## 📊 Project Stats
 
-![GitHub stars](https://img.shields.io/github/stars/YOUR_USERNAME/github-repo-manager?style=social)
-![GitHub forks](https://img.shields.io/github/forks/YOUR_USERNAME/github-repo-manager?style=social)
-![GitHub issues](https://img.shields.io/github/issues/YOUR_USERNAME/github-repo-manager)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/YOUR_USERNAME/github-repo-manager)
-![License](https://img.shields.io/github/license/YOUR_USERNAME/github-repo-manager)
+![GitHub stars](https://img.shields.io/github/stars/brunobola-portfolio/GitHub-Repo-Manager?style=social)
+![GitHub forks](https://img.shields.io/github/forks/brunobola-portfolio/GitHub-Repo-Manager?style=social)
+![GitHub issues](https://img.shields.io/github/issues/brunobola-portfolio/GitHub-Repo-Manager)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/brunobola-portfolio/GitHub-Repo-Manager)
+![License](https://img.shields.io/github/license/brunobola-portfolio/GitHub-Repo-Manager)
 
 ---
 
@@ -594,7 +594,8 @@ Every coffee makes a difference! Even small contributions fuel development and s
   <a href="#-overview">Overview</a> •
   <a href="#-key-features">Features</a> •
   <a href="#-getting-started">Getting Started</a> •
-  <a href="#-configuration">Configuration</a> •
+  <a href="#%EF%B8%8F-configuration">Configuration</a> •
   <a href="#-troubleshooting">Troubleshooting</a> •
+  <a href="#-support-this-project">Support</a> •
   <a href="#-contributing">Contributing</a>
 </p>
