@@ -620,7 +620,28 @@ app.post('/api/delete', requireAuth, async (req, res) => {
 app.post('/api/ai/chat', requireAuth, requireAI, async (req, res) => {
     try {
         const { message, context } = req.body;
-        const model = req.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        
+        if (!message || message.trim().length === 0) {
+            return res.status(400).json({
+                error: 'MESSAGE_REQUIRED',
+                message: 'Please provide a message to send to the AI assistant.'
+            });
+        }
+        
+        // Use configured model from environment or default
+        const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+        let model;
+        
+        try {
+            model = req.genAI.getGenerativeModel({ model: modelName });
+        } catch (modelError) {
+            console.error(`Failed to load model ${modelName}:`, modelError.message);
+            return res.status(503).json({
+                error: 'MODEL_UNAVAILABLE',
+                message: `AI model "${modelName}" is not available. Please check your configuration.`,
+                modelRequested: modelName
+            });
+        }
 
         const systemPrompt = `You are an expert GitHub Repository Manager Assistant.
     Your goal is to help users manage their repositories, analyze code, and suggest improvements.
@@ -650,7 +671,35 @@ app.post('/api/ai/chat', requireAuth, requireAI, async (req, res) => {
         res.json({ message: text });
     } catch (error) {
         console.error('AI Chat Error:', error);
-        res.status(500).json({ error: 'Failed to generate AI response' });
+        
+        // User-friendly error handling
+        if (error.message?.includes('not found') || error.status === 404) {
+            return res.status(404).json({
+                error: 'MODEL_NOT_FOUND',
+                message: `The AI model "${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}" is not available. Please verify your GEMINI_MODEL configuration in .env file.`,
+                suggestion: 'Try using: gemini-2.0-flash-exp, gemini-1.5-flash, or gemini-1.5-pro'
+            });
+        }
+        
+        if (error.message?.includes('API key') || error.status === 401) {
+            return res.status(401).json({
+                error: 'INVALID_API_KEY',
+                message: 'Invalid or expired Gemini API key. Please check your GEMINI_API_KEY in .env file.'
+            });
+        }
+        
+        if (error.message?.includes('quota') || error.status === 429) {
+            return res.status(429).json({
+                error: 'QUOTA_EXCEEDED',
+                message: 'API quota exceeded. Please try again later or check your Gemini API usage limits.'
+            });
+        }
+        
+        res.status(500).json({
+            error: 'AI_REQUEST_FAILED',
+            message: 'Failed to generate AI response. Please try again later.',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
@@ -658,7 +707,28 @@ app.post('/api/ai/chat', requireAuth, requireAI, async (req, res) => {
 app.post('/api/ai/suggest', requireAuth, requireAI, async (req, res) => {
     try {
         const { repo } = req.body;
-        const model = req.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        
+        if (!repo) {
+            return res.status(400).json({
+                error: 'REPO_REQUIRED',
+                message: 'Repository data is required for suggestions.'
+            });
+        }
+        
+        // Use configured model from environment or default
+        const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+        let model;
+        
+        try {
+            model = req.genAI.getGenerativeModel({ model: modelName });
+        } catch (modelError) {
+            console.error(`Failed to load model ${modelName}:`, modelError.message);
+            return res.status(503).json({
+                error: 'MODEL_UNAVAILABLE',
+                message: `AI model "${modelName}" is not available. Please check your configuration.`,
+                modelRequested: modelName
+            });
+        }
 
         const prompt = `Analyze this GitHub repository metadata and suggest 3 concrete improvements.
     Focus on: Description clarity, Topics (SEO), and Community standards (License, Contributing).
@@ -681,7 +751,35 @@ app.post('/api/ai/suggest', requireAuth, requireAI, async (req, res) => {
         res.json(JSON.parse(text));
     } catch (error) {
         console.error('AI Suggest Error:', error);
-        res.status(500).json({ error: 'Failed to generate suggestions' });
+        
+        // User-friendly error handling
+        if (error.message?.includes('not found') || error.status === 404) {
+            return res.status(404).json({
+                error: 'MODEL_NOT_FOUND',
+                message: `The AI model "${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}" is not available. Please verify your GEMINI_MODEL configuration in .env file.`,
+                suggestion: 'Try using: gemini-2.0-flash-exp, gemini-1.5-flash, or gemini-1.5-pro'
+            });
+        }
+        
+        if (error.message?.includes('API key') || error.status === 401) {
+            return res.status(401).json({
+                error: 'INVALID_API_KEY',
+                message: 'Invalid or expired Gemini API key. Please check your GEMINI_API_KEY in .env file.'
+            });
+        }
+        
+        if (error.message?.includes('quota') || error.status === 429) {
+            return res.status(429).json({
+                error: 'QUOTA_EXCEEDED',
+                message: 'API quota exceeded. Please try again later or check your Gemini API usage limits.'
+            });
+        }
+        
+        res.status(500).json({
+            error: 'AI_REQUEST_FAILED',
+            message: 'Failed to generate suggestions. Please try again later.',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
