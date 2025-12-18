@@ -542,6 +542,30 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more informa
 
 ---
 
+## 💖 Support This Project
+
+If this project has helped you save time or improve your workflow, consider supporting its development!
+
+<div align="center">
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/brunobola)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/brunobola)
+
+</div>
+
+### 🌟 Why Support?
+
+Your contributions help:
+- 🐛 **Fix bugs** and improve stability
+- ✨ **Develop new features** requested by the community
+- 📚 **Create better documentation** and tutorials
+- ⚡ **Maintain dependencies** and ensure compatibility
+- 💬 **Provide faster support** to users
+
+Every coffee makes a difference! Even small contributions fuel development and show appreciation for open-source work. 🙏
+
+---
+
 ## 📞 Support
 
 - **📖 Documentation**: Full docs at [`/docs`](docs/)
