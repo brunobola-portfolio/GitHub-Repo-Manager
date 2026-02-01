@@ -21,6 +21,14 @@ npm run dev:server   # Backend only
 
 ## Core Principles
 
+### 0. Critical Anti-Patterns
+
+**NEVER Write Fake Code**
+- MUST provide real, functional implementations
+- MUST NOT use placeholders, stubs, or mock data unless explicitly requested
+- MUST NOT add comments like "// TODO: implement later" without user permission
+- If implementation is complex, ask for clarification rather than faking it
+
 ### 1. Code Quality Standards
 
 **Comment Philosophy**
@@ -97,7 +105,24 @@ npm run dev:server   # Backend only
 - Debounce search inputs (500ms)
 - Lazy load heavy components
 
-### 5. Error Handling
+### 5. Testing & Verification
+
+**Testing Requirements**
+- MUST write tests when implementing new features or fixing bugs
+- Run tests to verify functionality before marking task complete
+- Use linting tools to ensure code quality (`npm run lint` or equivalent)
+- Verify type safety if using TypeScript
+- Test both success and error paths
+
+**Verification Steps**
+1. Read and understand the full scope before starting implementation
+2. Trim scope to only what's explicitly requested
+3. Implement with real, functional code
+4. Run tests and linting
+5. Verify in browser/terminal as applicable
+6. Check for regressions in related functionality
+
+### 6. Error Handling
 
 **Frontend**
 - Wrap async operations in try/catch
@@ -234,20 +259,43 @@ refactor(ui): extract Button component
 
 ---
 
+## Workflow Guidance
+
+### Multi-Step Task Approach
+
+1. **Read & Analyze**: Read full task requirements before starting
+2. **Trim Scope**: Focus only on explicitly requested features
+3. **Plan**: Break complex tasks into clear, manageable steps
+4. **Implement**: Write real, functional code (no placeholders)
+5. **Test**: Run tests and verify functionality
+6. **Verify**: Check for regressions and edge cases
+7. **Review**: Ensure code quality standards are met
+
+### Agent Iteration
+
+- SHOULD iterate on code through testing
+- MUST write tests, run them, and verify proper functionality
+- Use linting tools to catch errors early
+- Provide clear explanations when changes affect architecture
+
+---
+
 ## Before Making Changes
 
 1. **Search codebase** to understand existing patterns
 2. **Verify dependencies** - check signatures and existence
 3. **Check implementations** - look for similar code
-4. **Minimal changes** - do exactly what's requested
-5. **Preserve style** - match existing code patterns
-6. **Update downstream** - fix affected code
+4. **Read artifact and trim scope** - focus on what's requested
+5. **Minimal changes** - do exactly what's requested
+6. **Preserve style** - match existing code patterns
+7. **Update downstream** - fix affected code
 
-**Never**:
+**MUST NOT**:
 - Auto-commit or push without permission
 - Make architectural changes without asking
 - Install dependencies without confirmation
 - Create new files without necessity
+- Write fake code or use placeholders
 
 ---
 
@@ -272,5 +320,5 @@ For project-specific questions:
 
 ---
 
-*Last Updated: 2025-12-17*  
-*Agent Rules Version: 1.0*
+*Last Updated: 2025-12-23*
+*Agent Rules Version: 2.0 - Harmonized across Augment Code, Roo Code, and Antigravity*

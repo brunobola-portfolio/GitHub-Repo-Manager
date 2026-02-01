@@ -65,14 +65,16 @@ function QuickActions({
     onTransfer, onArchive, onDelete, selectedRepos, onAzureImport
 }) {
     return (
-        <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl ring-1 ring-slate-200 dark:ring-slate-700/60">
-            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between">
-                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-amber-500 fill-amber-500/20" />
+        <Card className="overflow-hidden border-0 shadow-xl shadow-slate-200/50 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl ring-1 ring-slate-200/60 dark:ring-slate-700/50 rounded-2xl">
+            <div className="px-5 py-4 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center justify-between">
+                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md shadow-amber-500/20">
+                        <Zap className="w-3.5 h-3.5" />
+                    </div>
                     Quick Actions
                 </h3>
                 {hasSelection && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300">
+                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 text-indigo-600 dark:text-indigo-300 shadow-sm">
                         {selectedCount} SELECTED
                     </span>
                 )}
@@ -199,10 +201,12 @@ function ActionButton({ icon: IconComp, label, subLabel, onClick, disabled, vari
 
 function ActionHistory({ results, isPerforming, message }) {
     return (
-        <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl ring-1 ring-slate-200 dark:ring-slate-700/60 flex flex-col max-h-[300px]">
-            <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between sticky top-0">
-                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                    <History className="w-4 h-4 text-slate-400" />
+        <Card className="overflow-hidden border-0 shadow-xl shadow-slate-200/50 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl ring-1 ring-slate-200/60 dark:ring-slate-700/50 rounded-2xl flex flex-col max-h-[300px]">
+            <div className="px-5 py-3.5 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center justify-between sticky top-0">
+                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-600 text-white shadow-md shadow-slate-400/20">
+                        <History className="w-3.5 h-3.5" />
+                    </div>
                     Action History
                 </h3>
                 {isPerforming && (
@@ -258,10 +262,12 @@ function ActionHistory({ results, isPerforming, message }) {
 
 function ActivityFeed({ activity }) {
     return (
-        <Card className="overflow-hidden border-0 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl ring-1 ring-slate-200 dark:ring-slate-700/60 flex flex-col max-h-[400px]">
-            <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/50 flex items-center justify-between sticky top-0">
-                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-blue-500" />
+        <Card className="overflow-hidden border-0 shadow-xl shadow-slate-200/50 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl ring-1 ring-slate-200/60 dark:ring-slate-700/50 rounded-2xl flex flex-col max-h-[400px]">
+            <div className="px-5 py-3.5 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center justify-between sticky top-0">
+                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-500/20">
+                        <Clock className="w-3.5 h-3.5" />
+                    </div>
                     Recent Activity
                 </h3>
             </div>

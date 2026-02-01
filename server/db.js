@@ -1,4 +1,3 @@
-import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -9,6 +8,32 @@ const dataDir = path.join(__dirname, 'data');
 // Ensure data directory exists
 if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
+}
+
+// Import better-sqlite3 with helpful error handling for version mismatches
+let Database;
+try {
+    Database = (await import('better-sqlite3')).default;
+} catch (error) {
+    if (error.code === 'ERR_DLOPEN_FAILED' && error.message.includes('NODE_MODULE_VERSION')) {
+        const match = error.message.match(/NODE_MODULE_VERSION (\d+).*NODE_MODULE_VERSION (\d+)/);
+        const compiledFor = match ? match[1] : 'unknown';
+        const required = match ? match[2] : process.versions.modules;
+
+        console.error('\n' + '='.repeat(70));
+        console.error('❌ NATIVE MODULE VERSION MISMATCH');
+        console.error('='.repeat(70));
+        console.error(`\nThe better-sqlite3 module was compiled for a different Node.js version.`);
+        console.error(`  • Compiled for: NODE_MODULE_VERSION ${compiledFor}`);
+        console.error(`  • Required:     NODE_MODULE_VERSION ${required} (Node.js ${process.version})`);
+        console.error(`\n📋 How to fix:`);
+        console.error(`   1. Run: npm rebuild better-sqlite3`);
+        console.error(`   2. Or run: node server/check-native-modules.js --fix`);
+        console.error(`   3. Or clean reinstall: rm -rf node_modules && npm install`);
+        console.error('\n' + '='.repeat(70) + '\n');
+        process.exit(1);
+    }
+    throw error;
 }
 
 const dbPath = path.join(dataDir, 'manager.db');

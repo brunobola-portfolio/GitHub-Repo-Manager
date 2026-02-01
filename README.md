@@ -350,6 +350,33 @@ For detailed architecture documentation, see [`docs/ARCHITECTURE.md`](docs/ARCHI
 
 ### Common Issues
 
+#### Backend Server Not Running (ECONNREFUSED)
+
+```text
+[vite] http proxy error: /api/auth/login
+AggregateError [ECONNREFUSED]
+```
+
+**Cause**: The frontend is running but the backend server is not started.
+
+**Solution**:
+
+1. **Recommended**: Run both servers together:
+
+   ```bash
+   npm run dev:all
+   ```
+
+2. **Alternative**: Start the backend separately in another terminal:
+
+   ```bash
+   npm run dev:server
+   ```
+
+3. Verify the backend is running on port 3001 by visiting `http://localhost:3001/api/health`
+
+**Note**: The UI will display a helpful guide when this error occurs, showing the exact commands to run.
+
 #### Port Already in Use
 ```bash
 Error: Port 5173 is already in use
@@ -382,13 +409,49 @@ Error: Invalid callback URL
 3. Without a key, mock responses are returned automatically
 
 #### Session Lost on Refresh
+
 **Solution**: Check that `SESSION_SECRET` is set in `.env` and the backend is running.
 
+#### Native Module Version Mismatch (NODE_MODULE_VERSION)
+
+```text
+Error: The module 'better_sqlite3.node' was compiled against a different Node.js version
+using NODE_MODULE_VERSION 137. This version of Node.js requires NODE_MODULE_VERSION 127.
+```
+
+**Cause**: The `better-sqlite3` native module was compiled for a different Node.js version than you're currently running. This typically happens after updating Node.js.
+
+**Solution**:
+
+1. **Quick fix** - Rebuild the native module:
+
+   ```bash
+   npm run fix:native
+   ```
+
+2. **Alternative** - Manual rebuild:
+
+   ```bash
+   npm rebuild better-sqlite3
+   ```
+
+3. **Full reinstall** (if above fails):
+
+   ```bash
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+
+**Prevention**: The app automatically checks native module compatibility on `npm install` and when starting the server.
+
 #### npm install Fails
+
 ```bash
 Error: Cannot find module 'some-package'
 ```
+
 **Solution**:
+
 ```bash
 rm -rf node_modules package-lock.json
 npm cache clean --force
@@ -396,6 +459,7 @@ npm install
 ```
 
 #### Charts Not Rendering
+
 **Solution**: Ensure browser window is focused and wait 2-3 seconds for data to load. Charts use lazy rendering for performance.
 
 ---

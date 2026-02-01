@@ -6,15 +6,35 @@
 @layer base {
 	body {
 		@apply bg-slate-50 text-slate-900 antialiased;
+		background-image:
+			radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.08), transparent),
+			radial-gradient(ellipse 60% 40% at 100% 100%, rgba(168, 85, 247, 0.05), transparent);
 	}
 
 	.dark body {
 		@apply bg-slate-950 text-slate-50;
+		background-image:
+			radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.15), transparent),
+			radial-gradient(ellipse 60% 40% at 100% 100%, rgba(168, 85, 247, 0.08), transparent);
 	}
 
 	/* Global Dark Mode Polish */
 	.dark .card-border {
 		@apply border border-white/10 shadow-xl shadow-black/20;
+	}
+
+	/* Glassmorphism Panel Base */
+	.glass-panel {
+		@apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-black/40 rounded-2xl;
+	}
+
+	/* Elegant Card Style */
+	.glass-card {
+		@apply bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/70 dark:border-slate-700/50 shadow-lg shadow-slate-200/30 dark:shadow-black/30 rounded-xl transition-all duration-200;
+	}
+
+	.glass-card:hover {
+		@apply shadow-xl shadow-slate-300/40 dark:shadow-black/50 border-slate-300/80 dark:border-slate-600/60 -translate-y-0.5;
 	}
 }
 

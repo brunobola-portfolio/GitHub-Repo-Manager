@@ -10,6 +10,7 @@
 
 export const ErrorType = {
     NETWORK: 'NETWORK',
+    BACKEND_UNAVAILABLE: 'BACKEND_UNAVAILABLE',
     TIMEOUT: 'TIMEOUT',
     AUTHENTICATION: 'AUTHENTICATION',
     AUTHORIZATION: 'AUTHORIZATION',
@@ -24,6 +25,7 @@ export const ErrorType = {
 // User-friendly error messages
 const ERROR_MESSAGES = {
     [ErrorType.NETWORK]: 'Unable to connect to the server. Please check your internet connection.',
+    [ErrorType.BACKEND_UNAVAILABLE]: 'Backend server is not running. Please start the server with "npm run dev:server" or "npm run dev:all".',
     [ErrorType.TIMEOUT]: 'The request took too long to complete. Please try again.',
     [ErrorType.AUTHENTICATION]: 'Your session has expired. Please login again.',
     [ErrorType.AUTHORIZATION]: 'You do not have permission to perform this action.',
@@ -43,7 +45,7 @@ export class ApiError extends Error {
         this.type = type
         this.status = status
         this.originalError = originalError
-        this.isRetryable = [ErrorType.NETWORK, ErrorType.TIMEOUT, ErrorType.SERVER].includes(type)
+        this.isRetryable = [ErrorType.NETWORK, ErrorType.TIMEOUT, ErrorType.SERVER, ErrorType.BACKEND_UNAVAILABLE].includes(type)
         this.userMessage = ERROR_MESSAGES[type] || message
     }
 }
@@ -56,6 +58,13 @@ export function categorizeError(status, error = null) {
 
     if (error?.name === 'AbortError') {
         return new ApiError(ErrorType.TIMEOUT)
+    }
+
+    // Detect backend unavailable (connection refused) errors
+    // These occur when the backend server is not running
+    if (error?.name === 'TypeError' && error?.message?.includes('Failed to fetch')) {
+        // Browser is online but can't reach the backend - server likely not running
+        return new ApiError(ErrorType.BACKEND_UNAVAILABLE, null, null, error)
     }
 
     if (error?.message?.includes('fetch') || error?.message?.includes('network')) {

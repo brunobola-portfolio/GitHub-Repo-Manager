@@ -280,12 +280,28 @@ export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, l
                                     <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} dx={-10} />
                                     <Tooltip
                                         contentStyle={{
-                                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                                            border: 'none',
-                                            borderRadius: '12px',
-                                            color: '#f8fafc',
-                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                            backdropFilter: 'blur(16px)',
+                                            border: '1px solid rgba(148, 163, 184, 0.2)',
+                                            borderRadius: '16px',
+                                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                                            padding: '12px 16px',
                                         }}
+                                        itemStyle={{
+                                            color: '#f8fafc',
+                                            fontSize: '13px',
+                                            fontWeight: '500',
+                                            padding: '4px 0',
+                                        }}
+                                        labelStyle={{
+                                            color: '#94a3b8',
+                                            fontSize: '11px',
+                                            fontWeight: '600',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.05em',
+                                            marginBottom: '8px',
+                                        }}
+                                        cursor={{ stroke: '#6366f1', strokeWidth: 2, strokeDasharray: '5 5' }}
                                     />
                                     <Line
                                         type="monotone"
@@ -339,11 +355,26 @@ export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, l
                                     </Pie>
                                     <Tooltip
                                         contentStyle={{
-                                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                                            border: 'none',
-                                            borderRadius: '12px',
+                                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                            backdropFilter: 'blur(16px)',
+                                            border: '1px solid rgba(148, 163, 184, 0.2)',
+                                            borderRadius: '16px',
+                                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                                            padding: '12px 16px',
+                                        }}
+                                        itemStyle={{
                                             color: '#f8fafc',
-                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                                            fontSize: '13px',
+                                            fontWeight: '500',
+                                            padding: '4px 0',
+                                        }}
+                                        labelStyle={{
+                                            color: '#94a3b8',
+                                            fontSize: '11px',
+                                            fontWeight: '600',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.05em',
+                                            marginBottom: '8px',
                                         }}
                                     />
                                 </PieChart>
@@ -377,13 +408,28 @@ export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, l
                                             width={120}
                                         />
                                         <Tooltip
-                                            cursor={{ fill: '#334155', opacity: 0.1 }}
+                                            cursor={{ fill: '#6366f1', opacity: 0.08, radius: 8 }}
                                             contentStyle={{
-                                                backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                                                border: 'none',
-                                                borderRadius: '12px',
+                                                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                                backdropFilter: 'blur(16px)',
+                                                border: '1px solid rgba(148, 163, 184, 0.2)',
+                                                borderRadius: '16px',
+                                                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                                                padding: '12px 16px',
+                                            }}
+                                            itemStyle={{
                                                 color: '#f8fafc',
-                                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                                                fontSize: '13px',
+                                                fontWeight: '500',
+                                                padding: '4px 0',
+                                            }}
+                                            labelStyle={{
+                                                color: '#94a3b8',
+                                                fontSize: '11px',
+                                                fontWeight: '600',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.05em',
+                                                marginBottom: '8px',
                                             }}
                                         />
                                         <Bar dataKey="repos" fill="#14b8a6" radius={[0, 6, 6, 0]} barSize={24} />
