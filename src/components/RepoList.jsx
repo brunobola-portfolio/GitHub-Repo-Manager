@@ -15,6 +15,7 @@ export function RepoList({
 	repos,
 	loading,
 	error,
+	errorInfo,
 	selectedIds,
 	toggleSelect,
 	selectRepos,
@@ -198,21 +199,21 @@ export function RepoList({
 					</div>
 
 					<div className="relative flex-1 lg:w-64 group">
-						<Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+						<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
 						<input
 							type="text"
 							placeholder={isAISearch ? "Ask AI (e.g., 'React apps with auth')..." : "Search repositories..."}
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className={`w-full pl-9 pr-10 py-2 rounded-xl border outline-none text-sm transition-all
+							className={`w-full pl-10 pr-12 py-2.5 rounded-xl border outline-none text-sm transition-all shadow-sm
 								${isAISearch
-									? 'bg-purple-50 dark:bg-purple-900/10 border-purple-200 dark:border-purple-700 focus:ring-purple-500/50 focus:border-purple-500 text-purple-900 dark:text-purple-100 placeholder:text-purple-400'
-									: 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-indigo-500/50 focus:border-indigo-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-400'
+									? 'bg-purple-50/80 dark:bg-purple-900/20 backdrop-blur-sm border-purple-200/80 dark:border-purple-700/60 focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 text-purple-900 dark:text-purple-100 placeholder:text-purple-400'
+									: 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200/80 dark:border-slate-700/60 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-400'
 								}`}
 						/>
 						<button
 							onClick={() => { setIsAISearch(!isAISearch); setSearchQuery('') }}
-							className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md transition-all ${isAISearch ? 'text-purple-500 bg-purple-100 dark:bg-purple-900/30' : 'text-slate-400 hover:text-purple-500'}`}
+							className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${isAISearch ? 'text-purple-500 bg-purple-100 dark:bg-purple-900/30 shadow-sm' : 'text-slate-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20'}`}
 							title="Toggle AI Semantic Search"
 						>
 							<Sparkles className="w-4 h-4" />
@@ -221,7 +222,7 @@ export function RepoList({
 							<Loader2 className="absolute right-10 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-purple-500" />
 						)}
 					</div>
-					<div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
+					<div className="flex bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl p-1 border border-slate-200/70 dark:border-slate-700/50 shadow-sm">
 						<button
 							onClick={() => setViewMode('grid')}
 							className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
@@ -286,7 +287,19 @@ export function RepoList({
 			) : error ? (
 				<div className="flex flex-col items-center justify-center py-20 text-red-500 dark:text-red-400">
 					<AlertCircle className="w-10 h-10 mb-4" />
-					<p>{error}</p>
+					<p className="text-center max-w-md">{error}</p>
+					{errorInfo?.type === 'BACKEND_UNAVAILABLE' && (
+						<div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg max-w-lg">
+							<p className="text-amber-800 dark:text-amber-200 text-sm font-medium mb-2">
+								How to fix this:
+							</p>
+							<ol className="text-amber-700 dark:text-amber-300 text-sm list-decimal list-inside space-y-1">
+								<li>Open a terminal in the project root</li>
+								<li>Run <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">npm run dev:server</code> to start the backend</li>
+								<li>Or run <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">npm run dev:all</code> to start both frontend and backend</li>
+							</ol>
+						</div>
+					)}
 					<Button variant="secondary" className="mt-4" onClick={onRefresh}>Try Again</Button>
 				</div>
 			) : filteredRepos.length === 0 ? (
@@ -421,14 +434,15 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 			onClick={onToggle}
 			onContextMenu={onContextMenu}
 			className={`
-                group relative transition-all duration-200 cursor-pointer
-                bg-white/80 dark:bg-slate-900/40 backdrop-blur-md
-                border border-slate-200 dark:border-slate-700/60
-                shadow-sm dark:shadow-xl dark:shadow-black/40
-                hover:border-indigo-400 dark:hover:border-indigo-500/50
-                hover:shadow-md dark:hover:shadow-indigo-500/10
+                group relative transition-all duration-300 cursor-pointer
+                bg-white/70 dark:bg-slate-800/60 backdrop-blur-xl
+                border border-slate-200/70 dark:border-slate-700/50
+                shadow-lg shadow-slate-200/40 dark:shadow-black/40
+                hover:border-indigo-400/60 dark:hover:border-indigo-500/40
+                hover:shadow-xl hover:shadow-slate-300/50 dark:hover:shadow-black/60
+                hover:-translate-y-1
                 ${isSelected
-					? 'ring-2 ring-indigo-500 border-transparent dark:bg-indigo-900/10'
+					? 'ring-2 ring-indigo-500 border-transparent bg-indigo-50/50 dark:bg-indigo-900/20'
 					: ''
 				}
                 ${isGrid ? 'rounded-2xl p-5 flex flex-col h-full' : 'rounded-xl p-4 flex items-center gap-4'}

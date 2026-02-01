@@ -85,6 +85,7 @@ function App() {
     user,
     loading: githubLoading,
     error,
+    errorInfo,
     message,
     selectedIds,
     page,
@@ -385,11 +386,11 @@ function App() {
 
         {/* Repos View */}
         {activeView === 'repos' && (
-          <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)]">
+          <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-140px)]">
             {/* Left: Organization Panel */}
             {user && (
               <div className="hidden lg:block w-80 flex-shrink-0 h-full">
-                <div className="h-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                <div className="h-full rounded-3xl overflow-hidden border border-slate-200/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl">
                   <OrgPanel
                     orgs={orgs}
                     selectedOrg={selectedOrg}
@@ -409,6 +410,7 @@ function App() {
                 repos={displayRepos}
                 loading={loading || isSwitchingOrg}
                 error={error}
+                errorInfo={errorInfo}
                 selectedIds={selectedIds}
                 toggleSelect={toggleSelect}
                 selectRepos={selectRepos}
