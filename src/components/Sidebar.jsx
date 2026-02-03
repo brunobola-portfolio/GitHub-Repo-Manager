@@ -65,7 +65,7 @@ function QuickActions({
     onTransfer, onArchive, onDelete, selectedRepos, onAzureImport
 }) {
     return (
-        <Card className="overflow-hidden border-0 shadow-xl shadow-slate-200/50 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl ring-1 ring-slate-200/60 dark:ring-slate-700/50 rounded-2xl">
+        <Card className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl">
             <div className="px-5 py-4 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center justify-between">
                 <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
                     <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md shadow-amber-500/20">
@@ -201,7 +201,7 @@ function ActionButton({ icon: IconComp, label, subLabel, onClick, disabled, vari
 
 function ActionHistory({ results, isPerforming, message }) {
     return (
-        <Card className="overflow-hidden border-0 shadow-xl shadow-slate-200/50 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl ring-1 ring-slate-200/60 dark:ring-slate-700/50 rounded-2xl flex flex-col max-h-[300px]">
+        <Card className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl flex flex-col max-h-[300px]">
             <div className="px-5 py-3.5 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center justify-between sticky top-0">
                 <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
                     <div className="p-1.5 rounded-lg bg-gradient-to-br from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-600 text-white shadow-md shadow-slate-400/20">
@@ -262,7 +262,7 @@ function ActionHistory({ results, isPerforming, message }) {
 
 function ActivityFeed({ activity }) {
     return (
-        <Card className="overflow-hidden border-0 shadow-xl shadow-slate-200/50 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl ring-1 ring-slate-200/60 dark:ring-slate-700/50 rounded-2xl flex flex-col max-h-[400px]">
+        <Card className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl flex flex-col max-h-[400px]">
             <div className="px-5 py-3.5 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center justify-between sticky top-0">
                 <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
                     <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-500/20">
