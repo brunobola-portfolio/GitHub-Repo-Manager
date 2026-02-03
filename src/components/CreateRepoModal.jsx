@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
+import { Select } from './ui/Select'
 import { Sparkles, Loader2 } from 'lucide-react'
 import { useGitHub } from '../hooks/useGitHub'
 
@@ -65,18 +66,17 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming 
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             Owner
                         </label>
-                        <select
+                        <Select
                             value={targetOrg}
-                            onChange={(e) => setTargetOrg(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="">My personal account</option>
-                            {orgs?.map((org) => (
-                                <option key={org.login} value={org.login}>
-                                    {org.login}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={setTargetOrg}
+                            options={[
+                                { value: '', label: 'My personal account' },
+                                ...(orgs?.map((org) => ({
+                                    value: org.login,
+                                    label: org.login
+                                })) || [])
+                            ]}
+                        />
                     </div>
 
                     <div>

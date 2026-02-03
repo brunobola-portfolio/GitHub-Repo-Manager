@@ -7,6 +7,7 @@ import {
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useToast } from '../hooks/useToast';
 import { Card } from './ui/Card';
+import { Select } from './ui/Select';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -153,15 +154,16 @@ export function ActionsStatsDashboard({ repos, teamId }) {
                 </div>
                 
                 <div className="flex gap-3">
-                    <select
+                    <Select
                         value={timeRange}
-                        onChange={(e) => setTimeRange(Number(e.target.value))}
-                        className="text-sm border-none bg-slate-100 dark:bg-slate-800/50 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500/20 cursor-pointer font-medium text-slate-600 dark:text-slate-300 shadow-sm hover:shadow-md transition-all"
-                    >
-                        <option value={7}>Last 7 days</option>
-                        <option value={30}>Last 30 days</option>
-                        <option value={90}>Last 90 days</option>
-                    </select>
+                        onChange={(val) => setTimeRange(Number(val))}
+                        options={[
+                            { value: 7, label: 'Last 7 days' },
+                            { value: 30, label: 'Last 30 days' },
+                            { value: 90, label: 'Last 90 days' }
+                        ]}
+                        size="sm"
+                    />
                     
                     <button
                         onClick={syncWorkflowRuns}

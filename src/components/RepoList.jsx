@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Card } from './ui/Card'
 import { Badge } from './ui/Badge'
 import { Button } from './ui/Button'
+import { Select } from './ui/Select'
 import {
 	GitFork, Lock, Globe, ExternalLink, RefreshCw, Loader2, AlertCircle,
 	ChevronLeft, ChevronRight, Archive, Star, Unlock, Eye, Trash2,
@@ -147,7 +148,7 @@ export function RepoList({
 	return (
 		<div className="space-y-6 relative min-h-[600px]">
 			{/* Glassmorphic Toolbar */}
-			<div className="sticky top-4 z-30 p-2 rounded-2xl border border-slate-200 dark:border-slate-700/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-lg shadow-slate-200/50 dark:shadow-black/40 flex flex-col lg:flex-row gap-3 items-center justify-between transition-all duration-300">
+			<div className="sticky top-4 z-30 p-2 rounded-2xl border border-slate-200/70 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-lg shadow-slate-200/50 dark:shadow-black/40 flex flex-col lg:flex-row gap-3 items-center justify-between transition-all duration-300">
 
 				{/* Search & View Toggle */}
 				<div className="flex items-center gap-2 w-full lg:w-auto">
@@ -240,21 +241,39 @@ export function RepoList({
 
 				{/* Filters */}
 				<div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 no-scrollbar">
-					<SelectFilter value={typeFilter} onChange={setTypeFilter} options={[
-						{ value: 'all', label: 'All Types' },
-						{ value: 'source', label: 'Sources' },
-						{ value: 'fork', label: 'Forks' },
-						{ value: 'archived', label: 'Archived' }
-					]} />
-					<SelectFilter value={visibilityFilter} onChange={setVisibilityFilter} options={[
-						{ value: 'all', label: 'All Visibility' },
-						{ value: 'public', label: 'Public' },
-						{ value: 'private', label: 'Private' }
-					]} />
-					<SelectFilter value={languageFilter} onChange={setLanguageFilter} options={[
-						{ value: 'all', label: 'All Languages' },
-						...availableLanguages.map(l => ({ value: l, label: l }))
-					]} />
+					<Select
+						value={typeFilter}
+						onChange={setTypeFilter}
+						options={[
+							{ value: 'all', label: 'All Types' },
+							{ value: 'source', label: 'Sources' },
+							{ value: 'fork', label: 'Forks' },
+							{ value: 'archived', label: 'Archived' }
+						]}
+						size="sm"
+						className="min-w-[120px]"
+					/>
+					<Select
+						value={visibilityFilter}
+						onChange={setVisibilityFilter}
+						options={[
+							{ value: 'all', label: 'All Visibility' },
+							{ value: 'public', label: 'Public' },
+							{ value: 'private', label: 'Private' }
+						]}
+						size="sm"
+						className="min-w-[120px]"
+					/>
+					<Select
+						value={languageFilter}
+						onChange={setLanguageFilter}
+						options={[
+							{ value: 'all', label: 'All Languages' },
+							...availableLanguages.map(l => ({ value: l, label: l }))
+						]}
+						size="sm"
+						className="min-w-[120px]"
+					/>
 
 					<div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden lg:block"></div>
 
@@ -397,22 +416,6 @@ export function RepoList({
 	)
 }
 
-function SelectFilter({ value, onChange, options }) {
-	return (
-		<div className="relative group">
-			<select
-				value={value}
-				onChange={(e) => onChange(e.target.value)}
-				className="appearance-none pl-3 pr-8 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500/20 outline-none cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors min-w-[120px]"
-			>
-				{options.map(opt => (
-					<option key={opt.value} value={opt.value}>{opt.label}</option>
-				))}
-			</select>
-			<ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-		</div>
-	)
-}
 
 function TooltipButton({ icon: IconComp, label, onClick, className = "" }) {
 	return (
@@ -435,7 +438,7 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 			onContextMenu={onContextMenu}
 			className={`
                 group relative transition-all duration-300 cursor-pointer
-                bg-white/70 dark:bg-slate-800/60 backdrop-blur-xl
+                bg-white/70 dark:bg-slate-800/80 backdrop-blur-xl
                 border border-slate-200/70 dark:border-slate-700/50
                 shadow-lg shadow-slate-200/40 dark:shadow-black/40
                 hover:border-indigo-400/60 dark:hover:border-indigo-500/40
@@ -451,7 +454,7 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 			{/* Selection Checkbox */}
 			{/* In Grid: Top Right. In List: Left side, static. */}
 			{isGrid ? (
-				<div className={`absolute top-4 right-4 z-10 transition-opacity duration-200 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+				<div className={`absolute top-4 right-4 z-10 transition-opacity duration-200 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'}`}>
 					<div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}>
 						{isSelected && <CheckSquare className="w-3.5 h-3.5 text-white" />}
 					</div>
@@ -494,7 +497,7 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 			</div>
 
 			{/* Stats & Meta */}
-			<div className={`flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 ${isGrid ? 'mt-auto pt-4 border-t border-slate-100 dark:border-white/5' : ''}`}>
+			<div className={`flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 ${isGrid ? 'mt-auto pt-4 border-t border-slate-200/50 dark:border-slate-700/30' : ''}`}>
 				{repo.language && (
 					<div className="flex items-center gap-1.5">
 						<span className="w-2 h-2 rounded-full bg-indigo-500"></span>
@@ -515,21 +518,21 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 				<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 					<button
 						onClick={(e) => { e.stopPropagation(); window.open(repo.html_url, '_blank') }}
-						className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-500"
+						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500"
 						title="Open on GitHub"
 					>
 						<ExternalLink className="w-4 h-4" />
 					</button>
 					<button
 						onClick={(e) => { e.stopPropagation(); onAction('archive', repo, !repo.archived) }}
-						className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-500"
+						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500"
 						title={repo.archived ? "Unarchive" : "Archive"}
 					>
 						<Archive className="w-4 h-4" />
 					</button>
 					<button
 						onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
-						className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-500 md:hidden"
+						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 md:hidden"
 						title="More Actions"
 					>
 						<MoreHorizontal className="w-4 h-4" />

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
+import { Select } from './ui/Select'
 
 export function AzureImportModal({ isOpen, onClose, onImport, orgs, isPerforming }) {
     const [azureOrg, setAzureOrg] = useState('')
@@ -135,18 +136,17 @@ export function AzureImportModal({ isOpen, onClose, onImport, orgs, isPerforming
 	                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                     Target Organization (optional)
                                 </label>
-                                <select
+                                <Select
                                     value={targetOrg}
-                                    onChange={(e) => setTargetOrg(e.target.value)}
-	                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    <option value="">My personal account</option>
-                                    {orgs?.map((org) => (
-                                        <option key={org.login} value={org.login}>
-                                            {org.login}
-                                        </option>
-                                    ))}
-                                </select>
+                                    onChange={setTargetOrg}
+                                    options={[
+                                        { value: '', label: 'My personal account' },
+                                        ...(orgs?.map((org) => ({
+                                            value: org.login,
+                                            label: org.login
+                                        })) || [])
+                                    ]}
+                                />
                             </div>
                             <div>
 	                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
