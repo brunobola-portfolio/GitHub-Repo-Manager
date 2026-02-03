@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Github, ArrowLeft, Plus, Trash2, Shield, UserPlus, BookCopy, Zap, Play, Clock, CheckCircle, XCircle, Loader2, Search, Activity } from 'lucide-react';
 import { useToast } from '../../hooks/useToast';
 import { ActivityTab } from './ActivityTab';
+import { Select } from '../ui/Select';
 
 export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsStats }) {
     const [activeTab, setActiveTab] = useState('activity');
@@ -404,15 +405,17 @@ function MemberCard({ member, currentUserRole, onUpdateRole, onRemove, isMe }) {
 
             <div className="flex items-center gap-2">
                 {canManage && member.role !== 'owner' ? (
-                    <select
+                    <Select
                         value={member.role}
-                        onChange={(e) => onUpdateRole(member.id, e.target.value)}
+                        onChange={(val) => onUpdateRole(member.id, val)}
                         disabled={isMe}
-                        className="text-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                    >
-                        <option value="admin">Admin</option>
-                        <option value="member">Member</option>
-                    </select>
+                        options={[
+                            { value: 'admin', label: 'Admin' },
+                            { value: 'member', label: 'Member' }
+                        ]}
+                        size="sm"
+                        className="min-w-[100px]"
+                    />
                 ) : (
                     <span className={`text-xs px-2 py-0.5 rounded-full border ${member.role === 'owner'
                         ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'

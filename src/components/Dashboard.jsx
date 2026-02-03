@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { Card } from './ui/Card'
 import { Skeleton } from './ui/Skeleton'
+import { Select } from './ui/Select'
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion'
 import * as Popover from '@radix-ui/react-popover'
@@ -129,7 +130,7 @@ export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, l
             {/* Header with Premium Org Selector */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 tracking-tight">
+                    <h1 aria-label="Dashboard" className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 tracking-tight">
                         Dashboard
                     </h1>
                     <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg">
@@ -260,15 +261,16 @@ export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, l
                                 <Activity className="w-5 h-5 text-indigo-500" />
                                 Activity Trends
                             </h3>
-                            <select
+                            <Select
                                 value={timeRange}
-                                onChange={(e) => setTimeRange(e.target.value)}
-                                className="text-sm border-none bg-slate-100 dark:bg-slate-800/50 rounded-lg px-3 py-1.5 focus:ring-0 cursor-pointer font-medium text-slate-600 dark:text-slate-300"
-                            >
-                                <option value="7d">Last 7 days</option>
-                                <option value="30d">Last 30 days</option>
-                                <option value="90d">Last 3 months</option>
-                            </select>
+                                onChange={setTimeRange}
+                                options={[
+                                    { value: '7d', label: 'Last 7 days' },
+                                    { value: '30d', label: 'Last 30 days' },
+                                    { value: '90d', label: 'Last 3 months' }
+                                ]}
+                                size="sm"
+                            />
                         </div>
                         {loading ? (
                             <Skeleton className="w-full h-[300px] rounded-xl" />
