@@ -237,7 +237,7 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
             aria-pressed={isDark}
             className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors
                 ${isDark
-                    ? 'bg-slate-900 text-slate-100 border-slate-600 shadow-inner'
+                    ? 'bg-slate-900 text-slate-100 border-slate-600'
                     : 'bg-slate-100 text-slate-800 border-slate-200'
                 }
 `}
@@ -290,7 +290,7 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
                 <div className="px-2 py-1 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                     Organizations ({orgs.length})
                 </div>
-                <div className="max-h-32 overflow-y-auto">
+                <div className="max-h-48 overflow-y-auto">
                     {orgs.length === 0 ? (
                         <div className="px-2 py-2 text-sm text-slate-500 dark:text-slate-400">No organizations</div>
                     ) : (

@@ -7,6 +7,14 @@
     <title>github-repo-manager</title>
   </head>
   <body>
+    <script>
+      // Apply dark mode BEFORE React renders to prevent flash of light mode
+      (function() {
+        var saved = localStorage.getItem('github-repo-manager-theme');
+        var isDark = saved === 'dark' || (saved !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) document.documentElement.classList.add('dark');
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

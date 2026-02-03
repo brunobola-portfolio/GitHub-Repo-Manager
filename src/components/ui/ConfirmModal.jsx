@@ -53,7 +53,7 @@ export function ConfirmModal({
 
 	    return (
 	        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl dark:shadow-slate-900/50 max-w-md w-full mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl dark:shadow-black/40 max-w-md w-full mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 {/* Header */}
 	                <div className={`${styles.bg} ${styles.border} border-b p-4 flex items-center gap-3`}>
 	                    <div className={`p-2 rounded-full ${styles.bg}`}>

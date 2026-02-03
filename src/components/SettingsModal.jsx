@@ -1,20 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { X, Moon, Sun, Monitor, Key, ShieldCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTheme } from '../hooks/useTheme'
 
 export function SettingsModal({ isOpen, onClose }) {
-    // Initialize state directly from localStorage to avoid useEffect state updates
     const [apiKey, setApiKey] = useState(() => localStorage.getItem('GEMINI_API_KEY') || '')
-    const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'system') // 'light', 'dark', 'system'
-
-    // Apply theme whenever it changes (Instant Preview)
-    useEffect(() => {
-        if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark')
-        } else {
-            document.documentElement.classList.remove('dark')
-        }
-    }, [theme])
+    const { theme, setTheme } = useTheme()
 
     const handleSave = () => {
         if (apiKey.trim()) {
@@ -22,7 +13,6 @@ export function SettingsModal({ isOpen, onClose }) {
         } else {
             localStorage.removeItem('GEMINI_API_KEY')
         }
-        localStorage.setItem('theme', theme)
         onClose()
     }
 
