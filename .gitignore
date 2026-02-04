@@ -46,3 +46,10 @@ server/data/*.db
 *.sln
 *.sw?
 .roo/
+
+# Claude Code and MCP
+.claude/
+.playwright-mcp/
+
+# Temporary files
+nul
