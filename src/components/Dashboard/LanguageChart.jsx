@@ -11,6 +11,11 @@ const COLORS = ['#6366f1', '#ec4899', '#8b5cf6', '#14b8a6', '#f59e0b', '#ef4444'
  * LanguageChart - Pie chart showing language distribution
  */
 export function LanguageChart({ data = [], loading }) {
+    // Calculate dynamic sizes based on data length
+    const itemsPerColumn = Math.ceil(data.length / 2)
+    const legendHeight = Math.max(itemsPerColumn * 32, 200)
+    const chartHeight = Math.max(legendHeight + 60, 340)
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -18,37 +23,47 @@ export function LanguageChart({ data = [], loading }) {
             transition={{ duration: 0.5, delay: 0.1 }}
             whileHover={{ y: -6, scale: 1.02 }}
         >
-            <Card className="p-6 h-[420px] bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl hover:shadow-2xl hover:border-pink-400/50 dark:hover:border-pink-500/40 transition-all duration-300 cursor-pointer">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-8 flex items-center gap-2">
+            <Card
+                className="p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl hover:shadow-2xl hover:border-pink-400/50 dark:hover:border-pink-500/40 transition-all duration-300 cursor-pointer"
+                style={{ minHeight: `${chartHeight + 60}px` }}
+            >
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
                     <Code2 className="w-5 h-5 text-pink-500" />
                     Language Distribution
                 </h3>
                 {loading ? (
-                    <div className="flex items-center justify-center h-[300px]">
+                    <div className="flex items-center justify-center" style={{ height: `${chartHeight}px` }}>
                         <Skeleton className="w-64 h-64 rounded-full" />
                     </div>
                 ) : data.length === 0 ? (
-                    <div className="flex items-center justify-center h-[300px] text-slate-400 dark:text-slate-500">
+                    <div className="flex items-center justify-center text-slate-400 dark:text-slate-500" style={{ height: `${chartHeight}px` }}>
                         <p>No language data available</p>
                     </div>
                 ) : (
-                    <div className="h-[300px]">
-                        <ResponsiveContainer width="100%" height="100%" debounce={50}>
-                            <PieChart>
-                                <Pie
-                                    data={data}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={80}
-                                    outerRadius={120}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                    cornerRadius={6}
-                                >
-                                    {data.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} strokeWidth={0} />
-                                    ))}
-                                </Pie>
+                    <div className="flex flex-col lg:flex-row items-center gap-8" style={{ minHeight: `${chartHeight}px` }}>
+                        {/* Chart */}
+                        <div className="flex-shrink-0" style={{ width: '280px', height: '280px' }}>
+                            <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                                <PieChart>
+                                    <Pie
+                                        data={data}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={85}
+                                        outerRadius={130}
+                                        paddingAngle={3}
+                                        dataKey="value"
+                                        cornerRadius={8}
+                                    >
+                                        {data.map((entry, index) => (
+                                            <Cell
+                                                key={`cell-${index}`}
+                                                fill={entry.color}
+                                                strokeWidth={0}
+                                                className="transition-opacity hover:opacity-80"
+                                            />
+                                        ))}
+                                    </Pie>
                                 <Tooltip
                                     contentStyle={{
                                         backgroundColor: 'rgba(15, 23, 42, 0.95)',
@@ -66,23 +81,40 @@ export function LanguageChart({ data = [], loading }) {
                                 />
                             </PieChart>
                         </ResponsiveContainer>
+                        </div>
 
-                        {/* Language Legend */}
-                        <div className="grid grid-cols-2 gap-3 mt-6">
-                            {data.slice(0, 6).map((lang, idx) => (
-                                <div key={lang.name} className="flex items-center gap-2">
+                        {/* Language Legend - Dynamic and scrollable */}
+                        <div className="flex-1 w-full lg:w-auto overflow-y-auto max-h-[340px] custom-scrollbar pr-2">
+                            <div
+                                className="grid gap-3"
+                                style={{
+                                    gridTemplateColumns: data.length > 8 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
+                                    gridAutoRows: 'minmax(0, auto)'
+                                }}
+                            >
+                                {data.map((lang, index) => (
                                     <div
-                                        className="w-3 h-3 rounded-full"
-                                        style={{ backgroundColor: COLORS[idx % COLORS.length] }}
-                                    />
-                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
-                                        {lang.name}
-                                    </span>
-                                    <span className="text-xs text-slate-400 ml-auto">
-                                        {lang.value}
-                                    </span>
-                                </div>
-                            ))}
+                                        key={lang.name}
+                                        className="flex items-center gap-3 group hover:bg-slate-50/80 dark:hover:bg-slate-800/40 p-2.5 rounded-xl transition-all duration-200 cursor-pointer"
+                                    >
+                                        <div
+                                            className="w-4 h-4 rounded-md flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform"
+                                            style={{ backgroundColor: lang.color }}
+                                        />
+                                        <span className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate flex-1 min-w-0">
+                                            {lang.name}
+                                        </span>
+                                        <div className="flex items-center gap-2 text-xs flex-shrink-0">
+                                            <span className="text-slate-600 dark:text-slate-400 font-semibold">
+                                                {lang.value}
+                                            </span>
+                                            <span className="text-slate-400 dark:text-slate-500 font-medium">
+                                                {lang.percentage}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
