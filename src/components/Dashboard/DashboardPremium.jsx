@@ -67,8 +67,8 @@ export function DashboardPremium({
             className="space-y-8"
         >
             {/* Header with Organization Selector */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                <div>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div className="flex-1">
                     <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 tracking-tight">
                         Dashboard
                     </h1>
@@ -77,12 +77,20 @@ export function DashboardPremium({
                     </p>
                 </div>
 
-                <OrganizationSelector
-                    orgs={orgs}
-                    selectedOrg={selectedOrg}
-                    onSelectOrg={onSelectOrg}
-                    loading={loading}
-                />
+                {/* Organization Selector Card */}
+                <div className="lg:self-start">
+                    <div className="mb-2">
+                        <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                            Filter by Organization
+                        </label>
+                    </div>
+                    <OrganizationSelector
+                        orgs={orgs}
+                        selectedOrg={selectedOrg}
+                        onSelectOrg={onSelectOrg}
+                        loading={loading}
+                    />
+                </div>
             </div>
 
             {/* CATEGORY 1: Overview Essencial (Always Visible) */}
