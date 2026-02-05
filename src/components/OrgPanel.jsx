@@ -2,8 +2,10 @@ import React, { useState } from 'react'
 import {
 	Building2, Plus, Search,
 	Settings, Shield,
-	ChevronRight, LayoutGrid, List
+	ChevronRight, LayoutGrid, List,
+	Globe, Folder
 } from 'lucide-react'
+import { formatNumber, formatCompact } from '../utils/format'
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
@@ -93,7 +95,7 @@ export function OrgPanel({
 									All Orgs
 								</h3>
 								<p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-									{stats?.totalRepos || 0} repos
+									{formatNumber(stats?.totalRepos || 0)} repos
 								</p>
 							</div>
 							{!selectedOrg && viewMode === 'list' && (
@@ -174,68 +176,139 @@ function OrgItem({ org, isSelected, onClick, viewMode }) {
 	// Calculate total repos if available, otherwise fallback
 	const totalRepos = (org.public_repos || 0) + (org.total_private_repos || 0)
 	const isGrid = viewMode === 'grid'
+	const isPersonal = org.isPersonal === true
 
 	return (
 		<motion.button
 			layout
 			initial={{ opacity: 0, scale: 0.95 }}
 			animate={{ opacity: 1, scale: 1 }}
-			whileHover={{ scale: 1.02 }}
+			whileHover={{
+				scale: 1.02,
+				transition: { duration: 0.2, ease: "easeOut" }
+			}}
 			whileTap={{ scale: 0.98 }}
 			onClick={onClick}
-			title={org.description || org.login} // Tooltip for full details
-			className={`group relative w-full flex items-center gap-3 rounded-xl transition-all border ${isSelected
-				? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 shadow-sm'
-				: 'bg-white dark:bg-slate-800/50 border-transparent hover:border-indigo-100 dark:hover:border-indigo-900 hover:shadow-sm'
-				} ${isGrid ? 'flex-col text-center p-4 min-h-[140px] justify-center' : 'p-3'}`}
+			title={org.description || org.login}
+			className={`group relative w-full flex items-center gap-3 rounded-xl transition-all duration-300 border ${
+				isSelected
+					? 'bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800 shadow-lg shadow-indigo-200/50 dark:shadow-indigo-900/30'
+					: 'bg-white/80 dark:bg-slate-800/60 border-slate-200/50 dark:border-slate-700/40 hover:border-indigo-200 dark:hover:border-indigo-800/60 hover:shadow-xl hover:shadow-indigo-100/30 dark:hover:shadow-indigo-900/20'
+			} ${isGrid ? 'flex-col text-center p-5 min-h-[180px] justify-start' : 'p-3.5'}`}
 		>
-			<img
-				src={org.avatar_url}
-				alt={org.login}
-				className={`rounded-lg object-cover ring-1 ring-slate-200 dark:ring-slate-700 group-hover:ring-indigo-200 dark:group-hover:ring-indigo-800 transition-all ${isGrid ? 'w-14 h-14 mb-3' : 'w-10 h-10'}`}
-			/>
+			{/* Gradient overlay animado no hover (estado selecionado) */}
+			{isSelected && (
+				<motion.div
+					className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 dark:from-indigo-500/10 dark:to-purple-500/10"
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					transition={{ duration: 0.3 }}
+				/>
+			)}
 
-			<div className={`flex-1 min-w-0 ${isGrid ? 'w-full flex flex-col items-center' : 'text-left'}`}>
-				<h3 className={`font-semibold truncate w-full ${isSelected ? 'text-indigo-900 dark:text-indigo-100' : 'text-slate-700 dark:text-slate-200'
-					} ${isGrid ? 'text-sm' : 'text-base'}`}>
+			{/* Avatar com efeito de anel melhorado */}
+			<div className="relative">
+				<img
+					src={org.avatar_url}
+					alt={org.login}
+					className={`rounded-xl object-cover ring-2 transition-all duration-300 ${
+						isSelected
+							? 'ring-indigo-300 dark:ring-indigo-600 shadow-lg shadow-indigo-200/50 dark:shadow-indigo-900/50'
+							: 'ring-slate-200 dark:ring-slate-700 group-hover:ring-indigo-300 dark:group-hover:ring-indigo-700/60 group-hover:shadow-md'
+					} ${isGrid ? 'w-16 h-16 mb-3' : 'w-11 h-11'}`}
+				/>
+
+				{/* Personal Account Badge */}
+				{isPersonal && (
+					<div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-md shadow-md">
+						YOU
+					</div>
+				)}
+
+				{/* Indicador ativo com pulse */}
+				{isSelected && !isPersonal && (
+					<motion.div
+						className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-indigo-500"
+						animate={{ scale: [1, 1.2, 1] }}
+						transition={{ duration: 2, repeat: Infinity }}
+					>
+						<div className="absolute inset-0 rounded-full bg-indigo-500 animate-ping opacity-75" />
+					</motion.div>
+				)}
+			</div>
+
+			<div className={`flex-1 min-w-0 relative z-10 ${isGrid ? 'w-full flex flex-col items-center' : 'text-left'}`}>
+				{/* Nome da Organização */}
+				<h3 className={`font-bold truncate w-full ${
+					isSelected ? 'text-indigo-900 dark:text-indigo-100' : 'text-slate-800 dark:text-slate-100'
+				} ${isGrid ? 'text-sm mb-1' : 'text-base mb-0.5'}`}>
 					{org.login}
 				</h3>
 
+				{/* Descrição (apenas em modo lista) */}
 				{!isGrid && (
-					<p className="text-xs text-slate-500 dark:text-slate-400 truncate w-full">
+					<p className="text-xs text-slate-500 dark:text-slate-400 truncate w-full mb-2">
 						{org.description || 'No description'}
 					</p>
 				)}
 
-				{/* Repo Count Badge */}
-				<div className={`mt-1.5 flex items-center gap-1 ${isGrid ? 'justify-center flex-wrap' : ''}`}>
-					<span className={`px-2 py-0.5 rounded-md text-[10px] font-medium border ${isSelected
-						? 'bg-indigo-100/50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
-						: 'bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+				{/* Grid de Estatísticas Melhorado */}
+				<div className={`flex items-center gap-2 mt-2 ${isGrid ? 'flex-col w-full' : 'flex-row flex-wrap'}`}>
+					{/* Total Repos */}
+					<div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
+						isSelected
+							? 'bg-indigo-100/60 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/60'
+							: 'bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600/50 group-hover:border-indigo-200 dark:group-hover:border-indigo-800/40'
+					}`}>
+						<Folder className="w-3 h-3" />
+						<span>{formatNumber(totalRepos)}</span>
+					</div>
+
+					{/* Public Repos */}
+					{org.public_repos > 0 && (
+						<div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
+							isSelected
+								? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
+								: 'bg-emerald-50/50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30'
 						}`}>
-						{totalRepos} Repos
-					</span>
+							<Globe className="w-3 h-3" />
+							<span>{formatCompact(org.public_repos)}</span>
+						</div>
+					)}
+
+					{/* Private Repos */}
 					{org.total_private_repos > 0 && (
-						<span
-							className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/30 flex items-center gap-1"
-							title={`${org.total_private_repos} Private Repositories`}
-						>
-							<Shield size={10} />
-							{org.total_private_repos}
-						</span>
+						<div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
+							isSelected
+								? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
+								: 'bg-amber-50/50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30'
+						}`}>
+							<Shield className="w-3 h-3" />
+							<span>{formatCompact(org.total_private_repos)}</span>
+						</div>
 					)}
 				</div>
 			</div>
 
+			{/* Indicador de seleção com animação melhorada */}
 			{isSelected && !isGrid && (
 				<motion.div
 					layoutId="active-indicator"
-					className="absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-indigo-500"
-				/>
+					className="absolute right-3 top-1/2 -translate-y-1/2"
+					initial={{ scale: 0 }}
+					animate={{ scale: 1 }}
+					transition={{ type: "spring", stiffness: 500, damping: 30 }}
+				>
+					<div className="relative">
+						<div className="w-2 h-2 rounded-full bg-indigo-500" />
+						<div className="absolute inset-0 w-2 h-2 rounded-full bg-indigo-500 animate-ping opacity-75" />
+					</div>
+				</motion.div>
 			)}
 
+			{/* Chevron no hover com animação suave */}
 			{!isSelected && !isGrid && (
-				<ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-1" />
+				<ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-0 group-hover:translate-x-1" />
 			)}
 		</motion.button>
 	)

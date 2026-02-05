@@ -6,6 +6,7 @@ import {
     GitCommit, GitPullRequest, CircleDot, Play, Copy, ExternalLink,
     Clock, ChevronRight
 } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 const ACTION_LABELS = {
     visibility: 'Change Visibility',
@@ -65,7 +66,7 @@ function QuickActions({
     onTransfer, onArchive, onDelete, selectedRepos, onAzureImport
 }) {
     return (
-        <Card className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl">
+        <Card hover={true} className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl">
             <div className="px-5 py-4 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center justify-between">
                 <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
                     <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md shadow-amber-500/20">
@@ -97,20 +98,36 @@ function QuickActions({
 
                         {/* Global Tools */}
                         <div className="grid grid-cols-1 gap-2">
-                            <button
+                            <motion.button
                                 onClick={onAzureImport}
                                 disabled={isPerforming}
-                                className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 group"
+                                whileHover={{
+                                    scale: 1.03,
+                                    boxShadow: "0 20px 25px -5px rgba(59, 130, 246, 0.3), 0 10px 10px -5px rgba(59, 130, 246, 0.2)"
+                                }}
+                                whileTap={{ scale: 0.98 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                                className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md hover:shadow-lg transition-all duration-200 group cursor-pointer"
                             >
-                                <div className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm">
+                                <motion.div
+                                    className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm"
+                                    whileHover={{ rotate: 360 }}
+                                    transition={{ duration: 0.6 }}
+                                >
                                     <Cloud className="w-4 h-4 text-white" />
-                                </div>
+                                </motion.div>
                                 <div className="text-left">
                                     <div className="text-xs font-bold">DevOps Import</div>
                                     <div className="text-[10px] text-blue-100">Migrate from Azure</div>
                                 </div>
-                                <ChevronRight className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </button>
+                                <motion.div
+                                    initial={{ x: 0 }}
+                                    animate={{ x: [0, 5, 0] }}
+                                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                                >
+                                    <ChevronRight className="w-4 h-4 ml-auto" />
+                                </motion.div>
+                            </motion.button>
                         </div>
                     </div>
                 ) : (
@@ -180,28 +197,39 @@ function ActionButton({ icon: IconComp, label, subLabel, onClick, disabled, vari
     }
 
     return (
-        <button
+        <motion.button
             onClick={onClick}
             disabled={disabled}
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
             className={`
-                flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200
-                disabled:opacity-50 disabled:cursor-not-allowed active:scale-95
+                flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold
+                transition-all duration-200 relative overflow-hidden
+                disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
                 ${variants[variant]}
                 ${className}
             `}
         >
-            <IconComp className="w-3.5 h-3.5" />
-            <div className="flex flex-col items-start leading-none">
+            {/* Background animado no hover */}
+            <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0"
+                initial={{ x: '-100%' }}
+                whileHover={{ x: '100%' }}
+                transition={{ duration: 0.6 }}
+            />
+            <IconComp className="w-3.5 h-3.5 relative z-10" />
+            <div className="flex flex-col items-start leading-none relative z-10">
                 <span>{label}</span>
                 {subLabel && <span className="text-[9px] opacity-70 font-normal mt-0.5">{subLabel}</span>}
             </div>
-        </button>
+        </motion.button>
     )
 }
 
 function ActionHistory({ results, isPerforming, message }) {
     return (
-        <Card className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl flex flex-col max-h-[300px]">
+        <Card hover={true} className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl flex flex-col max-h-[300px]">
             <div className="px-5 py-3.5 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center justify-between sticky top-0">
                 <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
                     <div className="p-1.5 rounded-lg bg-gradient-to-br from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-600 text-white shadow-md shadow-slate-400/20">
@@ -262,7 +290,7 @@ function ActionHistory({ results, isPerforming, message }) {
 
 function ActivityFeed({ activity }) {
     return (
-        <Card className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl flex flex-col max-h-[400px]">
+        <Card hover={true} className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl flex flex-col max-h-[400px]">
             <div className="px-5 py-3.5 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center justify-between sticky top-0">
                 <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
                     <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-500/20">
