@@ -3,7 +3,7 @@ import { useGitHub } from './hooks/useGitHub'
 import { HeaderNew } from './components/HeaderNew'
 import { Sidebar } from './components/Sidebar'
 import { RepoList } from './components/RepoList'
-import { Dashboard } from './components/Dashboard'
+import { DashboardPremium } from './components/Dashboard/DashboardPremium'
 import { OrgPanel } from './components/OrgPanel'
 import { AzureImportModal } from './components/AzureImportModal'
 import { CreateRepoModal } from './components/CreateRepoModal'
@@ -368,7 +368,7 @@ function App() {
         {/* Dashboard View */}
         {activeView === 'dashboard' && user && (
           <div className="animate-in fade-in duration-500">
-            <Dashboard
+            <DashboardPremium
               stats={stats}
               orgs={orgs}
               repos={displayRepos}
@@ -386,11 +386,11 @@ function App() {
 
         {/* Repos View */}
         {activeView === 'repos' && (
-          <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-140px)]">
+          <div className="flex flex-col lg:flex-row gap-8 min-h-0">
             {/* Left: Organization Panel */}
             {user && (
-              <div className="hidden lg:block w-80 flex-shrink-0 h-full">
-                <div className="h-full rounded-3xl overflow-hidden border border-slate-200/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl">
+              <div className="hidden lg:block w-80 flex-shrink-0">
+                <div className="sticky top-8 rounded-3xl overflow-hidden border border-slate-200/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl transition-all duration-300 hover:shadow-2xl hover:shadow-slate-300/60 dark:hover:shadow-black/70 hover:border-slate-300/70 dark:hover:border-slate-600/60 max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar">
                   <OrgPanel
                     orgs={orgs}
                     selectedOrg={selectedOrg}
@@ -405,7 +405,7 @@ function App() {
             )}
 
             {/* Center: Repository List */}
-            <div className="flex-1 min-w-0 h-full overflow-y-auto pr-2 custom-scrollbar">
+            <div className="flex-1 min-w-0">
               <RepoList
                 repos={displayRepos}
                 loading={loading || isSwitchingOrg}
@@ -438,22 +438,24 @@ function App() {
 
             {/* Right: Actions Sidebar */}
             {user && (
-              <div className="hidden xl:block w-80 flex-shrink-0 h-full overflow-y-auto custom-scrollbar">
-                <Sidebar
-                  selectedCount={selectedIds.size}
-                  isPerforming={isPerforming}
-                  performAction={handleAction}
-                  message={message}
-                  results={results}
-                  org={org}
-                  onArchive={archiveRepos}
-                  onDelete={deleteRepos}
-                  selectedRepos={selectedRepos}
-                  onTransfer={handleBulkTransfer}
-                  orgs={orgs}
-                  onAzureImport={() => setShowAzureImport(true)}
-                  activity={activity}
-                />
+              <div className="hidden xl:block w-80 flex-shrink-0">
+                <div className="sticky top-8 max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar">
+                  <Sidebar
+                    selectedCount={selectedIds.size}
+                    isPerforming={isPerforming}
+                    performAction={handleAction}
+                    message={message}
+                    results={results}
+                    org={org}
+                    onArchive={archiveRepos}
+                    onDelete={deleteRepos}
+                    selectedRepos={selectedRepos}
+                    onTransfer={handleBulkTransfer}
+                    orgs={orgs}
+                    onAzureImport={() => setShowAzureImport(true)}
+                    activity={activity}
+                  />
+                </div>
               </div>
             )}
           </div>

@@ -11,6 +11,8 @@ import {
 } from 'lucide-react'
 import { PAGINATION } from '../config'
 import { aiApi } from '../api/ai'
+import { formatCompact } from '../utils/format'
+import { motion } from 'framer-motion'
 
 export function RepoList({
 	repos,
@@ -433,17 +435,23 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 	const isGrid = viewMode === 'grid'
 
 	return (
-		<div
+		<motion.div
 			onClick={onToggle}
 			onContextMenu={onContextMenu}
+			initial={{ opacity: 0, y: 20 }}
+			animate={{ opacity: 1, y: 0 }}
+			whileHover={{
+				y: -4,
+				boxShadow: "0 20px 25px -5px rgba(100, 116, 139, 0.2), 0 10px 10px -5px rgba(100, 116, 139, 0.15)",
+				transition: { duration: 0.2, ease: "easeOut" }
+			}}
+			transition={{ duration: 0.3 }}
 			className={`
                 group relative transition-all duration-300 cursor-pointer
                 bg-white/70 dark:bg-slate-800/80 backdrop-blur-xl
                 border border-slate-200/70 dark:border-slate-700/50
                 shadow-lg shadow-slate-200/40 dark:shadow-black/40
                 hover:border-indigo-400/60 dark:hover:border-indigo-500/40
-                hover:shadow-xl hover:shadow-slate-300/50 dark:hover:shadow-black/60
-                hover:-translate-y-1
                 ${isSelected
 					? 'ring-2 ring-indigo-500 border-transparent bg-indigo-50/50 dark:bg-indigo-900/20'
 					: ''
@@ -451,6 +459,11 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
                 ${isGrid ? 'rounded-2xl p-5 flex flex-col h-full' : 'rounded-xl p-4 flex items-center gap-4'}
             `}
 		>
+			{/* Background gradiente animado no hover */}
+			<motion.div
+				className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500/0 to-purple-500/0 opacity-0 group-hover:from-indigo-500/5 group-hover:to-purple-500/5 group-hover:opacity-100 transition-all duration-300"
+				style={{ pointerEvents: 'none' }}
+			/>
 			{/* Selection Checkbox */}
 			{/* In Grid: Top Right. In List: Left side, static. */}
 			{isGrid ? (
@@ -506,56 +519,66 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 				)}
 				<div className="flex items-center gap-1">
 					<Star className="w-3.5 h-3.5" />
-					{repo.stargazers_count}
+					{formatCompact(repo.stargazers_count)}
 				</div>
 				<div className="flex items-center gap-1">
 					<GitFork className="w-3.5 h-3.5" />
-					{repo.forks_count}
+					{formatCompact(repo.forks_count)}
 				</div>
 				<div className="flex-1"></div>
 
 				{/* Actions (Grid: Bottom Right, List: Right Side) */}
-				<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-					<button
+				<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+					<motion.button
 						onClick={(e) => { e.stopPropagation(); window.open(repo.html_url, '_blank') }}
-						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500"
+						whileHover={{ scale: 1.1, rotate: 5 }}
+						whileTap={{ scale: 0.9 }}
+						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
 						title="Open on GitHub"
 					>
 						<ExternalLink className="w-4 h-4" />
-					</button>
-					<button
+					</motion.button>
+					<motion.button
 						onClick={(e) => { e.stopPropagation(); onAction('archive', repo, !repo.archived) }}
-						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500"
+						whileHover={{ scale: 1.1, rotate: -5 }}
+						whileTap={{ scale: 0.9 }}
+						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
 						title={repo.archived ? "Unarchive" : "Archive"}
 					>
 						<Archive className="w-4 h-4" />
-					</button>
-					<button
+					</motion.button>
+					<motion.button
 						onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
-						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 md:hidden"
+						whileHover={{ scale: 1.1 }}
+						whileTap={{ scale: 0.9 }}
+						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors md:hidden"
 						title="More Actions"
 					>
 						<MoreHorizontal className="w-4 h-4" />
-					</button>
-					<button
+					</motion.button>
+					<motion.button
 						onClick={(e) => { e.stopPropagation(); onOpenInsights() }}
-						className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-500"
+						whileHover={{ scale: 1.1, y: -2 }}
+						whileTap={{ scale: 0.9 }}
+						className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-500 transition-colors"
 						title="AI Insights"
 					>
 						<Brain className="w-4 h-4" />
-					</button>
+					</motion.button>
 					{onOpenHealth && (
-						<button
+						<motion.button
 							onClick={(e) => { e.stopPropagation(); onOpenHealth() }}
-							className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-500"
+							whileHover={{ scale: 1.1, y: -2 }}
+							whileTap={{ scale: 0.9 }}
+							className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-500 transition-colors"
 							title="Community Health"
 						>
 							<Shield className="w-4 h-4" />
-						</button>
+						</motion.button>
 					)}
 				</div>
 			</div>
-		</div>
+		</motion.div>
 	)
 }
 

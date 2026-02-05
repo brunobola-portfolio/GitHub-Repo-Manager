@@ -10,6 +10,7 @@ import {
 import { Card } from './ui/Card'
 import { Skeleton } from './ui/Skeleton'
 import { Select } from './ui/Select'
+import { formatNumber } from '../utils/format'
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion'
 import * as Popover from '@radix-ui/react-popover'
@@ -217,7 +218,7 @@ export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, l
                     <>
                         <StatCard
                             title="Total Repositories"
-                            value={stats?.totalRepos || 0}
+                            value={formatNumber(stats?.totalRepos || 0)}
                             icon={Folder}
                             color="text-blue-500"
                             bg="bg-blue-500/10"
@@ -225,7 +226,7 @@ export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, l
                         />
                         <StatCard
                             title="Public / Private"
-                            value={`${stats?.publicRepos || 0} / ${stats?.privateRepos || 0}`}
+                            value={`${formatNumber(stats?.publicRepos || 0)} / ${formatNumber(stats?.privateRepos || 0)}`}
                             icon={Archive}
                             color="text-purple-500"
                             bg="bg-purple-500/10"
@@ -233,7 +234,7 @@ export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, l
                         />
                         <StatCard
                             title="Total Forks"
-                            value={stats?.forks || 0}
+                            value={formatNumber(stats?.forks || 0)}
                             icon={GitFork}
                             color="text-indigo-500"
                             bg="bg-indigo-500/10"
@@ -450,26 +451,63 @@ export function Dashboard({ stats, orgs, repos = [], selectedOrg, onSelectOrg, l
 function StatCard({ title, value, icon: IconComp, color, bg, trend }) {
     return (
         <motion.div
-            whileHover={{ y: -4 }}
+            whileHover={{
+                y: -6,
+                transition: { type: "spring", stiffness: 300, damping: 20 }
+            }}
             transition={{ type: "spring", stiffness: 300 }}
         >
-            <Card className="p-6 hover:shadow-xl transition-all duration-300 border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl group">
-                <div className="flex items-start justify-between">
+            <Card className="p-6 hover:shadow-2xl transition-all duration-300 border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl group cursor-pointer overflow-hidden relative">
+                {/* Background gradiente animado no hover */}
+                <motion.div
+                    className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 to-purple-500/0"
+                    initial={{ opacity: 0 }}
+                    whileHover={{
+                        opacity: 1,
+                        background: "linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(168, 85, 247, 0.03) 100%)"
+                    }}
+                    transition={{ duration: 0.3 }}
+                />
+
+                <div className="flex items-start justify-between relative z-10">
                     <div>
-                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{title}</p>
-                        <h3 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-3 group-hover:text-transparent bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-500 group-hover:to-purple-500 transition-all">
+                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            {title}
+                        </p>
+                        <motion.h3
+                            className="text-3xl font-extrabold text-slate-900 dark:text-white mt-3 group-hover:text-transparent bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-500 group-hover:to-purple-500 transition-all"
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ type: "spring", stiffness: 400 }}
+                        >
                             {value}
-                        </h3>
+                        </motion.h3>
                         {trend && (
-                            <p className="text-xs text-slate-400 mt-3 flex items-center gap-1.5 font-medium">
-                                <span className="text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]">↑ 12%</span>
+                            <motion.p
+                                className="text-xs text-slate-400 mt-3 flex items-center gap-1.5 font-medium"
+                                initial={{ opacity: 0.7 }}
+                                whileHover={{ opacity: 1 }}
+                            >
+                                <motion.span
+                                    className="text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]"
+                                    whileHover={{ scale: 1.1 }}
+                                >
+                                    ↑ 12%
+                                </motion.span>
                                 {trend}
-                            </p>
+                            </motion.p>
                         )}
                     </div>
-                    <div className={`p-4 rounded-2xl ${bg} group-hover:scale-110 transition-transform duration-300`}>
+                    <motion.div
+                        className={`p-4 rounded-2xl ${bg}`}
+                        whileHover={{
+                            scale: 1.15,
+                            rotate: 10,
+                            transition: { type: "spring", stiffness: 400, damping: 15 }
+                        }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                    >
                         <IconComp className={`w-6 h-6 ${color}`} />
-                    </div>
+                    </motion.div>
                 </div>
             </Card>
         </motion.div>

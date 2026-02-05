@@ -1,0 +1,75 @@
+import React from 'react'
+import { motion } from 'framer-motion'
+
+/**
+ * EmptyState - Elegant placeholder when no data is available
+ *
+ * @param {string} icon - Lucide React icon component
+ * @param {string} title - Main title text
+ * @param {string} description - Descriptive subtitle
+ * @param {string} actionLabel - Optional CTA button text
+ * @param {function} onAction - Optional CTA button handler
+ * @param {string} gradient - Gradient colors for icon (e.g., "from-indigo-500 to-purple-600")
+ */
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  actionLabel,
+  onAction,
+  gradient = "from-indigo-500 to-purple-600"
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="flex flex-col items-center justify-center p-12 text-center"
+    >
+      {/* Icon with gradient background */}
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.1, duration: 0.5, type: "spring" }}
+        className={`w-20 h-20 mb-6 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}
+      >
+        {Icon && <Icon className="w-10 h-10 text-white" strokeWidth={2.5} />}
+      </motion.div>
+
+      {/* Title */}
+      <motion.h3
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+        className="text-xl font-bold text-slate-900 dark:text-white mb-2"
+      >
+        {title}
+      </motion.h3>
+
+      {/* Description */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+        className="text-sm text-slate-500 dark:text-slate-400 max-w-md mb-6"
+      >
+        {description}
+      </motion.p>
+
+      {/* Optional CTA Button */}
+      {actionLabel && onAction && (
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onAction}
+          className={`px-6 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r ${gradient} hover:shadow-lg transition-all`}
+        >
+          {actionLabel}
+        </motion.button>
+      )}
+    </motion.div>
+  )
+}

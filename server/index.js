@@ -197,6 +197,19 @@ app.get('/api/auth/callback', async (req, res) => {
     }
 });
 
+// Check current session
+app.get('/api/auth/session', (req, res) => {
+    if (req.session.accessToken) {
+        res.json({
+            authenticated: true,
+            userId: req.session.userId,
+            accessToken: req.session.accessToken
+        });
+    } else {
+        res.status(401).json({ authenticated: false });
+    }
+});
+
 app.get('/api/auth/logout', (req, res) => {
     req.session.destroy();
     res.json({ success: true });
@@ -312,11 +325,19 @@ app.get('/api/repos', requireAuth, async (req, res) => {
     try {
         const page = req.query.page || 1;
         const perPage = req.query.per_page || 30;
+        const org = req.query.org || '';
 
-        const { data, headers } = await githubApi(
-            `/user/repos?page=${page}&per_page=${perPage}&sort=updated&affiliation=owner`,
-            req.session.accessToken
-        );
+        let endpoint;
+        if (org && org !== '') {
+            // Specific organization - fetch org repos
+            endpoint = `/orgs/${org}/repos?page=${page}&per_page=${perPage}&sort=updated`;
+        } else {
+            // All repos - include personal + organization membership
+            // FIXED: Changed from affiliation=owner to affiliation=owner,organization_member
+            endpoint = `/user/repos?page=${page}&per_page=${perPage}&sort=updated&affiliation=owner,organization_member`;
+        }
+
+        const { data, headers } = await githubApi(endpoint, req.session.accessToken);
 
         // Extract pagination info from the Link header
         const linkHeader = headers.get('link');
@@ -377,6 +398,109 @@ app.get('/api/stats', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Stats Error:', error);
         res.status(500).json({ error: 'Failed to fetch statistics' });
+    }
+});
+
+// Enhanced Global Stats with Actions, PRs, Issues
+app.get('/api/stats/global', requireAuth, async (req, res) => {
+    try {
+        const { org } = req.query;
+        let repos = [];
+        let page = 1;
+        let hasNextPage = true;
+
+        // Fetch all repos
+        while (hasNextPage && repos.length < 1000) {
+            const endpoint = org
+                ? `/orgs/${org}/repos?page=${page}&per_page=100&sort=updated`
+                : `/user/repos?page=${page}&per_page=100&sort=updated&affiliation=owner,organization_member`;
+
+            const { data, headers } = await githubApi(endpoint, req.session.accessToken);
+            repos = [...repos, ...data];
+
+            const linkHeader = headers.get('link');
+            hasNextPage = linkHeader && linkHeader.includes('rel="next"');
+            page++;
+        }
+
+        const stats = {
+            totalRepos: repos.length,
+            publicRepos: repos.filter(r => !r.private).length,
+            privateRepos: repos.filter(r => r.private).length,
+            forks: repos.filter(r => r.fork).length,
+            sources: repos.filter(r => !r.fork).length,
+            archived: repos.filter(r => r.archived).length,
+            totalStars: repos.reduce((acc, r) => acc + r.stargazers_count, 0),
+            totalForks: repos.reduce((acc, r) => acc + r.forks_count, 0),
+            totalWatchers: repos.reduce((acc, r) => acc + r.watchers_count, 0),
+            hasIssues: repos.filter(r => r.has_issues).length,
+            hasWiki: repos.filter(r => r.has_wiki).length,
+            hasProjects: repos.filter(r => r.has_projects).length,
+            languages: {},
+            // Flags for conditional rendering
+            hasActions: false,
+            healthAnalyzed: 0
+        };
+
+        // Calculate language distribution
+        repos.forEach(repo => {
+            if (repo.language) {
+                stats.languages[repo.language] = (stats.languages[repo.language] || 0) + 1;
+            }
+        });
+
+        // Check if any repo has GitHub Actions (by checking workflow_runs table)
+        const actionsCount = db.prepare('SELECT COUNT(DISTINCT repo_id) as count FROM workflow_runs').get();
+        stats.hasActions = actionsCount.count > 0;
+
+        // Check how many repos have been analyzed for health
+        const healthCount = db.prepare('SELECT COUNT(*) as count FROM community_health_cache WHERE analyzed_at IS NOT NULL').get();
+        stats.healthAnalyzed = healthCount.count;
+
+        res.json(stats);
+    } catch (error) {
+        console.error('Global Stats Error:', error);
+        res.status(500).json({ error: 'Failed to fetch global statistics' });
+    }
+});
+
+// Actions Summary across all repos
+app.get('/api/stats/actions', requireAuth, async (req, res) => {
+    try {
+        const { days = 30, org } = req.query;
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - parseInt(days));
+
+        let query = `
+            SELECT
+                COUNT(*) as total_runs,
+                SUM(CASE WHEN conclusion = 'success' THEN 1 ELSE 0 END) as success_count,
+                SUM(CASE WHEN conclusion = 'failure' THEN 1 ELSE 0 END) as failure_count,
+                SUM(CASE WHEN conclusion = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count,
+                AVG(duration_seconds) as avg_duration,
+                MAX(started_at) as last_run_at
+            FROM workflow_runs
+            WHERE started_at >= ?
+        `;
+
+        const stats = db.prepare(query).get(cutoff.toISOString());
+
+        const successRate = stats.total_runs > 0
+            ? (stats.success_count / stats.total_runs) * 100
+            : 0;
+
+        res.json({
+            totalRuns: stats.total_runs || 0,
+            successCount: stats.success_count || 0,
+            failureCount: stats.failure_count || 0,
+            cancelledCount: stats.cancelled_count || 0,
+            successRate: +successRate.toFixed(2),
+            avgDuration: Math.round(stats.avg_duration || 0),
+            lastRunAt: stats.last_run_at
+        });
+    } catch (error) {
+        console.error('Actions Stats Error:', error);
+        res.status(500).json({ error: 'Failed to fetch actions statistics' });
     }
 });
 
@@ -472,25 +596,50 @@ app.post('/api/mirror', requireAuth, async (req, res) => {
 
 app.get('/api/orgs', requireAuth, async (req, res) => {
     try {
-        const { data } = await githubApi('/user/orgs', req.session.accessToken);
+        // 1. Fetch user info for personal account
+        const { data: user } = await githubApi('/user', req.session.accessToken);
 
-        // Enrich organization data with repo counts
-        // We do this in parallel but handle failures gracefully
-        const orgsWithCounts = await Promise.all(data.map(async (org) => {
+        // 2. Fetch user's personal repos to get accurate counts
+        const { data: userRepos } = await githubApi(
+            '/user/repos?affiliation=owner&per_page=100',
+            req.session.accessToken
+        );
+
+        const publicRepos = userRepos.filter(r => !r.private).length;
+        const privateRepos = userRepos.filter(r => r.private).length;
+
+        // 3. Create personal account as first "org"
+        const personalAccount = {
+            login: user.login,
+            avatar_url: user.avatar_url,
+            public_repos: publicRepos,
+            total_private_repos: privateRepos,
+            description: 'Personal Account',
+            isPersonal: true
+        };
+
+        // 4. Fetch organizations
+        const { data: orgs } = await githubApi('/user/orgs', req.session.accessToken);
+
+        // 5. Enrich organization data with repo counts
+        const orgsWithCounts = await Promise.all(orgs.map(async (org) => {
             try {
                 const { data: orgDetails } = await githubApi(`/orgs/${org.login}`, req.session.accessToken);
                 return {
                     ...org,
                     public_repos: orgDetails.public_repos || 0,
-                    total_private_repos: orgDetails.total_private_repos || 0
+                    total_private_repos: orgDetails.total_private_repos || 0,
+                    isPersonal: false
                 };
             } catch {
-                return org;
+                return { ...org, isPersonal: false };
             }
         }));
 
-        res.json(orgsWithCounts);
+        // 6. Return personal account FIRST, then organizations
+        res.json([personalAccount, ...orgsWithCounts]);
     } catch (error) {
+        console.error('Error fetching organizations:', error);
         res.status(error.status || 500).json({ error: error.message });
     }
 });
@@ -520,11 +669,21 @@ app.get('/api/orgs/:org/repos', requireAuth, async (req, res) => {
     try {
         const page = req.query.page || 1;
         const perPage = req.query.per_page || 30;
+        const orgLogin = req.params.org;
 
-        const { data, headers } = await githubApi(
-            `/orgs/${req.params.org}/repos?page=${page}&per_page=${perPage}&sort=updated`,
-            req.session.accessToken
-        );
+        // Get current user to check if this is their personal account
+        const { data: user } = await githubApi('/user', req.session.accessToken);
+
+        let endpoint;
+        if (orgLogin === user.login) {
+            // Personal account - fetch user's personal repos
+            endpoint = `/user/repos?affiliation=owner&page=${page}&per_page=${perPage}&sort=updated`;
+        } else {
+            // Organization - fetch org repos
+            endpoint = `/orgs/${orgLogin}/repos?page=${page}&per_page=${perPage}&sort=updated`;
+        }
+
+        const { data, headers } = await githubApi(endpoint, req.session.accessToken);
 
         const linkHeader = headers.get('link');
         let totalPages = null;
@@ -533,7 +692,7 @@ app.get('/api/orgs/:org/repos', requireAuth, async (req, res) => {
             if (lastMatch) totalPages = parseInt(lastMatch[1]);
         }
 
-        res.json({ repos: data, page: parseInt(page), totalPages, org: req.params.org });
+        res.json({ repos: data, page: parseInt(page), totalPages, org: orgLogin });
     } catch (error) {
         res.status(error.status || 500).json({ error: error.message });
     }
