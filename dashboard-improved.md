@@ -1,0 +1,240 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - img [ref=e11]
+          - generic [ref=e14]:
+            - heading "GitHub Repo Manager" [level=1] [ref=e15]
+            - paragraph [ref=e16]: Organize & migrate your repositories
+        - navigation [ref=e17]:
+          - button "Dashboard" [ref=e18]:
+            - img [ref=e19]
+            - text: Dashboard
+          - button "Repositories" [ref=e24]:
+            - img [ref=e25]
+            - text: Repositories
+          - button "Teams" [ref=e30]:
+            - img [ref=e31]
+            - text: Teams
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - button [ref=e38]:
+              - img [ref=e39]
+            - button "Import from Azure DevOps" [ref=e40]:
+              - img [ref=e41]
+            - button "AI Commit Generator" [ref=e43]:
+              - img [ref=e44]
+          - button "Dark mode" [pressed] [ref=e47]:
+            - img [ref=e48]
+            - generic [ref=e54]: Dark mode
+          - button "Sync organizations" [ref=e55]:
+            - img [ref=e56]
+          - button "Show notifications" [ref=e62]:
+            - img [ref=e63]
+          - button "Open user menu" [ref=e67]:
+            - img "dev-user" [ref=e68]
+            - img [ref=e69]
+    - main [ref=e71]:
+      - generic [ref=e73]:
+        - generic [ref=e74]:
+          - generic [ref=e75]:
+            - heading "Dashboard" [level=1] [ref=e76]
+            - paragraph [ref=e77]: Comprehensive overview of your GitHub ecosystem
+          - generic [ref=e78]:
+            - generic [ref=e79]: Filter by Organization
+            - button "All Organizations" [ref=e81]:
+              - generic [ref=e82]:
+                - img [ref=e84]
+                - generic [ref=e89]: All Organizations
+              - img [ref=e90]
+        - generic [ref=e92]:
+          - button "Overview" [ref=e93]:
+            - generic [ref=e94]:
+              - img [ref=e96]
+              - heading "Overview" [level=2] [ref=e98]
+            - img [ref=e100]
+          - generic [ref=e102]:
+            - generic [ref=e103]:
+              - generic [ref=e107] [cursor=pointer]:
+                - generic [ref=e108]:
+                  - paragraph [ref=e109]: Total Repositories
+                  - heading "87" [level=3] [ref=e110]
+                - img [ref=e112]
+              - generic [ref=e117] [cursor=pointer]:
+                - generic [ref=e118]:
+                  - paragraph [ref=e119]: Public / Private
+                  - heading "65 / 22" [level=3] [ref=e120]
+                - img [ref=e122]
+              - generic [ref=e128] [cursor=pointer]:
+                - generic [ref=e129]:
+                  - paragraph [ref=e130]: Total Stars
+                  - heading "11 174" [level=3] [ref=e131]
+                - img [ref=e133]
+              - generic [ref=e138] [cursor=pointer]:
+                - generic [ref=e139]:
+                  - paragraph [ref=e140]: Organizations
+                  - heading "3" [level=3] [ref=e141]
+                - img [ref=e143]
+              - generic [ref=e150] [cursor=pointer]:
+                - generic [ref=e151]:
+                  - paragraph [ref=e152]: Total Forks
+                  - heading "18" [level=3] [ref=e153]
+                - img [ref=e155]
+              - generic [ref=e163] [cursor=pointer]:
+                - generic [ref=e164]:
+                  - paragraph [ref=e165]: Commits (7d)
+                  - heading "8" [level=3] [ref=e166]
+                - img [ref=e168]
+              - generic [ref=e173] [cursor=pointer]:
+                - generic [ref=e174]:
+                  - paragraph [ref=e175]: Archived Repos
+                  - heading "0" [level=3] [ref=e176]
+                - img [ref=e178]
+              - generic [ref=e184] [cursor=pointer]:
+                - generic [ref=e185]:
+                  - paragraph [ref=e186]: Source Repos
+                  - heading "24" [level=3] [ref=e187]
+                - img [ref=e189]
+            - generic [ref=e193]:
+              - generic [ref=e195] [cursor=pointer]:
+                - generic [ref=e196]:
+                  - heading "Activity Trends" [level=3] [ref=e197]:
+                    - img [ref=e198]
+                    - text: Activity Trends
+                  - button "Last 7 days" [ref=e201]:
+                    - generic [ref=e202]: Last 7 days
+                    - img [ref=e203]
+                - application [ref=e207]:
+                  - generic [ref=e243]:
+                    - generic [ref=e244]:
+                      - generic [ref=e246]: Thu
+                      - generic [ref=e248]: Fri
+                      - generic [ref=e250]: Sat
+                      - generic [ref=e252]: Sun
+                      - generic [ref=e254]: Mon
+                      - generic [ref=e256]: Tue
+                      - generic [ref=e258]: Wed
+                    - generic [ref=e259]:
+                      - generic [ref=e261]: "0"
+                      - generic [ref=e263]: "0.5"
+                      - generic [ref=e265]: "1"
+                      - generic [ref=e267]: "1.5"
+                      - generic [ref=e269]: "2"
+              - generic [ref=e271] [cursor=pointer]:
+                - heading "Language Distribution" [level=3] [ref=e272]:
+                  - img [ref=e273]
+                  - text: Language Distribution
+                - generic [ref=e277]:
+                  - application [ref=e281]
+                  - generic [ref=e316]:
+                    - generic [ref=e317]:
+                      - generic [ref=e319]: TypeScript
+                      - generic [ref=e320]:
+                        - generic [ref=e321]: "5"
+                        - generic [ref=e322]: "%"
+                    - generic [ref=e323]:
+                      - generic [ref=e325]: Python
+                      - generic [ref=e326]:
+                        - generic [ref=e327]: "4"
+                        - generic [ref=e328]: "%"
+                    - generic [ref=e329]:
+                      - generic [ref=e331]: Go
+                      - generic [ref=e332]:
+                        - generic [ref=e333]: "4"
+                        - generic [ref=e334]: "%"
+                    - generic [ref=e335]:
+                      - generic [ref=e337]: Dart
+                      - generic [ref=e338]:
+                        - generic [ref=e339]: "2"
+                        - generic [ref=e340]: "%"
+                    - generic [ref=e341]:
+                      - generic [ref=e343]: HCL
+                      - generic [ref=e344]:
+                        - generic [ref=e345]: "2"
+                        - generic [ref=e346]: "%"
+                    - generic [ref=e347]:
+                      - generic [ref=e349]: Rust
+                      - generic [ref=e350]:
+                        - generic [ref=e351]: "2"
+                        - generic [ref=e352]: "%"
+                    - generic [ref=e353]:
+                      - generic [ref=e355]: Java
+                      - generic [ref=e356]:
+                        - generic [ref=e357]: "2"
+                        - generic [ref=e358]: "%"
+                    - generic [ref=e359]:
+                      - generic [ref=e361]: JavaScript
+                      - generic [ref=e362]:
+                        - generic [ref=e363]: "2"
+                        - generic [ref=e364]: "%"
+                    - generic [ref=e365]:
+                      - generic [ref=e367]: Swift
+                      - generic [ref=e368]:
+                        - generic [ref=e369]: "1"
+                        - generic [ref=e370]: "%"
+                    - generic [ref=e371]:
+                      - generic [ref=e373]: Kotlin
+                      - generic [ref=e374]:
+                        - generic [ref=e375]: "1"
+                        - generic [ref=e376]: "%"
+                    - generic [ref=e377]:
+                      - generic [ref=e379]: PHP
+                      - generic [ref=e380]:
+                        - generic [ref=e381]: "1"
+                        - generic [ref=e382]: "%"
+                    - generic [ref=e383]:
+                      - generic [ref=e385]: CSS
+                      - generic [ref=e386]:
+                        - generic [ref=e387]: "1"
+                        - generic [ref=e388]: "%"
+                    - generic [ref=e389]:
+                      - generic [ref=e391]: YAML
+                      - generic [ref=e392]:
+                        - generic [ref=e393]: "1"
+                        - generic [ref=e394]: "%"
+                    - generic [ref=e395]:
+                      - generic [ref=e397]: C++
+                      - generic [ref=e398]:
+                        - generic [ref=e399]: "1"
+                        - generic [ref=e400]: "%"
+                    - generic [ref=e401]:
+                      - generic [ref=e403]: HTML
+                      - generic [ref=e404]:
+                        - generic [ref=e405]: "1"
+                        - generic [ref=e406]: "%"
+        - generic [ref=e407]:
+          - button "Organizations 3 orgs" [ref=e408]:
+            - generic [ref=e409]:
+              - img [ref=e411]
+              - heading "Organizations" [level=2] [ref=e415]
+              - generic [ref=e416]: 3 orgs
+            - img [ref=e418]
+          - generic [ref=e421]:
+            - button "acme-corp acme-corp 57 repos" [ref=e422]:
+              - generic [ref=e423]:
+                - img "acme-corp" [ref=e424]
+                - generic [ref=e425]:
+                  - heading "acme-corp" [level=3] [ref=e426]
+                  - paragraph [ref=e427]: 57 repos
+            - button "open-source-collective open-source-collective 128 repos" [ref=e428]:
+              - generic [ref=e429]:
+                - img "open-source-collective" [ref=e430]
+                - generic [ref=e431]:
+                  - heading "open-source-collective" [level=3] [ref=e432]
+                  - paragraph [ref=e433]: 128 repos
+            - button "startup-incubator startup-incubator 32 repos" [ref=e434]:
+              - generic [ref=e435]:
+                - img "startup-incubator" [ref=e436]
+                - generic [ref=e437]:
+                  - heading "startup-incubator" [level=3] [ref=e438]
+                  - paragraph [ref=e439]: 32 repos
+        - button "Discover More Features" [ref=e441]:
+          - generic [ref=e442]:
+            - img [ref=e444]
+            - heading "Discover More Features" [level=2] [ref=e447]
+          - img [ref=e449]
+    - button "AI Assistant" [ref=e451]:
+      - img [ref=e452]
+      - generic [ref=e455]: AI Assistant
+  - generic [ref=e456]: "0"

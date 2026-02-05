@@ -58,6 +58,9 @@ export function ActivityChart({ activity = [], timeRange, onTimeRangeChange, loa
             }))
     }, [activity, timeRange])
 
+    // Calculate height to match LanguageChart
+    const chartHeight = 340
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -65,8 +68,11 @@ export function ActivityChart({ activity = [], timeRange, onTimeRangeChange, loa
             transition={{ duration: 0.5 }}
             whileHover={{ y: -6, scale: 1.02 }}
         >
-            <Card className="p-6 h-[420px] bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl hover:shadow-2xl hover:border-indigo-400/50 dark:hover:border-indigo-500/40 transition-all duration-300 cursor-pointer">
-                <div className="flex items-center justify-between mb-8">
+            <Card
+                className="p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl hover:shadow-2xl hover:border-indigo-400/50 dark:hover:border-indigo-500/40 transition-all duration-300 cursor-pointer"
+                style={{ minHeight: `${chartHeight + 60}px` }}
+            >
+                <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <Activity className="w-5 h-5 text-indigo-500" />
                         Activity Trends
@@ -83,9 +89,10 @@ export function ActivityChart({ activity = [], timeRange, onTimeRangeChange, loa
                     />
                 </div>
                 {loading ? (
-                    <Skeleton className="w-full h-[300px] rounded-xl" />
+                    <Skeleton className="w-full rounded-xl" style={{ height: `${chartHeight}px` }} />
                 ) : (
-                    <ResponsiveContainer width="100%" height={300} debounce={50}>
+                    <div style={{ height: `${chartHeight}px` }}>
+                        <ResponsiveContainer width="100%" height="100%" debounce={50}>
                         <LineChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
                             <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} dy={10} />
@@ -138,6 +145,7 @@ export function ActivityChart({ activity = [], timeRange, onTimeRangeChange, loa
                             />
                         </LineChart>
                     </ResponsiveContainer>
+                    </div>
                 )}
             </Card>
         </motion.div>
