@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-02-07
+
+### Added
+
+- **Security Hardening** (Critical):
+  - Helmet.js middleware for HTTP security headers (CSP, X-Frame-Options, HSTS, etc.)
+  - express-rate-limit: 200 req/15min for API, 20 req/15min for auth endpoints
+  - `SESSION_SECRET` enforcement in production (server refuses to start with default secret)
+  - GitHub username input validation on activity, team members, and collaborators endpoints
+  - `safeError()` utility to sanitize error messages and prevent internal detail leakage
+- **GitHub API Optimization**:
+  - ETag conditional requests — 304 responses don't count against rate limit
+  - Rate limit header tracking with auto-wait before exceeding limits
+  - Batched team activity fetching (3 concurrent + 100ms delay) instead of unlimited parallel
+- **Accessibility**:
+  - Focus trap in Modal component (Tab cycling, Shift+Tab, Escape to close, focus restore)
+  - ARIA roles on Modal (`role="dialog"`, `aria-modal="true"`, `aria-label`)
+  - Keyboard navigation for RepoCards (`tabIndex`, `role="button"`, `onKeyDown` with Enter/Space)
+  - ARIA attributes on selection checkboxes (`role="checkbox"`, `aria-checked`, `aria-label`)
+- **Language Chart Colors**: GitHub-style color map for 38 languages with 20-color vibrant fallback palette
+- **CSS Utilities**: Added missing `.no-scrollbar` and `.animate-spin-slow` classes
+- **Premium Dashboard**: Category-based organization with collapsible sections
+  - Overview, Organizations, PR/Issues, Actions Stats, Community Health sections
+  - Smart sticky organization selector
+  - Rich organization cards with star/fork/issue metrics
+
+### Changed
+
+- **Mobile Responsiveness**:
+  - AI Assistant: responsive sizing (`w-[calc(100vw-2rem)] sm:w-80 md:w-96`, `h-[70vh] sm:h-[500px]`)
+  - Repo card actions: visible on touch devices (`sm:opacity-0 sm:group-hover:opacity-100`)
+  - CategorySection: responsive padding (`p-4 sm:p-6 lg:p-8`)
+  - LanguageChart: fluid width (`maxWidth: 280px, width: 100%`)
+  - Touch targets: minimum 44px on header buttons and nav buttons
+- **Dark Mode**: Fixed background mismatch (`dark:bg-slate-900` → `dark:bg-slate-950` across App.jsx)
+- **Performance**: Moved render-blocking Google Fonts `@import` to HTML `<link>` tags in `index.html`
+- **StatCard**: Removed duplicate hover animation (`ds-hover-lift` CSS + Framer Motion `whileHover`)
+- **README**: Updated Vite 6→7, added security stack to tech table, documented v2.0 completed milestones, expanded architecture diagram with security middleware layer
+- **Screenshots**: Fresh 1920x1080 HD screenshots captured with Playwright MCP
+
+### Fixed
+
+- **SQL Injection** (Critical): Parameterized `repoIds` in `repo_metadata` query (`server/index.js:1062`)
+- **Session Security**: Added `sameSite: 'lax'` to session cookie to prevent CSRF
+- **OAuth Error Leak**: Removed `error_description` from OAuth redirect URL to prevent info exposure
+- **Color Contrast**: Improved trend text contrast (`text-slate-400` → `text-slate-500` in StatCard)
+
+### Security
+
+- SQL injection vulnerability patched with parameterized placeholders
+- HTTP security headers via Helmet.js (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, etc.)
+- API rate limiting prevents brute-force and abuse
+- Input validation prevents injection via GitHub username parameters
+- Session cookie hardened with `httpOnly`, `sameSite: 'lax'`, `secure` in production
+
 ## [2.3.1] - 2025-12-17
 
 ### Added
@@ -176,9 +231,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Links
 
-- [v2.3.1](https://github.com/YOUR_USERNAME/github-repo-manager/releases/tag/v2.3.1)
-- [v2.3.0](https://github.com/YOUR_USERNAME/github-repo-manager/releases/tag/v2.3.0)
-- [v2.2.0](https://github.com/YOUR_USERNAME/github-repo-manager/releases/tag/v2.2.0)
-- [v2.1.0](https://github.com/YOUR_USERNAME/github-repo-manager/releases/tag/v2.1.0)
-- [v2.0.0](https://github.com/YOUR_USERNAME/github-repo-manager/releases/tag/v2.0.0)
-- [v1.0.0](https://github.com/YOUR_USERNAME/github-repo-manager/releases/tag/v1.0.0)
+- [v2.4.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v2.4.0)
+- [v2.3.1](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v2.3.1)
+- [v2.3.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v2.3.0)
+- [v2.2.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v2.2.0)
+- [v2.1.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v2.1.0)
+- [v2.0.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v2.0.0)
+- [v1.0.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v1.0.0)

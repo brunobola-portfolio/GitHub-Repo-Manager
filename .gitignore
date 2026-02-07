@@ -57,6 +57,9 @@ server/data/*.db
 *.jpeg
 *.gif
 *.bmp
+# Exception: documentation images are part of the repo
+!docs/images/*.png
+!docs/images/*.jpg
 
 # Temporary files
 nul
