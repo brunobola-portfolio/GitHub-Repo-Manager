@@ -51,5 +51,12 @@ server/data/*.db
 .claude/
 .playwright-mcp/
 
+# Screenshots and images (not part of source)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+
 # Temporary files
 nul
