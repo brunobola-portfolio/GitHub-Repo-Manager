@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -57,11 +57,76 @@ export function Modal({
 
     const styles = variantStyles[variant] || variantStyles.default
 
+    const modalRef = useRef(null)
+    const previouslyFocusedRef = useRef(null)
+
     const handleBackdropClick = (e) => {
         if (closeOnBackdrop && e.target === e.currentTarget) {
             onClose()
         }
     }
+
+    // Focus trap: trap Tab/Shift+Tab within modal, restore focus on close
+    useEffect(() => {
+        if (!isOpen) return
+
+        // Save the element that was focused before modal opened
+        previouslyFocusedRef.current = document.activeElement
+
+        const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                onClose()
+                return
+            }
+
+            if (e.key !== 'Tab') return
+
+            const modal = modalRef.current
+            if (!modal) return
+
+            const focusableElements = Array.from(modal.querySelectorAll(FOCUSABLE_SELECTOR))
+            if (focusableElements.length === 0) return
+
+            const firstElement = focusableElements[0]
+            const lastElement = focusableElements[focusableElements.length - 1]
+
+            if (e.shiftKey) {
+                // Shift+Tab: if on first element, wrap to last
+                if (document.activeElement === firstElement) {
+                    e.preventDefault()
+                    lastElement.focus()
+                }
+            } else {
+                // Tab: if on last element, wrap to first
+                if (document.activeElement === lastElement) {
+                    e.preventDefault()
+                    firstElement.focus()
+                }
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown)
+
+        // Focus the first focusable element in the modal after a brief delay for animation
+        const timer = setTimeout(() => {
+            const modal = modalRef.current
+            if (modal) {
+                const firstFocusable = modal.querySelector(FOCUSABLE_SELECTOR)
+                if (firstFocusable) firstFocusable.focus()
+            }
+        }, 50)
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown)
+            clearTimeout(timer)
+            // Restore focus to previously focused element
+            if (previouslyFocusedRef.current && typeof previouslyFocusedRef.current.focus === 'function') {
+                previouslyFocusedRef.current.focus()
+            }
+        }
+    }, [isOpen, onClose])
 
     return (
         <AnimatePresence>
@@ -78,6 +143,10 @@ export function Modal({
                     >
                         {/* Modal Container */}
                         <motion.div
+                            ref={modalRef}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label={typeof title === 'string' ? title : undefined}
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}

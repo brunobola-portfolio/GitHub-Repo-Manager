@@ -42,7 +42,7 @@ export function LanguageChart({ data = [], loading }) {
                 ) : (
                     <div className="flex flex-col lg:flex-row items-center gap-8" style={{ minHeight: `${chartHeight}px` }}>
                         {/* Chart */}
-                        <div className="flex-shrink-0" style={{ width: '280px', height: '280px' }}>
+                        <div style={{ maxWidth: '280px', width: '100%', height: '280px' }}>
                             <ResponsiveContainer width="100%" height="100%" debounce={50}>
                                 <PieChart>
                                     <Pie

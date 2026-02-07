@@ -1,0 +1,253 @@
+/**
+ * GitHub Repo Manager - Premium Design Enhancement Layer
+ * Complements Tailwind CSS - NO global element overrides
+ * Only opt-in classes (.ds-*), CSS variables, and keyframe animations
+ */
+
+/* Fonts loaded via <link> in index.html for non-render-blocking behavior */
+
+/* ===== DESIGN TOKENS ===== */
+:root {
+  --ds-font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ds-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --ds-gradient-primary: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --ds-gradient-secondary: linear-gradient(135deg, #06b6d4, #3b82f6);
+  --ds-gradient-accent: linear-gradient(135deg, #f59e0b, #ec4899);
+  --ds-gradient-success: linear-gradient(135deg, #10b981, #06b6d4);
+  --ds-gradient-premium: linear-gradient(135deg, #6366f1 0%, #06b6d4 50%, #ec4899 100%);
+
+  --ds-shadow-glow-indigo: 0 0 30px rgba(99, 102, 241, 0.35);
+  --ds-shadow-glow-cyan: 0 0 30px rgba(6, 182, 212, 0.35);
+  --ds-shadow-glow-purple: 0 0 30px rgba(139, 92, 246, 0.35);
+
+  --ds-ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ds-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ===== KEYFRAME ANIMATIONS ===== */
+
+@keyframes ds-fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes ds-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes ds-slide-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes ds-slide-in-left {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes ds-scale-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ds-shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes ds-gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes ds-pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
+  50%      { box-shadow: 0 0 40px rgba(99, 102, 241, 0.4); }
+}
+
+@keyframes ds-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+/* ===== OPT-IN ANIMATION CLASSES ===== */
+
+.ds-animate-fade-in-up {
+  animation: ds-fade-in-up 0.5s var(--ds-ease-out-expo) both;
+}
+
+.ds-animate-fade-in {
+  animation: ds-fade-in 0.4s ease-out both;
+}
+
+.ds-animate-slide-right {
+  animation: ds-slide-in-right 0.5s var(--ds-ease-out-expo) both;
+}
+
+.ds-animate-slide-left {
+  animation: ds-slide-in-left 0.5s var(--ds-ease-out-expo) both;
+}
+
+.ds-animate-scale-in {
+  animation: ds-scale-in 0.35s var(--ds-ease-out-expo) both;
+}
+
+.ds-animate-float {
+  animation: ds-float 3s ease-in-out infinite;
+}
+
+/* Stagger children */
+.ds-stagger > *:nth-child(1) { animation-delay: 0.04s; }
+.ds-stagger > *:nth-child(2) { animation-delay: 0.08s; }
+.ds-stagger > *:nth-child(3) { animation-delay: 0.12s; }
+.ds-stagger > *:nth-child(4) { animation-delay: 0.16s; }
+.ds-stagger > *:nth-child(5) { animation-delay: 0.20s; }
+.ds-stagger > *:nth-child(6) { animation-delay: 0.24s; }
+.ds-stagger > *:nth-child(7) { animation-delay: 0.28s; }
+.ds-stagger > *:nth-child(8) { animation-delay: 0.32s; }
+
+/* ===== OPT-IN HOVER EFFECTS ===== */
+
+.ds-hover-lift {
+  transition: transform 0.25s var(--ds-ease-out-expo), box-shadow 0.25s ease;
+}
+.ds-hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+.ds-hover-glow {
+  transition: box-shadow 0.3s ease;
+}
+.ds-hover-glow:hover {
+  box-shadow: var(--ds-shadow-glow-indigo);
+}
+
+.ds-hover-scale {
+  transition: transform 0.2s var(--ds-ease-spring);
+}
+.ds-hover-scale:hover {
+  transform: scale(1.03);
+}
+
+/* ===== OPT-IN CARD SHIMMER ===== */
+
+.ds-card-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.ds-card-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.06) 45%, rgba(255,255,255,0.06) 55%, transparent 60%);
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+.ds-card-shimmer:hover::after {
+  animation: ds-shimmer 0.8s ease-out;
+}
+
+/* ===== OPT-IN GRADIENT TEXT ===== */
+
+.ds-gradient-text {
+  background: var(--ds-gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ds-gradient-text-premium {
+  background: var(--ds-gradient-premium);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: ds-gradient-shift 5s ease infinite;
+}
+
+/* ===== OPT-IN GLASS PANELS ===== */
+
+.ds-glass {
+  backdrop-filter: blur(16px) saturate(180%);
+}
+
+.ds-glass-strong {
+  backdrop-filter: blur(24px) saturate(200%);
+}
+
+/* ===== OPT-IN BUTTON SHIMMER ===== */
+
+.ds-btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.ds-btn-shimmer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent, rgba(255,255,255,0.18), transparent);
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+.ds-btn-shimmer:hover::before {
+  animation: ds-shimmer 0.6s ease-out;
+}
+
+/* ===== OPT-IN BORDER GLOW ===== */
+
+.ds-border-glow {
+  position: relative;
+}
+.ds-border-glow::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: var(--ds-gradient-primary);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s ease;
+}
+.ds-border-glow:hover::before {
+  opacity: 0.5;
+}
+
+/* ===== FONT UTILITY CLASSES ===== */
+
+.ds-font-display {
+  font-family: var(--ds-font-sans);
+}
+
+.ds-font-mono {
+  font-family: var(--ds-font-mono);
+}
+
+/* ===== SELECTION ===== */
+
+::selection {
+  background: rgba(99, 102, 241, 0.25);
+}
+
+/* ===== REDUCED MOTION ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-animate-fade-in-up,
+  .ds-animate-fade-in,
+  .ds-animate-slide-right,
+  .ds-animate-slide-left,
+  .ds-animate-scale-in,
+  .ds-animate-float {
+    animation: none !important;
+  }
+  .ds-hover-lift:hover,
+  .ds-hover-scale:hover {
+    transform: none !important;
+  }
+  .ds-card-shimmer:hover::after,
+  .ds-btn-shimmer:hover::before {
+    animation: none !important;
+  }
+}

@@ -49,15 +49,15 @@ export function HeaderNew({
     }
 
     return (
-        <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-20 transition-colors duration-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-700/50 sticky top-0 z-20 transition-all duration-300 shadow-sm dark:shadow-black/20">
+            <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                 {/* Left: Logo & Title */}
                 <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-br from-indigo-600 to-purple-600 p-2 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50">
+                    <div className="bg-gradient-to-br from-indigo-600 to-purple-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/25 dark:shadow-indigo-500/30 ds-btn-shimmer">
                         <Github className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 leading-none flex items-center gap-2">
+                        <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 leading-none flex items-center gap-2 ds-font-display">
                             GitHub Repo Manager
                             {isMockMode && (
                                 <span className="inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full text-xs font-medium">
@@ -70,9 +70,9 @@ export function HeaderNew({
                     </div>
                 </div>
 
-                {/* Center: Navigation */}
+                {/* Center: Navigation (desktop) */}
                 {user && (
-                    <nav className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-xl">
+                    <nav className="hidden sm:flex absolute left-1/2 -translate-x-1/2 items-center gap-1 bg-slate-100/80 dark:bg-slate-700/60 p-1 rounded-xl backdrop-blur-sm border border-slate-200/50 dark:border-slate-600/30">
                         <NavButton
                             active={activeView === 'dashboard'}
                             onClick={() => onViewChange?.('dashboard')}
@@ -222,6 +222,30 @@ export function HeaderNew({
                     )}
                 </div>
             </div>
+
+            {/* Mobile Navigation */}
+            {user && (
+                <nav className="flex sm:hidden items-center justify-center gap-1 px-4 pb-2 bg-white/80 dark:bg-slate-800/80">
+                    <NavButton
+                        active={activeView === 'dashboard'}
+                        onClick={() => onViewChange?.('dashboard')}
+                        icon={LayoutDashboard}
+                        label="Dashboard"
+                    />
+                    <NavButton
+                        active={activeView === 'repos'}
+                        onClick={() => onViewChange?.('repos')}
+                        icon={FolderGit2}
+                        label="Repos"
+                    />
+                    <NavButton
+                        active={activeView === 'teams'}
+                        onClick={() => onViewChange?.('teams')}
+                        icon={Users}
+                        label="Teams"
+                    />
+                </nav>
+            )}
         </header>
     )
 }
@@ -235,7 +259,7 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
             size="sm"
             onClick={toggleTheme}
             aria-pressed={isDark}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2.5 sm:px-2.5 sm:py-1 text-xs font-medium transition-colors min-h-[44px] min-w-[44px] justify-center
                 ${isDark
                     ? 'bg-slate-900 text-slate-100 border-slate-600'
                     : 'bg-slate-100 text-slate-800 border-slate-200'
@@ -255,9 +279,9 @@ function NavButton({ active, onClick, icon, label }) {
     return (
         <button
             onClick={onClick}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100 dark:focus-visible:ring-offset-slate-700 ${active
-                ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100 dark:focus-visible:ring-offset-slate-700 ds-font-display ${active
+                ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-md shadow-slate-200/60 dark:shadow-black/30'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-600/40'
                 } `}
         >
             {IconComponent && <IconComponent className="w-4 h-4" />}
@@ -269,9 +293,9 @@ function NavButton({ active, onClick, icon, label }) {
 // User Dropdown Menu
 function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, onClose }) {
     return (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-slate-800 rounded-xl shadow-xl dark:shadow-slate-900/50 border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
+        <div className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-50 ds-animate-scale-in">
             {/* User Info */}
-            <div className="p-4 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 border-b border-slate-200 dark:border-slate-700">
+            <div className="p-4 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-slate-700/50 dark:to-slate-800/50 border-b border-slate-200/60 dark:border-slate-700/50">
                 <div className="flex items-center gap-3">
                     <img
                         src={user.avatar_url || 'https://github.com/ghost.png'}
@@ -353,7 +377,7 @@ function MenuButton({ icon, onClick, children, danger }) {
 // Notifications Dropdown
 function NotificationsDropdown({ syncStatus, orgs }) {
     return (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-xl dark:shadow-slate-900/50 border border-slate-200 dark:border-slate-700 overflow-hidden z-50">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-50 ds-animate-scale-in">
             <div className="p-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
                 <h3 className="font-semibold text-slate-900 dark:text-slate-100">Notifications</h3>
                 <span className="text-xs text-slate-400 dark:text-slate-500">Sync Status</span>
