@@ -1,7 +1,7 @@
 # GitHub Repo Manager
 
 ![React](https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-7.2-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-20-339933?style=for-the-badge&logo=node.js&logoColor=white)
 ![Gemini AI](https://img.shields.io/badge/Gemini_AI-Powered-8E75B2?style=for-the-badge&logo=google-gemini&logoColor=white)
@@ -26,9 +26,10 @@ Whether you're an individual developer with dozens of side projects or a team le
 Experience a meticulously crafted interface with depth-rich layers, subtle blurs, and smooth animations that make navigating complex data intuitive and delightful.
 
 - **🌓 Dark/Light Mode**: Seamlessly switch between themes with system preference detection
-- **📱 Responsive Design**: Works beautifully across desktop, tablet, and mobile devices
-- **⚡ Lightning Fast**: Built with Vite for instant hot-module replacement and blazing-fast builds
+- **📱 Responsive Design**: Works beautifully across desktop, tablet, and mobile devices with touch-optimized targets (44px minimum)
+- **⚡ Lightning Fast**: Built with Vite 7 for instant hot-module replacement and blazing-fast builds
 - **🎭 Smooth Animations**: Powered by Framer Motion for fluid, natural interactions
+- **♿ Accessible**: Focus traps in modals, keyboard navigation, ARIA attributes, and screen reader support
 
 ### 📊 Comprehensive Dashboard
 Get a bird's-eye view of your entire GitHub ecosystem at a glance.
@@ -100,7 +101,7 @@ Monitor CI/CD pipeline performance with comprehensive analytics.
 
 - **📊 Workflow Metrics**: Success rates, failure tracking, and duration analysis
 - **📈 Daily Trends**: Interactive charts showing workflow performance over time
-- ** Real-time Sync**: Sync workflow runs directly from GitHub API
+- **Real-time Sync**: Sync workflow runs directly from GitHub API
 - **📥 Export Data**: Download statistics as CSV for reporting
 - **👥 Team Analytics**: Aggregate metrics across all team repositories
 - **🎯 Workflow-Specific Stats**: Detailed analysis per workflow
@@ -152,12 +153,13 @@ Full Azure DevOps migration capabilities (Work Items, Pipelines, Wiki) are plann
 
 | Category | Technologies |
 |----------|-------------|
-| **Frontend** | React 19, Vite 6, TailwindCSS 4 |
+| **Frontend** | React 19, Vite 7, TailwindCSS 4 |
 | **UI/UX** | Framer Motion 12, Lucide Icons, Recharts 2 |
 | **Backend** | Node.js 20+, Express 5 |
 | **Database** | Better-SQLite3 (local) |
+| **Security** | Helmet.js, express-rate-limit, ETag caching |
 | **AI** | Google Gemini API (@google/generative-ai) |
-| **APIs** | GitHub REST API, Azure DevOps API |
+| **APIs** | GitHub REST API (v2022-11-28), Azure DevOps API |
 
 ---
 
@@ -190,7 +192,7 @@ Full Azure DevOps migration capabilities (Work Items, Pipelines, Wiki) are plann
    cp .env.example .env
    ```
    
-   Edit `.env` with your credentials (see [Configuration](#-configuration) below)
+   Edit `.env` with your credentials (see [Configuration](#%EF%B8%8F-configuration) below)
 
 ### Running the Application
 
@@ -307,7 +309,7 @@ The application requires specific GitHub scopes for full functionality:
 | `delete_repo` | Delete repositories | Required explicitly for the bulk delete action |
 | `admin:org` | Organization administration | Create teams and manage organization settings (optional) |
 
-> **🔒 Security Note**: Access tokens are stored in encrypted session cookies and never persisted to disk.
+> **🔒 Security Note**: Access tokens are stored in encrypted session cookies (`httpOnly`, `sameSite: lax`) and never persisted to disk. The backend is hardened with Helmet.js security headers, rate limiting (200 req/15min API, 20 req/15min auth), parameterized SQL queries, and input validation. ETag conditional requests optimize GitHub API rate limit usage.
 
 ---
 
@@ -327,10 +329,16 @@ The application requires specific GitHub scopes for full functionality:
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                   Backend (Express Server)                   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Security: Helmet · Rate Limit · Input Validation    │   │
+│  └──────────────────────────────────────────────────────┘   │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
 │  │   Routes    │  │  AI Service │  │   Database (SQLite) │  │
 │  │ /api/*      │  │ (Gemini)    │  │   (Better-SQLite3)  │  │
 │  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  GitHub API: ETag Cache · Rate Limit Tracking        │   │
+│  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -524,15 +532,21 @@ A: In GitHub Issues with the `enhancement` label.
 
 ## 🗺️ Roadmap
 
-### v2.0 (Q1 2026) - IN PROGRESS
-- [x] **CI/CD Integration**: View and trigger GitHub Actions directly from the dashboard ✅ COMPLETED
-- [x] **Community Health Metrics**: Repository health scoring and recommendations ✅ COMPLETED
+### v2.0 (Q1 2026) - COMPLETED
+
+- [x] **CI/CD Integration**: View and trigger GitHub Actions directly from the dashboard
+- [x] **Community Health Metrics**: Repository health scoring and recommendations
+- [x] **Security Hardening**: Helmet.js, rate limiting, SQL injection fixes, input validation, ETag caching
+- [x] **Accessibility**: Focus traps, keyboard navigation, ARIA roles, touch-optimized targets (44px)
+- [x] **Mobile Responsiveness**: Responsive AI Assistant, touch-friendly repo actions, adaptive padding
+- [x] **GitHub API Optimization**: ETag conditional requests, rate limit tracking, batched team requests
 - [ ] **Advanced Analytics**: Historical trends, commit activity heatmaps, contributor insights
 - [ ] **Custom Themes**: User-customizable color schemes and glassmorphism intensity
 - [ ] **Keyboard Shortcuts**: Power-user shortcuts for common actions
 - [ ] **Repository Templates**: Save and reuse repository configurations
 
 ### v2.5 (Q2 2026)
+
 - [ ] **Mobile App**: React Native companion for on-the-go management
 - [ ] **GitHub Enterprise Support**: Connect to self-hosted GitHub instances
 - [ ] **Data Export**: Export repository data to CSV, JSON, or Excel
@@ -540,6 +554,7 @@ A: In GitHub Issues with the `enhancement` label.
 - [ ] **Collaborative Features**: Share repository collections with team members
 
 ### v3.0 (Q3 2026)
+
 - [ ] **Enhanced AI**:
   - Automated code review agents
   - Semantic search across all repositories
@@ -651,7 +666,7 @@ Every coffee makes a difference! Even small contributions fuel development and s
 
 <p align="center">
   <strong>Built with ❤️ by Bola Labs</strong><br>
-  <sub>Powered by React 19, Vite 6, and Google Gemini AI</sub>
+  <sub>Powered by React 19, Vite 7, and Google Gemini AI</sub>
 </p>
 
 <p align="center">
