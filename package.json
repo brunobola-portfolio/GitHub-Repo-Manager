@@ -1,7 +1,7 @@
 {
   "name": "github-repo-manager",
   "private": true,
-  "version": "2.3.1",
+  "version": "2.4.0",
   "type": "module",
   "author": "Bruno Marques - Bola Labs, Inc.",
   "license": "MIT",
