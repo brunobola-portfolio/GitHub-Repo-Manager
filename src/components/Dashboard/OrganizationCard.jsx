@@ -27,7 +27,7 @@ export function OrganizationCard({ org, repos = [], onClick }) {
             onClick={() => onClick?.(org.login)}
             whileHover={{ y: -6, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="group relative p-6 bg-gradient-to-br from-white/70 to-slate-50/70 dark:from-slate-900/70 dark:to-slate-800/70 backdrop-blur-xl border-2 border-slate-200/60 dark:border-slate-700/50 rounded-3xl hover:shadow-2xl hover:border-indigo-300/60 dark:hover:border-indigo-500/50 transition-all duration-300 text-left overflow-hidden"
+            className="group relative p-6 bg-gradient-to-br from-white/70 to-slate-50/70 dark:from-slate-900/70 dark:to-slate-800/70 backdrop-blur-xl border-2 border-slate-200/60 dark:border-slate-700/50 rounded-3xl hover:shadow-2xl hover:border-indigo-300/60 dark:hover:border-indigo-500/50 transition-all duration-300 text-left overflow-hidden ds-card-shimmer"
         >
             {/* Gradient overlay on hover */}
             <motion.div
@@ -55,7 +55,7 @@ export function OrganizationCard({ org, repos = [], onClick }) {
                             )}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-lg text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                            <h3 className="font-bold text-lg text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors ds-font-display">
                                 {org.login}
                             </h3>
                             <div className="flex items-center gap-2 mt-1">

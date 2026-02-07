@@ -10,6 +10,8 @@
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -48,17 +50,45 @@ if (GEMINI_API_KEY) {
     }
 }
 
+// Enforce SESSION_SECRET in production
+if (process.env.NODE_ENV === 'production' && SESSION_SECRET === 'CHANGE_THIS_SECRET') {
+    console.error('FATAL: SESSION_SECRET must be set in production. Exiting.');
+    process.exit(1);
+}
+
 if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
     console.warn('⚠️ Warning: GitHub OAuth credentials are missing.');
     console.warn('   OAuth login will not work. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in .env to enable.');
 }
 
 // Middleware Setup
+app.use(helmet({
+    contentSecurityPolicy: false, // Let Vite handle CSP in dev
+    crossOriginEmbedderPolicy: false // Allow embedded resources
+}));
 app.use(cors({
     origin: FRONTEND_URL,
     credentials: true
 }));
 app.use(express.json());
+
+// Rate limiting for API endpoints
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 200, // Limit each IP to 200 requests per window
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.' }
+});
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20, // Stricter limit for auth endpoints
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many authentication attempts, please try again later.' }
+});
+app.use('/api/', apiLimiter);
+app.use('/api/auth/', authLimiter);
 
 // Session configuration for secure auth persistence
 app.use(session({
@@ -68,14 +98,47 @@ app.use(session({
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
+        sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
 }));
 
 /**
+ * Validate GitHub username format.
+ * GitHub usernames: alphanumeric, hyphens, max 39 chars, no consecutive hyphens.
+ */
+function isValidGitHubUsername(username) {
+    return typeof username === 'string' && /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}$/.test(username);
+}
+
+/**
+ * Sanitize error for client response (avoid leaking internals).
+ */
+function safeError(error, fallbackMessage = 'An internal error occurred') {
+    if (process.env.NODE_ENV === 'production') {
+        return fallbackMessage;
+    }
+    return error?.message || fallbackMessage;
+}
+
+/**
+ * In-memory ETag cache for GitHub API conditional requests.
+ * Stores URL -> { etag, data } mappings. Conditional requests returning
+ * 304 Not Modified do not count against the GitHub rate limit.
+ */
+const etagCache = new Map();
+
+/**
+ * GitHub API rate limit tracking.
+ * Updated after every GitHub API response from X-RateLimit-* headers.
+ */
+let rateLimitInfo = { remaining: null, reset: null };
+
+/**
  * Wrapper for GitHub API calls.
- * Handles authentication headers, API versioning, and standardized error parsing.
- * 
+ * Handles authentication headers, API versioning, ETag-based conditional
+ * requests, rate limit tracking, and standardized error parsing.
+ *
  * @param {string} path - The API endpoint path (e.g., '/user/repos')
  * @param {string} token - The user's OAuth access token
  * @param {object} options - Fetch options (method, body, etc.)
@@ -83,16 +146,61 @@ app.use(session({
 async function githubApi(path, token, options = {}) {
     const url = path.startsWith('http') ? path : `https://api.github.com${path}`;
 
+    // Rate limit pre-check: if we know we're exhausted, wait or throw
+    if (rateLimitInfo.remaining !== null && rateLimitInfo.remaining <= 0 && rateLimitInfo.reset !== null) {
+        const now = Math.floor(Date.now() / 1000);
+        if (now < rateLimitInfo.reset) {
+            const waitSeconds = rateLimitInfo.reset - now;
+            if (waitSeconds <= 60) {
+                // Short wait - sleep until reset
+                console.warn(`[GitHub API] Rate limit exhausted. Waiting ${waitSeconds}s for reset...`);
+                await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
+            } else {
+                const resetDate = new Date(rateLimitInfo.reset * 1000).toISOString();
+                throw new Error(`GitHub API rate limit exhausted. Resets at ${resetDate} (${waitSeconds}s). Please try again later.`);
+            }
+        }
+    }
+
+    // Build request headers
+    const requestHeaders = {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+
+    // ETag conditional request: only for GET requests (or requests with no method specified)
+    const method = (options.method || 'GET').toUpperCase();
+    const cached = etagCache.get(url);
+    if (method === 'GET' && cached?.etag) {
+        requestHeaders['If-None-Match'] = cached.etag;
+    }
+
     const res = await fetch(url, {
         ...options,
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-            'Content-Type': 'application/json',
-            ...options.headers
-        }
+        headers: requestHeaders
     });
+
+    // Track rate limit info from response headers
+    const remainingHeader = res.headers.get('X-RateLimit-Remaining');
+    const resetHeader = res.headers.get('X-RateLimit-Reset');
+    if (remainingHeader !== null) {
+        rateLimitInfo.remaining = parseInt(remainingHeader, 10);
+    }
+    if (resetHeader !== null) {
+        rateLimitInfo.reset = parseInt(resetHeader, 10);
+    }
+    if (rateLimitInfo.remaining !== null && rateLimitInfo.remaining < 100) {
+        const resetDate = rateLimitInfo.reset ? new Date(rateLimitInfo.reset * 1000).toISOString() : 'unknown';
+        console.warn(`[GitHub API] Rate limit low: ${rateLimitInfo.remaining} requests remaining. Resets at ${resetDate}`);
+    }
+
+    // Handle 304 Not Modified - return cached data (does not count against rate limit)
+    if (res.status === 304 && cached?.data) {
+        return { data: cached.data, headers: res.headers };
+    }
 
     // Attempt to parse JSON, but handle empty responses gracefully
     const data = await res.json().catch(() => null);
@@ -102,6 +210,12 @@ async function githubApi(path, token, options = {}) {
         error.status = res.status;
         error.data = data;
         throw error;
+    }
+
+    // Cache the ETag and response data for future conditional requests
+    const responseEtag = res.headers.get('ETag');
+    if (method === 'GET' && responseEtag) {
+        etagCache.set(url, { etag: responseEtag, data });
     }
 
     return { data, headers: res.headers };
@@ -150,7 +264,7 @@ app.get('/api/auth/callback', async (req, res) => {
         const tokenData = await tokenRes.json();
 
         if (tokenData.error) {
-            return res.redirect(`${FRONTEND_URL}?error=${tokenData.error}&desc=${tokenData.error_description}`);
+            return res.redirect(`${FRONTEND_URL}?error=${encodeURIComponent(tokenData.error)}`);
         }
 
         // Fetch User Profile to sync with DB
@@ -313,6 +427,7 @@ app.get('/api/activity', requireAuth, async (req, res) => {
     try {
         const { username } = req.query;
         if (!username) return res.status(400).json({ error: 'Username required' });
+        if (!isValidGitHubUsername(username)) return res.status(400).json({ error: 'Invalid username format' });
 
         const { data } = await githubApi(`/users/${username}/events`, req.session.accessToken);
         res.json(data);
@@ -1059,7 +1174,8 @@ app.get('/api/ai/search', requireAuth, requireAI, async (req, res) => {
         // For now, we will just return the IDs and let the frontend match them with what it has,
         // OR we can fetch metadata from our local DB.
 
-        const metas = db.prepare(`SELECT * FROM repo_metadata WHERE repo_id IN (${repoIds.join(',')})`).all();
+        const placeholders = repoIds.map(() => '?').join(',');
+        const metas = db.prepare(`SELECT * FROM repo_metadata WHERE repo_id IN (${placeholders})`).all(...repoIds);
 
         // Merge score + metadata
         const enriched = results.map(r => {
@@ -1334,6 +1450,7 @@ app.get('/api/teams/:id', requireAuth, (req, res) => {
 app.post('/api/teams/:id/members', requireAuth, async (req, res) => {
     const { username } = req.body;
     if (!username) return res.status(400).json({ error: 'Username required' });
+    if (!isValidGitHubUsername(username)) return res.status(400).json({ error: 'Invalid username format' });
 
     try {
         // Check Admin/Owner permission
@@ -1513,6 +1630,7 @@ app.get('/api/repos/:owner/:repo/collaborators', requireAuth, async (req, res) =
 app.put('/api/repos/:owner/:repo/collaborators/:username', requireAuth, async (req, res) => {
     try {
         const { owner, repo, username } = req.params;
+        if (!isValidGitHubUsername(username)) return res.status(400).json({ error: 'Invalid username format' });
         const { permission = 'push' } = req.body; // default to push (Write) access
 
         const result = await githubApi(`/repos/${owner}/${repo}/collaborators/${username}`, req.session.accessToken, {
@@ -1537,21 +1655,33 @@ app.get(['/api/teams/:id/activity', '/api/team/:id/activity'], requireAuth, asyn
             return res.json([]);
         }
 
-        // 2. Fetch events for each repo (Limit to first 10 repos to avoid rate limits/timeouts for now)
-        // In a production app, this would be a background job with caching.
+        // 2. Fetch events for each repo (Limit to first 10 repos to avoid rate limits/timeouts)
+        // Uses batched fetching (3 at a time) with small delays to avoid rate limit spikes.
         const targetRepos = repos.slice(0, 10);
-        const fetchPromises = targetRepos.map(async (r) => {
-            try {
-                const { data } = await githubApi(`/repos/${r.repo_full_name}/events?per_page=10`, req.session.accessToken);
-                // Attach repo name to event for UI context
-                return data.map(event => ({ ...event, repo_name: r.repo_full_name }));
-            } catch (e) {
-                console.error(`Failed to fetch events for ${r.repo_full_name}:`, e.message);
-                return [];
-            }
-        });
+        const BATCH_SIZE = 3;
+        const BATCH_DELAY_MS = 100;
+        const results = [];
 
-        const results = await Promise.all(fetchPromises);
+        for (let i = 0; i < targetRepos.length; i += BATCH_SIZE) {
+            const batch = targetRepos.slice(i, i + BATCH_SIZE);
+            const batchResults = await Promise.all(
+                batch.map(async (r) => {
+                    try {
+                        const { data } = await githubApi(`/repos/${r.repo_full_name}/events?per_page=10`, req.session.accessToken);
+                        return data.map(event => ({ ...event, repo_name: r.repo_full_name }));
+                    } catch (e) {
+                        console.error(`Failed to fetch events for ${r.repo_full_name}:`, e.message);
+                        return [];
+                    }
+                })
+            );
+            results.push(...batchResults);
+
+            // Small delay between batches to spread out rate limit usage
+            if (i + BATCH_SIZE < targetRepos.length) {
+                await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
+            }
+        }
 
         // 3. Flatten, Deduplicate (by id), and Sort by Date
         const allEvents = results.flat();

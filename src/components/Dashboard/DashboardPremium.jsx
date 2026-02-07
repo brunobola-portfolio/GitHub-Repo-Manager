@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
     BarChart3, TrendingUp, Activity, GitPullRequest, GitMerge,
     MessageSquare, Zap, PlayCircle, Heart, Users, Building2,
@@ -29,18 +29,6 @@ export function DashboardPremium({
     onOrgClick
 }) {
     const [timeRange, setTimeRange] = useState('7d')
-    const [isSticky, setIsSticky] = useState(false)
-
-    // Handle scroll for sticky Organization Selector
-    useEffect(() => {
-        const handleScroll = () => {
-            // Becomes sticky after scrolling 100px
-            setIsSticky(window.scrollY > 100)
-        }
-
-        window.addEventListener('scroll', handleScroll)
-        return () => window.removeEventListener('scroll', handleScroll)
-    }, [])
 
     // Aggregate repository statistics
     const repoStats = useMemo(() => aggregateRepoStats(repos), [repos])
@@ -82,51 +70,27 @@ export function DashboardPremium({
             {/* Header with Organization Selector */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
                 <div className="flex-1">
-                    <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 tracking-tight">
+                    <h1 className="text-4xl font-extrabold tracking-tight ds-font-display ds-gradient-text">
                         Dashboard
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg">
+                    <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg ds-font-display">
                         Comprehensive overview of your GitHub ecosystem
                     </p>
                 </div>
 
-                {/* Sticky Organization Selector */}
+                {/* Organization Selector */}
                 <div className="lg:self-start">
-                    <motion.div
-                        animate={{
-                            scale: isSticky ? 0.9 : 1,
-                            y: isSticky ? -8 : 0
-                        }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                        className={`
-                            transition-all duration-300
-                            ${isSticky
-                                ? 'fixed top-4 right-8 z-50 shadow-2xl'
-                                : 'relative'
-                            }
-                        `}
-                    >
-                        {isSticky && (
-                            <div className="mb-2">
-                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                                    Filter by Organization
-                                </label>
-                            </div>
-                        )}
-                        {!isSticky && (
-                            <div className="mb-2">
-                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                                    Filter by Organization
-                                </label>
-                            </div>
-                        )}
-                        <OrganizationSelector
-                            orgs={orgs}
-                            selectedOrg={selectedOrg}
-                            onSelectOrg={onSelectOrg}
-                            loading={loading}
-                        />
-                    </motion.div>
+                    <div className="mb-2">
+                        <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                            Filter by Organization
+                        </label>
+                    </div>
+                    <OrganizationSelector
+                        orgs={orgs}
+                        selectedOrg={selectedOrg}
+                        onSelectOrg={onSelectOrg}
+                        loading={loading}
+                    />
                 </div>
             </div>
 

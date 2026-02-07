@@ -16,6 +16,9 @@ export function AIAssistant() {
     const { askAI, user, checkAIStatus } = useGitHub()
     const [isConfigured, setIsConfigured] = useState(true)
     const [showSettings, setShowSettings] = useState(false)
+    const [isIdle, setIsIdle] = useState(false)
+    const hideTimerRef = useRef(null)
+    const scrollTimerRef = useRef(null)
 
     // Check configuration on mount and when isOpen changes
     useEffect(() => {
@@ -42,6 +45,46 @@ export function AIAssistant() {
     useEffect(() => {
         scrollToBottom()
     }, [messages, isOpen])
+
+    // Autohide: fade button after inactivity, show on scroll/hover near corner
+    useEffect(() => {
+        if (isOpen) {
+            setIsIdle(false)
+            return
+        }
+
+        const startIdleTimer = () => {
+            clearTimeout(hideTimerRef.current)
+            hideTimerRef.current = setTimeout(() => setIsIdle(true), 4000)
+        }
+
+        const handleScroll = () => {
+            setIsIdle(false)
+            clearTimeout(scrollTimerRef.current)
+            scrollTimerRef.current = setTimeout(startIdleTimer, 1500)
+        }
+
+        const handleMouseMove = (e) => {
+            const nearBottomRight =
+                e.clientX > window.innerWidth - 120 &&
+                e.clientY > window.innerHeight - 120
+            if (nearBottomRight) {
+                setIsIdle(false)
+                startIdleTimer()
+            }
+        }
+
+        startIdleTimer()
+        window.addEventListener('scroll', handleScroll, { passive: true })
+        window.addEventListener('mousemove', handleMouseMove, { passive: true })
+
+        return () => {
+            clearTimeout(hideTimerRef.current)
+            clearTimeout(scrollTimerRef.current)
+            window.removeEventListener('scroll', handleScroll)
+            window.removeEventListener('mousemove', handleMouseMove)
+        }
+    }, [isOpen])
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -72,20 +115,23 @@ export function AIAssistant() {
             {/* Floating Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="fixed bottom-6 right-6 p-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg transition-all transform hover:scale-105 z-40 flex items-center gap-2"
+                onMouseEnter={() => { setIsIdle(false); clearTimeout(hideTimerRef.current) }}
+                className={`fixed bottom-4 sm:bottom-6 right-3 sm:right-6 p-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-full shadow-lg shadow-indigo-500/20 dark:shadow-indigo-500/30 transition-all duration-500 transform hover:scale-110 z-40 ds-btn-shimmer ${
+                    isIdle && !isOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                }`}
+                aria-label={isOpen ? 'Close AI Assistant' : 'Open AI Assistant'}
             >
-                {isOpen ? <X size={24} /> : <Sparkles size={24} />}
-                {!isOpen && <span className="font-medium hidden sm:inline">AI Assistant</span>}
+                {isOpen ? <X size={20} /> : <Sparkles size={20} />}
             </button>
 
             {/* Chat Window */}
             {isOpen && (
-                <Card className="fixed bottom-24 right-6 w-80 sm:w-96 h-[500px] flex flex-col shadow-2xl z-40 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-200 rounded-2xl">
+                <Card className="fixed bottom-16 sm:bottom-20 right-3 sm:right-6 w-[calc(100vw-2rem)] sm:w-80 md:w-96 h-[70vh] sm:h-[500px] flex flex-col shadow-2xl dark:shadow-black/50 z-50 border border-slate-200/60 dark:border-slate-700/50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl overflow-hidden ds-animate-scale-in rounded-2xl">
                     {/* Header */}
-                    <div className="p-4 bg-indigo-600 text-white flex items-center justify-between">
+                    <div className="p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Sparkles size={20} />
-                            <h3 className="font-semibold">Gemini Assistant</h3>
+                            <h3 className="font-semibold ds-font-display">Gemini Assistant</h3>
                         </div>
                         <button
                             onClick={() => setShowSettings(true)}

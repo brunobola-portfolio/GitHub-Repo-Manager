@@ -312,7 +312,7 @@ function App() {
   // 2. Show Global Loading State
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-500 dark:text-slate-400 animate-pulse">Loading Workspace...</p>
@@ -322,7 +322,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-12 font-sans dark:bg-slate-900 dark:text-slate-50">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-12 font-sans dark:bg-slate-950 dark:text-slate-50">
       <HeaderNew
         user={user}
         isMockMode={isMockMode}
@@ -341,7 +341,7 @@ function App() {
         onOpenCommitGen={() => setShowCommitGen(true)}
       />
 
-      <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300">
+      <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 relative z-[1]">
         {/* Welcome View (Logged Out) */}
         {!user && activeView === 'dashboard' && (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center animate-in fade-in zoom-in duration-500">
@@ -350,15 +350,15 @@ function App() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
-            <h1 className="text-5xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">
-              GitHub <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-600">Repo Manager</span>
+            <h1 className="text-5xl font-black text-slate-900 dark:text-white mb-6 tracking-tight ds-font-display">
+              GitHub <span className="ds-gradient-text-premium">Repo Manager</span>
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-xl max-w-lg mb-10 leading-relaxed">
+            <p className="text-slate-500 dark:text-slate-400 text-xl max-w-lg mb-10 leading-relaxed ds-font-display">
               Manage your teams, assign repositories, and monitor workflows with a premium local-first experience.
             </p>
             <button
               onClick={handleLogin}
-              className="px-10 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold text-lg hover:scale-105 active:scale-95 transition-all shadow-xl hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus:outline-none"
+              className="px-10 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-2xl font-bold text-lg hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-500/25 hover:shadow-2xl hover:shadow-indigo-500/40 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus:outline-none ds-btn-shimmer"
             >
               Get Started
             </button>
@@ -390,7 +390,7 @@ function App() {
             {/* Left: Organization Panel */}
             {user && (
               <div className="hidden lg:block w-80 flex-shrink-0">
-                <div className="sticky top-8 rounded-3xl overflow-hidden border border-slate-200/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl transition-all duration-300 hover:shadow-2xl hover:shadow-slate-300/60 dark:hover:shadow-black/70 hover:border-slate-300/70 dark:hover:border-slate-600/60 max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar">
+                <div className="sticky top-8 rounded-3xl overflow-hidden border border-slate-200/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-black/40 bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl transition-all duration-300 hover:shadow-2xl hover:shadow-slate-300/60 dark:hover:shadow-black/70 hover:border-slate-300/70 dark:hover:border-slate-600/60 max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar">
                   <OrgPanel
                     orgs={orgs}
                     selectedOrg={selectedOrg}
@@ -574,7 +574,7 @@ function App() {
       )}
 
       {showActionsStats && selectedTeam && (
-        <div className="fixed inset-0 z-50 bg-slate-50 dark:bg-slate-900 overflow-auto">
+        <div className="fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 overflow-auto">
           <div className="min-h-screen">
             <div className="sticky top-0 z-10 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4">
               <button

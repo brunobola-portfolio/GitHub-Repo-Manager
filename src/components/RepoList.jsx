@@ -150,7 +150,7 @@ export function RepoList({
 	return (
 		<div className="space-y-6 relative min-h-[600px]">
 			{/* Glassmorphic Toolbar */}
-			<div className="sticky top-4 z-30 p-2 rounded-2xl border border-slate-200/70 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-lg shadow-slate-200/50 dark:shadow-black/40 flex flex-col lg:flex-row gap-3 items-center justify-between transition-all duration-300">
+			<div className="sticky top-[104px] sm:top-[68px] z-30 p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-xl shadow-slate-200/50 dark:shadow-black/50 flex flex-col lg:flex-row gap-3 items-center justify-between transition-all duration-300">
 
 				{/* Search & View Toggle */}
 				<div className="flex items-center gap-2 w-full lg:w-auto">
@@ -158,8 +158,13 @@ export function RepoList({
 					<div className="relative z-40">
 						<div className="flex items-center rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-1">
 							<div
+								role="checkbox"
+								aria-checked={allFilteredSelected ? 'true' : someFilteredSelected ? 'mixed' : 'false'}
+								aria-label="Select all repositories"
+								tabIndex={0}
 								className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer transition-colors"
 								onClick={(e) => { e.stopPropagation(); handleSelectAll(); }}
+								onKeyDown={(e) => { if (e.key === ' ') { e.preventDefault(); e.stopPropagation(); handleSelectAll(); } }}
 								title={allFilteredSelected ? "Deselect All" : "Select All"}
 							>
 								<div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${allFilteredSelected
@@ -183,7 +188,7 @@ export function RepoList({
 
 						{/* Dropdown */}
 						{showSelectionMenu && (
-							<div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+							<div className="absolute top-full left-0 mt-2 w-48 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-xl shadow-2xl border border-slate-200/60 dark:border-slate-700/50 py-1 ds-animate-scale-in overflow-hidden">
 								<button onClick={handleSelectAll} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2">
 									<CheckSquare className="w-4 h-4" />
 									{allFilteredSelected ? 'Deselect All' : 'Select All'}
@@ -386,7 +391,7 @@ export function RepoList({
 
 			{/* Floating Selection Bar */}
 			{selectedIds.size > 0 && (
-				<div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 fade-in duration-300">
+				<div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-6rem)] animate-in slide-in-from-bottom-4 fade-in duration-300">
 					<div className="flex items-center gap-3 pl-4 pr-2 py-2 bg-slate-900/90 dark:bg-white/90 backdrop-blur-md text-white dark:text-slate-900 rounded-full shadow-2xl border border-white/10 dark:border-slate-200/20">
 						<div className="flex items-center gap-2 text-sm font-medium pr-3 border-r border-white/20 dark:border-slate-900/10">
 							<CheckSquare className="w-4 h-4" />
@@ -436,7 +441,11 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 
 	return (
 		<motion.div
+			tabIndex={0}
+			role="button"
+			aria-label={`${repo.name}${repo.private ? ' (private)' : ' (public)'}${isSelected ? ', selected' : ''}`}
 			onClick={onToggle}
+			onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
 			onContextMenu={onContextMenu}
 			initial={{ opacity: 0, y: 20 }}
 			animate={{ opacity: 1, y: 0 }}
@@ -452,6 +461,8 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
                 border border-slate-200/70 dark:border-slate-700/50
                 shadow-lg shadow-slate-200/40 dark:shadow-black/40
                 hover:border-indigo-400/60 dark:hover:border-indigo-500/40
+                ds-card-shimmer
+                focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 outline-none
                 ${isSelected
 					? 'ring-2 ring-indigo-500 border-transparent bg-indigo-50/50 dark:bg-indigo-900/20'
 					: ''
@@ -488,7 +499,7 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 					</div>
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2">
-							<h3 className="font-semibold text-slate-900 dark:text-white truncate group-hover:text-indigo-500 transition-colors">
+							<h3 className="font-semibold text-slate-900 dark:text-white truncate group-hover:text-indigo-500 transition-colors ds-font-display">
 								{repo.name}
 							</h3>
 							{repo.archived && (
@@ -528,7 +539,7 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 				<div className="flex-1"></div>
 
 				{/* Actions (Grid: Bottom Right, List: Right Side) */}
-				<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+				<div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300">
 					<motion.button
 						onClick={(e) => { e.stopPropagation(); window.open(repo.html_url, '_blank') }}
 						whileHover={{ scale: 1.1, rotate: 5 }}
@@ -551,7 +562,7 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 						onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
 						whileHover={{ scale: 1.1 }}
 						whileTap={{ scale: 0.9 }}
-						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors md:hidden"
+						className="p-2.5 sm:p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors md:hidden"
 						title="More Actions"
 					>
 						<MoreHorizontal className="w-4 h-4" />

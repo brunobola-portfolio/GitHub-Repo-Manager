@@ -33,7 +33,7 @@ export function StatCard({
             }}
             transition={{ type: "spring", stiffness: 300 }}
         >
-            <Card className="p-6 hover:shadow-2xl transition-all duration-300 border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl group cursor-pointer overflow-hidden relative">
+            <Card className="p-6 hover:shadow-2xl transition-all duration-300 border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl group cursor-pointer overflow-hidden relative ds-card-shimmer">
                 {/* Background gradient on hover */}
                 <motion.div
                     className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 to-purple-500/0"
@@ -47,11 +47,11 @@ export function StatCard({
 
                 <div className="flex items-start justify-between relative z-10">
                     <div className="flex-1">
-                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider ds-font-display">
                             {title}
                         </p>
                         <motion.h3
-                            className="text-3xl font-extrabold text-slate-900 dark:text-white mt-3 group-hover:text-transparent bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-500 group-hover:to-purple-500 transition-all"
+                            className="text-3xl font-extrabold text-slate-900 dark:text-white mt-3 group-hover:text-transparent bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-500 group-hover:to-purple-500 transition-all ds-font-mono"
                             whileHover={{ scale: 1.05 }}
                             transition={{ type: "spring", stiffness: 400 }}
                         >
@@ -59,7 +59,7 @@ export function StatCard({
                         </motion.h3>
                         {trend && (
                             <motion.p
-                                className="text-xs text-slate-400 mt-3 flex items-center gap-1.5 font-medium"
+                                className="text-xs text-slate-500 dark:text-slate-400 mt-3 flex items-center gap-1.5 font-medium"
                                 initial={{ opacity: 0.7 }}
                                 whileHover={{ opacity: 1 }}
                             >
