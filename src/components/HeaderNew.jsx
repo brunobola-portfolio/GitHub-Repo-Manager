@@ -105,6 +105,7 @@ export function HeaderNew({
                                     size="sm"
                                     onClick={onCreateRepo}
                                     className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
+                                    aria-label="Create new repository"
                                 >
                                     <Plus className="w-4 h-4" />
                                 </Button>
@@ -114,6 +115,7 @@ export function HeaderNew({
                                     onClick={onAzureImport}
                                     className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
                                     title="Import from Azure DevOps"
+                                    aria-label="Import from Azure DevOps"
                                 >
                                     <Cloud className="w-4 h-4" />
                                 </Button>
@@ -123,6 +125,7 @@ export function HeaderNew({
                                     onClick={onOpenCommitGen}
                                     className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
                                     title="AI Commit Generator"
+                                    aria-label="AI Commit Generator"
                                 >
                                     <Wand2 className="w-4 h-4" />
                                 </Button>
@@ -139,6 +142,7 @@ export function HeaderNew({
                                 disabled={syncing}
                                 className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
                                 title="Sync organizations"
+                                aria-label="Sync organizations"
                             >
                                 <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
                             </Button>

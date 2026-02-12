@@ -332,7 +332,10 @@ function ActivityFeed({ activity }) {
                                                 {getEventDescription(event)}
                                             </div>
                                             <div className="mt-1.5 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+                                                <button
+                                                    className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                                                    aria-label="View activity details"
+                                                >
                                                     View Details <ExternalLink className="w-2.5 h-2.5" />
                                                 </button>
                                             </div>

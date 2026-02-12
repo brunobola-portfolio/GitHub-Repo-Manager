@@ -564,13 +564,14 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 				<div className="flex-1"></div>
 
 				{/* Actions (Grid: Bottom Right, List: Right Side) */}
-				<div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300">
+				<div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300">
 					<motion.button
 						onClick={(e) => { e.stopPropagation(); window.open(repo.html_url, '_blank') }}
 						whileHover={{ scale: 1.1, rotate: 5 }}
 						whileTap={{ scale: 0.9 }}
 						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
 						title="Open on GitHub"
+						aria-label="Open on GitHub"
 					>
 						<ExternalLink className="w-4 h-4" />
 					</motion.button>
@@ -580,6 +581,7 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 						whileTap={{ scale: 0.9 }}
 						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
 						title={repo.archived ? "Unarchive" : "Archive"}
+						aria-label={repo.archived ? "Unarchive repository" : "Archive repository"}
 					>
 						<Archive className="w-4 h-4" />
 					</motion.button>
@@ -589,6 +591,7 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 						whileTap={{ scale: 0.9 }}
 						className="p-2.5 sm:p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors md:hidden"
 						title="More Actions"
+						aria-label="More actions"
 					>
 						<MoreHorizontal className="w-4 h-4" />
 					</motion.button>
@@ -598,6 +601,7 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 						whileTap={{ scale: 0.9 }}
 						className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-500 transition-colors"
 						title="AI Insights"
+						aria-label="AI Insights"
 					>
 						<Brain className="w-4 h-4" />
 					</motion.button>
@@ -608,6 +612,7 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 							whileTap={{ scale: 0.9 }}
 							className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-500 transition-colors"
 							title="Community Health"
+							aria-label="Community Health"
 						>
 							<Shield className="w-4 h-4" />
 						</motion.button>
