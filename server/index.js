@@ -32,6 +32,9 @@ if (process.env.VITE_MOCK_MODE !== 'false') {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Stats cache implementation
+const statsCache = new Map();
+
 // Environment Configuration
 const {
     GITHUB_CLIENT_ID,
@@ -369,26 +372,21 @@ const requireAuth = (req, res, next) => {
 
 // Middleware to check if AI is configured
 const requireAI = (req, res, next) => {
-    const serverKey = process.env.GEMINI_API_KEY;
-    const clientKey = req.headers['x-gemini-api-key'];
-
-    if (!serverKey && !clientKey) {
+    if (!process.env.GEMINI_API_KEY) {
         return res.status(503).json({
             error: 'AI_NOT_CONFIGURED',
-            message: 'AI features are not configured. Please set GEMINI_API_KEY in server/.env or in Settings.'
+            message: 'AI features are not configured. Please set GEMINI_API_KEY in server/.env file.'
         });
     }
 
-    // If using client key, we need to initialize a fresh instance for this request
-    // Note: In a real app, you might want to cache this or structure it differently
-    if (clientKey && !serverKey) {
-        req.genAI = new GoogleGenerativeAI(clientKey);
-    } else if (aiService.genAI) {
-        req.genAI = aiService.genAI; // Use global instance if server key exists (or prefer server key)
-    } else if (clientKey) {
-        req.genAI = new GoogleGenerativeAI(clientKey);
+    if (!aiService.genAI) {
+        return res.status(503).json({
+            error: 'AI_NOT_INITIALIZED',
+            message: 'AI service failed to initialize. Please check your GEMINI_API_KEY.'
+        });
     }
 
+    req.genAI = aiService.genAI;
     next();
 };
 
@@ -471,12 +469,29 @@ app.get('/api/repos', requireAuth, async (req, res) => {
 app.get('/api/stats', requireAuth, async (req, res) => {
     try {
         const { org } = req.query;
+        const userId = req.session.userId;
+
+        // Get cache TTL from header (in minutes), default to 5 minutes
+        const cacheTTLMinutes = parseInt(req.headers['x-cache-ttl']) || 5;
+        const cacheTTL = cacheTTLMinutes * 60 * 1000; // Convert to milliseconds
+
+        // Create cache key unique to user and org
+        const cacheKey = `stats:${userId}:${org || 'personal'}`;
+
+        // Check cache
+        const cached = statsCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < cacheTTL) {
+            res.setHeader('X-Cache-Hit', 'true');
+            return res.json(cached.data);
+        }
+
+        res.setHeader('X-Cache-Hit', 'false');
+
         let repos = [];
         let page = 1;
         let hasNextPage = true;
 
         // Fetch all repos to calculate stats (handling pagination)
-        // Note: For large accounts, this might be slow. In production, consider caching or background jobs.
         while (hasNextPage && repos.length < 1000) { // Safety limit
             const endpoint = org
                 ? `/orgs/${org}/repos?page=${page}&per_page=100&sort=updated`
@@ -509,10 +524,37 @@ app.get('/api/stats', requireAuth, async (req, res) => {
             }
         });
 
+        // Cache the results
+        statsCache.set(cacheKey, {
+            data: stats,
+            timestamp: Date.now()
+        });
+
         res.json(stats);
     } catch (error) {
         console.error('Stats Error:', error);
         res.status(500).json({ error: 'Failed to fetch statistics' });
+    }
+});
+
+// Clear stats cache
+app.post('/api/stats/clear-cache', requireAuth, (req, res) => {
+    try {
+        const userId = req.session.userId;
+        let cleared = 0;
+
+        // Clear all cache entries for this user
+        for (const key of statsCache.keys()) {
+            if (key.startsWith(`stats:${userId}:`)) {
+                statsCache.delete(key);
+                cleared++;
+            }
+        }
+
+        res.json({ success: true, cleared });
+    } catch (error) {
+        console.error('Cache Clear Error:', error);
+        res.status(500).json({ error: 'Failed to clear cache' });
     }
 });
 

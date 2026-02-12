@@ -1,19 +1,42 @@
 import React, { useState } from 'react'
-import { X, Moon, Sun, Monitor, Key, ShieldCheck } from 'lucide-react'
+import { X, Moon, Sun, Monitor, Zap, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from '../hooks/useTheme'
+import { API_BASE_URL } from '../config'
 
 export function SettingsModal({ isOpen, onClose }) {
-    const [apiKey, setApiKey] = useState(() => localStorage.getItem('GEMINI_API_KEY') || '')
     const { theme, setTheme } = useTheme()
 
+    // Load cache settings from localStorage
+    const [cacheSettings, setCacheSettings] = useState(() => {
+        const saved = localStorage.getItem('cache-settings')
+        return saved ? JSON.parse(saved) : { enabled: true, ttl: 5 }
+    })
+
+    const [clearing, setClearing] = useState(false)
+
     const handleSave = () => {
-        if (apiKey.trim()) {
-            localStorage.setItem('GEMINI_API_KEY', apiKey.trim())
-        } else {
-            localStorage.removeItem('GEMINI_API_KEY')
-        }
+        localStorage.setItem('cache-settings', JSON.stringify(cacheSettings))
         onClose()
+    }
+
+    const handleClearCache = async () => {
+        setClearing(true)
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/stats/clear-cache`, {
+                method: 'POST',
+                credentials: 'include'
+            })
+            if (response.ok) {
+                const data = await response.json()
+                alert(`Cache cleared successfully! (${data.cleared} entries removed)`)
+            }
+        } catch (error) {
+            console.error('Failed to clear cache:', error)
+            alert('Failed to clear cache. Please try again.')
+        } finally {
+            setClearing(false)
+        }
     }
 
     return (
@@ -59,25 +82,60 @@ export function SettingsModal({ isOpen, onClose }) {
                                 </div>
                             </div>
 
-                            {/* AI Configuration */}
+                            {/* Cache Settings */}
                             <div className="space-y-3">
                                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                                    <Key size={16} className="text-indigo-500" />
-                                    AI Configuration
+                                    <Zap size={16} className="text-amber-500" />
+                                    Performance Cache
                                 </label>
-                                <div className="space-y-2">
-                                    <input
-                                        type="password"
-                                        value={apiKey}
-                                        onChange={(e) => setApiKey(e.target.value)}
-                                        placeholder="Enter your Gemini API Key"
-                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                                    />
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                                        <ShieldCheck size={12} />
-                                        Stored locally in your browser. Overrides server key.
-                                    </p>
+
+                                {/* Enable/Disable Toggle */}
+                                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                                    <span className="text-sm text-slate-600 dark:text-slate-400">Enable stats caching</span>
+                                    <button
+                                        onClick={() => setCacheSettings({ ...cacheSettings, enabled: !cacheSettings.enabled })}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${cacheSettings.enabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                    >
+                                        <span
+                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${cacheSettings.enabled ? 'translate-x-6' : 'translate-x-1'}`}
+                                        />
+                                    </button>
                                 </div>
+
+                                {/* TTL Slider */}
+                                {cacheSettings.enabled && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm text-slate-600 dark:text-slate-400">Cache duration</span>
+                                            <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">{cacheSettings.ttl} min</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="1"
+                                            max="60"
+                                            value={cacheSettings.ttl}
+                                            onChange={(e) => setCacheSettings({ ...cacheSettings, ttl: parseInt(e.target.value) })}
+                                            className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                        />
+                                        <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                                            <span>1 min</span>
+                                            <span>60 min</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Clear Cache Button */}
+                                <button
+                                    onClick={handleClearCache}
+                                    disabled={clearing}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <Trash2 size={16} />
+                                    {clearing ? 'Clearing...' : 'Clear Cache Now'}
+                                </button>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Cached stats improve loading times. Clear if you see stale data.
+                                </p>
                             </div>
                         </div>
 
