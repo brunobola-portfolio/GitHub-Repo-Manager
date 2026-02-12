@@ -20,6 +20,7 @@ import RepoInsightsModal from './components/AI/RepoInsightsModal';
 import { ActionsStatsDashboard } from './components/ActionsStatsDashboard';
 import { CommunityHealthDashboard } from './components/CommunityHealthDashboard';
 import { SystemSetup } from './components/Setup/SystemSetup';
+import ErrorBoundary from './components/ErrorBoundary';
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
 
 function App() {
@@ -368,19 +369,21 @@ function App() {
         {/* Dashboard View */}
         {activeView === 'dashboard' && user && (
           <div className="animate-in fade-in duration-500">
-            <DashboardPremium
-              stats={stats}
-              orgs={orgs}
-              repos={displayRepos}
-              selectedOrg={selectedOrg}
-              onSelectOrg={handleOrgSelect}
-              loading={loading || isSwitchingOrg}
-              activity={activity}
-              onOrgClick={(orgLogin) => {
-                handleOrgSelect(orgLogin)
-                setActiveView('repos')
-              }}
-            />
+            <ErrorBoundary>
+              <DashboardPremium
+                stats={stats}
+                orgs={orgs}
+                repos={displayRepos}
+                selectedOrg={selectedOrg}
+                onSelectOrg={handleOrgSelect}
+                loading={loading || isSwitchingOrg}
+                activity={activity}
+                onOrgClick={(orgLogin) => {
+                  handleOrgSelect(orgLogin)
+                  setActiveView('repos')
+                }}
+              />
+            </ErrorBoundary>
           </div>
         )}
 
@@ -406,34 +409,36 @@ function App() {
 
             {/* Center: Repository List */}
             <div className="flex-1 min-w-0">
-              <RepoList
-                repos={displayRepos}
-                loading={loading || isSwitchingOrg}
-                error={error}
-                errorInfo={errorInfo}
-                selectedIds={selectedIds}
-                toggleSelect={toggleSelect}
-                selectRepos={selectRepos}
-                deselectRepos={deselectRepos}
-                invertSelection={invertSelection}
-                clearSelection={clearSelection}
-                page={page}
-                setPage={setPage}
-                perPage={perPage}
-                setPerPage={setPerPage}
-                totalPages={totalPages}
-                onRefresh={refresh}
-                selectedOrg={selectedOrg}
-                onQuickAction={handleQuickAction}
-                onOpenInsights={(repo) => {
-                  setSelectedInsightsRepo(repo)
-                  setShowInsights(true)
-                }}
-                onOpenHealth={(repo) => {
-                  setSelectedHealthRepo(repo)
-                  setShowCommunityHealth(true)
-                }}
-              />
+              <ErrorBoundary>
+                <RepoList
+                  repos={displayRepos}
+                  loading={loading || isSwitchingOrg}
+                  error={error}
+                  errorInfo={errorInfo}
+                  selectedIds={selectedIds}
+                  toggleSelect={toggleSelect}
+                  selectRepos={selectRepos}
+                  deselectRepos={deselectRepos}
+                  invertSelection={invertSelection}
+                  clearSelection={clearSelection}
+                  page={page}
+                  setPage={setPage}
+                  perPage={perPage}
+                  setPerPage={setPerPage}
+                  totalPages={totalPages}
+                  onRefresh={refresh}
+                  selectedOrg={selectedOrg}
+                  onQuickAction={handleQuickAction}
+                  onOpenInsights={(repo) => {
+                    setSelectedInsightsRepo(repo)
+                    setShowInsights(true)
+                  }}
+                  onOpenHealth={(repo) => {
+                    setSelectedHealthRepo(repo)
+                    setShowCommunityHealth(true)
+                  }}
+                />
+              </ErrorBoundary>
             </div>
 
             {/* Right: Actions Sidebar */}
@@ -464,20 +469,22 @@ function App() {
         {/* Teams View */}
         {activeView === 'teams' && user && (
           <div className="animate-in fade-in duration-500">
-            {selectedTeam ? (
-              <TeamDetails
-                team={selectedTeam}
-                onBack={() => setSelectedTeam(null)}
-                userRepos={repos}
-                user={user}
-                onShowActionsStats={() => setShowActionsStats(true)}
-              />
-            ) : (
-              <TeamHub
-                user={user}
-                onTeamSelect={setSelectedTeam}
-              />
-            )}
+            <ErrorBoundary>
+              {selectedTeam ? (
+                <TeamDetails
+                  team={selectedTeam}
+                  onBack={() => setSelectedTeam(null)}
+                  userRepos={repos}
+                  user={user}
+                  onShowActionsStats={() => setShowActionsStats(true)}
+                />
+              ) : (
+                <TeamHub
+                  user={user}
+                  onTeamSelect={setSelectedTeam}
+                />
+              )}
+            </ErrorBoundary>
           </div>
         )}
       </main>
