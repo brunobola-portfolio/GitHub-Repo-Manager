@@ -535,7 +535,13 @@ export function useGitHub() {
                 ? `${API_ENDPOINTS.repos.replace('/repos', '')}/stats?org=${org}`
                 : `${API_ENDPOINTS.repos.replace('/repos', '')}/stats`
 
-            const r = await fetch(url, { credentials: 'include' })
+            // Get cache settings from localStorage
+            const cacheSettings = JSON.parse(localStorage.getItem('cache-settings') || '{"enabled":true,"ttl":5}')
+            const headers = {
+                'x-cache-ttl': cacheSettings.enabled ? cacheSettings.ttl.toString() : '0'
+            }
+
+            const r = await fetch(url, { credentials: 'include', headers })
             if (r.ok) {
                 const data = await safeParseJson(r)
                 setStats(data)
