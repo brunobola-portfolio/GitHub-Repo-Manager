@@ -42,6 +42,14 @@ const db = new Database(dbPath, { verbose: console.log });
 // Enable foreign keys
 db.pragma('foreign_keys = ON');
 
+// Enable WAL mode for better concurrency and performance
+db.pragma('journal_mode = WAL');
+
+// Performance optimizations
+db.pragma('cache_size = 32000');      // 32MB cache (negative values are in KB, positive in pages)
+db.pragma('synchronous = NORMAL');    // Balance between safety and speed (safer than OFF, faster than FULL)
+db.pragma('temp_store = MEMORY');     // Store temporary tables in RAM for faster operations
+
 export function initDB() {
     const transactions = db.transaction(() => {
         // Users Table (Local cache of GitHub users)
