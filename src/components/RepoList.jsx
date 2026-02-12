@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Card } from './ui/Card'
 import { Badge } from './ui/Badge'
 import { Button } from './ui/Button'
@@ -48,29 +48,54 @@ export function RepoList({
 	// Derive available languages
 	const availableLanguages = [...new Set(repos.map(r => r.language).filter(Boolean))].sort()
 
-	// Filter repositories
-	const filteredRepos = isAISearch && searchQuery
-		? repos.filter(r => aiResults.some(res => res.repo_id === r.id))
-			.sort((a, b) => {
-				const scoreA = aiResults.find(res => res.repo_id === a.id)?.score || 0
-				const scoreB = aiResults.find(res => res.repo_id === b.id)?.score || 0
-				return scoreB - scoreA
-			})
-		: repos.filter(repo => {
-			if (searchQuery) {
+	// Filter repositories with optimized O(n) lookup using Map
+	const filteredRepos = useMemo(() => {
+		// Create Map for O(1) lookup instead of O(n) find()
+		const aiResultsMap = isAISearch && aiResults.length > 0
+			? new Map(aiResults.map(res => [res.repo_id, res]))
+			: null
+
+		const filtered = repos.filter(repo => {
+			// AI search filter with O(1) lookup
+			if (aiResultsMap) {
+				const match = aiResultsMap.get(repo.id)
+				if (!match) return false
+			}
+
+			// Search query filter
+			if (searchQuery && !isAISearch) {
 				const query = searchQuery.toLowerCase()
 				const matchesName = repo.name.toLowerCase().includes(query)
 				const matchesDesc = repo.description?.toLowerCase().includes(query)
 				if (!matchesName && !matchesDesc) return false
 			}
+
+			// Type filter
 			if (typeFilter === 'source' && repo.fork) return false
 			if (typeFilter === 'fork' && !repo.fork) return false
 			if (typeFilter === 'archived' && !repo.archived) return false
+
+			// Visibility filter
 			if (visibilityFilter === 'public' && repo.private) return false
 			if (visibilityFilter === 'private' && !repo.private) return false
+
+			// Language filter
 			if (languageFilter !== 'all' && repo.language !== languageFilter) return false
+
 			return true
 		})
+
+		// Sort AI results by score if applicable
+		if (aiResultsMap && filtered.length > 0) {
+			return filtered.sort((a, b) => {
+				const scoreA = aiResultsMap.get(a.id)?.score || 0
+				const scoreB = aiResultsMap.get(b.id)?.score || 0
+				return scoreB - scoreA
+			})
+		}
+
+		return filtered
+	}, [repos, aiResults, isAISearch, searchQuery, typeFilter, visibilityFilter, languageFilter])
 
 	// AI Search Effect
 	useEffect(() => {
