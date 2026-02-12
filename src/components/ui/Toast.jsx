@@ -47,6 +47,9 @@ export function Toast({ id, type = 'info', message, onDismiss, duration = 5000 }
 
 	return (
 		<div
+			role={type === 'error' ? 'alert' : 'status'}
+			aria-live={type === 'error' ? 'assertive' : 'polite'}
+			aria-atomic="true"
 			className={`flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl dark:shadow-black/70 transition-all duration-300 backdrop-blur-md pointer-events-auto ${
 				STYLES[type]
 			} ${isLeaving ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'}`}
@@ -56,6 +59,7 @@ export function Toast({ id, type = 'info', message, onDismiss, duration = 5000 }
             <button
                 onClick={handleDismiss}
                 className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors"
+                aria-label="Dismiss notification"
             >
                 <X className="w-4 h-4" />
             </button>
