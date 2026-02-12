@@ -3,10 +3,8 @@ import { API_BASE_URL, MOCK_MODE } from '../config';
 const REPO_MANAGER_API = `${API_BASE_URL}/api`;
 
 const getHeaders = () => {
-    const localKey = localStorage.getItem('GEMINI_API_KEY');
     return {
-        'Content-Type': 'application/json',
-        ...(localKey ? { 'x-gemini-api-key': localKey } : {})
+        'Content-Type': 'application/json'
     };
 };
 
