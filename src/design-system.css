@@ -268,20 +268,51 @@
 /* ===== REDUCED MOTION ===== */
 
 @media (prefers-reduced-motion: reduce) {
+  /* Disable all animations for users who prefer reduced motion */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Disable specific design system animations */
   .ds-animate-fade-in-up,
   .ds-animate-fade-in,
   .ds-animate-slide-right,
   .ds-animate-slide-left,
   .ds-animate-scale-in,
-  .ds-animate-float {
+  .ds-animate-float,
+  .animate-pulse,
+  .animate-spin,
+  .animate-bounce {
     animation: none !important;
   }
+
+  /* Disable transform-based hover effects */
   .ds-hover-lift:hover,
   .ds-hover-scale:hover {
     transform: none !important;
   }
+
+  /* Disable shimmer and gradient animations */
   .ds-card-shimmer:hover::after,
-  .ds-btn-shimmer:hover::before {
+  .ds-btn-shimmer:hover::before,
+  .ds-gradient-text-premium {
     animation: none !important;
+  }
+
+  /* Keep essential opacity transitions for feedback (minimal) */
+  button:hover,
+  a:hover {
+    transition: opacity 0.15s ease !important;
+  }
+
+  /* Disable Framer Motion animations globally */
+  .motion-reduce {
+    animation: none !important;
+    transition: none !important;
   }
 }
