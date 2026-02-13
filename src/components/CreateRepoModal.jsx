@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
 import { Select } from './ui/Select'
@@ -12,6 +12,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming 
     const [isPrivate, setIsPrivate] = useState(true)
     const { askAI } = useGitHub()
     const [isGenerating, setIsGenerating] = useState(false)
+    const modalRef = useRef(null)
 
     if (!isOpen) return null
 
@@ -48,15 +49,39 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming 
         }
     }
 
+    // Scroll input into view when keyboard appears (mobile fix)
+    useEffect(() => {
+        if (!isOpen) return
+
+        const handleFocus = (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                setTimeout(() => {
+                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }, 300) // Delay for keyboard animation
+            }
+        }
+
+        const modal = modalRef.current
+        modal?.addEventListener('focusin', handleFocus)
+        return () => modal?.removeEventListener('focusin', handleFocus)
+    }, [isOpen])
+
     return (
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-md p-6">
+            <div
+                ref={modalRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="create-repo-title"
+                className="w-full max-w-md max-h-[85vh] md:max-h-[90vh] flex flex-col overflow-hidden"
+            >
+            <Card className="flex-1 overflow-y-auto p-6">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        <span className="text-2xl">📦</span>
+                    <h2 id="create-repo-title" className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <span className="text-2xl" aria-hidden="true">📦</span>
                         Create Repository
                     </h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-2xl">
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-2xl" aria-label="Close modal">
                         ×
                     </button>
                 </div>
@@ -88,7 +113,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming 
                             value={name}
                             onChange={(e) => setName(e.target.value.replace(/\s/g, '-'))}
                             placeholder="my-awesome-project"
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                             required
                         />
                     </div>
@@ -102,7 +127,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming 
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="A short description of your repository"
                             rows={2}
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 placeholder:text-slate-400 dark:placeholder:text-slate-500 pr-10"
+                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 dark:placeholder:text-slate-500 pr-10"
                         />
                         <button
                             type="button"
@@ -135,6 +160,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming 
                     </div>
                 </form>
             </Card>
+            </div>
         </div>
     )
 }

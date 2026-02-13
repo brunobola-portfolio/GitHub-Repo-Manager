@@ -79,7 +79,7 @@ export function AzureImportModal({ isOpen, onClose, onImport, orgs, isPerforming
                                     value={azureOrg}
                                     onChange={(e) => setAzureOrg(e.target.value)}
                                     placeholder="e.g., mycompany"
-	                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+	                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                     required
                                 />
                             </div>
@@ -92,7 +92,7 @@ export function AzureImportModal({ isOpen, onClose, onImport, orgs, isPerforming
                                     value={azureProject}
                                     onChange={(e) => setAzureProject(e.target.value)}
                                     placeholder="e.g., MyProject"
-	                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+	                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                     required
                                 />
                             </div>
@@ -105,7 +105,7 @@ export function AzureImportModal({ isOpen, onClose, onImport, orgs, isPerforming
                                     value={azureRepo}
                                     onChange={(e) => setAzureRepo(e.target.value)}
                                     placeholder="e.g., my-repo"
-	                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+	                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                     required
                                 />
                             </div>
@@ -118,7 +118,7 @@ export function AzureImportModal({ isOpen, onClose, onImport, orgs, isPerforming
                                     value={azurePat}
                                     onChange={(e) => setAzurePat(e.target.value)}
                                     placeholder="Azure DevOps PAT with Code (Read) scope"
-	                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+	                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                     required
                                 />
 	                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
