@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useGitHub } from './hooks/useGitHub'
 import { HeaderNew } from './components/HeaderNew'
 import { Sidebar } from './components/Sidebar'
+import { MobileDrawer } from './components/MobileDrawer'
 import { RepoList } from './components/RepoList'
 import { DashboardPremium } from './components/Dashboard/DashboardPremium'
 import { OrgPanel } from './components/OrgPanel'
@@ -26,6 +27,7 @@ import { SelectionProvider } from './contexts/SelectionContext'
 import { ActionProvider } from './contexts/ActionContext'
 import { OrganizationProvider } from './contexts/OrganizationContext'
 import { ModalProvider } from './contexts/ModalContext'
+import { Menu } from 'lucide-react'
 
 function AppContent() {
   const [_session, setSession] = useState(null)
@@ -40,6 +42,7 @@ function AppContent() {
   const [selectedHealthRepo, setSelectedHealthRepo] = useState(null)
   const [confirmModal, setConfirmModal] = useState({ isOpen: false })
   const [syncStatus, setSyncStatus] = useState({ lastSync: null, hasUpdates: false })
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const { toasts, toast, dismissToast } = useToast()
 
   const {
@@ -257,6 +260,18 @@ function AppContent() {
 
   const displayRepos = selectedOrg ? orgRepos : repos
 
+  const sidebarProps = {
+    isPerforming,
+    performAction: handleAction,
+    message,
+    results,
+    onArchive: archiveRepos,
+    onDelete: deleteRepos,
+    selectedRepos: [],
+    onTransfer: () => setTransferRepos(displayRepos.filter(r => r.id)),
+    activity,
+  }
+
   if (systemInitialized === false) {
     return <SystemSetup onComplete={() => {
       setSystemInitialized(true)
@@ -276,8 +291,25 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-12 font-sans dark:bg-slate-950 dark:text-slate-50">
-      <HeaderNew
+    <>
+      {/* Skip Links - WCAG 2.1 requirement */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-lg focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+      {user && activeView === 'repos' && (
+        <a
+          href="#sidebar-navigation"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-40 focus:z-50 focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-lg focus:shadow-lg"
+        >
+          Skip to navigation
+        </a>
+      )}
+
+      <div className="min-h-screen bg-slate-50 text-slate-900 pb-12 font-sans dark:bg-slate-950 dark:text-slate-50">
+        <HeaderNew
         user={user}
         isMockMode={isMockMode}
         onLogin={handleLogin}
@@ -292,7 +324,7 @@ function AppContent() {
         onOpenOrgManager={handleOpenOrgManager}
       />
 
-      <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 relative z-[1]">
+      <main id="main-content" className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 relative z-[1]">
         {!user && activeView === 'dashboard' && (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center animate-in fade-in zoom-in duration-500">
             <div className="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-3xl mb-8 flex items-center justify-center shadow-2xl shadow-indigo-500/30 dark:shadow-indigo-900/40">
@@ -371,21 +403,11 @@ function AppContent() {
             </div>
 
             {user && (
-              <div className="hidden xl:block w-80 flex-shrink-0">
+              <aside id="sidebar-navigation" className="hidden xl:block w-80 flex-shrink-0">
                 <div className="sticky top-8 max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar">
-                  <Sidebar
-                    isPerforming={isPerforming}
-                    performAction={handleAction}
-                    message={message}
-                    results={results}
-                    onArchive={archiveRepos}
-                    onDelete={deleteRepos}
-                    selectedRepos={[]}
-                    onTransfer={() => setTransferRepos(displayRepos.filter(r => r.id))}
-                    activity={activity}
-                  />
+                  <Sidebar {...sidebarProps} />
                 </div>
-              </div>
+              </aside>
             )}
           </div>
         )}
@@ -499,7 +521,29 @@ function AppContent() {
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <AIAssistant />
-    </div>
+
+      {/* Mobile Drawer */}
+      {user && (
+        <>
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="xl:hidden fixed z-30 p-4 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-colors min-h-[56px] min-w-[56px] flex items-center justify-center safe-area-bottom safe-area-right"
+            style={{
+              bottom: 'calc(1.5rem + var(--safe-area-inset-bottom))',
+              right: 'calc(1.5rem + var(--safe-area-inset-right))'
+            }}
+            aria-label="Open navigation menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+
+          <MobileDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)}>
+            <Sidebar {...sidebarProps} />
+          </MobileDrawer>
+        </>
+      )}
+      </div>
+    </>
   )
 }
 
