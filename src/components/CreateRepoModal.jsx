@@ -113,7 +113,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming 
                             value={name}
                             onChange={(e) => setName(e.target.value.replace(/\s/g, '-'))}
                             placeholder="my-awesome-project"
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500 dark:placeholder:text-slate-400"
                             required
                         />
                     </div>
@@ -127,7 +127,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming 
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="A short description of your repository"
                             rows={2}
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400 dark:placeholder:text-slate-500 pr-10"
+                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500 dark:placeholder:text-slate-400 pr-10"
                         />
                         <button
                             type="button"

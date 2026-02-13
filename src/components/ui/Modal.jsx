@@ -107,7 +107,18 @@ export function Modal({
             }
         }
 
+        // Scroll input into view when keyboard appears (mobile fix)
+        const handleFocus = (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                setTimeout(() => {
+                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }, 300) // Delay for keyboard animation
+            }
+        }
+
         document.addEventListener('keydown', handleKeyDown)
+        const modal = modalRef.current
+        modal?.addEventListener('focusin', handleFocus)
 
         // Focus the first focusable element in the modal after a brief delay for animation
         const timer = setTimeout(() => {
@@ -120,6 +131,7 @@ export function Modal({
 
         return () => {
             document.removeEventListener('keydown', handleKeyDown)
+            modal?.removeEventListener('focusin', handleFocus)
             clearTimeout(timer)
             // Restore focus to previously focused element
             if (previouslyFocusedRef.current && typeof previouslyFocusedRef.current.focus === 'function') {
@@ -162,7 +174,7 @@ export function Modal({
                                 border-2 border-white/20 dark:border-slate-700/50
                                 overflow-hidden
                                 flex flex-col
-                                max-h-[90vh]
+                                max-h-[85vh] md:max-h-[90vh]
                                 ${className}
                             `}
                         >

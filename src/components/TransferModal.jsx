@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ArrowRight, Building2, GitFork, X, AlertTriangle, ArrowRightLeft, Copy } from 'lucide-react'
 import { Button } from './ui/Button'
 import { ProgressBar } from './ui/ProgressBar'
@@ -16,6 +16,7 @@ export function TransferModal({
 	const [targetOrg, setTargetOrg] = useState('')
 	const [action, setAction] = useState('transfer') // 'transfer' | 'mirror'
 	const [formError, setFormError] = useState('')
+	const modalRef = useRef(null)
 
 	if (!isOpen) return null
 
@@ -32,9 +33,31 @@ export function TransferModal({
 		}
 	}
 
+	// Scroll input into view when keyboard appears (mobile fix)
+	useEffect(() => {
+		if (!isOpen) return
+
+		const handleFocus = (e) => {
+			if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+				setTimeout(() => {
+					e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+				}, 300) // Delay for keyboard animation
+			}
+		}
+
+		const modal = modalRef.current
+		modal?.addEventListener('focusin', handleFocus)
+		return () => modal?.removeEventListener('focusin', handleFocus)
+	}, [isOpen])
+
 		    return (
 	        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl dark:shadow-slate-900/50 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div
+                ref={modalRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="transfer-modal-title"
+                className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl dark:shadow-slate-900/50 max-w-2xl w-full max-h-[85vh] md:max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-5 text-white">
                     <div className="flex items-center justify-between">
@@ -47,7 +70,7 @@ export function TransferModal({
                                 )}
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold">
+                                <h2 id="transfer-modal-title" className="text-xl font-bold">
                                     {action === 'transfer' ? 'Transfer Repositories' : 'Mirror Repositories'}
                                 </h2>
                                 <p className="text-white/80 text-sm">
@@ -55,7 +78,7 @@ export function TransferModal({
                                 </p>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors" aria-label="Close modal">
                             <X className="w-5 h-5" />
                         </button>
                     </div>

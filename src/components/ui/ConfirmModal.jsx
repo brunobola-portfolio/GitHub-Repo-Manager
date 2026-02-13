@@ -89,7 +89,7 @@ export function ConfirmModal({
                         className="p-1 hover:bg-white/50 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
                         aria-label="Close modal"
                     >
-                        <X className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                        <X className="w-5 h-5 text-slate-700 dark:text-slate-300" />
                     </button>
                 </div>
 
