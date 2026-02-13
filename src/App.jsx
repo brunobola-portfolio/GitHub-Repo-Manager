@@ -1,10 +1,9 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react'
 import { useGitHub } from './hooks/useGitHub'
 import { HeaderNew } from './components/HeaderNew'
 import { Sidebar } from './components/Sidebar'
 import { MobileDrawer } from './components/MobileDrawer'
 import { RepoList } from './components/RepoList'
-import { DashboardPremium } from './components/Dashboard/DashboardPremium'
 import { OrgPanel } from './components/OrgPanel'
 import { AzureImportModal } from './components/AzureImportModal'
 import { CreateRepoModal } from './components/CreateRepoModal'
@@ -15,12 +14,6 @@ import { ConfirmModal } from './components/ui/ConfirmModal'
 import { ToastContainer } from './components/ui/Toast'
 import { useToast } from './hooks/useToast'
 import { AIAssistant } from './components/AIAssistant'
-import { TeamHub } from './components/Teams/TeamHub'
-import { TeamDetails } from './components/Teams/TeamDetails'
-import RepoInsightsModal from './components/AI/RepoInsightsModal'
-import { ActionsStatsDashboard } from './components/ActionsStatsDashboard'
-import { CommunityHealthDashboard } from './components/CommunityHealthDashboard'
-import { SystemSetup } from './components/Setup/SystemSetup'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
 import { SelectionProvider } from './contexts/SelectionContext'
@@ -28,6 +21,27 @@ import { ActionProvider } from './contexts/ActionContext'
 import { OrganizationProvider } from './contexts/OrganizationContext'
 import { ModalProvider } from './contexts/ModalContext'
 import { Menu } from 'lucide-react'
+
+// Lazy load heavy route components for code splitting
+const DashboardPremium = lazy(() => import('./components/Dashboard/DashboardPremium').then(m => ({ default: m.DashboardPremium })))
+const TeamHub = lazy(() => import('./components/Teams/TeamHub').then(m => ({ default: m.TeamHub })))
+const TeamDetails = lazy(() => import('./components/Teams/TeamDetails').then(m => ({ default: m.TeamDetails })))
+const RepoInsightsModal = lazy(() => import('./components/AI/RepoInsightsModal'))
+const ActionsStatsDashboard = lazy(() => import('./components/ActionsStatsDashboard').then(m => ({ default: m.ActionsStatsDashboard })))
+const CommunityHealthDashboard = lazy(() => import('./components/CommunityHealthDashboard').then(m => ({ default: m.CommunityHealthDashboard })))
+const SystemSetup = lazy(() => import('./components/Setup/SystemSetup').then(m => ({ default: m.SystemSetup })))
+
+// Loading fallback component
+function LoadingFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+        <p className="text-slate-500 dark:text-slate-400 text-sm">Loading...</p>
+      </div>
+    </div>
+  )
+}
 
 function AppContent() {
   const [_session, setSession] = useState(null)
@@ -273,10 +287,14 @@ function AppContent() {
   }
 
   if (systemInitialized === false) {
-    return <SystemSetup onComplete={() => {
-      setSystemInitialized(true)
-      checkAuth()
-    }} />
+    return (
+      <Suspense fallback={<LoadingFallback />}>
+        <SystemSetup onComplete={() => {
+          setSystemInitialized(true)
+          checkAuth()
+        }} />
+      </Suspense>
+    )
   }
 
   if (loading) {
@@ -350,19 +368,21 @@ function AppContent() {
         {activeView === 'dashboard' && user && (
           <div className="animate-in fade-in duration-500">
             <ErrorBoundary>
-              <DashboardPremium
-                stats={stats}
-                orgs={orgs}
-                repos={displayRepos}
-                selectedOrg={selectedOrg}
-                onSelectOrg={handleOrgSelect}
-                loading={loading || isSwitchingOrg}
-                activity={activity}
-                onOrgClick={(orgLogin) => {
-                  handleOrgSelect(orgLogin)
-                  setActiveView('repos')
-                }}
-              />
+              <Suspense fallback={<LoadingFallback />}>
+                <DashboardPremium
+                  stats={stats}
+                  orgs={orgs}
+                  repos={displayRepos}
+                  selectedOrg={selectedOrg}
+                  onSelectOrg={handleOrgSelect}
+                  loading={loading || isSwitchingOrg}
+                  activity={activity}
+                  onOrgClick={(orgLogin) => {
+                    handleOrgSelect(orgLogin)
+                    setActiveView('repos')
+                  }}
+                />
+              </Suspense>
             </ErrorBoundary>
           </div>
         )}
@@ -415,20 +435,22 @@ function AppContent() {
         {activeView === 'teams' && user && (
           <div className="animate-in fade-in duration-500">
             <ErrorBoundary>
-              {selectedTeam ? (
-                <TeamDetails
-                  team={selectedTeam}
-                  onBack={() => setSelectedTeam(null)}
-                  userRepos={repos}
-                  user={user}
-                  onShowActionsStats={() => {}}
-                />
-              ) : (
-                <TeamHub
-                  user={user}
-                  onTeamSelect={setSelectedTeam}
-                />
-              )}
+              <Suspense fallback={<LoadingFallback />}>
+                {selectedTeam ? (
+                  <TeamDetails
+                    team={selectedTeam}
+                    onBack={() => setSelectedTeam(null)}
+                    userRepos={repos}
+                    user={user}
+                    onShowActionsStats={() => {}}
+                  />
+                ) : (
+                  <TeamHub
+                    user={user}
+                    onTeamSelect={setSelectedTeam}
+                  />
+                )}
+              </Suspense>
             </ErrorBoundary>
           </div>
         )}
@@ -506,17 +528,21 @@ function AppContent() {
         onClose={() => {}}
       />
 
-      <RepoInsightsModal
-        isOpen={selectedInsightsRepo !== null}
-        onClose={() => setSelectedInsightsRepo(null)}
-        repo={selectedInsightsRepo}
-      />
+      <Suspense fallback={null}>
+        <RepoInsightsModal
+          isOpen={selectedInsightsRepo !== null}
+          onClose={() => setSelectedInsightsRepo(null)}
+          repo={selectedInsightsRepo}
+        />
+      </Suspense>
 
       {selectedHealthRepo && (
-        <CommunityHealthDashboard
-          repo={selectedHealthRepo}
-          onClose={() => setSelectedHealthRepo(null)}
-        />
+        <Suspense fallback={null}>
+          <CommunityHealthDashboard
+            repo={selectedHealthRepo}
+            onClose={() => setSelectedHealthRepo(null)}
+          />
+        </Suspense>
       )}
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
