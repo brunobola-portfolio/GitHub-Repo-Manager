@@ -5,6 +5,8 @@
 ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-4.0-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-20-339933?style=for-the-badge&logo=node.js&logoColor=white)
 ![Gemini AI](https://img.shields.io/badge/Gemini_AI-Powered-8E75B2?style=for-the-badge&logo=google-gemini&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-109%20passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
+![CI Status](https://github.com/yourusername/github-repo-manager/workflows/CI/badge.svg)
 
 > **A modern, AI-powered dashboard for managing your GitHub ecosystem with style and intelligence.**
 
