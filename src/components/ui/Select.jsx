@@ -20,10 +20,13 @@ export function Select({
     placeholder = 'Select...',
     className = '',
     disabled = false,
-    size = 'md'
+    size = 'md',
+    label = 'Select'
 }) {
     const [isOpen, setIsOpen] = useState(false)
+    const [focusedIndex, setFocusedIndex] = useState(0)
     const selectRef = useRef(null)
+    const listRef = useRef(null)
 
     const selectedOption = options.find(opt => opt.value === value)
 
@@ -41,6 +44,16 @@ export function Select({
         }
     }, [isOpen])
 
+    // Auto-scroll focused option into view
+    useEffect(() => {
+        if (isOpen && focusedIndex >= 0 && listRef.current) {
+            const optionElement = listRef.current.querySelector(`[data-index="${focusedIndex}"]`)
+            if (optionElement) {
+                optionElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+            }
+        }
+    }, [focusedIndex, isOpen])
+
     // Size variants
     const sizeClasses = {
         sm: 'px-2.5 py-1.5 text-xs',
@@ -53,13 +66,64 @@ export function Select({
         setIsOpen(false)
     }
 
+    // Keyboard navigation handler
+    const handleKeyDown = (e) => {
+        if (!isOpen) {
+            // Open dropdown with Enter, Space, or ArrowDown
+            if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+                e.preventDefault()
+                setIsOpen(true)
+                // Set focused index to current selection
+                const currentIndex = options.findIndex(opt => opt.value === value)
+                setFocusedIndex(currentIndex >= 0 ? currentIndex : 0)
+            }
+            return
+        }
+
+        // Navigate through options when dropdown is open
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault()
+                setFocusedIndex(prev => Math.min(prev + 1, options.length - 1))
+                break
+            case 'ArrowUp':
+                e.preventDefault()
+                setFocusedIndex(prev => Math.max(prev - 1, 0))
+                break
+            case 'Enter':
+            case ' ':
+                e.preventDefault()
+                if (focusedIndex >= 0 && focusedIndex < options.length) {
+                    handleSelect(options[focusedIndex].value)
+                }
+                break
+            case 'Escape':
+                e.preventDefault()
+                setIsOpen(false)
+                break
+            case 'Home':
+                e.preventDefault()
+                setFocusedIndex(0)
+                break
+            case 'End':
+                e.preventDefault()
+                setFocusedIndex(options.length - 1)
+                break
+            default:
+                break
+        }
+    }
+
     return (
-        <div ref={selectRef} className={`relative ${className}`}>
+        <div ref={selectRef} className={`relative ${className}`} onKeyDown={handleKeyDown}>
             {/* Select Trigger */}
             <button
                 type="button"
                 disabled={disabled}
                 onClick={() => !disabled && setIsOpen(!isOpen)}
+                aria-haspopup="listbox"
+                aria-expanded={isOpen}
+                aria-label={label}
                 className={`
                     w-full flex items-center justify-between gap-2
                     ${sizeClasses[size]}
@@ -70,6 +134,7 @@ export function Select({
                     font-medium
                     text-slate-700 dark:text-slate-200
                     transition-all duration-200
+                    focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900
                     ${disabled
                         ? 'opacity-50 cursor-not-allowed'
                         : 'hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-md cursor-pointer'
@@ -103,21 +168,29 @@ export function Select({
                             shadow-2xl
                             overflow-hidden"
                     >
-                        <div className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
-                            {options.map((option) => {
+                        <div ref={listRef} role="listbox" aria-label={label} className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
+                            {options.map((option, index) => {
                                 const isSelected = option.value === value
+                                const isFocused = index === focusedIndex
                                 return (
                                     <button
                                         key={option.value}
                                         type="button"
+                                        role="option"
+                                        aria-selected={isSelected}
+                                        data-index={index}
                                         onClick={() => handleSelect(option.value)}
+                                        onMouseEnter={() => setFocusedIndex(index)}
                                         className={`
                                             w-full flex items-center justify-between gap-2
                                             px-3 py-2.5
                                             text-left text-sm font-medium
                                             transition-all duration-150
+                                            focus:outline-none
                                             ${isSelected
                                                 ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                                                : isFocused
+                                                ? 'bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100'
                                                 : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                                             }
                                         `}
