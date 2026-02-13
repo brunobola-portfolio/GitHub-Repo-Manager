@@ -1315,6 +1315,40 @@ app.post('/api/ai/batch-index', requireAuth, requireAI, async (req, res) => {
     const results = [];
     const limit = Math.min(repos.length, 10); // Max 10 at a time
 
+    // Prepare statements outside the loop for better performance
+    const insertMetadata = db.prepare(`
+        INSERT INTO repo_metadata (repo_id, summary, topics, health_score, last_indexed)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(repo_id) DO UPDATE SET
+            summary = excluded.summary, topics = excluded.topics,
+            health_score = excluded.health_score, last_indexed = CURRENT_TIMESTAMP
+    `);
+
+    const insertEmbedding = db.prepare(`
+        INSERT INTO repo_embeddings (repo_id, embedding, updated_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(repo_id) DO UPDATE SET embedding = excluded.embedding, updated_at = CURRENT_TIMESTAMP
+    `);
+
+    // Transaction wrapper for batch inserts (100x faster than individual inserts)
+    const batchInsertRepos = db.transaction((repoDataArray) => {
+        for (const repoData of repoDataArray) {
+            insertMetadata.run(
+                repoData.repo.id,
+                repoData.analysis.summary,
+                JSON.stringify(repoData.analysis.suggested_topics),
+                repoData.analysis.health_score
+            );
+            insertEmbedding.run(
+                repoData.repo.id,
+                JSON.stringify(repoData.embedding)
+            );
+        }
+    });
+
+    // Collect analyzed data for batch insert
+    const analyzedRepos = [];
+
     for (let i = 0; i < limit; i++) {
         const repo = repos[i];
         try {
@@ -1335,31 +1369,28 @@ app.post('/api/ai/batch-index', requireAuth, requireAI, async (req, res) => {
             // Generate analysis
             const analysis = await aiService.analyzeRepo(repo, readmeContent, fileStructure);
 
-            // Generate and save embedding
+            // Generate embedding
             const textToEmbed = `${repo.name} ${repo.description || ''} ${analysis.summary} ${analysis.suggested_topics?.join(' ') || ''}`;
             const embedding = await aiService.embedText(textToEmbed);
 
-            // Save to DB
-            db.prepare(`
-                INSERT INTO repo_metadata (repo_id, summary, topics, health_score, last_indexed)
-                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(repo_id) DO UPDATE SET
-                    summary = excluded.summary, topics = excluded.topics,
-                    health_score = excluded.health_score, last_indexed = CURRENT_TIMESTAMP
-            `).run(repo.id, analysis.summary, JSON.stringify(analysis.suggested_topics), analysis.health_score);
-
-            db.prepare(`
-                INSERT INTO repo_embeddings (repo_id, embedding, updated_at)
-                VALUES (?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(repo_id) DO UPDATE SET embedding = excluded.embedding, updated_at = CURRENT_TIMESTAMP
-            `).run(repo.id, JSON.stringify(embedding));
-
+            // Store for batch insert
+            analyzedRepos.push({ repo, analysis, embedding });
             results.push({ repo: repo.full_name, success: true, health_score: analysis.health_score });
 
         } catch (error) {
             console.error(`Batch index failed for ${repo.full_name}:`, error.message);
             results.push({ repo: repo.full_name, success: false, error: error.message });
         }
+    }
+
+    // Batch insert all successfully analyzed repos in a single transaction
+    try {
+        if (analyzedRepos.length > 0) {
+            batchInsertRepos(analyzedRepos);
+        }
+    } catch (error) {
+        console.error('Batch insert failed:', error);
+        return res.status(500).json({ error: 'Failed to save indexed data', details: error.message });
     }
 
     res.json({
