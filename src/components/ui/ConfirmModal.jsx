@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { AlertTriangle, X } from 'lucide-react'
 import { Button } from './Button'
 
@@ -15,6 +16,7 @@ export function ConfirmModal({
 	    isLoading = false
 	}) {
 	    const IconComponent = icon
+	    const modalRef = useRef(null)
 	    if (!isOpen) return null
 
     const handleConfirm = () => {
@@ -51,25 +53,48 @@ export function ConfirmModal({
 
     const styles = variantStyles[variant] || variantStyles.danger
 
+    // Scroll input into view when keyboard appears (mobile fix)
+    useEffect(() => {
+        if (!isOpen) return
+
+        const handleFocus = (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                setTimeout(() => {
+                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }, 300) // Delay for keyboard animation
+            }
+        }
+
+        const modal = modalRef.current
+        modal?.addEventListener('focusin', handleFocus)
+        return () => modal?.removeEventListener('focusin', handleFocus)
+    }, [isOpen])
+
 	    return (
-	        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl dark:shadow-black/40 max-w-md w-full mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+	        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4">
+            <div
+                ref={modalRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="confirm-modal-title"
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl dark:shadow-black/40 max-w-md w-full max-h-[85vh] md:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 {/* Header */}
-	                <div className={`${styles.bg} ${styles.border} border-b p-4 flex items-center gap-3`}>
+	                <div className={`${styles.bg} ${styles.border} border-b p-4 flex items-center gap-3 flex-shrink-0`}>
 	                    <div className={`p-2 rounded-full ${styles.bg}`}>
 	                        {IconComponent && <IconComponent className={`w-6 h-6 ${styles.iconColor}`} />}
                     </div>
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex-1">{title}</h2>
+                    <h2 id="confirm-modal-title" className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex-1">{title}</h2>
                     <button
                         onClick={onClose}
                         className="p-1 hover:bg-white/50 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
+                        aria-label="Close modal"
                     >
-                        <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                        <X className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                     </button>
                 </div>
 
-                {/* Body */}
-                <div className="p-6">
+                {/* Body - Scrollable */}
+                <div className="p-6 flex-1 overflow-y-auto">
                     <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{message}</p>
 
                     {requiresInput && (
@@ -80,7 +105,7 @@ export function ConfirmModal({
                             <input
                                 id="confirm-input"
                                 type="text"
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                 placeholder={requiresInput}
                                 autoComplete="off"
                             />
@@ -88,8 +113,8 @@ export function ConfirmModal({
                     )}
                 </div>
 
-                {/* Footer */}
-                <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3">
+                {/* Footer - Fixed */}
+                <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3 flex-shrink-0">
                     <Button variant="ghost" onClick={onClose} disabled={isLoading}>
                         {cancelText}
                     </Button>

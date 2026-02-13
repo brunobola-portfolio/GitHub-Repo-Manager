@@ -296,7 +296,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                     <input
                                         type="text"
                                         placeholder="Search repositories..."
-                                        className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-transparent dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
+                                        className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-transparent dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
                                         onChange={(e) => setSelectedRepoToAssign(e.target.value)} // Using this state for search temporarily
                                     />
                                 </div>
