@@ -13,26 +13,23 @@ import { PAGINATION } from '../config'
 import { aiApi } from '../api/ai'
 import { formatCompact } from '../utils/format'
 import { motion } from 'framer-motion'
+import { useSelection } from '../contexts/SelectionContext'
+import { useModal } from '../contexts/ModalContext'
 
 export function RepoList({
 	repos,
 	loading,
 	error,
 	errorInfo,
-	selectedIds,
-	toggleSelect,
-	selectRepos,
-	deselectRepos,
-	clearSelection,
 	page,
 	setPage,
 	perPage,
 	totalPages,
 	onRefresh,
-	onQuickAction,
-	onOpenInsights,
-	onOpenHealth
+	onQuickAction
 }) {
+	const { selectedIds, toggleSelect, selectRepos, deselectRepos, clearSelection, invertSelection } = useSelection()
+	const { openModal } = useModal()
 	const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
 	const [searchQuery, setSearchQuery] = useState('')
 	const [isAISearch, setIsAISearch] = useState(false)
@@ -375,8 +372,8 @@ export function RepoList({
 							onToggle={() => toggleSelect(repo.id)}
 							onAction={onQuickAction}
 							onContextMenu={(e) => handleContextMenu(e, repo)}
-							onOpenInsights={() => onOpenInsights(repo)}
-							onOpenHealth={() => onOpenHealth?.(repo)}
+							onOpenInsights={() => openModal('showRepoInsights')}
+							onOpenHealth={() => openModal('showCommunityHealth')}
 						/>
 					))}
 				</div>
@@ -440,8 +437,8 @@ export function RepoList({
 					y={repoMenu.y}
 					onClose={() => setRepoMenu(null)}
 					onQuickAction={onQuickAction}
-					onOpenInsights={() => onOpenInsights(repoMenu.repo)}
-					onOpenHealth={() => onOpenHealth?.(repoMenu.repo)}
+					onOpenInsights={() => openModal('showRepoInsights')}
+					onOpenHealth={() => openModal('showCommunityHealth')}
 				/>
 			)}
 		</div>
