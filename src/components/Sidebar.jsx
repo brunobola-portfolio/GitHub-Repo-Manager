@@ -7,6 +7,8 @@ import {
     Clock, ChevronRight
 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useSelection } from '../contexts/SelectionContext'
+import { useModal } from '../contexts/ModalContext'
 
 const ACTION_LABELS = {
     visibility: 'Change Visibility',
@@ -19,7 +21,6 @@ const ACTION_LABELS = {
 }
 
 export function Sidebar({
-    selectedCount,
     isPerforming,
     performAction,
     message,
@@ -28,9 +29,12 @@ export function Sidebar({
     onDelete,
     selectedRepos = [],
     onTransfer,
-    onAzureImport,
     activity = []
 }) {
+    const { selectedIds } = useSelection()
+    const { openModal } = useModal()
+
+    const selectedCount = selectedIds.size
     const hasSelection = selectedCount > 0
 
     return (
@@ -45,7 +49,7 @@ export function Sidebar({
                 onArchive={onArchive}
                 onDelete={onDelete}
                 selectedRepos={selectedRepos}
-                onAzureImport={onAzureImport}
+                onAzureImport={() => openModal('showAzureImport')}
             />
 
             {/* Action History */}
