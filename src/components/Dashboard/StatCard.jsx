@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
@@ -7,7 +7,7 @@ import { formatNumber, formatCompact } from '../../utils/format'
 /**
  * StatCard - Animated metric card with icon and optional trend
  */
-export function StatCard({
+export const StatCard = memo(function StatCard({
     title,
     value,
     icon: Icon,
@@ -82,4 +82,4 @@ export function StatCard({
             </Card>
         </motion.div>
     )
-}
+})

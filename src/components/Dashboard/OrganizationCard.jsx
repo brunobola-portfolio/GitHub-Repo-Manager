@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Building2, Star, GitFork, GitPullRequest, AlertCircle, Lock, Globe, TrendingUp } from 'lucide-react'
 import { formatCompact } from '../../utils/format'
@@ -6,7 +6,7 @@ import { formatCompact } from '../../utils/format'
 /**
  * OrganizationCard - Rich card showing organization details and metrics
  */
-export function OrganizationCard({ org, repos = [], onClick }) {
+export const OrganizationCard = memo(function OrganizationCard({ org, repos = [], onClick }) {
     // Calculate organization stats
     const orgRepos = repos.filter(r => r.owner?.login === org.login)
     const totalStars = orgRepos.reduce((sum, r) => sum + (r.stargazers_count || 0), 0)
@@ -123,9 +123,16 @@ export function OrganizationCard({ org, repos = [], onClick }) {
             </div>
         </motion.button>
     )
-}
+}, (prevProps, nextProps) => {
+    // Only re-render if org or repos changed
+    return (
+        prevProps.org.login === nextProps.org.login &&
+        prevProps.org.avatar_url === nextProps.org.avatar_url &&
+        prevProps.repos.length === nextProps.repos.length
+    )
+})
 
-function StatItem({ icon: Icon, value, label, color }) {
+const StatItem = memo(function StatItem({ icon: Icon, value, label, color }) {
     return (
         <div className="flex items-center gap-2 p-2 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl border border-slate-200/40 dark:border-slate-700/40">
             <div className={`w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center ${color}`}>
@@ -141,4 +148,4 @@ function StatItem({ icon: Icon, value, label, color }) {
             </div>
         </div>
     )
-}
+})
