@@ -1,0 +1,199 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
+import { useToast } from './useToast'
+
+describe('useToast', () => {
+  let dateSpy
+
+  beforeEach(() => {
+    // Mock Date.now() to control toast IDs
+    dateSpy = vi.spyOn(Date, 'now').mockReturnValue(1000000)
+  })
+
+  afterEach(() => {
+    dateSpy.mockRestore()
+  })
+
+  it('initializes with empty toasts array', () => {
+    const { result } = renderHook(() => useToast())
+
+    expect(result.current.toasts).toEqual([])
+  })
+
+  it('adds success toast', () => {
+    const { result } = renderHook(() => useToast())
+
+    act(() => {
+      result.current.toast.success('Operation successful')
+    })
+
+    expect(result.current.toasts).toHaveLength(1)
+    expect(result.current.toasts[0]).toMatchObject({
+      type: 'success',
+      message: 'Operation successful',
+      duration: 5000
+    })
+    expect(result.current.toasts[0].id).toBeDefined()
+  })
+
+  it('adds error toast', () => {
+    const { result } = renderHook(() => useToast())
+
+    act(() => {
+      result.current.toast.error('Something went wrong')
+    })
+
+    expect(result.current.toasts).toHaveLength(1)
+    expect(result.current.toasts[0]).toMatchObject({
+      type: 'error',
+      message: 'Something went wrong',
+      duration: 5000
+    })
+  })
+
+  it('adds info toast', () => {
+    const { result } = renderHook(() => useToast())
+
+    act(() => {
+      result.current.toast.info('Information message')
+    })
+
+    expect(result.current.toasts).toHaveLength(1)
+    expect(result.current.toasts[0]).toMatchObject({
+      type: 'info',
+      message: 'Information message',
+      duration: 5000
+    })
+  })
+
+  it('adds warning toast', () => {
+    const { result } = renderHook(() => useToast())
+
+    act(() => {
+      result.current.toast.warning('Warning message')
+    })
+
+    expect(result.current.toasts).toHaveLength(1)
+    expect(result.current.toasts[0]).toMatchObject({
+      type: 'warning',
+      message: 'Warning message',
+      duration: 5000
+    })
+  })
+
+  it('adds toast with custom duration', () => {
+    const { result } = renderHook(() => useToast())
+
+    act(() => {
+      result.current.toast.success('Quick message', 2000)
+    })
+
+    expect(result.current.toasts[0].duration).toBe(2000)
+  })
+
+  it('adds multiple toasts', () => {
+    const { result } = renderHook(() => useToast())
+
+    act(() => {
+      result.current.toast.success('First toast')
+    })
+
+    act(() => {
+      result.current.toast.error('Second toast')
+    })
+
+    act(() => {
+      result.current.toast.info('Third toast')
+    })
+
+    expect(result.current.toasts).toHaveLength(3)
+    expect(result.current.toasts[0].type).toBe('success')
+    expect(result.current.toasts[1].type).toBe('error')
+    expect(result.current.toasts[2].type).toBe('info')
+  })
+
+  it('dismisses toast by ID', () => {
+    const { result } = renderHook(() => useToast())
+
+    let toastId
+
+    act(() => {
+      toastId = result.current.toast.success('Toast to dismiss')
+    })
+
+    expect(result.current.toasts).toHaveLength(1)
+
+    act(() => {
+      result.current.dismissToast(toastId)
+    })
+
+    expect(result.current.toasts).toHaveLength(0)
+  })
+
+  it('dismisses specific toast among multiple', () => {
+    const { result } = renderHook(() => useToast())
+
+    let firstId, secondId, thirdId
+
+    act(() => {
+      firstId = result.current.toast.success('First')
+      secondId = result.current.toast.error('Second')
+      thirdId = result.current.toast.info('Third')
+    })
+
+    expect(result.current.toasts).toHaveLength(3)
+
+    act(() => {
+      result.current.dismissToast(secondId)
+    })
+
+    expect(result.current.toasts).toHaveLength(2)
+    expect(result.current.toasts.find(t => t.id === firstId)).toBeDefined()
+    expect(result.current.toasts.find(t => t.id === thirdId)).toBeDefined()
+    expect(result.current.toasts.find(t => t.id === secondId)).toBeUndefined()
+  })
+
+  it('generates unique IDs for each toast', () => {
+    const { result } = renderHook(() => useToast())
+
+    const ids = []
+
+    act(() => {
+      ids.push(result.current.toast.success('Toast 1'))
+      ids.push(result.current.toast.success('Toast 2'))
+      ids.push(result.current.toast.success('Toast 3'))
+    })
+
+    const uniqueIds = new Set(ids)
+    expect(uniqueIds.size).toBe(3)
+  })
+
+  it('handles dismissing non-existent toast gracefully', () => {
+    const { result } = renderHook(() => useToast())
+
+    act(() => {
+      result.current.toast.success('Test toast')
+    })
+
+    expect(result.current.toasts).toHaveLength(1)
+
+    act(() => {
+      result.current.dismissToast('non-existent-id')
+    })
+
+    expect(result.current.toasts).toHaveLength(1)
+  })
+
+  it('returns toast ID when adding toast', () => {
+    const { result } = renderHook(() => useToast())
+
+    let toastId
+
+    act(() => {
+      toastId = result.current.toast.success('Test')
+    })
+
+    expect(typeof toastId).toBe('number')
+    expect(result.current.toasts[0].id).toBe(toastId)
+  })
+})
