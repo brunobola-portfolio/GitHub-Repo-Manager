@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, memo } from 'react'
 import { Card } from './ui/Card'
 import { Badge } from './ui/Badge'
 import { Button } from './ui/Button'
@@ -449,7 +449,7 @@ export function RepoList({
 }
 
 
-function TooltipButton({ icon: IconComp, label, onClick, className = "" }) {
+const TooltipButton = memo(function TooltipButton({ icon: IconComp, label, onClick, className = "" }) {
 	return (
 		<button
 			onClick={onClick}
@@ -459,9 +459,9 @@ function TooltipButton({ icon: IconComp, label, onClick, className = "" }) {
 			<IconComp className="w-4 h-4" />
 		</button>
 	)
-}
+})
 
-function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMenu, onOpenInsights, onOpenHealth }) {
+const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMenu, onOpenInsights, onOpenHealth }) {
 	const isGrid = viewMode === 'grid'
 
 	return (
@@ -621,9 +621,20 @@ function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMen
 			</div>
 		</motion.div>
 	)
-}
+}, (prevProps, nextProps) => {
+	// Only re-render if these props change
+	return (
+		prevProps.repo.id === nextProps.repo.id &&
+		prevProps.repo.name === nextProps.repo.name &&
+		prevProps.repo.updated_at === nextProps.repo.updated_at &&
+		prevProps.repo.archived === nextProps.repo.archived &&
+		prevProps.repo.private === nextProps.repo.private &&
+		prevProps.viewMode === nextProps.viewMode &&
+		prevProps.isSelected === nextProps.isSelected
+	)
+})
 
-function RepoActionsMenu({ repo, x, y, onClose, onQuickAction, onOpenInsights, onOpenHealth }) {
+const RepoActionsMenu = memo(function RepoActionsMenu({ repo, x, y, onClose, onQuickAction, onOpenInsights, onOpenHealth }) {
 	// Adjust position to keep in viewport
 	const style = {
 		top: y,
@@ -710,4 +721,4 @@ function RepoActionsMenu({ repo, x, y, onClose, onQuickAction, onOpenInsights, o
 			</div>
 		</div>
 	)
-}
+})

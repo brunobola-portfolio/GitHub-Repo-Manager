@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, memo } from 'react'
 import {
 	Building2, Plus, Search,
 	Settings, Shield,
@@ -172,7 +172,7 @@ export function OrgPanel({
 	)
 }
 
-function OrgItem({ org, isSelected, onClick, viewMode }) {
+const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 	// Calculate total repos if available, otherwise fallback
 	const totalRepos = (org.public_repos || 0) + (org.total_private_repos || 0)
 	const isGrid = viewMode === 'grid'
@@ -312,4 +312,13 @@ function OrgItem({ org, isSelected, onClick, viewMode }) {
 			)}
 		</motion.button>
 	)
-}
+}, (prevProps, nextProps) => {
+	// Only re-render if these props change
+	return (
+		prevProps.org.login === nextProps.org.login &&
+		prevProps.org.public_repos === nextProps.org.public_repos &&
+		prevProps.org.total_private_repos === nextProps.org.total_private_repos &&
+		prevProps.isSelected === nextProps.isSelected &&
+		prevProps.viewMode === nextProps.viewMode
+	)
+})
