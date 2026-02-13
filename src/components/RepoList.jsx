@@ -279,6 +279,7 @@ export function RepoList({
 							{ value: 'fork', label: 'Forks' },
 							{ value: 'archived', label: 'Archived' }
 						]}
+						label="Repository Type"
 						size="sm"
 						className="min-w-[120px]"
 					/>
@@ -290,6 +291,7 @@ export function RepoList({
 							{ value: 'public', label: 'Public' },
 							{ value: 'private', label: 'Private' }
 						]}
+						label="Repository Visibility"
 						size="sm"
 						className="min-w-[120px]"
 					/>
@@ -300,6 +302,7 @@ export function RepoList({
 							{ value: 'all', label: 'All Languages' },
 							...availableLanguages.map(l => ({ value: l, label: l }))
 						]}
+						label="Programming Language"
 						size="sm"
 						className="min-w-[120px]"
 					/>
