@@ -6,7 +6,7 @@
 ![Node.js](https://img.shields.io/badge/Node.js-20-339933?style=for-the-badge&logo=node.js&logoColor=white)
 ![Gemini AI](https://img.shields.io/badge/Gemini_AI-Powered-8E75B2?style=for-the-badge&logo=google-gemini&logoColor=white)
 ![Tests](https://img.shields.io/badge/Tests-109%20passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
-![CI Status](https://github.com/yourusername/github-repo-manager/workflows/CI/badge.svg)
+![CI Status](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/workflows/CI/badge.svg)
 
 > **A modern, AI-powered dashboard for managing your GitHub ecosystem with style and intelligence.**
 
@@ -156,7 +156,7 @@ Full Azure DevOps migration capabilities (Work Items, Pipelines, Wiki) are plann
 | Category | Technologies |
 |----------|-------------|
 | **Frontend** | React 19, Vite 7, TailwindCSS 4 |
-| **UI/UX** | Framer Motion 12, Lucide Icons, Recharts 2 |
+| **UI/UX** | Framer Motion 12, Lucide Icons, Recharts 3 |
 | **Backend** | Node.js 20+, Express 5 |
 | **Database** | Better-SQLite3 (local) |
 | **Security** | Helmet.js, express-rate-limit, ETag caching |
@@ -542,13 +542,13 @@ A: In GitHub Issues with the `enhancement` label.
 - [x] **Accessibility**: Focus traps, keyboard navigation, ARIA roles, touch-optimized targets (44px)
 - [x] **Mobile Responsiveness**: Responsive AI Assistant, touch-friendly repo actions, adaptive padding
 - [x] **GitHub API Optimization**: ETag conditional requests, rate limit tracking, batched team requests
+
+### v2.5 (Q2 2026)
+
 - [ ] **Advanced Analytics**: Historical trends, commit activity heatmaps, contributor insights
 - [ ] **Custom Themes**: User-customizable color schemes and glassmorphism intensity
 - [ ] **Keyboard Shortcuts**: Power-user shortcuts for common actions
 - [ ] **Repository Templates**: Save and reuse repository configurations
-
-### v2.5 (Q2 2026)
-
 - [ ] **Mobile App**: React Native companion for on-the-go management
 - [ ] **GitHub Enterprise Support**: Connect to self-hosted GitHub instances
 - [ ] **Data Export**: Export repository data to CSV, JSON, or Excel
@@ -597,7 +597,7 @@ We love contributions! Whether it's bug fixes, new features, or documentation im
 
 ### Development Guidelines
 
-- **Code Style**: We use ESLint and Prettier. Run `npm run lint` before committing.
+- **Code Style**: We use ESLint. Run `npm run lint` before committing.
 - **Commit Messages**: Follow [Conventional Commits](https://www.conventionalcommits.org/).
 - **Testing**: Add tests for new features. Run `npm test` to verify.
 - **Documentation**: Update README and docs when adding features.

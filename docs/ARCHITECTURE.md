@@ -15,7 +15,7 @@ and an Express backend that talks to the GitHub REST API.
 Entry point: `src/main.jsx`
 
 - Renders `<App />` wrapped in a `ThemeProvider`.
-- Mounts into `#root` and wires global styles from `src/index.css`.
+- Mounts into `#root` and wires global styles from `src/index.css` and `src/design-system.css`.
 
 Root component: `src/App.jsx`
 
