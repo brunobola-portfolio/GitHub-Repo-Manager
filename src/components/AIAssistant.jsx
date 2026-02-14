@@ -23,13 +23,6 @@ export function AIAssistant() {
     // Check configuration on mount and when isOpen changes
     useEffect(() => {
         const checkConfig = async () => {
-            const localKey = localStorage.getItem('GEMINI_API_KEY')
-            if (localKey) {
-                setIsConfigured(true)
-                return
-            }
-
-            // Check if server is configured
             const status = await checkAIStatus()
             setIsConfigured(status.configured)
         }
@@ -219,11 +212,10 @@ export function AIAssistant() {
 
             <SettingsModal
                 isOpen={showSettings}
-                onClose={() => {
+                onClose={async () => {
                     setShowSettings(false)
-                    // Re-check config after closing settings
-                    const key = localStorage.getItem('GEMINI_API_KEY')
-                    setIsConfigured(!!key)
+                    const status = await checkAIStatus()
+                    setIsConfigured(status.configured)
                 }}
             />
         </>
