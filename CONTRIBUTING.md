@@ -45,22 +45,25 @@ The process described here has several goals:
 
 ### Git Commit Messages
 
-- Use the present tense ("Add feature" not "Added feature")
-- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
+Follow the [Conventional Commits](https://www.conventionalcommits.org/) format:
+
+- Format: `type(scope): description` (e.g., `feat(auth): add OAuth logout`, `fix(dashboard): correct chart rendering`)
+- Types: `feat`, `fix`, `chore`, `refactor`, `docs`, `style`, `perf`, `test`
 - Limit the first line to 72 characters or less
+- Use the present tense and imperative mood ("Add feature" not "Added feature")
 - Reference issues and pull requests liberally after the first line
 
 ### JavaScript Styleguide
 
-- All JavaScript must adhere to [Standard JS](https://standardjs.com/).
+- All JavaScript must pass ESLint checks. Run `npm run lint` before submitting.
 - Prefer `const` over `let`.
 - Use async/await for asynchronous operations.
 
 ## Development Setup
 
 1.  Clone the repository
-2.  Install dependencies: `npm install` (root) and `cd server && npm install`
-3.  Create `.env` files in root and server directories based on examples.
-4.  Start development server: `npm run dev`
+2.  Install dependencies: `npm install`
+3.  Copy `.env.example` to `.env` and configure your credentials.
+4.  Start development server: `npm run dev:all`
 
 Happy coding! 🚀
