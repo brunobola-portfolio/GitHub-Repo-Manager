@@ -857,13 +857,9 @@ export function useGitHub() {
             return { message: "Based on the analysis of your repository structure, I recommend adding a CONTRIBUTING.md file to guide new contributors. Additionally, your test coverage seems low in the `utils` directory. Would you like me to generate some test templates for you?" }
         }
         try {
-            const localKey = localStorage.getItem('GEMINI_API_KEY')
             const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/ai/chat`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(localKey ? { 'x-gemini-api-key': localKey } : {})
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message, context }),
                 credentials: 'include'
             })
@@ -887,13 +883,9 @@ export function useGitHub() {
             }
         }
         try {
-            const localKey = localStorage.getItem('GEMINI_API_KEY')
             const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/ai/suggest`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(localKey ? { 'x-gemini-api-key': localKey } : {})
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ repo }),
                 credentials: 'include'
             })
@@ -910,13 +902,9 @@ export function useGitHub() {
             return { readme: "# Project Title\n\n## Overview\nThis is a high-performance application built with React and Node.js.\n\n## Features\n- Real-time data processing\n- AI-powered insights\n- Glassmorphism UI\n\n## Installation\n```bash\nnpm install\nnpm run dev\n```" }
         }
         try {
-            const localKey = localStorage.getItem('GEMINI_API_KEY')
             const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/ai/readme`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(localKey ? { 'x-gemini-api-key': localKey } : {})
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(details),
                 credentials: 'include'
             })

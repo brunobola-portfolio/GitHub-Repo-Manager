@@ -61,5 +61,13 @@ server/data/*.db
 !docs/images/*.png
 !docs/images/*.jpg
 
+# Test reports and results
+playwright-report/
+test-results/
+
+# Temporary development docs
+validation-*.md
+dashboard-improved.md
+
 # Temporary files
 nul

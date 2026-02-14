@@ -37,7 +37,9 @@ try {
 }
 
 const dbPath = path.join(dataDir, 'manager.db');
-const db = new Database(dbPath, { verbose: console.log });
+const db = new Database(dbPath, {
+    verbose: process.env.NODE_ENV === 'development' ? console.log : undefined
+});
 
 // Enable foreign keys
 db.pragma('foreign_keys = ON');
