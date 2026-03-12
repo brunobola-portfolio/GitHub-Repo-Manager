@@ -313,8 +313,8 @@ Todos os componentes estão integrados:
 ### 📚 Documentação
 
 Criada documentação completa:
-- [`docs/ARCHITECTURE-TEAMS.md`](./ARCHITECTURE-TEAMS.md) - Arquitetura detalhada
-- [`docs/VALIDATION-REPORT.md`](./VALIDATION-REPORT.md) - Este relatório
+- [`docs/architecture/teams.md`](../architecture/teams.md) - Arquitetura detalhada
+- [`docs/reports/VALIDATION-REPORT.md`](./VALIDATION-REPORT.md) - Este relatório
 
 ---
 
