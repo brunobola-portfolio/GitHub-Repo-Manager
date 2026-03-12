@@ -27,7 +27,7 @@ The parser must extract `org`, `project`, and optionally `repo` from all of thes
 |---|---|---|---|
 | `https://dev.azure.com/{org}/{project}` | org | project | — |
 | `https://dev.azure.com/{org}/{project}/_git/{repo}` | org | project | repo |
-| `https://dev.azure.com/{org}/_git/{project}` | org | project | project |
+| `https://dev.azure.com/{org}/_git/{project}` | org | project | project (Azure omits project segment when repo name = project name) |
 
 #### URLs with subpages (user is browsing Azure DevOps)
 | Input | Org | Project | Repo |
@@ -43,7 +43,7 @@ The parser must extract `org`, `project`, and optionally `repo` from all of thes
 | `https://dev.azure.com/{org}/{project}/_releases` | org | project | — |
 | `https://dev.azure.com/{org}/{project}/_wiki/wikis/...` | org | project | — |
 | `https://dev.azure.com/{org}/{project}/_settings/repositories` | org | project | — |
-| `https://dev.azure.com/{org}/{project}/_apis/git/repositories/{repo}` | org | project | repo |
+| `https://dev.azure.com/{org}/{project}/_apis/git/repositories/{repo}` | org | project | repo (note: may be a GUID — used for org/project extraction only, repo name resolved via API) |
 
 #### Clone URLs (from "Clone" button)
 | Input | Org | Project | Repo |
@@ -63,6 +63,18 @@ The parser must extract `org`, `project`, and optionally `repo` from all of thes
 |---|---|---|---|
 | `{org}/{project}` | org | project | — |
 | `{org}/{project}/{repo}` | org | project | repo |
+
+**Shorthand rules:** Only triggers when input has no protocol (`://`), no domain (no `.`), and exactly 2 or 3 slash-separated segments. Format is always `org/project[/repo]`. A confirmation is shown in the visual feedback: "Interpreted as org=X, project=Y" so the user can verify.
+
+#### Legacy visualstudio.com clone URLs (with credentials prefix)
+| Input | Org | Project | Repo |
+|---|---|---|---|
+| `https://{org}@{org}.visualstudio.com/{project}/_git/{repo}` | org | project | repo |
+
+#### Azure DevOps Server (on-premises) detection
+| Input | Behavior |
+|---|---|
+| `https://tfs.company.com/tfs/DefaultCollection/...` | "Azure DevOps Server (on-premises) is not currently supported. This tool works with Azure DevOps Services (dev.azure.com)." |
 
 ### Pre-processing
 
@@ -90,6 +102,12 @@ As the user types/pastes, show parsed results below the field:
 - `✓ Repository: MyRepo` (if detected)
 - Or: `⚠ Could not parse URL. Examples: https://dev.azure.com/org/project`
 
+**Debouncing:** URL parsing runs instantly on every keystroke (pure function, no cost). Network calls (PAT validation, project/repo fetching) only trigger on explicit "Connect" / "Continue" button click — never on keystroke.
+
+### SSH URL Handling
+
+SSH clone URLs (`git@ssh.dev.azure.com:v3/...`) are parsed for metadata extraction only (org/project/repo). The actual import always uses the HTTPS remote URL returned by the Azure DevOps API, since the import service requires HTTPS for SSRF validation.
+
 ### Implementation Location
 
 Create a new utility: `src/utils/azureUrlParser.js`
@@ -102,21 +120,22 @@ Create a new utility: `src/utils/azureUrlParser.js`
 
 ### Resolution Hierarchy
 
-1. **Server `.env`** — If `AZURE_DEVOPS_PAT` is set, use it automatically
+1. **Server `.env`** — If `AZURE_PAT` is set, use it automatically (matches existing `.env.example`)
 2. **Manual input** — If no env PAT, show field to user
 
 ### New Backend Endpoint
 
-**GET `/api/azure/has-pat`** (authenticated)
-- Returns `{ hasPat: boolean }` — whether server has a PAT configured
+**GET `/api/azure/env-auth`** (authenticated)
+- Returns `{ available: boolean }` — whether server has a PAT configured in env
 - Does NOT return the PAT itself to the client
 - Used by frontend to decide whether to show PAT field
+- Note: `available: true` only means a PAT exists, not that it works for the target org. The subsequent validate call confirms actual access.
 
 ### UX: PAT from `.env`
 
-After URL is parsed, frontend calls `/api/azure/has-pat`:
-- If `true`: shows "Authenticated via server configuration" and auto-validates
-- Validation calls existing `POST /api/azure/validate` (backend uses env PAT when no PAT in request body)
+After URL is parsed, frontend calls `/api/azure/env-auth`:
+- If `available: true`: shows "Authenticated via server configuration" and auto-validates
+- Validation calls existing `POST /api/azure/validate` with org but no PAT (backend uses env PAT as fallback)
 - If validation fails: shows error + falls back to manual PAT field
 
 ### UX: Manual PAT
@@ -132,7 +151,7 @@ When no server PAT is available:
 
 Modify to support optional PAT in request body:
 - If `pat` is provided in body → use it (current behavior)
-- If `pat` is not provided → use `process.env.AZURE_DEVOPS_PAT`
+- If `pat` is not provided → use `process.env.AZURE_PAT`
 - If neither exists → return error
 
 Same logic applies to `POST /api/azure/projects` and `POST /api/azure/repos`.
@@ -175,6 +194,8 @@ All scenarios end with the existing progress step (polling `/api/import/status/{
 - If URL contained a specific repo AND PAT validates → skip repo selection, go to Target+Confirm
 - If URL was project-level → load repos, show selection step
 - If project has exactly 1 repo → auto-select it, skip to Target+Confirm
+
+**Verification on auto-skip:** Even when skipping, the Target+Confirm step always shows the full source summary (org/project/repo) with a "Change" link that goes back to repo selection — so the user can verify and correct if the URL was parsed incorrectly.
 
 ### Step 2: Repo Selection (conditional)
 
@@ -247,15 +268,22 @@ Unchanged from current implementation — progress bar, polling every 2s, succes
 
 ### Modified Files
 - `src/components/ImportWizard.jsx` — Replace azure-creds step, add smart URL input, combine target+review
-- `server/routes/azure.js` — Add `GET /api/azure/has-pat`, modify endpoints to support env PAT fallback
+- `server/routes/azure.js` — Add `GET /api/azure/env-auth`, modify endpoints to support env PAT fallback
 - `server/azure-service.js` — Accept optional PAT parameter with env fallback
+- `server/routes/import.js` — Make `azurePat` optional in `POST /api/import/azure`, fall back to `process.env.AZURE_PAT`
 
-### Potentially Remove
-- `src/components/AzureImportModal.jsx` — Deprecated, replaced by improved ImportWizard
+### Remove
+- `src/components/AzureImportModal.jsx` — Duplicate of ImportWizard's Azure flow, remove along with its import in `App.jsx` and `showAzureImport` modal trigger in `Sidebar.jsx`
 
 ---
 
-## 6. Non-Goals
+## 6. URL-Encoded Names
+
+Azure DevOps allows project and repo names with spaces (e.g., "My Project"). URLs encode these as `%20`. The parser decodes for display but API calls in the backend re-encode as needed. The user always sees the human-readable name.
+
+---
+
+## 7. Non-Goals
 
 - Storing PAT in the database (may be added later)
 - Multi-org PAT management
