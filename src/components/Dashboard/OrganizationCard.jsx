@@ -30,9 +30,9 @@ export const OrganizationCard = memo(function OrganizationCard({ org, repos = []
     return (
         <motion.button
             onClick={() => onClick?.(org.login)}
-            whileHover={{ y: -6, scale: 1.02 }}
+            whileHover={{ y: -4 }}
             whileTap={{ scale: 0.98 }}
-            className="group relative p-6 bg-gradient-to-br from-white/70 to-slate-50/70 dark:from-slate-900/70 dark:to-slate-800/70 backdrop-blur-xl border-2 border-slate-200/60 dark:border-slate-700/50 rounded-3xl hover:shadow-2xl hover:border-indigo-300/60 dark:hover:border-indigo-500/50 transition-all duration-300 text-left overflow-hidden ds-card-shimmer"
+            className="group relative w-full p-6 bg-gradient-to-br from-white/70 to-slate-50/70 dark:from-slate-900/70 dark:to-slate-800/70 backdrop-blur-xl border-2 border-slate-200/60 dark:border-slate-700/50 rounded-3xl hover:shadow-2xl hover:border-indigo-300/60 dark:hover:border-indigo-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset focus-visible:border-indigo-400 dark:focus-visible:border-indigo-500 transition-all duration-300 text-left overflow-hidden ds-card-shimmer"
         >
             {/* Gradient overlay on hover */}
             <motion.div

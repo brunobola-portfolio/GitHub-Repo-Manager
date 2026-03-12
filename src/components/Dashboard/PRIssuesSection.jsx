@@ -13,7 +13,7 @@ export function PRIssuesSection() {
         <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* PR Stats */}
-                <motion.div whileHover={{ scale: 1.02, y: -4 }}>
+                <motion.div whileHover={{ y: -3 }}>
                     <Card className="p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 hover:shadow-xl hover:border-pink-400/50 dark:hover:border-pink-500/40 transition-all">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center">
@@ -33,7 +33,7 @@ export function PRIssuesSection() {
                 </motion.div>
 
                 {/* Issues Stats */}
-                <motion.div whileHover={{ scale: 1.02, y: -4 }}>
+                <motion.div whileHover={{ y: -3 }}>
                     <Card className="p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 hover:shadow-xl hover:border-blue-400/50 dark:hover:border-blue-500/40 transition-all">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">

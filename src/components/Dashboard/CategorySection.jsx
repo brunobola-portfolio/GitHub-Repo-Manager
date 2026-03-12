@@ -25,7 +25,6 @@ export function CategorySection({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      whileHover={{ scale: 1.002 }}
       className="p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/50 to-slate-50/50 dark:from-slate-900/50 dark:to-slate-800/50 backdrop-blur-xl border-2 border-slate-200/60 dark:border-slate-700/40 shadow-lg hover:shadow-2xl hover:border-indigo-300/60 dark:hover:border-indigo-500/40 transition-all duration-300"
     >
       {/* Section Header */}
@@ -61,11 +60,11 @@ export function CategorySection({
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
+            animate={{ opacity: 1, height: 'auto', overflow: 'visible', transitionEnd: { overflow: 'visible' } }}
+            exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
-            style={{ overflow: 'hidden' }}
+            className="pt-1 pb-2"
           >
             {children}
           </motion.div>

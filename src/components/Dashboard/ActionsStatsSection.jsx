@@ -73,7 +73,7 @@ export function ActionsStatsSection({ stats }) {
 function MiniStatCard({ icon: Icon, label, value, color, bg }) {
     return (
         <motion.div
-            whileHover={{ scale: 1.05, y: -2 }}
+            whileHover={{ y: -3 }}
             className={`p-4 rounded-xl ${bg} border border-slate-200/60 dark:border-slate-700/40`}
         >
             <div className="flex items-start justify-between">

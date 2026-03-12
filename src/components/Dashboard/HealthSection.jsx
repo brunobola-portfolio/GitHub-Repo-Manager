@@ -12,7 +12,7 @@ export function HealthSection() {
         <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Health Score */}
-                <motion.div whileHover={{ scale: 1.02, y: -4 }}>
+                <motion.div whileHover={{ y: -3 }}>
                     <Card className="p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 hover:shadow-xl hover:border-emerald-400/50 dark:hover:border-emerald-500/40 transition-all">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
@@ -32,7 +32,7 @@ export function HealthSection() {
                 </motion.div>
 
                 {/* Security */}
-                <motion.div whileHover={{ scale: 1.02, y: -4 }}>
+                <motion.div whileHover={{ y: -3 }}>
                     <Card className="p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 hover:shadow-xl hover:border-orange-400/50 dark:hover:border-orange-500/40 transition-all">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
@@ -52,7 +52,7 @@ export function HealthSection() {
                 </motion.div>
 
                 {/* Documentation */}
-                <motion.div whileHover={{ scale: 1.02, y: -4 }}>
+                <motion.div whileHover={{ y: -3 }}>
                     <Card className="p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 hover:shadow-xl hover:border-purple-400/50 dark:hover:border-purple-500/40 transition-all">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
