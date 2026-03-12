@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles, Brain, Lightbulb, Loader2, FileText, CheckCircle2, AlertCircle, BarChart3 } from 'lucide-react';
 import { aiApi } from '../../api/ai';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
+    const modalRef = useFocusTrap(isOpen, onClose);
     const [analysis, setAnalysis] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -17,6 +19,7 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
             setAnalysis(null);
             setError(null);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, repo]);
 
     const fetchAnalysis = async () => {
@@ -37,8 +40,7 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
             }
 
             setAnalysis(data);
-        } catch (err) {
-            console.error(err);
+        } catch {
             setError('Failed to generate insights. Please try again.');
         } finally {
             setLoading(false);
@@ -69,6 +71,10 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
         <AnimatePresence>
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                 <motion.div
+                    ref={modalRef}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="repo-insights-title"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
@@ -81,7 +87,7 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                                 <Sparkles className="w-6 h-6 text-purple-400" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold text-white">AI Insights</h2>
+                                <h2 id="repo-insights-title" className="text-xl font-bold text-white">AI Insights</h2>
                                 <p className="text-sm text-gray-400">{repo?.full_name}</p>
                             </div>
                         </div>

@@ -158,7 +158,8 @@ export function Modal({
                             ref={modalRef}
                             role="dialog"
                             aria-modal="true"
-                            aria-label={typeof title === 'string' ? title : undefined}
+                            aria-labelledby="modal-title"
+                            aria-describedby="modal-body"
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -189,7 +190,7 @@ export function Modal({
                                         )}
                                         <div className="flex-1 min-w-0">
                                             {typeof title === 'string' ? (
-                                                <h2 className="text-xl font-bold truncate">
+                                                <h2 id="modal-title" className="text-xl font-bold truncate">
                                                     {title}
                                                 </h2>
                                             ) : (
@@ -210,7 +211,7 @@ export function Modal({
                             </div>
 
                             {/* Body */}
-                            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                            <div id="modal-body" className="flex-1 overflow-y-auto p-6 custom-scrollbar">
                                 {children}
                             </div>
 

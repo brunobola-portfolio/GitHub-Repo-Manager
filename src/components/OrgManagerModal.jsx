@@ -5,6 +5,7 @@ import {
     Shield, Mail, MapPin, Link as LinkIcon
 } from 'lucide-react'
 import { Button } from './ui/Button'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 
 export function OrgManagerModal({
     isOpen,
@@ -12,21 +13,25 @@ export function OrgManagerModal({
     org,
     onUpdateOrg
 }) {
+    const modalRef = useFocusTrap(isOpen, onClose)
     const [loading, setLoading] = useState(false)
     const [orgDetails, setOrgDetails] = useState(null)
     const [members, setMembers] = useState([])
     const [editing, setEditing] = useState(false)
     const [editForm, setEditForm] = useState({})
     const [activeTab, setActiveTab] = useState('overview')
+    const [error, setError] = useState(null)
 
     useEffect(() => {
         if (isOpen && org) {
             fetchOrgDetails()
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, org])
 
     const fetchOrgDetails = async () => {
         setLoading(true)
+        setError(null)
         try {
             const [orgRes, membersRes] = await Promise.all([
                 fetch(`/api/orgs/${org.login}`, { credentials: 'include' }),
@@ -50,7 +55,7 @@ export function OrgManagerModal({
                 setMembers(Array.isArray(data) ? data : [])
             }
         } catch (e) {
-            console.error('Error fetching org details:', e)
+            setError(e?.message || 'Failed to load organization details')
         } finally {
             setLoading(false)
         }
@@ -58,6 +63,7 @@ export function OrgManagerModal({
 
     const handleSave = async () => {
         setLoading(true)
+        setError(null)
         try {
             const res = await fetch(`/api/orgs/${org.login}`, {
                 method: 'PATCH',
@@ -73,7 +79,7 @@ export function OrgManagerModal({
                 onUpdateOrg?.(updated)
             }
         } catch (e) {
-            console.error('Error updating org:', e)
+            setError(e?.message || 'Failed to update organization')
         } finally {
             setLoading(false)
         }
@@ -85,7 +91,7 @@ export function OrgManagerModal({
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-slate-900 dark:text-slate-100 rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+            <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="org-manager-title" className="bg-white dark:bg-slate-900 dark:text-slate-100 rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-gradient-to-r from-indigo-500 to-purple-600">
                     <div className="flex items-center gap-4">
@@ -95,7 +101,7 @@ export function OrgManagerModal({
                             className="w-16 h-16 rounded-xl ring-4 ring-white/30 shadow-lg"
                         />
                         <div className="text-white">
-                            <h2 className="text-xl font-bold">{displayOrg.name || displayOrg.login}</h2>
+                            <h2 id="org-manager-title" className="text-xl font-bold">{displayOrg.name || displayOrg.login}</h2>
                             <p className="text-white/80 text-sm flex items-center gap-2">
                                 <Building2 className="w-4 h-4" />
                                 @{displayOrg.login}
@@ -136,6 +142,13 @@ export function OrgManagerModal({
                         </button>
                     ))}
                 </div>
+
+                {/* Error Banner */}
+                {error && (
+                    <div className="mx-6 mt-4 px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
+                        {error}
+                    </div>
+                )}
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6">
@@ -322,7 +335,6 @@ function SettingsTab({ org }) {
 }
 
 // Helper Components
-// eslint-disable-next-line no-unused-vars
 function StatCard({ icon: IconComp, label, value, color }) {
     const colors = {
         blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-200',
@@ -382,7 +394,6 @@ function EditField({ label, value, onChange, icon: IconComp, multiline }) {
     )
 }
 
-// eslint-disable-next-line no-unused-vars
 function SettingsLink({ href, icon: IconComp, title, desc }) {
     return (
         <a

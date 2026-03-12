@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { useOnlineStatus } from './useOnlineStatus'
 
 describe('useOnlineStatus', () => {
@@ -82,7 +82,7 @@ describe('useOnlineStatus', () => {
     expect(result.current.isOnline).toBe(true)
   })
 
-  it('sets wasOffline flag when coming back online', async () => {
+  it('sets wasOffline flag when coming back online', () => {
     const { result } = renderHook(() => useOnlineStatus())
 
     act(() => {
@@ -103,15 +103,13 @@ describe('useOnlineStatus', () => {
     expect(result.current.wasOffline).toBe(true)
   })
 
-  it.skip('resets wasOffline after 5 seconds', async () => {
-    // This test is skipped due to timing issues with fake timers and setTimeout in useEffect
-    // The functionality works in production - tested manually
+  it('resets wasOffline after 5 seconds', () => {
     const { result } = renderHook(() => useOnlineStatus())
 
+    // Go offline then online
     act(() => {
       window.dispatchEvent(new Event('offline'))
     })
-
     act(() => {
       Object.defineProperty(navigator, 'onLine', {
         writable: true,
@@ -121,9 +119,17 @@ describe('useOnlineStatus', () => {
     })
 
     expect(result.current.wasOffline).toBe(true)
+
+    // Advance timer past the 5s reset
+    act(() => {
+      vi.advanceTimersByTime(5100)
+    })
+
+    expect(result.current.wasOffline).toBe(false)
   })
 
   it('checkConnectivity returns true when fetch succeeds', async () => {
+    vi.useRealTimers() // Use real timers for async test
     global.fetch.mockResolvedValueOnce({ ok: true })
 
     const { result } = renderHook(() => useOnlineStatus())
@@ -142,6 +148,7 @@ describe('useOnlineStatus', () => {
   })
 
   it('checkConnectivity returns false when fetch fails', async () => {
+    vi.useRealTimers()
     global.fetch.mockRejectedValueOnce(new Error('Network error'))
 
     const { result } = renderHook(() => useOnlineStatus())
@@ -156,6 +163,7 @@ describe('useOnlineStatus', () => {
   })
 
   it('checkConnectivity returns false when response is not ok', async () => {
+    vi.useRealTimers()
     global.fetch.mockResolvedValueOnce({ ok: false, status: 500 })
 
     const { result } = renderHook(() => useOnlineStatus())
@@ -169,34 +177,76 @@ describe('useOnlineStatus', () => {
     expect(isConnected).toBe(false)
   })
 
-  it('checkConnectivity has timeout of 5 seconds', async () => {
-    // Mock fetch to never resolve
-    global.fetch.mockImplementation(() => new Promise(() => {}))
+  it('checkConnectivity passes AbortSignal for timeout', async () => {
+    vi.useRealTimers()
+    global.fetch.mockResolvedValueOnce({ ok: true })
 
     const { result } = renderHook(() => useOnlineStatus())
 
-    const checkPromise = act(async () => {
-      return result.current.checkConnectivity()
+    await act(async () => {
+      await result.current.checkConnectivity()
     })
 
-    // The AbortController should have a timeout
+    // Verify AbortSignal is passed
     expect(global.fetch).toHaveBeenCalledWith('/api/health', expect.objectContaining({
       signal: expect.any(AbortSignal)
     }))
-
-    // Note: Testing actual timeout behavior is complex with fake timers + fetch
-    // The important part is that the signal is passed
   })
 
-  it.skip('cleans up event listeners on unmount', () => {
-    // This test is skipped because mocking window.addEventListener/removeEventListener
-    // is complex and this is tested implicitly through memory leak tests
-    // The functionality works correctly in production
+  it('cleans up event listeners on unmount', () => {
+    const addSpy = vi.spyOn(window, 'addEventListener')
+    const removeSpy = vi.spyOn(window, 'removeEventListener')
+
+    const { unmount } = renderHook(() => useOnlineStatus())
+
+    expect(addSpy).toHaveBeenCalledWith('online', expect.any(Function))
+    expect(addSpy).toHaveBeenCalledWith('offline', expect.any(Function))
+
+    unmount()
+
+    expect(removeSpy).toHaveBeenCalledWith('online', expect.any(Function))
+    expect(removeSpy).toHaveBeenCalledWith('offline', expect.any(Function))
+
+    addSpy.mockRestore()
+    removeSpy.mockRestore()
   })
 
-  it.skip('provides all expected properties', () => {
-    // This test is skipped due to environment setup conflicts with fake timers
-    // The hook interface is tested implicitly through all other tests
-    // All properties (isOnline, isOffline, wasOffline, checkConnectivity) are used in other tests
+  it('provides all expected properties', () => {
+    const { result } = renderHook(() => useOnlineStatus())
+
+    expect(result.current).toHaveProperty('isOnline')
+    expect(result.current).toHaveProperty('isOffline')
+    expect(result.current).toHaveProperty('wasOffline')
+    expect(result.current).toHaveProperty('checkConnectivity')
+    expect(typeof result.current.checkConnectivity).toBe('function')
+    expect(typeof result.current.isOnline).toBe('boolean')
+    expect(typeof result.current.isOffline).toBe('boolean')
+    expect(typeof result.current.wasOffline).toBe('boolean')
+  })
+
+  it('cleans up wasOffline timer on unmount', () => {
+    const { result, unmount } = renderHook(() => useOnlineStatus())
+
+    // Go offline then online to trigger the timer
+    act(() => {
+      window.dispatchEvent(new Event('offline'))
+    })
+    act(() => {
+      Object.defineProperty(navigator, 'onLine', {
+        writable: true,
+        value: true
+      })
+      window.dispatchEvent(new Event('online'))
+    })
+
+    expect(result.current.wasOffline).toBe(true)
+
+    // Unmount before the timer fires — should not cause errors
+    unmount()
+
+    // Advance timer — should not throw or set state on unmounted component
+    act(() => {
+      vi.advanceTimersByTime(6000)
+    })
   })
 })

@@ -6,7 +6,8 @@ import {
   fetchWithRetry,
   safeParseJson,
   parseLinkHeaderTotal,
-  apiCall
+  apiCall,
+  resetSessionExpired
 } from './api'
 
 describe('ApiError', () => {
@@ -103,13 +104,13 @@ describe('categorizeError', () => {
 
 describe('fetchWithRetry', () => {
   beforeEach(() => {
+    resetSessionExpired()
     vi.useFakeTimers()
     global.fetch = vi.fn()
   })
 
-  afterEach(async () => {
-    // Clear all pending timers before restoring
-    await vi.runAllTimersAsync().catch(() => {})
+  afterEach(() => {
+    // Clear pending timers without executing them to avoid unhandled rejections
     vi.clearAllTimers()
     vi.useRealTimers()
     vi.restoreAllMocks()
@@ -160,25 +161,20 @@ describe('fetchWithRetry', () => {
 
     global.fetch.mockResolvedValue(serverError)
 
-    // Start the promise and run timers
     const promise = fetchWithRetry('https://api.example.com/test', {}, {
       maxRetries: 2,
       baseDelay: 100,
       timeout: 5000
     })
 
-    // Properly handle the promise rejection
-    try {
-      // Run all pending timers
-      await vi.runAllTimersAsync()
-      await promise
-      // Should not reach here
-      expect.fail('Should have thrown')
-    } catch (error) {
-      expect(error).toBeInstanceOf(ApiError)
-      expect(error.type).toBe(ErrorType.SERVER)
-    }
+    // Attach rejection handler BEFORE advancing timers to prevent unhandled rejection
+    const resultPromise = promise.catch(error => error)
 
+    await vi.runAllTimersAsync()
+
+    const error = await resultPromise
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error.type).toBe(ErrorType.SERVER)
     expect(global.fetch).toHaveBeenCalledTimes(3) // Initial + 2 retries
   })
 
@@ -197,19 +193,25 @@ describe('fetchWithRetry', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1) // No retries
   })
 
-  it.skip('respects custom timeout', async () => {
-    // This test is skipped because fake timers don't work well with AbortController
-    // Timeout functionality is tested indirectly through other tests
-    global.fetch.mockImplementation(
-      () => new Promise(resolve => {
-        const id = setTimeout(() => resolve({ ok: true }), 10000)
-        return () => clearTimeout(id)
+  it('respects custom timeout', async () => {
+    vi.useRealTimers()
+    // Mock fetch to hang until signal is aborted
+    global.fetch.mockImplementation((_url, opts) => {
+      return new Promise((_resolve, reject) => {
+        const onAbort = () => {
+          reject(new DOMException('The operation was aborted.', 'AbortError'))
+        }
+        if (opts?.signal?.aborted) {
+          onAbort()
+          return
+        }
+        opts?.signal?.addEventListener('abort', onAbort)
       })
-    )
+    })
 
     const promise = fetchWithRetry('https://api.example.com/test', {}, {
       maxRetries: 0,
-      timeout: 100
+      timeout: 50
     })
 
     await expect(promise).rejects.toThrow()
@@ -354,6 +356,7 @@ describe('parseLinkHeaderTotal', () => {
 
 describe('apiCall', () => {
   beforeEach(() => {
+    resetSessionExpired()
     vi.useFakeTimers()
     global.fetch = vi.fn()
   })

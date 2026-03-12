@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { MessageSquare, X, Send, Sparkles, Loader2, Settings, Key } from 'lucide-react'
-import { useGitHub } from '../hooks/useGitHub'
 import { Card } from './ui/Card'
 import ReactMarkdown from 'react-markdown'
 import { SettingsModal } from './SettingsModal'
 
-export function AIAssistant() {
+export function AIAssistant({ askAI, user, checkAIStatus }) {
     const [isOpen, setIsOpen] = useState(false)
     const [messages, setMessages] = useState([
         { role: 'assistant', text: 'Hi! I\'m your AI assistant. How can I help you manage your repositories today?' }
@@ -13,7 +12,6 @@ export function AIAssistant() {
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const messagesEndRef = useRef(null)
-    const { askAI, user, checkAIStatus } = useGitHub()
     const [isConfigured, setIsConfigured] = useState(true)
     const [showSettings, setShowSettings] = useState(false)
     const [isIdle, setIsIdle] = useState(false)
@@ -109,7 +107,7 @@ export function AIAssistant() {
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 onMouseEnter={() => { setIsIdle(false); clearTimeout(hideTimerRef.current) }}
-                className={`fixed bottom-4 sm:bottom-6 right-3 sm:right-6 p-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-full shadow-lg shadow-indigo-500/20 dark:shadow-indigo-500/30 transition-all duration-500 transform hover:scale-110 z-40 ds-btn-shimmer ${
+                className={`fixed bottom-20 xl:bottom-6 right-3 sm:right-6 p-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-full shadow-lg shadow-indigo-500/20 dark:shadow-indigo-500/30 transition-all duration-500 transform hover:scale-110 z-40 ds-btn-shimmer ${
                     isIdle && !isOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
                 }`}
                 aria-label={isOpen ? 'Close AI Assistant' : 'Open AI Assistant'}
@@ -119,7 +117,7 @@ export function AIAssistant() {
 
             {/* Chat Window */}
             {isOpen && (
-                <Card className="fixed bottom-16 sm:bottom-20 right-3 sm:right-6 w-[calc(100vw-2rem)] sm:w-80 md:w-96 h-[70vh] sm:h-[500px] flex flex-col shadow-2xl dark:shadow-black/50 z-50 border border-slate-200/60 dark:border-slate-700/50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl overflow-hidden ds-animate-scale-in rounded-2xl">
+                <Card className="fixed bottom-32 xl:bottom-20 right-3 sm:right-6 w-[calc(100vw-2rem)] sm:w-80 md:w-96 h-[60vh] xl:h-[500px] flex flex-col shadow-2xl dark:shadow-black/50 z-[45] border border-slate-200/60 dark:border-slate-700/50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl overflow-hidden ds-animate-scale-in rounded-2xl">
                     {/* Header */}
                     <div className="p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center justify-between">
                         <div className="flex items-center gap-2">

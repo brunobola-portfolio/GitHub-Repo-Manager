@@ -21,11 +21,11 @@ export function ActivityTab({ teamId }) {
 
             try {
                 setLoading(true);
+                setError(null);
                 const res = await fetch(`/api/teams/${teamId}/activity`);
 
                 // Fallback for demo if backend not running/configured
                 if (!res.ok) {
-                    console.warn('Backend activity fetch failed, falling back to mock data for demo.');
                     setEvents(MOCK_ACTIVITY_DATA);
                     setLoading(false);
                     return;
@@ -33,9 +33,8 @@ export function ActivityTab({ teamId }) {
 
                 const data = await res.json();
                 setEvents(data);
-            } catch (err) {
-                console.error(err);
-                // Last resort fallback
+            } catch (e) {
+                setError(e?.message || 'Failed to load activity feed');
                 setEvents(MOCK_ACTIVITY_DATA);
             } finally {
                 setLoading(false);
@@ -46,7 +45,7 @@ export function ActivityTab({ teamId }) {
     }, [teamId]);
 
     if (loading) return <ActivitySkeleton />;
-    if (error) return <div className="p-8 text-center text-red-400">{error}</div>;
+    if (error && events.length === 0) return <div className="p-8 text-center text-red-400">{error}</div>;
     if (events.length === 0) return (
         <div className="flex flex-col items-center justify-center p-12 text-slate-400">
             <Activity className="w-12 h-12 mb-4 opacity-20" />
@@ -69,6 +68,11 @@ export function ActivityTab({ teamId }) {
 
     return (
         <div className="space-y-8">
+            {error && (
+                <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
+                    {error} — showing cached data.
+                </div>
+            )}
             {Object.entries(groupedEvents).map(([date, dayEvents]) => (
                 <div key={date} className="relative">
                     <div className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-sm py-2 px-1 mb-4 flex items-center gap-4">

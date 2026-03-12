@@ -27,8 +27,8 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['warn', {
-        varsIgnorePattern: '^_|^[A-Z]',
-        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_|^[A-Z]|^motion$',
+        argsIgnorePattern: '^_|^[A-Z]',
         caughtErrorsIgnorePattern: '^_|e$|error$|err$',
         destructuredArrayIgnorePattern: '^_',
         ignoreRestSiblings: true

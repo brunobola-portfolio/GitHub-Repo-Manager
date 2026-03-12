@@ -1,6 +1,10 @@
-import '@testing-library/jest-dom'
-import { cleanup } from '@testing-library/react'
 import { afterEach, vi } from 'vitest'
+
+// Skip browser-specific setup when running in Node environment (server tests)
+if (typeof window !== 'undefined') {
+
+await import('@testing-library/jest-dom')
+const { cleanup } = await import('@testing-library/react')
 
 // Cleanup after each test
 afterEach(() => {
@@ -64,3 +68,5 @@ const localStorageMock = (() => {
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock
 })
+
+} // end browser-only setup

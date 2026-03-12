@@ -21,7 +21,7 @@ const NATIVE_MODULES = ['better-sqlite3'];
 /**
  * Get the Node.js ABI version from the module
  */
-function getModuleABI(moduleName) {
+function _getModuleABI(moduleName) {
     const bindingPath = join(rootDir, 'node_modules', moduleName, 'build', 'Release');
     if (!existsSync(bindingPath)) {
         return null;

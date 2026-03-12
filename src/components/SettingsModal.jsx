@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X, Moon, Sun, Monitor, Zap, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from '../hooks/useTheme'
 import { API_BASE_URL } from '../config'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 
 export function SettingsModal({ isOpen, onClose }) {
     const { theme, setTheme } = useTheme()
-    const modalRef = useRef(null)
+    const modalRef = useFocusTrap(isOpen, onClose)
 
     // Load cache settings from localStorage
     const [cacheSettings, setCacheSettings] = useState(() => {
@@ -15,6 +16,7 @@ export function SettingsModal({ isOpen, onClose }) {
     })
 
     const [clearing, setClearing] = useState(false)
+    const [cacheMessage, setCacheMessage] = useState(null)
 
     const handleSave = () => {
         localStorage.setItem('cache-settings', JSON.stringify(cacheSettings))
@@ -23,6 +25,7 @@ export function SettingsModal({ isOpen, onClose }) {
 
     const handleClearCache = async () => {
         setClearing(true)
+        setCacheMessage(null)
         try {
             const response = await fetch(`${API_BASE_URL}/api/stats/clear-cache`, {
                 method: 'POST',
@@ -30,11 +33,10 @@ export function SettingsModal({ isOpen, onClose }) {
             })
             if (response.ok) {
                 const data = await response.json()
-                alert(`Cache cleared successfully! (${data.cleared} entries removed)`)
+                setCacheMessage({ type: 'success', text: `Cache cleared! (${data.cleared} entries removed)` })
             }
-        } catch (error) {
-            console.error('Failed to clear cache:', error)
-            alert('Failed to clear cache. Please try again.')
+        } catch {
+            setCacheMessage({ type: 'error', text: 'Failed to clear cache. Please try again.' })
         } finally {
             setClearing(false)
         }
@@ -55,7 +57,7 @@ export function SettingsModal({ isOpen, onClose }) {
         const modal = modalRef.current
         modal?.addEventListener('focusin', handleFocus)
         return () => modal?.removeEventListener('focusin', handleFocus)
-    }, [isOpen])
+    }, [isOpen, modalRef])
 
     return (
         <AnimatePresence>
@@ -156,6 +158,11 @@ export function SettingsModal({ isOpen, onClose }) {
                                     <Trash2 size={16} />
                                     {clearing ? 'Clearing...' : 'Clear Cache Now'}
                                 </button>
+                                {cacheMessage && (
+                                    <p role="status" className={`text-xs font-medium ${cacheMessage.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                        {cacheMessage.text}
+                                    </p>
+                                )}
                                 <p className="text-xs text-slate-500 dark:text-slate-400">
                                     Cached stats improve loading times. Clear if you see stale data.
                                 </p>
@@ -183,7 +190,6 @@ export function SettingsModal({ isOpen, onClose }) {
     )
 }
 
-// eslint-disable-next-line no-unused-vars
 const ThemeOption = ({ value, icon: IconComp, label, currentTheme, setTheme }) => (
     <button
         onClick={() => setTheme(value)}

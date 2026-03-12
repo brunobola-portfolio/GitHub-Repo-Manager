@@ -4,7 +4,7 @@ import {
     ArrowRightLeft, Lock, Unlock, History, Zap, CheckCircle, XCircle,
     Loader2, Archive, Trash2, Cloud, Sparkles, MoreHorizontal,
     GitCommit, GitPullRequest, CircleDot, Play, Copy, ExternalLink,
-    Clock, ChevronRight
+    Clock, ChevronRight, Download
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useSelection } from '../contexts/SelectionContext'
@@ -38,7 +38,7 @@ export function Sidebar({
     const hasSelection = selectedCount > 0
 
     return (
-        <aside className="space-y-6 sticky top-24 min-w-0">
+        <aside className="space-y-6 min-w-0">
             {/* Quick Actions Panel */}
             <QuickActions
                 hasSelection={hasSelection}
@@ -50,6 +50,7 @@ export function Sidebar({
                 onDelete={onDelete}
                 selectedRepos={selectedRepos}
                 onAzureImport={() => openModal('showAzureImport')}
+                onImport={() => openModal('showImportWizard')}
             />
 
             {/* Action History */}
@@ -67,7 +68,7 @@ export function Sidebar({
 
 function QuickActions({
     hasSelection, selectedCount, isPerforming, performAction,
-    onTransfer, onArchive, onDelete, selectedRepos, onAzureImport
+    onTransfer, onArchive, onDelete, selectedRepos, onAzureImport, onImport
 }) {
     return (
         <Card hover={true} className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl">
@@ -103,6 +104,36 @@ function QuickActions({
                         {/* Global Tools */}
                         <div className="grid grid-cols-1 gap-2">
                             <motion.button
+                                onClick={onImport}
+                                disabled={isPerforming}
+                                whileHover={{
+                                    scale: 1.03,
+                                    boxShadow: "0 20px 25px -5px rgba(99, 102, 241, 0.3), 0 10px 10px -5px rgba(99, 102, 241, 0.2)"
+                                }}
+                                whileTap={{ scale: 0.98 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                                className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md hover:shadow-lg transition-all duration-200 group cursor-pointer"
+                            >
+                                <motion.div
+                                    className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm"
+                                    whileHover={{ rotate: 360 }}
+                                    transition={{ duration: 0.6 }}
+                                >
+                                    <Download className="w-4 h-4 text-white" />
+                                </motion.div>
+                                <div className="text-left">
+                                    <div className="text-xs font-bold">Import Repository</div>
+                                    <div className="text-[10px] text-indigo-100">Git URL, Azure, GitHub</div>
+                                </div>
+                                <motion.div
+                                    initial={{ x: 0 }}
+                                    animate={{ x: [0, 5, 0] }}
+                                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                                >
+                                    <ChevronRight className="w-4 h-4 ml-auto" />
+                                </motion.div>
+                            </motion.button>
+                            <motion.button
                                 onClick={onAzureImport}
                                 disabled={isPerforming}
                                 whileHover={{
@@ -111,7 +142,7 @@ function QuickActions({
                                 }}
                                 whileTap={{ scale: 0.98 }}
                                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                                className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md hover:shadow-lg transition-all duration-200 group cursor-pointer"
+                                className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-md hover:shadow-lg transition-all duration-200 group cursor-pointer"
                             >
                                 <motion.div
                                     className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm"
@@ -121,8 +152,8 @@ function QuickActions({
                                     <Cloud className="w-4 h-4 text-white" />
                                 </motion.div>
                                 <div className="text-left">
-                                    <div className="text-xs font-bold">DevOps Import</div>
-                                    <div className="text-[10px] text-blue-100">Migrate from Azure</div>
+                                    <div className="text-xs font-bold">Azure DevOps</div>
+                                    <div className="text-[10px] text-blue-100">Quick import wizard</div>
                                 </div>
                                 <motion.div
                                     initial={{ x: 0 }}
@@ -189,7 +220,6 @@ function QuickActions({
     )
 }
 
-// eslint-disable-next-line no-unused-vars
 function ActionButton({ icon: IconComp, label, subLabel, onClick, disabled, variant = 'secondary', className = '' }) {
     const variants = {
         secondary: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700',
@@ -339,6 +369,10 @@ function ActivityFeed({ activity }) {
                                                 <button
                                                     className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
                                                     aria-label="View activity details"
+                                                    onClick={() => {
+                                                        const repoName = event.repo?.name
+                                                        if (repoName) window.open(`https://github.com/${repoName}`, '_blank', 'noopener')
+                                                    }}
                                                 >
                                                     View Details <ExternalLink className="w-2.5 h-2.5" />
                                                 </button>
@@ -372,21 +406,22 @@ function getEventIcon(type) {
 }
 
 function getEventDescription(event) {
+    const p = event.payload || {}
     switch (event.type) {
         case 'PushEvent':
-            return `Pushed ${event.payload?.size || 0} commit(s) to ${event.payload?.ref?.replace('refs/heads/', '')}`
+            return `Pushed ${p.size || 0} commit(s)${p.ref ? ` to ${p.ref.replace('refs/heads/', '')}` : ''}`
         case 'PullRequestEvent':
-            return `${event.payload?.action} PR #${event.payload?.number}: ${event.payload?.pull_request?.title}`
+            return `${p.action || 'Updated'} PR${p.number != null ? ` #${p.number}` : ''}${p.pull_request?.title ? `: ${p.pull_request.title}` : ''}`
         case 'IssuesEvent':
-            return `${event.payload?.action} issue #${event.payload?.issue?.number}: ${event.payload?.issue?.title}`
+            return `${p.action || 'Updated'} issue${p.issue?.number != null ? ` #${p.issue.number}` : ''}${p.issue?.title ? `: ${p.issue.title}` : ''}`
         case 'CreateEvent':
-            return `Created ${event.payload?.ref_type} ${event.payload?.ref || ''}`
+            return `Created ${p.ref_type || 'resource'}${p.ref ? ` ${p.ref}` : ''}`
         case 'WatchEvent':
             return 'Starred repository'
         case 'ForkEvent':
             return 'Forked repository'
         default:
-            return event.type?.replace('Event', '')
+            return event.type?.replace('Event', '') || 'Activity'
     }
 }
 

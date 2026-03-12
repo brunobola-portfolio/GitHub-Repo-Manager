@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { ArrowRight, Building2, GitFork, X, AlertTriangle, ArrowRightLeft, Copy } from 'lucide-react'
 import { Button } from './ui/Button'
 import { ProgressBar } from './ui/ProgressBar'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 
 export function TransferModal({
 	isOpen,
@@ -16,7 +17,24 @@ export function TransferModal({
 	const [targetOrg, setTargetOrg] = useState('')
 	const [action, setAction] = useState('transfer') // 'transfer' | 'mirror'
 	const [formError, setFormError] = useState('')
-	const modalRef = useRef(null)
+	const modalRef = useFocusTrap(isOpen, onClose)
+
+	// Scroll input into view when keyboard appears (mobile fix)
+	useEffect(() => {
+		if (!isOpen) return
+
+		const handleFocus = (e) => {
+			if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+				setTimeout(() => {
+					e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+				}, 300)
+			}
+		}
+
+		const modal = modalRef.current
+		modal?.addEventListener('focusin', handleFocus)
+		return () => modal?.removeEventListener('focusin', handleFocus)
+	}, [isOpen, modalRef])
 
 	if (!isOpen) return null
 
@@ -32,23 +50,6 @@ export function TransferModal({
 			onMirror?.(repos.map(r => r.full_name), targetOrg)
 		}
 	}
-
-	// Scroll input into view when keyboard appears (mobile fix)
-	useEffect(() => {
-		if (!isOpen) return
-
-		const handleFocus = (e) => {
-			if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-				setTimeout(() => {
-					e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-				}, 300) // Delay for keyboard animation
-			}
-		}
-
-		const modal = modalRef.current
-		modal?.addEventListener('focusin', handleFocus)
-		return () => modal?.removeEventListener('focusin', handleFocus)
-	}, [isOpen])
 
 		    return (
 	        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4">

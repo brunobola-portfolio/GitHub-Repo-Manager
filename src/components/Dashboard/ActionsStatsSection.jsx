@@ -7,7 +7,7 @@ import { formatNumber, formatPercentage } from '../../utils/format'
 /**
  * ActionsStatsSection - GitHub Actions CI/CD statistics
  */
-export function ActionsStatsSection({ stats, loading }) {
+export function ActionsStatsSection({ stats }) {
     if (!stats) return null
 
     const { totalRuns, successRate, avgDuration, successCount, failureCount } = stats

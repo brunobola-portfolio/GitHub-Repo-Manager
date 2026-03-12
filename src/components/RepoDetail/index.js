@@ -1,0 +1,1 @@
+export { RepoDetail } from './RepoDetail'

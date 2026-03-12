@@ -46,7 +46,7 @@ const mockSearchResults = (query) => [
     { repo_id: 3, score: 0.78, name: 'project-3', full_name: 'dev-user/project-3', description: `Contains "${query}" - Utility library`, summary: 'Collection of utility functions' }
 ];
 
-const mockQualityReport = (repo) => ({
+const mockQualityReport = (_repo) => ({
     score: Math.floor(Math.random() * 30) + 60,
     breakdown: { documentation: 18, community: 12, engineering: 15, polish: 5 },
     patterns: {
@@ -103,9 +103,11 @@ export const aiApi = {
             credentials: 'include'
         });
 
-        // Handle AI not configured - return mock results
+        // Handle AI not configured - return mock results with flag
         if (res.status === 503) {
-            return mockSearchResults(query);
+            const results = mockSearchResults(query)
+            results.mock = true
+            return results
         }
         if (!res.ok) throw new Error('Search failed');
         return res.json();
@@ -155,7 +157,8 @@ export const aiApi = {
                 suggestions: [
                     { title: 'AI Not Configured', description: 'Set GEMINI_API_KEY for real suggestions', type: 'info' }
                 ],
-                analysis: 'AI features require a Gemini API key. Using placeholder data.'
+                analysis: 'AI features require a Gemini API key. Using placeholder data.',
+                mock: true
             };
         }
         if (!res.ok) throw new Error('Failed to fetch suggestions');

@@ -66,10 +66,10 @@ export function ActivityChart({ activity = [], timeRange, onTimeRangeChange, loa
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            whileHover={{ y: -6, scale: 1.02 }}
+            whileHover={{ y: -4 }}
         >
             <Card
-                className="p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl hover:shadow-2xl hover:border-indigo-400/50 dark:hover:border-indigo-500/40 transition-all duration-300 cursor-pointer"
+                className="p-4 sm:p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl hover:shadow-2xl hover:border-indigo-400/50 dark:hover:border-indigo-500/40 transition-all duration-300 cursor-pointer"
                 style={{ minHeight: `${chartHeight + 60}px` }}
             >
                 <div className="flex items-center justify-between mb-6">
@@ -92,7 +92,7 @@ export function ActivityChart({ activity = [], timeRange, onTimeRangeChange, loa
                     <Skeleton className="w-full rounded-xl" style={{ height: `${chartHeight}px` }} />
                 ) : (
                     <div style={{ height: `${chartHeight}px` }}>
-                        <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={200}>
                         <LineChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
                             <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} dy={10} />

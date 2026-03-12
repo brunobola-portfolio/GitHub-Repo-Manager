@@ -7,7 +7,7 @@ import { EmptyState } from '../ui/EmptyState'
 /**
  * PRIssuesSection - Pull Requests and Issues statistics
  */
-export function PRIssuesSection({ stats, loading }) {
+export function PRIssuesSection() {
     // Placeholder for future implementation
     return (
         <div className="space-y-6">
