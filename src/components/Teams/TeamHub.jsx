@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Plus, ChevronRight, Github, MoreVertical, Trash2, Edit2 } from 'lucide-react';
 import { useToast } from '../../hooks/useToast';
+import { ConfirmModal } from '../ui/ConfirmModal';
 
-export function TeamHub({ user, onTeamSelect }) {
+export function TeamHub({ onTeamSelect }) {
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreate, setShowCreate] = useState(false);
@@ -12,6 +13,8 @@ export function TeamHub({ user, onTeamSelect }) {
     const [isEditing, setIsEditing] = useState(false);
     const [activeTeamId, setActiveTeamId] = useState(null);
     const [formData, setFormData] = useState({ name: '', description: '' });
+
+    const [confirmAction, setConfirmAction] = useState(null);
 
     const { toast } = useToast();
 
@@ -22,8 +25,7 @@ export function TeamHub({ user, onTeamSelect }) {
             if (!res.ok) throw new Error('Failed to fetch teams');
             const data = await res.json();
             setTeams(data);
-        } catch (error) {
-            console.error(error);
+        } catch {
             toast.error('Could not load teams');
         } finally {
             setLoading(false);
@@ -32,6 +34,7 @@ export function TeamHub({ user, onTeamSelect }) {
 
     useEffect(() => {
         fetchTeams();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleSubmit = async (e) => {
@@ -64,22 +67,27 @@ export function TeamHub({ user, onTeamSelect }) {
         }
     };
 
-    const handleDelete = async (teamId, e) => {
+    const handleDelete = (teamId, e) => {
         e.stopPropagation(); // Prevent card click
-        if (!confirm('Are you sure you want to delete this team? This cannot be undone.')) return;
-
-        try {
-            const res = await fetch(`/api/teams/${teamId}`, { method: 'DELETE' });
-            if (res.ok) {
-                toast.success('Team deleted');
-                fetchTeams();
-            } else {
-                const data = await res.json();
-                toast.error(data.error || 'Failed to delete team');
+        setConfirmAction({
+            title: 'Delete Team',
+            message: 'Are you sure you want to delete this team? This cannot be undone.',
+            confirmText: 'Delete',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/api/teams/${teamId}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        toast.success('Team deleted');
+                        fetchTeams();
+                    } else {
+                        const data = await res.json();
+                        toast.error(data.error || 'Failed to delete team');
+                    }
+                } catch (error) {
+                    toast.error('Failed to delete team');
+                }
             }
-        } catch (error) {
-            toast.error('Failed to delete team');
-        }
+        });
     };
 
     const openEdit = (team, e) => {
@@ -191,6 +199,16 @@ export function TeamHub({ user, onTeamSelect }) {
                     )}
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={!!confirmAction}
+                onClose={() => setConfirmAction(null)}
+                onConfirm={() => { confirmAction?.onConfirm(); setConfirmAction(null); }}
+                title={confirmAction?.title}
+                message={confirmAction?.message}
+                confirmText={confirmAction?.confirmText}
+                variant="danger"
+            />
         </div>
     );
 }

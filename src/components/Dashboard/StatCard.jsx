@@ -33,7 +33,7 @@ export const StatCard = memo(function StatCard({
             }}
             transition={{ type: "spring", stiffness: 300 }}
         >
-            <Card className="p-6 hover:shadow-2xl transition-all duration-300 border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl group cursor-pointer overflow-hidden relative ds-card-shimmer">
+            <Card className="p-4 sm:p-6 hover:shadow-2xl transition-all duration-300 border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl group cursor-pointer overflow-hidden relative ds-card-shimmer">
                 {/* Background gradient on hover */}
                 <motion.div
                     className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 to-purple-500/0"
@@ -47,11 +47,11 @@ export const StatCard = memo(function StatCard({
 
                 <div className="flex items-start justify-between relative z-10">
                     <div className="flex-1">
-                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider ds-font-display">
+                        <p className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider ds-font-display">
                             {title}
                         </p>
                         <motion.h3
-                            className="text-3xl font-extrabold text-slate-900 dark:text-white mt-3 group-hover:text-transparent bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-500 group-hover:to-purple-500 transition-all ds-font-mono"
+                            className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-2 sm:mt-3 group-hover:text-transparent bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-500 group-hover:to-purple-500 transition-all ds-font-mono"
                             whileHover={{ scale: 1.05 }}
                             transition={{ type: "spring", stiffness: 400 }}
                         >
@@ -68,7 +68,7 @@ export const StatCard = memo(function StatCard({
                         )}
                     </div>
                     <motion.div
-                        className={`p-4 rounded-2xl ${bg}`}
+                        className={`p-2.5 sm:p-4 rounded-xl sm:rounded-2xl ${bg}`}
                         whileHover={{
                             scale: 1.15,
                             rotate: 10,
@@ -76,7 +76,7 @@ export const StatCard = memo(function StatCard({
                         }}
                         transition={{ type: "spring", stiffness: 300 }}
                     >
-                        <Icon className={`w-6 h-6 ${color}`} />
+                        <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${color}`} />
                     </motion.div>
                 </div>
             </Card>

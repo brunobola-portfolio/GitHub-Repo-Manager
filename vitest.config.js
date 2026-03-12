@@ -9,6 +9,9 @@ export default defineConfig({
     environment: 'happy-dom',
     setupFiles: ['./src/test/setup.js'],
     exclude: ['node_modules', 'dist', 'e2e'],
+    environmentMatchGlobs: [
+      ['server/**/*.test.js', 'node']
+    ],
     css: true,
     coverage: {
       provider: 'v8',

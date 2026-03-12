@@ -1,6 +1,19 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import db from './db.js';
 
+/**
+ * Sanitize user-controlled text before interpolation into AI prompts.
+ * Truncates to maxLen, strips null bytes, and returns empty string for falsy input.
+ * @param {string} text
+ * @param {number} maxLen
+ * @returns {string}
+ */
+function sanitizeForPrompt(text, maxLen = 5000) {
+    if (!text) return '';
+    const cleaned = String(text).replace(/\0/g, '');
+    return cleaned.slice(0, maxLen);
+}
+
 class AIService {
     constructor() {
         this.genAI = null;
@@ -220,19 +233,19 @@ class AIService {
         const prompt = `
             Analyze this GitHub repository and provide insights.
 
-            Name: ${repoData.name}
-            Description: ${repoData.description || 'None'}
-            Language: ${repoData.language || 'Not specified'}
-            Topics: ${repoData.topics?.join(', ') || 'None'}
+            Name: ${sanitizeForPrompt(repoData.name, 200)}
+            Description: ${sanitizeForPrompt(repoData.description, 500) || 'None'}
+            Language: ${sanitizeForPrompt(repoData.language, 100) || 'Not specified'}
+            Topics: ${sanitizeForPrompt(repoData.topics?.join(', '), 500) || 'None'}
             Stars: ${repoData.stargazers_count || 0}
             Forks: ${repoData.forks_count || 0}
             Open Issues: ${repoData.open_issues_count || 0}
 
             README (Excerpt):
-            ${readmeContent ? readmeContent.slice(0, 2500) : 'No README found'}
+            ${sanitizeForPrompt(readmeContent, 2500) || 'No README found'}
 
             File Structure:
-            ${JSON.stringify(fileStructure || [], null, 2)}
+            ${sanitizeForPrompt(JSON.stringify(fileStructure || [], null, 2), 3000)}
 
             Detected Patterns:
             - Has installation docs: ${patterns.hasInstallation}
@@ -297,19 +310,19 @@ class AIService {
         const prompt = `
             You are a technical writer improving a GitHub README.
 
-            Project: ${repoData.name}
-            Language: ${repoData.language || 'Not specified'}
-            Description: ${repoData.description || 'None provided'}
+            Project: ${sanitizeForPrompt(repoData.name, 200)}
+            Language: ${sanitizeForPrompt(repoData.language, 100) || 'Not specified'}
+            Description: ${sanitizeForPrompt(repoData.description, 500) || 'None provided'}
 
             Current README:
-            ${currentReadme ? currentReadme.slice(0, 3000) : 'Empty README'}
+            ${sanitizeForPrompt(currentReadme, 3000) || 'Empty README'}
 
             Missing Sections: ${missingSections.join(', ') || 'None detected'}
 
             Task: Generate ONLY the missing sections as markdown.
             - Use professional, clear language
             - Include placeholder examples where appropriate
-            - Make installation instructions specific to ${repoData.language || 'the project'}
+            - Make installation instructions specific to ${sanitizeForPrompt(repoData.language, 100) || 'the project'}
             - Each section should start with ## heading
 
             Return ONLY the markdown for missing sections (no existing content, no JSON wrapper).
@@ -338,7 +351,7 @@ class AIService {
      * @param {Array} fileStructure - File tree
      * @param {object} extraData - CI status, issues, etc.
      */
-    async generateQualityReport(repoData, readmeContent, fileStructure, extraData = {}) {
+    async generateQualityReport(repoData, readmeContent, fileStructure, _extraData = {}) {
         const patterns = this.detectPatterns(readmeContent, fileStructure);
         const quality = this.calculateQualityMetrics(patterns, repoData);
 

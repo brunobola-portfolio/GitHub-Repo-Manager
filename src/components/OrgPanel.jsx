@@ -6,7 +6,6 @@ import {
 	Globe, Folder
 } from 'lucide-react'
 import { formatNumber, formatCompact } from '../utils/format'
-// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { SettingsModal } from './SettingsModal'
@@ -24,7 +23,7 @@ export function OrgPanel({
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
 	const filteredOrgs = orgs.filter(org =>
-		org.login.toLowerCase().includes(searchTerm.toLowerCase())
+		org.login?.toLowerCase()?.includes(searchTerm.toLowerCase())
 	)
 
 	return (
@@ -157,7 +156,10 @@ export function OrgPanel({
 								<DropdownMenu.Separator className="h-px bg-slate-200/70 dark:bg-slate-700/70 my-1.5" />
 								<DropdownMenu.Item
 									className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl cursor-pointer outline-none transition-colors"
-									onClick={() => window.location.href = '/logout'}
+									onSelect={() => {
+										fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+											.finally(() => window.location.reload())
+									}}
 								>
 									Sign Out
 								</DropdownMenu.Item>

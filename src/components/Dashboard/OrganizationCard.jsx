@@ -1,4 +1,4 @@
-import React, { memo } from 'react'
+import React, { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Building2, Star, GitFork, GitPullRequest, AlertCircle, Lock, Globe, TrendingUp } from 'lucide-react'
 import { formatCompact } from '../../utils/format'
@@ -16,11 +16,16 @@ export const OrganizationCard = memo(function OrganizationCard({ org, repos = []
     const publicCount = orgRepos.filter(r => !r.private).length
     const privateCount = orgRepos.filter(r => r.private).length
 
-    // Recent activity indicator (simplified)
-    const hasRecentActivity = orgRepos.some(r => {
-        const daysSinceUpdate = (Date.now() - new Date(r.updated_at).getTime()) / (1000 * 60 * 60 * 24)
-        return daysSinceUpdate < 7
-    })
+    // Recent activity indicator - Date.now() is acceptable here as a display-only heuristic
+    /* eslint-disable react-hooks/purity */
+    const hasRecentActivity = useMemo(() => {
+        const now = Date.now()
+        return orgRepos.some(r => {
+            const daysSinceUpdate = (now - new Date(r.updated_at).getTime()) / (1000 * 60 * 60 * 24)
+            return daysSinceUpdate < 7
+        })
+    }, [orgRepos])
+    /* eslint-enable react-hooks/purity */
 
     return (
         <motion.button

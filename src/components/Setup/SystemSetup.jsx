@@ -5,9 +5,11 @@ import { Database, CheckCircle, Loader2, Server, HardDrive, ShieldCheck, ArrowRi
 export function SystemSetup({ onComplete }) {
     const [step, setStep] = useState(0);
     const [completed, setCompleted] = useState(false);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         startSetup();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const startSetup = async () => {
@@ -17,6 +19,7 @@ export function SystemSetup({ onComplete }) {
 
         // Step 2: Request Backend Setup
         try {
+            setError(null);
             const res = await fetch('/api/system/setup', { method: 'POST' });
             if (!res.ok) throw new Error('Setup failed');
 
@@ -32,9 +35,8 @@ export function SystemSetup({ onComplete }) {
 
             await wait(800);
             setCompleted(true);
-        } catch (error) {
-            console.error(error);
-            // Handle error (optional retry UI)
+        } catch (e) {
+            setError(e?.message || 'System setup failed. Please try again.');
         }
     };
 
@@ -81,6 +83,18 @@ export function SystemSetup({ onComplete }) {
                         status={step > 3 ? 'done' : step === 3 ? 'active' : 'pending'}
                     />
                 </div>
+
+                {error && (
+                    <div className="mt-8 px-4 py-3 bg-red-950/30 border border-red-800/50 rounded-xl text-sm text-red-400">
+                        {error}
+                        <button
+                            onClick={() => { setStep(0); setError(null); startSetup(); }}
+                            className="ml-3 underline hover:text-red-300 transition-colors"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                )}
 
                 <AnimatePresence>
                     {completed && (

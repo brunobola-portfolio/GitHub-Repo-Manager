@@ -1,25 +1,19 @@
-import { useState, useCallback, useEffect, lazy, Suspense } from 'react'
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react'
 import { useGitHub } from './hooks/useGitHub'
-import { HeaderNew } from './components/HeaderNew'
+import { Header } from './components/Header'
 import { Sidebar } from './components/Sidebar'
 import { MobileDrawer } from './components/MobileDrawer'
 import { RepoList } from './components/RepoList'
 import { OrgPanel } from './components/OrgPanel'
-import { AzureImportModal } from './components/AzureImportModal'
-import { CreateRepoModal } from './components/CreateRepoModal'
-import { TransferModal } from './components/TransferModal'
-import { OrgManagerModal } from './components/OrgManagerModal'
-import { CommitGeneratorModal } from './components/CommitGeneratorModal'
 import { ConfirmModal } from './components/ui/ConfirmModal'
 import { ToastContainer } from './components/ui/Toast'
 import { useToast } from './hooks/useToast'
-import { AIAssistant } from './components/AIAssistant'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
-import { SelectionProvider } from './contexts/SelectionContext'
-import { ActionProvider } from './contexts/ActionContext'
-import { OrganizationProvider } from './contexts/OrganizationContext'
-import { ModalProvider } from './contexts/ModalContext'
+import { onSessionExpired, resetSessionExpired } from './utils/api'
+import { SelectionProvider, useSelection } from './contexts/SelectionContext'
+import { ModalProvider, useModal } from './contexts/ModalContext'
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { Menu } from 'lucide-react'
 
 // Lazy load heavy route components for code splitting
@@ -27,9 +21,19 @@ const DashboardPremium = lazy(() => import('./components/Dashboard/DashboardPrem
 const TeamHub = lazy(() => import('./components/Teams/TeamHub').then(m => ({ default: m.TeamHub })))
 const TeamDetails = lazy(() => import('./components/Teams/TeamDetails').then(m => ({ default: m.TeamDetails })))
 const RepoInsightsModal = lazy(() => import('./components/AI/RepoInsightsModal'))
-const ActionsStatsDashboard = lazy(() => import('./components/ActionsStatsDashboard').then(m => ({ default: m.ActionsStatsDashboard })))
 const CommunityHealthDashboard = lazy(() => import('./components/CommunityHealthDashboard').then(m => ({ default: m.CommunityHealthDashboard })))
 const SystemSetup = lazy(() => import('./components/Setup/SystemSetup').then(m => ({ default: m.SystemSetup })))
+const AzureImportModal = lazy(() => import('./components/AzureImportModal').then(m => ({ default: m.AzureImportModal })))
+const CreateRepoModal = lazy(() => import('./components/CreateRepoModal').then(m => ({ default: m.CreateRepoModal })))
+const TransferModal = lazy(() => import('./components/TransferModal').then(m => ({ default: m.TransferModal })))
+const OrgManagerModal = lazy(() => import('./components/OrgManagerModal').then(m => ({ default: m.OrgManagerModal })))
+const CommitGeneratorModal = lazy(() => import('./components/CommitGeneratorModal').then(m => ({ default: m.CommitGeneratorModal })))
+const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })))
+const ImportWizard = lazy(() => import('./components/ImportWizard').then(m => ({ default: m.ImportWizard })))
+const RepoDetail = lazy(() => import('./components/RepoDetail').then(m => ({ default: m.RepoDetail })))
+const MigrationHistory = lazy(() => import('./components/MigrationHistory').then(m => ({ default: m.MigrationHistory })))
+const KeyboardShortcutsHelp = lazy(() => import('./components/KeyboardShortcutsHelp').then(m => ({ default: m.KeyboardShortcutsHelp })))
+const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ default: m.AIAssistant })))
 
 // Loading fallback component
 function LoadingFallback() {
@@ -50,14 +54,16 @@ function AppContent() {
   const [selectedTeam, setSelectedTeam] = useState(null)
   const [systemInitialized, setSystemInitialized] = useState(null)
   const [org, setOrg] = useState('')
-  const [selectedOrgForManager, setSelectedOrgForManager] = useState(null)
-  const [transferRepos, setTransferRepos] = useState([])
-  const [selectedInsightsRepo, setSelectedInsightsRepo] = useState(null)
-  const [selectedHealthRepo, setSelectedHealthRepo] = useState(null)
-  const [confirmModal, setConfirmModal] = useState({ isOpen: false })
+  const [selectedRepoDetail, setSelectedRepoDetail] = useState(null)
   const [syncStatus, setSyncStatus] = useState({ lastSync: null, hasUpdates: false })
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [sessionExpired, setSessionExpired] = useState(false)
   const { toasts, toast, dismissToast } = useToast()
+  const { modalStates, openModal, openModalWithData, closeModal, getModalData } = useModal()
+  const { selectedIds, clearSelection } = useSelection()
+  // showMigrationHistory is now in ModalContext
+  const [isSwitchingOrg, setIsSwitchingOrg] = useState(false)
+  const [teams, setTeams] = useState([])
 
   const {
     repos,
@@ -73,7 +79,6 @@ function AppContent() {
     results,
     isMockMode,
     setPage,
-    setPerPage,
     performAction,
     fetchUser: fetchGitHubUser,
     refresh,
@@ -85,18 +90,51 @@ function AppContent() {
     archiveRepos,
     deleteRepos,
     createRepo,
-    importFromAzure,
     setSelectedOrg,
     fetchOrgs,
     fetchStats,
     activity,
+    askAI,
+    checkAIStatus,
   } = useGitHub()
 
+  const { showHelp, setShowHelp, shortcuts } = useKeyboardShortcuts({
+    onSearch: () => {
+      // Focus the search input in RepoList if on repos view
+      const searchInput = document.querySelector('[data-search-input]')
+      if (searchInput) searchInput.focus()
+    },
+    onCreateRepo: () => openModal('showCreateRepo'),
+    onImport: () => openModal('showImportWizard'),
+    onViewChange: setActiveView,
+    enabled: !!user
+  })
+
   const loading = appLoading || githubLoading
+  const initCalled = useRef(false)
+
+  // Listen for session expiry from the API layer
+  useEffect(() => {
+    const unsubscribe = onSessionExpired(() => {
+      setSessionExpired(true)
+      toast.warning('Your session has expired. Please login again.')
+    })
+    return unsubscribe
+  }, [toast])
 
   useEffect(() => {
-    checkSystemStatus()
+    if (!initCalled.current) {
+      initCalled.current = true
+      checkSystemStatus()
+    }
+    return () => { initCalled.current = false }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Fetch teams when user becomes available
+  useEffect(() => {
+    if (user) fetchTeams()
+  }, [user, fetchTeams])
 
   const checkSystemStatus = async () => {
     try {
@@ -130,7 +168,7 @@ function AppContent() {
       if (res.ok) {
         const data = await res.json()
         setSession(data)
-        if (data.accessToken) {
+        if (data.authenticated) {
           fetchGitHubUser()
         }
       }
@@ -141,23 +179,35 @@ function AppContent() {
     }
   }
 
+  const fetchTeams = useCallback(async () => {
+    try {
+      const res = await fetch('/api/teams', { credentials: 'include' })
+      if (res.ok) {
+        const data = await res.json()
+        setTeams(Array.isArray(data) ? data : [])
+      }
+    } catch {
+      // Teams fetch is non-critical
+    }
+  }, [])
+
   const handleRefreshOrgs = useCallback(async () => {
     try {
-      await Promise.all([fetchOrgs(), fetchStats()])
+      await Promise.all([fetchOrgs(), fetchStats(), fetchTeams()])
       setSyncStatus({ lastSync: new Date().toISOString(), hasUpdates: false })
       toast.success('Organizations synced successfully')
     } catch {
       toast.error('Failed to sync organizations')
     }
-  }, [fetchOrgs, fetchStats, toast])
+  }, [fetchOrgs, fetchStats, fetchTeams, toast])
 
   const handleReauthorize = useCallback(() => {
     window.location.href = AUTH_ENDPOINTS.login
   }, [])
 
   const handleOpenOrgManager = useCallback((org) => {
-    setSelectedOrgForManager(org)
-  }, [])
+    openModalWithData('showOrgManager', org)
+  }, [openModalWithData])
 
   const handleAction = async (action, options = {}) => {
     try {
@@ -171,8 +221,7 @@ function AppContent() {
   const handleQuickAction = async (action, repo, value) => {
     switch (action) {
       case 'visibility':
-        setConfirmModal({
-          isOpen: true,
+        openModalWithData('showConfirm', {
           title: `Make ${repo.name} ${value}?`,
           message: `This will change the visibility of "${repo.name}" to ${value}. ${value === 'private' ? 'Only you and collaborators will be able to see it.' : 'Anyone on the internet can see this repository.'}`,
           variant: value === 'private' ? 'warning' : 'info',
@@ -180,7 +229,7 @@ function AppContent() {
             try {
               await performAction('visibility', [repo.full_name], null, { makePublic: value === 'public' })
               toast.success(`${repo.name} is now ${value}`)
-              setConfirmModal({ isOpen: false })
+              closeModal('showConfirm')
               refresh()
             } catch (err) {
               toast.error(`Failed to change visibility: ${err.message}`)
@@ -190,8 +239,7 @@ function AppContent() {
         break
 
       case 'archive':
-        setConfirmModal({
-          isOpen: true,
+        openModalWithData('showConfirm', {
           title: value ? `Archive ${repo.name}?` : `Unarchive ${repo.name}?`,
           message: value
             ? `Archiving "${repo.name}" will make it read-only. You can unarchive it later.`
@@ -201,7 +249,7 @@ function AppContent() {
             try {
               await archiveRepos([repo.full_name], value)
               toast.success(`${repo.name} ${value ? 'archived' : 'unarchived'}`)
-              setConfirmModal({ isOpen: false })
+              closeModal('showConfirm')
               refresh()
             } catch (err) {
               toast.error(`Failed to ${value ? 'archive' : 'unarchive'}: ${err.message}`)
@@ -211,16 +259,15 @@ function AppContent() {
         break
 
       case 'transfer':
-        setTransferRepos([repo])
+        openModalWithData('showTransfer', [repo])
         break
 
       case 'mirror':
-        setTransferRepos([repo])
+        openModalWithData('showTransfer', [repo])
         break
 
       case 'delete':
-        setConfirmModal({
-          isOpen: true,
+        openModalWithData('showConfirm', {
           title: `Delete ${repo.name}?`,
           message: `This will permanently delete "${repo.name}" and all its data. This action cannot be undone.`,
           variant: 'danger',
@@ -230,7 +277,7 @@ function AppContent() {
             try {
               await deleteRepos([repo.full_name])
               toast.success(`${repo.name} deleted`)
-              setConfirmModal({ isOpen: false })
+              closeModal('showConfirm')
               refresh()
             } catch (err) {
               toast.error(`Failed to delete: ${err.message}`)
@@ -242,19 +289,19 @@ function AppContent() {
   }
 
   const handleLogin = () => {
+    resetSessionExpired()
+    setSessionExpired(false)
     window.location.href = AUTH_ENDPOINTS.login
   }
 
   const handleLogout = async () => {
     try {
-      await fetch(AUTH_ENDPOINTS.logout, { credentials: 'include' })
+      await fetch(AUTH_ENDPOINTS.logout, { method: 'POST', credentials: 'include' })
       window.location.reload()
     } catch {
-      window.location.href = AUTH_ENDPOINTS.logout
+      window.location.reload()
     }
   }
-
-  const [isSwitchingOrg, setIsSwitchingOrg] = useState(false)
 
   const handleOrgSelect = async (orgLogin) => {
     setIsSwitchingOrg(true)
@@ -268,11 +315,13 @@ function AppContent() {
         await refresh()
       }
     } finally {
-      setTimeout(() => setIsSwitchingOrg(false), 300)
+      setIsSwitchingOrg(false)
     }
   }
 
   const displayRepos = selectedOrg ? orgRepos : repos
+
+  const selectedRepos = displayRepos.filter(r => selectedIds.has(r.id))
 
   const sidebarProps = {
     isPerforming,
@@ -281,8 +330,8 @@ function AppContent() {
     results,
     onArchive: archiveRepos,
     onDelete: deleteRepos,
-    selectedRepos: [],
-    onTransfer: () => setTransferRepos(displayRepos.filter(r => r.id)),
+    selectedRepos,
+    onTransfer: () => openModalWithData('showTransfer', selectedRepos.length > 0 ? selectedRepos : displayRepos),
     activity,
   }
 
@@ -327,7 +376,7 @@ function AppContent() {
       )}
 
       <div className="min-h-screen bg-slate-50 text-slate-900 pb-12 font-sans dark:bg-slate-950 dark:text-slate-50">
-        <HeaderNew
+        <Header
         user={user}
         isMockMode={isMockMode}
         onLogin={handleLogin}
@@ -340,25 +389,48 @@ function AppContent() {
         syncStatus={syncStatus}
         onReauthorize={handleReauthorize}
         onOpenOrgManager={handleOpenOrgManager}
+        onAzureImport={() => openModal('showAzureImport')}
+        onCreateRepo={() => openModal('showCreateRepo')}
+        onOpenCommitGen={() => openModal('showCommitGen')}
+        onOpenSettings={() => openModal('showSettings')}
+        onImport={() => openModal('showImportWizard')}
+        onMigrationHistory={() => openModal('showMigrationHistory')}
       />
 
-      <main id="main-content" className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8 transition-all duration-300 relative z-[1]">
+      {/* Session expired banner */}
+      {sessionExpired && (
+        <div className="bg-amber-50 dark:bg-amber-950/50 border-b border-amber-200 dark:border-amber-800">
+          <div className="max-w-[1920px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 py-3 flex items-center justify-between gap-4">
+            <p className="text-amber-800 dark:text-amber-200 text-sm font-medium">
+              Your session has expired. Please login again to continue.
+            </p>
+            <button
+              onClick={handleLogin}
+              className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors shrink-0"
+            >
+              Login Again
+            </button>
+          </div>
+        </div>
+      )}
+
+      <main id="main-content" className="max-w-[1920px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 py-8 transition-all duration-300 relative z-[1]">
         {!user && activeView === 'dashboard' && (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center animate-in fade-in zoom-in duration-500">
-            <div className="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-3xl mb-8 flex items-center justify-center shadow-2xl shadow-indigo-500/30 dark:shadow-indigo-900/40">
-              <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in zoom-in duration-500">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-3xl mb-6 sm:mb-8 flex items-center justify-center shadow-2xl shadow-indigo-500/30 dark:shadow-indigo-900/40">
+              <svg className="w-10 h-10 sm:w-12 sm:h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
-            <h1 className="text-5xl font-black text-slate-900 dark:text-white mb-6 tracking-tight ds-font-display">
+            <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white mb-4 sm:mb-6 tracking-tight ds-font-display">
               GitHub <span className="ds-gradient-text-premium">Repo Manager</span>
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-xl max-w-lg mb-10 leading-relaxed ds-font-display">
+            <p className="text-slate-500 dark:text-slate-400 text-base sm:text-xl max-w-lg mb-8 sm:mb-10 leading-relaxed ds-font-display">
               Manage your teams, assign repositories, and monitor workflows with a premium local-first experience.
             </p>
             <button
               onClick={handleLogin}
-              className="px-10 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-2xl font-bold text-lg hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-500/25 hover:shadow-2xl hover:shadow-indigo-500/40 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus:outline-none ds-btn-shimmer"
+              className="px-8 sm:px-10 py-3.5 sm:py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-2xl font-bold text-base sm:text-lg hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-500/25 hover:shadow-2xl hover:shadow-indigo-500/40 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus:outline-none ds-btn-shimmer"
             >
               Get Started
             </button>
@@ -373,6 +445,7 @@ function AppContent() {
                   stats={stats}
                   orgs={orgs}
                   repos={displayRepos}
+                  teams={teams}
                   selectedOrg={selectedOrg}
                   onSelectOrg={handleOrgSelect}
                   loading={loading || isSwitchingOrg}
@@ -391,15 +464,14 @@ function AppContent() {
           <div className="flex flex-col lg:flex-row gap-8 min-h-0">
             {user && (
               <div className="hidden lg:block w-80 flex-shrink-0">
-                <div className="sticky top-8 rounded-3xl overflow-hidden border border-slate-200/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-black/40 bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl transition-all duration-300 hover:shadow-2xl hover:shadow-slate-300/60 dark:hover:shadow-black/70 hover:border-slate-300/70 dark:hover:border-slate-600/60 max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar">
+                <div className="sticky top-20 rounded-3xl overflow-hidden border border-slate-200/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-black/40 bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl transition-all duration-300 hover:shadow-2xl hover:shadow-slate-300/60 dark:hover:shadow-black/70 hover:border-slate-300/70 dark:hover:border-slate-600/60 max-h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar">
                   <OrgPanel
                     orgs={orgs}
                     selectedOrg={selectedOrg}
                     onSelectOrg={handleOrgSelect}
                     user={user}
                     stats={stats}
-                    onManageOrg={handleOpenOrgManager}
-                    onRefresh={handleRefreshOrgs}
+                    onCreateOrg={handleOpenOrgManager}
                   />
                 </div>
               </div>
@@ -418,17 +490,37 @@ function AppContent() {
                   totalPages={totalPages}
                   onRefresh={refresh}
                   onQuickAction={handleQuickAction}
+                  onRepoClick={(repo) => {
+                    setSelectedRepoDetail(repo)
+                    setActiveView('repo-detail')
+                  }}
                 />
               </ErrorBoundary>
             </div>
 
             {user && (
               <aside id="sidebar-navigation" className="hidden xl:block w-80 flex-shrink-0">
-                <div className="sticky top-8 max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar">
+                <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar">
                   <Sidebar {...sidebarProps} />
                 </div>
               </aside>
             )}
+          </div>
+        )}
+
+        {activeView === 'repo-detail' && user && selectedRepoDetail && (
+          <div className="animate-in fade-in duration-500">
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingFallback />}>
+                <RepoDetail
+                  repo={selectedRepoDetail}
+                  onBack={() => {
+                    setSelectedRepoDetail(null)
+                    setActiveView('repos')
+                  }}
+                />
+              </Suspense>
+            </ErrorBoundary>
           </div>
         )}
 
@@ -456,97 +548,139 @@ function AppContent() {
         )}
       </main>
 
-      <AzureImportModal
-        isOpen={false}
-        onClose={() => {}}
-        onImport={importFromAzure}
-        orgs={orgs}
-        isPerforming={isPerforming}
-      />
-
-      <CreateRepoModal
-        isOpen={false}
-        onClose={() => {}}
-        onCreate={createRepo}
-        orgs={orgs}
-        isPerforming={isPerforming}
-      />
-
-      <TransferModal
-        isOpen={transferRepos.length > 0}
-        onClose={() => setTransferRepos([])}
-        repos={transferRepos}
-        orgs={orgs}
-        onTransfer={async (repoNames, targetOrg) => {
-          try {
-            await performAction('transfer', repoNames, targetOrg)
-            toast.success(`Transferred ${repoNames.length} repo(s) to ${targetOrg}`)
-            setTransferRepos([])
-            refresh()
-          } catch (err) {
-            toast.error(`Transfer failed: ${err.message}`)
-          }
-        }}
-        onMirror={async (repoNames, targetOrg) => {
-          try {
-            await performAction('mirror', repoNames, targetOrg)
-            toast.success(`Mirrored ${repoNames.length} repo(s) to ${targetOrg}`)
-            setTransferRepos([])
-            refresh()
-          } catch (err) {
-            toast.error(`Mirror failed: ${err.message}`)
-          }
-        }}
-        isPerforming={isPerforming}
-      />
-
-      <ConfirmModal
-        isOpen={confirmModal.isOpen}
-        onClose={() => setConfirmModal({ isOpen: false })}
-        onConfirm={confirmModal.onConfirm}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        variant={confirmModal.variant}
-        requiresInput={confirmModal.requiresInput}
-        confirmText={confirmModal.confirmText}
-        isLoading={isPerforming}
-      />
-
-      <OrgManagerModal
-        isOpen={selectedOrgForManager !== null}
-        onClose={() => setSelectedOrgForManager(null)}
-        org={selectedOrgForManager}
-        onRefresh={handleRefreshOrgs}
-        onUpdateOrg={(updated) => {
-          toast.success(`Organization ${updated.login} updated`)
-          handleRefreshOrgs()
-        }}
-      />
-
-      <CommitGeneratorModal
-        isOpen={false}
-        onClose={() => {}}
-      />
-
       <Suspense fallback={null}>
-        <RepoInsightsModal
-          isOpen={selectedInsightsRepo !== null}
-          onClose={() => setSelectedInsightsRepo(null)}
-          repo={selectedInsightsRepo}
+        <AzureImportModal
+          isOpen={modalStates.showAzureImport}
+          onClose={() => closeModal('showAzureImport')}
+          orgs={orgs}
         />
       </Suspense>
 
-      {selectedHealthRepo && (
+      <Suspense fallback={null}>
+        <CreateRepoModal
+          isOpen={modalStates.showCreateRepo}
+          onClose={() => closeModal('showCreateRepo')}
+          onCreate={createRepo}
+          orgs={orgs}
+          isPerforming={isPerforming}
+          askAI={askAI}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <TransferModal
+          isOpen={modalStates.showTransfer}
+          onClose={() => closeModal('showTransfer')}
+          repos={getModalData('showTransfer') || []}
+          orgs={orgs}
+          onTransfer={async (repoNames, targetOrg) => {
+            try {
+              await performAction('transfer', repoNames, targetOrg)
+              toast.success(`Transferred ${repoNames.length} repo(s) to ${targetOrg}`)
+              closeModal('showTransfer')
+              refresh()
+            } catch (err) {
+              toast.error(`Transfer failed: ${err.message}`)
+            }
+          }}
+          onMirror={async (repoNames, targetOrg) => {
+            try {
+              await performAction('mirror', repoNames, targetOrg)
+              toast.success(`Mirrored ${repoNames.length} repo(s) to ${targetOrg}`)
+              closeModal('showTransfer')
+              refresh()
+            } catch (err) {
+              toast.error(`Mirror failed: ${err.message}`)
+            }
+          }}
+          isPerforming={isPerforming}
+        />
+      </Suspense>
+
+      <ConfirmModal
+        isOpen={modalStates.showConfirm}
+        onClose={() => closeModal('showConfirm')}
+        onConfirm={getModalData('showConfirm')?.onConfirm}
+        title={getModalData('showConfirm')?.title}
+        message={getModalData('showConfirm')?.message}
+        variant={getModalData('showConfirm')?.variant}
+        requiresInput={getModalData('showConfirm')?.requiresInput}
+        confirmText={getModalData('showConfirm')?.confirmText}
+        isLoading={isPerforming}
+      />
+
+      <Suspense fallback={null}>
+        <OrgManagerModal
+          isOpen={modalStates.showOrgManager}
+          onClose={() => closeModal('showOrgManager')}
+          org={getModalData('showOrgManager')}
+          onRefresh={handleRefreshOrgs}
+          onUpdateOrg={(updated) => {
+            toast.success(`Organization ${updated.login} updated`)
+            handleRefreshOrgs()
+          }}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <CommitGeneratorModal
+          isOpen={modalStates.showCommitGen}
+          onClose={() => closeModal('showCommitGen')}
+          askAI={askAI}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <SettingsModal
+          isOpen={modalStates.showSettings}
+          onClose={() => closeModal('showSettings')}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <ImportWizard
+          isOpen={modalStates.showImportWizard}
+          onClose={() => closeModal('showImportWizard')}
+          orgs={orgs}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <RepoInsightsModal
+          isOpen={modalStates.showRepoInsights}
+          onClose={() => closeModal('showRepoInsights')}
+          repo={getModalData('showRepoInsights')}
+        />
+      </Suspense>
+
+      {modalStates.showCommunityHealth && (
         <Suspense fallback={null}>
           <CommunityHealthDashboard
-            repo={selectedHealthRepo}
-            onClose={() => setSelectedHealthRepo(null)}
+            repo={getModalData('showCommunityHealth')}
+            onClose={() => closeModal('showCommunityHealth')}
           />
         </Suspense>
       )}
 
+      <Suspense fallback={null}>
+        <MigrationHistory
+          isOpen={modalStates.showMigrationHistory}
+          onClose={() => closeModal('showMigrationHistory')}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <KeyboardShortcutsHelp
+          isOpen={showHelp}
+          onClose={() => setShowHelp(false)}
+          shortcuts={shortcuts}
+        />
+      </Suspense>
+
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-      <AIAssistant />
+      <Suspense fallback={null}>
+        <AIAssistant askAI={askAI} user={user} checkAIStatus={checkAIStatus} />
+      </Suspense>
 
       {/* Mobile Drawer */}
       {user && (
@@ -576,13 +710,9 @@ function AppContent() {
 function App() {
   return (
     <SelectionProvider>
-      <ActionProvider>
-        <OrganizationProvider>
-          <ModalProvider>
-            <AppContent />
-          </ModalProvider>
-        </OrganizationProvider>
-      </ActionProvider>
+      <ModalProvider>
+        <AppContent />
+      </ModalProvider>
     </SelectionProvider>
   )
 }

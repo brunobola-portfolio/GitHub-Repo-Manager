@@ -4,12 +4,13 @@ import { motion } from 'framer-motion'
 /**
  * EmptyState - Elegant placeholder when no data is available
  *
- * @param {string} icon - Lucide React icon component
+ * @param {React.ComponentType} icon - Lucide React icon component
  * @param {string} title - Main title text
- * @param {string} description - Descriptive subtitle
- * @param {string} actionLabel - Optional CTA button text
- * @param {function} onAction - Optional CTA button handler
- * @param {string} gradient - Gradient colors for icon (e.g., "from-indigo-500 to-purple-600")
+ * @param {string} [description] - Descriptive subtitle
+ * @param {string} [actionLabel] - Optional CTA button text (legacy prop)
+ * @param {function} [onAction] - Optional CTA button handler (legacy prop)
+ * @param {{ label: string, onClick: function }} [action] - Optional action with label and onClick
+ * @param {string} [gradient] - Gradient colors for icon (e.g., "from-indigo-500 to-purple-600")
  */
 export function EmptyState({
   icon: Icon,
@@ -17,8 +18,12 @@ export function EmptyState({
   description,
   actionLabel,
   onAction,
+  action,
   gradient = "from-indigo-500 to-purple-600"
 }) {
+  // Support both legacy (actionLabel/onAction) and new (action) prop shapes
+  const resolvedLabel = action?.label || actionLabel
+  const resolvedOnClick = action?.onClick || onAction
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -57,17 +62,17 @@ export function EmptyState({
       </motion.p>
 
       {/* Optional CTA Button */}
-      {actionLabel && onAction && (
+      {resolvedLabel && resolvedOnClick && (
         <motion.button
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.5 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={onAction}
+          onClick={resolvedOnClick}
           className={`px-6 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r ${gradient} hover:shadow-lg transition-all`}
         >
-          {actionLabel}
+          {resolvedLabel}
         </motion.button>
       )}
     </motion.div>

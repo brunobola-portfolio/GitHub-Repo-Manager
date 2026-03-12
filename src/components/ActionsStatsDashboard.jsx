@@ -29,18 +29,21 @@ export function ActionsStatsDashboard({ repos, teamId }) {
     const [loading, setLoading] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [teamStats, setTeamStats] = useState(null);
+    const [error, setError] = useState(null);
     const { toast } = useToast();
 
     useEffect(() => {
         if (selectedRepo) {
             fetchStats(selectedRepo, timeRange);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedRepo, timeRange]);
 
     useEffect(() => {
         if (teamId && repos.length > 0) {
             fetchTeamStats();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [teamId, repos, timeRange]);
 
     const fetchStats = async (repoFullName, days) => {
@@ -55,8 +58,7 @@ export function ActionsStatsDashboard({ repos, teamId }) {
             
             const data = await res.json();
             setStats(data);
-        } catch (error) {
-            console.error(error);
+        } catch {
             toast.error('Failed to load actions statistics');
         } finally {
             setLoading(false);
@@ -65,6 +67,7 @@ export function ActionsStatsDashboard({ repos, teamId }) {
 
     const fetchTeamStats = async () => {
         try {
+            setError(null);
             const res = await fetch(`/api/teams/${teamId}/actions/stats`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -73,11 +76,11 @@ export function ActionsStatsDashboard({ repos, teamId }) {
             });
 
             if (!res.ok) throw new Error('Failed to fetch team stats');
-            
+
             const data = await res.json();
             setTeamStats(data);
-        } catch (error) {
-            console.error(error);
+        } catch (e) {
+            setError(e?.message || 'Failed to load team statistics');
         }
     };
 
@@ -142,7 +145,7 @@ export function ActionsStatsDashboard({ repos, teamId }) {
             className="space-y-8 pb-12"
         >
             {/* Premium Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
                 <div>
                     <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 tracking-tight flex items-center gap-3">
                         <Zap className="w-10 h-10 text-indigo-600 dark:text-indigo-400" />
@@ -184,6 +187,12 @@ export function ActionsStatsDashboard({ repos, teamId }) {
                 </div>
             </div>
 
+            {error && (
+                <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
+                    {error}
+                </div>
+            )}
+
             {/* Repository Selector Pills */}
             <motion.div variants={itemVariants} className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
                 {repos.map(repo => (
@@ -213,7 +222,7 @@ export function ActionsStatsDashboard({ repos, teamId }) {
                                 <Zap className="w-6 h-6" />
                                 Team Performance Overview
                             </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
                                     <div className="text-5xl font-extrabold mb-2">{teamStats.teamAverages.totalRuns}</div>
                                     <div className="text-indigo-100 font-medium">Total Workflow Runs</div>
@@ -234,7 +243,7 @@ export function ActionsStatsDashboard({ repos, teamId }) {
 
             {/* Overview Cards */}
             {stats && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                     <StatCard
                         title="Total Runs"
                         value={stats.stats.totalRuns}
@@ -272,7 +281,7 @@ export function ActionsStatsDashboard({ repos, teamId }) {
             )}
 
             {/* Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
                 {/* Success Rate Trend */}
                 {stats && stats.trends.length > 0 && (
                     <motion.div variants={itemVariants}>
@@ -281,54 +290,56 @@ export function ActionsStatsDashboard({ repos, teamId }) {
                                 <TrendingUp className="w-5 h-5 text-emerald-500" />
                                 Success Rate Trend
                             </h3>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={stats.trends}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
-                                    <XAxis 
-                                        dataKey="date" 
-                                        stroke="#94a3b8" 
-                                        fontSize={12} 
-                                        tickLine={false} 
-                                        axisLine={false} 
-                                        dy={10}
-                                    />
-                                    <YAxis 
-                                        stroke="#94a3b8" 
-                                        fontSize={12} 
-                                        tickLine={false} 
-                                        axisLine={false} 
-                                        dx={-10}
-                                    />
-                                    <Tooltip
-                                        contentStyle={{
-                                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                                            border: 'none',
-                                            borderRadius: '12px',
-                                            color: '#f8fafc',
-                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                                            backdropFilter: 'blur(12px)'
-                                        }}
-                                    />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="successRate"
-                                        stroke="#10b981"
-                                        strokeWidth={4}
-                                        name="Success Rate (%)"
-                                        dot={{ fill: '#10b981', strokeWidth: 0, r: 4 }}
-                                        activeDot={{ r: 8, strokeWidth: 0 }}
-                                    />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="runs"
-                                        stroke="#6366f1"
-                                        strokeWidth={4}
-                                        name="Total Runs"
-                                        dot={{ fill: '#6366f1', strokeWidth: 0, r: 4 }}
-                                        activeDot={{ r: 8, strokeWidth: 0 }}
-                                    />
-                                </LineChart>
-                            </ResponsiveContainer>
+                            <div style={{ height: '300px' }}>
+                                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
+                                    <LineChart data={stats.trends}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
+                                        <XAxis
+                                            dataKey="date"
+                                            stroke="#94a3b8"
+                                            fontSize={12}
+                                            tickLine={false}
+                                            axisLine={false}
+                                            dy={10}
+                                        />
+                                        <YAxis
+                                            stroke="#94a3b8"
+                                            fontSize={12}
+                                            tickLine={false}
+                                            axisLine={false}
+                                            dx={-10}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                                                border: 'none',
+                                                borderRadius: '12px',
+                                                color: '#f8fafc',
+                                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                                backdropFilter: 'blur(12px)'
+                                            }}
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="successRate"
+                                            stroke="#10b981"
+                                            strokeWidth={4}
+                                            name="Success Rate (%)"
+                                            dot={{ fill: '#10b981', strokeWidth: 0, r: 4 }}
+                                            activeDot={{ r: 8, strokeWidth: 0 }}
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="runs"
+                                            stroke="#6366f1"
+                                            strokeWidth={4}
+                                            name="Total Runs"
+                                            dot={{ fill: '#6366f1', strokeWidth: 0, r: 4 }}
+                                            activeDot={{ r: 8, strokeWidth: 0 }}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
                         </Card>
                     </motion.div>
                 )}
@@ -341,44 +352,46 @@ export function ActionsStatsDashboard({ repos, teamId }) {
                                 <Clock className="w-5 h-5 text-purple-500" />
                                 Average Duration
                             </h3>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={stats.trends}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
-                                    <XAxis 
-                                        dataKey="date" 
-                                        stroke="#94a3b8" 
-                                        fontSize={12} 
-                                        tickLine={false} 
-                                        axisLine={false} 
-                                        dy={10}
-                                    />
-                                    <YAxis 
-                                        stroke="#94a3b8" 
-                                        fontSize={12} 
-                                        tickLine={false} 
-                                        axisLine={false} 
-                                        dx={-10}
-                                    />
-                                    <Tooltip
-                                        cursor={{ fill: '#334155', opacity: 0.1 }}
-                                        contentStyle={{
-                                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                                            border: 'none',
-                                            borderRadius: '12px',
-                                            color: '#f8fafc',
-                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                                            backdropFilter: 'blur(12px)'
-                                        }}
-                                    />
-                                    <Bar 
-                                        dataKey="avgDuration" 
-                                        fill="#8b5cf6" 
-                                        radius={[6, 6, 0, 0]} 
-                                        name="Avg Duration (s)"
-                                        barSize={32}
-                                    />
-                                </BarChart>
-                            </ResponsiveContainer>
+                            <div style={{ height: '300px' }}>
+                                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
+                                    <BarChart data={stats.trends}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
+                                        <XAxis
+                                            dataKey="date"
+                                            stroke="#94a3b8"
+                                            fontSize={12}
+                                            tickLine={false}
+                                            axisLine={false}
+                                            dy={10}
+                                        />
+                                        <YAxis
+                                            stroke="#94a3b8"
+                                            fontSize={12}
+                                            tickLine={false}
+                                            axisLine={false}
+                                            dx={-10}
+                                        />
+                                        <Tooltip
+                                            cursor={{ fill: '#334155', opacity: 0.1 }}
+                                            contentStyle={{
+                                                backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                                                border: 'none',
+                                                borderRadius: '12px',
+                                                color: '#f8fafc',
+                                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                                backdropFilter: 'blur(12px)'
+                                            }}
+                                        />
+                                        <Bar
+                                            dataKey="avgDuration"
+                                            fill="#8b5cf6"
+                                            radius={[6, 6, 0, 0]}
+                                            name="Avg Duration (s)"
+                                            barSize={32}
+                                        />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
                         </Card>
                     </motion.div>
                 )}
@@ -392,39 +405,41 @@ export function ActionsStatsDashboard({ repos, teamId }) {
                             <Activity className="w-5 h-5 text-indigo-500" />
                             Workflow Execution Details
                         </h3>
-                        <ResponsiveContainer width="100%" height={350}>
-                            <BarChart data={stats.trends}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
-                                <XAxis 
-                                    dataKey="date" 
-                                    stroke="#94a3b8" 
-                                    fontSize={12} 
-                                    tickLine={false} 
-                                    axisLine={false} 
-                                    dy={10}
-                                />
-                                <YAxis 
-                                    stroke="#94a3b8" 
-                                    fontSize={12} 
-                                    tickLine={false} 
-                                    axisLine={false} 
-                                    dx={-10}
-                                />
-                                <Tooltip
-                                    cursor={{ fill: '#334155', opacity: 0.1 }}
-                                    contentStyle={{
-                                        backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                                        border: 'none',
-                                        borderRadius: '12px',
-                                        color: '#f8fafc',
-                                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                                    }}
-                                />
-                                <Legend />
-                                <Bar dataKey="successes" name="Successes" fill="#10b981" radius={[6, 6, 0, 0]} barSize={20} />
-                                <Bar dataKey="failures" name="Failures" fill="#ef4444" radius={[6, 6, 0, 0]} barSize={20} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        <div style={{ height: '350px' }}>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
+                                <BarChart data={stats.trends}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
+                                    <XAxis
+                                        dataKey="date"
+                                        stroke="#94a3b8"
+                                        fontSize={12}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        dy={10}
+                                    />
+                                    <YAxis
+                                        stroke="#94a3b8"
+                                        fontSize={12}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        dx={-10}
+                                    />
+                                    <Tooltip
+                                        cursor={{ fill: '#334155', opacity: 0.1 }}
+                                        contentStyle={{
+                                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                                            border: 'none',
+                                            borderRadius: '12px',
+                                            color: '#f8fafc',
+                                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                                        }}
+                                    />
+                                    <Legend />
+                                    <Bar dataKey="successes" name="Successes" fill="#10b981" radius={[6, 6, 0, 0]} barSize={20} />
+                                    <Bar dataKey="failures" name="Failures" fill="#ef4444" radius={[6, 6, 0, 0]} barSize={20} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </Card>
                 </motion.div>
             )}

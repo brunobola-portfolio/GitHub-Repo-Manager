@@ -84,10 +84,10 @@ export function LanguageChart({ data = [], loading }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            whileHover={{ y: -6, scale: 1.02 }}
+            whileHover={{ y: -4 }}
         >
             <Card
-                className="p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl hover:shadow-2xl hover:border-pink-400/50 dark:hover:border-pink-500/40 transition-all duration-300 cursor-pointer"
+                className="p-4 sm:p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl hover:shadow-2xl hover:border-pink-400/50 dark:hover:border-pink-500/40 transition-all duration-300 cursor-pointer"
                 style={{ minHeight: `${chartHeight + 60}px` }}
             >
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
@@ -103,10 +103,10 @@ export function LanguageChart({ data = [], loading }) {
                         <p>No language data available</p>
                     </div>
                 ) : (
-                    <div className="flex flex-col lg:flex-row items-center gap-8" style={{ minHeight: `${chartHeight}px` }}>
+                    <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-8" style={{ minHeight: `${chartHeight}px` }}>
                         {/* Chart */}
                         <div style={{ maxWidth: '280px', width: '100%', height: '280px' }}>
-                            <ResponsiveContainer width="100%" height="100%" debounce={50}>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={200}>
                                 <PieChart>
                                     <Pie
                                         data={enrichedData}
@@ -155,7 +155,7 @@ export function LanguageChart({ data = [], loading }) {
                                     gridAutoRows: 'minmax(0, auto)'
                                 }}
                             >
-                                {enrichedData.map((lang, index) => (
+                                {enrichedData.map((lang) => (
                                     <div
                                         key={lang.name}
                                         className="flex items-center gap-3 group hover:bg-slate-50/80 dark:hover:bg-slate-800/40 p-2.5 rounded-xl transition-all duration-200 cursor-pointer"

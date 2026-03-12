@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Custom breakpoint for 3-column repo grid (only when sidebars + content have room) */
+@theme {
+	--breakpoint-3xl: 1800px;
+}
+
 /* Make Tailwind's `dark:` variant follow the `.dark` class on <html> (Tailwind v4) */
 @custom-variant dark (&:where(.dark, .dark *));
 

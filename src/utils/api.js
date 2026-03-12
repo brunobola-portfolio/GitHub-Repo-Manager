@@ -22,6 +22,33 @@ export const ErrorType = {
     UNKNOWN: 'UNKNOWN'
 }
 
+// ============ Auth Event Bus ============
+// Centralizes session-expiry detection so the UI reacts once, not per-request
+
+const authListeners = new Set()
+let sessionExpired = false
+
+export function onSessionExpired(callback) {
+    authListeners.add(callback)
+    return () => authListeners.delete(callback)
+}
+
+export function isSessionExpired() {
+    return sessionExpired
+}
+
+export function resetSessionExpired() {
+    sessionExpired = false
+}
+
+function notifySessionExpired() {
+    if (sessionExpired) return // already notified
+    sessionExpired = true
+    authListeners.forEach(cb => {
+        try { cb() } catch (e) { console.error('Auth listener error', e) }
+    })
+}
+
 // User-friendly error messages
 const ERROR_MESSAGES = {
     [ErrorType.NETWORK]: 'Unable to connect to the server. Please check your internet connection.',
@@ -73,6 +100,7 @@ export function categorizeError(status, error = null) {
 
     switch (status) {
         case 401:
+            notifySessionExpired()
             return new ApiError(ErrorType.AUTHENTICATION, null, status)
         case 403:
             return new ApiError(ErrorType.AUTHORIZATION, null, status)
@@ -118,6 +146,11 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 // Fetch with retry logic
 export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
     const { maxRetries, baseDelay, maxDelay, timeout } = { ...DEFAULT_RETRY_OPTIONS, ...retryOptions }
+
+    // Short-circuit: if session is already known expired, skip the request
+    if (sessionExpired) {
+        throw new ApiError(ErrorType.AUTHENTICATION, null, 401)
+    }
 
     let lastError = null
 
@@ -173,7 +206,6 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
         // Wait before retrying (not on last attempt)
         if (attempt < maxRetries) {
             const delay = calculateDelay(attempt, baseDelay, maxDelay)
-            console.log(`Retry attempt ${attempt + 1}/${maxRetries} after ${Math.round(delay)}ms`)
             await sleep(delay)
         }
     }

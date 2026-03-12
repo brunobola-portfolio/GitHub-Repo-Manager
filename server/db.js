@@ -204,6 +204,30 @@ export function initDB() {
 
         db.exec(`CREATE INDEX IF NOT EXISTS idx_community_health_score ON community_health_cache(health_score DESC)`);
 
+        // Migration jobs table for import tracking
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS migration_jobs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                source_type TEXT NOT NULL,
+                source_url TEXT NOT NULL,
+                source_name TEXT NOT NULL,
+                target_owner TEXT NOT NULL,
+                target_repo TEXT NOT NULL,
+                target_full_name TEXT,
+                status TEXT DEFAULT 'pending',
+                progress_pct INTEGER DEFAULT 0,
+                progress_message TEXT,
+                error_message TEXT,
+                started_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                completed_at TEXT,
+                metadata TEXT,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_mig_user ON migration_jobs(user_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_mig_status ON migration_jobs(status)`);
+
         // Indexes for performance
         db.exec(`CREATE INDEX IF NOT EXISTS idx_members_user ON team_members(user_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_repos_team ON repo_assignments(team_id)`);
@@ -211,6 +235,8 @@ export function initDB() {
         // Additional optimized indexes for frequent queries
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflow_runs_repo_created ON workflow_runs(repo_id, created_at DESC)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_team_members_team ON team_members(team_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_team_members_team_id ON team_members(team_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_team_members_user_team ON team_members(user_id, team_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_repo_assignments_repo ON repo_assignments(repo_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_repo_metadata_repo ON repo_metadata(repo_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_repo_embeddings_repo ON repo_embeddings(repo_id)`);

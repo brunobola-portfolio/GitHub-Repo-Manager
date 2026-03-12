@@ -6,7 +6,7 @@ import * as Popover from '@radix-ui/react-popover'
 /**
  * FilterBar - Premium filter system with multi-select, ranges, and presets
  */
-export function FilterBar({ filters, onFilterChange, presets = [], onSavePreset }) {
+export function FilterBar({ onFilterChange }) {
     const [showAdvanced, setShowAdvanced] = useState(false)
     const [activeFilters, setActiveFilters] = useState({})
 

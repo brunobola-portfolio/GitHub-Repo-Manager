@@ -16,6 +16,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
         if (repo) {
             fetchHealth(repo.full_name);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo]);
 
     const fetchHealth = async (repoFullName, refresh = false) => {
@@ -31,8 +32,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
 
             const data = await res.json();
             setHealth(data);
-        } catch (error) {
-            console.error(error);
+        } catch {
             toast.error('Failed to load community health');
         } finally {
             setLoading(false);
@@ -54,12 +54,6 @@ export function CommunityHealthDashboard({ repo, onClose }) {
     }
 
     if (!health) return null;
-
-    const getScoreColor = (score) => {
-        if (score >= 80) return 'text-emerald-600 dark:text-emerald-400';
-        if (score >= 60) return 'text-amber-600 dark:text-amber-400';
-        return 'text-red-600 dark:text-red-400';
-    };
 
     const getScoreLabel = (score) => {
         if (score >= 80) return 'Excellent';

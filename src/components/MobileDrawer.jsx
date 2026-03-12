@@ -12,7 +12,7 @@ export function MobileDrawer({ isOpen, onClose, children }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 z-40 xl:hidden"
+            className="fixed inset-0 bg-black/60 z-50 xl:hidden backdrop-blur-sm"
             aria-label="Close drawer"
           />
 

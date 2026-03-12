@@ -1,34 +1,52 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
 import { Select } from './ui/Select'
 import { Sparkles, Loader2 } from 'lucide-react'
-import { useGitHub } from '../hooks/useGitHub'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 
-export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming }) {
+export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming, askAI }) {
     const [name, setName] = useState('')
     const [description, setDescription] = useState('')
     const [targetOrg, setTargetOrg] = useState('')
     const [isPrivate, setIsPrivate] = useState(true)
-    const { askAI } = useGitHub()
     const [isGenerating, setIsGenerating] = useState(false)
-    const modalRef = useRef(null)
+    const [aiError, setAiError] = useState(null)
+    const modalRef = useFocusTrap(isOpen, onClose)
+
+    // Scroll input into view when keyboard appears (mobile fix)
+    useEffect(() => {
+        if (!isOpen) return
+
+        const handleFocus = (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                setTimeout(() => {
+                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }, 300) // Delay for keyboard animation
+            }
+        }
+
+        const modal = modalRef.current
+        modal?.addEventListener('focusin', handleFocus)
+        return () => modal?.removeEventListener('focusin', handleFocus)
+    }, [isOpen, modalRef])
 
     if (!isOpen) return null
 
     const handleMagicDescription = async () => {
         if (!name) return
         setIsGenerating(true)
+        setAiError(null)
         try {
             const res = await askAI(`Generate a short, professional, and catchy description (max 100 chars) for a GitHub repository named "${name}". Return ONLY the description text, no quotes.`)
 
             if (res.error === 'AI_NOT_CONFIGURED') {
-                setDescription('⚠️ AI not configured. Set GEMINI_API_KEY in server/.env')
+                setDescription('AI not configured. Set GEMINI_API_KEY in server/.env')
             } else if (res?.message) {
                 setDescription(res.message.replace(/^"|"$/g, '').trim())
             }
         } catch (e) {
-            console.error(e)
+            setAiError(e?.message || 'Failed to generate description')
         } finally {
             setIsGenerating(false)
         }
@@ -48,23 +66,6 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming 
             setTargetOrg('')
         }
     }
-
-    // Scroll input into view when keyboard appears (mobile fix)
-    useEffect(() => {
-        if (!isOpen) return
-
-        const handleFocus = (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                setTimeout(() => {
-                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                }, 300) // Delay for keyboard animation
-            }
-        }
-
-        const modal = modalRef.current
-        modal?.addEventListener('focusin', handleFocus)
-        return () => modal?.removeEventListener('focusin', handleFocus)
-    }, [isOpen])
 
     return (
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -139,6 +140,12 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming 
                             {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                         </button>
                     </div>
+
+                    {aiError && (
+                        <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
+                            {aiError}
+                        </div>
+                    )}
 
                     <label className="flex items-center gap-2 cursor-pointer">
                         <input

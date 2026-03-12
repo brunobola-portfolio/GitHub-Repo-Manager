@@ -1,80 +1,272 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { ApiError, ErrorType } from '../utils/api'
 
-// Import the hook file to test exported helper functions
-// Note: The main hook (useGitHub) is tested via E2E tests rather than unit tests
-// as it has complex state management and API interactions
+// Mock the config module to control MOCK_MODE
+vi.mock('../config', () => ({
+  MOCK_MODE: true,
+  API_ENDPOINTS: {
+    user: '/api/user',
+    repos: '/api/repos',
+    visibility: '/api/visibility',
+    transfer: '/api/transfer',
+    mirror: '/api/mirror',
+  },
+  PAGINATION: {
+    defaultPerPage: 30,
+    perPageOptions: [10, 30, 50, 100],
+  },
+}))
 
-describe('useGitHub helper functions', () => {
-  describe('Mock Data Generation', () => {
-    it('should generate mock repositories with correct structure', async () => {
-      // We can't directly test generateMockData as it's not exported
-      // This would be tested through the useGitHub hook in MOCK_MODE
-      // Skipping for now - will be covered in E2E tests
-      expect(true).toBe(true)
+// Must import after mocking
+const { useGitHub } = await import('./useGitHub')
+
+describe('useGitHub', () => {
+  beforeEach(() => {
+    global.fetch = vi.fn()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  describe('Initial State (Mock Mode)', () => {
+    it('returns all expected properties', () => {
+      const { result } = renderHook(() => useGitHub())
+
+      // Core data
+      expect(result.current).toHaveProperty('user')
+      expect(result.current).toHaveProperty('repos')
+      expect(result.current).toHaveProperty('loading')
+      expect(result.current).toHaveProperty('error')
+      expect(result.current).toHaveProperty('errorInfo')
+      expect(result.current).toHaveProperty('message')
+
+      // Pagination
+      expect(result.current).toHaveProperty('page')
+      expect(result.current).toHaveProperty('perPage')
+      expect(result.current).toHaveProperty('totalPages')
+      expect(result.current).toHaveProperty('setPage')
+      expect(result.current).toHaveProperty('setPerPage')
+
+      // Actions
+      expect(result.current).toHaveProperty('performAction')
+      expect(result.current).toHaveProperty('fetchUser')
+      expect(result.current).toHaveProperty('refresh')
+      expect(result.current).toHaveProperty('createRepo')
+      expect(result.current).toHaveProperty('deleteRepos')
+      expect(result.current).toHaveProperty('archiveRepos')
+
+      // Organizations
+      expect(result.current).toHaveProperty('orgs')
+      expect(result.current).toHaveProperty('selectedOrg')
+      expect(result.current).toHaveProperty('orgRepos')
+      expect(result.current).toHaveProperty('fetchOrgs')
+      expect(result.current).toHaveProperty('fetchOrgRepos')
+      expect(result.current).toHaveProperty('setSelectedOrg')
+
+      // Stats & Activity
+      expect(result.current).toHaveProperty('stats')
+      expect(result.current).toHaveProperty('fetchStats')
+      expect(result.current).toHaveProperty('activity')
+
+      // AI
+      expect(result.current).toHaveProperty('askAI')
+      expect(result.current).toHaveProperty('checkAIStatus')
+
+      // Selection (no-op stubs since SelectionContext is canonical)
+      expect(result.current).toHaveProperty('selectedIds')
+      expect(result.current).toHaveProperty('toggleSelect')
+      expect(result.current).toHaveProperty('selectRepos')
+
+      // Status flags
+      expect(result.current).toHaveProperty('isPerforming')
+      expect(result.current).toHaveProperty('results')
+      expect(result.current).toHaveProperty('isMockMode')
     })
+
+    it('populates mock user in mock mode', async () => {
+      const { result } = renderHook(() => useGitHub())
+
+      await waitFor(() => {
+        expect(result.current.user).not.toBeNull()
+      })
+
+      expect(result.current.user.login).toBe('dev-user')
+      expect(result.current.user.name).toBeTruthy()
+    })
+
+    it('populates mock repos in mock mode', async () => {
+      const { result } = renderHook(() => useGitHub())
+
+      await waitFor(() => {
+        expect(result.current.repos.length).toBeGreaterThan(0)
+      })
+
+      const firstRepo = result.current.repos[0]
+      expect(firstRepo).toHaveProperty('id')
+      expect(firstRepo).toHaveProperty('name')
+      expect(firstRepo).toHaveProperty('full_name')
+      expect(firstRepo).toHaveProperty('description')
+      expect(firstRepo).toHaveProperty('language')
+      expect(firstRepo).toHaveProperty('stargazers_count')
+      expect(firstRepo).toHaveProperty('private')
+      expect(firstRepo).toHaveProperty('html_url')
+      expect(firstRepo).toHaveProperty('updated_at')
+      expect(firstRepo).toHaveProperty('owner')
+    })
+
+    it('generates correct pagination in mock mode', async () => {
+      const { result } = renderHook(() => useGitHub())
+
+      await waitFor(() => {
+        expect(result.current.totalPages).not.toBeNull()
+      })
+
+      expect(result.current.page).toBe(1)
+      expect(result.current.perPage).toBe(30)
+      expect(result.current.totalPages).toBeGreaterThanOrEqual(1)
+    })
+
+    it('reports isMockMode as true', () => {
+      const { result } = renderHook(() => useGitHub())
+      expect(result.current.isMockMode).toBe(true)
+    })
+
+    it('starts with no errors', () => {
+      const { result } = renderHook(() => useGitHub())
+      expect(result.current.error).toBeNull()
+      expect(result.current.errorInfo).toBeNull()
+    })
+
+    it('initializes selection as empty Set', () => {
+      const { result } = renderHook(() => useGitHub())
+      expect(result.current.selectedIds).toBeInstanceOf(Set)
+      expect(result.current.selectedIds.size).toBe(0)
+    })
+  })
+
+  describe('Pagination (Mock Mode)', () => {
+    it('changes page via setPage', async () => {
+      const { result } = renderHook(() => useGitHub())
+
+      act(() => {
+        result.current.setPage(2)
+      })
+
+      await waitFor(() => {
+        expect(result.current.page).toBe(2)
+      })
+    })
+
+    it('changes perPage via setPerPage', async () => {
+      const { result } = renderHook(() => useGitHub())
+
+      act(() => {
+        result.current.setPerPage(10)
+      })
+
+      await waitFor(() => {
+        expect(result.current.perPage).toBe(10)
+      })
+    })
+  })
+
+  describe('Selection Stubs', () => {
+    it('toggleSelect is a no-op function', () => {
+      const { result } = renderHook(() => useGitHub())
+
+      act(() => {
+        result.current.toggleSelect(1)
+      })
+
+      expect(result.current.selectedIds.size).toBe(0)
+    })
+
+    it('selectRepos is a no-op function', () => {
+      const { result } = renderHook(() => useGitHub())
+
+      act(() => {
+        result.current.selectRepos([1, 2, 3])
+      })
+
+      expect(result.current.selectedIds.size).toBe(0)
+    })
+
+    // clearSelection removed - now managed by SelectionContext directly
   })
 
   describe('Error Handling', () => {
-    let originalOnLine
-
-    beforeEach(() => {
-      originalOnLine = navigator.onLine
-    })
-
-    afterEach(() => {
-      Object.defineProperty(navigator, 'onLine', {
-        writable: true,
-        value: originalOnLine
-      })
-    })
-
-    it('should handle ApiError instances', () => {
+    it('handles ApiError instances correctly', () => {
       const apiError = new ApiError(ErrorType.AUTHENTICATION, 'Auth failed', 401)
-
-      // In real code, getErrorInfo would be called with this error
-      // Testing the ApiError class itself is in api.test.js
       expect(apiError.type).toBe(ErrorType.AUTHENTICATION)
       expect(apiError.userMessage).toBe('Your session has expired. Please login again.')
       expect(apiError.status).toBe(401)
+      expect(apiError.isRetryable).toBe(false)
     })
 
-    it('should detect offline status', () => {
-      Object.defineProperty(navigator, 'onLine', {
-        writable: true,
-        value: false
-      })
-
-      expect(navigator.onLine).toBe(false)
+    it('marks network errors as retryable', () => {
+      const networkError = new ApiError(ErrorType.NETWORK, 'Network error')
+      expect(networkError.isRetryable).toBe(true)
     })
 
-    it('should handle network errors', () => {
-      const networkError = new Error('Network request failed')
-      networkError.name = 'TypeError'
+    it('marks server errors as retryable', () => {
+      const serverError = new ApiError(ErrorType.SERVER, 'Server error', 500)
+      expect(serverError.isRetryable).toBe(true)
+    })
 
-      expect(networkError.message).toContain('Network')
+    it('marks authorization errors as non-retryable', () => {
+      const authzError = new ApiError(ErrorType.AUTHORIZATION, 'Forbidden', 403)
+      expect(authzError.isRetryable).toBe(false)
     })
   })
 
-  describe('Integration Notes', () => {
-    it('notes that useGitHub is tested via E2E', () => {
-      // The useGitHub hook is a complex custom hook with:
-      // - Multiple state variables
-      // - API calls with retry logic
-      // - Pagination handling
-      // - Selection management
-      // - Error state management
-      //
-      // These are better tested through:
-      // 1. Component integration tests
-      // 2. E2E tests with Playwright
-      // 3. Manual testing in MOCK_MODE
-      //
-      // Unit testing custom hooks with extensive API interactions
-      // requires complex mocking that doesn't provide much value
-      // compared to integration/E2E tests
+  describe('Action Functions', () => {
+    it('all action functions are callable', () => {
+      const { result } = renderHook(() => useGitHub())
 
-      expect(true).toBe(true)
+      expect(typeof result.current.performAction).toBe('function')
+      expect(typeof result.current.fetchUser).toBe('function')
+      expect(typeof result.current.refresh).toBe('function')
+      expect(typeof result.current.createRepo).toBe('function')
+      expect(typeof result.current.deleteRepos).toBe('function')
+      expect(typeof result.current.archiveRepos).toBe('function')
+      expect(typeof result.current.fetchOrgs).toBe('function')
+      expect(typeof result.current.fetchOrgRepos).toBe('function')
+      expect(typeof result.current.fetchStats).toBe('function')
+      expect(typeof result.current.askAI).toBe('function')
+      expect(typeof result.current.checkAIStatus).toBe('function')
+      expect(typeof result.current.importFromAzure).toBe('function')
+    })
+  })
+
+  describe('Mock Data Quality', () => {
+    it('mock repos have realistic structure', async () => {
+      const { result } = renderHook(() => useGitHub())
+
+      await waitFor(() => {
+        expect(result.current.repos.length).toBeGreaterThan(0)
+      })
+
+      for (const repo of result.current.repos) {
+        expect(typeof repo.id).toBe('number')
+        expect(typeof repo.name).toBe('string')
+        expect(repo.name.length).toBeGreaterThan(0)
+        expect(typeof repo.stargazers_count).toBe('number')
+        expect(repo.stargazers_count).toBeGreaterThanOrEqual(0)
+        expect(typeof repo.private).toBe('boolean')
+      }
+    })
+
+    it('mock repos include diverse languages', async () => {
+      const { result } = renderHook(() => useGitHub())
+
+      await waitFor(() => {
+        expect(result.current.repos.length).toBeGreaterThan(0)
+      })
+
+      const languages = new Set(result.current.repos.map(r => r.language))
+      expect(languages.size).toBeGreaterThanOrEqual(3)
     })
   })
 })

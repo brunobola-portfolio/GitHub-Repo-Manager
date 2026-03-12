@@ -3,11 +3,14 @@
  * for display in the GitHub Repo Manager UI
  */
 
+/** Default locale for number formatting. Change to 'en-US' for international format. */
+export const APP_LOCALE = 'pt-PT'
+
 /**
  * Formats a number with thousand separators
  * @param {number} value - The number to format
  * @param {object} options - Formatting options
- * @param {string} options.locale - Locale for formatting (default: 'pt-PT')
+ * @param {string} options.locale - Locale for formatting (default: APP_LOCALE)
  * @param {number} options.minimumFractionDigits - Minimum decimal places
  * @param {number} options.maximumFractionDigits - Maximum decimal places
  * @param {string} options.notation - 'standard' or 'compact'
@@ -19,7 +22,7 @@
  */
 export function formatNumber(value, options = {}) {
 	const {
-		locale = 'pt-PT',
+		locale = APP_LOCALE,
 		minimumFractionDigits = 0,
 		maximumFractionDigits = 0,
 		notation = 'standard',
@@ -38,7 +41,6 @@ export function formatNumber(value, options = {}) {
 		}).format(value)
 	} catch (error) {
 		// Fallback to simple string conversion if Intl.NumberFormat fails
-		console.warn('Number formatting failed, using fallback:', error)
 		return String(value)
 	}
 }
@@ -52,7 +54,7 @@ export function formatNumber(value, options = {}) {
  * formatCompact(1234) // "1,2 mil" (pt-PT) or "1.2K" (en-US)
  * formatCompact(1234567) // "1,2 M" (pt-PT) or "1.2M" (en-US)
  */
-export function formatCompact(value, locale = 'pt-PT') {
+export function formatCompact(value, locale = APP_LOCALE) {
 	if (value == null || isNaN(value)) return '0'
 
 	try {
@@ -63,7 +65,6 @@ export function formatCompact(value, locale = 'pt-PT') {
 		}).format(value)
 	} catch (error) {
 		// Fallback to manual compact formatting
-		console.warn('Compact number formatting failed, using fallback:', error)
 		if (value >= 1000000000) {
 			return `${(value / 1000000000).toFixed(1)}B`
 		}

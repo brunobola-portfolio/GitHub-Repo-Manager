@@ -1,33 +1,69 @@
 import { Component } from 'react'
+import { AlertTriangle, RefreshCw, RotateCcw } from 'lucide-react'
 
 class ErrorBoundary extends Component {
-  state = { hasError: false, error: null }
+  state = { hasError: false, error: null, errorInfo: null }
 
   static getDerivedStateFromError(error) {
     return { hasError: true, error }
   }
 
   componentDidCatch(error, errorInfo) {
+    this.setState({ errorInfo })
     console.error('ErrorBoundary caught:', error, errorInfo)
+
+    // Report error to backend for monitoring
+    try {
+      fetch('/api/system/client-error', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: error?.message,
+          stack: error?.stack?.slice(0, 2000),
+          componentStack: errorInfo?.componentStack?.slice(0, 2000),
+          url: window.location.href,
+          timestamp: new Date().toISOString()
+        })
+      }).catch(() => {}) // Don't let reporting failure cause another error
+    } catch {
+      // Silently ignore reporting failures
+    }
+  }
+
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null, errorInfo: null })
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
-          <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">
+        <div className="min-h-[400px] flex items-center justify-center bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-6">
+          <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-black/30 p-8 text-center">
+            <div className="w-14 h-14 bg-red-50 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-7 h-7 text-red-500 dark:text-red-400" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">
               Something went wrong
             </h2>
-            <p className="text-slate-600 dark:text-slate-300 mb-4">
-              {this.state.error?.message || 'An unexpected error occurred'}
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 leading-relaxed">
+              {this.state.error?.message || 'An unexpected error occurred. You can try again or reload the page.'}
             </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-            >
-              Reload Page
-            </button>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={this.handleRetry}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium text-sm transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus:outline-none"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Try Again
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-medium text-sm transition-colors focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus:outline-none"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Reload Page
+              </button>
+            </div>
           </div>
         </div>
       )

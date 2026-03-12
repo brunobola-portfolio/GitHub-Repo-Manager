@@ -1,4 +1,5 @@
 import db from './db.js';
+import { githubApi } from './lib/github-api.js';
 
 class CommunityHealthService {
     /**
@@ -21,84 +22,56 @@ class CommunityHealthService {
     }
 
     async fetchRepoData(owner, repo, token) {
-        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/vnd.github+json',
-                'X-GitHub-Api-Version': '2022-11-28'
-            }
-        });
-        
-        if (!res.ok) throw new Error('Failed to fetch repo');
-        return await res.json();
+        const { data } = await githubApi(`/repos/${owner}/${repo}`, token);
+        return data;
     }
 
     async checkCommunityFiles(owner, repo, token) {
         const filesToCheck = [
-            'README.md',
-            'LICENSE',
-            'CONTRIBUTING.md',
-            'CODE_OF_CONDUCT.md',
-            'SECURITY.md',
-            '.github/ISSUE_TEMPLATE',
-            '.github/PULL_REQUEST_TEMPLATE.md'
+            'README.md', 'LICENSE', 'CONTRIBUTING.md', 'CODE_OF_CONDUCT.md',
+            'SECURITY.md', '.github/ISSUE_TEMPLATE', '.github/PULL_REQUEST_TEMPLATE.md'
         ];
-        
+
         const results = {};
-        
+
         for (const file of filesToCheck) {
             try {
-                const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${file}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/vnd.github+json'
-                    }
-                });
-                
-                results[file] = { exists: res.ok, size: res.ok ? (await res.json()).size : 0 };
+                const { data } = await githubApi(`/repos/${owner}/${repo}/contents/${file}`, token);
+                results[file] = { exists: true, size: data.size || 0 };
             } catch {
                 results[file] = { exists: false, size: 0 };
             }
         }
-        
+
         return results;
     }
 
     async getActivityMetrics(owner, repo, token) {
-        // Contributors
-        const contributorsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contributors?per_page=100`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/vnd.github+json'
-            }
-        });
-        const contributors = contributorsRes.ok ? await contributorsRes.json() : [];
-        
-        // Commits (last 30 days)
-        const since = new Date();
-        since.setDate(since.getDate() - 30);
-        const commitsRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?since=${since.toISOString()}&per_page=100`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/vnd.github+json'
-            }
-        });
-        const commits = commitsRes.ok ? await commitsRes.json() : [];
-        
-        // Issues
-        const issuesRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues?state=all&per_page=100`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/vnd.github+json'
-            }
-        });
-        const issues = issuesRes.ok ? await issuesRes.json() : [];
-        
+        let contributors = [];
+        try {
+            const result = await githubApi(`/repos/${owner}/${repo}/contributors?per_page=100`, token);
+            contributors = result.data;
+        } catch { /* empty */ }
+
+        let commits = [];
+        try {
+            const since = new Date();
+            since.setDate(since.getDate() - 30);
+            const result = await githubApi(`/repos/${owner}/${repo}/commits?since=${since.toISOString()}&per_page=100`, token);
+            commits = result.data;
+        } catch { /* empty */ }
+
+        let issues = [];
+        try {
+            const result = await githubApi(`/repos/${owner}/${repo}/issues?state=all&per_page=100`, token);
+            issues = result.data;
+        } catch { /* empty */ }
+
         return {
-            contributorCount: contributors.length,
-            commitsLast30Days: commits.length,
-            openIssues: issues.filter(i => i.state === 'open' && !i.pull_request).length,
-            closedIssues: issues.filter(i => i.state === 'closed' && !i.pull_request).length
+            contributorCount: Array.isArray(contributors) ? contributors.length : 0,
+            commitsLast30Days: Array.isArray(commits) ? commits.length : 0,
+            openIssues: Array.isArray(issues) ? issues.filter(i => i.state === 'open' && !i.pull_request).length : 0,
+            closedIssues: Array.isArray(issues) ? issues.filter(i => i.state === 'closed' && !i.pull_request).length : 0
         };
     }
 

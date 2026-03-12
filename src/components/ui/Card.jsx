@@ -1,8 +1,8 @@
 import { twMerge } from 'tailwind-merge'
 
-export function Card({ children, className, hover = false, glass = true }) {
+export function Card({ children, className, hover = false, glass = true, ref, ...props }) {
     return (
-        <div className={twMerge(
+        <div ref={ref} {...props} className={twMerge(
             // Base glassmorphism styling
             glass
                 ? 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl'

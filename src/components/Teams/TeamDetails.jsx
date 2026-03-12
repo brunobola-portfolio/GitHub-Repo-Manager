@@ -4,19 +4,21 @@ import { Users, Github, ArrowLeft, Plus, Trash2, Shield, UserPlus, BookCopy, Zap
 import { useToast } from '../../hooks/useToast';
 import { ActivityTab } from './ActivityTab';
 import { Select } from '../ui/Select';
+import { ConfirmModal } from '../ui/ConfirmModal';
 
 export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsStats }) {
     const [activeTab, setActiveTab] = useState('activity');
     const [members, setMembers] = useState([]);
     const [assignedRepos, setAssignedRepos] = useState([]);
     const [currentUserRole, setCurrentUserRole] = useState('member');
-    const [loading, setLoading] = useState(true);
+    const [_loading, setLoading] = useState(true);
     const [showInvite, setShowInvite] = useState(false);
     const [showAssign, setShowAssign] = useState(false);
     const [inviteUsername, setInviteUsername] = useState('');
     const [selectedRepoToAssign, setSelectedRepoToAssign] = useState('');
     const [userSearchResults, setUserSearchResults] = useState([]);
     const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+    const [confirmAction, setConfirmAction] = useState(null);
     const { toast } = useToast();
 
     const fetchDetails = async () => {
@@ -37,6 +39,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
 
     useEffect(() => {
         fetchDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [team.id]);
 
     const handleInviteGivenUsername = async (usernameToInvite) => {
@@ -85,7 +88,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
         }
     };
 
-    const handleUpdateRole = async (userId, newRole) => {
+    const _handleUpdateRole = async (userId, newRole) => {
         try {
             const res = await fetch(`/api/teams/${team.id}/members/${userId}`, {
                 method: 'PUT',
@@ -104,23 +107,28 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
         }
     };
 
-    const handleRemoveMember = async (userId) => {
-        if (!confirm('Are you sure you want to remove this member?')) return;
+    const _handleRemoveMember = (userId) => {
+        setConfirmAction({
+            title: 'Remove Member',
+            message: 'Are you sure you want to remove this member?',
+            confirmText: 'Remove',
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/api/teams/${team.id}/members/${userId}`, {
+                        method: 'DELETE'
+                    });
 
-        try {
-            const res = await fetch(`/api/teams/${team.id}/members/${userId}`, {
-                method: 'DELETE'
-            });
-
-            if (res.ok) {
-                toast.success('Member removed');
-                fetchDetails();
-            } else {
-                toast.error('Failed to remove member');
+                    if (res.ok) {
+                        toast.success('Member removed');
+                        fetchDetails();
+                    } else {
+                        toast.error('Failed to remove member');
+                    }
+                } catch (error) {
+                    toast.error('Error removing member');
+                }
             }
-        } catch (error) {
-            toast.error('Error removing member');
-        }
+        });
     };
 
     // Filter out repos correctly assigned
@@ -210,8 +218,8 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                                             const res = await fetch(`/api/search/users?q=${e.target.value}`);
                                                             const data = await res.json();
                                                             setUserSearchResults(data || []);
-                                                        } catch (err) {
-                                                            console.error(err);
+                                                        } catch {
+                                                            // User search failed
                                                         } finally {
                                                             setIsSearchingUsers(false);
                                                         }
@@ -367,6 +375,16 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                     <ActionsTab assignedRepos={assignedRepos} onShowStats={onShowActionsStats} />
                 )}
             </AnimatePresence>
+
+            <ConfirmModal
+                isOpen={!!confirmAction}
+                onClose={() => setConfirmAction(null)}
+                onConfirm={() => { confirmAction?.onConfirm(); setConfirmAction(null); }}
+                title={confirmAction?.title}
+                message={confirmAction?.message}
+                confirmText={confirmAction?.confirmText}
+                variant="danger"
+            />
         </div>
     );
 }
@@ -442,7 +460,7 @@ function MemberCard({ member, currentUserRole, onUpdateRole, onRemove, isMe }) {
     );
 }
 
-function RepoCard({ repo, teamMembers, currentUser }) {
+function RepoCard({ repo, teamMembers }) {
     const [showCollaborators, setShowCollaborators] = useState(false);
     const [collaborators, setCollaborators] = useState([]);
     const [loadingCollabs, setLoadingCollabs] = useState(false);
@@ -460,8 +478,8 @@ function RepoCard({ repo, teamMembers, currentUser }) {
                 const data = await res.json();
                 setCollaborators(data);
             }
-        } catch (error) {
-            console.error(error);
+        } catch {
+            // Collaborator fetch failed
         } finally {
             setLoadingCollabs(false);
         }
@@ -471,6 +489,7 @@ function RepoCard({ repo, teamMembers, currentUser }) {
         if (showCollaborators) {
             fetchCollaborators();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showCollaborators]);
 
     // 2. Identify missing team members
@@ -612,6 +631,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
         if (selectedRepo) {
             fetchWorkflows(selectedRepo);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedRepo]);
 
     const fetchWorkflows = async (repoFullName) => {

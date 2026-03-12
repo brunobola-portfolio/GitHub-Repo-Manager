@@ -22,6 +22,7 @@ export function DashboardPremium({
     stats,
     orgs = [],
     repos = [],
+    teams = [],
     selectedOrg,
     onSelectOrg,
     loading,
@@ -48,7 +49,7 @@ export function DashboardPremium({
         issues: shouldShowCategory('issues', { repos, stats }),
         actions: shouldShowCategory('actions', { repos, stats }),
         health: shouldShowCategory('health', { repos, stats }),
-        teams: shouldShowCategory('teams', { repos, stats, teams: [] }), // TODO: Add teams data
+        teams: shouldShowCategory('teams', { repos, stats, teams }),
         organizations: shouldShowCategory('organizations', { repos, stats, orgs })
     }
 
@@ -65,15 +66,15 @@ export function DashboardPremium({
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="space-y-8"
+            className="space-y-5 sm:space-y-6 lg:space-y-8"
         >
             {/* Header with Organization Selector */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
                 <div className="flex-1">
-                    <h1 className="text-4xl font-extrabold tracking-tight ds-font-display ds-gradient-text">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight ds-font-display ds-gradient-text">
                         Dashboard
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg ds-font-display">
+                    <p className="text-slate-500 dark:text-slate-400 mt-1.5 sm:mt-2 text-base sm:text-lg ds-font-display">
                         Comprehensive overview of your GitHub ecosystem
                     </p>
                 </div>
@@ -101,7 +102,7 @@ export function DashboardPremium({
                 defaultExpanded={true}
             >
                 {/* Key Metrics Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
                     <StatCard
                         title="Total Repositories"
                         value={stats?.totalRepos || repoStats.total}
@@ -169,7 +170,7 @@ export function DashboardPremium({
                 </div>
 
                 {/* Charts Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
                     <ActivityChart
                         activity={activity}
                         timeRange={timeRange}
@@ -231,7 +232,53 @@ export function DashboardPremium({
                 </CategorySection>
             )}
 
-            {/* CATEGORY 5: Teams & Organizations (Conditional) */}
+            {/* CATEGORY 5: Teams (Conditional) */}
+            {categories.teams && teams.length > 0 && (
+                <CategorySection
+                    title="Teams"
+                    icon={Users}
+                    badge={`${teams.length} teams`}
+                    defaultExpanded={true}
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                        {teams.map(team => (
+                            <motion.div
+                                key={team.id}
+                                whileHover={{ y: -4 }}
+                                className="p-5 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/40 dark:border-slate-800/40 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-all"
+                            >
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                                        <Users className="w-5 h-5 text-indigo-500" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h3 className="font-bold text-slate-900 dark:text-white truncate">
+                                            {team.name}
+                                        </h3>
+                                        {team.description && (
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                                {team.description}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+                                    <span className="flex items-center gap-1">
+                                        <Users className="w-3.5 h-3.5" />
+                                        {team.members?.length || 0} members
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <Folder className="w-3.5 h-3.5" />
+                                        {team.repos?.length || 0} repos
+                                    </span>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                </CategorySection>
+            )}
+
+            {/* CATEGORY 6: Organizations (Conditional) */}
             {categories.organizations && orgs.length > 1 && (
                 <CategorySection
                     title="Organizations"
@@ -239,7 +286,7 @@ export function DashboardPremium({
                     badge={`${orgs.length} orgs`}
                     defaultExpanded={true}
                 >
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                         {orgs.map(org => (
                             <OrganizationCard
                                 key={org.login}
@@ -259,7 +306,7 @@ export function DashboardPremium({
                     icon={TrendingUp}
                     defaultExpanded={false}
                 >
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                         {!categories.actions && (
                             <DiscoverCard
                                 icon={Zap}

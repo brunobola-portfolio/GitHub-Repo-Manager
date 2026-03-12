@@ -1,16 +1,15 @@
 import { useState } from 'react'
 import { X, Copy, RefreshCw, Wand2, Check } from 'lucide-react'
 import { Button } from './ui/Button'
-import { useGitHub } from '../hooks/useGitHub'
-// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 
-export function CommitGeneratorModal({ isOpen, onClose }) {
+export function CommitGeneratorModal({ isOpen, onClose, askAI }) {
+    const modalRef = useFocusTrap(isOpen, onClose)
     const [diff, setDiff] = useState('')
     const [generatedMessage, setGeneratedMessage] = useState('')
     const [loading, setLoading] = useState(false)
     const [copied, setCopied] = useState(false)
-    const { askAI } = useGitHub()
 
     const handleGenerate = async () => {
         if (!diff.trim()) return
@@ -22,8 +21,7 @@ export function CommitGeneratorModal({ isOpen, onClose }) {
                 { context: "commit-generation" }
             )
             setGeneratedMessage(response.message || 'Failed to generate message.')
-        } catch (e) {
-            console.error('Commit Gen Error:', e)
+        } catch {
             setGeneratedMessage('Error generating commit message. Please check your API key.')
         } finally {
             setLoading(false)
@@ -43,6 +41,10 @@ export function CommitGeneratorModal({ isOpen, onClose }) {
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <motion.div
+                ref={modalRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="commit-generator-title"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
@@ -55,7 +57,7 @@ export function CommitGeneratorModal({ isOpen, onClose }) {
                             <Wand2 className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-white">Commit Generator</h2>
+                            <h2 id="commit-generator-title" className="text-xl font-bold text-white">Commit Generator</h2>
                             <p className="text-white/80 text-xs">AI-powered conventional commits</p>
                         </div>
                     </div>

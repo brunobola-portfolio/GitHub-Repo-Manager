@@ -26,15 +26,17 @@ export function RepoList({
 	perPage,
 	totalPages,
 	onRefresh,
-	onQuickAction
+	onQuickAction,
+	onRepoClick
 }) {
-	const { selectedIds, toggleSelect, selectRepos, deselectRepos, clearSelection, invertSelection } = useSelection()
-	const { openModal } = useModal()
+	const { selectedIds, toggleSelect, selectRepos, deselectRepos, clearSelection } = useSelection()
+	const { openModalWithData } = useModal()
 	const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
 	const [searchQuery, setSearchQuery] = useState('')
 	const [isAISearch, setIsAISearch] = useState(false)
 	const [aiResults, setAiResults] = useState([])
 	const [isSearchingAI, setIsSearchingAI] = useState(false)
+	const [aiSearchError, setAiSearchError] = useState(null)
 
 	const [typeFilter, setTypeFilter] = useState('all')
 	const [visibilityFilter, setVisibilityFilter] = useState('all')
@@ -99,16 +101,19 @@ export function RepoList({
 		const delayDebounce = setTimeout(async () => {
 			if (isAISearch && searchQuery.length > 2) {
 				setIsSearchingAI(true)
+				setAiSearchError(null)
 				try {
 					const results = await aiApi.search(searchQuery)
 					setAiResults(results)
-				} catch (e) {
-					console.error("AI Search failed", e)
+				} catch (err) {
+					setAiSearchError('AI search unavailable. Try regular search.')
+					setAiResults([])
 				} finally {
 					setIsSearchingAI(false)
 				}
 			} else if (isAISearch && !searchQuery) {
 				setAiResults([])
+				setAiSearchError(null)
 			}
 		}, 500)
 
@@ -172,10 +177,10 @@ export function RepoList({
 	return (
 		<div className="space-y-6 relative min-h-[600px]">
 			{/* Glassmorphic Toolbar */}
-			<div className="sticky top-[104px] sm:top-[68px] z-30 p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-xl shadow-slate-200/50 dark:shadow-black/50 flex flex-col lg:flex-row gap-3 items-center justify-between transition-all duration-300">
+			<div className="sticky top-[108px] lg:top-16 z-10 p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-xl shadow-slate-200/50 dark:shadow-black/50 flex flex-col lg:flex-row gap-3 items-center justify-between transition-all duration-300">
 
 				{/* Search & View Toggle */}
-				<div className="flex items-center gap-2 w-full lg:w-auto">
+				<div className="flex items-center gap-2 w-full lg:w-auto flex-wrap sm:flex-nowrap">
 					{/* Advanced Selection Menu */}
 					<div className="relative z-40">
 						<div className="flex items-center rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-1">
@@ -228,10 +233,11 @@ export function RepoList({
 						)}
 					</div>
 
-					<div className="relative flex-1 lg:w-64 group">
+					<div className="relative min-w-0 basis-full sm:basis-auto sm:flex-1 lg:w-64 group order-first sm:order-none">
 						<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
 						<input
 							type="text"
+							data-search-input
 							placeholder={isAISearch ? "Ask AI (e.g., 'React apps with auth')..." : "Search repositories..."}
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
@@ -251,6 +257,9 @@ export function RepoList({
 						{isSearchingAI && (
 							<Loader2 className="absolute right-10 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-purple-500" />
 						)}
+						{aiSearchError && (
+							<p className="absolute -bottom-6 left-0 text-xs text-red-500 dark:text-red-400">{aiSearchError}</p>
+						)}
 					</div>
 					<div className="flex bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl p-1 border border-slate-200/70 dark:border-slate-700/50 shadow-sm">
 						<button
@@ -269,7 +278,7 @@ export function RepoList({
 				</div>
 
 				{/* Filters */}
-				<div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0 no-scrollbar">
+				<div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0">
 					<Select
 						value={typeFilter}
 						onChange={setTypeFilter}
@@ -336,22 +345,36 @@ export function RepoList({
 					</p>
 				</div>
 			) : error ? (
-				<div className="flex flex-col items-center justify-center py-20 text-red-500 dark:text-red-400">
-					<AlertCircle className="w-10 h-10 mb-4" />
-					<p className="text-center max-w-md">{error}</p>
-					{errorInfo?.type === 'BACKEND_UNAVAILABLE' && (
-						<div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg max-w-lg">
-							<p className="text-amber-800 dark:text-amber-200 text-sm font-medium mb-2">
-								How to fix this:
+				<div className="flex flex-col items-center justify-center py-20">
+					{errorInfo?.type === 'AUTHENTICATION' ? (
+						<>
+							<div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4">
+								<Lock className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+							</div>
+							<p className="text-slate-700 dark:text-slate-300 font-medium text-center mb-2">Session Expired</p>
+							<p className="text-slate-500 dark:text-slate-400 text-sm text-center max-w-md mb-4">
+								Your session has expired. Please login again to access your repositories.
 							</p>
-							<ol className="text-amber-700 dark:text-amber-300 text-sm list-decimal list-inside space-y-1">
-								<li>Open a terminal in the project root</li>
-								<li>Run <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">npm run dev:server</code> to start the backend</li>
-								<li>Or run <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">npm run dev:all</code> to start both frontend and backend</li>
-							</ol>
-						</div>
+						</>
+					) : (
+						<>
+							<AlertCircle className="w-10 h-10 mb-4 text-red-500 dark:text-red-400" />
+							<p className="text-center max-w-md text-red-500 dark:text-red-400">{error}</p>
+							{errorInfo?.type === 'BACKEND_UNAVAILABLE' && (
+								<div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg max-w-lg">
+									<p className="text-amber-800 dark:text-amber-200 text-sm font-medium mb-2">
+										How to fix this:
+									</p>
+									<ol className="text-amber-700 dark:text-amber-300 text-sm list-decimal list-inside space-y-1">
+										<li>Open a terminal in the project root</li>
+										<li>Run <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">npm run dev:server</code> to start the backend</li>
+										<li>Or run <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">npm run dev:all</code> to start both frontend and backend</li>
+									</ol>
+								</div>
+							)}
+							<Button variant="secondary" className="mt-4" onClick={onRefresh}>Try Again</Button>
+						</>
 					)}
-					<Button variant="secondary" className="mt-4" onClick={onRefresh}>Try Again</Button>
 				</div>
 			) : filteredRepos.length === 0 ? (
 				<div className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
@@ -363,7 +386,7 @@ export function RepoList({
 				</div>
 			) : (
 				<div className={viewMode === 'grid'
-					? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+					? "grid grid-cols-1 md:grid-cols-2 3xl:grid-cols-3 gap-4"
 					: "flex flex-col gap-3"
 				}>
 					{filteredRepos.map(repo => (
@@ -375,8 +398,9 @@ export function RepoList({
 							onToggle={() => toggleSelect(repo.id)}
 							onAction={onQuickAction}
 							onContextMenu={(e) => handleContextMenu(e, repo)}
-							onOpenInsights={() => openModal('showRepoInsights')}
-							onOpenHealth={() => openModal('showCommunityHealth')}
+							onOpenInsights={() => openModalWithData('showRepoInsights', repo)}
+							onOpenHealth={() => openModalWithData('showCommunityHealth', repo)}
+							onRepoClick={onRepoClick}
 						/>
 					))}
 				</div>
@@ -416,7 +440,7 @@ export function RepoList({
 
 			{/* Floating Selection Bar */}
 			{selectedIds.size > 0 && (
-				<div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-[calc(100vw-6rem)] animate-in slide-in-from-bottom-4 fade-in duration-300">
+				<div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[45] max-w-[calc(100vw-6rem)] animate-in slide-in-from-bottom-4 fade-in duration-300">
 					<div className="flex items-center gap-3 pl-4 pr-2 py-2 bg-slate-900/90 dark:bg-white/90 backdrop-blur-md text-white dark:text-slate-900 rounded-full shadow-2xl border border-white/10 dark:border-slate-200/20">
 						<div className="flex items-center gap-2 text-sm font-medium pr-3 border-r border-white/20 dark:border-slate-900/10">
 							<CheckSquare className="w-4 h-4" />
@@ -440,8 +464,8 @@ export function RepoList({
 					y={repoMenu.y}
 					onClose={() => setRepoMenu(null)}
 					onQuickAction={onQuickAction}
-					onOpenInsights={() => openModal('showRepoInsights')}
-					onOpenHealth={() => openModal('showCommunityHealth')}
+					onOpenInsights={() => openModalWithData('showRepoInsights', repoMenu.repo)}
+					onOpenHealth={() => openModalWithData('showCommunityHealth', repoMenu.repo)}
 				/>
 			)}
 		</div>
@@ -461,7 +485,7 @@ const TooltipButton = memo(function TooltipButton({ icon: IconComp, label, onCli
 	)
 })
 
-const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMenu, onOpenInsights, onOpenHealth }) {
+const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMenu, onOpenInsights, onOpenHealth, onRepoClick }) {
 	const isGrid = viewMode === 'grid'
 
 	return (
@@ -525,7 +549,10 @@ const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, onToggle, 
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2">
 							<h3 className="font-semibold text-slate-900 dark:text-white truncate group-hover:text-indigo-500 transition-colors ds-font-display">
-								{repo.name}
+								<button type="button" onClick={(e) => { e.stopPropagation(); onRepoClick?.(repo) }}
+									className="hover:underline focus:outline-none focus-visible:underline text-left truncate">
+									{repo.name}
+								</button>
 							</h3>
 							{repo.archived && (
 								<Badge variant="secondary" className="text-[10px] py-0 h-5">Archived</Badge>
@@ -635,16 +662,16 @@ const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, onToggle, 
 })
 
 const RepoActionsMenu = memo(function RepoActionsMenu({ repo, x, y, onClose, onQuickAction, onOpenInsights, onOpenHealth }) {
-	// Adjust position to keep in viewport
-	const style = {
-		top: y,
-		left: x,
-	}
+	// Clamp position to keep menu fully within the viewport
+	const margin = 8
+	const menuWidth = 220
+	const menuHeight = 320
+	const clampedX = Math.max(margin, Math.min(x, window.innerWidth - menuWidth - margin))
+	const clampedY = Math.max(margin, Math.min(y, window.innerHeight - menuHeight - margin))
 
-	// Simple adjustment to prevent overflow (could be more robust)
-	if (typeof window !== 'undefined') {
-		if (x + 200 > window.innerWidth) style.left = x - 200
-		if (y + 300 > window.innerHeight) style.top = y - 300
+	const style = {
+		top: clampedY,
+		left: clampedX,
 	}
 
 	const copyCloneUrl = () => {
@@ -655,7 +682,8 @@ const RepoActionsMenu = memo(function RepoActionsMenu({ repo, x, y, onClose, onQ
 
 	return (
 		<div
-			className="fixed z-50 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1 animate-in fade-in zoom-in-95 duration-100"
+			role="menu"
+			className="fixed z-[45] w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1 animate-in fade-in zoom-in-95 duration-100"
 			style={style}
 			onClick={(e) => e.stopPropagation()}
 		>
@@ -667,24 +695,24 @@ const RepoActionsMenu = memo(function RepoActionsMenu({ repo, x, y, onClose, onQ
 			</div>
 
 			<div className="p-1 space-y-0.5">
-				<button onClick={() => { window.open(repo.html_url, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+				<button role="menuitem" onClick={() => { window.open(repo.html_url, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
 					<ExternalLink className="w-4 h-4 text-slate-400" />
 					Open on GitHub
 				</button>
-				<button onClick={copyCloneUrl} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+				<button role="menuitem" onClick={copyCloneUrl} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
 					<Copy className="w-4 h-4 text-slate-400" />
 					Copy Clone URL
 				</button>
-				<button onClick={() => { window.open(`${repo.html_url}/settings`, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+				<button role="menuitem" onClick={() => { window.open(`${repo.html_url}/settings`, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
 					<Settings className="w-4 h-4 text-slate-400" />
 					Settings
 				</button>
-				<button onClick={() => { onOpenInsights(); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg">
+				<button role="menuitem" onClick={() => { onOpenInsights(); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg">
 					<Sparkles className="w-4 h-4" />
 					AI Insights
 				</button>
 				{onOpenHealth && (
-					<button onClick={() => { onOpenHealth(); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-emerald-600 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg">
+					<button role="menuitem" onClick={() => { onOpenHealth(); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-emerald-600 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg">
 						<Shield className="w-4 h-4" />
 						Community Health
 					</button>
@@ -692,29 +720,29 @@ const RepoActionsMenu = memo(function RepoActionsMenu({ repo, x, y, onClose, onQ
 			</div>
 
 			<div className="border-t border-slate-100 dark:border-slate-700/50 p-1 space-y-0.5">
-				<button onClick={() => { window.open(`${repo.html_url}/issues`, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+				<button role="menuitem" onClick={() => { window.open(`${repo.html_url}/issues`, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
 					<CircleDot className="w-4 h-4 text-slate-400" />
 					Issues
 				</button>
-				<button onClick={() => { window.open(`${repo.html_url}/pulls`, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+				<button role="menuitem" onClick={() => { window.open(`${repo.html_url}/pulls`, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
 					<GitPullRequest className="w-4 h-4 text-slate-400" />
 					Pull Requests
 				</button>
 			</div>
 
 			<div className="border-t border-slate-100 dark:border-slate-700/50 p-1 space-y-0.5">
-				<button onClick={() => { onQuickAction('visibility', repo, repo.private ? 'public' : 'private'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+				<button role="menuitem" onClick={() => { onQuickAction('visibility', repo, repo.private ? 'public' : 'private'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
 					{repo.private ? <Unlock className="w-4 h-4 text-slate-400" /> : <Lock className="w-4 h-4 text-slate-400" />}
 					{repo.private ? 'Make Public' : 'Make Private'}
 				</button>
-				<button onClick={() => { onQuickAction('archive', repo, !repo.archived); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+				<button role="menuitem" onClick={() => { onQuickAction('archive', repo, !repo.archived); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
 					<Archive className="w-4 h-4 text-slate-400" />
 					{repo.archived ? 'Unarchive' : 'Archive'}
 				</button>
 			</div>
 
 			<div className="border-t border-slate-100 dark:border-slate-700/50 p-1">
-				<button onClick={() => { onQuickAction('delete', repo); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
+				<button role="menuitem" onClick={() => { onQuickAction('delete', repo); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
 					<Trash2 className="w-4 h-4" />
 					Delete Repository
 				</button>

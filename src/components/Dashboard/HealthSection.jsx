@@ -7,7 +7,7 @@ import { EmptyState } from '../ui/EmptyState'
 /**
  * HealthSection - Repository health and quality metrics
  */
-export function HealthSection({ stats, loading }) {
+export function HealthSection() {
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
