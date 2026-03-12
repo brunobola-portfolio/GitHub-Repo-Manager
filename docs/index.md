@@ -6,14 +6,14 @@ Quick reference for navigating project documentation.
 
 Design specifications and feature requirements.
 
-- [Azure DevOps Smart Import](specs/2026-03-12-azure-smart-import-design.md) — Smart URL parser + auto-PAT for simplified Azure imports (Approved)
+- [Azure DevOps Smart Import](specs/2026-03-12-azure-smart-import-design.md) — Smart URL parser + auto-PAT for simplified Azure imports (Implemented)
 - [Dashboard Premium Redesign](specs/2026-02-05-dashboard-premium-redesign.md) — Category-based dashboard with premium filters and charts (In Progress)
 
 ## Plans (How to build it)
 
 Step-by-step implementation plans generated from approved specs.
 
-- [Azure DevOps Smart Import](plans/2026-03-12-azure-smart-import-plan.md) — 7-task implementation plan for smart URL parser + env PAT (Ready)
+- [Azure DevOps Smart Import](plans/2026-03-12-azure-smart-import-plan.md) — 7-task implementation plan for smart URL parser + env PAT (Complete)
 
 ## Architecture
 

@@ -20,7 +20,6 @@ import { createContext, useContext, useState, useCallback, useMemo } from 'react
 const ModalContext = createContext(null)
 
 const MODAL_NAMES = [
-  'showAzureImport',
   'showCreateRepo',
   'showTransfer',
   'showOrgManager',

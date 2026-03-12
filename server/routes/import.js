@@ -30,10 +30,14 @@ router.post('/import/validate-url', requireAuth, async (req, res) => {
 
 router.post('/import/azure', requireAuth, async (req, res) => {
     try {
-        const { azureOrg, azureProject, azureRepo, azurePat, targetOrg, targetName, makePrivate, description } = req.body;
+        const { azureOrg, azureProject, azureRepo, azurePat: bodyPat, targetOrg, targetName, makePrivate, description } = req.body;
+        const azurePat = azureService.resolvePat(bodyPat);
 
-        if (!azureOrg || !azureProject || !azureRepo || !azurePat) {
-            return errorResponse(res, 400, 'Azure organization, project, repository, and PAT are required', 'MISSING_PARAMS');
+        if (!azureOrg || !azureProject || !azureRepo) {
+            return errorResponse(res, 400, 'Azure organization, project, and repository are required', 'MISSING_PARAMS');
+        }
+        if (!azurePat) {
+            return errorResponse(res, 400, 'No PAT provided and no server PAT configured', 'MISSING_PAT');
         }
 
         // Get Azure repo details to get clone URL

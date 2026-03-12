@@ -13,6 +13,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+dotenv.config();
 
 import db, { initDB, seedMockData } from './db.js';
 import { aiService } from './ai-service.js';
@@ -37,8 +38,6 @@ import aiRoutes from './routes/ai.js';
 import statsRoutes from './routes/stats.js';
 import userRoutes from './routes/user.js';
 import bulkRoutes from './routes/bulk.js';
-
-dotenv.config();
 
 initDB();
 

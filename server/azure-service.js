@@ -7,6 +7,15 @@
 const BASE_URL = 'https://dev.azure.com';
 const API_VERSION = '7.1';
 
+/**
+ * Resolve PAT: use provided value, or fall back to AZURE_PAT env var.
+ * @param {string|undefined} pat - PAT from request body (may be undefined)
+ * @returns {string|null}
+ */
+function resolvePat(pat) {
+    return pat || process.env.AZURE_PAT || null;
+}
+
 function getHeaders(pat) {
     const encoded = Buffer.from(`:${pat}`).toString('base64');
     return {
@@ -140,5 +149,6 @@ export {
     listRepos,
     getRepoDetails,
     listBranches,
-    buildAuthenticatedCloneUrl
+    buildAuthenticatedCloneUrl,
+    resolvePat
 };

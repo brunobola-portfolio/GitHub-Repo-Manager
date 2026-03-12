@@ -23,7 +23,6 @@ const TeamDetails = lazy(() => import('./components/Teams/TeamDetails').then(m =
 const RepoInsightsModal = lazy(() => import('./components/AI/RepoInsightsModal'))
 const CommunityHealthDashboard = lazy(() => import('./components/CommunityHealthDashboard').then(m => ({ default: m.CommunityHealthDashboard })))
 const SystemSetup = lazy(() => import('./components/Setup/SystemSetup').then(m => ({ default: m.SystemSetup })))
-const AzureImportModal = lazy(() => import('./components/AzureImportModal').then(m => ({ default: m.AzureImportModal })))
 const CreateRepoModal = lazy(() => import('./components/CreateRepoModal').then(m => ({ default: m.CreateRepoModal })))
 const TransferModal = lazy(() => import('./components/TransferModal').then(m => ({ default: m.TransferModal })))
 const OrgManagerModal = lazy(() => import('./components/OrgManagerModal').then(m => ({ default: m.OrgManagerModal })))
@@ -131,11 +130,6 @@ function AppContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Fetch teams when user becomes available
-  useEffect(() => {
-    if (user) fetchTeams()
-  }, [user, fetchTeams])
-
   const checkSystemStatus = async () => {
     try {
       const res = await fetch('/api/system/status')
@@ -190,6 +184,11 @@ function AppContent() {
       // Teams fetch is non-critical
     }
   }, [])
+
+  // Fetch teams when user becomes available
+  useEffect(() => {
+    if (user) fetchTeams()
+  }, [user, fetchTeams])
 
   const handleRefreshOrgs = useCallback(async () => {
     try {
@@ -389,7 +388,6 @@ function AppContent() {
         syncStatus={syncStatus}
         onReauthorize={handleReauthorize}
         onOpenOrgManager={handleOpenOrgManager}
-        onAzureImport={() => openModal('showAzureImport')}
         onCreateRepo={() => openModal('showCreateRepo')}
         onOpenCommitGen={() => openModal('showCommitGen')}
         onOpenSettings={() => openModal('showSettings')}
@@ -547,14 +545,6 @@ function AppContent() {
           </div>
         )}
       </main>
-
-      <Suspense fallback={null}>
-        <AzureImportModal
-          isOpen={modalStates.showAzureImport}
-          onClose={() => closeModal('showAzureImport')}
-          orgs={orgs}
-        />
-      </Suspense>
 
       <Suspense fallback={null}>
         <CreateRepoModal
