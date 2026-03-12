@@ -18,7 +18,7 @@ dist-ssr
 .agent/
 augment rules/
 rules/
-plans/
+/plans/
 Implementation/
 .roo/
 

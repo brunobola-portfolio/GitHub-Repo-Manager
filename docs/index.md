@@ -13,7 +13,7 @@ Design specifications and feature requirements.
 
 Step-by-step implementation plans generated from approved specs.
 
-_(Plans are created here after specs are approved)_
+- [Azure DevOps Smart Import](plans/2026-03-12-azure-smart-import-plan.md) — 7-task implementation plan for smart URL parser + env PAT (Ready)
 
 ## Architecture
 
