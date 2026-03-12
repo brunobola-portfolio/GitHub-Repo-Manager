@@ -352,7 +352,7 @@ The application requires specific GitHub scopes for full functionality:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-For detailed architecture documentation, see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+For detailed architecture documentation, see [`docs/architecture/overview.md`](docs/architecture/overview.md).
 
 ---
 

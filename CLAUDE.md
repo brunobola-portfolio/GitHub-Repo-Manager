@@ -26,7 +26,12 @@
 - Validate all user inputs on server endpoints
 - Session cookies: `httpOnly`, `sameSite: 'lax'`, `secure` in production
 
-## Screenshots
-- Store in `docs/images/` only (root PNGs are gitignored)
-- Use Playwright MCP at 1920x1080 for HD captures
-- Name format: `0X_description_hd.png`
+## Documentation Structure
+- `docs/index.md` — Documentation map (start here)
+- `docs/specs/` — Design specs: `YYYY-MM-DD-feature-name.md` (what to build)
+- `docs/plans/` — Implementation plans (how to build it, generated from approved specs)
+- `docs/architecture/` — System architecture docs
+- `docs/api/` — API reference
+- `docs/reports/` — Validation and analysis reports
+- `docs/images/` — Screenshots (`0X_description_hd.png`, Playwright MCP at 1920x1080)
+- When creating specs or plans, ALWAYS use `docs/specs/` or `docs/plans/` — never create custom subdirectories

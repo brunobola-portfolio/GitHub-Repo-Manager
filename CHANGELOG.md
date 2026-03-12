@@ -65,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.3.1] - 2025-12-17
 
 ### Added
-- **Backend Architecture Documentation**: Created [`docs/ARCHITECTURE-BACKEND.md`](docs/ARCHITECTURE-BACKEND.md) documenting monolithic design decision
+- **Backend Architecture Documentation**: Created [`docs/architecture/backend.md`](docs/architecture/backend.md) documenting monolithic design decision
 - **Azure DevOps Limitations**: Added clear limitations section in README for import feature
 - **UI Warning**: AzureImportModal now displays prominent warning about basic import capabilities
 

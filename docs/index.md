@@ -1,0 +1,34 @@
+# Documentation Map
+
+Quick reference for navigating project documentation.
+
+## Specs (What to build)
+
+Design specifications and feature requirements.
+
+- [Azure DevOps Smart Import](specs/2026-03-12-azure-smart-import-design.md) — Smart URL parser + auto-PAT for simplified Azure imports (Approved)
+- [Dashboard Premium Redesign](specs/2026-02-05-dashboard-premium-redesign.md) — Category-based dashboard with premium filters and charts (In Progress)
+
+## Plans (How to build it)
+
+Step-by-step implementation plans generated from approved specs.
+
+_(Plans are created here after specs are approved)_
+
+## Architecture
+
+- [Overview](architecture/overview.md) — System architecture, data flow, component structure
+- [Backend](architecture/backend.md) — Express server, routes, middleware, database
+- [Teams](architecture/teams.md) — Teams feature architecture and data model
+
+## API
+
+- [API Reference](api/API.md) — Complete endpoint documentation (106 endpoints)
+
+## Reports
+
+- [Validation Report](reports/VALIDATION-REPORT.md) — Code analysis and validation results
+
+## Images
+
+Screenshots stored in `docs/images/` — named `0X_description_hd.png` for HD captures.

@@ -158,9 +158,13 @@ npm run dev:server   # Backend only
 - `CONTRIBUTING.md` - Contribution guidelines
 
 **docs/ Directory (Technical Documentation)**
-- `ARCHITECTURE-*.md` - Architecture documentation
-- `VALIDATION-REPORT.md` - Code analysis reports
-- Other technical guides and specifications
+- `docs/index.md` - Documentation map (start here to discover all docs)
+- `docs/specs/` - Design specifications (`YYYY-MM-DD-feature-name.md`)
+- `docs/plans/` - Implementation plans (generated from approved specs)
+- `docs/architecture/` - System architecture docs
+- `docs/api/` - API reference
+- `docs/reports/` - Validation and analysis reports
+- `docs/images/` - Screenshots and diagrams
 
 **Implementation/ Folder (Hidden from Git via .gitignore)**
 - Temporary analysis reports generated on user request
@@ -311,14 +315,15 @@ refactor(ui): extract Button component
 
 For project-specific questions:
 1. Check `README.md` for setup and features
-2. Review `Implementation/` folder for detailed docs
-3. Examine existing code patterns
-4. Ask maintainers for clarification
+2. Check `docs/index.md` for documentation map
+3. Review `docs/specs/` for feature designs and `docs/plans/` for implementation plans
+4. Examine existing code patterns
+5. Ask maintainers for clarification
 
 **Maintainer**: GitHub Repo Manager Team  
 **License**: Check LICENSE file in repository root
 
 ---
 
-*Last Updated: 2025-12-23*
-*Agent Rules Version: 2.0 - Harmonized across Augment Code, Roo Code, and Antigravity*
+*Last Updated: 2026-03-12*
+*Agent Rules Version: 2.1 - Harmonized across Augment Code, Roo Code, Antigravity, and Claude Code*
