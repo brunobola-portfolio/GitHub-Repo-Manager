@@ -198,10 +198,9 @@ export function ActionsStatsDashboard({ repos, teamId }) {
                 {repos.map(repo => (
                     <motion.button
                         key={repo.id}
-                        whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setSelectedRepo(repo.full_name)}
-                        className={`px-6 py-3 rounded-2xl whitespace-nowrap transition-all font-semibold shadow-lg ${
+                        className={`px-6 py-3 rounded-2xl whitespace-nowrap transition-all font-semibold shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset ${
                             selectedRepo === repo.full_name
                                 ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-indigo-500/30'
                                 : 'bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl text-slate-600 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60'
@@ -451,10 +450,10 @@ function StatCard({ title, value, icon: Icon, color, bg, trend, trendIcon: Trend
     return (
         <motion.div
             variants={itemVariants}
-            whileHover={{ y: -4 }}
+            whileHover={{ y: -3 }}
             transition={{ type: "spring", stiffness: 300 }}
         >
-            <Card className="p-6 hover:shadow-xl transition-all duration-300 border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl group cursor-pointer">
+            <Card className="p-6 hover:shadow-xl transition-all duration-300 border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl group cursor-pointer focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-inset">
                 <div className="flex items-start justify-between">
                     <div className="flex-1">
                         <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">

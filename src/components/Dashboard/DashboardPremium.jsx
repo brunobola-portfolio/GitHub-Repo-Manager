@@ -244,8 +244,8 @@ export function DashboardPremium({
                         {teams.map(team => (
                             <motion.div
                                 key={team.id}
-                                whileHover={{ y: -4 }}
-                                className="p-5 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/40 dark:border-slate-800/40 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-all"
+                                whileHover={{ y: -3 }}
+                                className="p-5 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/40 dark:border-slate-800/40 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-xl focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-inset transition-all"
                             >
                                 <div className="flex items-center gap-3 mb-3">
                                     <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
@@ -343,8 +343,8 @@ export function DashboardPremium({
 function DiscoverCard({ icon: Icon, title, description, href, actionText }) {
     return (
         <motion.div
-            whileHover={{ y: -4 }}
-            className="p-6 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/40 dark:border-slate-800/40 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-all"
+            whileHover={{ y: -3 }}
+            className="p-6 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/40 dark:border-slate-800/40 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-xl transition-all"
         >
             <Icon className="w-8 h-8 text-indigo-500 mb-3" />
             <h3 className="font-bold text-slate-900 dark:text-white mb-2">

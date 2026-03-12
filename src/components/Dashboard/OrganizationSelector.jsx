@@ -14,7 +14,7 @@ export function OrganizationSelector({ orgs = [], selectedOrg, onSelectOrg, load
                 <Popover.Trigger asChild>
                     <button
                         disabled={loading}
-                        className="flex items-center gap-3 px-5 py-3.5 bg-gradient-to-br from-white/90 to-slate-50/90 dark:from-slate-800/90 dark:to-slate-900/90 backdrop-blur-xl border-2 border-slate-200/60 dark:border-slate-700/60 rounded-2xl shadow-lg hover:shadow-xl hover:border-indigo-300/70 dark:hover:border-indigo-500/60 hover:scale-[1.02] transition-all duration-300 min-w-[260px] justify-between group"
+                        className="flex items-center gap-3 px-5 py-3.5 bg-gradient-to-br from-white/90 to-slate-50/90 dark:from-slate-800/90 dark:to-slate-900/90 backdrop-blur-xl border-2 border-slate-200/60 dark:border-slate-700/60 rounded-2xl shadow-lg hover:shadow-xl hover:border-indigo-300/70 dark:hover:border-indigo-500/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset focus-visible:border-indigo-400 transition-all duration-300 min-w-[260px] justify-between group"
                     >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                             {selectedOrgData ? (
@@ -74,7 +74,7 @@ export function OrganizationSelector({ orgs = [], selectedOrg, onSelectOrg, load
                                     onClick={() => onSelectOrg(org.login)}
                                     className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${selectedOrg === org.login
                                             ? 'bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-700 dark:text-indigo-300 shadow-sm'
-                                            : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:scale-[1.01]'
+                                            : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300'
                                         }`}
                                 >
                                     <img
