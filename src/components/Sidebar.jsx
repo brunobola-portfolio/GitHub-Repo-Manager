@@ -2,7 +2,7 @@ import { Card } from './ui/Card'
 import { Button } from './ui/Button'
 import {
     ArrowRightLeft, Lock, Unlock, History, Zap, CheckCircle, XCircle,
-    Loader2, Archive, Trash2, Cloud, Sparkles, MoreHorizontal,
+    Loader2, Archive, Trash2, Sparkles, MoreHorizontal,
     GitCommit, GitPullRequest, CircleDot, Play, Copy, ExternalLink,
     Clock, ChevronRight, Download
 } from 'lucide-react'
@@ -49,7 +49,6 @@ export function Sidebar({
                 onArchive={onArchive}
                 onDelete={onDelete}
                 selectedRepos={selectedRepos}
-                onAzureImport={() => openModal('showAzureImport')}
                 onImport={() => openModal('showImportWizard')}
             />
 
@@ -68,7 +67,7 @@ export function Sidebar({
 
 function QuickActions({
     hasSelection, selectedCount, isPerforming, performAction,
-    onTransfer, onArchive, onDelete, selectedRepos, onAzureImport, onImport
+    onTransfer, onArchive, onDelete, selectedRepos, onImport
 }) {
     return (
         <Card hover={true} className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl">
@@ -124,36 +123,6 @@ function QuickActions({
                                 <div className="text-left">
                                     <div className="text-xs font-bold">Import Repository</div>
                                     <div className="text-[10px] text-indigo-100">Git URL, Azure, GitHub</div>
-                                </div>
-                                <motion.div
-                                    initial={{ x: 0 }}
-                                    animate={{ x: [0, 5, 0] }}
-                                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                                >
-                                    <ChevronRight className="w-4 h-4 ml-auto" />
-                                </motion.div>
-                            </motion.button>
-                            <motion.button
-                                onClick={onAzureImport}
-                                disabled={isPerforming}
-                                whileHover={{
-                                    scale: 1.03,
-                                    boxShadow: "0 20px 25px -5px rgba(59, 130, 246, 0.3), 0 10px 10px -5px rgba(59, 130, 246, 0.2)"
-                                }}
-                                whileTap={{ scale: 0.98 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                                className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-md hover:shadow-lg transition-all duration-200 group cursor-pointer"
-                            >
-                                <motion.div
-                                    className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm"
-                                    whileHover={{ rotate: 360 }}
-                                    transition={{ duration: 0.6 }}
-                                >
-                                    <Cloud className="w-4 h-4 text-white" />
-                                </motion.div>
-                                <div className="text-left">
-                                    <div className="text-xs font-bold">Azure DevOps</div>
-                                    <div className="text-[10px] text-blue-100">Quick import wizard</div>
                                 </div>
                                 <motion.div
                                     initial={{ x: 0 }}

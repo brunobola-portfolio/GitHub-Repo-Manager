@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
 import { Select } from './ui/Select'
 import {
     GitBranch, Globe, Cloud, CheckCircle2, XCircle, Loader2,
     ArrowRight, ArrowLeft, ExternalLink, Lock, Unlock, Link2,
-    KeyRound, User, AlertTriangle, Download
+    KeyRound, User, AlertTriangle, Download, Eye, EyeOff, Info
 } from 'lucide-react'
+import { parseAzureUrl } from '../utils/azureUrlParser'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 
 const SOURCE_TYPES = [
@@ -16,7 +17,7 @@ const SOURCE_TYPES = [
 ]
 
 const STEPS_URL = ['source-type', 'url-input', 'target', 'review', 'progress']
-const STEPS_AZURE = ['source-type', 'azure-creds', 'azure-source', 'target', 'review', 'progress']
+const STEPS_AZURE = ['source-type', 'azure-smart', 'azure-repo', 'azure-confirm', 'progress']
 const STEPS_GITHUB = ['source-type', 'github-source', 'target', 'review', 'progress']
 
 function getSteps(sourceType) {
@@ -41,17 +42,21 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
     const [authUsername, setAuthUsername] = useState('')
     const [authPassword, setAuthPassword] = useState('')
 
-    // Azure source state
+    // Azure smart import state
+    const [azureUrl, setAzureUrl] = useState('')
+    const [azureParsed, setAzureParsed] = useState({ org: null, project: null, repo: null, error: null, suggestion: null })
     const [azureOrg, setAzureOrg] = useState('')
     const [azurePat, setAzurePat] = useState('')
-    const [patStatus, setPatStatus] = useState(null)
+    const [patStatus, setPatStatus] = useState(null) // null | 'validating' | 'valid' | 'invalid'
     const [patError, setPatError] = useState('')
-    const [projects, setProjects] = useState([])
+    const [envAuthAvailable, setEnvAuthAvailable] = useState(null) // null | true | false
+    const [showManualPat, setShowManualPat] = useState(false)
+    const [showPatText, setShowPatText] = useState(false)
     const [selectedProject, setSelectedProject] = useState('')
     const [repos, setRepos] = useState([])
     const [selectedRepo, setSelectedRepo] = useState('')
-    const [loadingProjects, setLoadingProjects] = useState(false)
     const [loadingRepos, setLoadingRepos] = useState(false)
+    const [validating, setValidating] = useState(false)
 
     // GitHub source state
     const [githubSourceUrl, setGithubSourceUrl] = useState('')
@@ -92,14 +97,20 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
             setAuthToken('')
             setAuthUsername('')
             setAuthPassword('')
+            setAzureUrl('')
+            setAzureParsed({ org: null, project: null, repo: null, error: null, suggestion: null })
             setAzureOrg('')
             setAzurePat('')
             setPatStatus(null)
             setPatError('')
-            setProjects([])
+            setEnvAuthAvailable(null)
+            setShowManualPat(false)
+            setShowPatText(false)
             setSelectedProject('')
             setRepos([])
             setSelectedRepo('')
+            setLoadingRepos(false)
+            setValidating(false)
             setGithubSourceUrl('')
             setTargetOrg('')
             setTargetName('')
@@ -111,40 +122,109 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
         }
     }, [isOpen])
 
-    // Fetch Azure projects
-    const fetchProjects = useCallback(async () => {
-        if (!azureOrg || !azurePat) return
-        setLoadingProjects(true)
-        try {
-            const res = await fetch('/api/azure/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ org: azureOrg, pat: azurePat }) })
-            if (res.status === 401) return
-            const data = await res.json()
-            if (res.ok) setProjects(data.projects || [])
-        } catch { /* ignore */ } finally {
-            setLoadingProjects(false)
-        }
-    }, [azureOrg, azurePat])
-
-    // Fetch Azure repos when project selected
+    // Check if server has AZURE_PAT configured
     useEffect(() => {
-        if (!selectedProject || !azureOrg || !azurePat) {
-            setRepos([])
-            setSelectedRepo('')
-            return
+        if (isOpen && envAuthAvailable === null) {
+            fetch('/api/azure/env-auth', { credentials: 'include' })
+                .then(r => r.json())
+                .then(data => setEnvAuthAvailable(data.available))
+                .catch(() => setEnvAuthAvailable(false))
         }
-        const fetchRepos = async () => {
-            setLoadingRepos(true)
-            try {
-                const res = await fetch('/api/azure/repos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ org: azureOrg, project: selectedProject, pat: azurePat }) })
-                if (res.status === 401) return
-                const data = await res.json()
-                if (res.ok) setRepos(data.repos || [])
-            } catch { /* ignore */ } finally {
-                setLoadingRepos(false)
+    }, [isOpen, envAuthAvailable])
+
+    // Parse Azure URL on change
+    useEffect(() => {
+        const parsed = parseAzureUrl(azureUrl)
+        setAzureParsed(parsed)
+        if (parsed.org) setAzureOrg(parsed.org)
+        if (parsed.project) setSelectedProject(parsed.project)
+    }, [azureUrl])
+
+    const connectAzure = async () => {
+        const { org, project, repo } = azureParsed
+        if (!org) return
+
+        setValidating(true)
+        setPatStatus('validating')
+        setPatError('')
+
+        try {
+            // Build PAT payload — omit if using env auth
+            const patPayload = showManualPat || !envAuthAvailable ? azurePat : undefined
+
+            // Validate PAT
+            const valRes = await fetch('/api/azure/validate', {
+                method: 'POST', credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ org, pat: patPayload })
+            })
+            const valData = await valRes.json()
+
+            if (!valData.valid) {
+                setPatStatus('invalid')
+                setPatError(valData.error || 'Invalid credentials')
+                // If env auth failed, show manual PAT field
+                if (envAuthAvailable && !showManualPat) setShowManualPat(true)
+                setValidating(false)
+                return
             }
+
+            setPatStatus('valid')
+
+            // If we have a specific repo from URL, skip to confirm
+            if (repo) {
+                const reposRes = await fetch('/api/azure/repos', {
+                    method: 'POST', credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ org, project, pat: patPayload })
+                })
+                const reposData = await reposRes.json()
+                if (reposRes.ok) {
+                    setRepos(reposData.repos || [])
+                    const found = (reposData.repos || []).find(r => r.name.toLowerCase() === repo.toLowerCase())
+                    if (found) {
+                        setSelectedRepo(found.name)
+                        if (!targetName) setTargetName(found.name)
+                    }
+                }
+                setValidating(false)
+                const stps = getSteps('azure')
+                setStep(stps.indexOf('azure-confirm'))
+                return
+            }
+
+            // Project-level: fetch repos
+            setLoadingRepos(true)
+            const reposRes = await fetch('/api/azure/repos', {
+                method: 'POST', credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ org, project, pat: patPayload })
+            })
+            const reposData = await reposRes.json()
+            if (reposRes.ok) {
+                const repoList = reposData.repos || []
+                setRepos(repoList)
+                // Auto-select if only 1 repo
+                if (repoList.length === 1 && !repoList[0].isDisabled) {
+                    setSelectedRepo(repoList[0].name)
+                    if (!targetName) setTargetName(repoList[0].name)
+                    setLoadingRepos(false)
+                    setValidating(false)
+                    const stps = getSteps('azure')
+                    setStep(stps.indexOf('azure-confirm'))
+                    return
+                }
+            }
+            setLoadingRepos(false)
+            setValidating(false)
+            const stps = getSteps('azure')
+            setStep(stps.indexOf('azure-repo'))
+        } catch {
+            setPatStatus('invalid')
+            setPatError('Could not reach Azure DevOps. Check your connection.')
+            setValidating(false)
         }
-        fetchRepos()
-    }, [selectedProject, azureOrg, azurePat])
+    }
 
     // Poll job status
     useEffect(() => {
@@ -197,30 +277,6 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
         }
     }
 
-    const validateAzurePat = async () => {
-        setPatStatus('validating')
-        setPatError('')
-        try {
-            const res = await fetch('/api/azure/validate', {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ org: azureOrg, pat: azurePat })
-            })
-            const data = await res.json()
-            if (data.valid) {
-                setPatStatus('valid')
-                fetchProjects()
-            } else {
-                setPatStatus('invalid')
-                setPatError(data.error || 'Invalid credentials')
-            }
-        } catch (e) {
-            setPatStatus('invalid')
-            setPatError(e.message)
-        }
-    }
-
     function buildCredentials() {
         if (authType === 'token') return { type: 'token', token: authToken }
         if (authType === 'basic') return { type: 'basic', username: authUsername, password: authPassword }
@@ -256,7 +312,7 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
                     azureOrg,
                     azureProject: selectedProject,
                     azureRepo: selectedRepo,
-                    azurePat,
+                    azurePat: showManualPat || !envAuthAvailable ? azurePat : undefined,
                     targetOrg: targetOrg || undefined,
                     targetName: targetName || selectedRepo,
                     makePrivate,
@@ -454,83 +510,250 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
                     </div>
                 )}
 
-                {/* Azure Credentials Step */}
-                {currentStep === 'azure-creds' && (
+                {/* Azure Smart URL Step */}
+                {currentStep === 'azure-smart' && (
                     <div className="space-y-4">
-                        <p className="text-sm text-slate-600 dark:text-slate-400">Enter your Azure DevOps organization and PAT.</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">Paste any Azure DevOps URL — project page, repo, clone URL, or shorthand.</p>
+
+                        {/* URL Input */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Organization *</label>
-                            <input type="text" value={azureOrg} onChange={e => { setAzureOrg(e.target.value); setPatStatus(null) }}
-                                placeholder="e.g., mycompany"
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Personal Access Token *</label>
-                            <input type="password" value={azurePat} onChange={e => { setAzurePat(e.target.value); setPatStatus(null) }}
-                                placeholder="Azure DevOps PAT with Code (Read) scope"
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Create at: dev.azure.com/{azureOrg || '{org}'}/_usersSettings/tokens
-                            </p>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Azure DevOps URL *</label>
+                            <div className="relative">
+                                <Cloud className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <input type="text" value={azureUrl} onChange={e => setAzureUrl(e.target.value)}
+                                    placeholder="https://dev.azure.com/org/project"
+                                    className="w-full pl-9 pr-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                            </div>
                         </div>
 
-                        {patStatus === 'valid' && (
-                            <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm"><CheckCircle2 className="w-4 h-4" /> Connected successfully</div>
-                        )}
-                        {patStatus === 'invalid' && (
-                            <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm"><XCircle className="w-4 h-4" /> {patError}</div>
-                        )}
-
-                        <div className="flex gap-3 pt-2">
-                            <Button variant="secondary" onClick={() => { setStep(0); setSourceType('') }} className="flex-1"><ArrowLeft className="w-4 h-4 mr-1" /> Back</Button>
-                            {patStatus !== 'valid' ? (
-                                <Button onClick={validateAzurePat} disabled={!azureOrg || !azurePat || patStatus === 'validating'} className="flex-1">
-                                    {patStatus === 'validating' ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Validating...</> : 'Validate'}
-                                </Button>
-                            ) : (
-                                <Button onClick={() => setStep(2)} className="flex-1">
-                                    Next <ArrowRight className="w-4 h-4 ml-1" />
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Azure Source Step */}
-                {currentStep === 'azure-source' && (
-                    <div className="space-y-4">
-                        <p className="text-sm text-slate-600 dark:text-slate-400">Select the project and repository to import.</p>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Project *</label>
-                            {loadingProjects ? (
-                                <div className="flex items-center gap-2 text-slate-500 text-sm py-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading projects...</div>
-                            ) : (
-                                <Select value={selectedProject} onChange={setSelectedProject}
-                                    options={[{ value: '', label: 'Select a project...' }, ...projects.map(p => ({ value: p.name, label: p.name }))]} />
-                            )}
-                        </div>
-                        {selectedProject && (
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Repository *</label>
-                                {loadingRepos ? (
-                                    <div className="flex items-center gap-2 text-slate-500 text-sm py-2"><Loader2 className="w-4 h-4 animate-spin" /> Loading repos...</div>
-                                ) : repos.length === 0 ? (
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 py-2">No repositories found in this project.</p>
-                                ) : (
-                                    <Select value={selectedRepo} onChange={val => { setSelectedRepo(val); if (!targetName) setTargetName(val) }}
-                                        options={[{ value: '', label: 'Select a repository...' }, ...repos.map(r => ({ value: r.name, label: `${r.name}${r.isDisabled ? ' (disabled)' : ''}` }))]} />
+                        {/* Parse Feedback */}
+                        {azureUrl && (
+                            <div className="space-y-1 text-xs">
+                                {azureParsed.org && (
+                                    <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                        <span>Organization: <strong>{azureParsed.org}</strong></span>
+                                    </div>
                                 )}
-                                {selectedRepoObj && (
-                                    <div className="mt-2 p-2 bg-slate-50 dark:bg-slate-800 rounded text-xs text-slate-600 dark:text-slate-400">
-                                        Size: {(selectedRepoObj.size / 1024).toFixed(1)} MB
-                                        {selectedRepoObj.defaultBranch && ` · Default: ${selectedRepoObj.defaultBranch.replace('refs/heads/', '')}`}
+                                {azureParsed.project && (
+                                    <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                        <span>Project: <strong>{azureParsed.project}</strong></span>
+                                    </div>
+                                )}
+                                {azureParsed.repo && (
+                                    <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400">
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                        <span>Repository: <strong>{azureParsed.repo}</strong></span>
+                                    </div>
+                                )}
+                                {azureParsed.error && (
+                                    <div className="flex items-start gap-1.5 text-amber-600 dark:text-amber-400">
+                                        <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                                        <div>
+                                            <span>{azureParsed.error}</span>
+                                            {azureParsed.suggestion && <p className="text-slate-500 dark:text-slate-400 mt-0.5">{azureParsed.suggestion}</p>}
+                                        </div>
                                     </div>
                                 )}
                             </div>
                         )}
+
+                        {/* PAT Section */}
+                        {azureParsed.org && !azureParsed.error && envAuthAvailable !== null && (
+                            <>
+                                {envAuthAvailable && !showManualPat ? (
+                                    <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 p-2.5 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                        <KeyRound className="w-4 h-4 shrink-0" />
+                                        <span>Authenticated via server configuration</span>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                            Personal Access Token *
+                                        </label>
+                                        <div className="relative">
+                                            <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <input
+                                                type={showPatText ? 'text' : 'password'}
+                                                value={azurePat}
+                                                onChange={e => { setAzurePat(e.target.value); setPatStatus(null) }}
+                                                placeholder="Paste your Personal Access Token"
+                                                className="w-full pl-9 pr-10 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPatText(!showPatText)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                                            >
+                                                {showPatText ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                                            <span>Scope: Code (Read)</span>
+                                            <a href={`https://dev.azure.com/${encodeURIComponent(azureParsed.org)}/_usersSettings/tokens`}
+                                                target="_blank" rel="noopener noreferrer"
+                                                className="text-indigo-500 hover:text-indigo-400 flex items-center gap-1">
+                                                Create PAT <ExternalLink className="w-3 h-3" />
+                                            </a>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {/* Validation status */}
+                        {patStatus === 'invalid' && (
+                            <div className="flex items-start gap-2 text-red-600 dark:text-red-400 text-sm">
+                                <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                                <span>{patError}</span>
+                            </div>
+                        )}
+
                         <div className="flex gap-3 pt-2">
-                            <Button variant="secondary" onClick={() => setStep(1)} className="flex-1"><ArrowLeft className="w-4 h-4 mr-1" /> Back</Button>
-                            <Button onClick={() => setStep(3)} disabled={!selectedProject || !selectedRepo} className="flex-1">Next <ArrowRight className="w-4 h-4 ml-1" /></Button>
+                            <Button variant="secondary" onClick={() => { setStep(0); setSourceType('') }} className="flex-1">
+                                <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                            </Button>
+                            <Button
+                                onClick={connectAzure}
+                                disabled={!azureParsed.org || !azureParsed.project || azureParsed.error !== null || validating || (!envAuthAvailable && !azurePat) || (showManualPat && !azurePat)}
+                                className="flex-1"
+                            >
+                                {validating ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Connecting...</> : <>Continue <ArrowRight className="w-4 h-4 ml-1" /></>}
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Azure Repo Selection (conditional — only when URL was project-level) */}
+                {currentStep === 'azure-repo' && (
+                    <div className="space-y-4">
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                            Select a repository from <strong>{azureParsed.org}/{selectedProject}</strong>
+                        </p>
+
+                        {loadingRepos ? (
+                            <div className="flex items-center gap-2 text-slate-500 text-sm py-4 justify-center">
+                                <Loader2 className="w-4 h-4 animate-spin" /> Loading repositories...
+                            </div>
+                        ) : repos.length === 0 ? (
+                            <div className="text-center py-6">
+                                <p className="text-sm text-slate-500 dark:text-slate-400">This project has no repositories.</p>
+                                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Check that your PAT has the correct permissions.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                                {repos.map(repo => (
+                                    <button
+                                        key={repo.id}
+                                        disabled={repo.isDisabled}
+                                        onClick={() => { setSelectedRepo(repo.name); if (!targetName) setTargetName(repo.name) }}
+                                        className={`w-full flex items-center justify-between p-3 rounded-lg border text-left transition-all text-sm
+                                            ${repo.isDisabled
+                                                ? 'opacity-50 cursor-not-allowed border-slate-200 dark:border-slate-700'
+                                                : selectedRepo === repo.name
+                                                    ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                                                    : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                            }`}
+                                    >
+                                        <div>
+                                            <div className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                                {repo.name}
+                                                {repo.isDisabled && <span className="text-xs px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-500 rounded">Disabled</span>}
+                                                {!repo.isDisabled && repo.size === 0 && <span className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded">Empty</span>}
+                                            </div>
+                                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                {(repo.size / 1024).toFixed(1)} MB
+                                                {repo.defaultBranch && ` · ${repo.defaultBranch.replace('refs/heads/', '')}`}
+                                            </div>
+                                        </div>
+                                        {selectedRepo === repo.name && <CheckCircle2 className="w-4 h-4 text-indigo-500 shrink-0" />}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="flex gap-3 pt-2">
+                            <Button variant="secondary" onClick={() => { const stps = getSteps('azure'); setStep(stps.indexOf('azure-smart')) }} className="flex-1">
+                                <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                            </Button>
+                            <Button onClick={() => { const stps = getSteps('azure'); setStep(stps.indexOf('azure-confirm')) }} disabled={!selectedRepo} className="flex-1">
+                                Next <ArrowRight className="w-4 h-4 ml-1" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Azure Confirm (combined target + review) */}
+                {currentStep === 'azure-confirm' && (
+                    <div className="space-y-4">
+                        {/* Source summary */}
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                            <div className="flex items-center justify-between">
+                                <div className="text-xs text-slate-500 dark:text-slate-400">Source</div>
+                                <button onClick={() => { const stps = getSteps('azure'); setStep(stps.indexOf('azure-smart')) }}
+                                    className="text-xs text-indigo-500 hover:text-indigo-400">Change</button>
+                            </div>
+                            <div className="text-sm font-medium text-slate-900 dark:text-slate-100 mt-1">
+                                Azure DevOps · {azureOrg}/{selectedProject}/{selectedRepo}
+                            </div>
+                            {(() => {
+                                const repoObj = repos.find(r => r.name === selectedRepo)
+                                if (!repoObj) return null
+                                return (
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-3">
+                                        {repoObj.size > 0 && <span>{(repoObj.size / 1024).toFixed(1)} MB</span>}
+                                        {repoObj.defaultBranch && <span>{repoObj.defaultBranch.replace('refs/heads/', '')}</span>}
+                                        {repoObj.size > 512000 && (
+                                            <span className="text-amber-500 flex items-center gap-1">
+                                                <AlertTriangle className="w-3 h-3" /> Large repo — import may take a while
+                                            </span>
+                                        )}
+                                    </div>
+                                )
+                            })()}
+                        </div>
+
+                        {/* Target config */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">GitHub Owner</label>
+                            <Select value={targetOrg} onChange={setTargetOrg}
+                                options={[{ value: '', label: 'My personal account' }, ...(orgs?.map(o => ({ value: o.login, label: o.login })) || [])]} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Repository Name</label>
+                            <input type="text" value={targetName} onChange={e => setTargetName(e.target.value)}
+                                placeholder="my-imported-repo"
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description (optional)</label>
+                            <input type="text" value={description} onChange={e => setDescription(e.target.value)}
+                                placeholder={`Imported from Azure DevOps: ${azureOrg}/${selectedProject}/${selectedRepo}`}
+                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" checked={makePrivate} onChange={e => setMakePrivate(e.target.checked)}
+                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700 text-indigo-600 focus:ring-indigo-500" />
+                            <span className="text-sm text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                                {makePrivate ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                                {makePrivate ? 'Private' : 'Public'} repository
+                            </span>
+                        </label>
+
+                        {/* Info note */}
+                        <div className="flex items-start gap-2 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg text-xs text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                            <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                            <span>Imports Git code and history. Issues, PRs, and pipelines are not migrated.</span>
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                            <Button variant="secondary" onClick={() => setStep(step - 1)} className="flex-1">
+                                <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                            </Button>
+                            <Button onClick={startImport} disabled={importing || gitAvailable === false || !targetName} className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500">
+                                {importing ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Starting...</> : 'Import'}
+                            </Button>
                         </div>
                     </div>
                 )}
@@ -688,7 +911,7 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
                                 {jobStatus?.status === 'complete' || jobStatus?.status === 'failed' ? 'Close' : 'Run in Background'}
                             </Button>
                             {jobStatus?.status === 'failed' && (
-                                <Button onClick={() => { setStep(steps.indexOf('review')); setJobId(null); setJobStatus(null) }} className="flex-1">
+                                <Button onClick={() => { setStep(steps.indexOf(sourceType === 'azure' ? 'azure-confirm' : 'review')); setJobId(null); setJobStatus(null) }} className="flex-1">
                                     <ArrowLeft className="w-4 h-4 mr-1" /> Retry
                                 </Button>
                             )}
