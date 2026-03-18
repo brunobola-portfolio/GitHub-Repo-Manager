@@ -144,6 +144,10 @@ export function RepoList({
 
 	const handleContextMenu = (e, repo) => {
 		e.preventDefault()
+		// Select the card if not already selected (like file managers — never deselect on right-click)
+		if (!selectedIds.has(repo.id)) {
+			selectRepos([repo.id])
+		}
 		setRepoMenu({ repo, x: e.clientX, y: e.clientY })
 	}
 
@@ -172,10 +176,10 @@ export function RepoList({
 	return (
 		<div className="space-y-6 relative min-h-[600px]">
 			{/* Glassmorphic Toolbar */}
-			<div className="sticky z-10 p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-xl shadow-slate-200/50 dark:shadow-black/50 flex flex-col md:flex-row gap-3 items-center justify-between transition-all duration-300" style={{ top: 'calc(var(--header-height) + 0.5rem)' }}>
+			<div className="sticky z-10 p-2 md:p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-xl shadow-slate-200/50 dark:shadow-black/50 flex flex-wrap md:flex-nowrap gap-2 items-center transition-all duration-300" style={{ top: 'calc(var(--header-height) + 0.5rem)' }}>
 
 				{/* Search & View Toggle */}
-				<div className="flex items-center gap-2 w-full lg:w-auto flex-wrap sm:flex-nowrap">
+				<div className="flex items-center gap-2 w-full md:w-auto md:flex-1 flex-wrap sm:flex-nowrap min-w-0">
 					{/* Advanced Selection Menu */}
 					<div className="relative z-40">
 						<div className="flex items-center rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-1">
@@ -228,7 +232,7 @@ export function RepoList({
 						)}
 					</div>
 
-					<div className="relative min-w-0 basis-full sm:basis-auto sm:flex-1 lg:w-64 group order-first sm:order-none">
+					<div className="relative min-w-0 basis-full sm:basis-auto sm:flex-1 group order-first sm:order-none">
 						<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
 						<input
 							type="text"
@@ -277,7 +281,7 @@ export function RepoList({
 				</div>
 
 				{/* Filters */}
-				<div className="flex items-center gap-2 w-full lg:w-auto overflow-x-auto pb-1 lg:pb-0">
+				<div className="flex items-center gap-1.5 w-full md:w-auto flex-wrap md:flex-nowrap min-w-0">
 					<Select
 						value={typeFilter}
 						onChange={setTypeFilter}
@@ -289,7 +293,7 @@ export function RepoList({
 						]}
 						label="Repository Type"
 						size="sm"
-						className="min-w-[120px]"
+						className="flex-1 min-w-0"
 					/>
 					<Select
 						value={visibilityFilter}
@@ -301,7 +305,7 @@ export function RepoList({
 						]}
 						label="Repository Visibility"
 						size="sm"
-						className="min-w-[120px]"
+						className="flex-1 min-w-0"
 					/>
 					<Select
 						value={languageFilter}
@@ -312,10 +316,10 @@ export function RepoList({
 						]}
 						label="Programming Language"
 						size="sm"
-						className="min-w-[120px]"
+						className="flex-1 min-w-0"
 					/>
 
-					<div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden lg:block"></div>
+					<div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block"></div>
 
 					<Button
 						variant="ghost"
@@ -404,6 +408,7 @@ export function RepoList({
 							repo={repo}
 							viewMode={viewMode}
 							isSelected={selectedIds.has(repo.id)}
+							isContextTarget={repoMenu?.repo?.id === repo.id}
 							onToggle={() => toggleSelect(repo.id)}
 							onAction={onQuickAction}
 							onContextMenu={(e) => handleContextMenu(e, repo)}
@@ -494,8 +499,26 @@ const TooltipButton = memo(function TooltipButton({ icon: IconComp, label, onCli
 	)
 })
 
-const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, onToggle, onAction, onContextMenu, onOpenInsights, onOpenHealth, onRepoClick }) {
+const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, isContextTarget, onToggle, onAction, onContextMenu, onOpenInsights, onOpenHealth, onRepoClick }) {
 	const isGrid = viewMode === 'grid'
+
+	// Ring + border via inline style to guarantee visibility (Tailwind v4 class-order can't override inline)
+	const ringShadow = isContextTarget
+		? '0 0 0 2px rgba(129, 140, 248, 0.85)'  // indigo-400 ring
+		: isSelected
+			? '0 0 0 2px rgba(99, 102, 241, 0.9)'   // indigo-500 ring
+			: null
+
+	const baseShadow = '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)'
+	const stateStyle = ringShadow
+		? {
+			boxShadow: `${ringShadow}, ${baseShadow}`,
+			borderColor: isContextTarget ? 'rgba(129, 140, 248, 0.6)' : 'transparent',
+		}
+		: {}
+
+	// Preserve ring in hover shadow for selected cards
+	const hoverShadow = '0 20px 25px -5px rgba(100, 116, 139, 0.2), 0 10px 10px -5px rgba(100, 116, 139, 0.15)'
 
 	return (
 		<motion.div
@@ -507,23 +530,26 @@ const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, onToggle, 
 			onContextMenu={onContextMenu}
 			initial={{ opacity: 0, y: 20 }}
 			animate={{ opacity: 1, y: 0 }}
-			whileHover={{
+			whileHover={isContextTarget ? {} : {
 				y: -4,
-				boxShadow: "0 20px 25px -5px rgba(100, 116, 139, 0.2), 0 10px 10px -5px rgba(100, 116, 139, 0.15)",
+				boxShadow: isSelected ? `0 0 0 2px rgba(99, 102, 241, 0.9), ${hoverShadow}` : hoverShadow,
 				transition: { duration: 0.2, ease: "easeOut" }
 			}}
 			transition={{ duration: 0.3 }}
+			style={stateStyle}
 			className={`
                 group relative transition-all duration-300 cursor-pointer
-                bg-white/70 dark:bg-slate-800/80 backdrop-blur-xl
-                border border-slate-200/70 dark:border-slate-700/50
+                backdrop-blur-xl border
                 shadow-lg shadow-slate-200/40 dark:shadow-black/40
-                hover:border-indigo-400/60 dark:hover:border-indigo-500/40
                 ds-card-shimmer
                 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 outline-none
-                ${isSelected
-					? 'ring-2 ring-indigo-500 border-transparent bg-indigo-50/50 dark:bg-indigo-900/20'
-					: ''
+                ${isContextTarget
+					? isSelected
+						? 'bg-indigo-100/60 dark:bg-indigo-900/40'
+						: 'bg-indigo-50/50 dark:bg-indigo-900/30'
+					: isSelected
+						? 'bg-indigo-50/50 dark:bg-indigo-900/20'
+						: 'bg-white/70 dark:bg-slate-800/80 border-slate-200/70 dark:border-slate-700/50 hover:border-indigo-400/60 dark:hover:border-indigo-500/40'
 				}
                 ${isGrid ? 'rounded-2xl p-3 sm:p-4 xl:p-5 flex flex-col h-full' : 'rounded-xl p-4 flex items-center gap-4'}
             `}
@@ -582,11 +608,11 @@ const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, onToggle, 
 			</div>
 
 			{/* Stats & Meta */}
-			<div className={`flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 ${isGrid ? 'mt-auto pt-4 border-t border-slate-200/50 dark:border-slate-700/30' : ''}`}>
+			<div className={`flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 ${isGrid ? 'mt-auto pt-3 border-t border-slate-200/50 dark:border-slate-700/30' : ''}`}>
 				{repo.language && (
 					<div className="flex items-center gap-1.5">
 						<span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-						{repo.language}
+						<span className="truncate max-w-[80px]">{repo.language}</span>
 					</div>
 				)}
 				<div className="flex items-center gap-1">
@@ -597,6 +623,12 @@ const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, onToggle, 
 					<GitFork className="w-3.5 h-3.5" />
 					{formatCompact(repo.forks_count)}
 				</div>
+				{isGrid && repo.open_issues_count > 0 && (
+					<div className="hidden sm:flex items-center gap-1 text-amber-500 dark:text-amber-400">
+						<AlertCircle className="w-3.5 h-3.5" />
+						{formatCompact(repo.open_issues_count)}
+					</div>
+				)}
 				<div className="flex-1"></div>
 
 				{/* Actions (Grid: Bottom Right, List: Right Side) */}
@@ -655,9 +687,18 @@ const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, onToggle, 
 					)}
 				</div>
 			</div>
-			{repo.pushed_at && (
-				<p className="hidden xl:block text-xs text-slate-500 dark:text-slate-400 mt-2">
-					Updated {new Date(repo.pushed_at).toLocaleDateString()}
+			{isGrid && repo.pushed_at && (
+				<p className="hidden lg:block text-xs text-slate-400 dark:text-slate-500 mt-1.5">
+					{(() => {
+						const diff = Date.now() - new Date(repo.pushed_at).getTime()
+						const mins = Math.floor(diff / 60000)
+						const hours = Math.floor(mins / 60)
+						const days = Math.floor(hours / 24)
+						if (days > 30) return `Updated ${new Date(repo.pushed_at).toLocaleDateString()}`
+						if (days > 0) return `Updated ${days}d ago`
+						if (hours > 0) return `Updated ${hours}h ago`
+						return `Updated ${mins}m ago`
+					})()}
 				</p>
 			)}
 		</motion.div>
@@ -671,7 +712,8 @@ const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, onToggle, 
 		prevProps.repo.archived === nextProps.repo.archived &&
 		prevProps.repo.private === nextProps.repo.private &&
 		prevProps.viewMode === nextProps.viewMode &&
-		prevProps.isSelected === nextProps.isSelected
+		prevProps.isSelected === nextProps.isSelected &&
+		prevProps.isContextTarget === nextProps.isContextTarget
 	)
 })
 
