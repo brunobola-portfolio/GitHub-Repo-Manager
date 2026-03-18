@@ -115,131 +115,119 @@ export function Header({
                 </div>
 
                 {/* Right: Actions & User */}
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-1.5 flex-shrink-0">
                     {user ? (
                         <>
-                            {/* Quick Actions */}
-                            <div className="hidden sm:flex items-center gap-1 mr-2">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
+                            {/* Quick Actions Container */}
+                            <div className="hidden sm:flex items-center gap-0.5 bg-slate-100 dark:bg-slate-950 p-[5px] rounded-[14px] border border-slate-200/50 dark:border-slate-700/50">
+                                <button
+                                    type="button"
                                     onClick={onCreateRepo}
-                                    className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
+                                    className="w-9 h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
                                     aria-label="Create new repository"
                                 >
                                     <Plus className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={onImport}
-                                    className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
+                                    className="w-9 h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
                                     title="Import Repository"
                                     aria-label="Import Repository"
                                 >
                                     <Download className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={onOpenCommitGen}
-                                    className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
+                                    className="w-9 h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
                                     title="AI Commit Generator"
                                     aria-label="AI Commit Generator"
                                 >
                                     <Wand2 className="w-4 h-4" />
-                                </Button>
+                                </button>
                             </div>
 
-                            {/* Theme Toggle */}
-                            <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
+                            {/* Utility Container */}
+                            <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-950 p-[5px] rounded-[14px] border border-slate-200/50 dark:border-slate-700/50">
+                                {/* Theme Toggle */}
+                                <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
 
-                            {/* Sync Button */}
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleSync}
-                                disabled={syncing}
-                                className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100"
-                                title="Sync organizations"
-                                aria-label="Sync organizations"
-                            >
-                                <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-                            </Button>
-
-                            {/* Notifications */}
-                            <div className="relative" ref={notifRef}>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setShowNotifications(!showNotifications)}
-                                    className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 relative"
-                                    aria-label={showNotifications ? 'Hide notifications' : 'Show notifications'}
-                                    aria-expanded={showNotifications}
-                                    aria-haspopup="true"
-                                >
-                                    <Bell className="w-4 h-4" />
-                                    {syncStatus?.hasUpdates && (
-                                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-indigo-500 rounded-full" />
-                                    )}
-                                </Button>
-
-                                {showNotifications && (
-                                    <NotificationsDropdown
-                                        syncStatus={syncStatus}
-                                        orgs={orgs}
-                                    />
-                                )}
-                            </div>
-
-                            {/* User Menu */}
-                            <div className="relative" ref={menuRef}>
+                                {/* Sync */}
                                 <button
                                     type="button"
-                                    onClick={() => setShowUserMenu(!showUserMenu)}
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-800"
-                                    aria-label={showUserMenu ? 'Close user menu' : 'Open user menu'}
-                                    aria-haspopup="true"
-                                    aria-expanded={showUserMenu}
+                                    onClick={handleSync}
+                                    disabled={syncing}
+                                    className="w-9 h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors disabled:opacity-50"
+                                    title="Sync organizations"
+                                    aria-label="Sync organizations"
                                 >
-                                    <img
-                                        src={user.avatar_url || 'https://github.com/ghost.png'}
-                                        alt={user.login}
-                                        className="w-8 h-8 rounded-full ring-2 ring-slate-200 dark:ring-slate-600"
-                                    />
-                                    <ChevronDown className={`w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+                                    <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
                                 </button>
 
-                                {showUserMenu && (
-                                    <UserDropdown
-                                        user={user}
-                                        orgs={orgs}
-                                        onLogout={onLogout}
-                                        onReauthorize={onReauthorize}
-                                        onOpenOrgManager={onOpenOrgManager}
-                                        onOpenSettings={onOpenSettings}
-                                        onMigrationHistory={onMigrationHistory}
-                                        onClose={() => setShowUserMenu(false)}
-                                    />
-                                )}
+                                {/* Notifications */}
+                                <div className="relative" ref={notifRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowNotifications(!showNotifications)}
+                                        className="w-9 h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors relative"
+                                        aria-label={showNotifications ? 'Hide notifications' : 'Show notifications'}
+                                        aria-expanded={showNotifications}
+                                        aria-haspopup="true"
+                                    >
+                                        <Bell className="w-4 h-4" />
+                                        {syncStatus?.hasUpdates && (
+                                            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-indigo-500 rounded-full" />
+                                        )}
+                                    </button>
+
+                                    {showNotifications && (
+                                        <NotificationsDropdown
+                                            syncStatus={syncStatus}
+                                            orgs={orgs}
+                                        />
+                                    )}
+                                </div>
+
+                                {/* User Menu */}
+                                <div className="relative" ref={menuRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowUserMenu(!showUserMenu)}
+                                        className="flex items-center gap-1.5 px-1 py-1 rounded-[10px] hover:bg-white/80 dark:hover:bg-slate-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                        aria-label={showUserMenu ? 'Close user menu' : 'Open user menu'}
+                                        aria-haspopup="true"
+                                        aria-expanded={showUserMenu}
+                                    >
+                                        <img
+                                            src={user.avatar_url || 'https://github.com/ghost.png'}
+                                            alt={user.login}
+                                            className="w-7 h-7 rounded-full ring-2 ring-slate-200 dark:ring-slate-600"
+                                        />
+                                        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 dark:text-slate-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {showUserMenu && (
+                                        <UserDropdown
+                                            user={user}
+                                            orgs={orgs}
+                                            onLogout={onLogout}
+                                            onReauthorize={onReauthorize}
+                                            onOpenOrgManager={onOpenOrgManager}
+                                            onOpenSettings={onOpenSettings}
+                                            onMigrationHistory={onMigrationHistory}
+                                            onClose={() => setShowUserMenu(false)}
+                                        />
+                                    )}
+                                </div>
                             </div>
                         </>
                     ) : (
-                        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
                             {/* Theme Toggle for non-logged in users */}
-                            <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={onCheck}
-                                disabled
-                                className="text-slate-400 dark:text-slate-500 cursor-not-allowed hidden sm:inline-flex"
-                                title="Login with GitHub to check connection status"
-                                aria-disabled="true"
-                            >
-                                <RefreshCw className="w-4 h-4 mr-1" />
-                                Status
-                            </Button>
+                            <div className="flex items-center bg-slate-100 dark:bg-slate-950 p-[5px] rounded-[14px] border border-slate-200/50 dark:border-slate-700/50">
+                                <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
+                            </div>
                             <Button variant="primary" size="sm" onClick={onLogin}>
                                 <Github className="w-4 h-4 sm:mr-1" />
                                 <span className="hidden sm:inline">Login with GitHub</span>
@@ -288,25 +276,23 @@ export function Header({
 }
 
 function ThemeToggleButton({ isDark, toggleTheme }) {
-    const label = isDark ? 'Dark mode' : 'Light mode'
-
     return (
-        <Button
-            variant="ghost"
-            size="sm"
+        <button
+            type="button"
             onClick={toggleTheme}
             aria-pressed={isDark}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2.5 sm:px-2.5 sm:py-1 text-xs font-medium transition-colors min-h-[44px] min-w-[44px] justify-center
-                ${isDark
-                    ? 'bg-slate-900 text-slate-100 border-slate-600'
-                    : 'bg-slate-100 text-slate-800 border-slate-200'
-                }
-`}
+            className={`flex items-center gap-1.5 rounded-[10px] transition-colors ${
+                isDark
+                    ? 'bg-white/10 dark:bg-slate-600 text-slate-100'
+                    : 'bg-white text-slate-800 shadow-sm'
+            } h-9 px-2.5 sm:px-3`}
             title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
-            {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">{label}</span>
-        </Button>
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            <span className="hidden sm:inline text-xs font-medium">
+                {isDark ? 'Dark mode' : 'Light mode'}
+            </span>
+        </button>
     )
 }
 
