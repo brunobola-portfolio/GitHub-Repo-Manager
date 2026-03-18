@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import {
     Github, LogOut, RefreshCw, FlaskConical, LayoutDashboard, FolderGit2, Plus, Cloud,
     Bell, Settings, User, ChevronDown, Building2, Shield, Users,
-    CheckCircle2, AlertCircle, Sparkles, Moon, Sun, Wand2, Download, History
+    CheckCircle2, AlertCircle, Sparkles, Moon, Sun, Wand2, Download, History, Menu
 } from 'lucide-react'
 import { Button } from './ui/Button'
 import { useTheme } from '../hooks/useTheme.jsx'
@@ -25,7 +25,8 @@ export function Header({
     onOpenCommitGen,
     onOpenSettings,
     onImport,
-    onMigrationHistory
+    onMigrationHistory,
+    onToggleOrgDrawer
 }) {
     const [showUserMenu, setShowUserMenu] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
@@ -54,10 +55,20 @@ export function Header({
     }
 
     return (
+        <>
         <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-700/50 sticky top-0 z-20 transition-all duration-300 shadow-sm dark:shadow-black/20 safe-area-top">
-            <div className="max-w-[1920px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 h-16 flex items-center gap-3 safe-area-left safe-area-right">
+            <div className="max-w-screen-2xl mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 h-14 flex items-center gap-3 safe-area-left safe-area-right">
                 {/* Left: Logo & Title */}
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink-0">
+                    {user && (
+                      <button
+                        onClick={onToggleOrgDrawer}
+                        className="md:hidden p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+                        aria-label="Open organizations"
+                      >
+                        <Menu className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+                      </button>
+                    )}
                     <div className="bg-gradient-to-br from-indigo-600 to-purple-600 p-2 sm:p-2.5 rounded-xl shadow-lg shadow-indigo-500/25 dark:shadow-indigo-500/30 ds-btn-shimmer flex-shrink-0">
                         <Github className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
@@ -78,7 +89,7 @@ export function Header({
                 {/* Center: Navigation (desktop) - flex-based centering */}
                 <div className="flex-1 flex justify-center min-w-0">
                     {user && (
-                        <nav className="hidden lg:flex items-center gap-1 bg-slate-100/80 dark:bg-slate-700/60 p-1 rounded-xl backdrop-blur-sm border border-slate-200/50 dark:border-slate-600/30 flex-shrink-0">
+                        <nav className="hidden md:flex items-center gap-1 bg-slate-100/80 dark:bg-slate-700/60 p-1 rounded-xl backdrop-blur-sm border border-slate-200/50 dark:border-slate-600/30 flex-shrink-0">
                             <NavButton
                                 active={activeView === 'dashboard'}
                                 onClick={() => onViewChange?.('dashboard')}
@@ -237,30 +248,40 @@ export function Header({
                 </div>
             </div>
 
-            {/* Mobile Navigation */}
-            {user && (
-                <nav className="flex lg:hidden items-center justify-center gap-1 px-5 pb-2 bg-white/80 dark:bg-slate-800/80">
-                    <NavButton
-                        active={activeView === 'dashboard'}
-                        onClick={() => onViewChange?.('dashboard')}
-                        icon={LayoutDashboard}
-                        label="Dashboard"
-                    />
-                    <NavButton
-                        active={activeView === 'repos'}
-                        onClick={() => onViewChange?.('repos')}
-                        icon={FolderGit2}
-                        label="Repos"
-                    />
-                    <NavButton
-                        active={activeView === 'teams'}
-                        onClick={() => onViewChange?.('teams')}
-                        icon={Users}
-                        label="Teams"
-                    />
-                </nav>
-            )}
         </header>
+
+        {user && (
+          <nav
+            className="fixed bottom-0 left-0 right-0 z-40 md:hidden backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-t border-slate-200/60 dark:border-slate-700/50"
+            role="navigation"
+            aria-label="Main navigation"
+            style={{ paddingBottom: 'var(--safe-area-inset-bottom, 0px)' }}
+          >
+            <div className="flex items-center justify-around h-14 px-4">
+              {[
+                { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+                { id: 'repos', icon: FolderGit2, label: 'Repos' },
+                { id: 'teams', icon: Users, label: 'Teams' },
+                { id: 'ai', icon: Sparkles, label: 'AI' },
+              ].map(({ id, icon: Icon, label }) => (
+                <button
+                  key={id}
+                  onClick={() => onViewChange?.(id === 'ai' ? 'repos' : id)}
+                  className={`flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-xl transition-colors ${
+                    activeView === id
+                      ? 'text-indigo-600 dark:text-indigo-400'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                  }`}
+                  aria-current={activeView === id ? 'page' : undefined}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="text-[10px] font-medium leading-none">{label}</span>
+                </button>
+              ))}
+            </div>
+          </nav>
+        )}
+        </>
     )
 }
 
@@ -294,6 +315,7 @@ function NavButton({ active, onClick, icon, label }) {
         <button
             type="button"
             onClick={onClick}
+            aria-current={active ? 'page' : undefined}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100 dark:focus-visible:ring-offset-slate-700 ds-font-display ${active
                 ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-md shadow-slate-200/60 dark:shadow-black/30'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-600/40'
