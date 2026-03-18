@@ -57,7 +57,7 @@ export function Header({
     return (
         <>
         <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-700/50 sticky top-0 z-20 transition-all duration-300 shadow-sm dark:shadow-black/20 safe-area-top">
-            <div className="max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 h-14 flex items-center gap-3 safe-area-left safe-area-right">
+            <div className="max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 h-16 flex items-center gap-3 safe-area-left safe-area-right">
                 {/* Left: Logo & Title */}
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink-0">
                     {user && (
@@ -69,20 +69,22 @@ export function Header({
                         <Menu className="w-5 h-5 text-slate-600 dark:text-slate-300" />
                       </button>
                     )}
-                    <div className="bg-gradient-to-br from-indigo-600 to-purple-600 p-2 sm:p-2.5 rounded-xl shadow-lg shadow-indigo-500/25 dark:shadow-indigo-500/30 ds-btn-shimmer flex-shrink-0">
-                        <Github className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                    </div>
-                    <div className="min-w-0">
-                        <h1 className="text-base sm:text-xl font-bold text-slate-900 dark:text-slate-100 leading-none flex items-center gap-2 ds-font-display truncate">
-                            <span className="hidden xs:inline">GitHub </span>Repo Manager
-                            {isMockMode && (
-                                <span className="inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0">
-                                    <FlaskConical className="w-3 h-3" />
-                                    Demo
-                                </span>
-                            )}
-                        </h1>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Organize & migrate your repositories</p>
+                    <div className="flex items-center gap-2.5 bg-slate-100 dark:bg-slate-950 p-[5px] pr-2.5 rounded-[14px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
+                        <div className="bg-gradient-to-br from-indigo-600 to-purple-600 p-2.5 rounded-[10px] shadow-lg shadow-indigo-500/25 dark:shadow-indigo-500/30 ds-btn-shimmer flex-shrink-0">
+                            <Github className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="min-w-0 hidden sm:block">
+                            <h1 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-none ds-font-display truncate">
+                                <span className="hidden xs:inline">GitHub </span>Repo Manager
+                                {isMockMode && (
+                                    <span className="inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full text-[10px] font-medium ml-1.5 flex-shrink-0">
+                                        <FlaskConical className="w-2.5 h-2.5" />
+                                        Demo
+                                    </span>
+                                )}
+                            </h1>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">Organize & migrate</p>
+                        </div>
                     </div>
                 </div>
 
