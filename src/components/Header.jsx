@@ -88,10 +88,10 @@ export function Header({
                     </div>
                 </div>
 
-                {/* Center: Navigation (desktop) - flex-based centering */}
+                {/* Center: Navigation (desktop) */}
                 <div className="flex-1 flex justify-center min-w-0">
                     {user && (
-                        <nav className="hidden md:flex items-center gap-1 bg-slate-100/80 dark:bg-slate-700/60 p-1 rounded-xl backdrop-blur-sm border border-slate-200/50 dark:border-slate-600/30 flex-shrink-0">
+                        <nav className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-[5px] rounded-[14px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
                             <NavButton
                                 active={activeView === 'dashboard'}
                                 onClick={() => onViewChange?.('dashboard')}
@@ -318,10 +318,10 @@ function NavButton({ active, onClick, icon, label }) {
             type="button"
             onClick={onClick}
             aria-current={active ? 'page' : undefined}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100 dark:focus-visible:ring-offset-slate-700 ds-font-display ${active
-                ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-md shadow-slate-200/60 dark:shadow-black/30'
+            className={`flex items-center gap-2 px-4 py-2 rounded-[10px] text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ds-font-display ${active
+                ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-600/40'
-                } `}
+                }`}
         >
             {IconComponent && <IconComponent className="w-4 h-4" />}
             {label}
