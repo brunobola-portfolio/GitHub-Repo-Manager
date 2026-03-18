@@ -27,7 +27,7 @@ export function OrgPanel({
 	)
 
 	return (
-		<div className="h-full flex flex-col bg-transparent w-80 transition-all duration-300">
+		<div className="h-full flex flex-col bg-transparent w-full transition-all duration-300">
 			{/* Header */}
 			<div className="p-5 border-b border-slate-200/60 dark:border-slate-700/40">
 				<div className="flex items-center justify-between mb-4">
