@@ -13,7 +13,6 @@ export function Header({
     isMockMode,
     onLogin,
     onLogout,
-    onCheck,
     onCreateRepo,
     activeView,
     onViewChange,
@@ -57,7 +56,7 @@ export function Header({
     return (
         <>
         <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-700/50 sticky top-0 z-20 transition-all duration-300 shadow-sm dark:shadow-black/20 safe-area-top">
-            <div className="max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 h-16 flex items-center gap-3 safe-area-left safe-area-right">
+            <div className="max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 h-14 sm:h-16 flex items-center gap-3 safe-area-left safe-area-right">
                 {/* Left: Logo & Title */}
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink-0">
                     {user && (
@@ -123,7 +122,7 @@ export function Header({
                                 <button
                                     type="button"
                                     onClick={onCreateRepo}
-                                    className="w-9 h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+                                    className="w-11 h-11 sm:w-9 sm:h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                                     aria-label="Create new repository"
                                 >
                                     <Plus className="w-4 h-4" />
@@ -131,7 +130,7 @@ export function Header({
                                 <button
                                     type="button"
                                     onClick={onImport}
-                                    className="w-9 h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+                                    className="w-11 h-11 sm:w-9 sm:h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                                     title="Import Repository"
                                     aria-label="Import Repository"
                                 >
@@ -140,7 +139,7 @@ export function Header({
                                 <button
                                     type="button"
                                     onClick={onOpenCommitGen}
-                                    className="w-9 h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+                                    className="w-11 h-11 sm:w-9 sm:h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                                     title="AI Commit Generator"
                                     aria-label="AI Commit Generator"
                                 >
@@ -158,7 +157,7 @@ export function Header({
                                     type="button"
                                     onClick={handleSync}
                                     disabled={syncing}
-                                    className="w-9 h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors disabled:opacity-50"
+                                    className="w-11 h-11 sm:w-9 sm:h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                                     title="Sync organizations"
                                     aria-label="Sync organizations"
                                 >
@@ -170,7 +169,7 @@ export function Header({
                                     <button
                                         type="button"
                                         onClick={() => setShowNotifications(!showNotifications)}
-                                        className="w-9 h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors relative"
+                                        className="w-11 h-11 sm:w-9 sm:h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                                         aria-label={showNotifications ? 'Hide notifications' : 'Show notifications'}
                                         aria-expanded={showNotifications}
                                         aria-haspopup="true"
@@ -281,12 +280,13 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
             type="button"
             onClick={toggleTheme}
             aria-pressed={isDark}
-            className={`flex items-center gap-1.5 rounded-[10px] transition-colors ${
+            className={`flex items-center gap-1.5 rounded-[10px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                 isDark
                     ? 'bg-white/10 dark:bg-slate-600 text-slate-100'
                     : 'bg-white text-slate-800 shadow-sm'
-            } h-9 px-2.5 sm:px-3`}
+            } h-11 sm:h-9 px-2.5 sm:px-3`}
             title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             <span className="hidden sm:inline text-xs font-medium">
