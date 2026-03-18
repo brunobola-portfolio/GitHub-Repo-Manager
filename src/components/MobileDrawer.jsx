@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 
-export function MobileDrawer({ isOpen, onClose, children }) {
+export function MobileDrawer({ isOpen, onClose, children, side = 'right' }) {
+  const isLeft = side === 'left'
   return (
     <AnimatePresence>
       {isOpen && (
@@ -18,11 +19,11 @@ export function MobileDrawer({ isOpen, onClose, children }) {
 
           {/* Drawer */}
           <motion.div
-            initial={{ x: '100%' }}
+            initial={{ x: isLeft ? '-100%' : '100%' }}
             animate={{ x: 0 }}
-            exit={{ x: '100%' }}
+            exit={{ x: isLeft ? '-100%' : '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed right-0 top-0 bottom-0 w-80 max-w-[90vw] bg-white dark:bg-slate-900 z-50 shadow-2xl overflow-y-auto"
+            className={`fixed ${isLeft ? 'left-0' : 'right-0'} top-0 bottom-0 w-80 max-w-[90vw] bg-white dark:bg-slate-900 z-50 shadow-2xl overflow-y-auto`}
             role="dialog"
             aria-modal="true"
             aria-label="Navigation drawer"
