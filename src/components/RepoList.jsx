@@ -176,7 +176,7 @@ export function RepoList({
 	return (
 		<div className="space-y-6 relative min-h-[600px]">
 			{/* Glassmorphic Toolbar */}
-			<div className="sticky z-10 p-2 md:p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-xl shadow-slate-200/50 dark:shadow-black/50 flex flex-wrap md:flex-nowrap gap-2 items-center transition-all duration-300" style={{ top: 'calc(var(--header-height) + 0.5rem)' }}>
+			<div className="sticky z-10 p-2 md:p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-xl shadow-slate-200/50 dark:shadow-black/50 flex flex-wrap md:flex-nowrap gap-2 items-center transition-all duration-300" style={{ top: 'calc(var(--header-height) + var(--layout-py))' }}>
 
 				{/* Search & View Toggle */}
 				<div className="flex items-center gap-2 w-full md:w-auto md:flex-1 flex-wrap sm:flex-nowrap min-w-0">
