@@ -10,15 +10,16 @@
 	--safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
 	--safe-area-inset-left: env(safe-area-inset-left, 0px);
 
-	/* Layout tokens (not ds-* design tokens — these are layout concerns) */
-	--header-height: 3.5rem;
+	/* Layout tokens */
+	--header-height: 4rem;
 	--bottom-nav-height: 0px;
 	--card-min-width: 300px;
+	--layout-py: 0.75rem;
 }
 
 @media (max-width: 639px) {
 	:root {
-		--header-height: 3rem;
+		--header-height: 3.5rem;
 		--bottom-nav-height: 4rem;
 		--card-min-width: 100%;
 	}
@@ -33,6 +34,18 @@
 @media (min-width: 1280px) {
 	:root {
 		--card-min-width: 320px;
+	}
+}
+
+@media (min-width: 768px) {
+	:root {
+		--layout-py: 1rem;
+	}
+}
+
+@media (min-width: 1024px) {
+	:root {
+		--layout-py: 1.25rem;
 	}
 }
 
