@@ -13,8 +13,8 @@ import { PAGINATION } from '../config'
 import { aiApi } from '../api/ai'
 import { formatCompact } from '../utils/format'
 import { motion } from 'framer-motion'
-import { useSelection } from '../contexts/SelectionContext'
-import { useModal } from '../contexts/ModalContext'
+import { useSelection } from '../hooks/useSelection'
+import { useModal } from '../hooks/useModal'
 
 export function RepoList({
 	repos,
@@ -29,7 +29,7 @@ export function RepoList({
 	onQuickAction,
 	onRepoClick
 }) {
-	const { selectedIds, toggleSelect, selectRepos, deselectRepos, clearSelection } = useSelection()
+	const { selectedIds, toggleSelect, selectRepos, deselectRepos, invertSelection, clearSelection } = useSelection()
 	const { openModalWithData } = useModal()
 	const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
 	const [searchQuery, setSearchQuery] = useState('')
@@ -98,26 +98,31 @@ export function RepoList({
 
 	// AI Search Effect
 	useEffect(() => {
+		let aborted = false
 		const delayDebounce = setTimeout(async () => {
 			if (isAISearch && searchQuery.length > 2) {
 				setIsSearchingAI(true)
 				setAiSearchError(null)
 				try {
 					const results = await aiApi.search(searchQuery)
-					setAiResults(results)
+					if (!aborted) setAiResults(results)
 				} catch (err) {
-					setAiSearchError('AI search unavailable. Try regular search.')
-					setAiResults([])
+					if (!aborted) {
+						setAiSearchError('AI search unavailable. Try regular search.')
+						setAiResults([])
+					}
 				} finally {
-					setIsSearchingAI(false)
+					if (!aborted) setIsSearchingAI(false)
 				}
 			} else if (isAISearch && !searchQuery) {
-				setAiResults([])
-				setAiSearchError(null)
+				if (!aborted) {
+					setAiResults([])
+					setAiSearchError(null)
+				}
 			}
 		}, 500)
 
-		return () => clearTimeout(delayDebounce)
+		return () => { aborted = true; clearTimeout(delayDebounce) }
 	}, [searchQuery, isAISearch])
 
 	const allFilteredSelected = filteredRepos.length > 0 && filteredRepos.every(r => selectedIds.has(r.id))
@@ -125,30 +130,15 @@ export function RepoList({
 
 	const handleSelectAll = () => {
 		if (allFilteredSelected) {
-			deselectRepos(filteredRepos)
+			deselectRepos(filteredRepos.map(r => r.id))
 		} else {
-			selectRepos(filteredRepos)
+			selectRepos(filteredRepos.map(r => r.id))
 		}
 		setShowSelectionMenu(false)
 	}
 
 	const handleInvertSelection = () => {
-		// Invert selection only for the currently filtered repos
-		const newSelectedIds = new Set(selectedIds)
-		filteredRepos.forEach(repo => {
-			if (newSelectedIds.has(repo.id)) {
-				newSelectedIds.delete(repo.id)
-			} else {
-				newSelectedIds.add(repo.id)
-			}
-		})
-		// We need a way to update parent state with new Set. 
-		// Assuming invertSelection prop does this globally, but here we want filtered inversion.
-		// Let's use the parent's invertSelection if it supports it, or manually toggle.
-		// Since we don't have a direct "setAllSelected" prop, we iterate.
-		// Actually, the best way is to use the props we have.
-		// If we want to invert *visible* selection:
-		filteredRepos.forEach(repo => toggleSelect(repo.id))
+		invertSelection(filteredRepos.map(r => r.id))
 		setShowSelectionMenu(false)
 	}
 
@@ -171,13 +161,18 @@ export function RepoList({
 		}
 	}, [])
 
+	// Reset context menu when filtered repos change
+	useEffect(() => {
+		setRepoMenu(null)
+	}, [filteredRepos])
+
 	const canGoBack = page > 1
 	const canGoNext = totalPages ? page < totalPages : repos.length === perPage
 
 	return (
 		<div className="space-y-6 relative min-h-[600px]">
 			{/* Glassmorphic Toolbar */}
-			<div className="sticky top-[108px] lg:top-16 z-10 p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-xl shadow-slate-200/50 dark:shadow-black/50 flex flex-col lg:flex-row gap-3 items-center justify-between transition-all duration-300">
+			<div className="sticky z-10 p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-xl shadow-slate-200/50 dark:shadow-black/50 flex flex-col md:flex-row gap-3 items-center justify-between transition-all duration-300" style={{ top: 'calc(var(--header-height) + 0.5rem)' }}>
 
 				{/* Search & View Toggle */}
 				<div className="flex items-center gap-2 w-full lg:w-auto flex-wrap sm:flex-nowrap">
@@ -187,7 +182,7 @@ export function RepoList({
 							<div
 								role="checkbox"
 								aria-checked={allFilteredSelected ? 'true' : someFilteredSelected ? 'mixed' : 'false'}
-								aria-label="Select all repositories"
+								aria-label={searchQuery || typeFilter !== 'all' || visibilityFilter !== 'all' || languageFilter !== 'all' ? "Select all filtered repositories" : "Select all repositories"}
 								tabIndex={0}
 								className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer transition-colors"
 								onClick={(e) => { e.stopPropagation(); handleSelectAll(); }}
@@ -264,12 +259,16 @@ export function RepoList({
 					<div className="flex bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl p-1 border border-slate-200/70 dark:border-slate-700/50 shadow-sm">
 						<button
 							onClick={() => setViewMode('grid')}
+							aria-label="Grid view"
+							aria-pressed={viewMode === 'grid'}
 							className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
 						>
 							<LayoutGrid className="w-4 h-4" />
 						</button>
 						<button
 							onClick={() => setViewMode('list')}
+							aria-label="List view"
+							aria-pressed={viewMode === 'list'}
 							className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
 						>
 							<ListIcon className="w-4 h-4" />
@@ -378,17 +377,27 @@ export function RepoList({
 				</div>
 			) : filteredRepos.length === 0 ? (
 				<div className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
-					<Search className="w-12 h-12 mb-4 opacity-20" />
-					<p>No repositories found matching your filters.</p>
-					<Button variant="ghost" className="mt-2" onClick={() => { setSearchQuery(''); setTypeFilter('all'); setVisibilityFilter('all'); setLanguageFilter('all'); }}>
-						Clear Filters
-					</Button>
+					{repos.length === 0 ? (
+						<>
+							<Archive className="w-12 h-12 mb-4 opacity-20" />
+							<p>No repositories yet.</p>
+							<p className="text-sm mt-1 opacity-70">Create or import a repository to get started.</p>
+						</>
+					) : (
+						<>
+							<Search className="w-12 h-12 mb-4 opacity-20" />
+							<p>No repositories match your current filters.</p>
+							<Button variant="ghost" className="mt-2" onClick={() => { setSearchQuery(''); setTypeFilter('all'); setVisibilityFilter('all'); setLanguageFilter('all'); }}>
+								Clear Filters
+							</Button>
+						</>
+					)}
 				</div>
 			) : (
 				<div className={viewMode === 'grid'
-					? "grid grid-cols-1 md:grid-cols-2 3xl:grid-cols-3 gap-4"
+					? "grid gap-4"
 					: "flex flex-col gap-3"
-				}>
+				} style={viewMode === 'grid' ? { gridTemplateColumns: 'repeat(auto-fill, minmax(min(var(--card-min-width), 100%), 1fr))' } : undefined}>
 					{filteredRepos.map(repo => (
 						<RepoCard
 							key={repo.id}
@@ -447,7 +456,7 @@ export function RepoList({
 							<span>{selectedIds.size}</span>
 						</div>
 						<div className="flex items-center gap-1">
-							<TooltipButton icon={CheckSquare} label="Select All" onClick={() => selectRepos(filteredRepos)} />
+							<TooltipButton icon={CheckSquare} label="Select All" onClick={() => selectRepos(filteredRepos.map(r => r.id))} />
 							<TooltipButton icon={Archive} label="Archive" onClick={() => onQuickAction('archive_selected')} />
 							<TooltipButton icon={Trash2} label="Delete" onClick={() => onQuickAction('delete_selected')} className="text-red-400 dark:text-red-600 hover:bg-red-500/20" />
 							<TooltipButton icon={X} label="Clear" onClick={clearSelection} />
@@ -516,7 +525,7 @@ const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, onToggle, 
 					? 'ring-2 ring-indigo-500 border-transparent bg-indigo-50/50 dark:bg-indigo-900/20'
 					: ''
 				}
-                ${isGrid ? 'rounded-2xl p-5 flex flex-col h-full' : 'rounded-xl p-4 flex items-center gap-4'}
+                ${isGrid ? 'rounded-2xl p-3 sm:p-4 xl:p-5 flex flex-col h-full' : 'rounded-xl p-4 flex items-center gap-4'}
             `}
 		>
 			{/* Background gradiente animado no hover */}
@@ -566,7 +575,7 @@ const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, onToggle, 
 
 				{/* Description */}
 				{isGrid && (
-					<p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 min-h-[2.5em] mt-1">
+					<p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-1 sm:line-clamp-2 xl:line-clamp-3 min-h-[2.5em] mt-1">
 						{repo.description || <span className="italic opacity-50">No description provided</span>}
 					</p>
 				)}
@@ -646,6 +655,11 @@ const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, onToggle, 
 					)}
 				</div>
 			</div>
+			{repo.pushed_at && (
+				<p className="hidden xl:block text-xs text-slate-500 dark:text-slate-400 mt-2">
+					Updated {new Date(repo.pushed_at).toLocaleDateString()}
+				</p>
+			)}
 		</motion.div>
 	)
 }, (prevProps, nextProps) => {
