@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo } from 'react'
+import { createContext, useState, useCallback, useMemo } from 'react'
 
 /**
  * Internal modal state shape: { isOpen: boolean, data: any }
@@ -11,13 +11,13 @@ import { createContext, useContext, useState, useCallback, useMemo } from 'react
  * @property {Object} modalStates - Current state of all modals (boolean properties for backward compat)
  * @property {(modalName: string) => void} openModal - Open a specific modal (no data)
  * @property {(modalName: string, data: any) => void} openModalWithData - Open a modal with payload data
- * @property {(modalName: string) => void} closeModal - Close a specific modal and clear its data
+ * @property {(modalName: string) => void} closeModal - Close a specific modal (data kept for exit animation)
  * @property {(modalName: string) => void} toggleModal - Toggle a specific modal
  * @property {() => void} closeAllModals - Close all modals at once
  * @property {(modalName: string) => any} getModalData - Get the data payload for a specific modal
  */
 
-const ModalContext = createContext(null)
+export const ModalContext = createContext(null)
 
 const MODAL_NAMES = [
   'showCreateRepo',
@@ -89,13 +89,14 @@ export function ModalProvider({ children }) {
   }, [])
 
   /**
-   * Close a specific modal and reset its data
+   * Close a specific modal but keep its data so exit animations still render correctly.
+   * Data is cleared when a new modal opens or when closeAllModals is called.
    * @param {string} modalName
    */
   const closeModal = useCallback((modalName) => {
     setInternalStates((prev) => ({
       ...prev,
-      [modalName]: createClosedState(),
+      [modalName]: { ...prev[modalName], isOpen: false },
     }))
   }, [])
 
@@ -145,17 +146,4 @@ export function ModalProvider({ children }) {
   )
 
   return <ModalContext.Provider value={value}>{children}</ModalContext.Provider>
-}
-
-/**
- * Hook to access modal context
- * @returns {ModalContextValue}
- * @throws {Error} If used outside ModalProvider
- */
-export function useModal() {
-  const context = useContext(ModalContext)
-  if (!context) {
-    throw new Error('useModal must be used within ModalProvider')
-  }
-  return context
 }

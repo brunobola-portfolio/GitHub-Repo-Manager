@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRepoDetail } from '../../hooks/useRepoDetail'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'

@@ -33,7 +33,7 @@ Implementation/
 *.db
 *.sqlite
 *.sqlite3
-server/data/*.db
+server/data/
 
 # Editor directories and files
 .vscode/*
@@ -50,6 +50,7 @@ server/data/*.db
 # Claude Code and MCP
 .claude/
 .playwright-mcp/
+.superpowers/
 
 # Screenshots and images (not part of source)
 *.png

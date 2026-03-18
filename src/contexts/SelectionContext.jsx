@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo } from 'react'
+import { createContext, useState, useCallback, useMemo } from 'react'
 
 /**
  * @typedef {Object} SelectionContextValue
@@ -10,7 +10,7 @@ import { createContext, useContext, useState, useCallback, useMemo } from 'react
  * @property {() => void} clearSelection - Clear all selections
  */
 
-const SelectionContext = createContext(null)
+export const SelectionContext = createContext(null)
 
 /**
  * SelectionProvider - Manages repository selection state
@@ -92,17 +92,4 @@ export function SelectionProvider({ children }) {
   )
 
   return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>
-}
-
-/**
- * Hook to access selection context
- * @returns {SelectionContextValue}
- * @throws {Error} If used outside SelectionProvider
- */
-export function useSelection() {
-  const context = useContext(SelectionContext)
-  if (!context) {
-    throw new Error('useSelection must be used within SelectionProvider')
-  }
-  return context
 }

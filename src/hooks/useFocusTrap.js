@@ -44,7 +44,12 @@ export function useFocusTrap(isOpen, onClose) {
 
         const timer = setTimeout(() => {
             const firstFocusable = ref.current?.querySelector(FOCUSABLE)
-            if (firstFocusable) firstFocusable.focus()
+            if (firstFocusable) {
+                firstFocusable.focus()
+            } else if (ref.current) {
+                ref.current.setAttribute('tabindex', '-1')
+                ref.current.focus()
+            }
         }, 50)
 
         return () => {

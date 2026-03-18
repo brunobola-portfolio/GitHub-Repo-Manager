@@ -8,20 +8,28 @@ export function OverviewTab({ owner, repo, api, repoData }) {
     const [error, setError] = useState(null)
 
     useEffect(() => {
+        const controller = new AbortController()
         const load = async () => {
             setLoading(true)
             setError(null)
             try {
                 const data = await api.fetchReadme()
-                setReadme(data.data || data)
+                if (!controller.signal.aborted) {
+                    setReadme(data.data || data)
+                }
             } catch (e) {
-                setReadme(null)
-                setError(e?.message || 'Failed to load README')
+                if (!controller.signal.aborted) {
+                    setReadme(null)
+                    setError(e?.message || 'Failed to load README')
+                }
             } finally {
-                setLoading(false)
+                if (!controller.signal.aborted) {
+                    setLoading(false)
+                }
             }
         }
         load()
+        return () => controller.abort()
     }, [owner, repo]) // eslint-disable-line react-hooks/exhaustive-deps
 
     return (

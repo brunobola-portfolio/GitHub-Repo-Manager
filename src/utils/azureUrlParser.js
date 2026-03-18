@@ -23,9 +23,9 @@ export function parseAzureUrl(input) {
   const sshMatch = url.match(/^git@ssh\.dev\.azure\.com:v3\/([^/]+)\/([^/]+)\/([^/]+)\s*$/)
   if (sshMatch) {
     return {
-      org: decodeURIComponent(sshMatch[1]),
-      project: decodeURIComponent(sshMatch[2]),
-      repo: decodeURIComponent(sshMatch[3]),
+      org: decodeURIComponent(sshMatch[1]).trim(),
+      project: decodeURIComponent(sshMatch[2]).trim(),
+      repo: decodeURIComponent(sshMatch[3]).trim(),
       error: null,
       suggestion: null
     }

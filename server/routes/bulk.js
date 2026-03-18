@@ -15,7 +15,7 @@ import express from 'express';
 import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, isValidGitHubUsername, safeError, errorResponse } from '../middleware/auth.js';
-import { validate, bulkVisibilitySchema, bulkArchiveSchema, bulkDeleteSchema, bulkTransferSchema } from '../lib/validators.js';
+import { validate, bulkVisibilitySchema, bulkArchiveSchema, bulkDeleteSchema, bulkTransferSchema, bulkMirrorSchema } from '../lib/validators.js';
 
 const router = express.Router();
 
@@ -33,21 +33,32 @@ router.post('/visibility', requireAuth, validate(bulkVisibilitySchema), async (r
     // Process sequentially to avoid hitting rate limits too hard
     for (const repoFullName of repos) {
         try {
-            console.log(`[Visibility] Toggling ${repoFullName} to public=${makePublic}`);
+            req.log.info({ repo: repoFullName, makePublic }, 'Toggling repo visibility');
             const response = await githubApi(`/repos/${repoFullName}`, req.session.accessToken, {
                 method: 'PATCH',
                 body: JSON.stringify({ private: !makePublic })
             });
-            console.log(`[Visibility] Success for ${repoFullName}:`, response);
+            req.log.info({ repo: repoFullName }, 'Visibility change succeeded');
             results.push({ repo: repoFullName, success: true });
         } catch (error) {
-            console.error(`[Visibility] Failed for ${repoFullName}:`, error);
+            req.log.error({ err: error, repo: repoFullName }, 'Visibility change failed');
             results.push({ repo: repoFullName, success: false, error: safeError(error, 'Operation failed') });
         }
     }
 
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.length - successCount;
+
+    if (successCount > 0) {
+        try {
+            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
+                req.session.userId, 'BULK_VISIBILITY', JSON.stringify(repos), JSON.stringify({ repos, makePublic, successCount })
+            );
+        } catch (auditErr) {
+            req.log?.error?.({ err: auditErr }, 'Audit log write failed');
+        }
+    }
+
     const statusCode = failureCount === 0 ? 200 : successCount === 0 ? 500 : 207;
     res.status(statusCode).json({
         message: `Successfully changed visibility for ${successCount} repositories.`,
@@ -80,6 +91,17 @@ router.post('/transfer', requireAuth, validate(bulkTransferSchema), async (req, 
 
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.length - successCount;
+
+    if (successCount > 0) {
+        try {
+            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
+                req.session.userId, 'BULK_TRANSFER', JSON.stringify(repos), JSON.stringify({ repos, newOwner: toOrg, successCount })
+            );
+        } catch (auditErr) {
+            req.log?.error?.({ err: auditErr }, 'Audit log write failed');
+        }
+    }
+
     const statusCode = failureCount === 0 ? 200 : successCount === 0 ? 500 : 207;
     res.status(statusCode).json({
         message: `Transferred ${successCount} repositories to ${toOrg}.`,
@@ -88,7 +110,7 @@ router.post('/transfer', requireAuth, validate(bulkTransferSchema), async (req, 
 });
 
 // Mirror (fork) multiple repos to an organization
-router.post('/mirror', requireAuth, async (req, res) => {
+router.post('/mirror', requireAuth, validate(bulkMirrorSchema), async (req, res) => {
     const { repos, toOrg } = req.body;
 
     if (!repos?.length || !toOrg) return errorResponse(res, 400, 'Missing repositories or target organization', 'MISSING_PARAMS');
@@ -143,6 +165,13 @@ router.post('/archive', requireAuth, validate(bulkArchiveSchema), async (req, re
 
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.length - successCount;
+
+    if (successCount > 0) {
+        db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
+            req.session.userId, 'BULK_ARCHIVE', JSON.stringify(repos), JSON.stringify({ archive })
+        );
+    }
+
     const statusCode = failureCount === 0 ? 200 : successCount === 0 ? 500 : 207;
     res.status(statusCode).json({
         message: `${archive ? 'Archived' : 'Unarchived'} ${successCount} repositories.`,
@@ -173,6 +202,13 @@ router.post('/delete', requireAuth, validate(bulkDeleteSchema), async (req, res)
 
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.length - successCount;
+
+    if (successCount > 0) {
+        db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
+            req.session.userId, 'BULK_DELETE', JSON.stringify(repos), null
+        );
+    }
+
     const statusCode = failureCount === 0 ? 200 : successCount === 0 ? 500 : 207;
     res.status(statusCode).json({
         message: `Deleted ${successCount} repositories.`,
@@ -211,7 +247,7 @@ router.post('/community-health/compare', requireAuth, async (req, res) => {
 
         res.json({ comparison });
     } catch (error) {
-        console.error('Compare Health Error:', error);
+        req.log.error({ err: error }, 'Compare health failed');
         errorResponse(res, 500, safeError(error, 'Failed to compare health'));
     }
 });

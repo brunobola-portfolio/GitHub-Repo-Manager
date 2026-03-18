@@ -52,7 +52,7 @@ router.get('/search/users', requireAuth, async (req, res) => {
         const { data } = await githubApi(`/search/users?q=${encodeURIComponent(q)}&per_page=5`, req.session.accessToken);
         res.json(data.items || []);
     } catch (error) {
-        console.error('User Search Error:', error);
+        req.log.error({ err: error }, 'User search failed');
         res.status(500).json({ error: 'Failed to search users' });
     }
 });

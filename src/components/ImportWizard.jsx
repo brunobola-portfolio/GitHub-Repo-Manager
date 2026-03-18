@@ -395,10 +395,11 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
 
     // Check duplicates when entering confirm step or org changes
     useEffect(() => {
-        if (currentStep !== 'azure-confirm' || selectedCount === 0 || !targetOrg) return
+        const stepName = getSteps(sourceType)[step]
+        if (stepName !== 'azure-confirm' || selectedCount === 0 || !targetOrg) return
         const targetNames = selectedRepoNames.map(n => selectedRepos[n] || n)
         checkDuplicates(targetNames, targetOrg)
-    }, [currentStep, targetOrg]) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [step, sourceType, targetOrg]) // eslint-disable-line react-hooks/exhaustive-deps
 
     const validateUrl = async () => {
         setFields({ urlValidation: 'validating', urlError: '' })

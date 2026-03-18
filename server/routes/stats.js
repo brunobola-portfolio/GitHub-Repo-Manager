@@ -57,7 +57,7 @@ router.get('/', requireAuth, async (req, res) => {
 
             // Defensive: ensure data is an array before spreading
             if (!Array.isArray(data)) {
-                console.warn(`[Stats] Unexpected response for ${endpoint}:`, typeof data);
+                req.log.warn({ endpoint, responseType: typeof data }, 'Unexpected stats response');
                 break;
             }
 
@@ -96,7 +96,7 @@ router.get('/', requireAuth, async (req, res) => {
 
         res.json(stats);
     } catch (error) {
-        console.error('Stats Error:', { message: error.message, status: error.status, org });
+        req.log.error({ err: error, org }, 'Stats fetch failed');
         let status = error.status || 500;
         let message;
 
@@ -133,7 +133,7 @@ router.post('/clear-cache', requireAuth, (req, res) => {
 
         res.json({ success: true, cleared });
     } catch (error) {
-        console.error('Cache Clear Error:', error);
+        req.log.error({ err: error }, 'Cache clear failed');
         res.status(500).json({ error: 'Failed to clear cache' });
     }
 });
@@ -199,7 +199,7 @@ router.get('/global', requireAuth, async (req, res) => {
 
         res.json(stats);
     } catch (error) {
-        console.error('Global Stats Error:', error.message || error);
+        req.log.error({ err: error }, 'Global stats fetch failed');
         const status = error.status || 500;
         const message = status === 401 ? 'Authentication expired. Please log in again.'
             : status === 403 ? 'API rate limit exceeded or insufficient permissions.'
@@ -244,7 +244,7 @@ router.get('/actions', requireAuth, async (req, res) => {
             lastRunAt: stats.last_run_at
         });
     } catch (error) {
-        console.error('Actions Stats Error:', error);
+        req.log.error({ err: error }, 'Actions stats fetch failed');
         res.status(500).json({ error: 'Failed to fetch actions statistics' });
     }
 });

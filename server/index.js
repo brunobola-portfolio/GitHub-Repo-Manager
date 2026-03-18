@@ -12,6 +12,7 @@ import session from 'express-session';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { randomUUID } from 'crypto';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -74,10 +75,22 @@ if (process.env.NODE_ENV === 'production' && SESSION_SECRET === 'CHANGE_THIS_SEC
     process.exit(1);
 }
 
-if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
-    console.warn('⚠️ Warning: GitHub OAuth credentials are missing.');
-    console.warn('   OAuth login will not work. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in .env to enable.');
+if (process.env.NODE_ENV !== 'production' && SESSION_SECRET === 'CHANGE_THIS_SECRET') {
+    logger.warn('Using default session secret. Set SESSION_SECRET environment variable for deployment.');
+} else if (SESSION_SECRET.length < 32) {
+    logger.warn('SESSION_SECRET is shorter than 32 characters. Use a longer, random secret for better security.');
 }
+
+if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
+    logger.warn('GitHub OAuth credentials missing. OAuth login will not work. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in .env to enable.');
+}
+
+// Request ID tracing
+app.use((req, res, next) => {
+    req.id = req.headers['x-request-id'] || randomUUID();
+    res.setHeader('X-Request-Id', req.id);
+    next();
+});
 
 // Middleware Setup
 app.use(helmet({
@@ -183,12 +196,33 @@ app.use('/api', bulkRoutes);
 // Team-specific routes (not in teams.js to avoid modifying existing module)
 // ------------------------------------------------------------------
 
+// In-memory TTL cache for team activity
+const activityCache = new Map();
+const ACTIVITY_CACHE_TTL = 60000; // 60 seconds
+
 // Team Activity Stream
 // Aggregates events from all repos assigned to the team
 app.get(['/api/teams/:id/activity', '/api/team/:id/activity'], requireAuth, async (req, res) => {
     try {
+        const teamId = req.params.id;
+
+        // Verify team membership
+        const membership = db.prepare(
+            'SELECT role FROM team_members WHERE team_id = ? AND user_id = ?'
+        ).get(teamId, req.session.userId);
+        if (!membership) {
+            return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
+        }
+
+        // Check cache first
+        const cacheKey = `team-${teamId}`;
+        const cached = activityCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < ACTIVITY_CACHE_TTL) {
+            return res.json(cached.data);
+        }
+
         // 1. Get Repos assigned to team
-        const repos = db.prepare('SELECT repo_full_name FROM repo_assignments WHERE team_id = ?').all(req.params.id);
+        const repos = db.prepare('SELECT repo_full_name FROM repo_assignments WHERE team_id = ?').all(teamId);
 
         if (!repos.length) {
             return res.json([]);
@@ -209,7 +243,7 @@ app.get(['/api/teams/:id/activity', '/api/team/:id/activity'], requireAuth, asyn
                         const { data } = await githubApi(`/repos/${r.repo_full_name}/events?per_page=10`, req.session.accessToken);
                         return data.map(event => ({ ...event, repo_name: r.repo_full_name }));
                     } catch (e) {
-                        console.error(`Failed to fetch events for ${r.repo_full_name}:`, e.message);
+                        logger.error({ err: e, repo: r.repo_full_name }, 'Failed to fetch repo events');
                         return [];
                     }
                 })
@@ -229,10 +263,20 @@ app.get(['/api/teams/:id/activity', '/api/team/:id/activity'], requireAuth, asyn
         uniqueEvents.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         // Return top 50
-        res.json(uniqueEvents.slice(0, 50));
+        const activityData = uniqueEvents.slice(0, 50);
+
+        // Cache the result
+        activityCache.set(cacheKey, { data: activityData, timestamp: Date.now() });
+        // Evict old entries to prevent unbounded growth
+        if (activityCache.size > 100) {
+            const oldest = activityCache.keys().next().value;
+            activityCache.delete(oldest);
+        }
+
+        res.json(activityData);
 
     } catch (error) {
-        console.error('Team Activity Error:', error);
+        logger.error({ err: error }, 'Team activity fetch failed');
         res.status(500).json({ error: 'Failed to fetch team activity' });
     }
 });
@@ -240,10 +284,20 @@ app.get(['/api/teams/:id/activity', '/api/team/:id/activity'], requireAuth, asyn
 // Get statistics for multiple repositories (team view)
 app.post('/api/teams/:id/actions/stats', requireAuth, async (req, res) => {
     try {
+        const teamId = req.params.id;
+
+        // Verify team membership
+        const membership = db.prepare(
+            'SELECT role FROM team_members WHERE team_id = ? AND user_id = ?'
+        ).get(teamId, req.session.userId);
+        if (!membership) {
+            return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
+        }
+
         const { days = 30 } = req.body;
 
         const repos = db.prepare('SELECT repo_id, repo_full_name FROM repo_assignments WHERE team_id = ?')
-            .all(req.params.id);
+            .all(teamId);
 
         if (repos.length === 0) {
             return res.json({ repos: [], teamAverages: {} });
@@ -272,7 +326,7 @@ app.post('/api/teams/:id/actions/stats', requireAuth, async (req, res) => {
 
         res.json({ repos: enrichedStats, teamAverages });
     } catch (error) {
-        console.error('Get Team Actions Stats Error:', error);
+        logger.error({ err: error }, 'Team actions stats fetch failed');
         res.status(500).json({ error: safeError(error, 'Failed to fetch team stats') });
     }
 });

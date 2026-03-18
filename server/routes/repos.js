@@ -22,11 +22,34 @@
 import express from 'express';
 import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
-import { requireAuth, isValidGitHubUsername, safeError } from '../middleware/auth.js';
+import { requireAuth, isValidGitHubUsername, safeError, errorResponse } from '../middleware/auth.js';
 import { actionsService } from '../actions-service.js';
 import { communityHealthService } from '../community-health-service.js';
+import { safeJsonParse } from '../lib/utils.js';
+import { validate, createRepoSchema, repoUpdateSchema, topicsSchema, forkSchema, issueCreateSchema, prCreateSchema, templateGenerateSchema, releaseCreateSchema, webhookCreateSchema } from '../lib/validators.js';
 
 const router = express.Router();
+
+function clampPerPage(value, defaultVal = 30) {
+    return Math.min(Math.max(parseInt(value) || defaultVal, 1), 100);
+}
+
+// Validate :owner and :repo URL params
+const GITHUB_NAME_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$/;
+
+router.param('owner', (req, res, next, val) => {
+    if (!GITHUB_NAME_RE.test(val) || val.length > 39) {
+        return errorResponse(res, 400, 'Invalid owner name', 'INVALID_PARAM');
+    }
+    next();
+});
+
+router.param('repo', (req, res, next, val) => {
+    if (!GITHUB_NAME_RE.test(val) || val.length > 100) {
+        return errorResponse(res, 400, 'Invalid repository name', 'INVALID_PARAM');
+    }
+    next();
+});
 
 // ------------------------------------------------------------------
 // Repository CRUD
@@ -65,27 +88,19 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // Create repo (personal or org)
-router.post('/', requireAuth, async (req, res) => {
+router.post('/', requireAuth, validate(createRepoSchema), async (req, res) => {
     try {
-        const { name, description, org, private: isPrivate, auto_init } = req.body;
-
-        if (!name || typeof name !== 'string' || name.trim().length === 0) {
-            return res.status(400).json({ error: 'Repository name is required' });
-        }
-
-        // Validate org name if provided
-        if (org && !isValidGitHubUsername(org)) {
-            return res.status(400).json({ error: 'Invalid organization name' });
-        }
+        const { name, description, org, isPrivate, autoInit, license } = req.body;
 
         const endpoint = org ? `/orgs/${org}/repos` : '/user/repos';
         const { data } = await githubApi(endpoint, req.session.accessToken, {
             method: 'POST',
             body: JSON.stringify({
-                name: name.trim(),
-                description: description || '',
-                private: isPrivate !== false,
-                auto_init: auto_init !== false
+                name,
+                description,
+                private: isPrivate,
+                auto_init: autoInit,
+                license_template: license
             })
         });
 
@@ -96,7 +111,7 @@ router.post('/', requireAuth, async (req, res) => {
 });
 
 // Create repository from template
-router.post('/generate', requireAuth, async (req, res) => {
+router.post('/generate', requireAuth, validate(templateGenerateSchema), async (req, res) => {
     try {
         const { template_owner, template_repo, owner, name, description, include_all_branches, private: isPrivate } = req.body;
 
@@ -107,7 +122,7 @@ router.post('/generate', requireAuth, async (req, res) => {
         });
         res.json({ success: true, repo: data });
     } catch (error) {
-        console.error('Generate from Template Error:', error);
+        req.log.error({ err: error }, 'Generate from template failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -119,35 +134,38 @@ router.get('/:owner/:repo', requireAuth, async (req, res) => {
         const { data } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('Get Repo Error:', error);
+        req.log.error({ err: error }, 'Get repo failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
 
 // Update repository settings
-router.patch('/:owner/:repo', requireAuth, async (req, res) => {
+router.patch('/:owner/:repo', requireAuth, validate(repoUpdateSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { name, description, homepage, private: isPrivate, has_issues, has_projects, has_wiki, default_branch, allow_squash_merge, allow_merge_commit, allow_rebase_merge, delete_branch_on_merge } = req.body;
 
         const { data } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken, {
             method: 'PATCH',
-            body: JSON.stringify({
-                name, description, homepage, private: isPrivate,
-                has_issues, has_projects, has_wiki, default_branch,
-                allow_squash_merge, allow_merge_commit, allow_rebase_merge,
-                delete_branch_on_merge
-            })
+            body: JSON.stringify(req.body)
         });
         res.json(data);
+
+        // Audit log: record repo settings update
+        try {
+            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
+                req.session.userId, 'REPO_UPDATE', `${owner}/${repo}`, JSON.stringify(req.body)
+            );
+        } catch (auditErr) {
+            req.log?.error?.({ err: auditErr }, 'Audit log write failed');
+        }
     } catch (error) {
-        console.error('Update Repo Error:', error);
+        req.log.error({ err: error }, 'Update repo failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
 
 // Update repository topics
-router.put('/:owner/:repo/topics', requireAuth, async (req, res) => {
+router.put('/:owner/:repo/topics', requireAuth, validate(topicsSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
         const { names } = req.body;
@@ -158,14 +176,23 @@ router.put('/:owner/:repo/topics', requireAuth, async (req, res) => {
             body: JSON.stringify({ names })
         });
         res.json(data);
+
+        // Audit log: record topics update
+        try {
+            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
+                req.session.userId, 'REPO_TOPICS_UPDATE', `${owner}/${repo}`, JSON.stringify({ names })
+            );
+        } catch (auditErr) {
+            req.log?.error?.({ err: auditErr }, 'Audit log write failed');
+        }
     } catch (error) {
-        console.error('Update Topics Error:', error);
+        req.log.error({ err: error }, 'Update topics failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
 
 // Fork a repository
-router.post('/:owner/:repo/forks', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/forks', requireAuth, validate(forkSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
         const { organization, name, default_branch_only } = req.body;
@@ -176,7 +203,7 @@ router.post('/:owner/:repo/forks', requireAuth, async (req, res) => {
         });
         res.json({ success: true, repo: data });
     } catch (error) {
-        console.error('Fork Repo Error:', error);
+        req.log.error({ err: error }, 'Fork repo failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -226,15 +253,15 @@ router.put('/:owner/:repo/collaborators/:username', requireAuth, async (req, res
 router.get('/:owner/:repo/branches', requireAuth, async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { protected: protectedOnly, per_page = 100 } = req.query;
+        const { protected: protectedOnly, per_page } = req.query;
 
-        let url = `/repos/${owner}/${repo}/branches?per_page=${per_page}`;
+        let url = `/repos/${owner}/${repo}/branches?per_page=${clampPerPage(per_page, 100)}`;
         if (protectedOnly) url += '&protected=true';
 
         const { data } = await githubApi(url, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('List Branches Error:', error);
+        req.log.error({ err: error }, 'List branches failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -243,10 +270,10 @@ router.get('/:owner/:repo/branches', requireAuth, async (req, res) => {
 router.get('/:owner/:repo/branches/:branch', requireAuth, async (req, res) => {
     try {
         const { owner, repo, branch } = req.params;
-        const { data } = await githubApi(`/repos/${owner}/${repo}/branches/${branch}`, req.session.accessToken);
+        const { data } = await githubApi(`/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}`, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('Get Branch Error:', error);
+        req.log.error({ err: error }, 'Get branch failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -258,7 +285,7 @@ router.post('/:owner/:repo/branches', requireAuth, async (req, res) => {
         const { name, source_branch = 'main' } = req.body;
 
         // First get the SHA of the source branch
-        const { data: refData } = await githubApi(`/repos/${owner}/${repo}/git/refs/heads/${source_branch}`, req.session.accessToken);
+        const { data: refData } = await githubApi(`/repos/${owner}/${repo}/git/refs/heads/${encodeURIComponent(source_branch)}`, req.session.accessToken);
         const sha = refData.object.sha;
 
         // Create new branch
@@ -268,7 +295,7 @@ router.post('/:owner/:repo/branches', requireAuth, async (req, res) => {
         });
         res.json({ success: true, ref: data });
     } catch (error) {
-        console.error('Create Branch Error:', error);
+        req.log.error({ err: error }, 'Create branch failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -277,12 +304,12 @@ router.post('/:owner/:repo/branches', requireAuth, async (req, res) => {
 router.delete('/:owner/:repo/branches/:branch', requireAuth, async (req, res) => {
     try {
         const { owner, repo, branch } = req.params;
-        await githubApi(`/repos/${owner}/${repo}/git/refs/heads/${branch}`, req.session.accessToken, {
+        await githubApi(`/repos/${owner}/${repo}/git/refs/heads/${encodeURIComponent(branch)}`, req.session.accessToken, {
             method: 'DELETE'
         });
         res.json({ success: true, message: `Branch ${branch} deleted` });
     } catch (error) {
-        console.error('Delete Branch Error:', error);
+        req.log.error({ err: error }, 'Delete branch failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -291,13 +318,13 @@ router.delete('/:owner/:repo/branches/:branch', requireAuth, async (req, res) =>
 router.get('/:owner/:repo/branches/:branch/protection', requireAuth, async (req, res) => {
     try {
         const { owner, repo, branch } = req.params;
-        const { data } = await githubApi(`/repos/${owner}/${repo}/branches/${branch}/protection`, req.session.accessToken);
+        const { data } = await githubApi(`/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}/protection`, req.session.accessToken);
         res.json(data);
     } catch (error) {
         if (error.status === 404) {
             res.json({ protected: false });
         } else {
-            console.error('Get Branch Protection Error:', error);
+            req.log.error({ err: error }, 'Get branch protection failed');
             res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
         }
     }
@@ -309,7 +336,7 @@ router.put('/:owner/:repo/branches/:branch/protection', requireAuth, async (req,
         const { owner, repo, branch } = req.params;
         const { required_status_checks, enforce_admins, required_pull_request_reviews, restrictions } = req.body;
 
-        const { data } = await githubApi(`/repos/${owner}/${repo}/branches/${branch}/protection`, req.session.accessToken, {
+        const { data } = await githubApi(`/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}/protection`, req.session.accessToken, {
             method: 'PUT',
             body: JSON.stringify({
                 required_status_checks,
@@ -320,7 +347,7 @@ router.put('/:owner/:repo/branches/:branch/protection', requireAuth, async (req,
         });
         res.json(data);
     } catch (error) {
-        console.error('Update Branch Protection Error:', error);
+        req.log.error({ err: error }, 'Update branch protection failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -329,12 +356,12 @@ router.put('/:owner/:repo/branches/:branch/protection', requireAuth, async (req,
 router.delete('/:owner/:repo/branches/:branch/protection', requireAuth, async (req, res) => {
     try {
         const { owner, repo, branch } = req.params;
-        await githubApi(`/repos/${owner}/${repo}/branches/${branch}/protection`, req.session.accessToken, {
+        await githubApi(`/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}/protection`, req.session.accessToken, {
             method: 'DELETE'
         });
         res.json({ success: true, message: 'Branch protection removed' });
     } catch (error) {
-        console.error('Delete Branch Protection Error:', error);
+        req.log.error({ err: error }, 'Delete branch protection failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -347,11 +374,10 @@ router.delete('/:owner/:repo/branches/:branch/protection', requireAuth, async (r
 router.get('/:owner/:repo/tags', requireAuth, async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { per_page = 30 } = req.query;
-        const { data } = await githubApi(`/repos/${owner}/${repo}/tags?per_page=${per_page}`, req.session.accessToken);
+        const { data } = await githubApi(`/repos/${owner}/${repo}/tags?per_page=${clampPerPage(req.query.per_page)}`, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('List Tags Error:', error);
+        req.log.error({ err: error }, 'List tags failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -360,17 +386,16 @@ router.get('/:owner/:repo/tags', requireAuth, async (req, res) => {
 router.get('/:owner/:repo/releases', requireAuth, async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { per_page = 30 } = req.query;
-        const { data } = await githubApi(`/repos/${owner}/${repo}/releases?per_page=${per_page}`, req.session.accessToken);
+        const { data } = await githubApi(`/repos/${owner}/${repo}/releases?per_page=${clampPerPage(req.query.per_page)}`, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('List Releases Error:', error);
+        req.log.error({ err: error }, 'List releases failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
 
 // Create release
-router.post('/:owner/:repo/releases', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/releases', requireAuth, validate(releaseCreateSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
         const { tag_name, target_commitish, name, body, draft, prerelease, generate_release_notes } = req.body;
@@ -381,7 +406,7 @@ router.post('/:owner/:repo/releases', requireAuth, async (req, res) => {
         });
         res.json({ success: true, release: data });
     } catch (error) {
-        console.error('Create Release Error:', error);
+        req.log.error({ err: error }, 'Create release failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -395,7 +420,7 @@ router.delete('/:owner/:repo/releases/:release_id', requireAuth, async (req, res
         });
         res.json({ success: true, message: 'Release deleted' });
     } catch (error) {
-        console.error('Delete Release Error:', error);
+        req.log.error({ err: error }, 'Delete release failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -408,21 +433,21 @@ router.delete('/:owner/:repo/releases/:release_id', requireAuth, async (req, res
 router.get('/:owner/:repo/issues', requireAuth, async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { state = 'open', labels, sort = 'created', direction = 'desc', per_page = 30 } = req.query;
+        const { state = 'open', labels, sort = 'created', direction = 'desc' } = req.query;
 
-        let url = `/repos/${owner}/${repo}/issues?state=${state}&sort=${sort}&direction=${direction}&per_page=${per_page}`;
+        let url = `/repos/${owner}/${repo}/issues?state=${state}&sort=${sort}&direction=${direction}&per_page=${clampPerPage(req.query.per_page)}`;
         if (labels) url += `&labels=${encodeURIComponent(labels)}`;
 
         const { data } = await githubApi(url, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('List Issues Error:', error);
+        req.log.error({ err: error }, 'List issues failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
 
 // Create issue
-router.post('/:owner/:repo/issues', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/issues', requireAuth, validate(issueCreateSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
         const { title, body, labels, assignees, milestone } = req.body;
@@ -433,7 +458,7 @@ router.post('/:owner/:repo/issues', requireAuth, async (req, res) => {
         });
         res.json({ success: true, issue: data });
     } catch (error) {
-        console.error('Create Issue Error:', error);
+        req.log.error({ err: error }, 'Create issue failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -450,7 +475,7 @@ router.patch('/:owner/:repo/issues/:issue_number', requireAuth, async (req, res)
         });
         res.json(data);
     } catch (error) {
-        console.error('Update Issue Error:', error);
+        req.log.error({ err: error }, 'Update issue failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -467,7 +492,7 @@ router.post('/:owner/:repo/issues/:issue_number/comments', requireAuth, async (r
         });
         res.json({ success: true, comment: data });
     } catch (error) {
-        console.error('Add Comment Error:', error);
+        req.log.error({ err: error }, 'Add comment failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -479,7 +504,7 @@ router.get('/:owner/:repo/issues/:issue_number', requireAuth, async (req, res) =
         const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}`, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('Get Issue Error:', error);
+        req.log.error({ err: error }, 'Get issue failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -491,7 +516,7 @@ router.get('/:owner/:repo/issues/:issue_number/comments', requireAuth, async (re
         const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}/comments?per_page=100`, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('List Issue Comments Error:', error);
+        req.log.error({ err: error }, 'List issue comments failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -504,18 +529,18 @@ router.get('/:owner/:repo/issues/:issue_number/comments', requireAuth, async (re
 router.get('/:owner/:repo/pulls', requireAuth, async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { state = 'open', sort = 'created', direction = 'desc', per_page = 30 } = req.query;
+        const { state = 'open', sort = 'created', direction = 'desc' } = req.query;
 
-        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls?state=${state}&sort=${sort}&direction=${direction}&per_page=${per_page}`, req.session.accessToken);
+        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls?state=${state}&sort=${sort}&direction=${direction}&per_page=${clampPerPage(req.query.per_page)}`, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('List PRs Error:', error);
+        req.log.error({ err: error }, 'List pull requests failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
 
 // Create pull request
-router.post('/:owner/:repo/pulls', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/pulls', requireAuth, validate(prCreateSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
         const { title, body, head, base, draft, maintainer_can_modify } = req.body;
@@ -526,7 +551,7 @@ router.post('/:owner/:repo/pulls', requireAuth, async (req, res) => {
         });
         res.json({ success: true, pull_request: data });
     } catch (error) {
-        console.error('Create PR Error:', error);
+        req.log.error({ err: error }, 'Create pull request failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -543,7 +568,7 @@ router.put('/:owner/:repo/pulls/:pull_number/merge', requireAuth, async (req, re
         });
         res.json({ success: true, merged: data.merged, message: data.message });
     } catch (error) {
-        console.error('Merge PR Error:', error);
+        req.log.error({ err: error }, 'Merge pull request failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -560,7 +585,7 @@ router.patch('/:owner/:repo/pulls/:pull_number', requireAuth, async (req, res) =
         });
         res.json(data);
     } catch (error) {
-        console.error('Update PR Error:', error);
+        req.log.error({ err: error }, 'Update pull request failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -572,7 +597,7 @@ router.get('/:owner/:repo/pulls/:pull_number', requireAuth, async (req, res) => 
         const { data } = await githubApi(`/repos/${owner}/${repo}/pulls/${pull_number}`, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('Get PR Error:', error);
+        req.log.error({ err: error }, 'Get pull request failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -584,7 +609,7 @@ router.get('/:owner/:repo/pulls/:pull_number/reviews', requireAuth, async (req, 
         const { data } = await githubApi(`/repos/${owner}/${repo}/pulls/${pull_number}/reviews`, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('List PR Reviews Error:', error);
+        req.log.error({ err: error }, 'List PR reviews failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -596,7 +621,7 @@ router.get('/:owner/:repo/pulls/:pull_number/files', requireAuth, async (req, re
         const { data } = await githubApi(`/repos/${owner}/${repo}/pulls/${pull_number}/files?per_page=100`, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('List PR Files Error:', error);
+        req.log.error({ err: error }, 'List PR files failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -612,13 +637,13 @@ router.get('/:owner/:repo/hooks', requireAuth, async (req, res) => {
         const { data } = await githubApi(`/repos/${owner}/${repo}/hooks`, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('List Webhooks Error:', error);
+        req.log.error({ err: error }, 'List webhooks failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
 
 // Create webhook
-router.post('/:owner/:repo/hooks', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/hooks', requireAuth, validate(webhookCreateSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
         const { config, events, active = true } = req.body;
@@ -629,7 +654,7 @@ router.post('/:owner/:repo/hooks', requireAuth, async (req, res) => {
         });
         res.json({ success: true, hook: data });
     } catch (error) {
-        console.error('Create Webhook Error:', error);
+        req.log.error({ err: error }, 'Create webhook failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -646,7 +671,7 @@ router.patch('/:owner/:repo/hooks/:hook_id', requireAuth, async (req, res) => {
         });
         res.json(data);
     } catch (error) {
-        console.error('Update Webhook Error:', error);
+        req.log.error({ err: error }, 'Update webhook failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -660,7 +685,7 @@ router.delete('/:owner/:repo/hooks/:hook_id', requireAuth, async (req, res) => {
         });
         res.json({ success: true, message: 'Webhook deleted' });
     } catch (error) {
-        console.error('Delete Webhook Error:', error);
+        req.log.error({ err: error }, 'Delete webhook failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -674,7 +699,7 @@ router.post('/:owner/:repo/hooks/:hook_id/pings', requireAuth, async (req, res) 
         });
         res.json({ success: true, message: 'Ping sent' });
     } catch (error) {
-        console.error('Ping Webhook Error:', error);
+        req.log.error({ err: error }, 'Ping webhook failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -714,7 +739,7 @@ router.get('/:owner/:repo/contents', requireAuth, async (req, res) => {
         const { data } = await githubApi(url, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('Get Contents Error:', error);
+        req.log.error({ err: error }, 'Get contents failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -737,7 +762,7 @@ router.put('/:owner/:repo/contents', requireAuth, async (req, res) => {
         });
         res.json({ success: true, commit: data.commit, content: data.content });
     } catch (error) {
-        console.error('Create/Update File Error:', error);
+        req.log.error({ err: error }, 'Create or update file failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -760,7 +785,7 @@ router.delete('/:owner/:repo/contents', requireAuth, async (req, res) => {
         });
         res.json({ success: true, commit: data.commit });
     } catch (error) {
-        console.error('Delete File Error:', error);
+        req.log.error({ err: error }, 'Delete file failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -775,7 +800,7 @@ router.get('/:owner/:repo/readme', requireAuth, async (req, res) => {
         if (error.status === 404) {
             res.json({ exists: false });
         } else {
-            console.error('Get README Error:', error);
+            req.log.error({ err: error }, 'Get README failed');
             res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
         }
     }
@@ -792,7 +817,7 @@ router.get('/:owner/:repo/labels', requireAuth, async (req, res) => {
         const { data } = await githubApi(`/repos/${owner}/${repo}/labels?per_page=100`, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('List Labels Error:', error);
+        req.log.error({ err: error }, 'List labels failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -809,7 +834,7 @@ router.post('/:owner/:repo/labels', requireAuth, async (req, res) => {
         });
         res.json({ success: true, label: data });
     } catch (error) {
-        console.error('Create Label Error:', error);
+        req.log.error({ err: error }, 'Create label failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -823,7 +848,7 @@ router.delete('/:owner/:repo/labels/:name', requireAuth, async (req, res) => {
         });
         res.json({ success: true, message: 'Label deleted' });
     } catch (error) {
-        console.error('Delete Label Error:', error);
+        req.log.error({ err: error }, 'Delete label failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -836,9 +861,9 @@ router.delete('/:owner/:repo/labels/:name', requireAuth, async (req, res) => {
 router.get('/:owner/:repo/commits', requireAuth, async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { sha, path, author, since, until, per_page = 30 } = req.query;
+        const { sha, path, author, since, until } = req.query;
 
-        let url = `/repos/${owner}/${repo}/commits?per_page=${per_page}`;
+        let url = `/repos/${owner}/${repo}/commits?per_page=${clampPerPage(req.query.per_page)}`;
         if (sha) url += `&sha=${sha}`;
         if (path) url += `&path=${encodeURIComponent(path)}`;
         if (author) url += `&author=${author}`;
@@ -848,7 +873,7 @@ router.get('/:owner/:repo/commits', requireAuth, async (req, res) => {
         const { data } = await githubApi(url, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('List Commits Error:', error);
+        req.log.error({ err: error }, 'List commits failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -857,10 +882,14 @@ router.get('/:owner/:repo/commits', requireAuth, async (req, res) => {
 router.get('/:owner/:repo/compare/:basehead', requireAuth, async (req, res) => {
     try {
         const { owner, repo, basehead } = req.params;
-        const { data } = await githubApi(`/repos/${owner}/${repo}/compare/${basehead}`, req.session.accessToken);
+        const parts = basehead.split('...');
+        const encodedBasehead = parts.length === 2
+            ? `${encodeURIComponent(parts[0])}...${encodeURIComponent(parts[1])}`
+            : encodeURIComponent(basehead);
+        const { data } = await githubApi(`/repos/${owner}/${repo}/compare/${encodedBasehead}`, req.session.accessToken);
         res.json(data);
     } catch (error) {
-        console.error('Compare Commits Error:', error);
+        req.log.error({ err: error }, 'Compare commits failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
@@ -876,7 +905,7 @@ router.get('/:owner/:repo/actions/workflows', requireAuth, async (req, res) => {
         const result = await githubApi(`/repos/${owner}/${repo}/actions/workflows`, req.session.accessToken);
         res.json(result.data.workflows || []);
     } catch (error) {
-        console.error('List Workflows Error:', error);
+        req.log.error({ err: error }, 'List workflows failed');
         res.status(500).json({ error: 'Failed to list workflows' });
     }
 });
@@ -894,7 +923,7 @@ router.post('/:owner/:repo/actions/workflows/:id/dispatches', requireAuth, async
 
         res.json({ message: 'Workflow triggered successfully' });
     } catch (error) {
-        console.error('Trigger Workflow Error:', error);
+        req.log.error({ err: error }, 'Trigger workflow failed');
         res.status(500).json({ error: 'Failed to trigger workflow' });
     }
 });
@@ -906,7 +935,7 @@ router.get('/:owner/:repo/actions/runs', requireAuth, async (req, res) => {
         const result = await githubApi(`/repos/${owner}/${repo}/actions/runs?per_page=10`, req.session.accessToken);
         res.json(result.data.workflow_runs || []);
     } catch (error) {
-        console.error('List Workflow Runs Error:', error);
+        req.log.error({ err: error }, 'List workflow runs failed');
         res.status(500).json({ error: 'Failed to list workflow runs' });
     }
 });
@@ -925,7 +954,7 @@ router.post('/:owner/:repo/actions/sync', requireAuth, async (req, res) => {
             res.status(500).json({ error: result.error });
         }
     } catch (error) {
-        console.error('Sync Workflow Runs Error:', error);
+        req.log.error({ err: error }, 'Sync workflow runs failed');
         res.status(500).json({ error: safeError(error, 'Operation failed') });
     }
 });
@@ -944,7 +973,7 @@ router.get('/:owner/:repo/actions/stats', requireAuth, async (req, res) => {
 
         res.json({ stats, trends, repo: `${owner}/${repo}` });
     } catch (error) {
-        console.error('Get Actions Stats Error:', error);
+        req.log.error({ err: error }, 'Get actions stats failed');
         res.status(500).json({ error: safeError(error, 'Operation failed') });
     }
 });
@@ -961,7 +990,7 @@ router.get('/:owner/:repo/workflows/:workflowId/stats', requireAuth, async (req,
 
         res.json(stats);
     } catch (error) {
-        console.error('Get Workflow Stats Error:', error);
+        req.log.error({ err: error }, 'Get workflow stats failed');
         res.status(500).json({ error: safeError(error, 'Operation failed') });
     }
 });
@@ -984,8 +1013,8 @@ router.get('/:owner/:repo/community-health', requireAuth, async (req, res) => {
             if (cached) {
                 return res.json({
                     score: cached.health_score,
-                    metrics: JSON.parse(cached.metrics),
-                    recommendations: JSON.parse(cached.recommendations),
+                    metrics: safeJsonParse(cached.metrics, {}),
+                    recommendations: safeJsonParse(cached.recommendations, []),
                     lastUpdated: cached.analyzed_at,
                     cached: true
                 });
@@ -1003,7 +1032,7 @@ router.get('/:owner/:repo/community-health', requireAuth, async (req, res) => {
             cached: false
         });
     } catch (error) {
-        console.error('Community Health Error:', error);
+        req.log.error({ err: error }, 'Community health analysis failed');
         res.status(500).json({ error: safeError(error, 'Operation failed') });
     }
 });

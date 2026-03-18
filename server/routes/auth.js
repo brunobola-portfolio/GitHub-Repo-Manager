@@ -95,7 +95,7 @@ router.get('/callback', async (req, res) => {
 
         req.session.regenerate((regenerateErr) => {
             if (regenerateErr) {
-                console.error('Session regenerate failed:', regenerateErr);
+                req.log.error({ err: regenerateErr }, 'Session regenerate failed');
                 return res.redirect(`${FRONTEND_URL}?error=session_error`);
             }
 
@@ -106,7 +106,7 @@ router.get('/callback', async (req, res) => {
 
             req.session.save((err) => {
                 if (err) {
-                    console.error('Session save failed:', err);
+                    req.log.error({ err }, 'Session save failed');
                     return res.redirect(`${FRONTEND_URL}?error=session_error`);
                 }
                 res.redirect(FRONTEND_URL);
@@ -114,7 +114,7 @@ router.get('/callback', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('OAuth Callback Error:', error);
+        req.log.error({ err: error }, 'OAuth callback failed');
         res.redirect(`${FRONTEND_URL}?error=auth_failed`);
     }
 });

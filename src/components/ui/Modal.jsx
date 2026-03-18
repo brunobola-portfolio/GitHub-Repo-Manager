@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect } from 'react'
 import { X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 
 /**
  * Modal - Premium base modal component with consistent styling
@@ -57,8 +58,7 @@ export function Modal({
 
     const styles = variantStyles[variant] || variantStyles.default
 
-    const modalRef = useRef(null)
-    const previouslyFocusedRef = useRef(null)
+    const modalRef = useFocusTrap(isOpen, onClose)
 
     const handleBackdropClick = (e) => {
         if (closeOnBackdrop && e.target === e.currentTarget) {
@@ -66,48 +66,10 @@ export function Modal({
         }
     }
 
-    // Focus trap: trap Tab/Shift+Tab within modal, restore focus on close
+    // Scroll input into view when keyboard appears (mobile fix)
     useEffect(() => {
         if (!isOpen) return
 
-        // Save the element that was focused before modal opened
-        previouslyFocusedRef.current = document.activeElement
-
-        const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-
-        const handleKeyDown = (e) => {
-            if (e.key === 'Escape') {
-                onClose()
-                return
-            }
-
-            if (e.key !== 'Tab') return
-
-            const modal = modalRef.current
-            if (!modal) return
-
-            const focusableElements = Array.from(modal.querySelectorAll(FOCUSABLE_SELECTOR))
-            if (focusableElements.length === 0) return
-
-            const firstElement = focusableElements[0]
-            const lastElement = focusableElements[focusableElements.length - 1]
-
-            if (e.shiftKey) {
-                // Shift+Tab: if on first element, wrap to last
-                if (document.activeElement === firstElement) {
-                    e.preventDefault()
-                    lastElement.focus()
-                }
-            } else {
-                // Tab: if on last element, wrap to first
-                if (document.activeElement === lastElement) {
-                    e.preventDefault()
-                    firstElement.focus()
-                }
-            }
-        }
-
-        // Scroll input into view when keyboard appears (mobile fix)
         const handleFocus = (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
                 setTimeout(() => {
@@ -116,29 +78,13 @@ export function Modal({
             }
         }
 
-        document.addEventListener('keydown', handleKeyDown)
         const modal = modalRef.current
         modal?.addEventListener('focusin', handleFocus)
 
-        // Focus the first focusable element in the modal after a brief delay for animation
-        const timer = setTimeout(() => {
-            const modal = modalRef.current
-            if (modal) {
-                const firstFocusable = modal.querySelector(FOCUSABLE_SELECTOR)
-                if (firstFocusable) firstFocusable.focus()
-            }
-        }, 50)
-
         return () => {
-            document.removeEventListener('keydown', handleKeyDown)
             modal?.removeEventListener('focusin', handleFocus)
-            clearTimeout(timer)
-            // Restore focus to previously focused element
-            if (previouslyFocusedRef.current && typeof previouslyFocusedRef.current.focus === 'function') {
-                previouslyFocusedRef.current.focus()
-            }
         }
-    }, [isOpen, onClose])
+    }, [isOpen, modalRef])
 
     return (
         <AnimatePresence>
@@ -167,7 +113,7 @@ export function Modal({
                             onClick={(e) => e.stopPropagation()}
                             className={`
                                 ${sizeClasses[size]}
-                                w-full
+                                w-full min-w-[320px]
                                 bg-white/95 dark:bg-slate-900/95
                                 backdrop-blur-2xl
                                 rounded-3xl

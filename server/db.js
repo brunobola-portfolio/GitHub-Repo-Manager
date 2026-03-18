@@ -38,7 +38,7 @@ try {
 
 const dbPath = path.join(dataDir, 'manager.db');
 const db = new Database(dbPath, {
-    verbose: process.env.NODE_ENV === 'development' ? console.log : undefined
+    verbose: process.env.SQLITE_VERBOSE === 'true' ? console.log : undefined
 });
 
 // Enable foreign keys
@@ -51,6 +51,7 @@ db.pragma('journal_mode = WAL');
 db.pragma('cache_size = 32000');      // 32MB cache (negative values are in KB, positive in pages)
 db.pragma('synchronous = NORMAL');    // Balance between safety and speed (safer than OFF, faster than FULL)
 db.pragma('temp_store = MEMORY');     // Store temporary tables in RAM for faster operations
+db.pragma('busy_timeout = 5000');       // Wait up to 5s for locked DB instead of failing immediately
 
 export function initDB() {
     const transactions = db.transaction(() => {
@@ -227,6 +228,19 @@ export function initDB() {
         `);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_mig_user ON migration_jobs(user_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_mig_status ON migration_jobs(status)`);
+
+        // Audit log for destructive operations
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS audit_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                action TEXT NOT NULL,
+                target TEXT NOT NULL,
+                details TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id)`);
 
         // Indexes for performance
         db.exec(`CREATE INDEX IF NOT EXISTS idx_members_user ON team_members(user_id)`);

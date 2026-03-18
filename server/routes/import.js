@@ -4,6 +4,7 @@ import * as azureService from '../azure-service.js';
 import db from '../db.js';
 import { requireAuth, safeError, errorResponse } from '../middleware/auth.js';
 import { githubApi } from '../lib/github-api.js';
+import { safeJsonParse } from '../lib/utils.js';
 
 const router = express.Router();
 
@@ -61,29 +62,31 @@ router.post('/import/azure', requireAuth, async (req, res) => {
             return errorResponse(res, 400, 'Could not obtain clone URL from Azure DevOps', 'MISSING_CLONE_URL');
         }
 
-        const existingJob = db.prepare(
-            `SELECT id FROM migration_jobs WHERE source_url = ? AND status IN ('pending', 'running') AND user_id = ?`
-        ).get(importService.safeUrl(sourceUrl), req.session.userId);
-        if (existingJob) {
-            return errorResponse(res, 409, 'An import for this repository is already in progress', 'DUPLICATE_IMPORT');
-        }
-
         const repoName = importService.sanitizeRepoName(targetName || azureRepo);
         const owner = targetOrg || '';
+        const safeUrl = importService.safeUrl(sourceUrl);
+        const userId = req.session.userId;
+        const sourceName = `${azureOrg}/${azureProject}/${azureRepo}`;
 
-        // Create migration job in DB
-        const job = db.prepare(`
-            INSERT INTO migration_jobs (user_id, source_type, source_url, source_name, target_owner, target_repo, status, progress_message)
-            VALUES (?, ?, ?, ?, ?, ?, 'running', 'Starting import...')
-        `).run(
-            req.session.userId,
-            'azure',
-            importService.safeUrl(sourceUrl),
-            `${azureOrg}/${azureProject}/${azureRepo}`,
-            owner,
-            repoName
-        );
-        const jobId = job.lastInsertRowid;
+        // Atomic duplicate check + insert to prevent race conditions
+        const createAzureJob = db.transaction((safeUrl, userId, sourceName, owner, repoName) => {
+            const existing = db.prepare(
+                `SELECT id FROM migration_jobs WHERE source_url = ? AND status IN ('pending', 'running') AND user_id = ?`
+            ).get(safeUrl, userId);
+            if (existing) return { duplicate: true, id: existing.id };
+
+            const result = db.prepare(`
+                INSERT INTO migration_jobs (user_id, source_type, source_url, source_name, target_owner, target_repo, status, progress_message)
+                VALUES (?, ?, ?, ?, ?, ?, 'running', 'Starting import...')
+            `).run(userId, 'azure', safeUrl, sourceName, owner, repoName);
+            return { duplicate: false, id: result.lastInsertRowid };
+        });
+
+        const jobResult = createAzureJob(safeUrl, userId, sourceName, owner, repoName);
+        if (jobResult.duplicate) {
+            return errorResponse(res, 409, 'An import for this repository is already in progress', 'DUPLICATE_IMPORT');
+        }
+        const jobId = jobResult.id;
 
         // Run import asynchronously
         importService.importRepository({
@@ -138,32 +141,33 @@ router.post('/import/url', requireAuth, async (req, res) => {
             return errorResponse(res, 400, 'Source URL is required', 'MISSING_URL');
         }
 
-        const existingJob = db.prepare(
-            `SELECT id FROM migration_jobs WHERE source_url = ? AND status IN ('pending', 'running') AND user_id = ?`
-        ).get(importService.safeUrl(sourceUrl), req.session.userId);
-        if (existingJob) {
-            return errorResponse(res, 409, 'An import for this repository is already in progress', 'DUPLICATE_IMPORT');
-        }
-
         // Extract repo name from URL if not provided
         const urlParts = sourceUrl.replace(/\.git$/, '').split('/');
         const inferredName = urlParts[urlParts.length - 1] || 'imported-repo';
         const repoName = importService.sanitizeRepoName(targetName || inferredName);
         const owner = targetOrg || '';
+        const safeUrl = importService.safeUrl(sourceUrl);
+        const userId = req.session.userId;
 
-        // Create migration job
-        const job = db.prepare(`
-            INSERT INTO migration_jobs (user_id, source_type, source_url, source_name, target_owner, target_repo, status, progress_message)
-            VALUES (?, ?, ?, ?, ?, ?, 'running', 'Starting import...')
-        `).run(
-            req.session.userId,
-            'url',
-            importService.safeUrl(sourceUrl),
-            inferredName,
-            owner,
-            repoName
-        );
-        const jobId = job.lastInsertRowid;
+        // Atomic duplicate check + insert to prevent race conditions
+        const createUrlJob = db.transaction((safeUrl, userId, inferredName, owner, repoName) => {
+            const existing = db.prepare(
+                `SELECT id FROM migration_jobs WHERE source_url = ? AND status IN ('pending', 'running') AND user_id = ?`
+            ).get(safeUrl, userId);
+            if (existing) return { duplicate: true, id: existing.id };
+
+            const result = db.prepare(`
+                INSERT INTO migration_jobs (user_id, source_type, source_url, source_name, target_owner, target_repo, status, progress_message)
+                VALUES (?, ?, ?, ?, ?, ?, 'running', 'Starting import...')
+            `).run(userId, 'url', safeUrl, inferredName, owner, repoName);
+            return { duplicate: false, id: result.lastInsertRowid };
+        });
+
+        const jobResult = createUrlJob(safeUrl, userId, inferredName, owner, repoName);
+        if (jobResult.duplicate) {
+            return errorResponse(res, 409, 'An import for this repository is already in progress', 'DUPLICATE_IMPORT');
+        }
+        const jobId = jobResult.id;
 
         // Run import asynchronously
         importService.importRepository({
@@ -232,7 +236,7 @@ router.get('/import/status/:id', requireAuth, async (req, res) => {
             errorMessage: job.error_message,
             startedAt: job.started_at,
             completedAt: job.completed_at,
-            metadata: job.metadata ? JSON.parse(job.metadata) : null
+            metadata: safeJsonParse(job.metadata)
         });
     } catch (error) {
         errorResponse(res, 500, safeError(error, 'Operation failed'));
@@ -267,7 +271,7 @@ router.get('/migrations', requireAuth, async (req, res) => {
                 errorMessage: j.error_message,
                 startedAt: j.started_at,
                 completedAt: j.completed_at,
-                metadata: j.metadata ? JSON.parse(j.metadata) : null
+                metadata: safeJsonParse(j.metadata)
             })),
             total: total.count,
             page,
