@@ -45,8 +45,8 @@ export default function CollapsiblePanel({
       className={`flex-shrink-0 sticky transition-[width] duration-300 ease-in-out ${overflowClass} ${className}`}
       style={{
         width: `${width}px`,
-        top: 'var(--header-height)',
-        maxHeight: 'calc(100vh - var(--header-height) - 1rem)',
+        top: 'calc(var(--header-height) + var(--layout-py))',
+        maxHeight: 'calc(100vh - var(--header-height) - 2 * var(--layout-py))',
       }}
       onTransitionEnd={handleTransitionEnd}
     >
