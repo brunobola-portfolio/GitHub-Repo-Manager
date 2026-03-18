@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
 import {
@@ -7,8 +8,163 @@ import {
     Clock, ChevronRight, Download
 } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { useSelection } from '../contexts/SelectionContext'
-import { useModal } from '../contexts/ModalContext'
+import { useSelection } from '../hooks/useSelection'
+import { useModal } from '../hooks/useModal'
+
+function SlimPopover({ isOpen, onClose, children, triggerRef }) {
+  const popoverRef = useRef(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    function handleClickOutside(e) {
+      if (
+        popoverRef.current && !popoverRef.current.contains(e.target) &&
+        triggerRef.current && !triggerRef.current.contains(e.target)
+      ) {
+        onClose()
+      }
+    }
+
+    function handleEscape(e) {
+      if (e.key === 'Escape') {
+        onClose()
+        triggerRef.current?.focus()
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleEscape)
+    popoverRef.current?.focus()
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [isOpen, onClose, triggerRef])
+
+  if (!isOpen) return null
+
+  return (
+    <div
+      ref={popoverRef}
+      tabIndex={-1}
+      className="absolute right-full mr-2 top-0 w-72 max-h-80 overflow-y-auto rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-xl z-40 p-3 outline-none"
+    >
+      {children}
+    </div>
+  )
+}
+
+function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRef }) {
+  return (
+    <button
+      ref={buttonRef}
+      onClick={onClick}
+      className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 group ${
+        accent
+          ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/25'
+          : isActive
+            ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400'
+            : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300'
+      }`}
+      aria-label={label}
+      aria-haspopup={accent ? undefined : 'true'}
+      aria-expanded={isActive || undefined}
+    >
+      <Icon className="w-5 h-5" />
+      <span className="absolute left-full ml-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+        {label}
+      </span>
+    </button>
+  )
+}
+
+export function SlimSidebar({ selectedRepos, onOpenImport }) {
+  const [openPopover, setOpenPopover] = useState(null)
+  const triggerRefs = {
+    actions: useRef(null),
+    history: useRef(null),
+    activity: useRef(null),
+  }
+
+  const togglePopover = (name) => {
+    setOpenPopover(prev => prev === name ? null : name)
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-2 py-3">
+      <SlimIconButton
+        icon={Zap}
+        label="Quick Actions"
+        isActive={openPopover === 'actions'}
+        onClick={() => togglePopover('actions')}
+        buttonRef={triggerRefs.actions}
+      />
+      <div className="relative">
+        <SlimPopover
+          isOpen={openPopover === 'actions'}
+          onClose={() => setOpenPopover(null)}
+          triggerRef={triggerRefs.actions}
+        >
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Quick Actions</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            {selectedRepos?.length > 0
+              ? `${selectedRepos.length} repos selected`
+              : 'Select repos for actions'}
+          </p>
+        </SlimPopover>
+      </div>
+
+      <div className="w-6 border-t border-slate-200 dark:border-slate-700/50" />
+
+      <SlimIconButton
+        icon={History}
+        label="Action History"
+        isActive={openPopover === 'history'}
+        onClick={() => togglePopover('history')}
+        buttonRef={triggerRefs.history}
+      />
+      <div className="relative">
+        <SlimPopover
+          isOpen={openPopover === 'history'}
+          onClose={() => setOpenPopover(null)}
+          triggerRef={triggerRefs.history}
+        >
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Action History</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">No recent actions</p>
+        </SlimPopover>
+      </div>
+
+      <SlimIconButton
+        icon={Clock}
+        label="Recent Activity"
+        isActive={openPopover === 'activity'}
+        onClick={() => togglePopover('activity')}
+        buttonRef={triggerRefs.activity}
+      />
+      <div className="relative">
+        <SlimPopover
+          isOpen={openPopover === 'activity'}
+          onClose={() => setOpenPopover(null)}
+          triggerRef={triggerRefs.activity}
+        >
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Recent Activity</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">No recent activity</p>
+        </SlimPopover>
+      </div>
+
+      <div className="flex-1" />
+
+      <SlimIconButton
+        icon={Download}
+        label="Import Repository"
+        accent
+        onClick={onOpenImport}
+      />
+    </div>
+  )
+}
 
 const ACTION_LABELS = {
     visibility: 'Change Visibility',
