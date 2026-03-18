@@ -21,6 +21,7 @@ rules/
 /plans/
 Implementation/
 .roo/
+.superpowers/
 
 # Environment files (NEVER commit credentials!)
 .env
