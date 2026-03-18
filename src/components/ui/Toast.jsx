@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react'
 
 const ICONS = {
@@ -28,19 +28,23 @@ const ICON_STYLES = {
 
 export function Toast({ id, type = 'info', message, onDismiss, duration = 5000 }) {
     const [isLeaving, setIsLeaving] = useState(false)
+    const timerRef = useRef(null)
+    const onDismissRef = useRef(onDismiss)
+    onDismissRef.current = onDismiss
     const Icon = ICONS[type] || Info
 
     useEffect(() => {
         if (duration > 0) {
-            const timer = setTimeout(() => {
+            timerRef.current = setTimeout(() => {
                 setIsLeaving(true)
-                setTimeout(() => onDismiss(id), 300)
+                setTimeout(() => onDismissRef.current(id), 300)
             }, duration)
-            return () => clearTimeout(timer)
+            return () => clearTimeout(timerRef.current)
         }
-    }, [duration, id, onDismiss])
+    }, [duration, id])
 
     const handleDismiss = () => {
+        clearTimeout(timerRef.current)
         setIsLeaving(true)
         setTimeout(() => onDismiss(id), 300)
     }
@@ -69,7 +73,7 @@ export function Toast({ id, type = 'info', message, onDismiss, duration = 5000 }
 
 export function ToastContainer({ toasts, onDismiss }) {
 	return (
-		<div className="fixed inset-x-0 bottom-20 z-50 flex flex-col items-end px-4 space-y-2 pointer-events-none sm:items-end sm:right-4 sm:left-auto sm:max-w-sm safe-area-bottom safe-area-right">
+		<div className="fixed inset-x-0 bottom-20 z-[60] flex flex-col items-end px-4 space-y-2 pointer-events-none sm:items-end sm:right-4 sm:left-auto sm:max-w-sm safe-area-bottom safe-area-right">
 			{toasts.map(toast => (
 				<Toast key={toast.id} {...toast} onDismiss={onDismiss} />
 			))}

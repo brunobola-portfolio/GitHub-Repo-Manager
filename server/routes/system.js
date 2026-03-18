@@ -1,4 +1,5 @@
 import express from 'express';
+import logger from '../lib/logger.js';
 import db, { initDB } from '../db.js';
 import { requireAuth, safeError } from '../middleware/auth.js';
 
@@ -16,30 +17,31 @@ router.get('/status', (req, res) => {
 
 router.post('/setup', requireAuth, async (req, res) => {
     try {
-        // Simulate "work" for the UI to show progress (optional, but requested for "demonstrating process")
-        // In verify real-world, we'd run migrations here.
-        // Since initDB() runs at start, we'll verify and maybe seed some data.
-
-        await new Promise(r => setTimeout(r, 1000)); // Simulate "Creating Tables"
-
-        // Ensure tables exist (redundant but safe)
+        // Ensure tables exist (idempotent)
         initDB();
 
-        await new Promise(r => setTimeout(r, 800)); // Simulate "Verifying Schema"
-
         // Seed if empty
-        const userCount = db.prepare('SELECT count(*) as count FROM users').get();
+        let userCount;
+        try {
+            userCount = db.prepare('SELECT count(*) as count FROM users').get();
+        } catch (dbError) {
+            logger.error({ err: dbError }, 'Failed to query user count');
+            userCount = { count: 0 };
+        }
         if (userCount.count === 0) {
             // We could insert a "System Admin" placeholder or just leave it
         }
 
-        await new Promise(r => setTimeout(r, 800)); // Simulate "Seeding Data"
-
         // Mark as completed
-        db.prepare(`
-            INSERT INTO system_meta (key, value) VALUES ('setup_completed', 'true')
-            ON CONFLICT(key) DO UPDATE SET value = 'true', updated_at = CURRENT_TIMESTAMP
-        `).run();
+        try {
+            db.prepare(`
+                INSERT INTO system_meta (key, value) VALUES ('setup_completed', 'true')
+                ON CONFLICT(key) DO UPDATE SET value = 'true', updated_at = CURRENT_TIMESTAMP
+            `).run();
+        } catch (metaError) {
+            logger.error({ err: metaError }, 'Failed to update system_meta');
+            throw metaError;
+        }
 
         res.json({ success: true });
     } catch (error) {
@@ -51,12 +53,12 @@ router.post('/setup', requireAuth, async (req, res) => {
 router.post('/client-error', (req, res) => {
     try {
         const { message, stack, componentStack, url, timestamp } = req.body || {};
-        console.error('[Client Error]', {
+        logger.error({
             message: String(message || 'Unknown error').slice(0, 500),
             url: String(url || '').slice(0, 200),
             timestamp: timestamp || new Date().toISOString(),
             stack: String(stack || '').slice(0, 1000)
-        });
+        }, 'Client error reported');
         res.json({ received: true });
     } catch {
         res.status(200).json({ received: true });

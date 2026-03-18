@@ -9,6 +9,8 @@
  * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
  */
 
+import logger from './logger.js';
+
 const MAX_STATS_CACHE = 200;
 const MAX_ETAG_CACHE = 2000;
 
@@ -60,11 +62,16 @@ export async function githubApi(path, token, options = {}) {
             const waitSeconds = rateLimitInfo.reset - now;
             if (waitSeconds <= 60) {
                 // Short wait - sleep until reset
-                console.warn(`[GitHub API] Rate limit exhausted. Waiting ${waitSeconds}s for reset...`);
+                logger.warn({ waitSeconds }, 'Rate limit exhausted, waiting for reset');
                 await new Promise(resolve => setTimeout(resolve, waitSeconds * 1000));
             } else {
                 const resetDate = new Date(rateLimitInfo.reset * 1000).toISOString();
-                throw new Error(`GitHub API rate limit exhausted. Resets at ${resetDate} (${waitSeconds}s). Please try again later.`);
+                const error = new Error(`GitHub API rate limit exhausted. Resets at ${resetDate}. Please try again later.`);
+                error.status = 429;
+                error.code = 'RATE_LIMITED';
+                error.resetsAt = resetDate;
+                error.retryAfter = waitSeconds;
+                throw error;
             }
         }
     }
@@ -85,10 +92,21 @@ export async function githubApi(path, token, options = {}) {
         requestHeaders['If-None-Match'] = cached.etag;
     }
 
-    const res = await fetch(url, {
-        ...options,
-        headers: requestHeaders
-    });
+    let res;
+    try {
+        res = await fetch(url, {
+            ...options,
+            headers: requestHeaders,
+            signal: options.signal || AbortSignal.timeout(30000)
+        });
+    } catch (err) {
+        if (err.name === 'AbortError' || err.name === 'TimeoutError') {
+            const error = new Error('GitHub API request timed out. Please try again.');
+            error.status = 504;
+            throw error;
+        }
+        throw err;
+    }
 
     // Track rate limit info from response headers
     const remainingHeader = res.headers.get('X-RateLimit-Remaining');
@@ -101,7 +119,7 @@ export async function githubApi(path, token, options = {}) {
     }
     if (rateLimitInfo.remaining !== null && rateLimitInfo.remaining < 100) {
         const resetDate = rateLimitInfo.reset ? new Date(rateLimitInfo.reset * 1000).toISOString() : 'unknown';
-        console.warn(`[GitHub API] Rate limit low: ${rateLimitInfo.remaining} requests remaining. Resets at ${resetDate}`);
+        logger.warn({ remaining: rateLimitInfo.remaining, resetDate }, 'Rate limit low');
     }
 
     // Handle 304 Not Modified - return cached data (does not count against rate limit)

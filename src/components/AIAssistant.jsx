@@ -20,11 +20,15 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
 
     // Check configuration on mount and when isOpen changes
     useEffect(() => {
-        const checkConfig = async () => {
-            const status = await checkAIStatus()
-            setIsConfigured(status.configured)
-        }
         if (isOpen) {
+            const checkConfig = async () => {
+                try {
+                    const status = await checkAIStatus()
+                    setIsConfigured(status?.configured ?? false)
+                } catch {
+                    setIsConfigured(false)
+                }
+            }
             checkConfig()
         }
     }, [isOpen, checkAIStatus])

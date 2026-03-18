@@ -19,8 +19,8 @@ class ErrorBoundary extends Component {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: error?.message,
-          stack: error?.stack?.slice(0, 2000),
-          componentStack: errorInfo?.componentStack?.slice(0, 2000),
+          stack: error?.stack?.slice(0, 5000),
+          componentStack: errorInfo?.componentStack?.slice(0, 5000),
           url: window.location.href,
           timestamp: new Date().toISOString()
         })

@@ -61,7 +61,7 @@ router.get('/', requireAuth, async (req, res) => {
         // 6. Return personal account FIRST, then organizations
         res.json([personalAccount, ...orgsWithCounts]);
     } catch (error) {
-        console.error('Error fetching organizations:', error);
+        req.log.error({ err: error }, 'Failed to fetch organizations');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });

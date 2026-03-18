@@ -20,6 +20,7 @@ import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, createRequireAI, safeError } from '../middleware/auth.js';
 import { aiService } from '../ai-service.js';
+import { safeJsonParse } from '../lib/utils.js';
 
 const router = express.Router();
 
@@ -47,8 +48,8 @@ router.post('/ai/chat', requireAuth, requireAI, async (req, res) => {
 
         if (!message || message.trim().length === 0) {
             return res.status(400).json({
-                error: 'MESSAGE_REQUIRED',
-                message: 'Please provide a message to send to the AI assistant.'
+                error: 'Please provide a message to send to the AI assistant.',
+                code: 'MESSAGE_REQUIRED'
             });
         }
 
@@ -59,11 +60,10 @@ router.post('/ai/chat', requireAuth, requireAI, async (req, res) => {
         try {
             model = req.genAI.getGenerativeModel({ model: modelName });
         } catch (modelError) {
-            console.error(`Failed to load model ${modelName}:`, modelError.message);
+            req.log.error({ err: modelError, model: modelName }, 'Failed to load AI model');
             return res.status(503).json({
-                error: 'MODEL_UNAVAILABLE',
-                message: `AI model "${modelName}" is not available. Please check your configuration.`,
-                modelRequested: modelName
+                error: `AI model "${modelName}" is not available. Please check your configuration.`,
+                code: 'MODEL_UNAVAILABLE'
             });
         }
 
@@ -94,35 +94,33 @@ router.post('/ai/chat', requireAuth, requireAI, async (req, res) => {
 
         res.json({ message: text });
     } catch (error) {
-        console.error('AI Chat Error:', error);
+        req.log.error({ err: error }, 'AI chat failed');
 
         // User-friendly error handling
         if (error.message?.includes('not found') || error.status === 404) {
             return res.status(404).json({
-                error: 'MODEL_NOT_FOUND',
-                message: `The AI model "${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}" is not available. Please verify your GEMINI_MODEL configuration in .env file.`,
-                suggestion: 'Try using: gemini-2.0-flash-exp, gemini-1.5-flash, or gemini-1.5-pro'
+                error: `The AI model "${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}" is not available. Please verify your GEMINI_MODEL configuration in .env file. Try using: gemini-2.0-flash-exp, gemini-1.5-flash, or gemini-1.5-pro`,
+                code: 'MODEL_NOT_FOUND'
             });
         }
 
         if (error.message?.includes('API key') || error.status === 401) {
             return res.status(401).json({
-                error: 'INVALID_API_KEY',
-                message: 'Invalid or expired Gemini API key. Please check your GEMINI_API_KEY in .env file.'
+                error: 'Invalid or expired Gemini API key. Please check your GEMINI_API_KEY in .env file.',
+                code: 'INVALID_API_KEY'
             });
         }
 
         if (error.message?.includes('quota') || error.status === 429) {
             return res.status(429).json({
-                error: 'QUOTA_EXCEEDED',
-                message: 'API quota exceeded. Please try again later or check your Gemini API usage limits.'
+                error: 'API quota exceeded. Please try again later or check your Gemini API usage limits.',
+                code: 'QUOTA_EXCEEDED'
             });
         }
 
         res.status(500).json({
-            error: 'AI_REQUEST_FAILED',
-            message: 'Failed to generate AI response. Please try again later.',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            error: 'Failed to generate AI response. Please try again later.',
+            code: 'AI_REQUEST_FAILED'
         });
     }
 });
@@ -137,8 +135,8 @@ router.post('/ai/suggest', requireAuth, requireAI, async (req, res) => {
 
         if (!repo) {
             return res.status(400).json({
-                error: 'REPO_REQUIRED',
-                message: 'Repository data is required for suggestions.'
+                error: 'Repository data is required for suggestions.',
+                code: 'REPO_REQUIRED'
             });
         }
 
@@ -149,11 +147,10 @@ router.post('/ai/suggest', requireAuth, requireAI, async (req, res) => {
         try {
             model = req.genAI.getGenerativeModel({ model: modelName });
         } catch (modelError) {
-            console.error(`Failed to load model ${modelName}:`, modelError.message);
+            req.log.error({ err: modelError, model: modelName }, 'Failed to load AI model');
             return res.status(503).json({
-                error: 'MODEL_UNAVAILABLE',
-                message: `AI model "${modelName}" is not available. Please check your configuration.`,
-                modelRequested: modelName
+                error: `AI model "${modelName}" is not available. Please check your configuration.`,
+                code: 'MODEL_UNAVAILABLE'
             });
         }
 
@@ -175,37 +172,39 @@ router.post('/ai/suggest', requireAuth, requireAI, async (req, res) => {
         const response = await result.response;
         const text = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
 
-        res.json(JSON.parse(text));
+        const parsed = safeJsonParse(text);
+        if (!parsed) {
+            return res.status(502).json({ error: 'AI returned an invalid response. Please retry.', code: 'AI_PARSE_ERROR' });
+        }
+        res.json(parsed);
     } catch (error) {
-        console.error('AI Suggest Error:', error);
+        req.log.error({ err: error }, 'AI suggest failed');
 
         // User-friendly error handling
         if (error.message?.includes('not found') || error.status === 404) {
             return res.status(404).json({
-                error: 'MODEL_NOT_FOUND',
-                message: `The AI model "${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}" is not available. Please verify your GEMINI_MODEL configuration in .env file.`,
-                suggestion: 'Try using: gemini-2.0-flash-exp, gemini-1.5-flash, or gemini-1.5-pro'
+                error: `The AI model "${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}" is not available. Please verify your GEMINI_MODEL configuration in .env file. Try using: gemini-2.0-flash-exp, gemini-1.5-flash, or gemini-1.5-pro`,
+                code: 'MODEL_NOT_FOUND'
             });
         }
 
         if (error.message?.includes('API key') || error.status === 401) {
             return res.status(401).json({
-                error: 'INVALID_API_KEY',
-                message: 'Invalid or expired Gemini API key. Please check your GEMINI_API_KEY in .env file.'
+                error: 'Invalid or expired Gemini API key. Please check your GEMINI_API_KEY in .env file.',
+                code: 'INVALID_API_KEY'
             });
         }
 
         if (error.message?.includes('quota') || error.status === 429) {
             return res.status(429).json({
-                error: 'QUOTA_EXCEEDED',
-                message: 'API quota exceeded. Please try again later or check your Gemini API usage limits.'
+                error: 'API quota exceeded. Please try again later or check your Gemini API usage limits.',
+                code: 'QUOTA_EXCEEDED'
             });
         }
 
         res.status(500).json({
-            error: 'AI_REQUEST_FAILED',
-            message: 'Failed to generate suggestions. Please try again later.',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            error: 'Failed to generate suggestions. Please try again later.',
+            code: 'AI_REQUEST_FAILED'
         });
     }
 });
@@ -239,7 +238,7 @@ router.post('/ai/readme', requireAuth, requireAI, async (req, res) => {
 
         res.json({ readme: text });
     } catch (error) {
-        console.error('AI README Error:', error);
+        req.log.error({ err: error }, 'AI README generation failed');
         res.status(500).json({ error: 'Failed to generate README' });
     }
 });
@@ -254,7 +253,7 @@ router.post('/ai/index', requireAuth, requireAI, async (req, res) => {
     if (!repo) return res.status(400).json({ error: 'Repo data required' });
 
     try {
-        console.log(`[AI Index] processing ${repo.full_name}...`);
+        req.log.info({ repo: repo.full_name }, 'AI indexing started');
 
         // 1. Fetch README
         let readmeContent = '';
@@ -262,7 +261,7 @@ router.post('/ai/index', requireAuth, requireAI, async (req, res) => {
             const { data } = await githubApi(`/repos/${repo.full_name}/readme`, req.session.accessToken);
             readmeContent = Buffer.from(data.content, 'base64').toString('utf-8');
         } catch (e) {
-            console.warn(`No README for ${repo.full_name}`);
+            req.log.warn({ repo: repo.full_name }, 'No README found');
         }
 
         // 2. Fetch File Structure (Tree) -> getting top 20 items to save tokens
@@ -271,7 +270,7 @@ router.post('/ai/index', requireAuth, requireAI, async (req, res) => {
             const { data } = await githubApi(`/repos/${repo.full_name}/contents`, req.session.accessToken);
             fileStructure = data.map(f => ({ name: f.name, type: f.type }));
         } catch (e) {
-            console.warn(`Could not fetch contents for ${repo.full_name}`);
+            req.log.warn({ repo: repo.full_name }, 'Could not fetch contents');
         }
 
         // 3. Generate Analysis (Summary, Health Score, Topics)
@@ -308,7 +307,7 @@ router.post('/ai/index', requireAuth, requireAI, async (req, res) => {
         res.json({ success: true, analysis });
 
     } catch (error) {
-        console.error('Indexing failed:', error);
+        req.log.error({ err: error }, 'AI indexing failed');
         res.status(500).json({ error: safeError(error, 'Indexing failed') });
     }
 });
@@ -326,9 +325,10 @@ router.get('/ai/search', requireAuth, requireAI, async (req, res) => {
 
         // Determine which IDs to fetch
         const repoIds = results.map(r => r.repo_id);
+        const safeIds = repoIds.slice(0, 100);
 
-        const placeholders = repoIds.map(() => '?').join(',');
-        const metas = db.prepare(`SELECT * FROM repo_metadata WHERE repo_id IN (${placeholders})`).all(...repoIds);
+        const placeholders = safeIds.map(() => '?').join(',');
+        const metas = db.prepare(`SELECT * FROM repo_metadata WHERE repo_id IN (${placeholders})`).all(...safeIds);
 
         // Merge score + metadata
         const enriched = results.map(r => {
@@ -339,7 +339,7 @@ router.get('/ai/search', requireAuth, requireAI, async (req, res) => {
         res.json(enriched);
 
     } catch (error) {
-        console.error('Semantic search failed:', error);
+        req.log.error({ err: error }, 'Semantic search failed');
         res.status(500).json({ error: safeError(error, 'Search failed') });
     }
 });
@@ -366,7 +366,7 @@ router.post('/ai/readme/enhance', requireAuth, requireAI, async (req, res) => {
             const { data } = await githubApi(`/repos/${repo.full_name}/readme`, req.session.accessToken);
             readmeContent = Buffer.from(data.content, 'base64').toString('utf-8');
         } catch (e) {
-            console.warn(`No README for ${repo.full_name}`);
+            req.log.warn({ repo: repo.full_name }, 'No README found');
         }
 
         // Fetch file structure
@@ -375,14 +375,14 @@ router.post('/ai/readme/enhance', requireAuth, requireAI, async (req, res) => {
             const { data } = await githubApi(`/repos/${repo.full_name}/contents`, req.session.accessToken);
             fileStructure = data.map(f => ({ name: f.name, type: f.type }));
         } catch (e) {
-            console.warn(`Could not fetch contents for ${repo.full_name}`);
+            req.log.warn({ repo: repo.full_name }, 'Could not fetch contents');
         }
 
         const result = await aiService.enhanceReadme(readmeContent, repo, fileStructure);
         res.json({ success: true, ...result, currentReadme: readmeContent });
 
     } catch (error) {
-        console.error('README Enhancement Error:', error);
+        req.log.error({ err: error }, 'README enhancement failed');
         res.status(500).json({ error: safeError(error, 'Failed to enhance README') });
     }
 });
@@ -411,7 +411,7 @@ router.post('/ai/quality-report', requireAuth, requireAI, async (req, res) => {
         res.json({ success: true, report, repo: repo.full_name });
 
     } catch (error) {
-        console.error('Quality Report Error:', error);
+        req.log.error({ err: error }, 'Quality report generation failed');
         res.status(500).json({ error: safeError(error, 'Failed to generate quality report') });
     }
 });
@@ -489,7 +489,7 @@ router.post('/ai/batch-index', requireAuth, requireAI, async (req, res) => {
             results.push({ repo: repo.full_name, success: true, health_score: analysis.health_score });
 
         } catch (error) {
-            console.error(`Batch index failed for ${repo.full_name}:`, error.message);
+            req.log.error({ err: error, repo: repo.full_name }, 'Batch index failed for repo');
             results.push({ repo: repo.full_name, success: false, error: safeError(error, 'Analysis failed') });
         }
     }
@@ -500,7 +500,7 @@ router.post('/ai/batch-index', requireAuth, requireAI, async (req, res) => {
             batchInsertRepos(analyzedRepos);
         }
     } catch (error) {
-        console.error('Batch insert failed:', error);
+        req.log.error({ err: error }, 'Batch insert failed');
         return res.status(500).json({ error: 'Failed to save indexed data' });
     }
 

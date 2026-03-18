@@ -33,7 +33,7 @@ export default defineConfig([
         destructuredArrayIgnorePattern: '^_',
         ignoreRestSiblings: true
       }],
-      'react-hooks/exhaustive-deps': 'warn',
+      'react-hooks/exhaustive-deps': 'error',
     },
   },
 ])

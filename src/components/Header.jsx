@@ -57,7 +57,7 @@ export function Header({
     return (
         <>
         <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-700/50 sticky top-0 z-20 transition-all duration-300 shadow-sm dark:shadow-black/20 safe-area-top">
-            <div className="max-w-screen-2xl mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 h-14 flex items-center gap-3 safe-area-left safe-area-right">
+            <div className="max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 h-14 flex items-center gap-3 safe-area-left safe-area-right">
                 {/* Left: Logo & Title */}
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink-0">
                     {user && (

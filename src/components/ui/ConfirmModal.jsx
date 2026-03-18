@@ -22,6 +22,7 @@ export function ConfirmModal({
     const [inputValue, setInputValue] = useState('')
     const [inputError, setInputError] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [confirmError, setConfirmError] = useState(null)
 
     // Reset input when modal opens/closes
     useEffect(() => {
@@ -29,6 +30,7 @@ export function ConfirmModal({
             setInputValue('')
             setInputError('')
             setIsSubmitting(false)
+            setConfirmError(null)
         }
     }, [isOpen])
 
@@ -47,6 +49,7 @@ export function ConfirmModal({
         const modal = modalRef.current
         modal?.addEventListener('focusin', handleFocus)
         return () => modal?.removeEventListener('focusin', handleFocus)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- modalRef is a stable ref
     }, [isOpen])
 
     if (!isOpen) return null
@@ -60,8 +63,11 @@ export function ConfirmModal({
             }
         }
         setIsSubmitting(true)
+        setConfirmError(null)
         try {
             await onConfirm()
+        } catch (err) {
+            setConfirmError(err.message || 'Operation failed. Please try again.')
         } finally {
             setIsSubmitting(false)
         }
@@ -137,6 +143,11 @@ export function ConfirmModal({
                             {inputError && (
                                 <p id="confirm-input-error" className="mt-1 text-sm text-red-600 dark:text-red-400" role="alert">{inputError}</p>
                             )}
+                        </div>
+                    )}
+                    {confirmError && (
+                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+                            <p className="text-sm text-red-700 dark:text-red-300">{confirmError}</p>
                         </div>
                     )}
                 </div>

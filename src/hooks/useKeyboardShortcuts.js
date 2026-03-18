@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 
 const SHORTCUTS = [
     { key: '/', description: 'Focus search', scope: 'global' },
@@ -18,9 +18,15 @@ export function useKeyboardShortcuts({
     enabled = true
 }) {
     const [showHelp, setShowHelp] = useState(false)
+    const lastExecutionRef = useRef(0)
 
     const handleKeyDown = useCallback((e) => {
         if (!enabled) return
+
+        // Debounce: prevent double-trigger on rapid keypress
+        const now = Date.now()
+        if (now - lastExecutionRef.current < 100) return
+        lastExecutionRef.current = now
 
         // Don't trigger if user is typing in an input, textarea, or contentEditable
         const target = e.target

@@ -25,9 +25,8 @@ router.get('/', requireAuth, (req, res) => {
 });
 
 // Create a team
-router.post('/', requireAuth, (req, res) => {
+router.post('/', requireAuth, validate(teamCreateSchema), (req, res) => {
     const { name, description } = req.body;
-    if (!name) return errorResponse(res, 400, 'Team name is required', 'MISSING_NAME');
 
     try {
         const result = db.transaction(() => {
@@ -47,7 +46,7 @@ router.post('/', requireAuth, (req, res) => {
 });
 
 // Update a team
-router.put('/:id', requireAuth, (req, res) => {
+router.put('/:id', requireAuth, validate(teamCreateSchema), (req, res) => {
     const { name, description } = req.body;
     const { id } = req.params;
 
@@ -75,6 +74,9 @@ router.delete('/:id', requireAuth, (req, res) => {
         const membership = db.prepare('SELECT role FROM team_members WHERE team_id = ? AND user_id = ?').get(id, req.session.userId);
         if (!membership || membership.role !== 'owner') return errorResponse(res, 403, 'Owner access required', 'FORBIDDEN');
 
+        // Capture team name before deletion for audit log
+        const team = db.prepare('SELECT name FROM teams WHERE id = ?').get(id);
+
         const result = db.transaction(() => {
             db.prepare('DELETE FROM team_members WHERE team_id = ?').run(id);
             db.prepare('DELETE FROM repo_assignments WHERE team_id = ?').run(id);
@@ -84,6 +86,15 @@ router.delete('/:id', requireAuth, (req, res) => {
 
         if (result.changes === 0) return errorResponse(res, 404, 'Team not found', 'NOT_FOUND');
         res.json({ success: true });
+
+        // Audit log: record team deletion
+        try {
+            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
+                req.session.userId, 'TEAM_DELETE', id, JSON.stringify({ name: team?.name })
+            );
+        } catch (auditErr) {
+            req.log?.error?.({ err: auditErr }, 'Audit log write failed');
+        }
     } catch (error) {
         errorResponse(res, 500, safeError(error, 'Operation failed'));
     }
@@ -115,10 +126,8 @@ router.get('/:id', requireAuth, (req, res) => {
 });
 
 // Add Member (Simulated Invite by Username)
-router.post('/:id/members', requireAuth, async (req, res) => {
+router.post('/:id/members', requireAuth, validate(teamMemberSchema), async (req, res) => {
     const { username } = req.body;
-    if (!username) return errorResponse(res, 400, 'Username required', 'MISSING_USERNAME');
-    if (!isValidGitHubUsername(username)) return errorResponse(res, 400, 'Invalid username format', 'INVALID_USERNAME');
 
     try {
         // Check Admin/Owner permission
@@ -150,6 +159,15 @@ router.post('/:id/members', requireAuth, async (req, res) => {
         `).run(req.params.id, user.id);
 
         res.json({ success: true });
+
+        // Audit log: record member addition
+        try {
+            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
+                req.session.userId, 'TEAM_MEMBER_ADD', req.params.id, JSON.stringify({ username, role: 'member' })
+            );
+        } catch (auditErr) {
+            req.log?.error?.({ err: auditErr }, 'Audit log write failed');
+        }
     } catch (error) {
         if (error.message.includes('UNIQUE constraint failed')) {
             return errorResponse(res, 400, 'User is already a member', 'DUPLICATE_MEMBER');
@@ -205,13 +223,22 @@ router.delete('/:id/members/:userId', requireAuth, (req, res) => {
             .run(req.params.id, req.params.userId);
 
         res.json({ success: true });
+
+        // Audit log: record member removal
+        try {
+            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
+                req.session.userId, 'TEAM_MEMBER_REMOVE', req.params.id, JSON.stringify({ userId: req.params.userId })
+            );
+        } catch (auditErr) {
+            req.log?.error?.({ err: auditErr }, 'Audit log write failed');
+        }
     } catch (error) {
         errorResponse(res, 500, safeError(error, 'Operation failed'));
     }
 });
 
 // Assign Repo to Team
-router.post('/:id/repos', requireAuth, (req, res) => {
+router.post('/:id/repos', requireAuth, validate(teamRepoSchema), (req, res) => {
     const { repoFullName, repoId } = req.body;
     try {
         // Verify membership and admin/owner role

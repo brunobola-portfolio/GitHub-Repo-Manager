@@ -498,7 +498,7 @@ function AppContent() {
       {/* Session expired banner */}
       {sessionExpired && (
         <div className="bg-amber-50 dark:bg-amber-950/50 border-b border-amber-200 dark:border-amber-800">
-          <div className="max-w-screen-2xl mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 py-3 flex items-center justify-between gap-4">
+          <div className="max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 py-3 flex items-center justify-between gap-4">
             <p className="text-amber-800 dark:text-amber-200 text-sm font-medium">
               Your session has expired. Please login again to continue.
             </p>
@@ -512,7 +512,7 @@ function AppContent() {
         </div>
       )}
 
-      <main id="main-content" className="max-w-screen-2xl mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 py-8 pb-20 md:pb-8 transition-all duration-300 relative z-[1]">
+      <main id="main-content" className="max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 py-6 pb-20 md:pb-6 transition-all duration-300 relative z-[1]">
         {!user && activeView === 'dashboard' && (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in zoom-in duration-500">
             <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-3xl mb-6 sm:mb-8 flex items-center justify-center shadow-2xl shadow-indigo-500/30 dark:shadow-indigo-900/40">
@@ -560,7 +560,7 @@ function AppContent() {
 
         {activeView === 'repos' && (
           <>
-            <div className="flex gap-4 lg:gap-6 min-h-0">
+            <div className="flex gap-3 lg:gap-4 min-h-0">
               {user && (
                 <CollapsiblePanel
                   side="left"
