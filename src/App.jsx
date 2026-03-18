@@ -11,10 +11,16 @@ import { useToast } from './hooks/useToast'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
 import { onSessionExpired, resetSessionExpired } from './utils/api'
-import { SelectionProvider, useSelection } from './contexts/SelectionContext'
-import { ModalProvider, useModal } from './contexts/ModalContext'
+import { SelectionProvider } from './contexts/SelectionContext'
+import { ModalProvider } from './contexts/ModalContext'
+import { useSelection } from './hooks/useSelection'
+import { useModal } from './hooks/useModal'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
-import { Menu } from 'lucide-react'
+import { useResponsiveLayout } from './hooks/useResponsiveLayout'
+import CollapsiblePanel from './components/ui/CollapsiblePanel'
+import { SlimSidebar } from './components/Sidebar'
+import { Menu, Building2, ChevronRight } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 // Lazy load heavy route components for code splitting
 const DashboardPremium = lazy(() => import('./components/Dashboard/DashboardPremium').then(m => ({ default: m.DashboardPremium })))
@@ -56,10 +62,13 @@ function AppContent() {
   const [selectedRepoDetail, setSelectedRepoDetail] = useState(null)
   const [syncStatus, setSyncStatus] = useState({ lastSync: null, hasUpdates: false })
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [orgDrawerOpen, setOrgDrawerOpen] = useState(false)
+  const [orgOverlayOpen, setOrgOverlayOpen] = useState(false)
   const [sessionExpired, setSessionExpired] = useState(false)
   const { toasts, toast, dismissToast } = useToast()
   const { modalStates, openModal, openModalWithData, closeModal, getModalData } = useModal()
-  const { selectedIds, clearSelection } = useSelection()
+  const { selectedIds } = useSelection()
+  const { leftMode, rightMode, toggleLeft, toggleRight } = useResponsiveLayout()
   // showMigrationHistory is now in ModalContext
   const [isSwitchingOrg, setIsSwitchingOrg] = useState(false)
   const [teams, setTeams] = useState([])
@@ -97,6 +106,8 @@ function AppContent() {
     checkAIStatus,
   } = useGitHub()
 
+  const anyModalOpen = Object.values(modalStates).some(Boolean)
+
   const { showHelp, setShowHelp, shortcuts } = useKeyboardShortcuts({
     onSearch: () => {
       // Focus the search input in RepoList if on repos view
@@ -106,7 +117,7 @@ function AppContent() {
     onCreateRepo: () => openModal('showCreateRepo'),
     onImport: () => openModal('showImportWizard'),
     onViewChange: setActiveView,
-    enabled: !!user
+    enabled: !!user && !anyModalOpen
   })
 
   const loading = appLoading || githubLoading
@@ -189,6 +200,23 @@ function AppContent() {
   useEffect(() => {
     if (user) fetchTeams()
   }, [user, fetchTeams])
+
+  // Close org overlay on Escape or resize to desktop
+  useEffect(() => {
+    if (!orgOverlayOpen) return
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') setOrgOverlayOpen(false)
+    }
+    const handleResize = () => {
+      if (window.innerWidth >= 1280) setOrgOverlayOpen(false)
+    }
+    document.addEventListener('keydown', handleEscape)
+    window.addEventListener('resize', handleResize)
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [orgOverlayOpen])
 
   const handleRefreshOrgs = useCallback(async () => {
     try {
@@ -334,6 +362,77 @@ function AppContent() {
     activity,
   }
 
+  const slimOrgContent = (
+    <>
+      <button
+        onClick={() => setOrgOverlayOpen(true)}
+        className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+        aria-label="Expand organization panel"
+        aria-expanded={orgOverlayOpen}
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+
+      <div className="w-6 border-t border-slate-200 dark:border-slate-700/50" />
+
+      <button
+        onClick={() => handleOrgSelect(null)}
+        className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all group ${
+          !selectedOrg
+            ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/30'
+            : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+        }`}
+        aria-label="All Organizations"
+      >
+        <Building2 className="w-5 h-5" />
+        <span className="absolute left-full ml-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+          All Orgs
+        </span>
+      </button>
+
+      {(orgs || []).slice(0, 8).map(org => (
+        <button
+          key={org.login}
+          onClick={() => handleOrgSelect(org.login)}
+          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all group ${
+            selectedOrg === org.login
+              ? 'ring-2 ring-indigo-500/30'
+              : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+          aria-label={org.login}
+        >
+          {org.avatar_url ? (
+            <img src={org.avatar_url} alt={org.login} className="w-8 h-8 rounded-lg" />
+          ) : (
+            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+              {org.login.charAt(0).toUpperCase()}
+            </span>
+          )}
+          <span className="absolute left-full ml-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+            {org.login}
+          </span>
+          {selectedOrg === org.login && (
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-1 h-5 rounded-full bg-indigo-500" />
+          )}
+        </button>
+      ))}
+
+      <div className="flex-1" />
+
+      {user && (
+        <button
+          className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+          aria-label={user.login}
+        >
+          <img src={user.avatar_url} alt={user.login} className="w-8 h-8 rounded-lg" />
+          <span className="absolute left-full ml-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+            {user.login}
+          </span>
+        </button>
+      )}
+    </>
+  )
+
   if (systemInitialized === false) {
     return (
       <Suspense fallback={<LoadingFallback />}>
@@ -393,12 +492,13 @@ function AppContent() {
         onOpenSettings={() => openModal('showSettings')}
         onImport={() => openModal('showImportWizard')}
         onMigrationHistory={() => openModal('showMigrationHistory')}
+        onToggleOrgDrawer={() => setOrgDrawerOpen(true)}
       />
 
       {/* Session expired banner */}
       {sessionExpired && (
         <div className="bg-amber-50 dark:bg-amber-950/50 border-b border-amber-200 dark:border-amber-800">
-          <div className="max-w-[1920px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 py-3 flex items-center justify-between gap-4">
+          <div className="max-w-screen-2xl mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 py-3 flex items-center justify-between gap-4">
             <p className="text-amber-800 dark:text-amber-200 text-sm font-medium">
               Your session has expired. Please login again to continue.
             </p>
@@ -412,7 +512,7 @@ function AppContent() {
         </div>
       )}
 
-      <main id="main-content" className="max-w-[1920px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 py-8 transition-all duration-300 relative z-[1]">
+      <main id="main-content" className="max-w-screen-2xl mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 2xl:px-20 py-8 pb-20 md:pb-8 transition-all duration-300 relative z-[1]">
         {!user && activeView === 'dashboard' && (
           <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in zoom-in duration-500">
             <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-3xl mb-6 sm:mb-8 flex items-center justify-center shadow-2xl shadow-indigo-500/30 dark:shadow-indigo-900/40">
@@ -459,10 +559,16 @@ function AppContent() {
         )}
 
         {activeView === 'repos' && (
-          <div className="flex flex-col lg:flex-row gap-8 min-h-0">
-            {user && (
-              <div className="hidden lg:block w-80 flex-shrink-0">
-                <div className="sticky top-20 rounded-3xl overflow-hidden border border-slate-200/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-black/40 bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl transition-all duration-300 hover:shadow-2xl hover:shadow-slate-300/60 dark:hover:shadow-black/70 hover:border-slate-300/70 dark:hover:border-slate-600/60 max-h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar">
+          <>
+            <div className="flex gap-4 lg:gap-6 min-h-0">
+              {user && (
+                <CollapsiblePanel
+                  side="left"
+                  mode={leftMode}
+                  expandedWidth={280}
+                  slimContent={slimOrgContent}
+                  className="rounded-3xl border border-slate-200/60 dark:border-slate-700/50 shadow-xl bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl"
+                >
                   <OrgPanel
                     orgs={orgs}
                     selectedOrg={selectedOrg}
@@ -471,39 +577,84 @@ function AppContent() {
                     stats={stats}
                     onCreateOrg={handleOpenOrgManager}
                   />
-                </div>
-              </div>
-            )}
+                </CollapsiblePanel>
+              )}
 
-            <div className="flex-1 min-w-0">
-              <ErrorBoundary>
-                <RepoList
-                  repos={displayRepos}
-                  loading={loading || isSwitchingOrg}
-                  error={error}
-                  errorInfo={errorInfo}
-                  page={page}
-                  setPage={setPage}
-                  perPage={perPage}
-                  totalPages={totalPages}
-                  onRefresh={refresh}
-                  onQuickAction={handleQuickAction}
-                  onRepoClick={(repo) => {
-                    setSelectedRepoDetail(repo)
-                    setActiveView('repo-detail')
-                  }}
-                />
-              </ErrorBoundary>
+              <div className="flex-1 min-w-0">
+                <ErrorBoundary>
+                  <RepoList
+                    repos={displayRepos}
+                    loading={loading || isSwitchingOrg}
+                    error={error}
+                    errorInfo={errorInfo}
+                    page={page}
+                    setPage={setPage}
+                    perPage={perPage}
+                    totalPages={totalPages}
+                    onRefresh={refresh}
+                    onQuickAction={handleQuickAction}
+                    onRepoClick={(repo) => {
+                      setSelectedRepoDetail(repo)
+                      setActiveView('repo-detail')
+                    }}
+                  />
+                </ErrorBoundary>
+              </div>
+
+              {user && (
+                <CollapsiblePanel
+                  side="right"
+                  mode={rightMode}
+                  expandedWidth={280}
+                  slimContent={
+                    <SlimSidebar
+                      selectedRepos={selectedRepos}
+                      onOpenImport={() => openModal('showImportWizard')}
+                    />
+                  }
+                >
+                  <Sidebar {...sidebarProps} />
+                </CollapsiblePanel>
+              )}
             </div>
 
-            {user && (
-              <aside id="sidebar-navigation" className="hidden xl:block w-80 flex-shrink-0">
-                <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar">
-                  <Sidebar {...sidebarProps} />
-                </div>
-              </aside>
-            )}
-          </div>
+            <AnimatePresence>
+              {orgOverlayOpen && leftMode === 'slim' && (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/20 z-20"
+                    onClick={() => setOrgOverlayOpen(false)}
+                  />
+                  <motion.div
+                    initial={{ x: -280 }}
+                    animate={{ x: 0 }}
+                    exit={{ x: -280 }}
+                    transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                    className="fixed left-[60px] z-30 w-[280px] rounded-3xl border border-slate-200/60 dark:border-slate-700/50 shadow-2xl bg-white dark:bg-slate-950 backdrop-blur-xl overflow-y-auto"
+                    style={{
+                      top: 'var(--header-height)',
+                      maxHeight: 'calc(100vh - var(--header-height) - 1rem)',
+                    }}
+                  >
+                    <OrgPanel
+                      orgs={orgs}
+                      selectedOrg={selectedOrg}
+                      onSelectOrg={(org) => {
+                        handleOrgSelect(org)
+                        setOrgOverlayOpen(false)
+                      }}
+                      user={user}
+                      stats={stats}
+                      onCreateOrg={handleOpenOrgManager}
+                    />
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </>
         )}
 
         {activeView === 'repo-detail' && user && selectedRepoDetail && (
@@ -677,9 +828,9 @@ function AppContent() {
         <>
           <button
             onClick={() => setDrawerOpen(true)}
-            className="xl:hidden fixed z-30 p-4 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-colors min-h-[56px] min-w-[56px] flex items-center justify-center safe-area-bottom safe-area-right"
+            className="md:hidden fixed z-30 p-4 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-colors min-h-[56px] min-w-[56px] flex items-center justify-center safe-area-bottom safe-area-right"
             style={{
-              bottom: 'calc(1.5rem + var(--safe-area-inset-bottom))',
+              bottom: 'calc(5rem + var(--safe-area-inset-bottom))',
               right: 'calc(1.5rem + var(--safe-area-inset-right))'
             }}
             aria-label="Open navigation menu"
@@ -689,6 +840,20 @@ function AppContent() {
 
           <MobileDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)}>
             <Sidebar {...sidebarProps} />
+          </MobileDrawer>
+
+          <MobileDrawer isOpen={orgDrawerOpen} onClose={() => setOrgDrawerOpen(false)} side="left">
+            <OrgPanel
+              orgs={orgs}
+              selectedOrg={selectedOrg}
+              onSelectOrg={(org) => {
+                handleOrgSelect(org)
+                setOrgDrawerOpen(false)
+              }}
+              user={user}
+              stats={stats}
+              onCreateOrg={handleOpenOrgManager}
+            />
           </MobileDrawer>
         </>
       )}
