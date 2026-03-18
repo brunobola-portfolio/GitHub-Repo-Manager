@@ -1,10 +1,5 @@
 @import "tailwindcss";
 
-/* Custom breakpoint for 3-column repo grid (only when sidebars + content have room) */
-@theme {
-	--breakpoint-3xl: 1800px;
-}
-
 /* Make Tailwind's `dark:` variant follow the `.dark` class on <html> (Tailwind v4) */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -14,6 +9,31 @@
 	--safe-area-inset-right: env(safe-area-inset-right, 0px);
 	--safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
 	--safe-area-inset-left: env(safe-area-inset-left, 0px);
+
+	/* Layout tokens (not ds-* design tokens — these are layout concerns) */
+	--header-height: 3.5rem;
+	--bottom-nav-height: 0px;
+	--card-min-width: 300px;
+}
+
+@media (max-width: 639px) {
+	:root {
+		--header-height: 3rem;
+		--bottom-nav-height: 4rem;
+		--card-min-width: 100%;
+	}
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+	:root {
+		--card-min-width: 280px;
+	}
+}
+
+@media (min-width: 1280px) {
+	:root {
+		--card-min-width: 320px;
+	}
 }
 
 @layer base {
