@@ -1,11 +1,10 @@
 
 import { useState, useRef, useEffect } from 'react'
 import {
-    Github, LogOut, RefreshCw, FlaskConical, LayoutDashboard, FolderGit2, Plus, Cloud,
+    Github, LogOut, RefreshCw, FlaskConical, LayoutDashboard, FolderGit2, Plus,
     Bell, Settings, User, ChevronDown, Building2, Shield, Users,
     CheckCircle2, AlertCircle, Sparkles, Moon, Sun, Wand2, Download, History, Menu
 } from 'lucide-react'
-import { Button } from './ui/Button'
 import { useTheme } from '../hooks/useTheme.jsx'
 
 export function Header({
@@ -68,21 +67,21 @@ export function Header({
                         <Menu className="w-5 h-5 text-slate-600 dark:text-slate-300" />
                       </button>
                     )}
-                    <div className="flex items-center gap-2.5 bg-slate-100 dark:bg-slate-950 p-[5px] pr-2.5 rounded-[14px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
-                        <div className="bg-gradient-to-br from-indigo-600 to-purple-600 p-2.5 rounded-[10px] shadow-lg shadow-indigo-500/25 dark:shadow-indigo-500/30 ds-btn-shimmer flex-shrink-0">
-                            <Github className="w-5 h-5 text-white" />
+                    <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-950 p-[5px] pr-3 rounded-[14px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
+                        <div className="bg-gradient-to-br from-indigo-600 to-purple-600 w-9 h-9 rounded-[10px] flex items-center justify-center shadow-md shadow-indigo-500/20 dark:shadow-indigo-500/25 ds-btn-shimmer flex-shrink-0">
+                            <Github className="w-[18px] h-[18px] text-white" strokeWidth={2} />
                         </div>
                         <div className="min-w-0 hidden sm:block">
-                            <h1 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-none ds-font-display truncate">
-                                <span className="hidden xs:inline">GitHub </span>Repo Manager
+                            <h1 className="text-[13px] font-bold text-slate-900 dark:text-slate-100 leading-none ds-font-display truncate">
+                                Repo Manager
                                 {isMockMode && (
-                                    <span className="inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full text-[10px] font-medium ml-1.5 flex-shrink-0">
+                                    <span className="inline-flex items-center gap-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full text-[9px] font-semibold ml-1.5 flex-shrink-0 uppercase tracking-wider">
                                         <FlaskConical className="w-2.5 h-2.5" />
                                         Demo
                                     </span>
                                 )}
                             </h1>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400">Organize & migrate</p>
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-none mt-0.5">Organize & migrate</p>
                         </div>
                     </div>
                 </div>
@@ -90,7 +89,7 @@ export function Header({
                 {/* Center: Navigation (desktop) */}
                 <div className="flex-1 flex justify-center min-w-0">
                     {user && (
-                        <nav className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-[5px] rounded-[14px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
+                        <nav className="hidden md:flex items-center gap-[3px] bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
                             <NavButton
                                 active={activeView === 'dashboard'}
                                 onClick={() => onViewChange?.('dashboard')}
@@ -118,26 +117,26 @@ export function Header({
                     {user ? (
                         <>
                             {/* Quick Actions Container */}
-                            <div className="hidden sm:flex items-center gap-0.5 bg-slate-100 dark:bg-slate-950 p-[5px] rounded-[14px] border border-slate-200/50 dark:border-slate-700/50">
+                            <div className="hidden sm:flex items-center gap-[3px] bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
                                 <HeaderIconButton onClick={onCreateRepo} label="Create new repository" title="New repo">
-                                    <Plus className="w-4 h-4" />
+                                    <Plus className="w-[15px] h-[15px]" />
                                 </HeaderIconButton>
                                 <HeaderIconButton onClick={onImport} label="Import Repository" title="Import">
-                                    <Download className="w-4 h-4" />
+                                    <Download className="w-[15px] h-[15px]" />
                                 </HeaderIconButton>
                                 <HeaderIconButton onClick={onOpenCommitGen} label="AI Commit Generator" title="AI Commit">
-                                    <Wand2 className="w-4 h-4" />
+                                    <Wand2 className="w-[15px] h-[15px]" />
                                 </HeaderIconButton>
                             </div>
 
                             {/* Utility Container */}
-                            <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-950 p-[5px] rounded-[14px] border border-slate-200/50 dark:border-slate-700/50">
+                            <div className="flex items-center gap-[3px] bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
                                 {/* Theme Toggle */}
                                 <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
 
                                 {/* Sync */}
                                 <HeaderIconButton onClick={handleSync} label="Sync organizations" disabled={syncing}>
-                                    <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+                                    <RefreshCw className={`w-[15px] h-[15px] ${syncing ? 'animate-spin' : ''}`} />
                                 </HeaderIconButton>
 
                                 {/* Notifications */}
@@ -149,7 +148,7 @@ export function Header({
                                         aria-haspopup="true"
                                         active={showNotifications}
                                     >
-                                        <Bell className="w-4 h-4" />
+                                        <Bell className="w-[15px] h-[15px]" />
                                         {syncStatus?.hasUpdates && (
                                             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-500 rounded-full ring-2 ring-slate-100 dark:ring-slate-950" />
                                         )}
@@ -168,7 +167,7 @@ export function Header({
                                     <button
                                         type="button"
                                         onClick={() => setShowUserMenu(!showUserMenu)}
-                                        className={`flex items-center gap-1.5 h-9 px-1.5 rounded-[10px] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                                        className={`flex items-center gap-1 h-[34px] px-1.5 rounded-[9px] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
                                             showUserMenu
                                                 ? 'bg-white dark:bg-slate-600 shadow-sm'
                                                 : 'hover:bg-white/80 dark:hover:bg-slate-700'
@@ -180,7 +179,7 @@ export function Header({
                                         <img
                                             src={user.avatar_url || 'https://github.com/ghost.png'}
                                             alt={user.login}
-                                            className="w-6 h-6 rounded-full ring-2 ring-slate-200/80 dark:ring-slate-500/50"
+                                            className="w-[26px] h-[26px] rounded-full ring-2 ring-slate-200/80 dark:ring-slate-500/50"
                                         />
                                         <ChevronDown className={`w-3 h-3 text-slate-400 dark:text-slate-500 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
                                     </button>
@@ -203,21 +202,21 @@ export function Header({
                     ) : (
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                             {/* Theme + Login unified container */}
-                            <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-950 p-[5px] rounded-[14px] border border-slate-200/50 dark:border-slate-700/50">
+                            <div className="flex items-center gap-[3px] bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
                                 <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
                                 <button
                                     type="button"
                                     onClick={onLogin}
-                                    className="flex items-center gap-2 h-9 px-3.5 rounded-[10px]
+                                    className="flex items-center gap-1.5 h-[34px] px-3 sm:px-3.5 rounded-[9px]
                                         bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500
-                                        text-white text-sm font-semibold
+                                        text-white text-[13px] font-semibold
                                         shadow-sm shadow-indigo-500/25
                                         hover:shadow-md hover:shadow-indigo-500/30
                                         active:scale-[0.97] transition-all duration-200
                                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
                                         ds-btn-shimmer"
                                 >
-                                    <Github className="w-4 h-4" />
+                                    <Github className="w-[15px] h-[15px]" />
                                     <span className="hidden sm:inline">Login with GitHub</span>
                                     <span className="sm:hidden">Login</span>
                                 </button>
@@ -270,7 +269,7 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
             type="button"
             onClick={toggleTheme}
             aria-pressed={isDark}
-            className={`relative flex items-center gap-1.5 rounded-[10px] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 h-9 px-2.5 sm:px-3 ${
+            className={`relative flex items-center gap-1.5 rounded-[9px] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 h-[34px] px-2.5 ${
                 isDark
                     ? 'bg-slate-600/80 text-amber-300 hover:bg-slate-500/80 hover:text-amber-200'
                     : 'bg-white text-indigo-600 shadow-sm hover:bg-indigo-50 hover:text-indigo-700'
@@ -278,11 +277,11 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
             title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
-            <span className="relative w-4 h-4">
-                <Sun className={`w-4 h-4 absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-50'}`} />
-                <Moon className={`w-4 h-4 absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-0 -rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'}`} />
+            <span className="relative w-[15px] h-[15px]" aria-hidden="true">
+                <Sun className={`w-[15px] h-[15px] absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-50'}`} />
+                <Moon className={`w-[15px] h-[15px] absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-0 -rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'}`} />
             </span>
-            <span className="hidden sm:inline text-xs font-semibold tracking-wide">
+            <span className="hidden sm:inline text-[12px] font-semibold tracking-wide">
                 {isDark ? 'Dark' : 'Light'}
             </span>
         </button>
@@ -296,7 +295,7 @@ function HeaderIconButton({ onClick, label, title, children, disabled, active, .
             type="button"
             onClick={onClick}
             disabled={disabled}
-            className={`relative w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-200
+            className={`relative w-[34px] h-[34px] rounded-[9px] flex items-center justify-center transition-all duration-200
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
                 disabled:opacity-40 disabled:cursor-not-allowed
                 ${active
@@ -320,12 +319,12 @@ function NavButton({ active, onClick, icon, label }) {
             type="button"
             onClick={onClick}
             aria-current={active ? 'page' : undefined}
-            className={`flex items-center gap-2 px-4 py-2 rounded-[10px] text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ds-font-display ${active
+            className={`flex items-center gap-1.5 px-3.5 h-[34px] rounded-[9px] text-[13px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ds-font-display ${active
                 ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-600/40'
                 }`}
         >
-            {IconComponent && <IconComponent className="w-4 h-4" />}
+            {IconComponent && <IconComponent className="w-[15px] h-[15px]" />}
             {label}
         </button>
     )
@@ -379,7 +378,7 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
             <div className="p-2">
                 <MenuButton icon={User} onClick={() => window.open(`https://github.com/${user.login}`, '_blank')}>
                     View Profile
-                </MenuButton >
+                </MenuButton>
                 <MenuButton icon={Building2} onClick={() => window.open('https://github.com/organizations/plan', '_blank')}>
                     Create Organization
                 </MenuButton>
@@ -397,8 +396,8 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
                         Logout
                     </MenuButton>
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     )
 }
 
