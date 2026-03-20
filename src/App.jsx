@@ -10,7 +10,7 @@ import { ToastContainer } from './components/ui/Toast'
 import { useToast } from './hooks/useToast'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
-import { onSessionExpired, resetSessionExpired } from './utils/api'
+import { onSessionExpired, resetSessionExpired, fetchWithRetry, safeParseJson } from './utils/api'
 import { SelectionProvider } from './contexts/SelectionContext'
 import { ModalProvider } from './contexts/ModalContext'
 import { useSelection } from './hooks/useSelection'
@@ -21,6 +21,8 @@ import CollapsiblePanel from './components/ui/CollapsiblePanel'
 import { SlimSidebar } from './components/Sidebar'
 import { Menu, Building2, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { WelcomeHero } from './components/WelcomeHero'
+import { SessionBanner } from './components/SessionBanner'
 
 // Lazy load heavy route components for code splitting
 const DashboardPremium = lazy(() => import('./components/Dashboard/DashboardPremium').then(m => ({ default: m.DashboardPremium })))
@@ -143,18 +145,17 @@ function AppContent() {
 
   const checkSystemStatus = async () => {
     try {
-      const res = await fetch('/api/system/status')
-      const data = await res.json()
+      const res = await fetchWithRetry('/api/system/status', { credentials: 'include' })
+      const data = await safeParseJson(res)
       setSystemInitialized(data.initialized)
       if (data.initialized) {
         checkAuth()
       } else {
         setAppLoading(false)
       }
-    } catch (e) {
-      console.error("Failed to check system status", e)
-      setSystemInitialized(true)
-      checkAuth()
+    } catch {
+      setSystemInitialized(false)
+      setAppLoading(false)
     }
   }
 
@@ -169,16 +170,14 @@ function AppContent() {
         return
       }
 
-      const res = await fetch('/api/auth/session')
-      if (res.ok) {
-        const data = await res.json()
-        setSession(data)
-        if (data.authenticated) {
-          fetchGitHubUser()
-        }
+      const res = await fetchWithRetry('/api/auth/session', { credentials: 'include' }, { maxRetries: 1 })
+      const data = await safeParseJson(res)
+      setSession(data)
+      if (data.authenticated) {
+        fetchGitHubUser()
       }
-    } catch (err) {
-      console.error('Auth check failed', err)
+    } catch {
+      // Server unavailable or not authenticated — both are fine, user sees login
     } finally {
       setAppLoading(false)
     }
@@ -496,43 +495,15 @@ function AppContent() {
       />
 
       {/* Session expired banner */}
-      {sessionExpired && (
-        <div className="bg-amber-50 dark:bg-amber-950/50 border-b border-amber-200 dark:border-amber-800">
-          <div className="max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 py-3 flex items-center justify-between gap-4">
-            <p className="text-amber-800 dark:text-amber-200 text-sm font-medium">
-              Your session has expired. Please login again to continue.
-            </p>
-            <button
-              onClick={handleLogin}
-              className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors shrink-0"
-            >
-              Login Again
-            </button>
-          </div>
-        </div>
-      )}
+      <SessionBanner
+        visible={sessionExpired}
+        onLogin={handleLogin}
+        onDismiss={() => setSessionExpired(false)}
+      />
 
       <main id="main-content" className="max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 pt-3 md:pt-4 lg:pt-5 pb-20 md:pb-6 transition-all duration-300 relative z-[1]">
         {!user && activeView === 'dashboard' && (
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in zoom-in duration-500">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-3xl mb-6 sm:mb-8 flex items-center justify-center shadow-2xl shadow-indigo-500/30 dark:shadow-indigo-900/40">
-              <svg className="w-10 h-10 sm:w-12 sm:h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-            <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white mb-4 sm:mb-6 tracking-tight ds-font-display">
-              GitHub <span className="ds-gradient-text-premium">Repo Manager</span>
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-base sm:text-xl max-w-lg mb-8 sm:mb-10 leading-relaxed ds-font-display">
-              Manage your teams, assign repositories, and monitor workflows with a premium local-first experience.
-            </p>
-            <button
-              onClick={handleLogin}
-              className="px-8 sm:px-10 py-3.5 sm:py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-2xl font-bold text-base sm:text-lg hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-500/25 hover:shadow-2xl hover:shadow-indigo-500/40 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus:outline-none ds-btn-shimmer"
-            >
-              Get Started
-            </button>
-          </div>
+          <WelcomeHero onLogin={handleLogin} />
         )}
 
         {activeView === 'dashboard' && user && (
