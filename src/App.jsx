@@ -170,14 +170,21 @@ function AppContent() {
         return
       }
 
-      const res = await fetchWithRetry('/api/auth/session', { credentials: 'include' }, { maxRetries: 1 })
-      const data = await safeParseJson(res)
-      setSession(data)
-      if (data.authenticated) {
-        fetchGitHubUser()
+      // Use raw fetch here — a 401 means "not logged in", NOT "session expired".
+      // fetchWithRetry would trigger notifySessionExpired on 401, showing the
+      // expiry banner even when the user simply hasn't logged in yet.
+      const res = await fetch('/api/auth/session', { credentials: 'include' })
+      if (res.ok) {
+        const data = await res.json().catch(() => null)
+        if (data) {
+          setSession(data)
+          if (data.authenticated) {
+            fetchGitHubUser()
+          }
+        }
       }
     } catch {
-      // Server unavailable or not authenticated — both are fine, user sees login
+      // Server unavailable — user sees login screen
     } finally {
       setAppLoading(false)
     }
