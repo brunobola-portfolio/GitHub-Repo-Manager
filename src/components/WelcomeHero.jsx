@@ -50,7 +50,7 @@ export function WelcomeHero({ onLogin }) {
         >
           <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-[1.75rem] bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-400 p-[2px] shadow-2xl shadow-indigo-500/30 dark:shadow-indigo-500/20">
             <div className="w-full h-full rounded-[1.65rem] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl flex items-center justify-center">
-              <Github className="w-11 h-11 sm:w-13 sm:h-13 text-indigo-600 dark:text-indigo-400" strokeWidth={1.5} />
+              <Github className="w-11 h-11 sm:w-14 sm:h-14 text-indigo-600 dark:text-indigo-400" strokeWidth={1.5} />
             </div>
           </div>
           {/* Pulsing ring */}
@@ -92,9 +92,10 @@ export function WelcomeHero({ onLogin }) {
             onClick={onLogin}
             className="group relative px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl font-bold text-base sm:text-lg text-white
               bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]
-              hover:bg-right transition-[background-position] duration-500
+              hover:bg-right
               shadow-xl shadow-indigo-500/25 hover:shadow-2xl hover:shadow-indigo-500/40
-              hover:scale-[1.04] active:scale-[0.97] transition-all
+              hover:scale-[1.04] active:scale-[0.97]
+              transition-all duration-500
               focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 dark:focus-visible:ring-offset-slate-950 focus:outline-none
               ds-btn-shimmer"
           >

@@ -485,7 +485,6 @@ function AppContent() {
         isMockMode={isMockMode}
         onLogin={handleLogin}
         onLogout={handleLogout}
-        onCheck={fetchGitHubUser}
         activeView={activeView}
         onViewChange={setActiveView}
         onRefreshOrgs={handleRefreshOrgs}
