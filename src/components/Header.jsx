@@ -119,32 +119,15 @@ export function Header({
                         <>
                             {/* Quick Actions Container */}
                             <div className="hidden sm:flex items-center gap-0.5 bg-slate-100 dark:bg-slate-950 p-[5px] rounded-[14px] border border-slate-200/50 dark:border-slate-700/50">
-                                <button
-                                    type="button"
-                                    onClick={onCreateRepo}
-                                    className="w-11 h-11 sm:w-9 sm:h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                                    aria-label="Create new repository"
-                                >
+                                <HeaderIconButton onClick={onCreateRepo} label="Create new repository" title="New repo">
                                     <Plus className="w-4 h-4" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={onImport}
-                                    className="w-11 h-11 sm:w-9 sm:h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                                    title="Import Repository"
-                                    aria-label="Import Repository"
-                                >
+                                </HeaderIconButton>
+                                <HeaderIconButton onClick={onImport} label="Import Repository" title="Import">
                                     <Download className="w-4 h-4" />
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={onOpenCommitGen}
-                                    className="w-11 h-11 sm:w-9 sm:h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                                    title="AI Commit Generator"
-                                    aria-label="AI Commit Generator"
-                                >
+                                </HeaderIconButton>
+                                <HeaderIconButton onClick={onOpenCommitGen} label="AI Commit Generator" title="AI Commit">
                                     <Wand2 className="w-4 h-4" />
-                                </button>
+                                </HeaderIconButton>
                             </div>
 
                             {/* Utility Container */}
@@ -153,32 +136,24 @@ export function Header({
                                 <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
 
                                 {/* Sync */}
-                                <button
-                                    type="button"
-                                    onClick={handleSync}
-                                    disabled={syncing}
-                                    className="w-11 h-11 sm:w-9 sm:h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                                    title="Sync organizations"
-                                    aria-label="Sync organizations"
-                                >
+                                <HeaderIconButton onClick={handleSync} label="Sync organizations" disabled={syncing}>
                                     <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-                                </button>
+                                </HeaderIconButton>
 
                                 {/* Notifications */}
                                 <div className="relative" ref={notifRef}>
-                                    <button
-                                        type="button"
+                                    <HeaderIconButton
                                         onClick={() => setShowNotifications(!showNotifications)}
-                                        className="w-11 h-11 sm:w-9 sm:h-9 rounded-[10px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100 transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-                                        aria-label={showNotifications ? 'Hide notifications' : 'Show notifications'}
+                                        label={showNotifications ? 'Hide notifications' : 'Show notifications'}
                                         aria-expanded={showNotifications}
                                         aria-haspopup="true"
+                                        active={showNotifications}
                                     >
                                         <Bell className="w-4 h-4" />
                                         {syncStatus?.hasUpdates && (
-                                            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-indigo-500 rounded-full" />
+                                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-500 rounded-full ring-2 ring-slate-100 dark:ring-slate-950" />
                                         )}
-                                    </button>
+                                    </HeaderIconButton>
 
                                     {showNotifications && (
                                         <NotificationsDropdown
@@ -193,7 +168,11 @@ export function Header({
                                     <button
                                         type="button"
                                         onClick={() => setShowUserMenu(!showUserMenu)}
-                                        className="flex items-center gap-1.5 px-1 py-1 rounded-[10px] hover:bg-white/80 dark:hover:bg-slate-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                        className={`flex items-center gap-1.5 h-9 px-1.5 rounded-[10px] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                                            showUserMenu
+                                                ? 'bg-white dark:bg-slate-600 shadow-sm'
+                                                : 'hover:bg-white/80 dark:hover:bg-slate-700'
+                                        }`}
                                         aria-label={showUserMenu ? 'Close user menu' : 'Open user menu'}
                                         aria-haspopup="true"
                                         aria-expanded={showUserMenu}
@@ -201,9 +180,9 @@ export function Header({
                                         <img
                                             src={user.avatar_url || 'https://github.com/ghost.png'}
                                             alt={user.login}
-                                            className="w-7 h-7 rounded-full ring-2 ring-slate-200 dark:ring-slate-600"
+                                            className="w-6 h-6 rounded-full ring-2 ring-slate-200/80 dark:ring-slate-500/50"
                                         />
-                                        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 dark:text-slate-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+                                        <ChevronDown className={`w-3 h-3 text-slate-400 dark:text-slate-500 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
                                     </button>
 
                                     {showUserMenu && (
@@ -223,15 +202,26 @@ export function Header({
                         </>
                     ) : (
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                            {/* Theme Toggle for non-logged in users */}
-                            <div className="flex items-center bg-slate-100 dark:bg-slate-950 p-[5px] rounded-[14px] border border-slate-200/50 dark:border-slate-700/50">
+                            {/* Theme + Login unified container */}
+                            <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-950 p-[5px] rounded-[14px] border border-slate-200/50 dark:border-slate-700/50">
                                 <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
+                                <button
+                                    type="button"
+                                    onClick={onLogin}
+                                    className="flex items-center gap-2 h-9 px-3.5 rounded-[10px]
+                                        bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500
+                                        text-white text-sm font-semibold
+                                        shadow-sm shadow-indigo-500/25
+                                        hover:shadow-md hover:shadow-indigo-500/30
+                                        active:scale-[0.97] transition-all duration-200
+                                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
+                                        ds-btn-shimmer"
+                                >
+                                    <Github className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Login with GitHub</span>
+                                    <span className="sm:hidden">Login</span>
+                                </button>
                             </div>
-                            <Button variant="primary" size="sm" onClick={onLogin}>
-                                <Github className="w-4 h-4 sm:mr-1" />
-                                <span className="hidden sm:inline">Login with GitHub</span>
-                                <span className="sm:hidden">Login</span>
-                            </Button>
                         </div>
                     )}
                 </div>
@@ -280,18 +270,44 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
             type="button"
             onClick={toggleTheme}
             aria-pressed={isDark}
-            className={`flex items-center gap-1.5 rounded-[10px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+            className={`relative flex items-center gap-1.5 rounded-[10px] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 h-9 px-2.5 sm:px-3 ${
                 isDark
-                    ? 'bg-white/10 dark:bg-slate-600 text-slate-100'
-                    : 'bg-white text-slate-800 shadow-sm'
-            } h-11 sm:h-9 px-2.5 sm:px-3`}
+                    ? 'bg-slate-600/80 text-amber-300 hover:bg-slate-500/80 hover:text-amber-200'
+                    : 'bg-white text-indigo-600 shadow-sm hover:bg-indigo-50 hover:text-indigo-700'
+            }`}
             title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            <span className="hidden sm:inline text-xs font-medium">
-                {isDark ? 'Dark mode' : 'Light mode'}
+            <span className="relative w-4 h-4">
+                <Sun className={`w-4 h-4 absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-50'}`} />
+                <Moon className={`w-4 h-4 absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-0 -rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'}`} />
             </span>
+            <span className="hidden sm:inline text-xs font-semibold tracking-wide">
+                {isDark ? 'Dark' : 'Light'}
+            </span>
+        </button>
+    )
+}
+
+// Shared icon button for header actions
+function HeaderIconButton({ onClick, label, title, children, disabled, active, ...rest }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            disabled={disabled}
+            className={`relative w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-200
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
+                disabled:opacity-40 disabled:cursor-not-allowed
+                ${active
+                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100'
+                }`}
+            title={title}
+            aria-label={label}
+            {...rest}
+        >
+            {children}
         </button>
     )
 }
