@@ -201,6 +201,7 @@ describe('MigrationEngine', () => {
   })
 
   afterEach(() => {
+    engine.destroy()
     db.close()
   })
 
@@ -607,6 +608,40 @@ describe('MigrationEngine', () => {
       db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('running', planId)
       engine.cancelPlan(planId)
       expect(engine._isCancelled(planId)).toBe(true)
+    })
+  })
+
+  describe('scheduling', () => {
+    it('clears credentials older than 48 hours', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      db.prepare(
+        `UPDATE migration_plans SET credentials_enc = 'encrypted', created_at = datetime('now', '-49 hours') WHERE id = ?`
+      ).run(planId)
+      engine._runCredentialCleanup()
+      const plan = db.prepare('SELECT credentials_enc FROM migration_plans WHERE id = ?').get(planId)
+      expect(plan.credentials_enc).toBeNull()
+    })
+
+    it('does not clear credentials younger than 48 hours', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      db.prepare(
+        `UPDATE migration_plans SET credentials_enc = 'encrypted' WHERE id = ?`
+      ).run(planId)
+      engine._runCredentialCleanup()
+      const plan = db.prepare('SELECT credentials_enc FROM migration_plans WHERE id = ?').get(planId)
+      expect(plan.credentials_enc).toBe('encrypted')
+    })
+
+    it('destroy cleans up intervals', () => {
+      // Should not throw
+      engine.destroy()
+      engine.destroy() // idempotent
     })
   })
 })
