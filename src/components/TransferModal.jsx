@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { ArrowRight, Building2, GitFork, X, AlertTriangle, ArrowRightLeft, Copy, Loader2, CheckCircle2 } from 'lucide-react'
 import { Button } from './ui/Button'
 import { ProgressBar } from './ui/ProgressBar'
@@ -67,6 +67,8 @@ export function TransferModal({
 				if (!cancelled && resp.ok) {
 					const data = await resp.json()
 					setConflicts(data.conflicts || {})
+				} else if (!cancelled) {
+					console.warn("Conflict check failed:", resp.status)
 				}
 			} catch {
 				// Silently fail — transfer will still catch conflicts at execution time

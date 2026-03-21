@@ -37,10 +37,12 @@ export const bulkDeleteSchema = z.object({
     repos: z.array(z.string().min(1).max(200)).min(1).max(100)
 });
 
-const strategySchema = z.object({
-    action: z.enum(['transfer', 'replace', 'rename', 'skip']),
-    newName: z.string().min(1).max(100).optional()
-});
+const strategySchema = z.discriminatedUnion('action', [
+    z.object({ action: z.literal('transfer') }),
+    z.object({ action: z.literal('replace') }),
+    z.object({ action: z.literal('rename'), newName: z.string().min(1).max(100) }),
+    z.object({ action: z.literal('skip') }),
+])
 
 export const bulkTransferSchema = z.object({
     repos: z.array(z.string().min(1).max(200)).min(1).max(100),
