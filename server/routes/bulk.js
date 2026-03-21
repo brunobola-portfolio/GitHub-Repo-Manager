@@ -78,14 +78,8 @@ router.post('/transfer/check-conflicts', requireAuth, validate(checkConflictsSch
     await Promise.all(repos.map(async (repoFullName) => {
         const repoName = repoFullName.split('/').pop()
         try {
-            // Check if repo with same name exists in target org
             const { data: targetRepo } = await githubApi(
                 `/repos/${encodeURIComponent(targetOrg)}/${encodeURIComponent(repoName)}`,
-                req.session.accessToken
-            )
-            // Also fetch source repo metadata for comparison
-            const { data: sourceRepo } = await githubApi(
-                `/repos/${repoFullName}`,
                 req.session.accessToken
             )
 
@@ -102,9 +96,21 @@ router.post('/transfer/check-conflicts', requireAuth, validate(checkConflictsSch
                 open_issues_count: r.open_issues_count
             })
 
+            // Target exists — try to fetch source for comparison
+            let sourceData = null
+            try {
+                const { data: sourceRepo } = await githubApi(
+                    `/repos/${repoFullName}`,
+                    req.session.accessToken
+                )
+                sourceData = pick(sourceRepo)
+            } catch {
+                // Source inaccessible but target exists — still a conflict
+            }
+
             conflicts[repoName] = {
                 exists: true,
-                source: pick(sourceRepo),
+                source: sourceData,
                 target: pick(targetRepo)
             }
         } catch (error) {

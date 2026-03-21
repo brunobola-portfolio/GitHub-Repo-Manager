@@ -61,4 +61,12 @@ describe('ConflictPanel', () => {
         fireEvent.click(screen.getByRole('button', { name: /confirm rename/i }))
         expect(onResolve).toHaveBeenCalledWith({ action: 'rename', newName: 'repo-new' })
     })
+
+    it('shows resolved state and allows changing resolution', () => {
+        const onResolve = vi.fn()
+        render(<ConflictPanel conflict={mockConflict} repoName="repo" resolution={{ action: 'skip' }} onResolve={onResolve} />)
+        expect(screen.getByText(/will skip/i)).toBeInTheDocument()
+        fireEvent.click(screen.getByRole('button', { name: /change/i }))
+        expect(onResolve).toHaveBeenCalledWith(null)
+    })
 })
