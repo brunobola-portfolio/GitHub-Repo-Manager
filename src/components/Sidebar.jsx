@@ -430,6 +430,15 @@ function ActionHistory({ results, isPerforming, message }) {
                                         <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
                                             {r.message}
                                         </div>
+                                        {!r.success && r.details?.length > 0 && (
+                                            <div className="mt-1 space-y-0.5">
+                                                {r.details.map((d, j) => (
+                                                    <div key={j} className="text-[10px] text-red-500/80 dark:text-red-400/70 leading-tight">
+                                                        {d.field ? `${d.field}: ` : ''}{d.message}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

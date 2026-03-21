@@ -13,9 +13,25 @@ import { ApiError, ErrorType } from './api'
  */
 export function getErrorInfo(error) {
     if (error instanceof ApiError) {
+        // Use server-provided message if more specific than the generic one
+        const serverMessage = error.data?.error || error.data?.message
+        const detailMessages = error.data?.details?.map(d => d.message).join('; ')
+
+        // Also extract per-repo errors from bulk operation results
+        const bulkResults = error.data?.results
+        const failedResults = Array.isArray(bulkResults)
+            ? bulkResults.filter(r => r && r.success === false)
+            : []
+        const bulkDetails = failedResults.length > 0
+            ? failedResults.map(r => ({ field: r.repo, message: r.error || 'Operation failed' }))
+            : null
+
+        const specificMessage = detailMessages || serverMessage
+
         return {
             type: error.type,
-            message: error.userMessage,
+            message: specificMessage || error.userMessage,
+            details: error.data?.details || bulkDetails || null,
             isRetryable: error.isRetryable,
             status: error.status
         }

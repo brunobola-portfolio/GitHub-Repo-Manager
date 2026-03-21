@@ -293,6 +293,7 @@ export function useRepos(user) {
                 at: new Date().toISOString(),
                 action,
                 message: info.message,
+                details: info.details || null,
                 success: false,
                 errorType: info.type
             }
@@ -369,7 +370,7 @@ export function useRepos(user) {
             const info = getErrorInfo(e)
             setMessage(info.message)
             setErrorInfo(info)
-            const entry = { at: new Date().toISOString(), action: 'archive', message: info.message, success: false, errorType: info.type }
+            const entry = { at: new Date().toISOString(), action: 'archive', message: info.message, details: info.details || null, success: false, errorType: info.type }
             setResults(prev => [entry, ...prev])
             throw new Error(info.message)
         } finally {
@@ -418,7 +419,7 @@ export function useRepos(user) {
             const info = getErrorInfo(e)
             setMessage(info.message)
             setErrorInfo(info)
-            const entry = { at: new Date().toISOString(), action: 'delete', message: info.message, success: false, errorType: info.type }
+            const entry = { at: new Date().toISOString(), action: 'delete', message: info.message, details: info.details || null, success: false, errorType: info.type }
             setResults(prev => [entry, ...prev])
             throw new Error(info.message)
         } finally {
