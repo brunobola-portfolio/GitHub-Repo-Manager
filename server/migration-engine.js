@@ -194,8 +194,8 @@ export class MigrationEngine extends EventEmitter {
     ).all(planId)
 
     // Concurrency limits by type
-    const maxConcurrency = { repo: 2, 'work-items': 1, wiki: 1 }
-    const runningByType = { repo: 0, 'work-items': 0, wiki: 0 }
+    const maxConcurrency = { repo: 2, 'repo-tfvc': 1, 'work-items': 1, wiki: 1 }
+    const runningByType = { repo: 0, 'repo-tfvc': 0, 'work-items': 0, wiki: 0 }
 
     // Process all tasks with concurrency control
     const taskQueue = [...tasks]
