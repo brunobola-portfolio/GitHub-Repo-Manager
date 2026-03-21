@@ -28,7 +28,7 @@ function createTestDb() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS migration_plans (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL REFERENCES users(id),
+      user_id INTEGER NOT NULL,
       status TEXT NOT NULL DEFAULT 'draft',
       source_type TEXT NOT NULL DEFAULT 'azure',
       source_org TEXT NOT NULL,
@@ -42,7 +42,8 @@ function createTestDb() {
       ai_analysis TEXT,
       summary TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `)
 
@@ -54,7 +55,7 @@ function createTestDb() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS migration_tasks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      plan_id INTEGER NOT NULL REFERENCES migration_plans(id),
+      plan_id INTEGER NOT NULL,
       type TEXT NOT NULL,
       execution_order INTEGER NOT NULL DEFAULT 0,
       source_ref TEXT NOT NULL,
@@ -69,7 +70,8 @@ function createTestDb() {
       started_at TEXT,
       completed_at TEXT,
       metadata TEXT,
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (plan_id) REFERENCES migration_plans(id) ON DELETE CASCADE
     )
   `)
 
@@ -107,6 +109,10 @@ describe('migration_plans schema', () => {
     expect(columns).toContain('credentials_enc')
     expect(columns).toContain('ai_analysis')
     expect(columns).toContain('summary')
+    expect(columns).toContain('started_at')
+    expect(columns).toContain('completed_at')
+    expect(columns).toContain('created_at')
+    expect(columns).toContain('updated_at')
   })
 
   it('creates migration_tasks table with all columns', () => {
@@ -120,12 +126,21 @@ describe('migration_plans schema', () => {
     expect(columns).toContain('progress_pct')
     expect(columns).toContain('retries')
     expect(columns).toContain('max_retries')
+    expect(columns).toContain('source_ref')
+    expect(columns).toContain('target_ref')
+    expect(columns).toContain('progress_message')
+    expect(columns).toContain('error_message')
+    expect(columns).toContain('started_at')
+    expect(columns).toContain('completed_at')
+    expect(columns).toContain('metadata')
+    expect(columns).toContain('created_at')
+    expect(columns).toContain('status')
   })
 
   it('enforces foreign key from tasks to plans', () => {
     expect(() => {
       db.prepare('INSERT INTO migration_tasks (plan_id, type, source_ref) VALUES (999, ?, ?)').run('repo', 'test')
-    }).toThrow()
+    }).toThrow(/FOREIGN KEY constraint failed/)
   })
 
   it('defaults status to draft for plans', () => {
@@ -164,7 +179,7 @@ describe('migration_plans schema', () => {
   it('enforces foreign key from plans to users', () => {
     expect(() => {
       db.prepare('INSERT INTO migration_plans (user_id, source_org, source_project) VALUES (999, ?, ?)').run('org', 'proj')
-    }).toThrow()
+    }).toThrow(/FOREIGN KEY constraint failed/)
   })
 
   it('sets created_at and updated_at timestamps automatically', () => {

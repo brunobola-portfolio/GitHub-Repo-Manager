@@ -233,7 +233,7 @@ export function initDB() {
         db.exec(`
             CREATE TABLE IF NOT EXISTS migration_plans (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL REFERENCES users(id),
+                user_id INTEGER NOT NULL,
                 status TEXT NOT NULL DEFAULT 'draft',
                 source_type TEXT NOT NULL DEFAULT 'azure',
                 source_org TEXT NOT NULL,
@@ -247,7 +247,8 @@ export function initDB() {
                 ai_analysis TEXT,
                 summary TEXT,
                 created_at TEXT NOT NULL DEFAULT (datetime('now')),
-                updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
         `);
 
@@ -259,7 +260,7 @@ export function initDB() {
         db.exec(`
             CREATE TABLE IF NOT EXISTS migration_tasks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                plan_id INTEGER NOT NULL REFERENCES migration_plans(id),
+                plan_id INTEGER NOT NULL,
                 type TEXT NOT NULL,
                 execution_order INTEGER NOT NULL DEFAULT 0,
                 source_ref TEXT NOT NULL,
@@ -274,7 +275,8 @@ export function initDB() {
                 started_at TEXT,
                 completed_at TEXT,
                 metadata TEXT,
-                created_at TEXT NOT NULL DEFAULT (datetime('now'))
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (plan_id) REFERENCES migration_plans(id) ON DELETE CASCADE
             )
         `);
 
