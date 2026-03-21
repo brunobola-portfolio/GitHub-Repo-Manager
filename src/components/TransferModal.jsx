@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
-import { ArrowRight, Building2, GitFork, X, AlertTriangle, ArrowRightLeft, Copy } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { ArrowRight, Building2, GitFork, X, AlertTriangle, ArrowRightLeft, Copy, Loader2, CheckCircle2 } from 'lucide-react'
 import { Button } from './ui/Button'
 import { ProgressBar } from './ui/ProgressBar'
 import { useFocusTrap } from '../hooks/useFocusTrap'
+import { ConflictPanel } from './ConflictPanel'
+import { API_ENDPOINTS } from '../config'
 
 export function TransferModal({
 	isOpen,
@@ -17,6 +19,9 @@ export function TransferModal({
 	const [targetOrg, setTargetOrg] = useState('')
 	const [action, setAction] = useState('transfer') // 'transfer' | 'mirror'
 	const [formError, setFormError] = useState('')
+	const [conflicts, setConflicts] = useState(null) // null = unchecked, {} = checked
+	const [checkingConflicts, setCheckingConflicts] = useState(false)
+	const [resolutions, setResolutions] = useState({}) // { repoName: { action, newName? } }
 	const modalRef = useFocusTrap(isOpen, onClose)
 
 	// Scroll input into view when keyboard appears (mobile fix)
@@ -36,6 +41,43 @@ export function TransferModal({
 		return () => modal?.removeEventListener('focusin', handleFocus)
 	}, [isOpen, modalRef])
 
+	// Check conflicts when targetOrg changes (transfer mode only)
+	useEffect(() => {
+		if (!targetOrg || !repos.length || action !== 'transfer') {
+			setConflicts(null)
+			setResolutions({})
+			return
+		}
+
+		let cancelled = false
+		async function checkConflicts() {
+			setCheckingConflicts(true)
+			setConflicts(null)
+			setResolutions({})
+			try {
+				const resp = await fetch(API_ENDPOINTS.checkConflicts, {
+					method: 'POST',
+					credentials: 'include',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						repos: repos.map(r => r.full_name),
+						targetOrg
+					})
+				})
+				if (!cancelled && resp.ok) {
+					const data = await resp.json()
+					setConflicts(data.conflicts || {})
+				}
+			} catch {
+				// Silently fail — transfer will still catch conflicts at execution time
+			} finally {
+				if (!cancelled) setCheckingConflicts(false)
+			}
+		}
+		checkConflicts()
+		return () => { cancelled = true }
+	}, [targetOrg, repos, action])
+
 	if (!isOpen) return null
 
 	// Detect if all selected repos belong to the same owner as the target
@@ -51,15 +93,35 @@ export function TransferModal({
 			setFormError('Cannot transfer repositories to their current owner')
 			return
 		}
+
+		// Check all conflicts are resolved
+		if (conflicts) {
+			const unresolvedConflicts = repos.filter(r => conflicts[r.name]?.exists && !resolutions[r.name])
+			if (unresolvedConflicts.length > 0) {
+				setFormError(`Resolve ${unresolvedConflicts.length} conflict(s) before transferring`)
+				return
+			}
+		}
+
 		setFormError('')
+
+		// Build strategies map from resolutions (keyed by full_name)
+		const strategies = {}
+		for (const repo of repos) {
+			const resolution = resolutions[repo.name]
+			if (resolution) {
+				strategies[repo.full_name] = resolution
+			}
+		}
+
 		if (action === 'transfer') {
-			onTransfer?.(repos.map(r => r.full_name), targetOrg)
+			onTransfer?.(repos.map(r => r.full_name), targetOrg, strategies)
 		} else {
 			onMirror?.(repos.map(r => r.full_name), targetOrg)
 		}
 	}
 
-		    return (
+	    return (
 	        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4">
             <div
                 ref={modalRef}
@@ -201,27 +263,59 @@ export function TransferModal({
 	                        )}
                     </div>
 
-                    {/* Repository Preview */}
+                    {/* Repository Preview with Conflict Status */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                             Repositories to {action === 'transfer' ? 'Transfer' : 'Mirror'}
                         </label>
-                        <div className="max-h-40 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-700">
-                            {repos.map(repo => (
-                                <div key={repo.id} className="flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                                    <GitFork className="w-4 h-4 text-slate-400 dark:text-slate-500" />
-                                    <div className="flex-1 min-w-0">
-                                        <div className="font-medium text-slate-900 dark:text-slate-100 truncate">{repo.name}</div>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{repo.full_name}</div>
-                                    </div>
-                                    {targetOrg && (
-                                        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                                            <ArrowRight className="w-4 h-4" />
-                                            <span className="text-indigo-600 dark:text-indigo-400 font-medium">{targetOrg}/{repo.name}</span>
+                        <div className="max-h-60 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-700">
+                            {repos.map(repo => {
+                                const conflict = conflicts?.[repo.name]
+                                const hasConflict = conflict?.exists === true
+                                const resolution = resolutions[repo.name]
+
+                                return (
+                                    <div key={repo.id} className="p-3">
+                                        <div className="flex items-center gap-3">
+                                            {checkingConflicts ? (
+                                                <Loader2 className="w-4 h-4 text-slate-400 animate-spin shrink-0" />
+                                            ) : hasConflict ? (
+                                                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                                            ) : conflicts ? (
+                                                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                                            ) : (
+                                                <GitFork className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
+                                            )}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-medium text-slate-900 dark:text-slate-100 truncate">{repo.name}</div>
+                                                <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{repo.full_name}</div>
+                                            </div>
+                                            {targetOrg && !hasConflict && (
+                                                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                                                    <ArrowRight className="w-4 h-4" />
+                                                    <span className="text-indigo-600 dark:text-indigo-400 font-medium">{targetOrg}/{repo.name}</span>
+                                                </div>
+                                            )}
+                                            {hasConflict && !resolution && (
+                                                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Conflict</span>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                            ))}
+                                        {hasConflict && (
+                                            <ConflictPanel
+                                                conflict={conflict}
+                                                repoName={repo.name}
+                                                resolution={resolution}
+                                                onResolve={(r) => setResolutions(prev => {
+                                                    const next = { ...prev }
+                                                    if (r === null) { delete next[repo.name] }
+                                                    else { next[repo.name] = r }
+                                                    return next
+                                                })}
+                                            />
+                                        )}
+                                    </div>
+                                )
+                            })}
                         </div>
                     </div>
 
@@ -240,7 +334,22 @@ export function TransferModal({
                 {/* Footer */}
                 <div className="px-6 py-4 bg-slate-50 dark:bg-slate-700/50 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
                     <span className="text-sm text-slate-500 dark:text-slate-400">
-                        {repos.length} repo{repos.length !== 1 ? 's' : ''} will be {action === 'transfer' ? 'transferred' : 'mirrored'}
+                        {(() => {
+                            const skipped = Object.values(resolutions).filter(r => r.action === 'skip').length
+                            const replaced = Object.values(resolutions).filter(r => r.action === 'replace').length
+                            const renamed = Object.values(resolutions).filter(r => r.action === 'rename').length
+                            const transferCount = repos.length - skipped
+
+                            if (replaced || renamed || skipped) {
+                                const parts = []
+                                if (transferCount > 0) parts.push(`${transferCount} transfer`)
+                                if (replaced > 0) parts.push(`${replaced} replace`)
+                                if (renamed > 0) parts.push(`${renamed} rename`)
+                                if (skipped > 0) parts.push(`${skipped} skip`)
+                                return parts.join(', ')
+                            }
+                            return `${repos.length} repo${repos.length !== 1 ? 's' : ''} will be ${action === 'transfer' ? 'transferred' : 'mirrored'}`
+                        })()}
                     </span>
                     <div className="flex gap-3">
                         <Button variant="ghost" onClick={onClose} disabled={isPerforming}>
@@ -249,7 +358,7 @@ export function TransferModal({
                         <Button
                             variant={action === 'transfer' ? 'primary' : 'secondary'}
                             onClick={handleSubmit}
-                            disabled={!targetOrg || isPerforming}
+                            disabled={!targetOrg || isPerforming || checkingConflicts || (conflicts && repos.some(r => conflicts[r.name]?.exists && !resolutions[r.name]))}
                         >
                             {isPerforming ? 'Processing...' : (action === 'transfer' ? 'Transfer' : 'Mirror')}
                         </Button>
@@ -259,4 +368,3 @@ export function TransferModal({
         </div>
     )
 }
-
