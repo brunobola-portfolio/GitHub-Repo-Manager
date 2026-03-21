@@ -1,4 +1,8 @@
 import { EventEmitter } from 'events'
+import { importRepository } from './import-service.js'
+import { migrateWorkItems } from './work-item-service.js'
+import { migrateWiki } from './wiki-service.js'
+import { encryptCredentials, decryptCredentials, isSchedulingEnabled } from './lib/credential-encryption.js'
 
 export class MigrationEngine extends EventEmitter {
   constructor(db) {
@@ -7,6 +11,8 @@ export class MigrationEngine extends EventEmitter {
     this._cancelledPlans = new Set()
     this._pausedPlans = new Set()
     this._lastProgressWrite = new Map() // taskId -> timestamp
+    this._startScheduler()
+    this._startCredentialCleanup()
   }
 
   /**
@@ -164,7 +170,7 @@ export class MigrationEngine extends EventEmitter {
    * all tasks with concurrency limits, and marks plan as completed/failed.
    * @param {number} planId
    */
-  async executePlan(planId) {
+  async executePlan(planId, credentials = null) {
     const plan = this.db.prepare('SELECT * FROM migration_plans WHERE id = ?').get(planId)
     if (!plan) {
       throw new Error(`Plan ${planId} not found`)
@@ -219,7 +225,7 @@ export class MigrationEngine extends EventEmitter {
       this.emit('task-status', { planId, taskId: task.id, status: 'running' })
 
       try {
-        const metadata = await this._executeTask(task)
+        const metadata = await this._executeTask(task, credentials)
         // Check for cancellation after execution
         if (this._isCancelled(planId)) return
 
@@ -387,15 +393,128 @@ export class MigrationEngine extends EventEmitter {
   }
 
   /**
-   * Stub task executor — returns empty metadata.
-   * Will be wired to real services in Task 16.
-   * @param {object} task
-   * @returns {Promise<object>} metadata
+   * Dispatches a task to the appropriate service for execution.
+   * @param {object} task - The migration task row from the database
+   * @param {object|null} credentials - Credentials for source/target systems
+   * @returns {Promise<object>} metadata from the service
    */
-  async _executeTask(task) {
-    // Simulate a small amount of work
-    await new Promise(resolve => setTimeout(resolve, 10))
-    return {}
+  async _executeTask(task, credentials) {
+    const config = typeof task.config === 'string' ? JSON.parse(task.config) : (task.config || {})
+    const callbacks = {
+      onProgress: (pct, msg) => this._updateTaskProgress(task.id, pct, msg),
+      isCancelled: () => this._isCancelled(task.plan_id)
+    }
+
+    // Parse target_ref to get owner/repo
+    const [targetOwner, targetRepo] = (task.target_ref || '').split('/')
+
+    switch (task.type) {
+      case 'repo': {
+        // Parse source_ref: "org/project/repoName"
+        const parts = task.source_ref.split('/')
+        const azureOrg = parts[0]
+        const azureProject = parts[1]
+        const azureRepo = parts.slice(2).join('/')
+
+        return await importRepository({
+          sourceUrl: `https://dev.azure.com/${azureOrg}/${azureProject}/_git/${azureRepo}`,
+          credentials: credentials?.azurePat ? { type: 'pat', token: credentials.azurePat } : undefined,
+          targetOwner,
+          targetName: targetRepo,
+          isPrivate: config.makePrivate ?? true,
+          description: config.description || '',
+          githubToken: credentials?.githubToken,
+          onProgress: (status, message, pct) => callbacks.onProgress(pct, message)
+        })
+      }
+      case 'work-items': {
+        return await migrateWorkItems(
+          { ...config, org: credentials?.azureOrg, project: credentials?.azureProject },
+          { pat: credentials?.azurePat },
+          credentials?.githubToken,
+          targetOwner,
+          targetRepo,
+          callbacks
+        )
+      }
+      case 'wiki': {
+        return await migrateWiki(
+          { ...config, org: credentials?.azureOrg, project: credentials?.azureProject },
+          { pat: credentials?.azurePat },
+          credentials?.githubToken,
+          targetOwner,
+          targetRepo,
+          { onProgress: (status, message, pct) => callbacks.onProgress(pct, message) }
+        )
+      }
+      default:
+        throw new Error(`Unknown task type: ${task.type}`)
+    }
+  }
+
+  /**
+   * Schedules a plan for future execution with encrypted credentials.
+   * @param {number} planId
+   * @param {string} scheduledAt - ISO 8601 datetime string
+   * @param {object} credentials - Credentials to encrypt and store
+   */
+  schedulePlan(planId, scheduledAt, credentials) {
+    if (!isSchedulingEnabled()) {
+      throw new Error('Scheduling not available: SESSION_SECRET is not configured')
+    }
+    const encrypted = encryptCredentials(credentials)
+    this.db.prepare(
+      `UPDATE migration_plans SET status = 'scheduled', scheduled_at = ?, credentials_enc = ?, updated_at = datetime('now') WHERE id = ?`
+    ).run(scheduledAt, encrypted, planId)
+    this.emit('plan-status', { planId, status: 'scheduled' })
+  }
+
+  /**
+   * Starts the scheduler interval that checks for due plans every 30 seconds.
+   */
+  _startScheduler() {
+    this._schedulerInterval = setInterval(() => {
+      try {
+        const duePlans = this.db.prepare(
+          `SELECT id, credentials_enc FROM migration_plans WHERE status = 'scheduled' AND scheduled_at <= datetime('now')`
+        ).all()
+
+        for (const plan of duePlans) {
+          const credentials = plan.credentials_enc ? decryptCredentials(plan.credentials_enc) : null
+          // Clear credentials immediately after reading
+          this.db.prepare('UPDATE migration_plans SET credentials_enc = NULL WHERE id = ?').run(plan.id)
+          this.executePlan(plan.id, credentials).catch(err => {
+            console.error(`Scheduled plan ${plan.id} failed:`, err)
+          })
+        }
+      } catch (err) {
+        console.error('Scheduler tick error:', err)
+      }
+    }, 30000)
+  }
+
+  /**
+   * Starts the credential cleanup interval that runs hourly.
+   */
+  _startCredentialCleanup() {
+    this._cleanupInterval = setInterval(() => this._runCredentialCleanup(), 3600000)
+  }
+
+  /**
+   * Clears encrypted credentials older than 48 hours to limit exposure.
+   */
+  _runCredentialCleanup() {
+    this.db.prepare(
+      `UPDATE migration_plans SET credentials_enc = NULL WHERE credentials_enc IS NOT NULL AND created_at < datetime('now', '-48 hours')`
+    ).run()
+  }
+
+  /**
+   * Cleans up intervals. Call when shutting down or in tests.
+   */
+  destroy() {
+    if (this._schedulerInterval) clearInterval(this._schedulerInterval)
+    if (this._cleanupInterval) clearInterval(this._cleanupInterval)
   }
 
   /**
