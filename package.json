@@ -6,7 +6,14 @@
   "description": "Modern GitHub repository management dashboard with AI-powered insights, team collaboration, and Azure DevOps migration",
   "author": "Bruno Marques - Bola Labs, Inc.",
   "license": "MIT",
-  "keywords": ["github", "dashboard", "repository-management", "react", "ai", "devops"],
+  "keywords": [
+    "github",
+    "dashboard",
+    "repository-management",
+    "react",
+    "ai",
+    "devops"
+  ],
   "homepage": "https://github.com/brunobola/github-repo-manager",
   "repository": {
     "type": "git",
@@ -40,6 +47,7 @@
     "@google/generative-ai": "^0.24.1",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-popover": "^1.1.15",
+    "adm-zip": "^0.5.16",
     "better-sqlite3": "^12.6.2",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",

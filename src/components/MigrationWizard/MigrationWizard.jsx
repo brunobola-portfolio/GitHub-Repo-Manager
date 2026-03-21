@@ -95,7 +95,7 @@ export default function MigrationWizard({ onClose }) {
       case 'source':
         return <SourceStep source={source} onChange={updateSource} />
       case 'repoSelect':
-        return <RepoSelectStep repos={repos} onSetRepos={setRepos} source={source} />
+        return <RepoSelectStep repos={repos} onSetRepos={setRepos} source={source} onChange={updateSource} />
       case 'repoConfig':
         return (
           <RepoConfigStep

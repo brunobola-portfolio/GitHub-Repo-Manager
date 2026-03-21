@@ -54,7 +54,15 @@ router.post('/azure/repos', requireAuth, async (req, res) => {
             return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
         }
         const repos = await azureService.listRepos(org, project, pat);
-        res.json({ repos });
+        // When no Git repos found, check if project uses TFVC
+        let versionControlType = null;
+        if (repos.length === 0) {
+            try {
+                const info = await azureService.getProjectInfo(org, project, pat);
+                versionControlType = info.versionControlType;
+            } catch { /* degrade gracefully */ }
+        }
+        res.json({ repos, ...(versionControlType ? { versionControlType } : {}) });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to list Azure repos'));
     }
@@ -108,6 +116,40 @@ router.post('/azure/work-items/preview', requireAuth, async (req, res) => {
         res.json({ items });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to preview work items'));
+    }
+});
+
+router.post('/azure/project-info', requireAuth, async (req, res) => {
+    try {
+        const { org, project, pat: bodyPat } = req.body;
+        const pat = azureService.resolvePat(bodyPat);
+        if (!org || !project) {
+            return errorResponse(res, 400, 'Organization and project are required');
+        }
+        if (!pat) {
+            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
+        }
+        const info = await azureService.getProjectInfo(org, project, pat);
+        res.json(info);
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to get project info'));
+    }
+});
+
+router.post('/azure/tfvc/items', requireAuth, async (req, res) => {
+    try {
+        const { org, project, pat: bodyPat, scopePath } = req.body;
+        const pat = azureService.resolvePat(bodyPat);
+        if (!org || !project) {
+            return errorResponse(res, 400, 'Organization and project are required');
+        }
+        if (!pat) {
+            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
+        }
+        const items = await azureService.listTfvcItems(org, project, pat, scopePath);
+        res.json({ items });
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to list TFVC items'));
     }
 });
 

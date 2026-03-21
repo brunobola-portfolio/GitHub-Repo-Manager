@@ -236,8 +236,121 @@ async function getWikiCloneUrl(org, project, pat, wikiId) {
 }
 
 /**
- * Construct authenticated clone URL with embedded PAT
+ * Get project info including version control type (Git or Tfvc)
  */
+async function getProjectInfo(org, project, pat) {
+    const url = `${BASE_URL}/${encodeURIComponent(org)}/_apis/projects/${encodeURIComponent(project)}?includeCapabilities=true&api-version=${API_VERSION}`;
+    const data = await azureFetch(url, pat);
+    return {
+        id: data.id,
+        name: data.name,
+        versionControlType: data.capabilities?.versioncontrol?.sourceControlType || 'Git'
+    };
+}
+
+/**
+ * List TFVC items (files/folders) under a given path
+ */
+async function listTfvcItems(org, project, pat, scopePath) {
+    const path = scopePath || `$/${project}`;
+    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/tfvc/items?scopePath=${encodeURIComponent(path)}&recursionLevel=OneLevel&api-version=${API_VERSION}`;
+    const data = await azureFetch(url, pat);
+    return (data.value || []).filter(item => item.path !== path).map(item => ({
+        path: item.path,
+        isFolder: item.isFolder || false,
+        size: item.size || 0,
+        changeDate: item.changeDate || null,
+        url: item.url || ''
+    }));
+}
+
+/**
+ * Create a new Git repository in Azure DevOps (used as temp target for TFVC import)
+ */
+async function createGitRepo(org, project, repoName, pat) {
+    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories?api-version=${API_VERSION}`;
+    const data = await azureFetch(url, pat, {
+        method: 'POST',
+        body: JSON.stringify({ name: repoName })
+    });
+    return {
+        id: data.id,
+        name: data.name,
+        remoteUrl: data.remoteUrl,
+        webUrl: data.webUrl
+    };
+}
+
+/**
+ * Trigger TFVC-to-Git import using Azure DevOps Import Request API
+ */
+async function importTfvcToGit(org, project, repoId, tfvcPath, pat, importHistory = true) {
+    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/importRequests?api-version=${API_VERSION}`;
+    const data = await azureFetch(url, pat, {
+        method: 'POST',
+        body: JSON.stringify({
+            parameters: {
+                tfvcSource: {
+                    path: tfvcPath,
+                    importHistory,
+                    importHistoryDurationInDays: importHistory ? 180 : 0
+                }
+            }
+        })
+    });
+    return {
+        importRequestId: data.importRequestId,
+        status: data.status?.toString() || 'queued'
+    };
+}
+
+/**
+ * Poll TFVC-to-Git import status
+ */
+async function getImportStatus(org, project, repoId, importRequestId, pat) {
+    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/importRequests/${encodeURIComponent(importRequestId)}?api-version=${API_VERSION}`;
+    const data = await azureFetch(url, pat);
+    return {
+        importRequestId: data.importRequestId,
+        status: data.status?.toString() || 'unknown',
+        detailedStatus: data.detailedStatus || null
+    };
+}
+
+/**
+ * Delete a Git repository in Azure DevOps (cleanup temp repo after TFVC import)
+ */
+async function deleteGitRepo(org, project, repoId, pat) {
+    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}?api-version=${API_VERSION}`;
+    const res = await fetch(url, {
+        method: 'DELETE',
+        headers: getHeaders(pat)
+    });
+    if (!res.ok && res.status !== 204) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.message || `Failed to delete repo: ${res.status}`);
+    }
+}
+
+/**
+ * Download TFVC items as ZIP (fallback for snapshot migration without history)
+ */
+async function downloadTfvcItems(org, project, scopePath, pat) {
+    const path = scopePath || `$/${project}`;
+    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/tfvc/items?scopePath=${encodeURIComponent(path)}&recursionLevel=Full&download=true&api-version=${API_VERSION}`;
+    const res = await fetch(url, {
+        headers: {
+            ...getHeaders(pat),
+            'Accept': 'application/zip'
+        }
+    });
+    if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.message || `Failed to download TFVC items: ${res.status}`);
+    }
+    return Buffer.from(await res.arrayBuffer());
+}
+
 /**
  * Escapes single quotes in a WIQL value to prevent injection.
  * @param {string} value
@@ -266,5 +379,12 @@ export {
     getWorkItemCounts,
     previewWorkItems,
     fetchWorkItems,
-    getWikiCloneUrl
+    getWikiCloneUrl,
+    getProjectInfo,
+    listTfvcItems,
+    createGitRepo,
+    importTfvcToGit,
+    getImportStatus,
+    deleteGitRepo,
+    downloadTfvcItems
 };

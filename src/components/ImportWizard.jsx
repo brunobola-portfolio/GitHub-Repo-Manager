@@ -58,6 +58,10 @@ const INITIAL_STATE = {
     checkingDuplicates: false,
     loadingRepos: false,
     validating: false,
+    // TFVC state
+    versionControlType: null, // 'Git' | 'Tfvc' | null
+    tfvcItems: [],
+    loadingTfvcItems: false,
     // GitHub source state
     githubSourceUrl: '',
     // Target state
@@ -140,6 +144,7 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
         patStatus, patError, envAuthAvailable, showManualPat, showPatText,
         selectedProject, repos, selectedRepos, repoSearch, duplicates, checkingDuplicates,
         loadingRepos, validating,
+        versionControlType, tfvcItems, loadingTfvcItems,
         githubSourceUrl,
         targetOrg, targetName, makePrivate, description,
         jobId, jobStatus, importing,
@@ -274,6 +279,31 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
             const reposData = await reposRes.json()
             if (reposRes.ok) {
                 const repoList = reposData.repos || []
+
+                // TFVC detection: if no Git repos and project uses TFVC, fetch TFVC items
+                if (repoList.length === 0 && reposData.versionControlType === 'Tfvc') {
+                    setFields({ versionControlType: 'Tfvc', loadingRepos: false, loadingTfvcItems: true, validating: false })
+                    try {
+                        const tfvcRes = await fetch('/api/azure/tfvc/items', {
+                            method: 'POST', credentials: 'include',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ org, project, pat: patPayload })
+                        })
+                        const tfvcData = await tfvcRes.json()
+                        const items = (tfvcData.items || []).filter(i => i.isFolder)
+                        const stps = getSteps('azure')
+                        setFields({
+                            tfvcItems: items,
+                            loadingTfvcItems: false,
+                            step: stps.indexOf('azure-repo'),
+                        })
+                    } catch {
+                        const stps = getSteps('azure')
+                        setFields({ tfvcItems: [], loadingTfvcItems: false, step: stps.indexOf('azure-repo') })
+                    }
+                    return
+                }
+
                 // Auto-select if only 1 non-disabled repo
                 if (repoList.length === 1 && !repoList[0].isDisabled) {
                     const stps = getSteps('azure')
@@ -283,6 +313,7 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
                         ...(!targetName ? { targetName: repoList[0].name } : {}),
                         loadingRepos: false,
                         validating: false,
+                        versionControlType: null,
                         step: stps.indexOf('azure-confirm'),
                     })
                     return
@@ -292,6 +323,7 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
                     repos: repoList,
                     loadingRepos: false,
                     validating: false,
+                    versionControlType: null,
                     step: stps.indexOf('azure-repo'),
                 })
             } else {
@@ -463,7 +495,51 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
         setFields({ importing: true, step: steps.length - 1 })
 
         try {
-            // Azure batch import (2+ repos selected)
+            const patPayload = showManualPat || !envAuthAvailable ? azurePat : undefined
+
+            // TFVC batch import
+            if (sourceType === 'azure' && versionControlType === 'Tfvc' && isBatch) {
+                const itemsList = selectedRepoNames.map(name => {
+                    const item = tfvcItems.find(i => i.path.split('/').pop() === name)
+                    return { tfvcPath: item?.path || `$/${selectedProject}/${name}`, targetName: selectedRepos[name] || name }
+                })
+                const res = await fetch('/api/import/azure-tfvc/batch', {
+                    method: 'POST', credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        azureOrg, azureProject: selectedProject, azurePat: patPayload,
+                        targetOrg: targetOrg || undefined, makePrivate, items: itemsList,
+                    })
+                })
+                const data = await res.json()
+                if (data.success) { set('batchJobs', data.jobs) }
+                else { setFields({ jobStatus: { status: 'failed', errorMessage: data.error, progressPct: 0 }, importing: false }) }
+                return
+            }
+
+            // TFVC single import
+            if (sourceType === 'azure' && versionControlType === 'Tfvc') {
+                const name = selectedRepoNames[0]
+                const item = tfvcItems.find(i => i.path.split('/').pop() === name)
+                const res = await fetch('/api/import/azure-tfvc', {
+                    method: 'POST', credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        azureOrg, azureProject: selectedProject,
+                        tfvcPath: item?.path || `$/${selectedProject}/${name}`,
+                        azurePat: patPayload,
+                        targetOrg: targetOrg || undefined,
+                        targetName: selectedRepos[name] || targetName || name,
+                        makePrivate, description
+                    })
+                })
+                const data = await res.json()
+                if (data.success) { set('jobId', data.jobId) }
+                else { setFields({ jobStatus: { status: 'failed', errorMessage: data.error, progressPct: 0 }, importing: false }) }
+                return
+            }
+
+            // Azure Git batch import (2+ repos selected)
             if (sourceType === 'azure' && isBatch) {
                 const reposList = selectedRepoNames.map(name => ({
                     azureRepo: name,
@@ -476,7 +552,7 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
                     body: JSON.stringify({
                         azureOrg,
                         azureProject: selectedProject,
-                        azurePat: showManualPat || !envAuthAvailable ? azurePat : undefined,
+                        azurePat: patPayload,
                         targetOrg: targetOrg || undefined,
                         makePrivate,
                         repos: reposList,
@@ -494,7 +570,7 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
                 return
             }
 
-            // Single import (Azure single, URL, or GitHub)
+            // Single import (Azure Git single, URL, or GitHub)
             let endpoint, body
 
             if (sourceType === 'azure') {
@@ -504,7 +580,7 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
                     azureOrg,
                     azureProject: selectedProject,
                     azureRepo: singleRepo,
-                    azurePat: showManualPat || !envAuthAvailable ? azurePat : undefined,
+                    azurePat: patPayload,
                     targetOrg: targetOrg || undefined,
                     targetName: selectedRepos[singleRepo] || targetName || singleRepo,
                     makePrivate,
@@ -866,18 +942,112 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
                                 <div className="min-w-0">
                                     <div className="text-sm font-semibold text-indigo-200 truncate">{azureParsed.org} / {selectedProject}</div>
                                     <div className="text-xs text-indigo-400/80 flex items-center gap-3 mt-0.5">
-                                        <span className="flex items-center gap-1"><FolderGit2 className="w-3 h-3" /> {repos.length} repos</span>
-                                        <span>{formatSize(repos.reduce((s, r) => s + (r.size || 0), 0))}</span>
+                                        {versionControlType === 'Tfvc' ? (
+                                            <>
+                                                <span className="flex items-center gap-1 text-amber-400"><AlertTriangle className="w-3 h-3" /> TFVC</span>
+                                                <span className="flex items-center gap-1"><FolderGit2 className="w-3 h-3" /> {tfvcItems.length} folders</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="flex items-center gap-1"><FolderGit2 className="w-3 h-3" /> {repos.length} repos</span>
+                                                <span>{formatSize(repos.reduce((s, r) => s + (r.size || 0), 0))}</span>
+                                            </>
+                                        )}
                                         <span className="flex items-center gap-1"><KeyRound className="w-3 h-3" /> PAT</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {loadingRepos ? (
+                        {(loadingRepos || loadingTfvcItems) ? (
                             <div className="flex items-center gap-2 text-slate-500 text-sm py-8 justify-center">
-                                <Loader2 className="w-4 h-4 animate-spin" /> Loading repositories...
+                                <Loader2 className="w-4 h-4 animate-spin" /> {versionControlType === 'Tfvc' ? 'Loading TFVC items...' : 'Loading repositories...'}
                             </div>
+                        ) : versionControlType === 'Tfvc' ? (
+                            /* TFVC folder browser */
+                            tfvcItems.length === 0 ? (
+                                <div className="text-center py-6">
+                                    <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+                                    <p className="text-sm font-medium text-slate-200">This TFVC project has no folders</p>
+                                    <p className="text-xs text-slate-400 mt-1">Check that your PAT has Code (Read) permission.</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="p-2.5 bg-amber-900/20 border border-amber-700/30 rounded-lg">
+                                        <p className="text-xs text-amber-300">
+                                            <AlertTriangle className="w-3 h-3 inline mr-1" />
+                                            This project uses TFVC. Select folders to migrate as Git repositories.
+                                            Each folder will be converted to a separate Git repo and pushed to GitHub.
+                                        </p>
+                                    </div>
+
+                                    {/* Search */}
+                                    <div className="relative">
+                                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                                        <input
+                                            type="text" value={repoSearch}
+                                            onChange={e => set('repoSearch', e.target.value)}
+                                            placeholder="Filter folders..."
+                                            className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-indigo-500"
+                                        />
+                                    </div>
+
+                                    {/* Selection counter */}
+                                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                                        <span>
+                                            <span className={selectedCount > 0 ? 'text-indigo-400 font-medium' : ''}>{selectedCount} selected</span>
+                                            {' '}of {tfvcItems.length}
+                                        </span>
+                                    </div>
+
+                                    {/* TFVC folder list */}
+                                    <div className="space-y-1.5 max-h-72 overflow-y-auto pr-0.5">
+                                        {tfvcItems
+                                            .filter(item => !repoSearch || item.path.toLowerCase().includes(repoSearch.toLowerCase()))
+                                            .map(item => {
+                                                const folderName = item.path.split('/').pop()
+                                                const isSelected = selectedRepos[folderName] !== undefined
+                                                return (
+                                                    <button
+                                                        key={item.path}
+                                                        onClick={() => dispatch({ type: 'TOGGLE_REPO', repoName: folderName })}
+                                                        className={`w-full text-left p-3 rounded-xl border transition-all text-sm
+                                                            ${isSelected
+                                                                ? 'border-indigo-500/60 bg-indigo-950/30 shadow-sm shadow-indigo-500/10'
+                                                                : 'border-slate-200 dark:border-slate-700 hover:border-indigo-400/50 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-start gap-2.5">
+                                                            <div className={`w-[18px] h-[18px] mt-0.5 rounded flex items-center justify-center shrink-0 border-2 transition-colors
+                                                                ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-400 dark:border-slate-600'}`}>
+                                                                {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-2">
+                                                                    <FolderGit2 className="w-3.5 h-3.5 text-amber-400" />
+                                                                    <span className="font-semibold text-slate-900 dark:text-slate-100">{folderName}</span>
+                                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-400 font-semibold uppercase tracking-wide">TFVC</span>
+                                                                </div>
+                                                                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">{item.path}</div>
+                                                                {isSelected && (
+                                                                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-700/50" onClick={e => e.stopPropagation()}>
+                                                                        <label className="text-[11px] text-slate-500 whitespace-nowrap">Target:</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={selectedRepos[folderName] || ''}
+                                                                            onChange={e => dispatch({ type: 'SET_REPO_TARGET', repoName: folderName, targetName: e.target.value })}
+                                                                            className="flex-1 px-2 py-1 text-xs bg-slate-800 border border-slate-600 rounded text-slate-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                )
+                                            })}
+                                    </div>
+                                </>
+                            )
                         ) : repos.length === 0 ? (
                             <div className="text-center py-6">
                                 <p className="text-sm text-slate-500 dark:text-slate-400">This project has no repositories.</p>
@@ -1021,7 +1191,12 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
                             <div className="text-sm font-medium text-slate-900 dark:text-slate-100 mt-1">
                                 Azure DevOps · {getSourceDisplayName()}
                             </div>
-                            {selectedCount === 1 && (() => {
+                            {versionControlType === 'Tfvc' && (
+                                <div className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3" /> TFVC — will be converted to Git before import
+                                </div>
+                            )}
+                            {selectedCount === 1 && !versionControlType && (() => {
                                 const repoObj = repos.find(r => r.name === selectedRepoNames[0])
                                 if (!repoObj) return null
                                 return (
