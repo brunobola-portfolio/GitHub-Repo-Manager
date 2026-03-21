@@ -734,7 +734,6 @@ async function runTfvcSnapshotFallback(params) {
     const { simpleGit } = await import('simple-git');
     const { mkdirSync, existsSync, rmSync, writeFileSync } = await import('fs');
     const { join } = await import('path');
-    const { randomUUID } = await import('crypto');
     const { fileURLToPath } = await import('url');
     const { dirname } = await import('path');
 
@@ -742,10 +741,16 @@ async function runTfvcSnapshotFallback(params) {
     const __dirname = dirname(__filename);
     const tmpDir = join(__dirname, '..', 'data', 'tmp', `tfvc-snapshot-${Date.now()}`);
 
+    const MAX_ZIP_SIZE = 1024 * 1024 * 1024; // 1 GB limit
+
     try {
         // Download TFVC content as ZIP
         onProgress('running', 'Downloading TFVC files...', 35);
         const zipBuffer = await azureService.downloadTfvcItems(azureOrg, azureProject, tfvcPath, azurePat);
+
+        if (zipBuffer.length > MAX_ZIP_SIZE) {
+            throw new Error(`TFVC content exceeds 1 GB limit (${(zipBuffer.length / 1024 / 1024).toFixed(0)} MB). Try migrating a smaller scope.`);
+        }
 
         // Extract ZIP
         onProgress('running', 'Extracting files...', 45);
@@ -766,10 +771,14 @@ async function runTfvcSnapshotFallback(params) {
         await git.add('.');
         await git.commit(`Initial commit: imported from Azure DevOps TFVC\n\nSource: ${azureOrg}/${azureProject}${tfvcPath}`);
 
+        // Detect actual default branch name (may be 'main' or 'master' depending on git config)
+        const branchSummary = await git.branchLocal();
+        const defaultBranch = branchSummary.current || 'main';
+
         // Create GitHub repo
         onProgress('running', 'Creating target repository on GitHub...', 65);
         const endpoint = targetOwner
-            ? `https://api.github.com/orgs/${targetOwner}/repos`
+            ? `https://api.github.com/orgs/${encodeURIComponent(targetOwner)}/repos`
             : 'https://api.github.com/user/repos';
 
         const createRes = await fetch(endpoint, {
@@ -799,7 +808,7 @@ async function runTfvcSnapshotFallback(params) {
         onProgress('running', 'Pushing to GitHub...', 80);
         const pushUrl = `https://x-access-token:${githubToken}@github.com/${createdRepo.full_name}.git`;
         await git.addRemote('origin', pushUrl);
-        await git.push('origin', 'master', ['--set-upstream']);
+        await git.push('origin', defaultBranch, ['--set-upstream']);
 
         db.prepare(`
             UPDATE migration_jobs SET status = 'complete', target_full_name = ?, progress_pct = 100,

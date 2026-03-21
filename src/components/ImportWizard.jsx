@@ -100,7 +100,9 @@ function wizardReducer(state, action) {
             if (next[action.repoName] !== undefined) {
                 delete next[action.repoName]
             } else {
-                next[action.repoName] = action.repoName
+                // For TFVC paths ($/Project/Folder), default target name = last segment
+                const defaultTarget = action.targetName || action.repoName.split('/').pop() || action.repoName
+                next[action.repoName] = defaultTarget
             }
             return { ...state, selectedRepos: next }
         }
@@ -497,11 +499,13 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
         try {
             const patPayload = showManualPat || !envAuthAvailable ? azurePat : undefined
 
-            // TFVC batch import
+            // TFVC batch import — selectedRepoNames are full TFVC paths (e.g. "$/Project/Folder")
             if (sourceType === 'azure' && versionControlType === 'Tfvc' && isBatch) {
-                const itemsList = selectedRepoNames.map(name => {
-                    const item = tfvcItems.find(i => i.path.split('/').pop() === name)
-                    return { tfvcPath: item?.path || `$/${selectedProject}/${name}`, targetName: selectedRepos[name] || name }
+                const itemsList = selectedRepoNames.map(key => {
+                    const item = tfvcItems.find(i => i.path === key)
+                    const tfvcPath = item?.path || key
+                    const folderName = tfvcPath.split('/').pop()
+                    return { tfvcPath, targetName: selectedRepos[key] || folderName }
                 })
                 const res = await fetch('/api/import/azure-tfvc/batch', {
                     method: 'POST', credentials: 'include',
@@ -517,19 +521,21 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
                 return
             }
 
-            // TFVC single import
+            // TFVC single import — selectedRepoNames[0] is a full TFVC path
             if (sourceType === 'azure' && versionControlType === 'Tfvc') {
-                const name = selectedRepoNames[0]
-                const item = tfvcItems.find(i => i.path.split('/').pop() === name)
+                const key = selectedRepoNames[0]
+                const item = tfvcItems.find(i => i.path === key)
+                const tfvcPath = item?.path || key
+                const folderName = tfvcPath.split('/').pop()
                 const res = await fetch('/api/import/azure-tfvc', {
                     method: 'POST', credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         azureOrg, azureProject: selectedProject,
-                        tfvcPath: item?.path || `$/${selectedProject}/${name}`,
+                        tfvcPath,
                         azurePat: patPayload,
                         targetOrg: targetOrg || undefined,
-                        targetName: selectedRepos[name] || targetName || name,
+                        targetName: selectedRepos[key] || targetName || folderName,
                         makePrivate, description
                     })
                 })
@@ -1000,17 +1006,18 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
                                         </span>
                                     </div>
 
-                                    {/* TFVC folder list */}
+                                    {/* TFVC folder list — uses full path as key to avoid collisions */}
                                     <div className="space-y-1.5 max-h-72 overflow-y-auto pr-0.5">
                                         {tfvcItems
                                             .filter(item => !repoSearch || item.path.toLowerCase().includes(repoSearch.toLowerCase()))
                                             .map(item => {
                                                 const folderName = item.path.split('/').pop()
-                                                const isSelected = selectedRepos[folderName] !== undefined
+                                                const itemKey = item.path
+                                                const isSelected = selectedRepos[itemKey] !== undefined
                                                 return (
                                                     <button
                                                         key={item.path}
-                                                        onClick={() => dispatch({ type: 'TOGGLE_REPO', repoName: folderName })}
+                                                        onClick={() => dispatch({ type: 'TOGGLE_REPO', repoName: itemKey })}
                                                         className={`w-full text-left p-3 rounded-xl border transition-all text-sm
                                                             ${isSelected
                                                                 ? 'border-indigo-500/60 bg-indigo-950/30 shadow-sm shadow-indigo-500/10'
@@ -1034,8 +1041,8 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
                                                                         <label className="text-[11px] text-slate-500 whitespace-nowrap">Target:</label>
                                                                         <input
                                                                             type="text"
-                                                                            value={selectedRepos[folderName] || ''}
-                                                                            onChange={e => dispatch({ type: 'SET_REPO_TARGET', repoName: folderName, targetName: e.target.value })}
+                                                                            value={selectedRepos[itemKey] || ''}
+                                                                            onChange={e => dispatch({ type: 'SET_REPO_TARGET', repoName: itemKey, targetName: e.target.value })}
                                                                             className="flex-1 px-2 py-1 text-xs bg-slate-800 border border-slate-600 rounded text-slate-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                                                                         />
                                                                     </div>
