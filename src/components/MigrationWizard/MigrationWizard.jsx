@@ -157,7 +157,7 @@ export default function MigrationWizard({ onClose }) {
         {canGoBack ? 'Back' : 'Cancel'}
       </button>
 
-      {canGoNext && (
+      {canGoNext && currentStepIndex < 6 && (
         <button
           type="button"
           onClick={handleNext}

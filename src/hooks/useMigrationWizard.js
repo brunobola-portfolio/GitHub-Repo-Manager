@@ -23,6 +23,7 @@ const INITIAL_SOURCE = {
 const INITIAL_WORK_ITEMS = {
   enabled: false,
   types: [],
+  counts: {},
   includeComments: true,
   includeAttachments: true,
 }
