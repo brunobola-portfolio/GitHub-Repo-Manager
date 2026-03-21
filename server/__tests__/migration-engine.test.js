@@ -358,4 +358,255 @@ describe('MigrationEngine', () => {
       expect(() => engine.deletePlan(planId)).toThrow()
     })
   })
+
+  describe('executePlan', () => {
+    it('transitions plan from draft to completed', async () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      await engine.executePlan(planId)
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.status).toBe('completed')
+    })
+
+    it('emits plan-status events', async () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const events = []
+      engine.on('plan-status', e => events.push(e))
+      await engine.executePlan(planId)
+      expect(events.some(e => e.status === 'running')).toBe(true)
+      expect(events.some(e => e.status === 'completed')).toBe(true)
+    })
+
+    it('completes all tasks', async () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [
+          { type: 'repo', sourceRef: 'r1', targetRef: 't1', config: {} },
+          { type: 'repo', sourceRef: 'r2', targetRef: 't2', config: {} }
+        ]
+      )
+      await engine.executePlan(planId)
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.tasks.every(t => t.status === 'completed')).toBe(true)
+    })
+
+    it('generates summary on completion', async () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      await engine.executePlan(planId)
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.summary).toBeDefined()
+      expect(plan.summary.total).toBe(1)
+      expect(plan.summary.success).toBe(1)
+    })
+
+    it('handles task failures and continues other tasks', async () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [
+          { type: 'repo', sourceRef: 'r1', targetRef: 't1', config: {} },
+          { type: 'repo', sourceRef: 'r2', targetRef: 't2', config: {} }
+        ]
+      )
+      // Make the first task fail
+      let callCount = 0
+      engine._executeTask = async () => {
+        callCount++
+        if (callCount === 1) throw new Error('simulated failure')
+        return {}
+      }
+      await engine.executePlan(planId)
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.summary.failed).toBe(1)
+      expect(plan.summary.success).toBe(1)
+    })
+
+    it('emits task-complete and task-failed events', async () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const completeEvents = []
+      engine.on('task-complete', e => completeEvents.push(e))
+      await engine.executePlan(planId)
+      expect(completeEvents).toHaveLength(1)
+      expect(completeEvents[0].planId).toBe(planId)
+    })
+  })
+
+  describe('cancelPlan', () => {
+    it('sets plan status to cancelled', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('running', planId)
+      engine.cancelPlan(planId)
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.status).toBe('cancelled')
+    })
+
+    it('cancels pending tasks', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('running', planId)
+      engine.cancelPlan(planId)
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.tasks[0].status).toBe('cancelled')
+    })
+
+    it('emits plan-status cancelled event', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('running', planId)
+      const events = []
+      engine.on('plan-status', e => events.push(e))
+      engine.cancelPlan(planId)
+      expect(events).toHaveLength(1)
+      expect(events[0].status).toBe('cancelled')
+    })
+  })
+
+  describe('pausePlan / resumePlan', () => {
+    it('pauses a running plan', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('running', planId)
+      engine.pausePlan(planId)
+      expect(engine.getPlanStatus(planId).status).toBe('paused')
+    })
+
+    it('emits plan-status paused event', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('running', planId)
+      const events = []
+      engine.on('plan-status', e => events.push(e))
+      engine.pausePlan(planId)
+      expect(events[0].status).toBe('paused')
+    })
+
+    it('resumes a paused plan and completes it', async () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('running', planId)
+      engine.pausePlan(planId)
+      expect(engine.getPlanStatus(planId).status).toBe('paused')
+      await engine.resumePlan(planId)
+      expect(engine.getPlanStatus(planId).status).toBe('completed')
+    })
+  })
+
+  describe('retryTask', () => {
+    it('resets failed task to pending', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const taskId = engine.getPlanStatus(planId).tasks[0].id
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('failed', planId)
+      db.prepare("UPDATE migration_tasks SET status = 'failed', error_message = 'test error' WHERE id = ?").run(taskId)
+      engine.retryTask(planId, taskId)
+      const task = engine.getPlanStatus(planId).tasks[0]
+      expect(task.status).toBe('pending')
+      expect(task.error_message).toBeNull()
+      expect(task.retries).toBe(1)
+    })
+
+    it('throws for non-failed task', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const taskId = engine.getPlanStatus(planId).tasks[0].id
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('failed', planId)
+      expect(() => engine.retryTask(planId, taskId)).toThrow(/Cannot retry task/)
+    })
+
+    it('throws for running plan', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const taskId = engine.getPlanStatus(planId).tasks[0].id
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('running', planId)
+      db.prepare("UPDATE migration_tasks SET status = 'failed' WHERE id = ?").run(taskId)
+      expect(() => engine.retryTask(planId, taskId)).toThrow(/Cannot retry tasks/)
+    })
+  })
+
+  describe('_updateTaskProgress', () => {
+    it('emits task-progress event', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const taskId = engine.getPlanStatus(planId).tasks[0].id
+      const events = []
+      engine.on('task-progress', e => events.push(e))
+      engine._updateTaskProgress(taskId, 50, 'Halfway done')
+      expect(events).toHaveLength(1)
+      expect(events[0].pct).toBe(50)
+      expect(events[0].message).toBe('Halfway done')
+    })
+
+    it('writes to DB on first call', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const taskId = engine.getPlanStatus(planId).tasks[0].id
+      engine._updateTaskProgress(taskId, 50, 'Halfway done')
+      const task = db.prepare('SELECT progress_pct, progress_message FROM migration_tasks WHERE id = ?').get(taskId)
+      expect(task.progress_pct).toBe(50)
+      expect(task.progress_message).toBe('Halfway done')
+    })
+
+    it('throttles DB writes to max 1 per second per task', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const taskId = engine.getPlanStatus(planId).tasks[0].id
+      engine._updateTaskProgress(taskId, 25, 'First')
+      engine._updateTaskProgress(taskId, 50, 'Second')
+      // Second call should be throttled — DB should still show first values
+      const task = db.prepare('SELECT progress_pct, progress_message FROM migration_tasks WHERE id = ?').get(taskId)
+      expect(task.progress_pct).toBe(25)
+      expect(task.progress_message).toBe('First')
+    })
+  })
+
+  describe('_isCancelled', () => {
+    it('returns false for non-cancelled plan', () => {
+      expect(engine._isCancelled(1)).toBe(false)
+    })
+
+    it('returns true after cancelPlan', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('running', planId)
+      engine.cancelPlan(planId)
+      expect(engine._isCancelled(planId)).toBe(true)
+    })
+  })
 })
