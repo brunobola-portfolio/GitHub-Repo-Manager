@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import ErrorBoundary from './ErrorBoundary'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 // Suppress console.error for expected errors
 const originalError = console.error

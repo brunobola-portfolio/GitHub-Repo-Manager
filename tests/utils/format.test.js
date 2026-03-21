@@ -5,7 +5,7 @@ import {
   formatPercentage,
   formatFileSize,
   formatRelativeTime
-} from './format'
+} from '@/utils/format'
 
 describe('formatNumber', () => {
   it('formats numbers with thousand separators (pt-PT)', () => {

@@ -8,7 +8,7 @@ import {
   parseLinkHeaderTotal,
   apiCall,
   resetSessionExpired
-} from './api'
+} from '@/utils/api'
 
 describe('ApiError', () => {
   it('creates error with correct properties', () => {

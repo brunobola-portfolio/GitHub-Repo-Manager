@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { ThemeProvider, useTheme } from './useTheme'
+import { ThemeProvider, useTheme } from '@/hooks/useTheme'
 
 describe('useTheme', () => {
   let matchMediaMock
