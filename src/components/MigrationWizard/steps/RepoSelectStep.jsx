@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Check, Loader2, AlertCircle, FolderGit2,
   ArrowUpDown, CheckSquare, Square, ToggleLeft,
-  GitBranch, Code2, HardDrive,
+  GitBranch, Code2, HardDrive, AlertTriangle,
 } from 'lucide-react'
 
 /**
@@ -29,7 +29,7 @@ const SORT_OPTIONS = [
  *   onSetRepos - (repos) => void  (calls wizard.setRepos)
  *   source     - { org, project, pat }
  */
-export default function RepoSelectStep({ repos, onSetRepos, source }) {
+export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -56,6 +56,43 @@ export default function RepoSelectStep({ repos, onSetRepos, source }) {
         })
         const data = await res.json()
         if (res.ok && data.repos) {
+          // TFVC detection: no Git repos but project uses TFVC
+          if (data.repos.length === 0 && data.versionControlType === 'Tfvc') {
+            if (onChange) onChange({ versionControlType: 'Tfvc' })
+            // Fetch TFVC items
+            try {
+              const tfvcRes = await fetch('/api/azure/tfvc/items', {
+                method: 'POST', credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ org: source.org, project: source.project, pat: source.pat || undefined }),
+              })
+              const tfvcData = await tfvcRes.json()
+              const items = (tfvcData.items || []).filter(i => i.isFolder)
+              const mapped = items.map(item => ({
+                name: item.path.split('/').pop(),
+                selected: false,
+                targetName: item.path.split('/').pop(),
+                visibility: 'private',
+                description: '',
+                size: item.size || 0,
+                language: null,
+                branches: 0,
+                isDisabled: false,
+                isFork: false,
+                id: item.path,
+                tfvcPath: item.path,
+                isTfvc: true,
+              }))
+              onSetRepos(mapped)
+              setFetched(true)
+            } catch {
+              setError('Failed to load TFVC items')
+            }
+            setLoading(false)
+            return
+          }
+
+          if (onChange) onChange({ versionControlType: null })
           const mapped = data.repos.map((r) => ({
             name: r.name,
             selected: false,
@@ -82,7 +119,7 @@ export default function RepoSelectStep({ repos, onSetRepos, source }) {
     }
 
     fetchRepos()
-  }, [source.org, source.project, source.pat, onSetRepos, fetched])
+  }, [source.org, source.project, source.pat, onSetRepos, onChange, fetched])
 
   // Filter by search
   const filteredRepos = useMemo(() => {
@@ -177,30 +214,56 @@ export default function RepoSelectStep({ repos, onSetRepos, source }) {
     )
   }
 
+  const isTfvc = source.versionControlType === 'Tfvc' || repos.some(r => r.isTfvc)
+
   // Empty state
   if (!loading && repos.length === 0) {
     return (
       <div className="text-center py-12">
-        <FolderGit2 className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          No repositories found in this project.
-        </p>
-        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-          Check that your PAT has the correct permissions.
-        </p>
+        {isTfvc ? (
+          <>
+            <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
+            <p className="text-sm font-medium text-slate-300">
+              This TFVC project has no folders to migrate.
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Check that your PAT has Code (Read) permission.
+            </p>
+          </>
+        ) : (
+          <>
+            <FolderGit2 className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              No repositories found in this project.
+            </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+              Check that your PAT has the correct permissions.
+            </p>
+          </>
+        )}
       </div>
     )
   }
 
   return (
     <div className="space-y-4">
+      {/* TFVC info banner */}
+      {isTfvc && (
+        <div className="p-3 bg-amber-900/20 border border-amber-700/30 rounded-xl">
+          <p className="text-xs text-amber-300">
+            <AlertTriangle className="w-3.5 h-3.5 inline mr-1.5" />
+            This project uses TFVC. Each folder will be converted to a Git repository and pushed to GitHub.
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-          Select Repositories
+          {isTfvc ? 'Select TFVC Folders' : 'Select Repositories'}
         </h3>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Choose which repositories to migrate from{' '}
+          Choose which {isTfvc ? 'folders' : 'repositories'} to migrate from{' '}
           <span className="font-medium text-slate-700 dark:text-slate-300">
             {source.org}/{source.project}
           </span>

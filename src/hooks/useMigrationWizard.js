@@ -18,6 +18,7 @@ const INITIAL_SOURCE = {
   project: '',
   pat: '',
   validated: false,
+  versionControlType: null, // 'Git' | 'Tfvc' | null
 }
 
 const INITIAL_WORK_ITEMS = {

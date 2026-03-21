@@ -2,6 +2,7 @@ import { EventEmitter } from 'events'
 import { importRepository } from './import-service.js'
 import { migrateWorkItems } from './work-item-service.js'
 import { migrateWiki } from './wiki-service.js'
+import * as azureService from './azure-service.js'
 import { encryptCredentials, decryptCredentials, isSchedulingEnabled } from './lib/credential-encryption.js'
 
 export class MigrationEngine extends EventEmitter {
@@ -429,6 +430,60 @@ export class MigrationEngine extends EventEmitter {
           githubToken: credentials?.githubToken,
           onProgress: (status, message, pct) => callbacks.onProgress(pct, message)
         })
+      }
+      case 'repo-tfvc': {
+        // TFVC repo migration: convert TFVC → Git in Azure DevOps, then clone + push to GitHub
+        const tfvcParts = task.source_ref.split('/')
+        const tfvcOrg = tfvcParts[0]
+        const tfvcProject = tfvcParts[1]
+        const tfvcFolder = tfvcParts.slice(2).join('/')
+        const tfvcPath = `$/${tfvcProject}/${tfvcFolder}`
+        const azurePat = credentials?.azurePat
+
+        callbacks.onProgress(5, 'Creating temporary Git repo in Azure DevOps...')
+        const tempRepoName = `_tfvc-import-${targetRepo}-${Date.now()}`
+        const tempRepo = await azureService.createGitRepo(tfvcOrg, tfvcProject, tempRepoName, azurePat)
+
+        try {
+          callbacks.onProgress(10, 'Converting TFVC to Git...')
+          const importReq = await azureService.importTfvcToGit(tfvcOrg, tfvcProject, tempRepo.id, tfvcPath, azurePat, true)
+
+          // Poll for completion
+          let done = false
+          for (let i = 0; i < 120 && !done; i++) {
+            if (callbacks.isCancelled()) throw new Error('Migration cancelled')
+            await new Promise(r => setTimeout(r, 5000))
+            const status = await azureService.getImportStatus(tfvcOrg, tfvcProject, tempRepo.id, importReq.importRequestId, azurePat)
+            callbacks.onProgress(10 + Math.floor((i / 120) * 30), `Converting TFVC to Git... (${status.status})`)
+            if (status.status === 'completed') done = true
+            else if (status.status === 'failed' || status.status === 'abandoned') {
+              throw new Error(`TFVC conversion failed: ${status.detailedStatus?.errorMessage || status.status}`)
+            }
+          }
+          if (!done) throw new Error('TFVC conversion timed out')
+
+          callbacks.onProgress(45, 'Cloning converted repository...')
+          const repoDetails = await azureService.getRepoDetails(tfvcOrg, tfvcProject, tempRepoName, azurePat)
+
+          const result = await importRepository({
+            sourceUrl: repoDetails.remoteUrl,
+            credentials: azurePat ? { type: 'pat', token: azurePat } : undefined,
+            targetOwner,
+            targetName: targetRepo,
+            isPrivate: config.makePrivate ?? true,
+            description: config.description || '',
+            githubToken: credentials?.githubToken,
+            onProgress: (status, message, pct) => callbacks.onProgress(45 + Math.floor((pct / 100) * 50), message)
+          })
+
+          // Cleanup temp repo
+          try { await azureService.deleteGitRepo(tfvcOrg, tfvcProject, tempRepo.id, azurePat) } catch { /* ignore */ }
+          return result
+        } catch (err) {
+          // Cleanup temp repo on failure
+          try { await azureService.deleteGitRepo(tfvcOrg, tfvcProject, tempRepo.id, azurePat) } catch { /* ignore */ }
+          throw err
+        }
       }
       case 'work-items': {
         return await migrateWorkItems(
