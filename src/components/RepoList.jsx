@@ -31,7 +31,7 @@ export function RepoList({
 	onRepoClick
 }) {
 	const { selectedIds, toggleSelect, selectRepos, deselectRepos, invertSelection, clearSelection } = useSelection()
-	const { openModalWithData } = useModal()
+	const { openModal, openModalWithData } = useModal()
 	const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
 	const [searchQuery, setSearchQuery] = useState('')
 	const [isAISearch, setIsAISearch] = useState(false)
@@ -498,6 +498,15 @@ export function RepoList({
 								break
 							case 'transfer':
 								openModalWithData('showTransfer', data)
+								break
+							case 'migrate':
+							case 'migrateWorkItems':
+							case 'migrateWiki':
+							case 'migrate_selected':
+								openModal('showMigrationWizard')
+								break
+							case 'migrationHistory':
+								openModal('showMigrationHistory')
 								break
 							case 'aiRisk':
 							case 'aiSuggest':
