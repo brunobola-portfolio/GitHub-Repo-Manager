@@ -24,6 +24,8 @@ export const API_ENDPOINTS = {
     visibility: `${API_BASE_URL}/api/visibility`,
     transfer: `${API_BASE_URL}/api/transfer`,
     mirror: `${API_BASE_URL}/api/mirror`,
+    archive: `${API_BASE_URL}/api/archive`,
+    delete: `${API_BASE_URL}/api/delete`,
 };
 
 // Pagination Settings

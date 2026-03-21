@@ -32,7 +32,8 @@
 - Test setup file: `tests/setup.js`
 - Run unit tests: `npx vitest`
 - Run E2E tests: `npx playwright test`
-- NEVER place test files alongside source files in `src/`
+- Backend tests go in `server/__tests__/` (e.g., `server/middleware/auth.js` → `server/__tests__/auth.test.js`)
+- NEVER place test files alongside source files in `src/` or `server/`
 
 ## Documentation Structure
 - `docs/index.md` — Documentation map (start here)

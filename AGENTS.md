@@ -114,6 +114,12 @@ npm run dev:server   # Backend only
 - Verify type safety if using TypeScript
 - Test both success and error paths
 
+**Test Directories**
+- `tests/` — Frontend unit tests (Vitest), mirrors `src/` structure
+- `e2e/` — End-to-end tests (Playwright)
+- `server/__tests__/` — Backend unit tests (Vitest)
+- NEVER place test files alongside source in `src/` or `server/`
+
 **Verification Steps**
 1. Read and understand the full scope before starting implementation
 2. Trim scope to only what's explicitly requested
@@ -143,7 +149,7 @@ npm run dev:server   # Backend only
 
 - ❌ Never create `.md`, `.txt`, or documentation files
 - ❌ Never create mock files, mock data, or stub implementations
-- ❌ Never create test files or scripts
+- ❌ Never create test files outside designated directories (`tests/`, `e2e/`, `server/__tests__/`)
 - ❌ Never create fallback/failover methods
 - ❌ Never create "just in case" utilities
 - ❌ Never create type definitions (.d.ts) unless TypeScript is used
@@ -206,7 +212,7 @@ npm run dev:server   # Backend only
 - Avoid createClass and legacy patterns
 - Use Suspense for loading states
 
-### Vite 6
+### Vite 7
 
 - Leverage native ES modules
 - Use Vite's environment variable system (`import.meta.env`)
@@ -325,5 +331,5 @@ For project-specific questions:
 
 ---
 
-*Last Updated: 2026-03-12*
+*Last Updated: 2026-03-21*
 *Agent Rules Version: 2.1 - Harmonized across Augment Code, Roo Code, Antigravity, and Claude Code*

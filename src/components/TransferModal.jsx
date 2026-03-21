@@ -38,9 +38,17 @@ export function TransferModal({
 
 	if (!isOpen) return null
 
+	// Detect if all selected repos belong to the same owner as the target
+	const repoOwners = [...new Set(repos.map(r => r.owner?.login).filter(Boolean))]
+	const isTransferToSelf = action === 'transfer' && repoOwners.length === 1 && targetOrg === repoOwners[0]
+
 	const handleSubmit = () => {
 		if (!targetOrg) {
 			setFormError('Please select a target organization')
+			return
+		}
+		if (isTransferToSelf) {
+			setFormError('Cannot transfer repositories to their current owner')
 			return
 		}
 		setFormError('')

@@ -226,7 +226,7 @@ export function useRepos(user) {
             }
         }
 
-        // Real API call with retry
+        // Real API call with retry (no retries for destructive/non-idempotent actions)
         setIsPerforming(true)
         setMessage(`Processing ${repoNames.length} repositories...`)
 
@@ -237,13 +237,15 @@ export function useRepos(user) {
                 ...options
             }
 
+            const destructiveActions = ['transfer', 'mirror', 'delete']
+            const maxRetries = destructiveActions.includes(action) ? 0 : 2
             const endpoint = API_ENDPOINTS[action] || `${API_ENDPOINTS.repos.replace('/repos', '')}/${action}`
             const resp = await fetchWithRetry(endpoint, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
-            }, { maxRetries: 2 })
+            }, { maxRetries })
 
             const parsed = await safeParseJson(resp)
             const apiResults = Array.isArray(parsed?.results) ? parsed.results : []
@@ -350,12 +352,12 @@ export function useRepos(user) {
 
         setIsPerforming(true)
         try {
-            const resp = await fetchWithRetry(`${API_ENDPOINTS.repos.replace('/repos', '')}/archive`, {
+            const resp = await fetchWithRetry(API_ENDPOINTS.archive, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ repos: repoNames, archive })
-            }, { maxRetries: 2 })
+            }, { maxRetries: 0 })
             const data = await safeParseJson(resp)
             const msg = data?.message || `${archive ? 'Archived' : 'Unarchived'} ${repoNames.length} repositories`
             const entry = { at: new Date().toISOString(), action: 'archive', message: msg, success: true }
@@ -398,12 +400,12 @@ export function useRepos(user) {
 
         setIsPerforming(true)
         try {
-            const resp = await fetchWithRetry(`${API_ENDPOINTS.repos.replace('/repos', '')}/delete`, {
+            const resp = await fetchWithRetry(API_ENDPOINTS.delete, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ repos: repoNames, confirm: confirmToken })
-            }, { maxRetries: 2 })
+            }, { maxRetries: 0 })
             const data = await safeParseJson(resp)
             const msg = data?.message || `Deleted ${repoNames.length} repositories`
             const entry = { at: new Date().toISOString(), action: 'delete', message: msg, success: true }
