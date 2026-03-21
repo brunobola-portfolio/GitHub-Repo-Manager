@@ -5,6 +5,8 @@ import { useMigrationWizard } from '../../hooks/useMigrationWizard'
 import SourceStep from './steps/SourceStep'
 import RepoSelectStep from './steps/RepoSelectStep'
 import RepoConfigStep from './steps/RepoConfigStep'
+import WorkItemsStep from './steps/WorkItemsStep'
+import WikiStep from './steps/WikiStep'
 import { ArrowLeft, ArrowRight, Rocket, AlertCircle } from 'lucide-react'
 
 const STEP_LABELS = {
@@ -61,6 +63,10 @@ export default function MigrationWizard({ onClose }) {
     repos,
     setRepos,
     updateRepo,
+    workItems,
+    updateWorkItems,
+    wiki,
+    updateWiki,
   } = wizard
 
   // Only selected repos for the config step
@@ -90,9 +96,9 @@ export default function MigrationWizard({ onClose }) {
           />
         )
       case 'workItems':
-        return <StepPlaceholder label={STEP_LABELS.workItems} />
+        return <WorkItemsStep workItems={workItems} onUpdate={updateWorkItems} source={source} />
       case 'wiki':
-        return <StepPlaceholder label={STEP_LABELS.wiki} />
+        return <WikiStep wiki={wiki} onUpdate={updateWiki} source={source} />
       case 'aiReview':
         return <StepPlaceholder label={STEP_LABELS.aiReview} />
       case 'schedule':
