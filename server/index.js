@@ -376,6 +376,16 @@ function gracefulShutdown(signal) {
         }
 
         try {
+            // Mark in-flight migration plans and tasks as interrupted
+            db.prepare(`UPDATE migration_plans SET status = 'interrupted', updated_at = datetime('now')
+                WHERE status IN ('running', 'paused')`).run();
+            db.prepare(`UPDATE migration_tasks SET status = 'interrupted'
+                WHERE status IN ('pending', 'running')`).run();
+        } catch (e) {
+            logger.warn({ err: e }, 'Could not update migration plans/tasks');
+        }
+
+        try {
             db.close();
         } catch (e) {
             logger.warn({ err: e }, 'Could not close database');
