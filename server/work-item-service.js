@@ -63,8 +63,11 @@ function htmlToMarkdown(html) {
   // <code> → `code`
   md = md.replace(/<code>(.*?)<\/code>/gi, '`$1`')
 
-  // <a href="url">text</a> → [text](url)
-  md = md.replace(/<a\s+href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
+  // <a href="url">text</a> → [text](url) with protocol validation
+  md = md.replace(/<a\s+href="([^"]*)"[^>]*>(.*?)<\/a>/gi, (match, href, text) => {
+    const safeHref = /^(https?:|mailto:)/i.test(href) ? href : '#'
+    return `[${text}](${safeHref})`
+  })
 
   // Strip any remaining HTML tags
   md = md.replace(/<[^>]+>/g, '')
