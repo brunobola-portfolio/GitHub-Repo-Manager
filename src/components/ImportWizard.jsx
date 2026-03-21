@@ -473,6 +473,11 @@ export function ImportWizard({ isOpen, onClose, orgs }) {
     }
 
     function getSourceDisplayName() {
+        if (sourceType === 'azure' && versionControlType === 'Tfvc') {
+            if (selectedCount > 1) return `${azureOrg}/${selectedProject} (${selectedCount} TFVC folders)`
+            const path = selectedRepoNames[0] || ''
+            return `${azureOrg}/${selectedProject} · TFVC: ${path.split('/').pop()}`
+        }
         if (sourceType === 'azure') {
             if (selectedCount > 1) return `${azureOrg}/${selectedProject} (${selectedCount} repos)`
             const name = selectedRepoNames[0] || ''

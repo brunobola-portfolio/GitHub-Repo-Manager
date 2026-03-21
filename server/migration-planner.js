@@ -49,6 +49,24 @@ export function fallbackAnalysis(context) {
     }
   }
 
+  // TFVC conversion risks
+  const tfvcRepos = repos.filter(r => r.isTfvc);
+  if (tfvcRepos.length > 0) {
+    risks.push({
+      severity: 'medium',
+      title: `TFVC conversion required (${tfvcRepos.length} ${tfvcRepos.length === 1 ? 'folder' : 'folders'})`,
+      description: 'TFVC repositories must be converted to Git before migration. Conversion preserves up to 180 days of history. If conversion fails, a snapshot without history will be used as fallback.',
+      mitigation: 'Ensure your PAT has Code (Read) permissions and the TFVC content is under 1 GB per folder.',
+    });
+
+    if (tfvcRepos.length > 3) {
+      suggestions.push({
+        id: 'tfvc-batch-warning',
+        text: `${tfvcRepos.length} TFVC folders selected. Each conversion takes 2-10 minutes. Consider migrating in smaller batches.`,
+      });
+    }
+  }
+
   // Name conflicts
   for (const repo of repos) {
     const targetName = repo.targetName || repo.name;
@@ -80,7 +98,10 @@ export function fallbackAnalysis(context) {
   const totalWikiPages = wikis.reduce((sum, w) => sum + (w.pageCount || 0), 0);
   const wikiMinutes = Math.ceil(totalWikiPages / 20);
 
-  const estimatedMinutes = Math.max(1, repoMinutes + workItemMinutes + wikiMinutes);
+  // TFVC conversion adds ~5 minutes per folder
+  const tfvcMinutes = tfvcRepos.length * 5;
+
+  const estimatedMinutes = Math.max(1, repoMinutes + workItemMinutes + wikiMinutes + tfvcMinutes);
 
   // --- Suggestions ---
   if (repos.length > 5) {
@@ -129,12 +150,16 @@ export async function analyzeMigration(context) {
     const workItems = context.workItems || {};
     const wikis = context.wikis || [];
 
+    const tfvcInfo = repos.some(r => r.isTfvc)
+      ? `\n\nTFVC Note: Some repositories use Team Foundation Version Control (TFVC) and must be converted to Git before migration. TFVC conversion preserves up to 180 days of history and takes 2-10 minutes per folder. If conversion fails (>1GB or timeout), a snapshot without history is used as fallback. TFVC folders: ${repos.filter(r => r.isTfvc).map(r => r.name).join(', ')}`
+      : '';
+
     const prompt = `You are analyzing a migration plan from Azure DevOps to GitHub.
 Analyze the following migration context and provide recommendations.
 
 Repositories to migrate:
-${repos.map(r => `- ${r.name} (${((r.size || 0) / 1_000_000).toFixed(1)} MB${r.hasLfs ? ', uses LFS' : ''})`).join('\n')}
-
+${repos.map(r => `- ${r.name} (${((r.size || 0) / 1_000_000).toFixed(1)} MB${r.hasLfs ? ', uses LFS' : ''}${r.isTfvc ? ', TFVC' : ''})`).join('\n')}
+${tfvcInfo}
 Work Items: ${JSON.stringify(workItems.counts || {}, null, 2)}
 Wikis: ${wikis.length} wikis, ${wikis.reduce((s, w) => s + (w.pageCount || 0), 0)} total pages
 Target org existing repos: ${(context.target?.existingRepos || []).join(', ') || 'none'}
@@ -148,7 +173,7 @@ Return a JSON object with exactly this structure (no markdown, raw JSON only):
   "warnings": ["string"]
 }
 
-Consider: repo sizes, LFS usage, name conflicts, work item volume, optimal execution order.`;
+Consider: repo sizes, LFS usage, name conflicts, work item volume, optimal execution order${repos.some(r => r.isTfvc) ? ', TFVC conversion time and history limitations' : ''}.`;
 
     const result = await aiService.model.generateContent(prompt);
     const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();

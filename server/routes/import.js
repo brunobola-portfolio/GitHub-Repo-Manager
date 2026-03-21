@@ -438,6 +438,9 @@ router.post('/import/azure-tfvc', requireAuth, async (req, res) => {
         if (!azureOrg || !azureProject || !tfvcPath) {
             return errorResponse(res, 400, 'Azure organization, project, and TFVC path are required', 'MISSING_PARAMS');
         }
+        if (!tfvcPath.startsWith('$/')) {
+            return errorResponse(res, 400, 'TFVC path must start with $/', 'INVALID_PATH');
+        }
         if (!azurePat) {
             return errorResponse(res, 400, 'No PAT provided and no server PAT configured', 'MISSING_PAT');
         }
@@ -449,19 +452,25 @@ router.post('/import/azure-tfvc', requireAuth, async (req, res) => {
         const userId = req.session.userId;
         const sourceName = `${azureOrg}/${azureProject}/${folderName} (TFVC)`;
 
-        // Duplicate check
-        const existing = db.prepare(
-            `SELECT id FROM migration_jobs WHERE source_url = ? AND status IN ('pending', 'running') AND user_id = ?`
-        ).get(safeUrl, userId);
-        if (existing) {
+        // Atomic duplicate check + insert to prevent race conditions
+        const createTfvcJob = db.transaction((safeUrl, userId, sourceName, owner, repoName) => {
+            const existing = db.prepare(
+                `SELECT id FROM migration_jobs WHERE source_url = ? AND status IN ('pending', 'running') AND user_id = ?`
+            ).get(safeUrl, userId);
+            if (existing) return { duplicate: true, id: existing.id };
+
+            const result = db.prepare(`
+                INSERT INTO migration_jobs (user_id, source_type, source_url, source_name, target_owner, target_repo, status, progress_message)
+                VALUES (?, ?, ?, ?, ?, ?, 'running', 'Starting TFVC conversion...')
+            `).run(userId, 'azure-tfvc', safeUrl, sourceName, owner, repoName);
+            return { duplicate: false, id: result.lastInsertRowid };
+        });
+
+        const jobResult = createTfvcJob(safeUrl, userId, sourceName, owner, repoName);
+        if (jobResult.duplicate) {
             return errorResponse(res, 409, 'An import for this TFVC path is already in progress', 'DUPLICATE_IMPORT');
         }
-
-        const job = db.prepare(`
-            INSERT INTO migration_jobs (user_id, source_type, source_url, source_name, target_owner, target_repo, status, progress_message)
-            VALUES (?, ?, ?, ?, ?, ?, 'running', 'Starting TFVC conversion...')
-        `).run(userId, 'azure-tfvc', safeUrl, sourceName, owner, repoName);
-        const jobId = Number(job.lastInsertRowid);
+        const jobId = Number(jobResult.id);
 
         // Run TFVC import asynchronously
         runTfvcImport({
@@ -504,7 +513,7 @@ router.post('/import/azure-tfvc/batch', requireAuth, async (req, res) => {
 
         for (const item of items) {
             const { tfvcPath, targetName: itemTargetName } = item;
-            if (!tfvcPath) continue;
+            if (!tfvcPath || !tfvcPath.startsWith('$/')) continue;
 
             const folderName = tfvcPath.split('/').pop() || azureProject;
             const repoName = importService.sanitizeRepoName(itemTargetName || folderName);
@@ -567,6 +576,7 @@ router.post('/import/azure-tfvc/batch', requireAuth, async (req, res) => {
         res.json({
             success: true,
             jobs: jobResults.map(j => ({
+                repoName: j.tfvcPath?.split('/').pop() || j.targetName,
                 tfvcPath: j.tfvcPath,
                 targetName: j.targetName,
                 jobId: j.jobId,
@@ -616,7 +626,15 @@ async function runTfvcImport(params) {
             await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
             pollAttempts++;
 
-            const status = await azureService.getImportStatus(azureOrg, azureProject, tempRepoId, importReq.importRequestId, azurePat);
+            let status;
+            try {
+                status = await azureService.getImportStatus(azureOrg, azureProject, tempRepoId, importReq.importRequestId, azurePat);
+            } catch (pollError) {
+                if (pollError.status === 401 || pollError.status === 403) {
+                    throw new Error('PAT expired or was revoked during TFVC conversion. The conversion may still be running in Azure DevOps — check manually.');
+                }
+                throw pollError;
+            }
             const pct = Math.min(10 + Math.floor((pollAttempts / MAX_POLLS) * 30), 40);
             onProgress('running', `Converting TFVC to Git... (${status.status})`, pct);
 
@@ -748,6 +766,9 @@ async function runTfvcSnapshotFallback(params) {
         onProgress('running', 'Downloading TFVC files...', 35);
         const zipBuffer = await azureService.downloadTfvcItems(azureOrg, azureProject, tfvcPath, azurePat);
 
+        if (zipBuffer.length === 0) {
+            throw new Error('TFVC path contains no files to migrate. Check that the path exists and has content.');
+        }
         if (zipBuffer.length > MAX_ZIP_SIZE) {
             throw new Error(`TFVC content exceeds 1 GB limit (${(zipBuffer.length / 1024 / 1024).toFixed(0)} MB). Try migrating a smaller scope.`);
         }
