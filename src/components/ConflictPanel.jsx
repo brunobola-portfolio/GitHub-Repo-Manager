@@ -1,0 +1,241 @@
+import { Fragment, useState } from 'react'
+import { Trash2, Edit3, SkipForward } from 'lucide-react'
+
+// --- Helper functions ---
+
+function formatSize(kb) {
+    if (kb >= 1024) {
+        return `${(kb / 1024).toFixed(1)} MB`
+    }
+    return `${kb} KB`
+}
+
+function formatDate(iso) {
+    if (!iso) return '—'
+    const d = new Date(iso)
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function compareSummary(source, target) {
+    const srcDate = source?.updated_at ? new Date(source.updated_at) : null
+    const tgtDate = target?.updated_at ? new Date(target.updated_at) : null
+
+    if (!srcDate || !tgtDate) {
+        return { text: 'Unable to compare dates', type: 'neutral' }
+    }
+
+    const diffMs = srcDate - tgtDate
+    const diffDays = Math.round(Math.abs(diffMs) / (1000 * 60 * 60 * 24))
+
+    if (diffMs > 0) {
+        return {
+            text: `Source is newer (updated ${diffDays}d later)`,
+            type: 'source'
+        }
+    } else if (diffMs < 0) {
+        return {
+            text: `Target is newer (updated ${diffDays}d later)`,
+            type: 'target'
+        }
+    } else {
+        return { text: 'Repos appear identical', type: 'neutral' }
+    }
+}
+
+// --- Metadata rows for the comparison table ---
+
+const METADATA_ROWS = [
+    {
+        label: 'Updated',
+        getValue: (repo) => formatDate(repo?.updated_at)
+    },
+    {
+        label: 'Size',
+        getValue: (repo) => (repo?.size != null ? formatSize(repo.size) : '—')
+    },
+    {
+        label: 'Language',
+        getValue: (repo) => repo?.language || '—'
+    },
+    {
+        label: 'Stars',
+        getValue: (repo) => (repo?.stargazers_count != null ? String(repo.stargazers_count) : '—')
+    },
+    {
+        label: 'Forks',
+        getValue: (repo) => (repo?.forks_count != null ? String(repo.forks_count) : '—')
+    }
+]
+
+// --- ConflictPanel component ---
+
+export function ConflictPanel({ conflict, repoName, onResolve, resolution }) {
+    const [pendingAction, setPendingAction] = useState(null) // 'replace' | 'rename'
+    const [renameValue, setRenameValue] = useState(`${repoName}-2`)
+
+    const { source, target } = conflict || {}
+    const summary = compareSummary(source, target)
+
+    const summaryColorClass =
+        summary.type === 'source'
+            ? 'text-emerald-600 dark:text-emerald-400'
+            : summary.type === 'target'
+            ? 'text-amber-600 dark:text-amber-400'
+            : 'text-slate-500 dark:text-slate-400'
+
+    // --- Resolved state ---
+    if (resolution) {
+        const label =
+            resolution.action === 'replace'
+                ? 'Will replace target'
+                : resolution.action === 'skip'
+                ? 'Will skip this repo'
+                : `Will rename to "${resolution.newName}"`
+
+        return (
+            <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 px-4 py-3">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</span>
+                <button
+                    type="button"
+                    onClick={() => {
+                        setPendingAction(null)
+                        setRenameValue(`${repoName}-2`)
+                        onResolve(null)
+                    }}
+                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline shrink-0"
+                >
+                    Change
+                </button>
+            </div>
+        )
+    }
+
+    return (
+        <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-sm">
+            {/* Comparison table */}
+            <div className="grid grid-cols-3 bg-slate-50 dark:bg-slate-800/50">
+                {/* Column headers */}
+                <div className="px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                    Field
+                </div>
+                <div className="px-3 py-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">
+                    Source
+                </div>
+                <div className="px-3 py-2 text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
+                    Target
+                </div>
+
+                {/* Data rows */}
+                {METADATA_ROWS.map((row) => (
+                    <Fragment key={row.label}>
+                        <div className="px-3 py-2 text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700">
+                            {row.label}
+                        </div>
+                        <div className="px-3 py-2 text-slate-700 dark:text-slate-200 border-t border-slate-200 dark:border-slate-700">
+                            {row.getValue(source)}
+                        </div>
+                        <div className="px-3 py-2 text-slate-700 dark:text-slate-200 border-t border-slate-200 dark:border-slate-700">
+                            {row.getValue(target)}
+                        </div>
+                    </Fragment>
+                ))}
+            </div>
+
+            {/* Smart summary */}
+            <div className={`px-3 py-2 border-t border-slate-200 dark:border-slate-700 font-medium ${summaryColorClass}`}>
+                {summary.text}
+            </div>
+
+            {/* Action area */}
+            <div className="px-3 py-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/30 space-y-3">
+                {/* Replace flow */}
+                {pendingAction === 'replace' ? (
+                    <div className="space-y-2">
+                        <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                            This will overwrite the existing target repository. This cannot be undone.
+                        </p>
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => onResolve({ action: 'replace' })}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-medium transition-colors"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Confirm Replace
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPendingAction(null)}
+                                className="px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                ) : pendingAction === 'rename' ? (
+                    /* Rename flow */
+                    <div className="space-y-2">
+                        <label className="block text-xs text-slate-600 dark:text-slate-400 font-medium">
+                            New repository name
+                        </label>
+                        <input
+                            type="text"
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => onResolve({ action: 'rename', newName: renameValue })}
+                                disabled={!renameValue.trim()}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-medium transition-colors"
+                            >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                Confirm Rename
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPendingAction(null)}
+                                className="px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    /* Default action buttons */
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setPendingAction('replace')}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 text-xs font-medium hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Replace
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setRenameValue(`${repoName}-2`)
+                                setPendingAction('rename')
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 text-xs font-medium hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors"
+                        >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            Rename
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => onResolve({ action: 'skip' })}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                        >
+                            <SkipForward className="w-3.5 h-3.5" />
+                            Skip
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
