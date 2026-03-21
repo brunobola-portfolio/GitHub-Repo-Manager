@@ -6,6 +6,7 @@ import {
     bulkArchiveSchema,
     bulkDeleteSchema,
     bulkTransferSchema,
+    checkConflictsSchema,
     teamCreateSchema,
     teamMemberSchema,
     teamRepoSchema,
@@ -114,6 +115,70 @@ describe('bulkTransferSchema', () => {
             toOrg: 'target-org'
         })
         expect(result.success).toBe(true)
+    })
+})
+
+describe('checkConflictsSchema', () => {
+    it('accepts valid data', () => {
+        const result = checkConflictsSchema.safeParse({
+            repos: ['owner/repo1', 'owner/repo2'],
+            targetOrg: 'my-org'
+        })
+        expect(result.success).toBe(true)
+    })
+
+    it('rejects missing targetOrg', () => {
+        const result = checkConflictsSchema.safeParse({ repos: ['a/b'] })
+        expect(result.success).toBe(false)
+    })
+
+    it('rejects empty repos', () => {
+        const result = checkConflictsSchema.safeParse({ repos: [], targetOrg: 'org' })
+        expect(result.success).toBe(false)
+    })
+})
+
+describe('bulkTransferSchema with strategies', () => {
+    it('accepts transfer without strategies (backward compat)', () => {
+        const result = bulkTransferSchema.safeParse({
+            repos: ['owner/repo'],
+            toOrg: 'target-org'
+        })
+        expect(result.success).toBe(true)
+    })
+
+    it('accepts transfer with strategies', () => {
+        const result = bulkTransferSchema.safeParse({
+            repos: ['owner/repo'],
+            toOrg: 'target-org',
+            strategies: {
+                'owner/repo': { action: 'replace' }
+            }
+        })
+        expect(result.success).toBe(true)
+    })
+
+    it('accepts rename strategy with newName', () => {
+        const result = bulkTransferSchema.safeParse({
+            repos: ['owner/repo'],
+            toOrg: 'target-org',
+            strategies: {
+                'owner/repo': { action: 'rename', newName: 'repo-2' }
+            }
+        })
+        expect(result.success).toBe(true)
+        expect(result.data.strategies['owner/repo'].newName).toBe('repo-2')
+    })
+
+    it('rejects invalid strategy action', () => {
+        const result = bulkTransferSchema.safeParse({
+            repos: ['owner/repo'],
+            toOrg: 'target-org',
+            strategies: {
+                'owner/repo': { action: 'destroy' }
+            }
+        })
+        expect(result.success).toBe(false)
     })
 })
 

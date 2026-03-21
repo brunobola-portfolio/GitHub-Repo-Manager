@@ -37,9 +37,20 @@ export const bulkDeleteSchema = z.object({
     repos: z.array(z.string().min(1).max(200)).min(1).max(100)
 });
 
+const strategySchema = z.object({
+    action: z.enum(['transfer', 'replace', 'rename', 'skip']),
+    newName: z.string().min(1).max(100).optional()
+});
+
 export const bulkTransferSchema = z.object({
     repos: z.array(z.string().min(1).max(200)).min(1).max(100),
-    toOrg: z.string().min(1).max(39)
+    toOrg: z.string().min(1).max(39),
+    strategies: z.record(z.string(), strategySchema).optional()
+});
+
+export const checkConflictsSchema = z.object({
+    repos: z.array(z.string().min(1).max(200)).min(1).max(100),
+    targetOrg: z.string().min(1).max(39)
 });
 
 export const bulkMirrorSchema = z.object({
