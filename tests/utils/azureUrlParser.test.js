@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseAzureUrl } from './azureUrlParser'
+import { parseAzureUrl } from '@/utils/azureUrlParser'
 
 describe('parseAzureUrl', () => {
   // Standard dev.azure.com

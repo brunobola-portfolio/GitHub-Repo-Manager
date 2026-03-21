@@ -26,6 +26,14 @@
 - Validate all user inputs on server endpoints
 - Session cookies: `httpOnly`, `sameSite: 'lax'`, `secure` in production
 
+## Testing
+- Unit tests go in `tests/` mirroring `src/` structure (e.g., `src/hooks/useTheme.jsx` → `tests/hooks/useTheme.test.jsx`)
+- E2E tests go in `e2e/` (Playwright)
+- Test setup file: `tests/setup.js`
+- Run unit tests: `npx vitest`
+- Run E2E tests: `npx playwright test`
+- NEVER place test files alongside source files in `src/`
+
 ## Documentation Structure
 - `docs/index.md` — Documentation map (start here)
 - `docs/specs/` — Design specs: `YYYY-MM-DD-feature-name.md` (what to build)
@@ -35,3 +43,9 @@
 - `docs/reports/` — Validation and analysis reports
 - `docs/images/` — Screenshots (`0X_description_hd.png`, Playwright MCP at 1920x1080)
 - When creating specs or plans, ALWAYS use `docs/specs/` or `docs/plans/` — never create custom subdirectories
+
+## Dev Files
+- `.dev/claude/memory/` — Claude persistent memory for this project (committed)
+- `.dev/claude/plans/` — Implementation plans generated during development (committed)
+- `.claude/settings.json` — Claude Code project settings (committed)
+- `.claude/settings.local.json` — Local overrides (gitignored)

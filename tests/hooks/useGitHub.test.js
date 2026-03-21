@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { ApiError, ErrorType } from '../utils/api'
+import { ApiError, ErrorType } from '@/utils/api'
 
 // Mock the config module to control MOCK_MODE
-vi.mock('../config', () => ({
+vi.mock('@/config', () => ({
   MOCK_MODE: true,
   API_ENDPOINTS: {
     user: '/api/user',
@@ -19,7 +19,7 @@ vi.mock('../config', () => ({
 }))
 
 // Must import after mocking
-const { useGitHub } = await import('./useGitHub')
+const { useGitHub } = await import('@/hooks/useGitHub')
 
 describe('useGitHub', () => {
   beforeEach(() => {

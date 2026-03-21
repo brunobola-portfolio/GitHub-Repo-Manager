@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { ConfirmModal } from './ConfirmModal'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 // Mock useFocusTrap
-vi.mock('../../hooks/useFocusTrap', () => ({
+vi.mock('@/hooks/useFocusTrap', () => ({
   useFocusTrap: () => ({ current: null })
 }))
 

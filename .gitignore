@@ -49,9 +49,12 @@ server/data/
 .roo/
 
 # Claude Code and MCP
-.claude/
+.claude/settings.local.json
 .playwright-mcp/
 .superpowers/
+
+# Dev directory — memory and plans are committed, brainstorm is local
+.dev/brainstorm/
 
 # Screenshots and images (not part of source)
 *.png
