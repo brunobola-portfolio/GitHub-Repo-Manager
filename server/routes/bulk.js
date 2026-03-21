@@ -15,7 +15,7 @@ import express from 'express';
 import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, isValidGitHubUsername, safeError, errorResponse } from '../middleware/auth.js';
-import { validate, bulkVisibilitySchema, bulkArchiveSchema, bulkDeleteSchema, bulkTransferSchema, bulkMirrorSchema } from '../lib/validators.js';
+import { validate, bulkVisibilitySchema, bulkArchiveSchema, bulkDeleteSchema, bulkTransferSchema, bulkMirrorSchema, checkConflictsSchema } from '../lib/validators.js';
 
 const router = express.Router();
 
@@ -65,6 +65,59 @@ router.post('/visibility', requireAuth, validate(bulkVisibilitySchema), async (r
         results
     });
 });
+
+// Check for name conflicts before transfer
+router.post('/transfer/check-conflicts', requireAuth, validate(checkConflictsSchema), async (req, res) => {
+    const { repos, targetOrg } = req.body
+
+    if (!isValidGitHubUsername(targetOrg))
+        return errorResponse(res, 400, 'Invalid target organization name', 'INVALID_ORG')
+
+    const conflicts = {}
+
+    await Promise.all(repos.map(async (repoFullName) => {
+        const repoName = repoFullName.split('/').pop()
+        try {
+            // Check if repo with same name exists in target org
+            const { data: targetRepo } = await githubApi(
+                `/repos/${encodeURIComponent(targetOrg)}/${encodeURIComponent(repoName)}`,
+                req.session.accessToken
+            )
+            // Also fetch source repo metadata for comparison
+            const { data: sourceRepo } = await githubApi(
+                `/repos/${repoFullName}`,
+                req.session.accessToken
+            )
+
+            const pick = (r) => ({
+                full_name: r.full_name,
+                updated_at: r.updated_at,
+                pushed_at: r.pushed_at,
+                size: r.size,
+                default_branch: r.default_branch,
+                stargazers_count: r.stargazers_count,
+                forks_count: r.forks_count,
+                language: r.language,
+                description: r.description,
+                open_issues_count: r.open_issues_count
+            })
+
+            conflicts[repoName] = {
+                exists: true,
+                source: pick(sourceRepo),
+                target: pick(targetRepo)
+            }
+        } catch (error) {
+            if (error.status === 404) {
+                conflicts[repoName] = { exists: false }
+            } else {
+                conflicts[repoName] = { exists: false, error: safeError(error, 'Check failed') }
+            }
+        }
+    }))
+
+    res.json({ conflicts })
+})
 
 // Transfer multiple repos to an organization
 router.post('/transfer', requireAuth, validate(bulkTransferSchema), async (req, res) => {
