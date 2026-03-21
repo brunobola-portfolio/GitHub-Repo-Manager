@@ -121,7 +121,7 @@ router.post('/transfer/check-conflicts', requireAuth, validate(checkConflictsSch
 
 // Transfer multiple repos to an organization
 router.post('/transfer', requireAuth, validate(bulkTransferSchema), async (req, res) => {
-    const { repos, toOrg } = req.body;
+    const { repos, toOrg, strategies } = req.body;
 
     if (!repos?.length || !toOrg) return errorResponse(res, 400, 'Missing repositories or target organization', 'MISSING_PARAMS');
     if (!isValidGitHubUsername(toOrg)) return errorResponse(res, 400, 'Invalid target organization name', 'INVALID_ORG');
@@ -131,14 +131,46 @@ router.post('/transfer', requireAuth, validate(bulkTransferSchema), async (req, 
     const results = [];
 
     for (const repoFullName of repos) {
+        const strategy = strategies?.[repoFullName]
+        const action = strategy?.action || 'transfer'
+
+        // Skip repos marked as skip
+        if (action === 'skip') {
+            results.push({ repo: repoFullName, success: true, skipped: true })
+            continue
+        }
+
         try {
+            // Replace: delete target repo first
+            if (action === 'replace') {
+                const repoName = repoFullName.split('/').pop()
+                try {
+                    await githubApi(`/repos/${toOrg}/${repoName}`, req.session.accessToken, {
+                        method: 'DELETE'
+                    })
+                } catch (delError) {
+                    if (delError.status !== 404) {
+                        results.push({ repo: repoFullName, success: false, error: `Failed to delete target: ${safeError(delError)}` })
+                        continue
+                    }
+                }
+            }
+
+            // Build transfer body
+            const transferBody = { new_owner: toOrg }
+            if (action === 'rename' && strategy?.newName) {
+                transferBody.new_name = strategy.newName
+            }
+
             await githubApi(`/repos/${repoFullName}/transfer`, req.session.accessToken, {
                 method: 'POST',
-                body: JSON.stringify({ new_owner: toOrg })
-            });
-            results.push({ repo: repoFullName, success: true });
+                body: JSON.stringify(transferBody)
+            })
+            results.push({ repo: repoFullName, success: true })
         } catch (error) {
-            results.push({ repo: repoFullName, success: false, error: safeError(error, 'Operation failed') });
+            const ghErrors = error.data?.errors?.map(e => e.message).join('; ')
+            const detail = ghErrors || safeError(error, 'Operation failed')
+            results.push({ repo: repoFullName, success: false, error: detail })
         }
     }
 
