@@ -69,9 +69,8 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
       // Build tasks from wizard state
       const selectedRepos = (wizard.repos || []).filter(r => r.selected)
       const source = wizard.source || {}
-      const isTfvc = source.versionControlType === 'Tfvc' || selectedRepos.some(r => r.isTfvc)
       const tasks = selectedRepos.map(repo => ({
-        type: isTfvc ? 'repo-tfvc' : 'repo',
+        type: (repo.isTfvc || source.versionControlType === 'Tfvc') ? 'repo-tfvc' : 'repo',
         sourceRef: `${source.org}/${source.project}/${repo.name}`,
         targetRef: repo.targetName || repo.name,
         config: { makePrivate: repo.visibility === 'private', description: repo.description || '' },

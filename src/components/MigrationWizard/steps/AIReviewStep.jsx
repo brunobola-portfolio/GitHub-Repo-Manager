@@ -132,6 +132,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
           size: r.size || 0,
           targetName: r.targetName || r.name,
           hasLfs: r.hasLfs || false,
+          isTfvc: r.isTfvc || false,
         })),
         workItems: wizard.workItems?.enabled ? {
           counts: wizard.workItems.counts || {},
@@ -150,6 +151,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
           type: wizard.source?.type || 'azure',
           org: wizard.source?.org || '',
           project: wizard.source?.project || '',
+          versionControlType: wizard.source?.versionControlType || null,
         },
       }
 
