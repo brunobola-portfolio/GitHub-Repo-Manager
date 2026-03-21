@@ -55,7 +55,7 @@ export function Header({
     return (
         <>
         <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-700/50 sticky top-0 z-20 transition-all duration-300 shadow-sm dark:shadow-black/20 safe-area-top">
-            <div className="max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 h-14 sm:h-16 flex items-center gap-3 safe-area-left safe-area-right">
+            <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 h-14 sm:h-16 flex items-center gap-3 safe-area-left safe-area-right">
                 {/* Left: Logo & Title */}
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink-0">
                     {user && (
@@ -202,7 +202,7 @@ export function Header({
                     ) : (
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                             {/* Theme + Login unified container */}
-                            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
+                            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
                                 <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
                                 <button
                                     type="button"
