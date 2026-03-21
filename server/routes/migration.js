@@ -2,6 +2,7 @@ import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { MigrationEngine } from '../migration-engine.js';
 import { createPlanSchema, updatePlanSchema } from '../lib/validators.js';
+import { analyzeMigration } from '../migration-planner.js';
 import db from '../db.js';
 
 const router = express.Router();
@@ -157,11 +158,15 @@ router.get('/migration/stream/:id', requireAuth, (req, res) => {
   engine.handleSSEConnection(parseInt(req.params.id), req.session.userId, req, res);
 });
 
-// POST /api/migration/analyze — AI analysis (stub for now)
+// POST /api/migration/analyze — AI-powered or fallback analysis
 router.post('/migration/analyze', requireAuth, async (req, res) => {
   try {
-    // Will be implemented in Task 20
-    res.json({ executionOrder: [], risks: [], suggestions: [], estimatedMinutes: 0, warnings: [] });
+    const context = req.body;
+    if (!context || !Array.isArray(context.repos)) {
+      return res.status(400).json({ error: 'Invalid context: repos array is required' });
+    }
+    const result = await analyzeMigration(context);
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
