@@ -22,6 +22,7 @@ export function TransferModal({
 	const [conflicts, setConflicts] = useState(null) // null = unchecked, {} = checked
 	const [checkingConflicts, setCheckingConflicts] = useState(false)
 	const [resolutions, setResolutions] = useState({}) // { repoName: { action, newName? } }
+	const [dryRun, setDryRun] = useState(false)
 	const modalRef = useFocusTrap(isOpen, onClose)
 
 	// Scroll input into view when keyboard appears (mobile fix)
@@ -41,7 +42,7 @@ export function TransferModal({
 		return () => modal?.removeEventListener('focusin', handleFocus)
 	}, [isOpen, modalRef])
 
-	// Check conflicts when targetOrg changes (transfer mode only)
+	// Check conflicts when targetOrg changes (transfer mode only) - debounced 500ms
 	useEffect(() => {
 		if (!targetOrg || !repos.length || action !== 'transfer') {
 			setConflicts(null)
@@ -50,34 +51,37 @@ export function TransferModal({
 		}
 
 		let cancelled = false
-		async function checkConflicts() {
-			setCheckingConflicts(true)
-			setConflicts(null)
-			setResolutions({})
-			try {
-				const resp = await fetch(API_ENDPOINTS.checkConflicts, {
-					method: 'POST',
-					credentials: 'include',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						repos: repos.map(r => r.full_name),
-						targetOrg
+		const timer = setTimeout(() => {
+			async function checkConflicts() {
+				setCheckingConflicts(true)
+				setConflicts(null)
+				setResolutions({})
+				try {
+					const resp = await fetch(API_ENDPOINTS.checkConflicts, {
+						method: 'POST',
+						credentials: 'include',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							repos: repos.map(r => r.full_name),
+							targetOrg
+						})
 					})
-				})
-				if (!cancelled && resp.ok) {
-					const data = await resp.json()
-					setConflicts(data.conflicts || {})
-				} else if (!cancelled) {
-					console.warn("Conflict check failed:", resp.status)
+					if (!cancelled && resp.ok) {
+						const data = await resp.json()
+						setConflicts(data.conflicts || {})
+					} else if (!cancelled) {
+						console.warn("Conflict check failed:", resp.status)
+					}
+				} catch {
+					// Silently fail — transfer will still catch conflicts at execution time
+				} finally {
+					if (!cancelled) setCheckingConflicts(false)
 				}
-			} catch {
-				// Silently fail — transfer will still catch conflicts at execution time
-			} finally {
-				if (!cancelled) setCheckingConflicts(false)
 			}
-		}
-		checkConflicts()
-		return () => { cancelled = true }
+			checkConflicts()
+		}, 500)
+
+		return () => { cancelled = true; clearTimeout(timer) }
 	}, [targetOrg, repos, action])
 
 	if (!isOpen) return null
@@ -333,6 +337,19 @@ export function TransferModal({
                     )}
                 </div>
 
+                {/* Dry-run toggle */}
+                <div className="px-6 py-2 border-t border-slate-100 dark:border-slate-700">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={dryRun}
+                            onChange={(e) => setDryRun(e.target.checked)}
+                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700"
+                        />
+                        <span className="text-sm text-slate-600 dark:text-slate-400">Simulate transfer (dry-run)</span>
+                    </label>
+                </div>
+
                 {/* Footer */}
                 <div className="px-6 py-4 bg-slate-50 dark:bg-slate-700/50 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
                     <span className="text-sm text-slate-500 dark:text-slate-400">
@@ -350,7 +367,7 @@ export function TransferModal({
                                 if (skipped > 0) parts.push(`${skipped} skip`)
                                 return parts.join(', ')
                             }
-                            return `${repos.length} repo${repos.length !== 1 ? 's' : ''} will be ${action === 'transfer' ? 'transferred' : 'mirrored'}`
+                            return `${repos.length} repo${repos.length !== 1 ? 's' : ''} will be ${action === 'transfer' ? 'transferred' : 'mirrored'}${dryRun ? ' (dry-run)' : ''}`
                         })()}
                     </span>
                     <div className="flex gap-3">
@@ -362,7 +379,7 @@ export function TransferModal({
                             onClick={handleSubmit}
                             disabled={!targetOrg || isPerforming || checkingConflicts || (conflicts && repos.some(r => conflicts[r.name]?.exists && !resolutions[r.name]))}
                         >
-                            {isPerforming ? 'Processing...' : (action === 'transfer' ? 'Transfer' : 'Mirror')}
+                            {isPerforming ? 'Processing...' : (dryRun ? 'Simulate' : (action === 'transfer' ? 'Transfer' : 'Mirror'))}
                         </Button>
                     </div>
                 </div>
