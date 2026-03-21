@@ -2,13 +2,15 @@ import React, { useState, useMemo } from 'react'
 import {
     BarChart3, TrendingUp, Activity, GitPullRequest, GitMerge,
     MessageSquare, Zap, PlayCircle, Heart, Users, Building2,
-    Code2, Folder, Archive, Star, GitFork, CheckCircle2, XCircle
+    Code2, Folder, Archive, Star, GitFork, CheckCircle2, XCircle,
+    Download
 } from 'lucide-react'
 import { CategorySection } from './CategorySection'
 import { EmptyState } from '../ui/EmptyState'
 import { StatCard } from './StatCard'
 import { ActivityChart } from './ActivityChart'
 import { LanguageChart } from './LanguageChart'
+import { MigrationActivity } from './MigrationActivity'
 import { OrganizationSelector } from './OrganizationSelector'
 import { OrganizationCard } from './OrganizationCard'
 import { shouldShowCategory, aggregateRepoStats, aggregateLanguages, calculateActivityMetrics } from '../../utils/statsAggregator'
@@ -199,6 +201,15 @@ export function DashboardPremium({
                     />
                 </CategorySection>
             )}
+
+            {/* CATEGORY: Migration Activity (Always visible) */}
+            <CategorySection
+                title="Migration Activity"
+                icon={Download}
+                defaultExpanded={true}
+            >
+                <MigrationActivity loading={loading} />
+            </CategorySection>
 
             {/* CATEGORY 3: CI/CD & Automation (Conditional) */}
             {categories.actions && (

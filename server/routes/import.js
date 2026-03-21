@@ -283,6 +283,47 @@ router.get('/migrations', requireAuth, async (req, res) => {
 });
 
 // ------------------------------------------------------------------
+// Migration stats summary for dashboard
+// ------------------------------------------------------------------
+router.get('/migrations/stats', requireAuth, async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const total = db.prepare('SELECT COUNT(*) as count FROM migration_jobs WHERE user_id = ?').get(userId);
+        const completed = db.prepare("SELECT COUNT(*) as count FROM migration_jobs WHERE user_id = ? AND status = 'complete'").get(userId);
+        const failed = db.prepare("SELECT COUNT(*) as count FROM migration_jobs WHERE user_id = ? AND status = 'failed'").get(userId);
+        const running = db.prepare("SELECT COUNT(*) as count FROM migration_jobs WHERE user_id = ? AND status IN ('pending', 'running')").get(userId);
+        const tfvc = db.prepare("SELECT COUNT(*) as count FROM migration_jobs WHERE user_id = ? AND source_type = 'azure-tfvc'").get(userId);
+        const recent = db.prepare(`
+            SELECT id, source_type, source_name, target_repo, target_full_name, status, progress_pct, progress_message, started_at, completed_at, metadata
+            FROM migration_jobs WHERE user_id = ? ORDER BY started_at DESC LIMIT 5
+        `).all(userId);
+
+        res.json({
+            total: total.count,
+            completed: completed.count,
+            failed: failed.count,
+            running: running.count,
+            tfvc: tfvc.count,
+            recent: recent.map(j => ({
+                id: j.id,
+                sourceType: j.source_type,
+                sourceName: j.source_name,
+                targetRepo: j.target_repo,
+                targetFullName: j.target_full_name,
+                status: j.status,
+                progressPct: j.progress_pct,
+                progressMessage: j.progress_message,
+                startedAt: j.started_at,
+                completedAt: j.completed_at,
+                metadata: safeJsonParse(j.metadata)
+            }))
+        });
+    } catch (error) {
+        errorResponse(res, 500, safeError(error, 'Failed to get migration stats'));
+    }
+});
+
+// ------------------------------------------------------------------
 // Batch Azure import — imports multiple repos with concurrency limit
 // ------------------------------------------------------------------
 router.post('/import/azure/batch', requireAuth, async (req, res) => {

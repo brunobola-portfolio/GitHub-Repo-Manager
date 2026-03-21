@@ -2,7 +2,7 @@
 
 **Base URL:** `http://localhost:3001/api`
 **Authentication:** GitHub OAuth via session cookies. Most endpoints require an authenticated session (`requireAuth` middleware). The server never exposes raw access tokens to the client.
-**Total Endpoints:** 106
+**Total Endpoints:** 112
 
 ---
 
@@ -2458,6 +2458,139 @@ List repositories in an Azure DevOps project.
 
 **Error Codes:**
 - `400` - Organization, project, and PAT are required
+
+**Note:** When no Git repos are found, the response includes `versionControlType: 'Tfvc'` if the project uses TFVC.
+
+---
+
+### `POST /api/azure/project-info`
+
+Get project info including version control type (Git or TFVC).
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `org` | string | Yes | Azure DevOps organization name |
+| `project` | string | Yes | Project name |
+| `pat` | string | No | PAT (uses server PAT if omitted) |
+
+**Response (200):**
+
+```json
+{
+  "id": "project-guid",
+  "name": "MyProject",
+  "versionControlType": "Git" | "Tfvc"
+}
+```
+
+---
+
+### `POST /api/azure/tfvc/items`
+
+List TFVC items (files/folders) under a given path.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `org` | string | Yes | Azure DevOps organization name |
+| `project` | string | Yes | Project name |
+| `pat` | string | No | PAT (uses server PAT if omitted) |
+| `scopePath` | string | No | TFVC path (defaults to `$/{project}`) |
+
+**Response (200):**
+
+```json
+{
+  "items": [
+    { "path": "$/MyProject/Folder", "isFolder": true, "size": 0, "changeDate": "..." }
+  ]
+}
+```
+
+---
+
+### `POST /api/import/azure-tfvc`
+
+Import a TFVC path to GitHub. Converts TFVC to Git via Azure DevOps Import Request API, then clones and pushes to GitHub. Falls back to ZIP snapshot if conversion fails.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `azureOrg` | string | Yes | Azure DevOps organization |
+| `azureProject` | string | Yes | Project name |
+| `tfvcPath` | string | Yes | TFVC path (must start with `$/`) |
+| `azurePat` | string | No | PAT (uses server PAT if omitted) |
+| `targetOrg` | string | No | GitHub target organization |
+| `targetName` | string | No | Target repo name |
+| `makePrivate` | boolean | No | Make target private (default: true) |
+| `importHistory` | boolean | No | Import history up to 180 days (default: true) |
+
+**Response (200):**
+
+```json
+{ "success": true, "jobId": 42, "message": "TFVC import started" }
+```
+
+---
+
+### `POST /api/import/azure-tfvc/batch`
+
+Batch import multiple TFVC paths. Same pipeline as single import with concurrency limit of 2.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Max items | 20 |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `azureOrg` | string | Yes | Azure DevOps organization |
+| `azureProject` | string | Yes | Project name |
+| `azurePat` | string | No | PAT |
+| `targetOrg` | string | No | GitHub target organization |
+| `makePrivate` | boolean | No | Make targets private |
+| `items` | array | Yes | `[{ tfvcPath, targetName }]` |
+
+---
+
+### `GET /api/migrations/stats`
+
+Get migration statistics summary for the dashboard.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Response (200):**
+
+```json
+{
+  "total": 15,
+  "completed": 12,
+  "failed": 1,
+  "running": 2,
+  "tfvc": 3,
+  "recent": [ { "id": 1, "sourceType": "azure-tfvc", "sourceName": "...", "status": "complete", ... } ]
+}
+```
 
 ---
 
