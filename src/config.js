@@ -23,6 +23,7 @@ export const API_ENDPOINTS = {
     repos: `${API_BASE_URL}/api/repos`,
     visibility: `${API_BASE_URL}/api/visibility`,
     transfer: `${API_BASE_URL}/api/transfer`,
+    checkConflicts: `${API_BASE_URL}/api/transfer/check-conflicts`,
     mirror: `${API_BASE_URL}/api/mirror`,
     archive: `${API_BASE_URL}/api/archive`,
     delete: `${API_BASE_URL}/api/delete`,

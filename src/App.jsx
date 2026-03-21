@@ -691,22 +691,33 @@ function AppContent() {
           onClose={() => closeModal('showTransfer')}
           repos={getModalData('showTransfer') || []}
           orgs={orgs}
-          onTransfer={async (repoNames, targetOrg) => {
+          onTransfer={async (repoNames, targetOrg, strategies) => {
             try {
-              await performAction('transfer', repoNames, targetOrg)
-              toast.success(`Transferred ${repoNames.length} repo(s) to ${targetOrg}`)
-              closeModal('showTransfer')
-              refresh()
+              const options = strategies && Object.keys(strategies).length > 0
+                ? { strategies }
+                : {}
+              const result = await performAction('transfer', repoNames, targetOrg, options)
+              if (result?.success) {
+                toast.success(`Transferred ${repoNames.length} repo(s) to ${targetOrg}`)
+                closeModal('showTransfer')
+                refresh()
+              } else {
+                toast.error(result?.message || 'Transfer failed')
+              }
             } catch (err) {
               toast.error(`Transfer failed: ${err.message}`)
             }
           }}
           onMirror={async (repoNames, targetOrg) => {
             try {
-              await performAction('mirror', repoNames, targetOrg)
-              toast.success(`Mirrored ${repoNames.length} repo(s) to ${targetOrg}`)
-              closeModal('showTransfer')
-              refresh()
+              const result = await performAction('mirror', repoNames, targetOrg)
+              if (result?.success) {
+                toast.success(`Mirrored ${repoNames.length} repo(s) to ${targetOrg}`)
+                closeModal('showTransfer')
+                refresh()
+              } else {
+                toast.error(result?.message || 'Mirror failed')
+              }
             } catch (err) {
               toast.error(`Mirror failed: ${err.message}`)
             }
