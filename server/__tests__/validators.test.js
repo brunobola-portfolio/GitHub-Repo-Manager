@@ -103,7 +103,7 @@ describe('bulkDeleteSchema', () => {
 })
 
 describe('bulkTransferSchema', () => {
-    it('requires newOwner', () => {
+    it('requires toOrg', () => {
         const result = bulkTransferSchema.safeParse({ repos: ['a/b'] })
         expect(result.success).toBe(false)
     })
@@ -111,7 +111,7 @@ describe('bulkTransferSchema', () => {
     it('accepts valid transfer data', () => {
         const result = bulkTransferSchema.safeParse({
             repos: ['a/b'],
-            newOwner: 'target-org'
+            toOrg: 'target-org'
         })
         expect(result.success).toBe(true)
     })

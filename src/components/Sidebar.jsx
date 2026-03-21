@@ -440,7 +440,11 @@ function ActionHistory({ results, isPerforming, message }) {
 
             {/* Status Bar */}
             <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800/60 text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-2">
-                <div className={`w-1.5 h-1.5 rounded-full ${isPerforming ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`} />
+                <div className={`w-1.5 h-1.5 rounded-full ${
+                    isPerforming ? 'bg-amber-400 animate-pulse'
+                    : results[0]?.success === false ? 'bg-red-400'
+                    : 'bg-emerald-400'
+                }`} />
                 {message || 'Ready'}
             </div>
         </Card>

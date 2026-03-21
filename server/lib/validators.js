@@ -39,7 +39,7 @@ export const bulkDeleteSchema = z.object({
 
 export const bulkTransferSchema = z.object({
     repos: z.array(z.string().min(1).max(200)).min(1).max(100),
-    newOwner: z.string().min(1).max(39)
+    toOrg: z.string().min(1).max(39)
 });
 
 export const bulkMirrorSchema = z.object({
