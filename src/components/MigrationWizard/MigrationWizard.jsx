@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { useMigrationWizard } from '../../hooks/useMigrationWizard'
 import SourceStep from './steps/SourceStep'
+import RepoSelectStep from './steps/RepoSelectStep'
+import RepoConfigStep from './steps/RepoConfigStep'
 import { ArrowLeft, ArrowRight, Rocket, AlertCircle } from 'lucide-react'
 
 const STEP_LABELS = {
@@ -56,7 +58,13 @@ export default function MigrationWizard({ onClose }) {
     error,
     source,
     updateSource,
+    repos,
+    setRepos,
+    updateRepo,
   } = wizard
+
+  // Only selected repos for the config step
+  const selectedRepos = repos.filter((r) => r.selected)
 
   // Track animation direction: +1 = forward, -1 = backward
   const direction = canGoBack ? 1 : 1
@@ -66,9 +74,21 @@ export default function MigrationWizard({ onClose }) {
       case 'source':
         return <SourceStep source={source} onChange={updateSource} />
       case 'repoSelect':
-        return <StepPlaceholder label={STEP_LABELS.repoSelect} />
+        return <RepoSelectStep repos={repos} onSetRepos={setRepos} source={source} />
       case 'repoConfig':
-        return <StepPlaceholder label={STEP_LABELS.repoConfig} />
+        return (
+          <RepoConfigStep
+            repos={selectedRepos}
+            onUpdateRepo={(selectedIndex, updates) => {
+              // Map the selected-repo index back to the original repos array index
+              const originalIndex = repos.findIndex(
+                (r) => r.name === selectedRepos[selectedIndex]?.name
+              )
+              if (originalIndex !== -1) updateRepo(originalIndex, updates)
+            }}
+            source={source}
+          />
+        )
       case 'workItems':
         return <StepPlaceholder label={STEP_LABELS.workItems} />
       case 'wiki':
