@@ -2,11 +2,16 @@ import { Suspense } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { useMigrationWizard } from '../../hooks/useMigrationWizard'
+import { migrationApi } from '../../api/migration'
 import SourceStep from './steps/SourceStep'
 import RepoSelectStep from './steps/RepoSelectStep'
 import RepoConfigStep from './steps/RepoConfigStep'
 import WorkItemsStep from './steps/WorkItemsStep'
 import WikiStep from './steps/WikiStep'
+import AIReviewStep from './steps/AIReviewStep'
+import ScheduleStep from './steps/ScheduleStep'
+import ProgressStep from './steps/ProgressStep'
+import SummaryStep from './steps/SummaryStep'
 import { ArrowLeft, ArrowRight, Rocket, AlertCircle } from 'lucide-react'
 
 const STEP_LABELS = {
@@ -67,6 +72,13 @@ export default function MigrationWizard({ onClose }) {
     updateWorkItems,
     wiki,
     updateWiki,
+    aiPlan,
+    updateAiPlan,
+    schedule,
+    updateSchedule,
+    planId,
+    setPlanId,
+    resetWizard,
   } = wizard
 
   // Only selected repos for the config step
@@ -100,13 +112,28 @@ export default function MigrationWizard({ onClose }) {
       case 'wiki':
         return <WikiStep wiki={wiki} onUpdate={updateWiki} source={source} />
       case 'aiReview':
-        return <StepPlaceholder label={STEP_LABELS.aiReview} />
+        return <AIReviewStep aiPlan={aiPlan} onUpdate={updateAiPlan} wizard={wizard} />
       case 'schedule':
-        return <StepPlaceholder label={STEP_LABELS.schedule} />
+        return <ScheduleStep schedule={schedule} onUpdate={updateSchedule} wizard={wizard} />
       case 'progress':
-        return <StepPlaceholder label={STEP_LABELS.progress} />
+        return (
+          <ProgressStep
+            planId={planId}
+            onPause={() => {}}
+            onCancel={() => {}}
+            onRetryTask={(taskId) => {
+              if (planId) migrationApi.retryTask(planId, taskId).catch(() => {})
+            }}
+          />
+        )
       case 'summary':
-        return <StepPlaceholder label={STEP_LABELS.summary} />
+        return (
+          <SummaryStep
+            planId={planId}
+            onNewMigration={resetWizard}
+            onViewHistory={onClose}
+          />
+        )
       default:
         return <StepPlaceholder label="Unknown Step" />
     }
