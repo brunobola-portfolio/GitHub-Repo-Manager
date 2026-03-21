@@ -507,7 +507,7 @@ function AppContent() {
         onDismiss={() => setSessionExpired(false)}
       />
 
-      <main id="main-content" className="max-w-[1920px] mx-auto px-3 sm:px-5 lg:px-6 xl:px-8 pt-3 md:pt-4 lg:pt-5 pb-20 md:pb-6 transition-all duration-300 relative z-[1]">
+      <main id="main-content" className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 pt-3 md:pt-4 lg:pt-5 pb-20 md:pb-6 transition-all duration-300 relative z-[1]">
         {!user && activeView === 'dashboard' && (
           <WelcomeHero onLogin={handleLogin} />
         )}
