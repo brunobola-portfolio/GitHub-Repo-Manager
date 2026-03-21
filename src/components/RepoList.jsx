@@ -5,9 +5,9 @@ import { Button } from './ui/Button'
 import { Select } from './ui/Select'
 import {
 	GitFork, Lock, Globe, ExternalLink, RefreshCw, Loader2, AlertCircle,
-	ChevronLeft, ChevronRight, Archive, Star, Unlock, Eye, Trash2,
-	MoreHorizontal, ArrowRightLeft, Copy, Settings, ChevronDown, Search, Filter,
-	LayoutGrid, List as ListIcon, CheckSquare, X, GitPullRequest, CircleDot, Brain, Sparkles, Shield
+	ChevronLeft, ChevronRight, Archive, Star, Trash2,
+	MoreHorizontal, ArrowRightLeft, ChevronDown, Search,
+	LayoutGrid, List as ListIcon, CheckSquare, X, Brain, Sparkles, Shield
 } from 'lucide-react'
 import { PAGINATION } from '../config'
 import { aiApi } from '../api/ai'
@@ -15,6 +15,7 @@ import { formatCompact } from '../utils/format'
 import { motion } from 'framer-motion'
 import { useSelection } from '../hooks/useSelection'
 import { useModal } from '../hooks/useModal'
+import RepoContextMenu from './RepoContextMenu'
 
 export function RepoList({
 	repos,
@@ -151,17 +152,16 @@ export function RepoList({
 		setRepoMenu({ repo, x: e.clientX, y: e.clientY })
 	}
 
-	// Close menu on click outside or scroll
+	// Close selection dropdown on click outside or scroll
 	useEffect(() => {
-		const closeMenu = () => {
-			setRepoMenu(null)
+		const closeSelectionMenu = () => {
 			setShowSelectionMenu(false)
 		}
-		window.addEventListener('click', closeMenu)
-		window.addEventListener('scroll', closeMenu, true)
+		window.addEventListener('click', closeSelectionMenu)
+		window.addEventListener('scroll', closeSelectionMenu, true)
 		return () => {
-			window.removeEventListener('click', closeMenu)
-			window.removeEventListener('scroll', closeMenu, true)
+			window.removeEventListener('click', closeSelectionMenu)
+			window.removeEventListener('scroll', closeSelectionMenu, true)
 		}
 	}, [])
 
@@ -472,14 +472,46 @@ export function RepoList({
 
 			{/* Context Menu */}
 			{repoMenu && (
-				<RepoActionsMenu
+				<RepoContextMenu
 					repo={repoMenu.repo}
+					selectedRepos={selectedIds.size > 1 ? repos.filter(r => selectedIds.has(r.id)) : []}
 					x={repoMenu.x}
 					y={repoMenu.y}
 					onClose={() => setRepoMenu(null)}
-					onQuickAction={onQuickAction}
-					onOpenInsights={() => openModalWithData('showRepoInsights', repoMenu.repo)}
-					onOpenHealth={() => openModalWithData('showCommunityHealth', repoMenu.repo)}
+					onAction={(action, data) => {
+						setRepoMenu(null)
+						switch (action) {
+							case 'visibility':
+								onQuickAction('visibility', data, data.private ? 'public' : 'private')
+								break
+							case 'archive':
+								onQuickAction('archive', data, !data.archived)
+								break
+							case 'delete':
+								onQuickAction('delete', data)
+								break
+							case 'archive_selected':
+								onQuickAction('archive_selected')
+								break
+							case 'delete_selected':
+								onQuickAction('delete_selected')
+								break
+							case 'transfer':
+								openModalWithData('showTransfer', data)
+								break
+							case 'aiRisk':
+							case 'aiSuggest':
+							case 'aiQuality':
+							case 'aiCompare':
+							case 'aiSecurity':
+								openModalWithData('showRepoInsights', data)
+								break
+							default:
+								// For actions not yet wired, pass through to onQuickAction
+								onQuickAction(action, data)
+								break
+						}
+					}}
 				/>
 			)}
 		</div>
@@ -717,92 +749,3 @@ const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, isContextT
 	)
 })
 
-const RepoActionsMenu = memo(function RepoActionsMenu({ repo, x, y, onClose, onQuickAction, onOpenInsights, onOpenHealth }) {
-	// Clamp position to keep menu fully within the viewport
-	const margin = 8
-	const menuWidth = 220
-	const menuHeight = 320
-	const clampedX = Math.max(margin, Math.min(x, window.innerWidth - menuWidth - margin))
-	const clampedY = Math.max(margin, Math.min(y, window.innerHeight - menuHeight - margin))
-
-	const style = {
-		top: clampedY,
-		left: clampedX,
-	}
-
-	const copyCloneUrl = () => {
-		navigator.clipboard.writeText(repo.clone_url)
-		onClose()
-		// Ideally show a toast here
-	}
-
-	return (
-		<div
-			role="menu"
-			className="fixed z-[45] w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1 animate-in fade-in zoom-in-95 duration-100"
-			style={style}
-			onClick={(e) => e.stopPropagation()}
-		>
-			<div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
-				<p className="text-xs font-medium text-slate-900 dark:text-white truncate max-w-[180px]">{repo.name}</p>
-				<Badge variant={repo.private ? "secondary" : "success"} className="text-[10px] py-0 h-4">
-					{repo.private ? 'Private' : 'Public'}
-				</Badge>
-			</div>
-
-			<div className="p-1 space-y-0.5">
-				<button role="menuitem" onClick={() => { window.open(repo.html_url, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
-					<ExternalLink className="w-4 h-4 text-slate-400" />
-					Open on GitHub
-				</button>
-				<button role="menuitem" onClick={copyCloneUrl} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
-					<Copy className="w-4 h-4 text-slate-400" />
-					Copy Clone URL
-				</button>
-				<button role="menuitem" onClick={() => { window.open(`${repo.html_url}/settings`, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
-					<Settings className="w-4 h-4 text-slate-400" />
-					Settings
-				</button>
-				<button role="menuitem" onClick={() => { onOpenInsights(); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg">
-					<Sparkles className="w-4 h-4" />
-					AI Insights
-				</button>
-				{onOpenHealth && (
-					<button role="menuitem" onClick={() => { onOpenHealth(); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-emerald-600 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg">
-						<Shield className="w-4 h-4" />
-						Community Health
-					</button>
-				)}
-			</div>
-
-			<div className="border-t border-slate-100 dark:border-slate-700/50 p-1 space-y-0.5">
-				<button role="menuitem" onClick={() => { window.open(`${repo.html_url}/issues`, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
-					<CircleDot className="w-4 h-4 text-slate-400" />
-					Issues
-				</button>
-				<button role="menuitem" onClick={() => { window.open(`${repo.html_url}/pulls`, '_blank'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
-					<GitPullRequest className="w-4 h-4 text-slate-400" />
-					Pull Requests
-				</button>
-			</div>
-
-			<div className="border-t border-slate-100 dark:border-slate-700/50 p-1 space-y-0.5">
-				<button role="menuitem" onClick={() => { onQuickAction('visibility', repo, repo.private ? 'public' : 'private'); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
-					{repo.private ? <Unlock className="w-4 h-4 text-slate-400" /> : <Lock className="w-4 h-4 text-slate-400" />}
-					{repo.private ? 'Make Public' : 'Make Private'}
-				</button>
-				<button role="menuitem" onClick={() => { onQuickAction('archive', repo, !repo.archived); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
-					<Archive className="w-4 h-4 text-slate-400" />
-					{repo.archived ? 'Unarchive' : 'Archive'}
-				</button>
-			</div>
-
-			<div className="border-t border-slate-100 dark:border-slate-700/50 p-1">
-				<button role="menuitem" onClick={() => { onQuickAction('delete', repo); onClose() }} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
-					<Trash2 className="w-4 h-4" />
-					Delete Repository
-				</button>
-			</div>
-		</div>
-	)
-})
