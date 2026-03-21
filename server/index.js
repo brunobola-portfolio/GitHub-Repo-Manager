@@ -31,6 +31,7 @@ import systemRoutes from './routes/system.js';
 import azureRoutes from './routes/azure.js';
 import importRoutes from './routes/import.js';
 import webhooksRoutes from './routes/webhooks.js';
+import migrationRoutes from './routes/migration.js';
 
 // Route modules (new)
 import reposRoutes from './routes/repos.js';
@@ -183,6 +184,7 @@ app.use('/api/system', systemRoutes);
 app.use('/api', azureRoutes);
 app.use('/api', importRoutes);
 app.use('/api', webhooksRoutes);
+app.use('/api', migrationRoutes);
 
 // New route modules
 app.use('/api/repos', reposRoutes);
