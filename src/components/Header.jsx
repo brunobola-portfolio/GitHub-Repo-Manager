@@ -67,9 +67,9 @@ export function Header({
                         <Menu className="w-5 h-5 text-slate-600 dark:text-slate-300" />
                       </button>
                     )}
-                    <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-950 p-[5px] pr-3 rounded-[14px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
-                        <div className="bg-gradient-to-br from-indigo-600 to-purple-600 w-9 h-9 rounded-[10px] flex items-center justify-center shadow-md shadow-indigo-500/20 dark:shadow-indigo-500/25 ds-btn-shimmer flex-shrink-0">
-                            <Github className="w-[18px] h-[18px] text-white" strokeWidth={2} />
+                    <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-[4px] pr-3 rounded-[13px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
+                        <div className="bg-gradient-to-br from-indigo-600 to-purple-600 w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shadow-md shadow-indigo-500/20 dark:shadow-indigo-500/25 ds-btn-shimmer flex-shrink-0">
+                            <Github className="w-4 h-4 text-white" strokeWidth={2} />
                         </div>
                         <div className="min-w-0 hidden sm:block">
                             <h1 className="text-[13px] font-bold text-slate-900 dark:text-slate-100 leading-none ds-font-display truncate">
@@ -89,7 +89,7 @@ export function Header({
                 {/* Center: Navigation (desktop) */}
                 <div className="flex-1 flex justify-center min-w-0">
                     {user && (
-                        <nav className="hidden md:flex items-center gap-[3px] bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
+                        <nav className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
                             <NavButton
                                 active={activeView === 'dashboard'}
                                 onClick={() => onViewChange?.('dashboard')}
@@ -117,7 +117,7 @@ export function Header({
                     {user ? (
                         <>
                             {/* Quick Actions Container */}
-                            <div className="hidden sm:flex items-center gap-[3px] bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
+                            <div className="hidden sm:flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
                                 <HeaderIconButton onClick={onCreateRepo} label="Create new repository" title="New repo">
                                     <Plus className="w-[15px] h-[15px]" />
                                 </HeaderIconButton>
@@ -130,7 +130,7 @@ export function Header({
                             </div>
 
                             {/* Utility Container */}
-                            <div className="flex items-center gap-[3px] bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
+                            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
                                 {/* Theme Toggle */}
                                 <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
 
@@ -202,7 +202,7 @@ export function Header({
                     ) : (
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                             {/* Theme + Login unified container */}
-                            <div className="flex items-center gap-[3px] bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
+                            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
                                 <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
                                 <button
                                     type="button"
