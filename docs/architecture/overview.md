@@ -51,7 +51,8 @@ Entry point: `server/index.js`
   - **Auth**: `/api/auth/login`, `/api/auth/callback`, `/api/auth/logout`, `/api/user`.
   - **Repositories**: listing, creating, visibility changes, transfer, mirror, archive, delete.
   - **Organizations**: list orgs, get org details, list org repos.
-  - **Azure Import**: kick off imports and check status.
+  - **Azure Import**: Git repo imports, TFVC-to-Git conversion, batch imports, migration stats.
+  - **Migration Engine**: plan-based migrations with work items, wikis, and scheduling.
   - **Stats**: aggregate repository statistics.
 
 ## Configuration
@@ -75,5 +76,20 @@ Entry point: `server/index.js`
 - `ThemeProvider` synchronizes the class with user preference and system theme.
 - Components use Tailwind `dark:` variants to render appropriate backgrounds, borders, and text.
 
-This document is a high-level guide; see inline comments and the README for more details.
+## Migration & Import
 
+The application supports importing repositories from multiple sources:
+
+- **Git URL**: Clone any public or private Git repository via URL.
+- **Azure DevOps (Git)**: Import Git repos from Azure DevOps with PAT authentication.
+- **Azure DevOps (TFVC)**: Automatically detects TFVC projects and converts them to Git via the Azure DevOps Import Request API (preserves up to 180 days of history). Falls back to ZIP snapshot if conversion fails.
+- **GitHub**: Import between GitHub accounts/orgs.
+
+Key services:
+
+- `server/import-service.js` — Git clone + push pipeline using `simple-git`.
+- `server/azure-service.js` — Azure DevOps REST API v7.1 (Git, TFVC, work items, wikis).
+- `server/migration-engine.js` — Plan-based migration with task types: `repo`, `repo-tfvc`, `work-items`, `wiki`.
+- `server/migration-planner.js` — AI-assisted (Gemini) or fallback risk analysis for migrations.
+
+This document is a high-level guide; see inline comments and the README for more details.
