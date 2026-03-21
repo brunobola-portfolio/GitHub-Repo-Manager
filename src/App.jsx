@@ -41,6 +41,7 @@ const RepoDetail = lazy(() => import('./components/RepoDetail').then(m => ({ def
 const MigrationHistory = lazy(() => import('./components/MigrationHistory').then(m => ({ default: m.MigrationHistory })))
 const KeyboardShortcutsHelp = lazy(() => import('./components/KeyboardShortcutsHelp').then(m => ({ default: m.KeyboardShortcutsHelp })))
 const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ default: m.AIAssistant })))
+const MigrationWizard = lazy(() => import('./components/MigrationWizard/MigrationWizard'))
 
 // Loading fallback component
 function LoadingFallback() {
@@ -118,6 +119,7 @@ function AppContent() {
     },
     onCreateRepo: () => openModal('showCreateRepo'),
     onImport: () => openModal('showImportWizard'),
+    onMigrate: () => openModal('showMigrationWizard'),
     onViewChange: setActiveView,
     enabled: !!user && !anyModalOpen
   })
@@ -797,6 +799,12 @@ function AppContent() {
           onClose={() => closeModal('showMigrationHistory')}
         />
       </Suspense>
+
+      {modalStates.showMigrationWizard && (
+        <Suspense fallback={null}>
+          <MigrationWizard onClose={() => closeModal('showMigrationWizard')} />
+        </Suspense>
+      )}
 
       <Suspense fallback={null}>
         <KeyboardShortcutsHelp

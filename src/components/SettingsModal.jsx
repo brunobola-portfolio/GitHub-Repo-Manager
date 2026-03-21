@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, Moon, Sun, Monitor, Zap, Trash2 } from 'lucide-react'
+import { X, Moon, Sun, Monitor, Zap, Trash2, GitBranch } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from '../hooks/useTheme'
 import { API_BASE_URL } from '../config'
@@ -11,8 +11,12 @@ export function SettingsModal({ isOpen, onClose }) {
 
     // Load cache settings from localStorage
     const [cacheSettings, setCacheSettings] = useState(() => {
-        const saved = localStorage.getItem('cache-settings')
-        return saved ? JSON.parse(saved) : { enabled: true, ttl: 5 }
+        try { return JSON.parse(localStorage.getItem('cache-settings')) || { enabled: true, ttl: 5 } } catch { return { enabled: true, ttl: 5 } }
+    })
+
+    // Load migration settings from localStorage
+    const [migrationSettings, setMigrationSettings] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('migration-settings')) || { defaultVisibility: 'private', maxRetries: 3 } } catch { return { defaultVisibility: 'private', maxRetries: 3 } }
     })
 
     const [clearing, setClearing] = useState(false)
@@ -20,6 +24,7 @@ export function SettingsModal({ isOpen, onClose }) {
 
     const handleSave = () => {
         localStorage.setItem('cache-settings', JSON.stringify(cacheSettings))
+        localStorage.setItem('migration-settings', JSON.stringify(migrationSettings))
         onClose()
     }
 
@@ -166,6 +171,57 @@ export function SettingsModal({ isOpen, onClose }) {
                                 <p className="text-xs text-slate-500 dark:text-slate-400">
                                     Cached stats improve loading times. Clear if you see stale data.
                                 </p>
+                            </div>
+
+                            {/* Migration Settings */}
+                            <div className="space-y-3">
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                    <GitBranch size={16} className="text-indigo-500" />
+                                    Migration
+                                </label>
+
+                                {/* Default Visibility */}
+                                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                                    <span className="text-sm text-slate-600 dark:text-slate-400">Default visibility for imports</span>
+                                    <div className="flex gap-1 p-0.5 bg-slate-200 dark:bg-slate-700 rounded-lg">
+                                        <button
+                                            onClick={() => setMigrationSettings({ ...migrationSettings, defaultVisibility: 'public' })}
+                                            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                                                migrationSettings.defaultVisibility === 'public'
+                                                    ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                                                    : 'text-slate-500 dark:text-slate-400'
+                                            }`}
+                                        >
+                                            Public
+                                        </button>
+                                        <button
+                                            onClick={() => setMigrationSettings({ ...migrationSettings, defaultVisibility: 'private' })}
+                                            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                                                migrationSettings.defaultVisibility === 'private'
+                                                    ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                                                    : 'text-slate-500 dark:text-slate-400'
+                                            }`}
+                                        >
+                                            Private
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Retry Policy */}
+                                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                                    <span className="text-sm text-slate-600 dark:text-slate-400">Max retries for failed tasks</span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="5"
+                                        value={migrationSettings.maxRetries}
+                                        onChange={(e) => {
+                                            const val = Math.min(5, Math.max(1, parseInt(e.target.value) || 1))
+                                            setMigrationSettings({ ...migrationSettings, maxRetries: val })
+                                        }}
+                                        className="w-16 px-2 py-1 text-sm text-center border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                </div>
                             </div>
                         </div>
 

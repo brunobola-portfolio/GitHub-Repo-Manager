@@ -29,6 +29,7 @@ const MODAL_NAMES = [
   'showCommunityHealth',
   'showSettings',
   'showImportWizard',
+  'showMigrationWizard',
   'showMigrationHistory',
   'showConfirm',
 ]

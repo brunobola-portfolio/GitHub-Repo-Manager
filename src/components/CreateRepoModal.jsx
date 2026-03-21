@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
 import { Select } from './ui/Select'
-import { Sparkles, Loader2 } from 'lucide-react'
+import { Sparkles, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 
 export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming, askAI }) {
@@ -12,7 +12,37 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
     const [isPrivate, setIsPrivate] = useState(true)
     const [isGenerating, setIsGenerating] = useState(false)
     const [aiError, setAiError] = useState(null)
+    const [nameStatus, setNameStatus] = useState(null) // null | 'checking' | 'available' | 'taken'
     const modalRef = useFocusTrap(isOpen, onClose)
+
+    // Debounced name availability check
+    useEffect(() => {
+        if (!name || !isOpen) {
+            setNameStatus(null)
+            return
+        }
+        setNameStatus('checking')
+        const timer = setTimeout(async () => {
+            try {
+                const res = await fetch('/api/import/check-duplicates', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ names: [name], org: targetOrg || undefined })
+                })
+                if (res.ok) {
+                    const data = await res.json()
+                    const duplicates = data.duplicates || []
+                    setNameStatus(duplicates.length > 0 ? 'taken' : 'available')
+                } else {
+                    setNameStatus(null)
+                }
+            } catch {
+                setNameStatus(null)
+            }
+        }, 500)
+        return () => clearTimeout(timer)
+    }, [name, targetOrg, isOpen])
 
     // Scroll input into view when keyboard appears (mobile fix)
     useEffect(() => {
@@ -109,14 +139,26 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             Repository Name *
                         </label>
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value.replace(/\s/g, '-'))}
-                            placeholder="my-awesome-project"
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500 dark:placeholder:text-slate-400"
-                            required
-                        />
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value.replace(/\s/g, '-'))}
+                                placeholder="my-awesome-project"
+                                className="w-full px-3 py-2 pr-9 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500 dark:placeholder:text-slate-400"
+                                required
+                            />
+                            {nameStatus && (
+                                <span className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                                    {nameStatus === 'checking' && <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />}
+                                    {nameStatus === 'available' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                                    {nameStatus === 'taken' && <XCircle className="w-4 h-4 text-red-500" />}
+                                </span>
+                            )}
+                        </div>
+                        {nameStatus === 'taken' && (
+                            <p className="mt-1 text-xs text-red-500 dark:text-red-400">This repository name is already taken</p>
+                        )}
                     </div>
 
                     <div className="relative">
