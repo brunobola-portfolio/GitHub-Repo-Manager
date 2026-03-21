@@ -95,8 +95,17 @@ router.post('/migration/plans/:id/execute', requireAuth, async (req, res) => {
   try {
     const plan = engine.getPlanStatus(parseInt(req.params.id));
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
+
+    // Extract credentials from session for immediate execution
+    const credentials = {
+      githubToken: req.session.accessToken,
+      azurePat: req.body.azurePat || null,
+      azureOrg: plan.source_org,
+      azureProject: plan.source_project
+    };
+
     // Start execution asynchronously
-    engine.executePlan(parseInt(req.params.id)).catch(err => {
+    engine.executePlan(parseInt(req.params.id), credentials).catch(err => {
       console.error('Plan execution error:', err);
     });
     res.json({ success: true, message: 'Execution started' });

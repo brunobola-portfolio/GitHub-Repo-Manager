@@ -8,6 +8,15 @@
 
 import { getWorkItemCounts, fetchWorkItems } from './azure-service.js'
 
+/**
+ * Escapes single quotes in a WIQL value to prevent injection.
+ * @param {string} value
+ * @returns {string}
+ */
+function escapeWiql(value) {
+  return value.replace(/'/g, "''")
+}
+
 const ALLOWED_ATTACHMENT_HOSTS = [
   /^[a-z0-9-]+\.dev\.azure\.com$/i,
   /^[a-z0-9-]+\.visualstudio\.com$/i
@@ -427,12 +436,13 @@ async function migrateWorkItems(config, azureCreds, githubToken, targetOwner, ta
   onProgress(0, 'Querying work items from Azure DevOps...')
 
   // Step 1: Query work item IDs via WIQL
+  const escapedProject = escapeWiql(project)
   const wiqlTypes = types && types.length > 0
-    ? types.map(t => `'${t}'`).join(', ')
+    ? types.map(t => `'${escapeWiql(t)}'`).join(', ')
     : null
   const wiqlQuery = wiqlTypes
-    ? `SELECT [System.Id] FROM workitems WHERE [System.TeamProject] = '${project}' AND [System.WorkItemType] IN (${wiqlTypes})`
-    : `SELECT [System.Id] FROM workitems WHERE [System.TeamProject] = '${project}'`
+    ? `SELECT [System.Id] FROM workitems WHERE [System.TeamProject] = '${escapedProject}' AND [System.WorkItemType] IN (${wiqlTypes})`
+    : `SELECT [System.Id] FROM workitems WHERE [System.TeamProject] = '${escapedProject}'`
 
   // Use the WIQL endpoint to get IDs first
   const wiqlRes = await fetch(

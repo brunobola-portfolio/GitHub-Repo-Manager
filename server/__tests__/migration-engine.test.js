@@ -562,8 +562,9 @@ describe('MigrationEngine', () => {
       const taskId = engine.getPlanStatus(planId).tasks[0].id
       const events = []
       engine.on('task-progress', e => events.push(e))
-      engine._updateTaskProgress(taskId, 50, 'Halfway done')
+      engine._updateTaskProgress(taskId, planId, 50, 'Halfway done')
       expect(events).toHaveLength(1)
+      expect(events[0].planId).toBe(planId)
       expect(events[0].pct).toBe(50)
       expect(events[0].message).toBe('Halfway done')
     })
@@ -574,7 +575,7 @@ describe('MigrationEngine', () => {
         [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
       )
       const taskId = engine.getPlanStatus(planId).tasks[0].id
-      engine._updateTaskProgress(taskId, 50, 'Halfway done')
+      engine._updateTaskProgress(taskId, planId, 50, 'Halfway done')
       const task = db.prepare('SELECT progress_pct, progress_message FROM migration_tasks WHERE id = ?').get(taskId)
       expect(task.progress_pct).toBe(50)
       expect(task.progress_message).toBe('Halfway done')
@@ -586,8 +587,8 @@ describe('MigrationEngine', () => {
         [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
       )
       const taskId = engine.getPlanStatus(planId).tasks[0].id
-      engine._updateTaskProgress(taskId, 25, 'First')
-      engine._updateTaskProgress(taskId, 50, 'Second')
+      engine._updateTaskProgress(taskId, planId, 25, 'First')
+      engine._updateTaskProgress(taskId, planId, 50, 'Second')
       // Second call should be throttled — DB should still show first values
       const task = db.prepare('SELECT progress_pct, progress_message FROM migration_tasks WHERE id = ?').get(taskId)
       expect(task.progress_pct).toBe(25)

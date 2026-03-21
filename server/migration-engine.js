@@ -263,7 +263,7 @@ export class MigrationEngine extends EventEmitter {
 
       if (inFlight.size > 0) {
         // Wait a tick to let in-flight promises settle
-        await new Promise(resolve => setTimeout(resolve, 5))
+        await new Promise(resolve => setTimeout(resolve, 100))
       } else {
         // No tasks can be started and none in flight — break to avoid infinite loop
         break
@@ -272,7 +272,7 @@ export class MigrationEngine extends EventEmitter {
 
     // Wait for remaining in-flight tasks to finish
     while (inFlight.size > 0) {
-      await new Promise(resolve => setTimeout(resolve, 5))
+      await new Promise(resolve => setTimeout(resolve, 100))
     }
 
     // If cancelled or paused, don't finalize
@@ -401,7 +401,7 @@ export class MigrationEngine extends EventEmitter {
   async _executeTask(task, credentials) {
     const config = typeof task.config === 'string' ? JSON.parse(task.config) : (task.config || {})
     const callbacks = {
-      onProgress: (pct, msg) => this._updateTaskProgress(task.id, pct, msg),
+      onProgress: (pct, msg) => this._updateTaskProgress(task.id, task.plan_id, pct, msg),
       isCancelled: () => this._isCancelled(task.plan_id)
     }
 
@@ -620,12 +620,12 @@ export class MigrationEngine extends EventEmitter {
    * @param {number} pct - progress percentage (0-100)
    * @param {string} message - progress description
    */
-  _updateTaskProgress(taskId, pct, message) {
+  _updateTaskProgress(taskId, planId, pct, message) {
     const now = Date.now()
     const lastWrite = this._lastProgressWrite.get(taskId) || 0
 
     // Always emit the event
-    this.emit('task-progress', { taskId, pct, message })
+    this.emit('task-progress', { taskId, planId, pct, message })
 
     // Only write to DB if >= 1 second since last write for this task
     if (now - lastWrite >= 1000) {

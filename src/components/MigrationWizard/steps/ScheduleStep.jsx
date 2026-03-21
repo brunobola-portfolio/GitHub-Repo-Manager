@@ -67,20 +67,21 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
     try {
       // Build tasks from wizard state
       const selectedRepos = (wizard.repos || []).filter(r => r.selected)
+      const source = wizard.source || {}
       const tasks = selectedRepos.map(repo => ({
         type: 'repo',
-        sourceRef: repo.name,
+        sourceRef: `${source.org}/${source.project}/${repo.name}`,
         targetRef: repo.targetName || repo.name,
-        metadata: { visibility: repo.visibility || 'private' },
+        config: { makePrivate: repo.visibility === 'private', description: repo.description || '' },
       }))
 
       // Add work item tasks
       if (wizard.workItems?.enabled) {
         tasks.push({
           type: 'work-items',
-          sourceRef: wizard.source?.project || 'project',
+          sourceRef: `${source.org}/${source.project}`,
           targetRef: 'GitHub Issues',
-          metadata: { types: wizard.workItems.types },
+          config: { types: wizard.workItems.types },
         })
       }
 
@@ -91,7 +92,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
             type: 'wiki',
             sourceRef: w.name || w.id,
             targetRef: wizard.wiki.destinations?.[w.id] || 'wiki',
-            metadata: {},
+            config: {},
           })
         }
       }
