@@ -60,4 +60,55 @@ router.post('/azure/repos', requireAuth, async (req, res) => {
     }
 });
 
+router.post('/azure/wikis', requireAuth, async (req, res) => {
+    try {
+        const { org, project, pat: bodyPat } = req.body;
+        const pat = azureService.resolvePat(bodyPat);
+        if (!org || !project) {
+            return errorResponse(res, 400, 'Organization and project are required');
+        }
+        if (!pat) {
+            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
+        }
+        const wikis = await azureService.listWikis(org, project, pat);
+        res.json({ wikis });
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to list Azure wikis'));
+    }
+});
+
+router.post('/azure/work-items/counts', requireAuth, async (req, res) => {
+    try {
+        const { org, project, pat: bodyPat } = req.body;
+        const pat = azureService.resolvePat(bodyPat);
+        if (!org || !project) {
+            return errorResponse(res, 400, 'Organization and project are required');
+        }
+        if (!pat) {
+            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
+        }
+        const counts = await azureService.getWorkItemCounts(org, project, pat);
+        res.json({ counts });
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to get work item counts'));
+    }
+});
+
+router.post('/azure/work-items/preview', requireAuth, async (req, res) => {
+    try {
+        const { org, project, pat: bodyPat, types } = req.body;
+        const pat = azureService.resolvePat(bodyPat);
+        if (!org || !project) {
+            return errorResponse(res, 400, 'Organization and project are required');
+        }
+        if (!pat) {
+            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
+        }
+        const items = await azureService.previewWorkItems(org, project, pat, types || []);
+        res.json({ items });
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to preview work items'));
+    }
+});
+
 export default router;

@@ -27,6 +27,12 @@ export const API_ENDPOINTS = {
     mirror: `${API_BASE_URL}/api/mirror`,
     archive: `${API_BASE_URL}/api/archive`,
     delete: `${API_BASE_URL}/api/delete`,
+    migrationPlans: `${API_BASE_URL}/api/migration/plans`,
+    migrationStream: `${API_BASE_URL}/api/migration/stream`,
+    migrationAnalyze: `${API_BASE_URL}/api/migration/analyze`,
+    azureWikis: `${API_BASE_URL}/api/azure/wikis`,
+    azureWorkItemCounts: `${API_BASE_URL}/api/azure/work-items/counts`,
+    azureWorkItemPreview: `${API_BASE_URL}/api/azure/work-items/preview`,
 };
 
 // Pagination Settings

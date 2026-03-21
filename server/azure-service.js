@@ -134,8 +134,119 @@ async function listBranches(org, project, repoId, pat) {
 }
 
 /**
+ * List wikis in a project
+ */
+async function listWikis(org, project, pat) {
+    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wiki/wikis?api-version=${API_VERSION}`;
+    const data = await azureFetch(url, pat);
+    return (data.value || []).map(w => ({
+        id: w.id,
+        name: w.name,
+        type: w.type,
+        remoteUrl: w.remoteUrl || ''
+    }));
+}
+
+/**
+ * Get work item counts grouped by type using WIQL
+ */
+async function getWorkItemCounts(org, project, pat) {
+    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/wiql?api-version=${API_VERSION}`;
+    const wiql = `SELECT [System.Id], [System.WorkItemType] FROM workitems WHERE [System.TeamProject] = '${escapeWiql(project)}'`;
+    const data = await azureFetch(url, pat, {
+        method: 'POST',
+        body: JSON.stringify({ query: wiql })
+    });
+
+    const ids = (data.workItems || []).map(wi => wi.id);
+    if (ids.length === 0) return {};
+
+    // Fetch work item details in batches of 200 to get their types
+    const counts = {};
+    for (let i = 0; i < ids.length; i += 200) {
+        const batch = ids.slice(i, i + 200);
+        const detailUrl = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/workitems?ids=${batch.join(',')}&fields=System.WorkItemType&api-version=${API_VERSION}`;
+        const details = await azureFetch(detailUrl, pat);
+        for (const item of (details.value || [])) {
+            const type = item.fields?.['System.WorkItemType'] || 'Unknown';
+            counts[type] = (counts[type] || 0) + 1;
+        }
+    }
+
+    return counts;
+}
+
+/**
+ * Preview work items (top 10 per type) using WIQL
+ */
+async function previewWorkItems(org, project, pat, types) {
+    const items = [];
+
+    for (const type of types) {
+        const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/wiql?api-version=${API_VERSION}`;
+        const wiql = `SELECT [System.Id] FROM workitems WHERE [System.TeamProject] = '${escapeWiql(project)}' AND [System.WorkItemType] = '${escapeWiql(type)}' ORDER BY [System.Id] DESC`;
+        const data = await azureFetch(url, pat, {
+            method: 'POST',
+            body: JSON.stringify({ query: wiql, $top: 10 })
+        });
+
+        const ids = (data.workItems || []).slice(0, 10).map(wi => wi.id);
+        if (ids.length === 0) continue;
+
+        const detailUrl = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/workitems?ids=${ids.join(',')}&fields=System.Id,System.Title,System.WorkItemType,System.State,System.AssignedTo&api-version=${API_VERSION}`;
+        const details = await azureFetch(detailUrl, pat);
+        for (const item of (details.value || [])) {
+            items.push({
+                id: item.id,
+                title: item.fields?.['System.Title'] || '',
+                type: item.fields?.['System.WorkItemType'] || '',
+                state: item.fields?.['System.State'] || '',
+                assignedTo: item.fields?.['System.AssignedTo']?.displayName || ''
+            });
+        }
+    }
+
+    return items;
+}
+
+/**
+ * Fetch full work item details by IDs (with relations)
+ */
+async function fetchWorkItems(org, project, pat, ids) {
+    if (!ids || ids.length === 0) return [];
+
+    const results = [];
+    for (let i = 0; i < ids.length; i += 200) {
+        const batch = ids.slice(i, i + 200);
+        const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/workitems?ids=${batch.join(',')}&$expand=relations&api-version=${API_VERSION}`;
+        const data = await azureFetch(url, pat);
+        results.push(...(data.value || []));
+    }
+
+    return results;
+}
+
+/**
+ * Get wiki clone URL by wiki ID
+ */
+async function getWikiCloneUrl(org, project, pat, wikiId) {
+    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wiki/wikis/${encodeURIComponent(wikiId)}?api-version=${API_VERSION}`;
+    const data = await azureFetch(url, pat);
+    return data.remoteUrl || '';
+}
+
+/**
  * Construct authenticated clone URL with embedded PAT
  */
+/**
+ * Escapes single quotes in a WIQL value to prevent injection.
+ * @param {string} value
+ * @returns {string}
+ */
+function escapeWiql(value) {
+    return value.replace(/'/g, "''");
+}
+
 function buildAuthenticatedCloneUrl(remoteUrl, pat) {
     if (!remoteUrl || !pat) return null;
     // Azure DevOps URLs: https://dev.azure.com/org/project/_git/repo
@@ -150,5 +261,10 @@ export {
     getRepoDetails,
     listBranches,
     buildAuthenticatedCloneUrl,
-    resolvePat
+    resolvePat,
+    listWikis,
+    getWorkItemCounts,
+    previewWorkItems,
+    fetchWorkItems,
+    getWikiCloneUrl
 };

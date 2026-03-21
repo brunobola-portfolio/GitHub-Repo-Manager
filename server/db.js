@@ -229,6 +229,60 @@ export function initDB() {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_mig_user ON migration_jobs(user_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_mig_status ON migration_jobs(status)`);
 
+        // Migration plans table (enhanced migration engine)
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS migration_plans (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'draft',
+                source_type TEXT NOT NULL DEFAULT 'azure',
+                source_org TEXT NOT NULL,
+                source_project TEXT NOT NULL,
+                target_org TEXT,
+                is_dry_run INTEGER NOT NULL DEFAULT 0,
+                scheduled_at TEXT,
+                credentials_enc TEXT,
+                started_at TEXT,
+                completed_at TEXT,
+                ai_analysis TEXT,
+                summary TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `);
+
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_plan_user ON migration_plans(user_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_plan_status ON migration_plans(status)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_plan_scheduled ON migration_plans(scheduled_at) WHERE status = 'scheduled'`);
+
+        // Migration tasks table (individual items within a plan)
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS migration_tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                plan_id INTEGER NOT NULL,
+                type TEXT NOT NULL,
+                execution_order INTEGER NOT NULL DEFAULT 0,
+                source_ref TEXT NOT NULL,
+                target_ref TEXT,
+                config TEXT,
+                status TEXT NOT NULL DEFAULT 'pending',
+                progress_pct INTEGER NOT NULL DEFAULT 0,
+                progress_message TEXT,
+                error_message TEXT,
+                retries INTEGER NOT NULL DEFAULT 0,
+                max_retries INTEGER NOT NULL DEFAULT 3,
+                started_at TEXT,
+                completed_at TEXT,
+                metadata TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (plan_id) REFERENCES migration_plans(id) ON DELETE CASCADE
+            )
+        `);
+
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_task_plan ON migration_tasks(plan_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_task_status ON migration_tasks(status)`);
+
         // Audit log for destructive operations
         db.exec(`
             CREATE TABLE IF NOT EXISTS audit_log (
