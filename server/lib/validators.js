@@ -178,6 +178,61 @@ export const webhookCreateSchema = z.object({
     active: z.boolean().optional().default(true)
 });
 
+// --- Migration Plan Schemas ---
+
+export const createPlanSchema = z.object({
+    source: z.object({
+        type: z.literal('azure'),
+        org: z.string().min(1).max(100),
+        project: z.string().min(1).max(100),
+        pat: z.string().min(1).optional()
+    }),
+    targetOrg: z.string().max(39).optional(),
+    tasks: z.array(z.discriminatedUnion('type', [
+        z.object({
+            type: z.literal('repo'),
+            sourceRef: z.string().min(1),
+            targetRef: z.string().min(1).max(100),
+            config: z.object({
+                makePrivate: z.boolean().default(true),
+                description: z.string().max(350).default(''),
+                rollbackPolicy: z.enum(['delete', 'keep-empty']).default('delete'),
+                timeout: z.number().min(60000).max(3600000).default(1800000)
+            }).default({})
+        }),
+        z.object({
+            type: z.literal('work-items'),
+            sourceRef: z.string().min(1),
+            targetRef: z.string().min(1),
+            config: z.object({
+                types: z.array(z.string()).min(1),
+                includeComments: z.boolean().default(true),
+                includeAttachments: z.boolean().default(true),
+                includeHistory: z.boolean().default(false),
+                createProjectBoard: z.boolean().default(false),
+                labelMapping: z.record(z.string(), z.string()).default({})
+            })
+        }),
+        z.object({
+            type: z.literal('wiki'),
+            sourceRef: z.string().min(1),
+            targetRef: z.string().min(1),
+            config: z.object({
+                destination: z.enum(['wiki', 'docs']),
+                createPR: z.boolean().default(true),
+                branch: z.string().default('docs/wiki-migration')
+            })
+        })
+    ])).min(1).max(60),
+    schedule: z.object({
+        mode: z.enum(['now', 'scheduled']).default('now'),
+        scheduledAt: z.string().datetime().optional(),
+        isDryRun: z.boolean().default(false)
+    }).default({ mode: 'now', isDryRun: false })
+});
+
+export const updatePlanSchema = createPlanSchema.partial();
+
 // --- Middleware factory ---
 
 /**
