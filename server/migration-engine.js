@@ -408,6 +408,93 @@ export class MigrationEngine extends EventEmitter {
   }
 
   /**
+   * Handles an SSE connection for streaming migration plan events.
+   * @param {number} planId
+   * @param {number} userId
+   * @param {import('http').IncomingMessage} req
+   * @param {import('http').ServerResponse} res
+   */
+  handleSSEConnection(planId, userId, req, res) {
+    // 1. Set SSE headers
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive'
+    })
+
+    // 2. Check plan ownership
+    const plan = this.getPlanStatus(planId)
+    if (plan.user_id !== userId) {
+      res.end()
+      return
+    }
+
+    // 3. If plan was interrupted, emit plan-interrupted event
+    if (plan.status === 'interrupted') {
+      this._sendSSE(res, 'plan-interrupted', { planId, status: 'interrupted' })
+    }
+
+    // 4. If Last-Event-ID header present, emit catch-up event
+    const lastEventId = req.headers['last-event-id']
+    if (lastEventId) {
+      this._sendSSE(res, 'catch-up', plan)
+    }
+
+    // 5. Register event listeners filtered by planId
+    let eventCounter = parseInt(lastEventId) || 0
+    const listeners = {}
+    const eventTypes = ['task-progress', 'task-status', 'task-complete', 'task-failed', 'plan-status', 'plan-complete']
+
+    eventTypes.forEach(type => {
+      const listener = (data) => {
+        if (data.planId === planId || (data.taskId && this._taskBelongsToPlan(data.taskId, planId))) {
+          eventCounter++
+          this._sendSSE(res, type, data, eventCounter)
+        }
+      }
+      this.on(type, listener)
+      listeners[type] = listener
+    })
+
+    // 6. Keepalive every 15s
+    const keepalive = setInterval(() => {
+      res.write(':keepalive\n\n')
+    }, 15000)
+
+    // 7. Cleanup on close
+    req.on('close', () => {
+      clearInterval(keepalive)
+      Object.entries(listeners).forEach(([type, listener]) => {
+        this.removeListener(type, listener)
+      })
+    })
+  }
+
+  /**
+   * Sends an SSE event to the client.
+   * @param {import('http').ServerResponse} res
+   * @param {string} event
+   * @param {object} data
+   * @param {number} [id]
+   */
+  _sendSSE(res, event, data, id) {
+    if (id !== undefined) res.write(`id: ${id}\n`)
+    res.write(`event: ${event}\n`)
+    res.write(`data: ${JSON.stringify(data)}\n\n`)
+  }
+
+  /**
+   * Checks if a task belongs to a given plan.
+   * @param {number} taskId
+   * @param {number} planId
+   * @returns {boolean}
+   */
+  _taskBelongsToPlan(taskId, planId) {
+    const task = this.db.prepare('SELECT plan_id FROM migration_tasks WHERE id = ?').get(taskId)
+    return task && task.plan_id === planId
+  }
+
+  /**
    * Updates task progress with DB write throttling (max 1 write/sec per task).
    * Always emits the event regardless of throttle.
    * @param {number} taskId
