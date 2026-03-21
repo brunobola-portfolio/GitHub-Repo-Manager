@@ -245,6 +245,7 @@ export class MigrationEngine extends EventEmitter {
       } finally {
         runningByType[task.type] = Math.max(0, (runningByType[task.type] || 0) - 1)
         inFlight.delete(task.id)
+        this._lastProgressWrite.delete(task.id)
       }
     }
 
@@ -295,6 +296,8 @@ export class MigrationEngine extends EventEmitter {
     this.db.prepare(
       'UPDATE migration_plans SET status = ?, completed_at = datetime(?), summary = ? WHERE id = ?'
     ).run(finalStatus, new Date().toISOString(), JSON.stringify(summary), planId)
+    this._cancelledPlans.delete(planId)
+    this._pausedPlans.delete(planId)
     this.emit('plan-status', { planId, status: finalStatus })
     this.emit('plan-complete', { planId, summary })
   }
@@ -534,19 +537,17 @@ export class MigrationEngine extends EventEmitter {
    * @param {import('http').ServerResponse} res
    */
   handleSSEConnection(planId, userId, req, res) {
-    // 1. Set SSE headers
+    // 1. Check plan existence and ownership BEFORE setting SSE headers
+    let plan
+    try { plan = this.getPlanStatus(planId) } catch { res.status(404).end(); return }
+    if (plan.user_id !== userId) { res.status(403).end(); return }
+
+    // 2. Set SSE headers
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive'
     })
-
-    // 2. Check plan ownership
-    const plan = this.getPlanStatus(planId)
-    if (plan.user_id !== userId) {
-      res.end()
-      return
-    }
 
     // 3. If plan was interrupted, emit plan-interrupted event
     if (plan.status === 'interrupted') {

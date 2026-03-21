@@ -152,7 +152,7 @@ async function listWikis(org, project, pat) {
  */
 async function getWorkItemCounts(org, project, pat) {
     const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/wiql?api-version=${API_VERSION}`;
-    const wiql = `SELECT [System.Id], [System.WorkItemType] FROM workitems WHERE [System.TeamProject] = '${project}'`;
+    const wiql = `SELECT [System.Id], [System.WorkItemType] FROM workitems WHERE [System.TeamProject] = '${escapeWiql(project)}'`;
     const data = await azureFetch(url, pat, {
         method: 'POST',
         body: JSON.stringify({ query: wiql })
@@ -184,7 +184,7 @@ async function previewWorkItems(org, project, pat, types) {
 
     for (const type of types) {
         const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/wiql?api-version=${API_VERSION}`;
-        const wiql = `SELECT [System.Id] FROM workitems WHERE [System.TeamProject] = '${project}' AND [System.WorkItemType] = '${type}' ORDER BY [System.Id] DESC`;
+        const wiql = `SELECT [System.Id] FROM workitems WHERE [System.TeamProject] = '${escapeWiql(project)}' AND [System.WorkItemType] = '${escapeWiql(type)}' ORDER BY [System.Id] DESC`;
         const data = await azureFetch(url, pat, {
             method: 'POST',
             body: JSON.stringify({ query: wiql, $top: 10 })
@@ -238,6 +238,15 @@ async function getWikiCloneUrl(org, project, pat, wikiId) {
 /**
  * Construct authenticated clone URL with embedded PAT
  */
+/**
+ * Escapes single quotes in a WIQL value to prevent injection.
+ * @param {string} value
+ * @returns {string}
+ */
+function escapeWiql(value) {
+    return value.replace(/'/g, "''");
+}
+
 function buildAuthenticatedCloneUrl(remoteUrl, pat) {
     if (!remoteUrl || !pat) return null;
     // Azure DevOps URLs: https://dev.azure.com/org/project/_git/repo

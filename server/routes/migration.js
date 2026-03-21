@@ -16,7 +16,16 @@ router.post('/migration/plans', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Validation failed', details: parsed.error.flatten() });
     }
     const { source, tasks, targetOrg, schedule } = parsed.data;
-    const planId = engine.createPlan(req.session.userId, source, tasks, { targetOrg, ...schedule });
+    const planId = engine.createPlan(req.session.userId, source, tasks, { targetOrg, isDryRun: schedule?.isDryRun });
+    if (schedule?.mode === 'scheduled' && schedule?.scheduledAt) {
+      const credentials = {
+        githubToken: req.session.accessToken,
+        azurePat: req.body.source?.pat || null,
+        azureOrg: source.org,
+        azureProject: source.project
+      };
+      engine.schedulePlan(planId, schedule.scheduledAt, credentials);
+    }
     res.json({ planId });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -26,8 +35,8 @@ router.post('/migration/plans', requireAuth, async (req, res) => {
 // GET /api/migration/plans — List user's plans (paginated)
 router.get('/migration/plans', requireAuth, async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const perPage = parseInt(req.query.per_page) || 20;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const perPage = Math.min(100, Math.max(1, parseInt(req.query.per_page) || 20));
     const offset = (page - 1) * perPage;
     const plans = db.prepare(
       'SELECT * FROM migration_plans WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?'
@@ -97,9 +106,10 @@ router.post('/migration/plans/:id/execute', requireAuth, async (req, res) => {
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
 
     // Extract credentials from session for immediate execution
+    const azurePat = typeof req.body.azurePat === 'string' ? req.body.azurePat : null;
     const credentials = {
       githubToken: req.session.accessToken,
-      azurePat: req.body.azurePat || null,
+      azurePat,
       azureOrg: plan.source_org,
       azureProject: plan.source_project
     };
@@ -143,7 +153,9 @@ router.post('/migration/plans/:id/resume', requireAuth, async (req, res) => {
   try {
     const plan = engine.getPlanStatus(parseInt(req.params.id));
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
-    engine.resumePlan(parseInt(req.params.id));
+    engine.resumePlan(parseInt(req.params.id)).catch(err => {
+      console.error('Plan resume error:', err);
+    });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -171,8 +183,8 @@ router.get('/migration/stream/:id', requireAuth, (req, res) => {
 router.post('/migration/analyze', requireAuth, async (req, res) => {
   try {
     const context = req.body;
-    if (!context || !Array.isArray(context.repos)) {
-      return res.status(400).json({ error: 'Invalid context: repos array is required' });
+    if (!context || !Array.isArray(context.repos) || context.repos.length > 200) {
+      return res.status(400).json({ error: 'Invalid context: repos array required (max 200)' });
     }
     const result = await analyzeMigration(context);
     res.json(result);
