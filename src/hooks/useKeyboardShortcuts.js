@@ -14,6 +14,7 @@ export function useKeyboardShortcuts({
     onSearch,
     onCreateRepo,
     onImport,
+    onMigrate,
     onViewChange,
     enabled = true
 }) {
@@ -48,7 +49,7 @@ export function useKeyboardShortcuts({
                 break
             case 'i':
                 e.preventDefault()
-                onImport?.()
+                onMigrate?.()
                 break
             case 'd':
                 e.preventDefault()
@@ -73,7 +74,7 @@ export function useKeyboardShortcuts({
                 }
                 break
         }
-    }, [enabled, onSearch, onCreateRepo, onImport, onViewChange, showHelp])
+    }, [enabled, onSearch, onCreateRepo, onMigrate, onViewChange, showHelp])
 
     useEffect(() => {
         document.addEventListener('keydown', handleKeyDown)
