@@ -55,6 +55,8 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
         const data = await res.json()
         if (res.ok && data.counts) {
           setTypeCounts(data.counts)
+          // Update wizard state with counts
+          onUpdate({ counts: data.counts })
           // Auto-select all types
           if (workItems.types.length === 0) {
             onUpdate({ types: Object.keys(data.counts) })

@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 const SHORTCUTS = [
     { key: '/', description: 'Focus search', scope: 'global' },
     { key: 'n', description: 'Create new repository', scope: 'global' },
-    { key: 'i', description: 'Import repository', scope: 'global' },
+    { key: 'i', description: 'Open Migration Wizard', scope: 'global' },
     { key: 'd', description: 'Go to Dashboard', scope: 'navigation' },
     { key: 'r', description: 'Go to Repositories', scope: 'navigation' },
     { key: 't', description: 'Go to Teams', scope: 'navigation' },

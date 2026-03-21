@@ -22,9 +22,16 @@ export function useSSE(url) {
 
     eventTypes.forEach(type => {
       es.addEventListener(type, (e) => {
-        const data = JSON.parse(e.data)
-        setEvents(prev => [...prev, { type, data, id: e.lastEventId }])
-        if (type === 'catch-up') setLastPlanState(data)
+        try {
+          const data = JSON.parse(e.data)
+          setEvents(prev => {
+            const updated = [...prev, { type, data, id: e.lastEventId }]
+            return updated.length > 100 ? updated.slice(-100) : updated
+          })
+          if (type === 'catch-up') setLastPlanState(data)
+        } catch {
+          // Skip malformed events
+        }
       })
     })
 

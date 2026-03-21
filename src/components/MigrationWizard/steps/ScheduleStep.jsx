@@ -53,6 +53,7 @@ function SummaryCard({ wizard }) {
 export default function ScheduleStep({ schedule, onUpdate, wizard }) {
   const [executing, setExecuting] = useState(false)
   const [execError, setExecError] = useState(null)
+  const [scheduled, setScheduled] = useState(false)
 
   // Minimum schedule time: now + 5 minutes
   const minDateTime = useMemo(() => {
@@ -113,14 +114,16 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
 
       const { planId } = await migrationApi.createPlan(planData)
 
-      // If executing now, start it
-      if (schedule.mode === 'now') {
+      if (schedule.mode === 'scheduled') {
+        // For scheduled migrations, show success inline
+        if (wizard.setPlanId) wizard.setPlanId(planId)
+        setScheduled(true)
+      } else {
+        // Execute immediately and go to progress
         await migrationApi.executePlan(planId)
+        if (wizard.setPlanId) wizard.setPlanId(planId)
+        if (wizard.nextStep) wizard.nextStep()
       }
-
-      // Notify the wizard about the plan
-      if (wizard.setPlanId) wizard.setPlanId(planId)
-      if (wizard.nextStep) wizard.nextStep()
     } catch (err) {
       setExecError(err.message || 'Failed to start migration')
     } finally {
@@ -259,31 +262,41 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
         </div>
       )}
 
+      {/* Scheduled success message */}
+      {scheduled && (
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-sm">
+          <Calendar className="w-4 h-4 shrink-0" />
+          <span>Migration scheduled for {schedule.scheduledAt ? new Date(schedule.scheduledAt).toLocaleString() : 'later'}. You can close this wizard.</span>
+        </div>
+      )}
+
       {/* Execute button */}
-      <button
-        type="button"
-        onClick={handleExecute}
-        disabled={executing || (schedule.mode === 'scheduled' && !schedule.scheduledAt)}
-        className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-medium rounded-xl
-          text-white
-          bg-gradient-to-r from-indigo-500 to-purple-600
-          hover:from-indigo-600 hover:to-purple-700
-          shadow-lg shadow-indigo-500/25
-          disabled:opacity-50 disabled:cursor-not-allowed
-          transition-all"
-      >
-        {executing ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            {schedule.mode === 'now' ? 'Starting...' : 'Scheduling...'}
-          </>
-        ) : (
-          <>
-            <Rocket className="w-4 h-4" />
-            {buttonLabel}
-          </>
-        )}
-      </button>
+      {!scheduled && (
+        <button
+          type="button"
+          onClick={handleExecute}
+          disabled={executing || (schedule.mode === 'scheduled' && !schedule.scheduledAt)}
+          className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-medium rounded-xl
+            text-white
+            bg-gradient-to-r from-indigo-500 to-purple-600
+            hover:from-indigo-600 hover:to-purple-700
+            shadow-lg shadow-indigo-500/25
+            disabled:opacity-50 disabled:cursor-not-allowed
+            transition-all"
+        >
+          {executing ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {schedule.mode === 'now' ? 'Starting...' : 'Scheduling...'}
+            </>
+          ) : (
+            <>
+              <Rocket className="w-4 h-4" />
+              {buttonLabel}
+            </>
+          )}
+        </button>
+      )}
     </div>
   )
 }

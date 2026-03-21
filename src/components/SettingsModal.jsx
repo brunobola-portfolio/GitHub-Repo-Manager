@@ -11,14 +11,12 @@ export function SettingsModal({ isOpen, onClose }) {
 
     // Load cache settings from localStorage
     const [cacheSettings, setCacheSettings] = useState(() => {
-        const saved = localStorage.getItem('cache-settings')
-        return saved ? JSON.parse(saved) : { enabled: true, ttl: 5 }
+        try { return JSON.parse(localStorage.getItem('cache-settings')) || { enabled: true, ttl: 5 } } catch { return { enabled: true, ttl: 5 } }
     })
 
     // Load migration settings from localStorage
     const [migrationSettings, setMigrationSettings] = useState(() => {
-        const saved = localStorage.getItem('migration-settings')
-        return saved ? JSON.parse(saved) : { defaultVisibility: 'private', maxRetries: 3 }
+        try { return JSON.parse(localStorage.getItem('migration-settings')) || { defaultVisibility: 'private', maxRetries: 3 } } catch { return { defaultVisibility: 'private', maxRetries: 3 } }
     })
 
     const [clearing, setClearing] = useState(false)

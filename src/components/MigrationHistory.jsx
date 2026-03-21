@@ -255,7 +255,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                 const status = STATUS_STYLES[job.status] || STATUS_STYLES.pending
                                 const StatusIcon = status.icon
                                 const SourceIcon = SOURCE_ICONS[job.sourceType] || Globe
-                                const meta = job.metadata ? (typeof job.metadata === 'string' ? JSON.parse(job.metadata) : job.metadata) : null
+                                const meta = (() => { try { return typeof job.metadata === 'string' ? JSON.parse(job.metadata) : (job.metadata || {}) } catch { return {} } })()
 
                                 return (
                                     <div key={job.id} className="p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">

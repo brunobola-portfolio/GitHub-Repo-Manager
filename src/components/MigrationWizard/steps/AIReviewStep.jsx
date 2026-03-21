@@ -120,6 +120,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
   const [approved, setApproved] = useState(aiPlan?.analyzed || false)
 
   const analyze = useCallback(async () => {
+    setApproved(false) // Reset approval on re-analyze
     setAnalyzing(true)
     setError(null)
 
