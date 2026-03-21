@@ -66,12 +66,13 @@ const ERROR_MESSAGES = {
 
 // Custom API Error class
 export class ApiError extends Error {
-    constructor(type, message, status = null, originalError = null) {
+    constructor(type, message, status = null, originalError = null, data = null) {
         super(message || ERROR_MESSAGES[type] || ERROR_MESSAGES[ErrorType.UNKNOWN])
         this.name = 'ApiError'
         this.type = type
         this.status = status
         this.originalError = originalError
+        this.data = data
         this.isRetryable = [ErrorType.NETWORK, ErrorType.TIMEOUT, ErrorType.SERVER, ErrorType.BACKEND_UNAVAILABLE].includes(type)
         this.userMessage = ERROR_MESSAGES[type] || message
     }
@@ -177,8 +178,13 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
                 return response
             }
 
+            // Parse error response body to preserve server-provided details
+            let errorData = null
+            try { errorData = await response.json() } catch {}
+
             // Categorize the error
             const apiError = categorizeError(response.status)
+            apiError.data = errorData
 
             // Don't retry auth errors or not found
             if (!apiError.isRetryable) {
