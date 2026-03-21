@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import Database from 'better-sqlite3'
+import { MigrationEngine } from '../migration-engine.js'
 
 /**
  * Creates an in-memory SQLite database with the same schema used by the app.
@@ -187,5 +188,174 @@ describe('migration_plans schema', () => {
     const plan = db.prepare('SELECT created_at, updated_at FROM migration_plans WHERE id = 1').get()
     expect(plan.created_at).toBeTruthy()
     expect(plan.updated_at).toBeTruthy()
+  })
+})
+
+describe('MigrationEngine', () => {
+  let engine, db
+
+  beforeEach(() => {
+    db = createTestDb()
+    db.prepare('INSERT INTO users (id, username) VALUES (1, ?)').run('testuser')
+    engine = new MigrationEngine(db)
+  })
+
+  afterEach(() => {
+    db.close()
+  })
+
+  describe('createPlan', () => {
+    it('creates a plan with tasks', () => {
+      const planId = engine.createPlan(1, {
+        type: 'azure', org: 'myorg', project: 'myproj'
+      }, [
+        { type: 'repo', sourceRef: 'org/proj/repo1', targetRef: 'gh/repo1', config: {} }
+      ])
+      expect(planId).toBeGreaterThan(0)
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.status).toBe('draft')
+      expect(plan.tasks).toHaveLength(1)
+      expect(plan.tasks[0].type).toBe('repo')
+    })
+
+    it('creates plan with multiple task types', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [
+          { type: 'repo', sourceRef: 'r1', targetRef: 't1', config: { makePrivate: true } },
+          { type: 'work-items', sourceRef: 'wi', targetRef: 't1', config: { types: ['Bug'] } },
+          { type: 'wiki', sourceRef: 'w1', targetRef: 't1', config: { destination: 'docs' } }
+        ]
+      )
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.tasks).toHaveLength(3)
+    })
+
+    it('stores config as JSON', () => {
+      const config = { makePrivate: true, rollbackPolicy: 'delete' }
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config }]
+      )
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.tasks[0].config).toEqual(config)
+    })
+
+    it('sets execution_order based on array index', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [
+          { type: 'repo', sourceRef: 'r1', targetRef: 't1', config: {} },
+          { type: 'repo', sourceRef: 'r2', targetRef: 't2', config: {} }
+        ]
+      )
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.tasks[0].execution_order).toBe(0)
+      expect(plan.tasks[1].execution_order).toBe(1)
+    })
+  })
+
+  describe('validatePlan', () => {
+    it('returns valid for well-formed plan', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const result = engine.validatePlan(planId)
+      expect(result.valid).toBe(true)
+      expect(result.errors).toHaveLength(0)
+    })
+
+    it('returns error for plan with no tasks', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' }, []
+      )
+      const result = engine.validatePlan(planId)
+      expect(result.valid).toBe(false)
+      expect(result.errors.length).toBeGreaterThan(0)
+    })
+
+    it('detects duplicate target refs', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [
+          { type: 'repo', sourceRef: 'r1', targetRef: 'same', config: {} },
+          { type: 'repo', sourceRef: 'r2', targetRef: 'same', config: {} }
+        ]
+      )
+      const result = engine.validatePlan(planId)
+      expect(result.valid).toBe(false)
+      expect(result.errors.some(e => e.includes('duplicate'))).toBe(true)
+    })
+
+    it('throws for non-existent plan', () => {
+      expect(() => engine.validatePlan(999)).toThrow()
+    })
+  })
+
+  describe('getPlanStatus', () => {
+    it('returns plan with tasks', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.id).toBe(planId)
+      expect(plan.source_org).toBe('o')
+      expect(plan.tasks).toHaveLength(1)
+    })
+
+    it('throws for non-existent plan', () => {
+      expect(() => engine.getPlanStatus(999)).toThrow()
+    })
+
+    it('parses JSON fields', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: { key: 'val' } }]
+      )
+      const plan = engine.getPlanStatus(planId)
+      expect(typeof plan.tasks[0].config).toBe('object')
+      expect(plan.tasks[0].config.key).toBe('val')
+    })
+  })
+
+  describe('deletePlan', () => {
+    it('deletes draft plan and its tasks', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      engine.deletePlan(planId)
+      expect(() => engine.getPlanStatus(planId)).toThrow()
+    })
+
+    it('deletes failed plan', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('failed', planId)
+      engine.deletePlan(planId)
+      expect(() => engine.getPlanStatus(planId)).toThrow()
+    })
+
+    it('refuses to delete running plan', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('running', planId)
+      expect(() => engine.deletePlan(planId)).toThrow()
+    })
+
+    it('refuses to delete completed plan', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('completed', planId)
+      expect(() => engine.deletePlan(planId)).toThrow()
+    })
   })
 })
