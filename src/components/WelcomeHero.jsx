@@ -5,7 +5,7 @@ import {
   FolderGit2, Users, BarChart3, Cloud, Lock, Globe,
   Sparkles, ChevronRight
 } from 'lucide-react'
-import { AppLogoIcon } from './AppLogo'
+import { AppLogo, AppLogoIcon } from './AppLogo'
 
 /* ──────── Animated counter ──────── */
 function AnimatedNumber({ target, duration = 2, suffix = '' }) {
@@ -133,11 +133,7 @@ export function WelcomeHero({ onLogin }) {
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           className="relative mb-8 sm:mb-10"
         >
-          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-[1.75rem] bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-400 p-[2px] shadow-2xl shadow-indigo-500/30 dark:shadow-indigo-500/20">
-            <div className="w-full h-full rounded-[1.65rem] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl flex items-center justify-center">
-              <AppLogoIcon className="w-11 h-11 sm:w-14 sm:h-14 text-indigo-600 dark:text-indigo-400" />
-            </div>
-          </div>
+          <AppLogo className="w-24 h-24 sm:w-28 sm:h-28 rounded-[1.75rem] shadow-2xl shadow-indigo-500/30 dark:shadow-indigo-500/20" />
           <motion.div
             className="absolute inset-0 rounded-[1.75rem] border-2 border-indigo-400/30 dark:border-indigo-400/20"
             animate={{ scale: [1, 1.2, 1], opacity: [0.6, 0, 0.6] }}
