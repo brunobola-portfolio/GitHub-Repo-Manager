@@ -61,7 +61,7 @@ export function useOrgs(user) {
     /**
      * Fetch user's organizations
      */
-    async function fetchOrgs() {
+    const fetchOrgs = useCallback(async () => {
         if (MOCK_MODE) {
             setOrgs([
                 { login: 'acme-corp', avatar_url: 'https://github.com/ghost.png', public_repos: 42, total_private_repos: 15 },
@@ -82,7 +82,7 @@ export function useOrgs(user) {
         } catch (e) {
             if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return
         }
-    }
+    }, [])
 
     /**
      * Fetch repos for a specific organization
@@ -124,7 +124,7 @@ export function useOrgs(user) {
     /**
      * Fetch dashboard statistics
      */
-    async function fetchStats(org = '') {
+    const fetchStats = useCallback(async (org = '') => {
         if (MOCK_MODE) {
             setStats({
                 totalRepos: org ? 42 : 87,
@@ -175,7 +175,7 @@ export function useOrgs(user) {
         } catch (e) {
             if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return
         }
-    }
+    }, [])
 
     // Auto-refresh stats when selectedOrg changes
     useEffect(() => {
@@ -184,7 +184,7 @@ export function useOrgs(user) {
         } else if (MOCK_MODE) {
             fetchStats(selectedOrg)
         }
-    }, [selectedOrg, user])
+    }, [selectedOrg, user, fetchStats])
 
     // Load orgs and stats when user is loaded
     useEffect(() => {
@@ -192,7 +192,7 @@ export function useOrgs(user) {
             fetchOrgs()
             fetchStats()
         }
-    }, [user])
+    }, [user, fetchOrgs, fetchStats])
 
     /**
      * Fetch activity feed for a user

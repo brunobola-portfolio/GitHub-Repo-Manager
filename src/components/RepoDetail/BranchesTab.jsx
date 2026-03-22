@@ -119,7 +119,7 @@ export function BranchesTab({ owner, repo, api }) {
 
             <div className="space-y-2">
                 {branches.map(b => (
-                    <Card key={b.name} className="p-3 flex items-center gap-3">
+                    <Card key={b.name} className="p-3 flex items-center gap-3 group">
                         <GitBranch className="w-4 h-4 text-slate-400 shrink-0" />
                         <div className="flex-1 min-w-0">
                             <span className="font-medium text-sm text-slate-900 dark:text-slate-100">{b.name}</span>

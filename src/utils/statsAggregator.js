@@ -82,7 +82,7 @@ export function aggregateLanguages(repos = []) {
  * Calculate trend indicator (up, down, stable)
  */
 export function calculateTrend(current, previous) {
-  if (!previous || previous === 0) return { direction: 'stable', percentage: 0 }
+  if (current == null || !previous || previous === 0) return { direction: 'stable', percentage: 0 }
 
   const percentage = ((current - previous) / previous) * 100
 

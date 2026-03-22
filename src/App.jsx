@@ -118,7 +118,6 @@ function AppContent() {
       if (searchInput) searchInput.focus()
     },
     onCreateRepo: () => openModal('showCreateRepo'),
-    onImport: () => openModal('showImportWizard'),
     onMigrate: () => openModal('showMigrationWizard'),
     onViewChange: setActiveView,
     enabled: !!user && !anyModalOpen
@@ -662,7 +661,7 @@ function AppContent() {
                     onBack={() => setSelectedTeam(null)}
                     userRepos={repos}
                     user={user}
-                    onShowActionsStats={() => {}}
+                    onShowActionsStats={null}
                   />
                 ) : (
                   <TeamHub
@@ -745,7 +744,6 @@ function AppContent() {
           isOpen={modalStates.showOrgManager}
           onClose={() => closeModal('showOrgManager')}
           org={getModalData('showOrgManager')}
-          onRefresh={handleRefreshOrgs}
           onUpdateOrg={(updated) => {
             toast.success(`Organization ${updated.login} updated`)
             handleRefreshOrgs()

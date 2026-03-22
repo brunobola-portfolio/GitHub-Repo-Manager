@@ -247,7 +247,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate }) {
                         />
                         <div className="flex items-center justify-between mt-3">
                             <Button
-                                variant={isOpen ? 'ghost' : 'ghost'}
+                                variant="ghost"
                                 size="sm"
                                 onClick={handleStateToggle}
                                 className={isOpen ? 'text-purple-600 dark:text-purple-400' : 'text-green-600 dark:text-green-400'}

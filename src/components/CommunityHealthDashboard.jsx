@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
     Shield, FileText, Users, Activity, CheckCircle,
     XCircle, AlertCircle, TrendingUp, RefreshCw
 } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 export function CommunityHealthDashboard({ repo, onClose }) {
     const [health, setHealth] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const { toast } = useToast();
+    const modalRef = useFocusTrap(true, onClose);
 
     useEffect(() => {
         if (repo) {
@@ -63,8 +65,12 @@ export function CommunityHealthDashboard({ repo, onClose }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+            role="dialog" aria-modal="true" aria-label="Community Health Dashboard"
+        >
             <motion.div
+                ref={modalRef}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-auto"

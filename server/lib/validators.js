@@ -71,7 +71,8 @@ export const teamMemberSchema = z.object({
 });
 
 export const teamRepoSchema = z.object({
-    repoFullName: z.string().min(1).max(200)
+    repoFullName: z.string().min(1).max(200),
+    repoId: z.number().int().positive().optional()
 });
 
 export const importSchema = z.object({

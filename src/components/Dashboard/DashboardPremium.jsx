@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import {
     BarChart3, TrendingUp, Activity, GitPullRequest, GitMerge,
-    MessageSquare, Zap, PlayCircle, Heart, Users, Building2,
+    Zap, PlayCircle, Heart, Users, Building2,
     Code2, Folder, Archive, Star, GitFork, CheckCircle2, XCircle,
     Download
 } from 'lucide-react'
@@ -14,6 +14,7 @@ import { MigrationActivity } from './MigrationActivity'
 import { OrganizationSelector } from './OrganizationSelector'
 import { OrganizationCard } from './OrganizationCard'
 import { shouldShowCategory, aggregateRepoStats, aggregateLanguages, calculateActivityMetrics } from '../../utils/statsAggregator'
+import { useModal } from '../../hooks/useModal'
 import { motion } from 'framer-motion'
 
 /**
@@ -32,6 +33,7 @@ export function DashboardPremium({
     onOrgClick
 }) {
     const [timeRange, setTimeRange] = useState('7d')
+    const { openModalWithData } = useModal()
 
     // Aggregate repository statistics
     const repoStats = useMemo(() => aggregateRepoStats(repos), [repos])
@@ -326,12 +328,13 @@ export function DashboardPremium({
                                 href="https://docs.github.com/actions"
                             />
                         )}
-                        {!categories.health && (
+                        {!categories.health && repos.length > 0 && (
                             <DiscoverCard
                                 icon={Heart}
                                 title="Analyze Repository Health"
                                 description="Improve your project's community standards"
                                 actionText="Run Health Check"
+                                onClick={() => openModalWithData('showCommunityHealth', repos[0])}
                             />
                         )}
                         {!categories.pullRequests && (
@@ -351,7 +354,13 @@ export function DashboardPremium({
 /**
  * DiscoverCard - Small card for features without data
  */
-function DiscoverCard({ icon: Icon, title, description, href, actionText }) {
+function DiscoverCard({ icon: Icon, title, description, href, actionText, onClick }) {
+    const isLink = !!href
+    const ActionTag = isLink ? 'a' : 'button'
+    const actionProps = isLink
+        ? { href, target: '_blank', rel: 'noopener noreferrer' }
+        : { type: 'button', onClick }
+
     return (
         <motion.div
             whileHover={{ y: -3 }}
@@ -365,14 +374,12 @@ function DiscoverCard({ icon: Icon, title, description, href, actionText }) {
                 {description}
             </p>
             {(href || actionText) && (
-                <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                <ActionTag
+                    {...actionProps}
+                    className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
                 >
                     {actionText || 'Learn More'} →
-                </a>
+                </ActionTag>
             )}
         </motion.div>
     )

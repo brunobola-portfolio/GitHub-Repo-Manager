@@ -1,5 +1,5 @@
 import express from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, safeError } from '../middleware/auth.js';
 import { MigrationEngine } from '../migration-engine.js';
 import { createPlanSchema, updatePlanSchema } from '../lib/validators.js';
 import { analyzeMigration } from '../migration-planner.js';
@@ -28,7 +28,7 @@ router.post('/migration/plans', requireAuth, async (req, res) => {
     }
     res.json({ planId });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
 
@@ -44,7 +44,7 @@ router.get('/migration/plans', requireAuth, async (req, res) => {
     const total = db.prepare('SELECT COUNT(*) as count FROM migration_plans WHERE user_id = ?').get(req.session.userId);
     res.json({ plans, total: total.count, page, perPage });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
 
@@ -55,8 +55,8 @@ router.get('/migration/plans/:id', requireAuth, async (req, res) => {
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
     res.json(plan);
   } catch (err) {
-    if (err.message.includes('not found')) return res.status(404).json({ error: err.message });
-    res.status(500).json({ error: err.message });
+    if (err.message?.includes('not found')) return res.status(404).json({ error: 'Plan not found' });
+    res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
 
@@ -70,7 +70,7 @@ router.put('/migration/plans/:id', requireAuth, async (req, res) => {
     if (!parsed.success) return res.status(400).json({ error: 'Validation failed', details: parsed.error.flatten() });
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
 
@@ -82,8 +82,8 @@ router.delete('/migration/plans/:id', requireAuth, async (req, res) => {
     engine.deletePlan(parseInt(req.params.id));
     res.json({ success: true });
   } catch (err) {
-    if (err.message.includes('Cannot delete')) return res.status(400).json({ error: err.message });
-    res.status(500).json({ error: err.message });
+    if (err.message?.includes('Cannot delete')) return res.status(400).json({ error: 'Cannot delete an active plan' });
+    res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
 
@@ -95,7 +95,7 @@ router.post('/migration/plans/:id/validate', requireAuth, async (req, res) => {
     const result = engine.validatePlan(parseInt(req.params.id));
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
 
@@ -120,7 +120,7 @@ router.post('/migration/plans/:id/execute', requireAuth, async (req, res) => {
     });
     res.json({ success: true, message: 'Execution started' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
 
@@ -132,7 +132,7 @@ router.post('/migration/plans/:id/cancel', requireAuth, async (req, res) => {
     engine.cancelPlan(parseInt(req.params.id));
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
 
@@ -144,7 +144,7 @@ router.post('/migration/plans/:id/pause', requireAuth, async (req, res) => {
     engine.pausePlan(parseInt(req.params.id));
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
 
@@ -158,7 +158,7 @@ router.post('/migration/plans/:id/resume', requireAuth, async (req, res) => {
     });
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
 
@@ -170,7 +170,7 @@ router.post('/migration/plans/:id/tasks/:taskId/retry', requireAuth, async (req,
     engine.retryTask(parseInt(req.params.id), parseInt(req.params.taskId));
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
 
@@ -189,7 +189,7 @@ router.post('/migration/analyze', requireAuth, async (req, res) => {
     const result = await analyzeMigration(context);
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
 
@@ -218,7 +218,7 @@ router.get('/migration/plans/:id/report', requireAuth, async (req, res) => {
       summary, tasks, errors, generatedAt: new Date().toISOString()
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
 

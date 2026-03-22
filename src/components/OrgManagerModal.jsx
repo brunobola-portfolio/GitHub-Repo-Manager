@@ -186,7 +186,7 @@ function OverviewTab({ org, editing, editForm, setEditForm, onEdit, onSave, onCa
             <div className="grid grid-cols-4 gap-4">
                 <StatCard icon={Globe} label="Public Repos" value={org.public_repos || 0} color="blue" />
                 <StatCard icon={Lock} label="Private Repos" value={org.total_private_repos || 0} color="purple" />
-                <StatCard icon={GitFork} label="Forks" value={org.public_gists || 0} color="green" />
+                <StatCard icon={GitFork} label="Forks" value={org.public_repos_forks || org.public_gists || 0} color="green" />
                 <StatCard icon={Users} label="Members" value={org.members_count || '—'} color="orange" />
             </div>
 

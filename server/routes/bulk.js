@@ -258,9 +258,13 @@ router.post('/archive', requireAuth, validate(bulkArchiveSchema), async (req, re
     const failureCount = results.length - successCount;
 
     if (successCount > 0) {
-        db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
-            req.session.userId, 'BULK_ARCHIVE', JSON.stringify(repos), JSON.stringify({ archive })
-        );
+        try {
+            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
+                req.session.userId, 'BULK_ARCHIVE', JSON.stringify(repos), JSON.stringify({ archive })
+            );
+        } catch (auditErr) {
+            req.log?.error?.({ err: auditErr }, 'Failed to write audit log for BULK_ARCHIVE');
+        }
     }
 
     const statusCode = failureCount === 0 ? 200 : successCount === 0 ? 500 : 207;
@@ -295,9 +299,13 @@ router.post('/delete', requireAuth, validate(bulkDeleteSchema), async (req, res)
     const failureCount = results.length - successCount;
 
     if (successCount > 0) {
-        db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
-            req.session.userId, 'BULK_DELETE', JSON.stringify(repos), null
-        );
+        try {
+            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
+                req.session.userId, 'BULK_DELETE', JSON.stringify(repos), null
+            );
+        } catch (auditErr) {
+            req.log?.error?.({ err: auditErr }, 'Failed to write audit log for BULK_DELETE');
+        }
     }
 
     const statusCode = failureCount === 0 ? 200 : successCount === 0 ? 500 : 207;
@@ -318,6 +326,9 @@ router.post('/community-health/compare', requireAuth, async (req, res) => {
 
         if (!repos || !Array.isArray(repos)) {
             return errorResponse(res, 400, 'Invalid repos array', 'INVALID_FORMAT');
+        }
+        if (repos.length > 50) {
+            return errorResponse(res, 400, 'Maximum 50 repos for comparison', 'TOO_MANY_REPOS');
         }
 
         const comparison = [];

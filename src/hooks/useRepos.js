@@ -102,37 +102,17 @@ export function useRepos(user) {
         }
     }, [perPage])
 
-    // Fetch repos when page or perPage changes (non-mock mode).
-    // When unauthenticated, avoid calling the repos API and instead
-    // clear the current list so the UI can show an auth empty state.
-    useEffect(() => {
-        if (MOCK_MODE) {
-            const { repos: mockRepos, totalPages: mockTotalPages } = generateMockData(page, perPage)
-            setRepos(mockRepos)
-            setTotalPages(mockTotalPages)
-            return
-        }
-
-        if (!user) {
-            setRepos([])
-            setTotalPages(null)
-            return
-        }
-
-        fetchRepos(page, perPage)
-    }, [page, perPage, user])
-
     /**
      * Fetch repositories from API with pagination and retry logic
      */
-    async function fetchRepos(pageToLoad = 1, per = 30) {
+    const fetchRepos = useCallback(async (pageToLoad = 1, per = 30, signal) => {
         setLoading(true)
         setError(null)
         setErrorInfo(null)
 
         try {
             const url = `${API_ENDPOINTS.repos}?page=${pageToLoad}&per_page=${per}`
-            const r = await fetchWithRetry(url, { credentials: 'include' })
+            const r = await fetchWithRetry(url, { credentials: 'include', signal })
             const parsed = await safeParseJson(r)
 
             // Handle response format: { repos, page, totalPages } or direct array
@@ -157,6 +137,7 @@ export function useRepos(user) {
             setPage(pageToLoad)
             setPerPage(per)
         } catch (e) {
+            if (e.name === 'AbortError') return
             const info = getErrorInfo(e)
             setError(info.message)
             setErrorInfo(info)
@@ -165,7 +146,29 @@ export function useRepos(user) {
         } finally {
             setLoading(false)
         }
-    }
+    }, [])
+
+    // Fetch repos when page or perPage changes (non-mock mode).
+    // When unauthenticated, avoid calling the repos API and instead
+    // clear the current list so the UI can show an auth empty state.
+    useEffect(() => {
+        if (MOCK_MODE) {
+            const { repos: mockRepos, totalPages: mockTotalPages } = generateMockData(page, perPage)
+            setRepos(mockRepos)
+            setTotalPages(mockTotalPages)
+            return
+        }
+
+        if (!user) {
+            setRepos([])
+            setTotalPages(null)
+            return
+        }
+
+        const controller = new AbortController()
+        fetchRepos(page, perPage, controller.signal)
+        return () => controller.abort()
+    }, [page, perPage, user, fetchRepos])
 
     // Selection is managed by SelectionContext - these are kept as no-ops for backward compat
     const toggleSelect = useCallback(() => {}, [])
@@ -328,7 +331,7 @@ export function useRepos(user) {
         }
 
         fetchRepos(page, perPage)
-    }, [page, perPage, user])
+    }, [page, perPage, user, fetchRepos])
 
     /**
      * Archive/unarchive repositories

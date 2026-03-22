@@ -7,25 +7,23 @@ import { formatCompact } from '../../utils/format'
  * OrganizationCard - Rich card showing organization details and metrics
  */
 export const OrganizationCard = memo(function OrganizationCard({ org, repos = [], onClick }) {
-    // Calculate organization stats
-    const orgRepos = repos.filter(r => r.owner?.login === org.login)
-    const totalStars = orgRepos.reduce((sum, r) => sum + (r.stargazers_count || 0), 0)
-    const totalForks = orgRepos.reduce((sum, r) => sum + (r.forks_count || 0), 0)
-    const openIssues = orgRepos.reduce((sum, r) => sum + (r.open_issues_count || 0), 0)
-
-    const publicCount = orgRepos.filter(r => !r.private).length
-    const privateCount = orgRepos.filter(r => r.private).length
-
-    // Recent activity indicator - Date.now() is acceptable here as a display-only heuristic
-    /* eslint-disable react-hooks/purity */
-    const hasRecentActivity = useMemo(() => {
+    // Derive all org-specific stats in a single useMemo keyed on stable deps
+    const { orgRepos, totalStars, totalForks, openIssues, publicCount, privateCount, hasRecentActivity } = useMemo(() => {
+        const filtered = repos.filter(r => r.owner?.login === org.login)
         const now = Date.now()
-        return orgRepos.some(r => {
-            const daysSinceUpdate = (now - new Date(r.updated_at).getTime()) / (1000 * 60 * 60 * 24)
-            return daysSinceUpdate < 7
-        })
-    }, [orgRepos])
-    /* eslint-enable react-hooks/purity */
+        return {
+            orgRepos: filtered,
+            totalStars: filtered.reduce((sum, r) => sum + (r.stargazers_count || 0), 0),
+            totalForks: filtered.reduce((sum, r) => sum + (r.forks_count || 0), 0),
+            openIssues: filtered.reduce((sum, r) => sum + (r.open_issues_count || 0), 0),
+            publicCount: filtered.filter(r => !r.private).length,
+            privateCount: filtered.filter(r => r.private).length,
+            hasRecentActivity: filtered.some(r => {
+                const daysSinceUpdate = (now - new Date(r.updated_at).getTime()) / (1000 * 60 * 60 * 24)
+                return daysSinceUpdate < 7
+            })
+        }
+    }, [repos, org.login])
 
     return (
         <motion.button

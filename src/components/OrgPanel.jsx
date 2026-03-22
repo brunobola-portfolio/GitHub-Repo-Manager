@@ -149,7 +149,10 @@ export function OrgPanel({
 									<Settings size={15} />
 									Settings
 								</DropdownMenu.Item>
-								<DropdownMenu.Item className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-600 dark:hover:text-indigo-300 rounded-xl cursor-pointer outline-none transition-colors">
+								<DropdownMenu.Item
+									className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-600 dark:hover:text-indigo-300 rounded-xl cursor-pointer outline-none transition-colors"
+									onSelect={() => window.open('https://github.com/settings/security', '_blank', 'noopener,noreferrer')}
+								>
 									<Shield size={15} />
 									Security
 								</DropdownMenu.Item>

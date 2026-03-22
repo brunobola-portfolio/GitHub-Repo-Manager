@@ -34,7 +34,7 @@ export const StatCard = memo(function StatCard({
             transition={{ type: "spring", stiffness: 300 }}
             className="rounded-2xl focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-inset"
         >
-            <Card className="p-4 sm:p-6 hover:shadow-2xl transition-all duration-300 border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl group cursor-pointer overflow-hidden relative ds-card-shimmer">
+            <Card className="p-4 sm:p-6 hover:shadow-2xl transition-all duration-300 border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl group overflow-hidden relative ds-card-shimmer">
                 {/* Background gradient on hover */}
                 <motion.div
                     className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 to-purple-500/0"
