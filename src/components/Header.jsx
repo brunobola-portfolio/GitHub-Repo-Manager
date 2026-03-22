@@ -5,6 +5,7 @@ import {
     Bell, Settings, User, ChevronDown, Building2, Shield, Users,
     CheckCircle2, AlertCircle, Sparkles, Moon, Sun, Wand2, Download, History, Menu
 } from 'lucide-react'
+import { AppLogoIcon } from './AppLogo'
 import { useTheme } from '../hooks/useTheme.jsx'
 
 export function Header({
@@ -68,8 +69,8 @@ export function Header({
                       </button>
                     )}
                     <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-[4px] pr-3 rounded-[13px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
-                        <div className="bg-gradient-to-br from-indigo-600 to-purple-600 w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shadow-md shadow-indigo-500/20 dark:shadow-indigo-500/25 ds-btn-shimmer flex-shrink-0">
-                            <Github className="w-4 h-4 text-white" strokeWidth={2} />
+                        <div className="bg-gradient-to-br from-indigo-600 to-purple-600 w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shadow-md shadow-indigo-500/20 dark:shadow-indigo-500/25 ds-btn-shimmer flex-shrink-0 text-white">
+                            <AppLogoIcon className="w-[18px] h-[18px]" />
                         </div>
                         <div className="min-w-0 hidden sm:block">
                             <h1 className="text-[13px] font-bold text-slate-900 dark:text-slate-100 leading-none ds-font-display truncate">
