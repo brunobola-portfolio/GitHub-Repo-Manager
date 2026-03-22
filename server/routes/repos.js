@@ -232,7 +232,11 @@ router.put('/:owner/:repo/collaborators/:username', requireAuth, async (req, res
     try {
         const { owner, repo, username } = req.params;
         if (!isValidGitHubUsername(username)) return res.status(400).json({ error: 'Invalid username format' });
-        const { permission = 'push' } = req.body; // default to push (Write) access
+        const { permission = 'push' } = req.body;
+        const allowedPermissions = ['pull', 'push', 'admin', 'maintain', 'triage'];
+        if (!allowedPermissions.includes(permission)) {
+            return res.status(400).json({ error: 'Invalid permission level' });
+        }
 
         const result = await githubApi(`/repos/${owner}/${repo}/collaborators/${username}`, req.session.accessToken, {
             method: 'PUT',

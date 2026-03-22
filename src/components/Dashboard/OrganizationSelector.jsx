@@ -7,10 +7,16 @@ import * as Popover from '@radix-ui/react-popover'
  */
 export function OrganizationSelector({ orgs = [], selectedOrg, onSelectOrg, loading }) {
     const selectedOrgData = orgs?.find(o => o.login === selectedOrg)
+    const [open, setOpen] = React.useState(false)
+
+    const handleSelect = (value) => {
+        onSelectOrg(value)
+        setOpen(false)
+    }
 
     return (
         <div className="relative z-20">
-            <Popover.Root>
+            <Popover.Root open={open} onOpenChange={setOpen}>
                 <Popover.Trigger asChild>
                     <button
                         disabled={loading}
@@ -53,7 +59,7 @@ export function OrganizationSelector({ orgs = [], selectedOrg, onSelectOrg, load
                     >
                         <div className="max-h-[340px] overflow-y-auto space-y-1.5 custom-scrollbar pr-1">
                             <button
-                                onClick={() => onSelectOrg('')}
+                                onClick={() => handleSelect('')}
                                 className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${!selectedOrg
                                         ? 'bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-700 dark:text-indigo-300 shadow-sm'
                                         : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300'
@@ -71,7 +77,7 @@ export function OrganizationSelector({ orgs = [], selectedOrg, onSelectOrg, load
                             {orgs?.map(org => (
                                 <button
                                     key={org.login}
-                                    onClick={() => onSelectOrg(org.login)}
+                                    onClick={() => handleSelect(org.login)}
                                     className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${selectedOrg === org.login
                                             ? 'bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-700 dark:text-indigo-300 shadow-sm'
                                             : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300'

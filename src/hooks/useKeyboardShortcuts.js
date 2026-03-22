@@ -13,7 +13,6 @@ const SHORTCUTS = [
 export function useKeyboardShortcuts({
     onSearch,
     onCreateRepo,
-    onImport,
     onMigrate,
     onViewChange,
     enabled = true
@@ -24,9 +23,9 @@ export function useKeyboardShortcuts({
     const handleKeyDown = useCallback((e) => {
         if (!enabled) return
 
-        // Debounce: prevent double-trigger on rapid keypress
+        // Debounce: prevent double-trigger on rapid keypress (exempt Escape)
         const now = Date.now()
-        if (now - lastExecutionRef.current < 100) return
+        if (e.key !== 'Escape' && now - lastExecutionRef.current < 100) return
         lastExecutionRef.current = now
 
         // Don't trigger if user is typing in an input, textarea, or contentEditable

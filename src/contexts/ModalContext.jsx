@@ -25,7 +25,6 @@ const MODAL_NAMES = [
   'showOrgManager',
   'showCommitGen',
   'showRepoInsights',
-  'showActionsStats',
   'showCommunityHealth',
   'showSettings',
   'showImportWizard',

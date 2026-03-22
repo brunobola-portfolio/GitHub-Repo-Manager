@@ -14,18 +14,21 @@
 import express from 'express';
 import db from '../db.js';
 import { githubApi, statsCache, evictOldest } from '../lib/github-api.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, isValidGitHubUsername } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Get repository statistics (with caching)
 router.get('/', requireAuth, async (req, res) => {
     const { org } = req.query;
+    if (org && !isValidGitHubUsername(org)) {
+        return res.status(400).json({ error: 'Invalid organization name' });
+    }
     try {
         const userId = req.session.userId;
 
-        // Get cache TTL from header (in minutes), default to 5 minutes
-        const cacheTTLMinutes = parseInt(req.headers['x-cache-ttl']) || 5;
+        // Get cache TTL from header (in minutes), default to 5 minutes, clamped 1-60
+        const cacheTTLMinutes = Math.min(Math.max(parseInt(req.headers['x-cache-ttl']) || 5, 1), 60);
         const cacheTTL = cacheTTLMinutes * 60 * 1000; // Convert to milliseconds
 
         // Create cache key unique to user and org
@@ -212,9 +215,9 @@ router.get('/global', requireAuth, async (req, res) => {
 // Actions Summary across all repos
 router.get('/actions', requireAuth, async (req, res) => {
     try {
-        const { days = 30 } = req.query;
+        const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), 365);
         const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - parseInt(days));
+        cutoff.setDate(cutoff.getDate() - days);
 
         let query = `
             SELECT

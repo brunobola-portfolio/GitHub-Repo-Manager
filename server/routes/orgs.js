@@ -11,9 +11,17 @@
 
 import express from 'express';
 import { githubApi } from '../lib/github-api.js';
-import { requireAuth, safeError } from '../middleware/auth.js';
+import { requireAuth, safeError, isValidGitHubUsername } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Validate :org param
+router.param('org', (req, res, next, org) => {
+    if (!isValidGitHubUsername(org)) {
+        return res.status(400).json({ error: 'Invalid organization name' });
+    }
+    next();
+});
 
 // List organizations (personal account first, then orgs)
 router.get('/', requireAuth, async (req, res) => {

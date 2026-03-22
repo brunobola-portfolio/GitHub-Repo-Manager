@@ -49,7 +49,6 @@ export function ActivityChart({ activity = [], timeRange, onTimeRangeChange, loa
         })
 
         return Object.entries(dailyData)
-            .slice(-7)
             .map(([date, data]) => ({
                 name: dayNames[new Date(date).getDay()],
                 commits: data.commits,

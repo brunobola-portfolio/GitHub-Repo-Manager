@@ -267,10 +267,8 @@
 .ds-focus-ring-offset:focus-visible {
   box-shadow: 0 0 0 2px theme('colors.white'), 0 0 0 4px theme('colors.indigo.500');
 }
-@media (prefers-color-scheme: dark) {
-  .ds-focus-ring-offset:focus-visible {
-    box-shadow: 0 0 0 2px theme('colors.slate.900'), 0 0 0 4px theme('colors.indigo.500');
-  }
+:where(.dark) .ds-focus-ring-offset:focus-visible {
+  box-shadow: 0 0 0 2px theme('colors.slate.900'), 0 0 0 4px theme('colors.indigo.500');
 }
 
 /* Focus ring inset (for inputs inside containers) */

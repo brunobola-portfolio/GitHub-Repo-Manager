@@ -88,9 +88,10 @@ export function formatCompact(value, locale = APP_LOCALE) {
  * formatPercentage(45.678, 2) // "45.68%"
  */
 export function formatPercentage(value, decimals = 1) {
-	if (value == null || isNaN(value)) return '0%'
+	const num = Number(value)
+	if (value == null || isNaN(num)) return '0%'
 
-	return `${value.toFixed(decimals)}%`
+	return `${num.toFixed(decimals)}%`
 }
 
 /**
@@ -103,14 +104,14 @@ export function formatPercentage(value, decimals = 1) {
  * formatFileSize(1048576) // "1.00 MB"
  */
 export function formatFileSize(bytes, decimals = 2) {
-	if (bytes == null || isNaN(bytes)) return '0 Bytes'
+	if (bytes == null || isNaN(bytes) || bytes < 0) return '0 Bytes'
 	if (bytes === 0) return '0 Bytes'
 
 	const k = 1024
 	const dm = decimals < 0 ? 0 : decimals
 	const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB']
 
-	const i = Math.floor(Math.log(bytes) / Math.log(k))
+	const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1)
 
 	return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
 }
@@ -128,8 +129,10 @@ export function formatRelativeTime(date) {
 
 	const now = new Date()
 	const then = new Date(date)
+	if (isNaN(then.getTime())) return ''
 	const seconds = Math.floor((now - then) / 1000)
 
+	if (seconds < 0) return 'just now'
 	if (seconds < 60) return `${seconds}s ago`
 
 	const minutes = Math.floor(seconds / 60)

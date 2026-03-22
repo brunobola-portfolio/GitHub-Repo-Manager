@@ -13,12 +13,15 @@ import './index.css'
 import './design-system.css'
 import App from './App.jsx'
 import { ThemeProvider } from './hooks/useTheme.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <MotionConfig reducedMotion="user">
       <ThemeProvider>
-        <App />
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
       </ThemeProvider>
     </MotionConfig>
   </StrictMode>,
