@@ -205,7 +205,7 @@ export function Sidebar({
                 onArchive={onArchive}
                 onDelete={onDelete}
                 selectedRepos={selectedRepos}
-                onImport={() => openModal('showImportWizard')}
+                onImport={() => openModal('showMigrationWizard')}
             />
 
             {/* Action History */}

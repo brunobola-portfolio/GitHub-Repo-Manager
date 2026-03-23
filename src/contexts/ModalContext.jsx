@@ -27,7 +27,6 @@ const MODAL_NAMES = [
   'showRepoInsights',
   'showCommunityHealth',
   'showSettings',
-  'showImportWizard',
   'showMigrationWizard',
   'showMigrationHistory',
   'showConfirm',

@@ -116,10 +116,10 @@ export default function SourceStep({ source, onChange }) {
     <div className="space-y-5">
       <div>
         <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-          Azure DevOps Source
+          Connect to Azure DevOps
         </h3>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Connect to your Azure DevOps organization to select repositories for migration.
+          Enter your Azure DevOps organization and credentials to connect.
         </p>
       </div>
 

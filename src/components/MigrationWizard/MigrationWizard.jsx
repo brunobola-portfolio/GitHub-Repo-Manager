@@ -1,9 +1,13 @@
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useCallback, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { useMigrationWizard } from '../../hooks/useMigrationWizard'
 import { migrationApi } from '../../api/migration'
+import SourceTypeStep from './steps/SourceTypeStep'
 import SourceStep from './steps/SourceStep'
+import UrlInputStep from './steps/UrlInputStep'
+import GitHubSourceStep from './steps/GitHubSourceStep'
+import TargetConfigStep from './steps/TargetConfigStep'
 import RepoSelectStep from './steps/RepoSelectStep'
 import RepoConfigStep from './steps/RepoConfigStep'
 import WorkItemsStep from './steps/WorkItemsStep'
@@ -11,11 +15,17 @@ import WikiStep from './steps/WikiStep'
 import AIReviewStep from './steps/AIReviewStep'
 import ScheduleStep from './steps/ScheduleStep'
 import ProgressStep from './steps/ProgressStep'
+import SimpleProgressStep from './steps/SimpleProgressStep'
 import SummaryStep from './steps/SummaryStep'
-import { ArrowLeft, ArrowRight, Rocket, AlertCircle } from 'lucide-react'
+import BreadcrumbNav from './BreadcrumbNav'
+import { ArrowLeft, ArrowRight, Rocket, Download, AlertCircle } from 'lucide-react'
 
 const STEP_LABELS = {
-  source: 'Source',
+  sourceType: 'Source',
+  azureConnect: 'Connect',
+  urlInput: 'URL',
+  githubSource: 'Source',
+  targetConfig: 'Target',
   repoSelect: 'Repos',
   repoConfig: 'Configure',
   workItems: 'Work Items',
@@ -24,15 +34,6 @@ const STEP_LABELS = {
   schedule: 'Schedule',
   progress: 'Progress',
   summary: 'Summary',
-}
-
-function StepPlaceholder({ label }) {
-  return (
-    <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-      <p className="text-lg font-medium">{label}</p>
-      <p className="text-sm mt-1">Coming soon...</p>
-    </div>
-  )
 }
 
 const slideVariants = {
@@ -50,7 +51,7 @@ const slideVariants = {
   }),
 }
 
-export default function MigrationWizard({ onClose }) {
+export default function MigrationWizard({ onClose, orgs = [] }) {
   const wizard = useMigrationWizard()
 
   const {
@@ -78,22 +79,135 @@ export default function MigrationWizard({ onClose }) {
     updateSchedule,
     planId,
     setPlanId,
+    importJobs,
+    updateImportJobs,
     resetWizard,
   } = wizard
 
-  // Only selected repos for the config step
   const selectedRepos = repos.filter((r) => r.selected)
-
-  // Track animation direction: +1 = forward, -1 = backward
   const [direction, setDirection] = useState(1)
 
   const handleNext = () => { setDirection(1); nextStep() }
   const handleBack = () => { setDirection(-1); prevStep() }
 
+  // Auto-advance when sourceType is set on the sourceType step.
+  // This runs AFTER the steps array has been recomputed with the new sourceType,
+  // avoiding stale closure issues with setTimeout-based auto-advance.
+  const prevSourceType = useRef(source.sourceType)
+  useEffect(() => {
+    if (source.sourceType && !prevSourceType.current && currentStepIndex === 0) {
+      setDirection(1)
+      // steps has already been recomputed, so index 1 is the correct next step
+      if (steps.length > 1) {
+        // Use the hook's internal setter indirectly by going to index 1
+        // We bypass nextStep() since validation of sourceType step would pass now
+        nextStep()
+      }
+    }
+    prevSourceType.current = source.sourceType
+  }, [source.sourceType, currentStepIndex, steps.length, nextStep])
+
+  // Breadcrumb navigation for Azure flow
+  const handleBreadcrumbNavigate = useCallback((target) => {
+    setDirection(-1)
+    if (target === 'org') {
+      updateSource({ project: '', validated: false })
+      setRepos([])
+      goToStep('azureConnect')
+    } else if (target === 'project') {
+      setRepos([])
+      goToStep('azureConnect')
+    }
+  }, [updateSource, setRepos, goToStep])
+
+  // Start import for URL/GitHub flows
+  const handleStartImport = useCallback(async () => {
+    updateImportJobs({ importing: true })
+    setDirection(1)
+
+    try {
+      let endpoint, body
+
+      if (source.sourceType === 'github') {
+        endpoint = '/api/import/url'
+        body = {
+          sourceUrl: source.githubSourceUrl,
+          targetOrg: source.targetOrg || undefined,
+          targetName: source.targetName || source.githubSourceUrl.replace(/\.git$/, '').split('/').pop(),
+          makePrivate: source.makePrivate,
+          description: source.description,
+        }
+      } else {
+        // URL import
+        endpoint = '/api/import/url'
+        let credentials
+        if (source.authType === 'token') credentials = { type: 'token', token: source.authToken }
+        else if (source.authType === 'basic') credentials = { type: 'basic', username: source.authUsername, password: source.authPassword }
+
+        body = {
+          sourceUrl: source.sourceUrl,
+          credentials,
+          targetOrg: source.targetOrg || undefined,
+          targetName: source.targetName || source.sourceUrl.replace(/\.git$/, '').split('/').pop(),
+          makePrivate: source.makePrivate,
+          description: source.description,
+        }
+      }
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+
+      if (data.success) {
+        updateImportJobs({ jobId: data.jobId })
+        // Navigate to progress step
+        nextStep()
+      } else {
+        updateImportJobs({
+          importing: false,
+          jobStatus: { status: 'failed', errorMessage: data.error, progressPct: 0 },
+        })
+        nextStep()
+      }
+    } catch (e) {
+      updateImportJobs({
+        importing: false,
+        jobStatus: { status: 'failed', errorMessage: e.message, progressPct: 0 },
+      })
+      nextStep()
+    }
+  }, [source, updateImportJobs, nextStep])
+
   function renderStep() {
     switch (currentStep) {
-      case 'source':
+      case 'sourceType':
+        return (
+          <SourceTypeStep
+            source={source}
+            onChange={updateSource}
+          />
+        )
+      case 'azureConnect':
         return <SourceStep source={source} onChange={updateSource} />
+      case 'urlInput':
+        return <UrlInputStep source={source} onChange={updateSource} />
+      case 'githubSource':
+        return <GitHubSourceStep source={source} onChange={updateSource} />
+      case 'targetConfig':
+        return (
+          <TargetConfigStep
+            source={source}
+            onChange={updateSource}
+            orgs={orgs}
+            importJobs={importJobs}
+            onUpdateImportJobs={updateImportJobs}
+            onStartImport={handleStartImport}
+          />
+        )
       case 'repoSelect':
         return <RepoSelectStep repos={repos} onSetRepos={setRepos} source={source} onChange={updateSource} />
       case 'repoConfig':
@@ -101,7 +215,6 @@ export default function MigrationWizard({ onClose }) {
           <RepoConfigStep
             repos={selectedRepos}
             onUpdateRepo={(selectedIndex, updates) => {
-              // Map the selected-repo index back to the original repos array index
               const originalIndex = repos.findIndex(
                 (r) => r.name === selectedRepos[selectedIndex]?.name
               )
@@ -119,14 +232,23 @@ export default function MigrationWizard({ onClose }) {
       case 'schedule':
         return <ScheduleStep schedule={schedule} onUpdate={updateSchedule} wizard={wizard} />
       case 'progress':
+        if (source.sourceType === 'azure') {
+          return (
+            <ProgressStep
+              planId={planId}
+              onPause={() => {}}
+              onCancel={() => {}}
+              onRetryTask={(taskId) => {
+                if (planId) migrationApi.retryTask(planId, taskId).catch(() => {})
+              }}
+            />
+          )
+        }
         return (
-          <ProgressStep
-            planId={planId}
-            onPause={() => {}}
-            onCancel={() => {}}
-            onRetryTask={(taskId) => {
-              if (planId) migrationApi.retryTask(planId, taskId).catch(() => {})
-            }}
+          <SimpleProgressStep
+            importJobs={importJobs}
+            onUpdate={updateImportJobs}
+            source={source}
           />
         )
       case 'summary':
@@ -138,9 +260,25 @@ export default function MigrationWizard({ onClose }) {
           />
         )
       default:
-        return <StepPlaceholder label="Unknown Step" />
+        return (
+          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+            <p className="text-lg font-medium">Unknown Step</p>
+          </div>
+        )
     }
   }
+
+  const isAzure = source.sourceType === 'azure'
+  const isSimpleFlow = source.sourceType === 'url' || source.sourceType === 'github'
+  const wizardTitle = isAzure ? 'Migration Wizard' : 'Import Repository'
+  const wizardIcon = isAzure ? Rocket : Download
+
+  // Hide Next button on sourceType (auto-advance) and targetConfig (has its own Import button)
+  // Also hide after schedule step for Azure (progress handles itself)
+  const hideNextButton = currentStep === 'sourceType'
+    || currentStep === 'targetConfig'
+    || currentStep === 'progress'
+    || currentStep === 'summary'
 
   const footer = (
     <ModalFooter align="between">
@@ -157,7 +295,7 @@ export default function MigrationWizard({ onClose }) {
         {canGoBack ? 'Back' : 'Cancel'}
       </button>
 
-      {canGoNext && currentStepIndex < 6 && (
+      {canGoNext && !hideNextButton && (
         <button
           type="button"
           onClick={handleNext}
@@ -179,61 +317,71 @@ export default function MigrationWizard({ onClose }) {
     <Modal
       isOpen={true}
       onClose={onClose}
-      title="Migration Wizard"
-      icon={Rocket}
+      title={wizardTitle}
+      icon={wizardIcon}
       size="xl"
       footer={footer}
     >
-      <div role="form" aria-label="Migration Wizard">
-        {/* Step Indicator */}
-        <nav aria-label="Wizard steps" className="mb-6">
-          <ol className="flex items-center justify-between gap-1">
-            {steps.map((step, index) => {
-              const isActive = index === currentStepIndex
-              const isCompleted = index < currentStepIndex
-              const label = STEP_LABELS[step] || step
+      <div role="form" aria-label={wizardTitle}>
+        {/* Step Indicator — hide on sourceType step when no source selected */}
+        {source.sourceType && (
+          <nav aria-label="Wizard steps" className="mb-4">
+            <ol className="flex items-center justify-between gap-1">
+              {steps.map((step, index) => {
+                const isActive = index === currentStepIndex
+                const isCompleted = index < currentStepIndex
+                const label = STEP_LABELS[step] || step
 
-              return (
-                <li
-                  key={step}
-                  className="flex flex-col items-center flex-1 min-w-0"
-                  aria-current={isActive ? 'step' : undefined}
-                >
-                  <button
-                    type="button"
-                    onClick={() => goToStep(step)}
-                    disabled={!isCompleted}
-                    className={`
-                      w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all
-                      ${isActive
-                        ? 'bg-indigo-500 text-white ring-4 ring-indigo-500/20 scale-110'
-                        : isCompleted
-                          ? 'bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600'
-                          : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
-                      }
-                    `}
-                    aria-label={`${label}${isActive ? ' (current)' : isCompleted ? ' (completed)' : ''}`}
+                return (
+                  <li
+                    key={step}
+                    className="flex flex-col items-center flex-1 min-w-0"
+                    aria-current={isActive ? 'step' : undefined}
                   >
-                    {isCompleted ? '\u2713' : index + 1}
-                  </button>
-                  <span
-                    className={`
-                      mt-1.5 text-[10px] font-medium truncate max-w-full text-center
-                      ${isActive
-                        ? 'text-indigo-600 dark:text-indigo-400'
-                        : isCompleted
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : 'text-slate-400 dark:text-slate-500'
-                      }
-                    `}
-                  >
-                    {label}
-                  </span>
-                </li>
-              )
-            })}
-          </ol>
-        </nav>
+                    <button
+                      type="button"
+                      onClick={() => goToStep(step)}
+                      disabled={!isCompleted}
+                      className={`
+                        w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all
+                        ${isActive
+                          ? 'bg-indigo-500 text-white ring-4 ring-indigo-500/20 scale-110'
+                          : isCompleted
+                            ? 'bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
+                        }
+                      `}
+                      aria-label={`${label}${isActive ? ' (current)' : isCompleted ? ' (completed)' : ''}`}
+                    >
+                      {isCompleted ? '\u2713' : index + 1}
+                    </button>
+                    <span
+                      className={`
+                        mt-1.5 text-[10px] font-medium truncate max-w-full text-center
+                        ${isActive
+                          ? 'text-indigo-600 dark:text-indigo-400'
+                          : isCompleted
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-slate-400 dark:text-slate-500'
+                        }
+                      `}
+                    >
+                      {label}
+                    </span>
+                  </li>
+                )
+              })}
+            </ol>
+          </nav>
+        )}
+
+        {/* Breadcrumb Navigation (Azure only) */}
+        <BreadcrumbNav
+          source={source}
+          currentStep={currentStep}
+          selectedCount={selectedRepos.length}
+          onNavigate={handleBreadcrumbNavigate}
+        />
 
         {/* Error Display */}
         {error && (

@@ -136,6 +136,60 @@ router.post('/azure/project-info', requireAuth, async (req, res) => {
     }
 });
 
+router.post('/azure/branches', requireAuth, async (req, res) => {
+    try {
+        const { org, project, repoId, pat: bodyPat } = req.body;
+        const pat = azureService.resolvePat(bodyPat);
+        if (!org || !project || !repoId) {
+            return errorResponse(res, 400, 'Organization, project, and repoId are required');
+        }
+        if (!pat) {
+            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
+        }
+        const branches = await azureService.listBranches(org, project, repoId, pat);
+        res.json({ branches });
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to list branches'));
+    }
+});
+
+router.post('/azure/pat-permissions', requireAuth, async (req, res) => {
+    try {
+        const { org, project, pat: bodyPat } = req.body;
+        const pat = azureService.resolvePat(bodyPat);
+        if (!org || !project) {
+            return errorResponse(res, 400, 'Organization and project are required');
+        }
+        if (!pat) {
+            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
+        }
+
+        const permissions = { code: false, workItems: false, wiki: false };
+
+        // Test Code (Read) — try listing repos
+        try {
+            await azureService.listRepos(org, project, pat);
+            permissions.code = true;
+        } catch { /* permission denied or error */ }
+
+        // Test Work Items (Read) — try WIQL query
+        try {
+            await azureService.getWorkItemCounts(org, project, pat);
+            permissions.workItems = true;
+        } catch { /* permission denied or error */ }
+
+        // Test Wiki (Read) — try listing wikis
+        try {
+            await azureService.listWikis(org, project, pat);
+            permissions.wiki = true;
+        } catch { /* permission denied or error */ }
+
+        res.json({ permissions });
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to check PAT permissions'));
+    }
+});
+
 router.post('/azure/tfvc/items', requireAuth, async (req, res) => {
     try {
         const { org, project, pat: bodyPat, scopePath } = req.body;
