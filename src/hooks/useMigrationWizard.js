@@ -1,24 +1,58 @@
 import { useState, useCallback, useMemo } from 'react'
 
-const STEPS = [
-  'source',
-  'repoSelect',
-  'repoConfig',
-  'workItems',
-  'wiki',
-  'aiReview',
-  'schedule',
-  'progress',
-  'summary',
-]
+/**
+ * Compute the active step sequence based on source type and feature toggles.
+ */
+function getStepsForSourceType(sourceType, workItemsEnabled, wikiEnabled) {
+  switch (sourceType) {
+    case 'azure':
+      return [
+        'sourceType',
+        'azureConnect',
+        'repoSelect',
+        'repoConfig',
+        ...(workItemsEnabled ? ['workItems'] : []),
+        ...(wikiEnabled ? ['wiki'] : []),
+        'aiReview',
+        'schedule',
+        'progress',
+        'summary',
+      ]
+    case 'url':
+      return ['sourceType', 'urlInput', 'targetConfig', 'progress', 'summary']
+    case 'github':
+      return ['sourceType', 'githubSource', 'targetConfig', 'progress', 'summary']
+    default:
+      return ['sourceType']
+  }
+}
 
 const INITIAL_SOURCE = {
-  type: 'azure',
+  sourceType: '',             // 'azure' | 'url' | 'github'
+  // Azure fields
   org: '',
   project: '',
   pat: '',
   validated: false,
-  versionControlType: null, // 'Git' | 'Tfvc' | null
+  versionControlType: null,   // 'Git' | 'Tfvc' | null
+  // URL import fields
+  sourceUrl: '',
+  urlValidation: null,        // null | 'validating' | 'valid' | 'invalid'
+  urlError: '',
+  authType: 'none',           // 'none' | 'token' | 'basic'
+  authToken: '',
+  authUsername: '',
+  authPassword: '',
+  // GitHub import fields
+  githubSourceUrl: '',
+  // Target fields (URL/GitHub flows)
+  targetOrg: '',
+  targetName: '',
+  makePrivate: true,
+  description: '',
+  // System
+  gitAvailable: null,
+  envAuthAvailable: null,
 }
 
 const INITIAL_WORK_ITEMS = {
@@ -48,11 +82,36 @@ const INITIAL_SCHEDULE = {
   isDryRun: false,
 }
 
+const INITIAL_IMPORT_JOBS = {
+  jobId: null,
+  jobStatus: null,
+  importing: false,
+  batchJobs: [],
+  batchStatuses: {},
+}
+
 const validators = {
-  source: (state) => {
+  sourceType: (state) => {
+    if (!state.source.sourceType) return 'Select a source type'
+    return null
+  },
+  azureConnect: (state) => {
     if (!state.source.org) return 'Organization is required'
     if (!state.source.project) return 'Project is required'
     if (!state.source.validated) return 'Please validate your credentials'
+    return null
+  },
+  urlInput: (state) => {
+    if (!state.source.sourceUrl.trim()) return 'Repository URL is required'
+    if (state.source.urlValidation !== 'valid') return 'Please validate the URL first'
+    return null
+  },
+  githubSource: (state) => {
+    if (!state.source.githubSourceUrl.trim()) return 'GitHub repository URL is required'
+    return null
+  },
+  targetConfig: (state) => {
+    if (!state.source.targetName.trim()) return 'Repository name is required'
     return null
   },
   repoSelect: (state) => {
@@ -89,17 +148,9 @@ const validators = {
 }
 
 /**
- * Determines whether a step should be skipped based on current state.
- */
-function shouldSkipStep(step, state) {
-  if (step === 'workItems' && !state.workItems.enabled) return true
-  if (step === 'wiki' && !state.wiki.enabled) return true
-  return false
-}
-
-/**
- * State machine hook that powers the MigrationWizard component.
+ * State machine hook that powers the unified Migration/Import Wizard.
  * Manages step navigation, validation, and all wizard state.
+ * Steps are computed dynamically based on source type.
  */
 export function useMigrationWizard() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
@@ -110,22 +161,24 @@ export function useMigrationWizard() {
   const [aiPlan, setAiPlan] = useState(INITIAL_AI_PLAN)
   const [schedule, setSchedule] = useState(INITIAL_SCHEDULE)
   const [planId, setPlanId] = useState(null)
+  const [importJobs, setImportJobs] = useState(INITIAL_IMPORT_JOBS)
   const [error, setError] = useState(null)
 
-  const currentStep = STEPS[currentStepIndex]
-
-  const state = useMemo(
-    () => ({ source, repos, workItems, wiki, aiPlan, schedule, planId }),
-    [source, repos, workItems, wiki, aiPlan, schedule, planId]
+  // Dynamic step list based on source type
+  const steps = useMemo(
+    () => getStepsForSourceType(source.sourceType, workItems.enabled, wiki.enabled),
+    [source.sourceType, workItems.enabled, wiki.enabled]
   )
 
+  const currentStep = steps[currentStepIndex] || 'sourceType'
+
   const canGoBack = currentStepIndex > 0
-  const canGoNext = currentStepIndex < STEPS.length - 1
+  const canGoNext = currentStepIndex < steps.length - 1
 
   const nextStep = useCallback(() => {
-    const validate = validators[STEPS[currentStepIndex]]
+    const validate = validators[steps[currentStepIndex]]
     if (validate) {
-      const validationError = validate({ source, repos, workItems, wiki, aiPlan, schedule, planId })
+      const validationError = validate({ source, repos, workItems, wiki, aiPlan, schedule, planId, importJobs })
       if (validationError) {
         setError(validationError)
         return
@@ -134,45 +187,31 @@ export function useMigrationWizard() {
 
     setError(null)
 
-    let nextIndex = currentStepIndex + 1
-    while (
-      nextIndex < STEPS.length &&
-      shouldSkipStep(STEPS[nextIndex], { source, repos, workItems, wiki, aiPlan, schedule, planId })
-    ) {
-      nextIndex++
-    }
-
-    if (nextIndex < STEPS.length) {
+    const nextIndex = currentStepIndex + 1
+    if (nextIndex < steps.length) {
       setCurrentStepIndex(nextIndex)
     }
-  }, [currentStepIndex, source, repos, workItems, wiki, aiPlan, schedule, planId])
+  }, [currentStepIndex, steps, source, repos, workItems, wiki, aiPlan, schedule, planId, importJobs])
 
   const prevStep = useCallback(() => {
-    let prevIndex = currentStepIndex - 1
-    while (
-      prevIndex >= 0 &&
-      shouldSkipStep(STEPS[prevIndex], { source, repos, workItems, wiki, aiPlan, schedule, planId })
-    ) {
-      prevIndex--
-    }
-
+    const prevIndex = currentStepIndex - 1
     if (prevIndex >= 0) {
       setError(null)
       setCurrentStepIndex(prevIndex)
     }
-  }, [currentStepIndex, source, repos, workItems, wiki, aiPlan, schedule, planId])
+  }, [currentStepIndex])
 
   const goToStep = useCallback(
     (step) => {
-      const targetIndex = STEPS.indexOf(step)
+      const targetIndex = steps.indexOf(step)
       if (targetIndex < 0) return
-      // Only allow navigating to completed steps (before current)
+      // Allow navigating to completed steps (before current)
       if (targetIndex < currentStepIndex) {
         setError(null)
         setCurrentStepIndex(targetIndex)
       }
     },
-    [currentStepIndex]
+    [currentStepIndex, steps]
   )
 
   const updateSource = useCallback((updates) => {
@@ -199,6 +238,13 @@ export function useMigrationWizard() {
     setSchedule((prev) => ({ ...prev, ...updates }))
   }, [])
 
+  const updateImportJobs = useCallback((updatesOrFn) => {
+    setImportJobs((prev) => {
+      const updates = typeof updatesOrFn === 'function' ? updatesOrFn(prev) : updatesOrFn
+      return { ...prev, ...updates }
+    })
+  }, [])
+
   const resetWizard = useCallback(() => {
     setCurrentStepIndex(0)
     setSource(INITIAL_SOURCE)
@@ -208,12 +254,13 @@ export function useMigrationWizard() {
     setAiPlan(INITIAL_AI_PLAN)
     setSchedule(INITIAL_SCHEDULE)
     setPlanId(null)
+    setImportJobs(INITIAL_IMPORT_JOBS)
     setError(null)
   }, [])
 
   return {
     // Step navigation
-    steps: STEPS,
+    steps,
     currentStep,
     currentStepIndex,
     nextStep,
@@ -230,6 +277,7 @@ export function useMigrationWizard() {
     aiPlan,
     schedule,
     planId,
+    importJobs,
     error,
 
     // State updaters
@@ -241,6 +289,7 @@ export function useMigrationWizard() {
     updateAiPlan,
     updateSchedule,
     setPlanId,
+    updateImportJobs,
 
     // Actions
     resetWizard,

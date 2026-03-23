@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Lock, Unlock, Loader2, CheckCircle2, XCircle,
   AlertTriangle, RefreshCw, SkipForward, Edit3,
-  Settings2,
+  Settings2, ChevronDown, ChevronUp, GitBranch, HardDrive,
 } from 'lucide-react'
 
 /**
@@ -18,6 +18,42 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source }) {
   // Conflict status per repo: { [repoName]: 'idle' | 'checking' | 'clear' | 'conflict' }
   const [conflicts, setConflicts] = useState({})
   const debounceTimers = useRef({})
+  // Branch filtering: expanded repos and cached branches
+  const [expandedBranches, setExpandedBranches] = useState({})
+  const [branchCache, setBranchCache] = useState({})   // { [repoId]: branches[] }
+  const [loadingBranches, setLoadingBranches] = useState({})
+
+  const toggleBranchExpand = useCallback(async (repo, index) => {
+    const key = repo.id || repo.name
+    const isExpanded = expandedBranches[key]
+
+    setExpandedBranches((prev) => ({ ...prev, [key]: !isExpanded }))
+
+    // Fetch branches if not cached
+    if (!isExpanded && !branchCache[key]) {
+      setLoadingBranches((prev) => ({ ...prev, [key]: true }))
+      try {
+        const res = await fetch('/api/azure/branches', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            org: source.org,
+            project: source.project,
+            repoId: repo.id,
+            pat: source.pat || undefined,
+          }),
+        })
+        const data = await res.json()
+        if (res.ok && data.branches) {
+          setBranchCache((prev) => ({ ...prev, [key]: data.branches }))
+        }
+      } catch { /* ignore */ }
+      setLoadingBranches((prev) => ({ ...prev, [key]: false }))
+    }
+  }, [expandedBranches, branchCache, source.org, source.project, source.pat])
+
+  const hasLfsEnabled = repos.some((r) => r.lfsEnabled)
 
   // Debounced conflict check when targetName changes
   const checkConflict = useCallback(
@@ -171,6 +207,16 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source }) {
         </div>
       </div>
 
+      {/* LFS Warning Banner */}
+      {hasLfsEnabled && (
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-sm">
+          <HardDrive className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+          <span className="text-amber-700 dark:text-amber-400">
+            Git LFS objects will be included. Large repositories may take significantly longer to migrate.
+          </span>
+        </div>
+      )}
+
       {/* Config table */}
       <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
         {/* Table header */}
@@ -321,6 +367,105 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source }) {
                           <SkipForward className="w-3 h-3" />
                           Skip
                         </button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* LFS and Branch options row */}
+                  <div className="px-4 pb-3 flex items-center gap-4">
+                    {/* LFS Toggle */}
+                    <label className="inline-flex items-center gap-2 cursor-pointer">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={!!repo.lfsEnabled}
+                        onClick={() => onUpdateRepo(index, { lfsEnabled: !repo.lfsEnabled })}
+                        className={`relative w-8 h-5 rounded-full transition-colors shrink-0
+                          ${repo.lfsEnabled ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                      >
+                        <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform
+                          ${repo.lfsEnabled ? 'translate-x-3' : 'translate-x-0'}`} />
+                      </button>
+                      <span className="text-xs text-slate-600 dark:text-slate-400">
+                        <HardDrive className="w-3 h-3 inline mr-1" />
+                        LFS
+                      </span>
+                    </label>
+
+                    {/* Branch filter toggle */}
+                    <button
+                      type="button"
+                      onClick={() => toggleBranchExpand(repo, index)}
+                      className="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                    >
+                      <GitBranch className="w-3 h-3" />
+                      {repo.branchFilter === 'selected'
+                        ? `${(repo.selectedBranches || []).length} branches`
+                        : 'All branches'}
+                      {expandedBranches[repo.id || repo.name]
+                        ? <ChevronUp className="w-3 h-3" />
+                        : <ChevronDown className="w-3 h-3" />}
+                    </button>
+                  </div>
+
+                  {/* Branch filtering expanded section */}
+                  {expandedBranches[repo.id || repo.name] && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="px-4 pb-3"
+                    >
+                      <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-2">
+                        {/* Mirror all toggle */}
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={repo.branchFilter !== 'selected'}
+                            onChange={(e) => {
+                              onUpdateRepo(index, {
+                                branchFilter: e.target.checked ? 'all' : 'selected',
+                                ...(e.target.checked ? { selectedBranches: [] } : {}),
+                              })
+                            }}
+                            className="rounded border-slate-300 dark:border-slate-600 text-indigo-500 focus:ring-indigo-500"
+                          />
+                          <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Mirror all branches
+                          </span>
+                        </label>
+
+                        {/* Individual branch list */}
+                        {repo.branchFilter === 'selected' && (
+                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                            {loadingBranches[repo.id || repo.name] ? (
+                              <div className="flex items-center gap-2 text-xs text-slate-500 py-2">
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                Loading branches...
+                              </div>
+                            ) : (branchCache[repo.id || repo.name] || []).length > 0 ? (
+                              (branchCache[repo.id || repo.name] || []).map((branch) => (
+                                <label key={branch.name} className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={(repo.selectedBranches || []).includes(branch.name)}
+                                    onChange={(e) => {
+                                      const current = repo.selectedBranches || []
+                                      const next = e.target.checked
+                                        ? [...current, branch.name]
+                                        : current.filter((b) => b !== branch.name)
+                                      onUpdateRepo(index, { selectedBranches: next })
+                                    }}
+                                    className="rounded border-slate-300 dark:border-slate-600 text-indigo-500 focus:ring-indigo-500"
+                                  />
+                                  <span className="text-xs text-slate-600 dark:text-slate-400">{branch.name}</span>
+                                </label>
+                              ))
+                            ) : (
+                              <p className="text-xs text-slate-400 py-1">No branches found</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   )}

@@ -36,7 +36,7 @@ const TransferModal = lazy(() => import('./components/TransferModal').then(m => 
 const OrgManagerModal = lazy(() => import('./components/OrgManagerModal').then(m => ({ default: m.OrgManagerModal })))
 const CommitGeneratorModal = lazy(() => import('./components/CommitGeneratorModal').then(m => ({ default: m.CommitGeneratorModal })))
 const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })))
-const ImportWizard = lazy(() => import('./components/ImportWizard').then(m => ({ default: m.ImportWizard })))
+// ImportWizard removed — unified into MigrationWizard
 const RepoDetail = lazy(() => import('./components/RepoDetail').then(m => ({ default: m.RepoDetail })))
 const MigrationHistory = lazy(() => import('./components/MigrationHistory').then(m => ({ default: m.MigrationHistory })))
 const KeyboardShortcutsHelp = lazy(() => import('./components/KeyboardShortcutsHelp').then(m => ({ default: m.KeyboardShortcutsHelp })))
@@ -496,7 +496,7 @@ function AppContent() {
         onCreateRepo={() => openModal('showCreateRepo')}
         onOpenCommitGen={() => openModal('showCommitGen')}
         onOpenSettings={() => openModal('showSettings')}
-        onImport={() => openModal('showImportWizard')}
+        onImport={() => openModal('showMigrationWizard')}
         onMigrationHistory={() => openModal('showMigrationHistory')}
         onToggleOrgDrawer={() => setOrgDrawerOpen(true)}
       />
@@ -587,7 +587,7 @@ function AppContent() {
                   slimContent={
                     <SlimSidebar
                       selectedRepos={selectedRepos}
-                      onOpenImport={() => openModal('showImportWizard')}
+                      onOpenImport={() => openModal('showMigrationWizard')}
                     />
                   }
                 >
@@ -767,14 +767,6 @@ function AppContent() {
       </Suspense>
 
       <Suspense fallback={null}>
-        <ImportWizard
-          isOpen={modalStates.showImportWizard}
-          onClose={() => closeModal('showImportWizard')}
-          orgs={orgs}
-        />
-      </Suspense>
-
-      <Suspense fallback={null}>
         <RepoInsightsModal
           isOpen={modalStates.showRepoInsights}
           onClose={() => closeModal('showRepoInsights')}
@@ -800,7 +792,7 @@ function AppContent() {
 
       {modalStates.showMigrationWizard && (
         <Suspense fallback={null}>
-          <MigrationWizard onClose={() => closeModal('showMigrationWizard')} />
+          <MigrationWizard onClose={() => closeModal('showMigrationWizard')} orgs={orgs} />
         </Suspense>
       )}
 

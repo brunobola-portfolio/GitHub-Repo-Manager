@@ -4,6 +4,7 @@ import {
   Search, Check, Loader2, AlertCircle, FolderGit2,
   ArrowUpDown, CheckSquare, Square, ToggleLeft,
   GitBranch, Code2, HardDrive, AlertTriangle,
+  CheckCircle2, XCircle, ExternalLink, KeyRound,
 } from 'lucide-react'
 
 /**
@@ -13,6 +14,108 @@ function formatSize(kb) {
   if (kb >= 1048576) return `${(kb / 1048576).toFixed(1)} GB`
   if (kb >= 1024) return `${(kb / 1024).toFixed(1)} MB`
   return `${kb} KB`
+}
+
+/**
+ * EmptyRepoState — shown when no repos are found.
+ * For non-TFVC projects, automatically runs PAT permission diagnostics.
+ */
+function EmptyRepoState({ isTfvc, source }) {
+  const [permissions, setPermissions] = useState(null)
+  const [checking, setChecking] = useState(false)
+
+  useEffect(() => {
+    if (isTfvc || !source.org || !source.project) return
+    setChecking(true)
+    fetch('/api/azure/pat-permissions', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ org: source.org, project: source.project, pat: source.pat || undefined }),
+    })
+      .then((r) => r.json())
+      .then((data) => setPermissions(data.permissions || null))
+      .catch(() => setPermissions(null))
+      .finally(() => setChecking(false))
+  }, [isTfvc, source.org, source.project, source.pat])
+
+  if (isTfvc) {
+    return (
+      <div className="text-center py-12">
+        <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
+        <p className="text-sm font-medium text-slate-300">
+          This TFVC project has no folders to migrate.
+        </p>
+        <p className="text-xs text-slate-400 mt-1">
+          Check that your PAT has Code (Read) permission.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="py-8 space-y-4">
+      <div className="text-center">
+        <FolderGit2 className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+          No repositories found in this project.
+        </p>
+      </div>
+
+      {/* PAT Diagnostics */}
+      {checking ? (
+        <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Checking PAT permissions...
+        </div>
+      ) : permissions ? (
+        <div className="max-w-xs mx-auto space-y-2">
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 text-center">
+            PAT Permission Check
+          </p>
+          {[
+            { key: 'code', label: 'Code (Read)', required: true },
+            { key: 'workItems', label: 'Work Items (Read)', required: false },
+            { key: 'wiki', label: 'Wiki (Read)', required: false },
+          ].map(({ key, label, required }) => (
+            <div key={key} className="flex items-center gap-2 text-sm">
+              {permissions[key] ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+              ) : (
+                <XCircle className="w-4 h-4 text-red-500 shrink-0" />
+              )}
+              <span className={permissions[key] ? 'text-slate-600 dark:text-slate-400' : 'text-red-600 dark:text-red-400'}>
+                {label}
+                {required && !permissions[key] && ' (required)'}
+              </span>
+            </div>
+          ))}
+
+          {!permissions.code && (
+            <div className="mt-3 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-400">
+              <p>Your PAT does not have <strong>Code (Read)</strong> permission, which is required to list repositories.</p>
+              {source.org && (
+                <a
+                  href={`https://dev.azure.com/${encodeURIComponent(source.org)}/_usersSettings/tokens`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 mt-2 text-indigo-500 hover:text-indigo-400"
+                >
+                  <KeyRound className="w-3 h-3" />
+                  Create a new PAT
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="text-xs text-slate-400 dark:text-slate-500 text-center">
+          Check that your PAT has the correct permissions.
+        </p>
+      )}
+    </div>
+  )
 }
 
 const SORT_OPTIONS = [
@@ -216,33 +319,9 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
 
   const isTfvc = source.versionControlType === 'Tfvc' || repos.some(r => r.isTfvc)
 
-  // Empty state
+  // Empty state with PAT diagnostics
   if (!loading && repos.length === 0) {
-    return (
-      <div className="text-center py-12">
-        {isTfvc ? (
-          <>
-            <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
-            <p className="text-sm font-medium text-slate-300">
-              This TFVC project has no folders to migrate.
-            </p>
-            <p className="text-xs text-slate-400 mt-1">
-              Check that your PAT has Code (Read) permission.
-            </p>
-          </>
-        ) : (
-          <>
-            <FolderGit2 className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              No repositories found in this project.
-            </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-              Check that your PAT has the correct permissions.
-            </p>
-          </>
-        )}
-      </div>
-    )
+    return <EmptyRepoState isTfvc={isTfvc} source={source} />
   }
 
   return (
