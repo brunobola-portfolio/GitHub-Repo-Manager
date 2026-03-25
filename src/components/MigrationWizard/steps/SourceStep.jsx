@@ -54,25 +54,28 @@ export default function SourceStep({ source, onChange, oauthHook }) {
     }
   }, [onChange])
 
+  // ── destructure oauthHook for stable references in callbacks ───────────
+  const { oauthStatus: oauthStatusValue, pausePolling, resumePolling } = oauthHook
+
   // ── credential mode switch ─────────────────────────────────────────────
   const handleModeSwitch = useCallback((newMode) => {
     if (newMode === source.credentialMode) return
     if (source.credentialMode === 'oauth' && newMode !== 'oauth') {
-      oauthHook.pausePolling()
+      pausePolling()
     }
     if (newMode === 'oauth' && source.credentialMode !== 'oauth') {
-      if (oauthHook.oauthStatus === 'pending') oauthHook.resumePolling()
+      if (oauthStatusValue === 'pending') resumePolling()
     }
     onChange({ credentialMode: newMode, validated: false })
     setProjects([])
     setValidationError('')
-  }, [source.credentialMode, oauthHook, onChange])
+  }, [source.credentialMode, oauthStatusValue, pausePolling, resumePolling, onChange])
 
   // ── auto-validate ──────────────────────────────────────────────────────
   const credentialReady = (
     (source.credentialMode === 'serverPat' && envAuthAvailable) ||
     (source.credentialMode === 'personalPat' && source.pat?.trim()) ||
-    (source.credentialMode === 'oauth' && oauthHook.oauthStatus === 'success')
+    (source.credentialMode === 'oauth' && oauthStatusValue === 'success')
   )
 
   const runValidation = useCallback(async () => {
@@ -112,7 +115,7 @@ export default function SourceStep({ source, onChange, oauthHook }) {
   // debounced trigger for org / pat changes
   useEffect(() => {
     if (!source.org?.trim() || !credentialReady) return
-    if (source.credentialMode === 'serverPat' || oauthHook.oauthStatus === 'success') {
+    if (source.credentialMode === 'serverPat' || oauthStatusValue === 'success') {
       // immediate — no debounce
       runValidation()
       return
@@ -120,7 +123,7 @@ export default function SourceStep({ source, onChange, oauthHook }) {
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(runValidation, DEBOUNCE_MS)
     return () => clearTimeout(debounceRef.current)
-  }, [source.org, source.pat, source.credentialMode, oauthHook.oauthStatus]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [source.org, source.pat, source.credentialMode, oauthStatusValue, credentialReady, runValidation])
 
   // ── project dropdown change ────────────────────────────────────────────
   const handleProjectChange = (e) => onChange({ project: e.target.value })
