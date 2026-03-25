@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react'
 
 const FOCUSABLE = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
-export function useFocusTrap(isOpen, onClose) {
+export function useFocusTrap(isOpen, onClose, options = {}) {
+    const { disableEscape = false } = options
     const ref = useRef(null)
     const previouslyFocusedRef = useRef(null)
 
@@ -13,7 +14,7 @@ export function useFocusTrap(isOpen, onClose) {
 
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') {
-                onClose()
+                if (!disableEscape) onClose()
                 return
             }
             if (e.key !== 'Tab') return
@@ -59,7 +60,7 @@ export function useFocusTrap(isOpen, onClose) {
                 previouslyFocusedRef.current.focus()
             }
         }
-    }, [isOpen, onClose])
+    }, [isOpen, onClose, disableEscape])
 
     return ref
 }

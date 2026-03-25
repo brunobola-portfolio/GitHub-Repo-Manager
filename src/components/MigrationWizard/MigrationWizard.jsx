@@ -1,6 +1,7 @@
-import { Suspense, useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Modal, ModalFooter } from '../ui/Modal'
+import { WizardPanel } from '../ui/WizardPanel'
+import { ConfirmModal } from '../ui/ConfirmModal'
 import { useMigrationWizard } from '../../hooks/useMigrationWizard'
 import { useAzureOAuth } from '../../hooks/useAzureOAuth'
 import { migrationApi } from '../../api/migration'
@@ -19,7 +20,10 @@ import ProgressStep from './steps/ProgressStep'
 import SimpleProgressStep from './steps/SimpleProgressStep'
 import SummaryStep from './steps/SummaryStep'
 import BreadcrumbNav from './BreadcrumbNav'
-import { ArrowLeft, ArrowRight, Rocket, Download, AlertCircle } from 'lucide-react'
+import {
+  ArrowLeft, ArrowRight, Rocket, Download, AlertCircle,
+  Check,
+} from 'lucide-react'
 
 const STEP_LABELS = {
   sourceType: 'Source',
@@ -38,36 +42,182 @@ const STEP_LABELS = {
 }
 
 const STEP_META = {
-  sourceType:  { title: 'Choose Source',            subtitle: 'Select where to import your repositories from.' },
-  azureConnect:{ title: 'Connect to Azure DevOps',  subtitle: 'Enter your organization and credentials.' },
-  urlInput:    { title: 'Repository URL',            subtitle: 'Enter the clone URL of the Git repository.' },
-  githubSource:{ title: 'GitHub Repository',         subtitle: 'Enter the GitHub repository to import.' },
-  targetConfig:{ title: 'Target Configuration',      subtitle: 'Configure where to import the repository.' },
-  repoSelect:  { title: 'Select Repositories',       subtitle: 'Choose which repositories to migrate.' },
-  repoConfig:  { title: 'Configure Repositories',    subtitle: 'Set target names and options for each repo.' },
-  workItems:   { title: 'Work Items',                subtitle: 'Configure work item migration settings.' },
-  wiki:        { title: 'Wiki',                      subtitle: 'Configure wiki migration settings.' },
-  aiReview:    { title: 'AI Review',                 subtitle: 'Review the migration plan with AI assistance.' },
-  schedule:    { title: 'Schedule',                  subtitle: 'Choose when to run the migration.' },
-  progress:    { title: 'Migration in Progress',     subtitle: 'Your migration is running.' },
-  summary:     { title: 'Migration Complete',        subtitle: 'Review the results of your migration.' },
+  sourceType:   { title: 'Choose Source',            subtitle: 'Select where to import your repositories from.' },
+  azureConnect: { title: 'Connect to Azure DevOps',  subtitle: 'Enter your organization and credentials.' },
+  urlInput:     { title: 'Repository URL',            subtitle: 'Enter the clone URL of the Git repository.' },
+  githubSource: { title: 'GitHub Repository',         subtitle: 'Enter the GitHub repository to import.' },
+  targetConfig: { title: 'Target Configuration',      subtitle: 'Configure where to import the repository.' },
+  repoSelect:   { title: 'Select Repositories',       subtitle: 'Choose which repositories to migrate.' },
+  repoConfig:   { title: 'Configure Repositories',    subtitle: 'Set target names and options for each repo.' },
+  workItems:    { title: 'Work Items',                subtitle: 'Configure work item migration settings.' },
+  wiki:         { title: 'Wiki',                      subtitle: 'Configure wiki migration settings.' },
+  aiReview:     { title: 'AI Review',                 subtitle: 'Review the migration plan with AI assistance.' },
+  schedule:     { title: 'Schedule',                  subtitle: 'Choose when to run the migration.' },
+  progress:     { title: 'Migration in Progress',     subtitle: 'Your migration is running.' },
+  summary:      { title: 'Migration Complete',        subtitle: 'Review the results of your migration.' },
 }
 
 const slideVariants = {
-  enter: (direction) => ({
-    x: direction > 0 ? 80 : -80,
-    opacity: 0,
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-  },
-  exit: (direction) => ({
-    x: direction > 0 ? -80 : 80,
-    opacity: 0,
-  }),
+  enter: (direction) => ({ x: direction > 0 ? 80 : -80, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (direction) => ({ x: direction > 0 ? -80 : 80, opacity: 0 }),
 }
 
+/* ------------------------------------------------------------------ */
+/*  Sidebar Stepper (desktop fullscreen)                               */
+/* ------------------------------------------------------------------ */
+function SidebarStepper({ steps, currentStepIndex, onGoToStep, source, selectedCount, onBreadcrumbNavigate, currentStep }) {
+  return (
+    <div className="flex flex-col h-full">
+      {/* Breadcrumb (Azure only) */}
+      <div className="px-4 pt-4">
+        <BreadcrumbNav
+          source={source}
+          currentStep={currentStep}
+          selectedCount={selectedCount}
+          onNavigate={onBreadcrumbNavigate}
+        />
+      </div>
+
+      {/* Step list */}
+      <nav aria-label="Wizard steps" className="flex-1 px-3 py-4 overflow-y-auto custom-scrollbar">
+        <ol className="space-y-1">
+          {steps.map((step, index) => {
+            const isActive = index === currentStepIndex
+            const isCompleted = index < currentStepIndex
+            const label = STEP_LABELS[step] || step
+
+            return (
+              <li key={step}>
+                <button
+                  type="button"
+                  onClick={() => onGoToStep(step)}
+                  disabled={!isCompleted}
+                  aria-label={`${label}${isActive ? ' (current)' : isCompleted ? ' (completed)' : ''}`}
+                  aria-current={isActive ? 'step' : undefined}
+                  className={`
+                    w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200
+                    ${isActive
+                      ? 'bg-indigo-50 dark:bg-indigo-950/40 ring-1 ring-indigo-200 dark:ring-indigo-800/50'
+                      : isCompleted
+                        ? 'hover:bg-slate-100 dark:hover:bg-slate-800/50 cursor-pointer'
+                        : 'opacity-50 cursor-default'
+                    }
+                  `}
+                >
+                  <span className={`
+                    flex items-center justify-center rounded-full text-xs font-bold flex-shrink-0 transition-all
+                    ${isActive
+                      ? 'w-8 h-8 bg-indigo-500 text-white ring-4 ring-indigo-500/20'
+                      : isCompleted
+                        ? 'w-6 h-6 bg-emerald-500 text-white'
+                        : 'w-6 h-6 bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
+                    }
+                  `}>
+                    {isCompleted ? <Check className="w-3.5 h-3.5" /> : index + 1}
+                  </span>
+
+                  <span className={`
+                    text-sm font-medium truncate
+                    ${isActive
+                      ? 'text-indigo-700 dark:text-indigo-300'
+                      : isCompleted
+                        ? 'text-slate-700 dark:text-slate-300'
+                        : 'text-slate-400 dark:text-slate-500'
+                    }
+                  `}>
+                    {label}
+                  </span>
+                </button>
+
+                {index < steps.length - 1 && (
+                  <div className="flex justify-center py-0.5">
+                    <div className={`w-0.5 h-3 rounded-full transition-colors ${isCompleted ? 'bg-emerald-400' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ol>
+      </nav>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Horizontal Stepper (desktop restored mode)                         */
+/* ------------------------------------------------------------------ */
+function HorizontalStepper({ steps, currentStepIndex, onGoToStep }) {
+  return (
+    <nav aria-label="Wizard steps" className="px-6 pt-4 pb-2">
+      <ol className="flex items-center">
+        {steps.map((step, index) => {
+          const isActive = index === currentStepIndex
+          const isCompleted = index < currentStepIndex
+          const label = STEP_LABELS[step] || step
+          return (
+            <li key={step} className="flex items-center flex-1 min-w-0">
+              <div className="flex flex-col items-center">
+                <button
+                  type="button"
+                  onClick={() => onGoToStep(step)}
+                  disabled={!isCompleted}
+                  aria-label={`${label}${isActive ? ' (current)' : isCompleted ? ' (completed)' : ''}`}
+                  aria-current={isActive ? 'step' : undefined}
+                  className={`
+                    flex items-center justify-center rounded-full text-xs font-bold transition-all
+                    ${isActive
+                      ? 'w-7 h-7 bg-indigo-500 text-white ring-4 ring-indigo-500/20 scale-110'
+                      : isCompleted
+                        ? 'w-5 h-5 bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600'
+                        : 'w-5 h-5 bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
+                    }
+                  `}
+                >
+                  {isCompleted ? <Check className="w-3 h-3" /> : index + 1}
+                </button>
+                <span className={`mt-1 text-[10px] font-medium truncate max-w-[52px] text-center
+                  ${isActive ? 'text-indigo-600 dark:text-indigo-400' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                  {label}
+                </span>
+              </div>
+              {index < steps.length - 1 && (
+                <div className={`flex-1 h-0.5 mx-1 mb-5 transition-colors ${isCompleted ? 'bg-emerald-400' : 'bg-slate-200 dark:bg-slate-700'}`} />
+              )}
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Mobile Progress Bar                                                */
+/* ------------------------------------------------------------------ */
+function MobileProgressBar({ steps, currentStepIndex }) {
+  const progress = steps.length > 1 ? (currentStepIndex / (steps.length - 1)) * 100 : 0
+  const label = STEP_LABELS[steps[currentStepIndex]] || ''
+  return (
+    <div className="px-4 pt-3 pb-2">
+      <div className="h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+        <motion.div
+          className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full"
+          initial={false}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+        />
+      </div>
+      <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400 text-center">
+        Step {currentStepIndex + 1} of {steps.length} — {label}
+      </p>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main Wizard Component                                              */
+/* ------------------------------------------------------------------ */
 export default function MigrationWizard({ onClose, orgs = [] }) {
   const wizard = useMigrationWizard()
 
@@ -98,19 +248,30 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
     importJobs,
     updateImportJobs,
     resetWizard,
+    isDirty,
   } = wizard
 
   const oauthHook = useAzureOAuth()
-
   const selectedRepos = repos.filter((r) => r.selected)
   const [direction, setDirection] = useState(1)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches)
+  const [isMaximized, setIsMaximized] = useState(true)
 
-  const handleNext = () => { setDirection(1); nextStep() }
-  const handleBack = () => { setDirection(-1); prevStep() }
+  // Track mobile breakpoint
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 767px)')
+    const onChange = (e) => setIsMobile(e.matches)
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
+  }, [])
 
-  // Auto-advance when sourceType is set on the sourceType step.
-  // This runs AFTER the steps array has been recomputed with the new sourceType,
-  // avoiding stale closure issues with setTimeout-based auto-advance.
+  const handleToggleMaximize = useCallback(() => setIsMaximized((v) => !v), [])
+
+  const handleNext = useCallback(() => { setDirection(1); nextStep() }, [nextStep])
+  const handleBack = useCallback(() => { setDirection(-1); prevStep() }, [prevStep])
+
+  // Auto-advance when sourceType is set on the sourceType step
   const prevSourceType = useRef(source.sourceType)
   useEffect(() => {
     if (source.sourceType && !prevSourceType.current && currentStepIndex === 0) {
@@ -141,10 +302,10 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
     setDirection(1)
 
     try {
-      let endpoint, body
+      const endpoint = '/api/import/url'
+      let body
 
       if (source.sourceType === 'github') {
-        endpoint = '/api/import/url'
         body = {
           sourceUrl: source.githubSourceUrl,
           targetOrg: source.targetOrg || undefined,
@@ -153,8 +314,6 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
           description: source.description,
         }
       } else {
-        // URL import
-        endpoint = '/api/import/url'
         let credentials
         if (source.authType === 'token') credentials = { type: 'token', token: source.authToken }
         else if (source.authType === 'basic') credentials = { type: 'basic', username: source.authUsername, password: source.authPassword }
@@ -179,7 +338,6 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
 
       if (data.success) {
         updateImportJobs({ jobId: data.jobId })
-        // Navigate to progress step
         nextStep()
       } else {
         updateImportJobs({
@@ -197,15 +355,28 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
     }
   }, [source, updateImportJobs, nextStep])
 
+  // Close with dirty-state confirmation
+  const handleClose = useCallback(() => {
+    if (currentStep === 'summary') {
+      onClose()
+      return
+    }
+    if (isDirty) {
+      setShowConfirm(true)
+    } else {
+      onClose()
+    }
+  }, [isDirty, currentStep, onClose])
+
+  const handleConfirmClose = useCallback(() => {
+    setShowConfirm(false)
+    onClose()
+  }, [onClose])
+
   function renderStep() {
     switch (currentStep) {
       case 'sourceType':
-        return (
-          <SourceTypeStep
-            source={source}
-            onChange={updateSource}
-          />
-        )
+        return <SourceTypeStep source={source} onChange={updateSource} />
       case 'azureConnect':
         return <SourceStep source={source} onChange={updateSource} oauthHook={oauthHook} />
       case 'urlInput':
@@ -286,19 +457,27 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
   const isAzure = source.sourceType === 'azure'
   const wizardTitle = isAzure ? 'Migration Wizard' : 'Import Repository'
   const wizardIcon = isAzure ? Rocket : Download
+  const disableEscape = currentStep === 'progress' || currentStep === 'summary'
 
-  // Hide Next button on sourceType (auto-advance) and targetConfig (has its own Import button)
-  // Also hide after schedule step for Azure (progress handles itself)
   const hideNextButton = currentStep === 'sourceType'
     || currentStep === 'targetConfig'
     || currentStep === 'progress'
     || currentStep === 'summary'
 
+  const isProgressOrSummary = currentStep === 'progress' || currentStep === 'summary'
+  const confirmMessage = currentStep === 'progress'
+    ? 'A migration is in progress. Closing will not stop it, but you will lose visibility of the progress. Are you sure?'
+    : 'You have unsaved progress. All entered data will be lost.'
+
+  const showSidebar = !!source.sourceType
+  const effectiveMaximized = isMobile || isMaximized
+
+  // Footer
   const footer = (
-    <ModalFooter align="between">
+    <div className="flex items-center justify-between gap-3">
       <button
         type="button"
-        onClick={canGoBack ? handleBack : onClose}
+        onClick={canGoBack ? handleBack : handleClose}
         className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl
           text-slate-600 dark:text-slate-300
           bg-slate-100 dark:bg-slate-800
@@ -324,116 +503,112 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
           <ArrowRight className="w-4 h-4" />
         </button>
       )}
-    </ModalFooter>
+    </div>
   )
 
+  // Sidebar content
+  const sidebar = showSidebar ? (
+    <SidebarStepper
+      steps={steps}
+      currentStepIndex={currentStepIndex}
+      onGoToStep={goToStep}
+      source={source}
+      selectedCount={selectedRepos.length}
+      onBreadcrumbNavigate={handleBreadcrumbNavigate}
+      currentStep={currentStep}
+    />
+  ) : null
+
   return (
-    <Modal
-      isOpen={true}
-      onClose={onClose}
-      title={wizardTitle}
-      icon={wizardIcon}
-      size="xl"
-      footer={footer}
-    >
-      <div role="form" aria-label={wizardTitle}>
-        {/* Step Indicator — hide on sourceType step when no source selected */}
-        {source.sourceType && (
-          <nav aria-label="Wizard steps" className="mb-4">
-            <ol className="flex items-center">
-              {steps.map((step, index) => {
-                const isActive = index === currentStepIndex
-                const isCompleted = index < currentStepIndex
-                const label = STEP_LABELS[step] || step
-                return (
-                  <li key={step} className="flex items-center flex-1 min-w-0">
-                    <div className="flex flex-col items-center">
-                      <button
-                        type="button"
-                        onClick={() => goToStep(step)}
-                        disabled={!isCompleted}
-                        aria-label={`${label}${isActive ? ' (current)' : isCompleted ? ' (completed)' : ''}`}
-                        aria-current={isActive ? 'step' : undefined}
-                        className={`
-                          flex items-center justify-center rounded-full text-xs font-bold transition-all
-                          ${isActive
-                            ? 'w-8 h-8 bg-indigo-500 text-white ring-4 ring-indigo-500/20 scale-110'
-                            : isCompleted
-                              ? 'w-6 h-6 bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600'
-                              : 'w-6 h-6 bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
-                          }
-                        `}
-                      >
-                        {isCompleted ? '✓' : index + 1}
-                      </button>
-                      <span className={`mt-1.5 text-[10px] font-medium truncate max-w-[52px] text-center
-                        ${isActive ? 'text-indigo-600 dark:text-indigo-400' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                        {label}
-                      </span>
-                    </div>
-                    {index < steps.length - 1 && (
-                      <div className={`flex-1 h-0.5 mx-1 mb-5 transition-colors ${isCompleted ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
-                    )}
-                  </li>
-                )
-              })}
-            </ol>
-          </nav>
-        )}
+    <>
+      <WizardPanel
+        isOpen={true}
+        onClose={handleClose}
+        title={wizardTitle}
+        icon={wizardIcon}
+        stepInfo={STEP_META[currentStep] || null}
+        sidebar={sidebar}
+        footer={isProgressOrSummary ? null : footer}
+        disableEscape={disableEscape}
+        isMaximized={isMaximized}
+        isMobile={isMobile}
+        onToggleMaximize={handleToggleMaximize}
+      >
+        <div role="form" aria-label={wizardTitle} className="p-4 md:p-6 lg:p-8">
+          {/* Horizontal stepper — desktop restored mode only */}
+          {showSidebar && !effectiveMaximized && (
+            <HorizontalStepper
+              steps={steps}
+              currentStepIndex={currentStepIndex}
+              onGoToStep={goToStep}
+            />
+          )}
 
-        {/* Step title/subtitle from STEP_META */}
-        {STEP_META[currentStep] && (
-          <div className="mb-4">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-              {STEP_META[currentStep].title}
-            </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              {STEP_META[currentStep].subtitle}
-            </p>
-          </div>
-        )}
+          {/* Mobile progress bar */}
+          {showSidebar && isMobile && (
+            <MobileProgressBar steps={steps} currentStepIndex={currentStepIndex} />
+          )}
 
-        {/* Breadcrumb Navigation (Azure only) */}
-        <BreadcrumbNav
-          source={source}
-          currentStep={currentStep}
-          selectedCount={selectedRepos.length}
-          onNavigate={handleBreadcrumbNavigate}
-        />
+          {/* Step title/subtitle */}
+          {STEP_META[currentStep] && (
+            <div className="mb-4">
+              <h3 className={`font-semibold text-slate-900 dark:text-slate-100 ${effectiveMaximized && !isMobile ? 'text-lg' : 'text-base'}`}>
+                {STEP_META[currentStep].title}
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                {STEP_META[currentStep].subtitle}
+              </p>
+            </div>
+          )}
 
-        {/* Error Display */}
-        {error && (
-          <div className="mb-4 flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
-            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+          {/* Breadcrumb — mobile and restored mode (sidebar handles it in fullscreen) */}
+          {(isMobile || !effectiveMaximized) && (
+            <BreadcrumbNav
+              source={source}
+              currentStep={currentStep}
+              selectedCount={selectedRepos.length}
+              onNavigate={handleBreadcrumbNavigate}
+            />
+          )}
 
-        {/* Step Content with Animation */}
-        <div className="relative min-h-[280px]">
-          <AnimatePresence mode="wait" custom={direction}>
-            <motion.div
-              key={currentStep}
-              custom={direction}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.25, ease: 'easeInOut' }}
-            >
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center p-8">
-                    <div className="w-8 h-8 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                  </div>
-                }
+          {/* Error Display */}
+          {error && (
+            <div className="mb-4 flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Step Content with Animation */}
+          <div className={`relative ${effectiveMaximized && !isMobile ? 'max-w-3xl mx-auto' : ''}`}>
+            <AnimatePresence mode="wait" custom={direction}>
+              <motion.div
+                key={currentStep}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
               >
                 {renderStep()}
-              </Suspense>
-            </motion.div>
-          </AnimatePresence>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
-      </div>
-    </Modal>
+      </WizardPanel>
+
+      {/* Dirty state confirmation modal */}
+      <ConfirmModal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={handleConfirmClose}
+        title="Cancel Migration?"
+        message={confirmMessage}
+        confirmText="Discard & Close"
+        cancelText="Continue Editing"
+        variant="warning"
+      />
+    </>
   )
 }

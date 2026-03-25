@@ -180,6 +180,18 @@ export function useMigrationWizard() {
   const canGoBack = currentStepIndex > 0
   const canGoNext = currentStepIndex < steps.length - 1
 
+  const isDirty = useMemo(() => {
+    if (!source.sourceType) return false
+    if (source.pat || source.authToken || source.authUsername || source.authPassword) return true
+    if (source.org || source.project) return true
+    if (source.sourceUrl || source.githubSourceUrl) return true
+    if (source.targetName || source.targetOrg) return true
+    if (repos.some((r) => r.selected)) return true
+    if (workItems.enabled || wiki.enabled) return true
+    if (currentStepIndex > 1) return true
+    return false
+  }, [source, repos, workItems.enabled, wiki.enabled, currentStepIndex])
+
   const nextStep = useCallback(() => {
     const validate = validators[steps[currentStepIndex]]
     if (validate) {
@@ -275,6 +287,7 @@ export function useMigrationWizard() {
     canGoBack,
 
     // State
+    isDirty,
     source,
     repos,
     workItems,
