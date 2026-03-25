@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import express from 'express';
 import * as azureService from '../azure-service.js';
 import { requireAuth, safeError, errorResponse } from '../middleware/auth.js';
@@ -225,7 +226,7 @@ router.get('/azure/oauth/start', requireAuth, (req, res) => {
     }
     const redirectUri = encodeURIComponent(`${req.protocol}://${req.get('host')}/api/azure/oauth/callback`);
     const scope = encodeURIComponent('https://app.vssps.visualstudio.com/.default offline_access');
-    const state = Buffer.from(JSON.stringify({ ts: Date.now() })).toString('base64');
+    const state = crypto.randomBytes(16).toString('hex');
     req.session.oauthState = state;
     const authUrl = `https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/authorize` +
         `?client_id=${AZURE_CLIENT_ID}` +
@@ -237,13 +238,24 @@ router.get('/azure/oauth/start', requireAuth, (req, res) => {
 });
 
 // GET /api/azure/oauth/callback — exchange code for token
-router.get('/azure/oauth/callback', requireAuth, async (req, res) => {
-    const { code } = req.query;
+// Note: requireAuth is intentionally omitted — this runs in a popup tab where session
+// cookies may not be sent with a redirect. State validation provides CSRF protection.
+router.get('/azure/oauth/callback', async (req, res) => {
+    const { code, state } = req.query;
     const { AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID } = process.env;
+
+    if (!AZURE_CLIENT_ID || !AZURE_CLIENT_SECRET || !AZURE_TENANT_ID) {
+        return res.status(503).send('<html><body><p>OAuth not configured.</p></body></html>');
+    }
 
     if (!code) {
         return res.status(400).send('<html><body><p>OAuth error: no code received.</p></body></html>');
     }
+
+    if (!state || state !== req.session.oauthState) {
+        return res.status(400).send('<html><body><p>OAuth error: invalid state parameter.</p></body></html>');
+    }
+    delete req.session.oauthState;
 
     try {
         const redirectUri = `${req.protocol}://${req.get('host')}/api/azure/oauth/callback`;
@@ -265,7 +277,14 @@ router.get('/azure/oauth/callback', requireAuth, async (req, res) => {
             req.session.azureTokenReady = true;
         }
     } catch {
-        // Token exchange failed — azureTokenReady stays falsy
+        req.session.azureTokenError = true;
+        return res.send(`<!DOCTYPE html>
+<html><head><title>Authentication Failed</title></head>
+<body style="font-family:sans-serif;text-align:center;padding:40px">
+  <h2>Authentication failed</h2>
+  <p>Token exchange error. Please close this tab and try again.</p>
+  <script>window.close();</script>
+</body></html>`);
     }
 
     res.send(`<!DOCTYPE html>
@@ -279,7 +298,10 @@ router.get('/azure/oauth/callback', requireAuth, async (req, res) => {
 
 // GET /api/azure/oauth/token — polling endpoint (never sends token to client)
 router.get('/azure/oauth/token', requireAuth, (req, res) => {
-    res.json({ ready: !!req.session.azureTokenReady });
+    res.json({
+        ready: !!req.session.azureTokenReady,
+        error: !!req.session.azureTokenError,
+    });
 });
 
 export default router;
