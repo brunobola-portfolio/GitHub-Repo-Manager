@@ -49,7 +49,7 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
           body: JSON.stringify({
             org: source.org,
             project: source.project,
-            pat: source.pat || undefined,
+            pat: source.credentialMode === 'personalPat' ? source.pat : undefined,
           }),
         })
         const data = await res.json()
@@ -72,7 +72,7 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
     }
 
     fetchCounts()
-  }, [workItems.enabled, typeCounts, source.org, source.project, source.pat, workItems.types.length, onUpdate])
+  }, [workItems.enabled, typeCounts, source.org, source.project, source.credentialMode, source.pat, workItems.types.length, onUpdate])
 
   const handleToggleEnabled = useCallback(() => {
     const next = !workItems.enabled

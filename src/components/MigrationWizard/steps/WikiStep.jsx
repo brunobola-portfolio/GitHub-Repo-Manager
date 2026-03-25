@@ -31,7 +31,7 @@ export default function WikiStep({ wiki, onUpdate, source }) {
           body: JSON.stringify({
             org: source.org,
             project: source.project,
-            pat: source.pat || undefined,
+            pat: source.credentialMode === 'personalPat' ? source.pat : undefined,
           }),
         })
         const data = await res.json()
@@ -49,7 +49,7 @@ export default function WikiStep({ wiki, onUpdate, source }) {
     }
 
     fetchWikis()
-  }, [wiki.enabled, fetched, source.org, source.project, source.pat, onUpdate])
+  }, [wiki.enabled, fetched, source.org, source.project, source.credentialMode, source.pat, onUpdate])
 
   const handleToggleEnabled = useCallback(() => {
     const next = !wiki.enabled
