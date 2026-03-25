@@ -1,7 +1,7 @@
 import express from 'express';
 import logger from '../lib/logger.js';
 import db, { initDB } from '../db.js';
-import { requireAuth, safeError } from '../middleware/auth.js';
+import { safeError } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ router.get('/status', (req, res) => {
     }
 });
 
-router.post('/setup', requireAuth, async (req, res) => {
+router.post('/setup', async (req, res) => {
     try {
         // Ensure tables exist (idempotent)
         initDB();
@@ -26,6 +26,7 @@ router.post('/setup', requireAuth, async (req, res) => {
             userCount = db.prepare('SELECT count(*) as count FROM users').get();
         } catch (dbError) {
             logger.error({ err: dbError }, 'Failed to query user count');
+            // If table doesn't exist, assume 0 users
             userCount = { count: 0 };
         }
         if (userCount.count === 0) {
@@ -52,7 +53,7 @@ router.post('/setup', requireAuth, async (req, res) => {
 // Client error reporting endpoint (no auth required - errors may occur before login)
 router.post('/client-error', (req, res) => {
     try {
-        const { message, stack, componentStack, url, timestamp } = req.body || {};
+        const { message, stack, url, timestamp } = req.body || {};
         logger.error({
             message: String(message || 'Unknown error').slice(0, 500),
             url: String(url || '').slice(0, 200),

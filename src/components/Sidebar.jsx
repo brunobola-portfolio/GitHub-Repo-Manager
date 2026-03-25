@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
+import {
+	useState, useEffect, useMemo, useRef
+} from 'react'
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
 import {
@@ -82,11 +84,11 @@ function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRe
 
 export function SlimSidebar({ selectedRepos, onOpenImport }) {
   const [openPopover, setOpenPopover] = useState(null)
-  const triggerRefs = {
-    actions: useRef(null),
-    history: useRef(null),
-    activity: useRef(null),
-  }
+  
+  // Define hooks at top level individually
+  const actionsRef = useRef(null)
+  const historyRef = useRef(null)
+  const activityRef = useRef(null)
 
   const togglePopover = (name) => {
     setOpenPopover(prev => prev === name ? null : name)
@@ -94,19 +96,19 @@ export function SlimSidebar({ selectedRepos, onOpenImport }) {
 
   return (
     <div className="flex flex-col items-center gap-2 py-3">
-      <SlimIconButton
-        icon={Zap}
-        label="Quick Actions"
-        isActive={openPopover === 'actions'}
-        onClick={() => togglePopover('actions')}
-        buttonRef={triggerRefs.actions}
-      />
-      <div className="relative">
-        <SlimPopover
-          isOpen={openPopover === 'actions'}
-          onClose={() => setOpenPopover(null)}
-          triggerRef={triggerRefs.actions}
-        >
+        <SlimIconButton
+          icon={Zap}
+          label="Quick Actions"
+          isActive={openPopover === 'actions'}
+          onClick={() => togglePopover('actions')}
+          buttonRef={actionsRef}
+        />
+        <div className="relative">
+          <SlimPopover
+            isOpen={openPopover === 'actions'}
+            onClose={() => setOpenPopover(null)}
+            triggerRef={actionsRef}
+          >
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Quick Actions</p>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             {selectedRepos?.length > 0
@@ -118,37 +120,37 @@ export function SlimSidebar({ selectedRepos, onOpenImport }) {
 
       <div className="w-6 border-t border-slate-200 dark:border-slate-700/50" />
 
-      <SlimIconButton
-        icon={History}
-        label="Action History"
-        isActive={openPopover === 'history'}
-        onClick={() => togglePopover('history')}
-        buttonRef={triggerRefs.history}
-      />
-      <div className="relative">
-        <SlimPopover
-          isOpen={openPopover === 'history'}
-          onClose={() => setOpenPopover(null)}
-          triggerRef={triggerRefs.history}
-        >
+        <SlimIconButton
+          icon={History}
+          label="Action History"
+          isActive={openPopover === 'history'}
+          onClick={() => togglePopover('history')}
+          buttonRef={historyRef}
+        />
+        <div className="relative">
+          <SlimPopover
+            isOpen={openPopover === 'history'}
+            onClose={() => setOpenPopover(null)}
+            triggerRef={historyRef}
+          >
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Action History</p>
           <p className="text-sm text-slate-500 dark:text-slate-400">No recent actions</p>
         </SlimPopover>
       </div>
 
-      <SlimIconButton
-        icon={Clock}
-        label="Recent Activity"
-        isActive={openPopover === 'activity'}
-        onClick={() => togglePopover('activity')}
-        buttonRef={triggerRefs.activity}
-      />
-      <div className="relative">
-        <SlimPopover
-          isOpen={openPopover === 'activity'}
-          onClose={() => setOpenPopover(null)}
-          triggerRef={triggerRefs.activity}
-        >
+        <SlimIconButton
+          icon={Clock}
+          label="Recent Activity"
+          isActive={openPopover === 'activity'}
+          onClick={() => togglePopover('activity')}
+          buttonRef={activityRef}
+        />
+        <div className="relative">
+          <SlimPopover
+            isOpen={openPopover === 'activity'}
+            onClose={() => setOpenPopover(null)}
+            triggerRef={activityRef}
+          >
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Recent Activity</p>
           <p className="text-sm text-slate-500 dark:text-slate-400">No recent activity</p>
         </SlimPopover>
@@ -460,70 +462,61 @@ function ActionHistory({ results, isPerforming, message }) {
     )
 }
 
-function ActivityFeed({ activity }) {
+function ActivityList({ activity }) {
+    const now = useMemo(() => new Date(), [])
+    
+    if (!Array.isArray(activity) || activity.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
+                    <Clock className="w-5 h-5 opacity-40" />
+                </div>
+                <span className="text-xs">No recent activity found</span>
+            </div>
+        )
+    }
+
     return (
-        <Card hover={true} className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl flex flex-col max-h-[400px]">
-            <div className="px-5 py-3.5 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center justify-between sticky top-0">
-                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
-                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-500/20">
-                        <Clock className="w-3.5 h-3.5" />
-                    </div>
-                    Recent Activity
-                </h3>
-            </div>
+        <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+            {activity.map((event) => {
+                if (!event) return null
+                const EventIcon = getEventIcon(event.type)
+                const timeAgo = getTimeAgo(new Date(event.created_at), now)
 
-            <div className="flex-1 overflow-y-auto p-0 custom-scrollbar">
-                {(!Array.isArray(activity) || activity.length === 0) ? (
-                    <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
-                            <Clock className="w-5 h-5 opacity-40" />
-                        </div>
-                        <span className="text-xs">No recent activity found</span>
-                    </div>
-                ) : (
-                    <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                        {activity.map((event) => {
-                            if (!event) return null
-                            const EventIcon = getEventIcon(event.type)
-                            const timeAgo = getTimeAgo(new Date(event.created_at))
-
-                            return (
-                                <div key={event.id} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                    <div className="flex items-start gap-3">
-                                        <div className="mt-1">
-                                            {EventIcon}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between gap-2">
-                                                <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate hover:text-indigo-500 cursor-pointer">
-                                                    {event.repo?.name || 'Unknown Repo'}
-                                                </div>
-                                                <span className="text-[10px] text-slate-400 whitespace-nowrap">{timeAgo}</span>
-                                            </div>
-                                            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight line-clamp-2">
-                                                {getEventDescription(event)}
-                                            </div>
-                                            <div className="mt-1.5 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
-                                                    aria-label="View activity details"
-                                                    onClick={() => {
-                                                        const repoName = event.repo?.name
-                                                        if (repoName) window.open(`https://github.com/${repoName}`, '_blank', 'noopener')
-                                                    }}
-                                                >
-                                                    View Details <ExternalLink className="w-2.5 h-2.5" />
-                                                </button>
-                                            </div>
-                                        </div>
+                return (
+                    <div key={event.id} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                        <div className="flex items-start gap-3">
+                            <div className="mt-1">
+                                {EventIcon}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate hover:text-indigo-500 cursor-pointer">
+                                        {event.repo?.name || 'Unknown Repo'}
                                     </div>
+                                    <span className="text-[10px] text-slate-400 whitespace-nowrap">{timeAgo}</span>
                                 </div>
-                            )
-                        })}
+                                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight line-clamp-2">
+                                    {getEventDescription(event)}
+                                </div>
+                                <div className="mt-1.5 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                                        aria-label="View activity details"
+                                        onClick={() => {
+                                            const repoName = event.repo?.name
+                                            if (repoName) window.open(`https://github.com/${repoName}`, '_blank', 'noopener')
+                                        }}
+                                    >
+                                        View Details <ExternalLink className="w-2.5 h-2.5" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                )}
-            </div>
-        </Card>
+                )
+            })}
+        </div>
     )
 }
 
@@ -563,8 +556,8 @@ function getEventDescription(event) {
     }
 }
 
-function getTimeAgo(date) {
-    const seconds = Math.floor((new Date() - date) / 1000)
+function getTimeAgo(date, now = new Date()) {
+    const seconds = Math.floor((now - date) / 1000)
     let interval = seconds / 31536000
     if (interval > 1) return Math.floor(interval) + "y ago"
     interval = seconds / 2592000

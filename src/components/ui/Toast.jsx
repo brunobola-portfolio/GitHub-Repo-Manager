@@ -30,7 +30,10 @@ export function Toast({ id, type = 'info', message, onDismiss, duration = 5000 }
     const [isLeaving, setIsLeaving] = useState(false)
     const timerRef = useRef(null)
     const onDismissRef = useRef(onDismiss)
-    onDismissRef.current = onDismiss
+
+    useEffect(() => {
+        onDismissRef.current = onDismiss
+    }, [onDismiss])
     const Icon = ICONS[type] || Info
 
     useEffect(() => {

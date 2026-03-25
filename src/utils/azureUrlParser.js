@@ -91,8 +91,6 @@ function isOnPremisesTfs(url) {
 }
 
 function parseDevAzureCom(url) {
-  const empty = { org: null, project: null, repo: null, error: null, suggestion: null }
-
   // Match https://dev.azure.com/{org}/...
   const match = url.match(/^https?:\/\/dev\.azure\.com\/([^/]+)\/?(.*)$/)
   if (!match) return null

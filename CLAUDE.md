@@ -50,3 +50,19 @@
 - `.dev/claude/plans/` — Implementation plans generated during development (committed)
 - `.claude/settings.json` — Claude Code project settings (committed)
 - `.claude/settings.local.json` — Local overrides (gitignored)
+
+## Workspace Organisation
+
+### Folder `.dev/` (local working dirs are gitignored)
+
+- **Screenshots/design refs**: ALWAYS in `.dev/screenshots/[page]/`
+- **Technical documentation drafts**: ALWAYS in `.dev/docs/[topic]/`
+- **Local plan copies**: ALWAYS in `.dev/plans/`
+- **Validation checklists**: ALWAYS in `.dev/checklists/`
+
+### File rules
+
+- **Never** place loose files (PNG, PDF, MD) in the project root
+- **Never** create temporary folders outside of `.dev/`
+- Before creating any auxiliary file, check if a suitable folder exists in `.dev/`
+- If a new category is needed, create a subfolder inside `.dev/`

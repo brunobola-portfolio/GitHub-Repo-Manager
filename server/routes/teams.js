@@ -1,7 +1,7 @@
 import express from 'express';
 import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
-import { requireAuth, isValidGitHubUsername, safeError, errorResponse } from '../middleware/auth.js';
+import { requireAuth, safeError, errorResponse } from '../middleware/auth.js';
 import { validate, teamCreateSchema, teamMemberSchema, teamRepoSchema } from '../lib/validators.js';
 
 const router = express.Router();

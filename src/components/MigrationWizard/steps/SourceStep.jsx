@@ -38,10 +38,9 @@ export default function SourceStep({ source, onChange, oauthHook }) {
         if (!source.credentialMode) onChange({ credentialMode: 'personalPat' })
       })
       .finally(() => setCredLoading(false))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   // Intentionally run once on mount: onChange is a stable setState setter,
   // source.credentialMode is only read as a guard (if !mode → set default).
-  }, [])
+  }, [onChange, source.credentialMode])
 
   // ── smart URL paste ────────────────────────────────────────────────────
   const handleUrlPaste = useCallback((value) => {

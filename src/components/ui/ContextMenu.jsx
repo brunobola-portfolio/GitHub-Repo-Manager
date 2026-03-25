@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, memo } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight } from 'lucide-react'
 
@@ -33,6 +33,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 	const [focusedIndex, setFocusedIndex] = useState(-1)
 	const hoverTimerRef = useRef(null)
 	const itemRefs = useRef([])
+	const [submenuPos, setSubmenuPos] = useState({ x: 0, y: 0 })
 
 	// Get only actionable items (not separators/headers) for keyboard nav
 	const actionableIndices = items
@@ -58,12 +59,12 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 			if (parentDirection === 'right' && newLeft + rect.width > window.innerWidth - margin) {
 				// Flip to left
 				newLeft = x - rect.width - (menuRef.current.parentElement?.getBoundingClientRect().width || 0)
-				setSubmenuDirection('left')
+				Promise.resolve().then(() => setSubmenuDirection('left'))
 			} else if (parentDirection === 'left' && newLeft < margin) {
 				newLeft = x + rect.width
-				setSubmenuDirection('right')
+				Promise.resolve().then(() => setSubmenuDirection('right'))
 			} else {
-				setSubmenuDirection(parentDirection)
+				Promise.resolve().then(() => setSubmenuDirection(parentDirection))
 			}
 		} else {
 			if (newLeft + rect.width > window.innerWidth - margin) {
@@ -72,7 +73,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 		}
 
 		if (newLeft < margin) newLeft = margin
-		setPosition({ top: newTop, left: newLeft })
+		Promise.resolve().then(() => setPosition({ top: newTop, left: newLeft }))
 	}, [x, y, isSubmenu, parentDirection])
 
 	// Handle hover with delay for submenus
@@ -231,7 +232,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 	}, [])
 
 	// Calculate submenu position
-	const getSubmenuPosition = (index) => {
+	const getSubmenuPosition = useCallback((index) => {
 		const itemEl = itemRefs.current[index]
 		if (!itemEl || !menuRef.current) return { x: 0, y: 0 }
 		const itemRect = itemEl.getBoundingClientRect()
@@ -243,7 +244,13 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 		const subY = itemRect.top
 
 		return { x: subX, y: subY }
-	}
+	}, [submenuDirection])
+
+	useLayoutEffect(() => {
+		if (activeSubmenu >= 0) {
+			Promise.resolve().then(() => setSubmenuPos(getSubmenuPosition(activeSubmenu)))
+		}
+	}, [activeSubmenu, getSubmenuPosition])
 
 	return (
 		<>
@@ -346,20 +353,17 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 
 				{/* Render active submenu */}
 				<AnimatePresence>
-					{activeSubmenu >= 0 && items[activeSubmenu]?.children && (() => {
-						const subPos = getSubmenuPosition(activeSubmenu)
-						return (
-							<ContextMenuInner
-								key={`sub-${activeSubmenu}`}
-								items={items[activeSubmenu].children}
-								x={subPos.x}
-								y={subPos.y}
-								onClose={() => setActiveSubmenu(-1)}
-								isSubmenu
-								parentDirection={submenuDirection}
-							/>
-						)
-					})()}
+					{activeSubmenu >= 0 && items[activeSubmenu]?.children && (
+						<ContextMenuInner
+							key={`sub-${activeSubmenu}`}
+							items={items[activeSubmenu].children}
+							x={submenuPos.x}
+							y={submenuPos.y}
+							onClose={() => setActiveSubmenu(-1)}
+							isSubmenu
+							parentDirection={submenuDirection}
+						/>
+					)}
 				</AnimatePresence>
 			</motion.div>
 		</>

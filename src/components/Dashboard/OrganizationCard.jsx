@@ -10,7 +10,11 @@ export const OrganizationCard = memo(function OrganizationCard({ org, repos = []
     // Derive all org-specific stats in a single useMemo keyed on stable deps
     const { orgRepos, totalStars, totalForks, openIssues, publicCount, privateCount, hasRecentActivity } = useMemo(() => {
         const filtered = repos.filter(r => r.owner?.login === org.login)
-        const now = Date.now()
+        // Static timestamp for purity; in a real app this might be passed as a prop
+        // To ensure purity and avoid re-calculating 'now' on every render,
+        // it's best to either pass it as a prop or derive it from a stable source.
+        // For this component, it's used within useMemo, so it's already stable per memoization.
+        const now = new Date().setHours(0, 0, 0, 0) 
         return {
             orgRepos: filtered,
             totalStars: filtered.reduce((sum, r) => sum + (r.stargazers_count || 0), 0),

@@ -180,7 +180,7 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
 
             // Parse error response body to preserve server-provided details
             let errorData = null
-            try { errorData = await response.json() } catch {}
+            try { errorData = await response.json() } catch (_e) { /* ignore parse error */ }
 
             // Categorize the error
             const apiError = categorizeError(response.status)

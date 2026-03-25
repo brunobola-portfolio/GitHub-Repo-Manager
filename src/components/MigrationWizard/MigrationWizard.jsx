@@ -95,7 +95,6 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
     schedule,
     updateSchedule,
     planId,
-    setPlanId,
     importJobs,
     updateImportJobs,
     resetWizard,
@@ -115,13 +114,10 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
   const prevSourceType = useRef(source.sourceType)
   useEffect(() => {
     if (source.sourceType && !prevSourceType.current && currentStepIndex === 0) {
-      setDirection(1)
-      // steps has already been recomputed, so index 1 is the correct next step
-      if (steps.length > 1) {
-        // Use the hook's internal setter indirectly by going to index 1
-        // We bypass nextStep() since validation of sourceType step would pass now
+      Promise.resolve().then(() => {
+        setDirection(1)
         nextStep()
-      }
+      })
     }
     prevSourceType.current = source.sourceType
   }, [source.sourceType, currentStepIndex, steps.length, nextStep])
@@ -288,7 +284,6 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
   }
 
   const isAzure = source.sourceType === 'azure'
-  const isSimpleFlow = source.sourceType === 'url' || source.sourceType === 'github'
   const wizardTitle = isAzure ? 'Migration Wizard' : 'Import Repository'
   const wizardIcon = isAzure ? Rocket : Download
 

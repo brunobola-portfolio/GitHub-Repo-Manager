@@ -23,7 +23,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source }) {
   const [branchCache, setBranchCache] = useState({})   // { [repoId]: branches[] }
   const [loadingBranches, setLoadingBranches] = useState({})
 
-  const toggleBranchExpand = useCallback(async (repo, index) => {
+  const toggleBranchExpand = useCallback(async (repo, _index) => {
     const key = repo.id || repo.name
     const isExpanded = expandedBranches[key]
 

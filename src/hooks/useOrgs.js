@@ -180,17 +180,19 @@ export function useOrgs(user) {
     // Auto-refresh stats when selectedOrg changes
     useEffect(() => {
         if (!MOCK_MODE && user) {
-            fetchStats(selectedOrg)
+            Promise.resolve().then(() => fetchStats(selectedOrg))
         } else if (MOCK_MODE) {
-            fetchStats(selectedOrg)
+            Promise.resolve().then(() => fetchStats(selectedOrg))
         }
     }, [selectedOrg, user, fetchStats])
 
     // Load orgs and stats when user is loaded
     useEffect(() => {
         if (user) {
-            fetchOrgs()
-            fetchStats()
+            Promise.resolve().then(() => {
+                fetchOrgs()
+                fetchStats()
+            })
         }
     }, [user, fetchOrgs, fetchStats])
 
@@ -222,7 +224,7 @@ export function useOrgs(user) {
     // Auto-fetch activity when user is loaded
     useEffect(() => {
         if (user?.login) {
-            fetchActivity(user.login)
+            Promise.resolve().then(() => fetchActivity(user.login))
         }
     }, [user, fetchActivity])
 

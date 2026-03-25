@@ -345,7 +345,7 @@ router.post('/import/azure/batch', requireAuth, async (req, res) => {
         const jobResults = [];
 
         for (const repo of repos) {
-            const { azureRepo, targetName, description: repoDesc } = repo;
+            const { azureRepo, targetName } = repo;
             if (!azureRepo) continue;
 
             const repoName = importService.sanitizeRepoName(targetName || azureRepo);

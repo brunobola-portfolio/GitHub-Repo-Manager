@@ -1,23 +1,5 @@
-import { createContext, useState, useCallback, useMemo } from 'react'
-
-/**
- * Internal modal state shape: { isOpen: boolean, data: any }
- * External consumers see `modalStates.showXxx` as a boolean for backward compat,
- * and can use `getModalData(modalName)` to read the payload.
- */
-
-/**
- * @typedef {Object} ModalContextValue
- * @property {Object} modalStates - Current state of all modals (boolean properties for backward compat)
- * @property {(modalName: string) => void} openModal - Open a specific modal (no data)
- * @property {(modalName: string, data: any) => void} openModalWithData - Open a modal with payload data
- * @property {(modalName: string) => void} closeModal - Close a specific modal (data kept for exit animation)
- * @property {(modalName: string) => void} toggleModal - Toggle a specific modal
- * @property {() => void} closeAllModals - Close all modals at once
- * @property {(modalName: string) => any} getModalData - Get the data payload for a specific modal
- */
-
-export const ModalContext = createContext(null)
+import { useState, useCallback, useMemo } from 'react'
+import { ModalContext } from './contexts'
 
 const MODAL_NAMES = [
   'showCreateRepo',

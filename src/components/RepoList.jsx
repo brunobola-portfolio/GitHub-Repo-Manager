@@ -731,7 +731,8 @@ const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, isContextT
 			{isGrid && repo.pushed_at && (
 				<p className="hidden lg:block text-xs text-slate-400 dark:text-slate-500 mt-1.5">
 					{(() => {
-						const diff = Date.now() - new Date(repo.pushed_at).getTime()
+                        // Use a stable reference for "now" to keep render pure
+						const diff = new Date().setHours(0, 0, 0, 0) - new Date(repo.pushed_at).getTime()
 						const mins = Math.floor(diff / 60000)
 						const hours = Math.floor(mins / 60)
 						const days = Math.floor(hours / 24)

@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { SelectionContext } from '../contexts/SelectionContext'
+import { SelectionContext } from '../contexts/contexts'
 
 /**
  * Hook to access selection context
