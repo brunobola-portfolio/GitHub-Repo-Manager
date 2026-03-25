@@ -149,10 +149,6 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source }) {
 
     return (
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-          Import Progress
-        </h3>
-
         <AnimatePresence mode="wait">
           {!status ? (
             <motion.div
@@ -226,14 +222,9 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source }) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-          Importing {batchJobs.length} repositories...
-        </h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-          {completedCount}/{batchJobs.length} completed
-        </p>
-      </div>
+      <p className="text-sm text-slate-500 dark:text-slate-400">
+        {completedCount}/{batchJobs.length} completed
+      </p>
 
       {/* Overall progress bar */}
       <ProgressBar pct={batchJobs.length > 0 ? (completedCount / batchJobs.length) * 100 : 0} />
