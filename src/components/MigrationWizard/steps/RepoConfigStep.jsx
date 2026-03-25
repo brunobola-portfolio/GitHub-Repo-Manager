@@ -41,7 +41,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source }) {
             org: source.org,
             project: source.project,
             repoId: repo.id,
-            pat: source.pat || undefined,
+            pat: source.credentialMode === 'personalPat' ? source.pat : undefined,
           }),
         })
         const data = await res.json()
@@ -51,7 +51,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source }) {
       } catch { /* ignore */ }
       setLoadingBranches((prev) => ({ ...prev, [key]: false }))
     }
-  }, [expandedBranches, branchCache, source.org, source.project, source.pat])
+  }, [expandedBranches, branchCache, source.org, source.project, source.pat, source.credentialMode])
 
   const hasLfsEnabled = repos.some((r) => r.lfsEnabled)
 

@@ -14,7 +14,7 @@ const API_VERSION = '7.1';
  * @returns {string|null}
  */
 function resolvePat(pat, session) {
-    return pat || process.env.AZURE_PAT || session?.azureToken || null;
+    return pat || session?.azureToken || process.env.AZURE_PAT || null;
 }
 
 function getHeaders(pat) {

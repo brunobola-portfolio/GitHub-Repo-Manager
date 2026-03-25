@@ -231,7 +231,9 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
     if (match && !match.selected) {
       onSetRepos(repos.map((r) => r.name === source.urlParsedRepo ? { ...r, selected: true } : r))
     }
-  }, [repos, source.urlParsedRepo]) // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // onSetRepos is a stable useState setter — omitting it is safe and avoids re-running on every render.
+  }, [repos, source.urlParsedRepo])
 
   // Filter by search
   const filteredRepos = useMemo(() => {

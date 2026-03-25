@@ -225,9 +225,12 @@ router.get('/azure/oauth/start', requireAuth, (req, res) => {
         return res.status(503).json({ error: 'OAuth not configured' });
     }
     const redirectUri = encodeURIComponent(`${req.protocol}://${req.get('host')}/api/azure/oauth/callback`);
-    const scope = encodeURIComponent('https://app.vssps.visualstudio.com/.default offline_access');
+    const scope = encodeURIComponent('https://app.vssps.visualstudio.com/.default');
     const state = crypto.randomBytes(16).toString('hex');
+    // Clear any previous OAuth session state so retries start clean
     req.session.oauthState = state;
+    delete req.session.azureTokenReady;
+    delete req.session.azureTokenError;
     const authUrl = `https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/authorize` +
         `?client_id=${AZURE_CLIENT_ID}` +
         `&response_type=code` +
@@ -265,7 +268,7 @@ router.get('/azure/oauth/callback', async (req, res) => {
             code,
             redirect_uri: redirectUri,
             grant_type: 'authorization_code',
-            scope: 'https://app.vssps.visualstudio.com/.default offline_access',
+            scope: 'https://app.vssps.visualstudio.com/.default',
         });
         const tokenRes = await fetch(
             `https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/token`,
