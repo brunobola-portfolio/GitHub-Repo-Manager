@@ -117,16 +117,9 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
 
   return (
     <div className="space-y-5">
-      {/* Header + Master Toggle */}
+      {/* Master Toggle */}
       <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-            Work Items
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Migrate Azure DevOps work items as GitHub Issues
-          </p>
-        </div>
+        <div />
         <button
           type="button"
           role="switch"
