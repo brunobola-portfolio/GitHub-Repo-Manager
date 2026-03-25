@@ -31,13 +31,13 @@ function EmptyRepoState({ isTfvc, source }) {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ org: source.org, project: source.project, pat: source.pat || undefined }),
+      body: JSON.stringify({ org: source.org, project: source.project, pat: source.credentialMode === 'personalPat' ? source.pat : undefined }),
     })
       .then((r) => r.json())
       .then((data) => setPermissions(data.permissions || null))
       .catch(() => setPermissions(null))
       .finally(() => setChecking(false))
-  }, [isTfvc, source.org, source.project, source.pat])
+  }, [isTfvc, source.org, source.project, source.pat, source.credentialMode])
 
   if (isTfvc) {
     return (
@@ -154,7 +154,7 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
           body: JSON.stringify({
             org: source.org,
             project: source.project,
-            pat: source.pat || undefined,
+            pat: source.credentialMode === 'personalPat' ? source.pat : undefined,
           }),
         })
         const data = await res.json()
@@ -167,7 +167,7 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
               const tfvcRes = await fetch('/api/azure/tfvc/items', {
                 method: 'POST', credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ org: source.org, project: source.project, pat: source.pat || undefined }),
+                body: JSON.stringify({ org: source.org, project: source.project, pat: source.credentialMode === 'personalPat' ? source.pat : undefined }),
               })
               const tfvcData = await tfvcRes.json()
               const items = (tfvcData.items || []).filter(i => i.isFolder)
@@ -223,6 +223,15 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
 
     fetchRepos()
   }, [source.org, source.project, source.pat, onSetRepos, onChange, fetched])
+
+  // Auto-select repo matching urlParsedRepo from URL paste
+  useEffect(() => {
+    if (!source.urlParsedRepo || !repos.length) return
+    const match = repos.find((r) => r.name === source.urlParsedRepo)
+    if (match && !match.selected) {
+      onSetRepos(repos.map((r) => r.name === source.urlParsedRepo ? { ...r, selected: true } : r))
+    }
+  }, [repos, source.urlParsedRepo]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filter by search
   const filteredRepos = useMemo(() => {
@@ -335,19 +344,6 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
           </p>
         </div>
       )}
-
-      {/* Header */}
-      <div>
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-          {isTfvc ? 'Select TFVC Folders' : 'Select Repositories'}
-        </h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Choose which {isTfvc ? 'folders' : 'repositories'} to migrate from{' '}
-          <span className="font-medium text-slate-700 dark:text-slate-300">
-            {source.org}/{source.project}
-          </span>
-        </p>
-      </div>
 
       {/* Search + Sort row */}
       <div className="flex items-center gap-2">
