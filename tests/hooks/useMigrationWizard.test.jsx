@@ -5,40 +5,49 @@ import { useMigrationWizard } from '@/hooks/useMigrationWizard'
 describe('useMigrationWizard', () => {
   it('starts at source step', () => {
     const { result } = renderHook(() => useMigrationWizard())
-    expect(result.current.currentStep).toBe('source')
+    expect(result.current.currentStep).toBe('sourceType')
   })
 
-  it('has all 9 steps', () => {
+  it('has all 8 azure steps', () => {
     const { result } = renderHook(() => useMigrationWizard())
-    expect(result.current.steps).toHaveLength(9)
+    act(() => result.current.updateSource({ sourceType: 'azure' }))
+    expect(result.current.steps).toHaveLength(8)
   })
 
   it('does not advance from source without validation', () => {
     const { result } = renderHook(() => useMigrationWizard())
     act(() => result.current.nextStep())
-    expect(result.current.currentStep).toBe('source')
+    expect(result.current.currentStep).toBe('sourceType')
     expect(result.current.error).toBeTruthy()
   })
 
   it('advances when source is valid', () => {
     const { result } = renderHook(() => useMigrationWizard())
+    // Set sourceType first so azure steps are available
+    act(() => result.current.updateSource({ sourceType: 'azure' }))
+    act(() => result.current.nextStep()) // sourceType → azureConnect
     act(() => result.current.updateSource({ org: 'o', project: 'p', pat: 'pat', validated: true }))
-    act(() => result.current.nextStep())
+    act(() => result.current.nextStep()) // azureConnect → repoSelect
     expect(result.current.currentStep).toBe('repoSelect')
     expect(result.current.error).toBeNull()
   })
 
   it('goes back to previous step', () => {
     const { result } = renderHook(() => useMigrationWizard())
+    act(() => result.current.updateSource({ sourceType: 'azure' }))
+    act(() => result.current.nextStep()) // sourceType → azureConnect
     act(() => result.current.updateSource({ org: 'o', project: 'p', pat: 'p', validated: true }))
-    act(() => result.current.nextStep())
+    act(() => result.current.nextStep()) // azureConnect → repoSelect
     act(() => result.current.prevStep())
-    expect(result.current.currentStep).toBe('source')
+    expect(result.current.currentStep).toBe('azureConnect')
   })
 
   it('skips disabled workItems and wiki steps', () => {
     const { result } = renderHook(() => useMigrationWizard())
-    // Source
+    // Set sourceType first so azure steps are available
+    act(() => result.current.updateSource({ sourceType: 'azure' }))
+    act(() => result.current.nextStep()) // sourceType → azureConnect
+    // AzureConnect
     act(() => result.current.updateSource({ org: 'o', project: 'p', pat: 'p', validated: true }))
     act(() => result.current.nextStep()) // → repoSelect
     // RepoSelect
@@ -55,16 +64,18 @@ describe('useMigrationWizard', () => {
 
   it('does not skip workItems when enabled', () => {
     const { result } = renderHook(() => useMigrationWizard())
+    act(() => result.current.updateSource({ sourceType: 'azure' }))
+    act(() => result.current.nextStep()) // sourceType → azureConnect
     act(() => result.current.updateSource({ org: 'o', project: 'p', pat: 'p', validated: true }))
-    act(() => result.current.nextStep())
+    act(() => result.current.nextStep()) // → repoSelect
     act(() =>
       result.current.setRepos([
         { name: 'r', selected: true, targetName: 'r', visibility: 'private', description: '' },
       ])
     )
-    act(() => result.current.nextStep())
+    act(() => result.current.nextStep()) // → repoConfig
     act(() => result.current.updateWorkItems({ enabled: true, types: ['Bug'] }))
-    act(() => result.current.nextStep())
+    act(() => result.current.nextStep()) // → workItems
     expect(result.current.currentStep).toBe('workItems')
   })
 
@@ -74,22 +85,26 @@ describe('useMigrationWizard', () => {
       result.current.updateSource({ org: 'test', project: 'test', pat: 'p', validated: true })
     )
     act(() => result.current.resetWizard())
-    expect(result.current.currentStep).toBe('source')
+    expect(result.current.currentStep).toBe('sourceType')
     expect(result.current.source.org).toBe('')
   })
 
   it('clears error on successful navigation', () => {
     const { result } = renderHook(() => useMigrationWizard())
-    act(() => result.current.nextStep()) // fails, sets error
+    // At sourceType: nextStep without sourceType set should fail
+    act(() => result.current.nextStep())
     expect(result.current.error).toBeTruthy()
-    act(() => result.current.updateSource({ org: 'o', project: 'p', pat: 'p', validated: true }))
-    act(() => result.current.nextStep()) // succeeds
+    // Set sourceType to clear error and advance
+    act(() => result.current.updateSource({ sourceType: 'azure' }))
+    act(() => result.current.nextStep()) // sourceType → azureConnect
     expect(result.current.error).toBeNull()
   })
 
   it('skips disabled steps when going back', () => {
     const { result } = renderHook(() => useMigrationWizard())
     // Navigate to aiReview with workItems and wiki disabled
+    act(() => result.current.updateSource({ sourceType: 'azure' }))
+    act(() => result.current.nextStep()) // sourceType → azureConnect
     act(() => result.current.updateSource({ org: 'o', project: 'p', pat: 'p', validated: true }))
     act(() => result.current.nextStep()) // → repoSelect
     act(() =>
@@ -109,12 +124,14 @@ describe('useMigrationWizard', () => {
     const { result } = renderHook(() => useMigrationWizard())
     // Try to go to a future step
     act(() => result.current.goToStep('repoSelect'))
-    expect(result.current.currentStep).toBe('source')
+    expect(result.current.currentStep).toBe('sourceType')
     // Advance and then go back via goToStep
+    act(() => result.current.updateSource({ sourceType: 'azure' }))
+    act(() => result.current.nextStep()) // sourceType → azureConnect
     act(() => result.current.updateSource({ org: 'o', project: 'p', pat: 'p', validated: true }))
     act(() => result.current.nextStep()) // → repoSelect
-    act(() => result.current.goToStep('source'))
-    expect(result.current.currentStep).toBe('source')
+    act(() => result.current.goToStep('sourceType'))
+    expect(result.current.currentStep).toBe('sourceType')
   })
 
   it('canGoBack is false at first step', () => {
@@ -124,8 +141,8 @@ describe('useMigrationWizard', () => {
 
   it('canGoNext is false at last step', () => {
     const { result } = renderHook(() => useMigrationWizard())
-    // Directly check: steps has 9 items, last index is 8
-    expect(result.current.canGoNext).toBe(true) // at step 0
+    // At first step with no sourceType set, steps = ['sourceType'] (length 1), so canGoNext is false
+    expect(result.current.canGoNext).toBe(false)
   })
 
   it('updateRepo modifies a specific repo', () => {
@@ -157,6 +174,8 @@ describe('useMigrationWizard', () => {
 
   it('validates repoSelect requires selected repos', () => {
     const { result } = renderHook(() => useMigrationWizard())
+    act(() => result.current.updateSource({ sourceType: 'azure' }))
+    act(() => result.current.nextStep()) // sourceType → azureConnect
     act(() => result.current.updateSource({ org: 'o', project: 'p', pat: 'p', validated: true }))
     act(() => result.current.nextStep()) // → repoSelect
     act(() =>
@@ -169,6 +188,8 @@ describe('useMigrationWizard', () => {
 
   it('validates repoConfig requires target names', () => {
     const { result } = renderHook(() => useMigrationWizard())
+    act(() => result.current.updateSource({ sourceType: 'azure' }))
+    act(() => result.current.nextStep()) // sourceType → azureConnect
     act(() => result.current.updateSource({ org: 'o', project: 'p', pat: 'p', validated: true }))
     act(() => result.current.nextStep()) // → repoSelect
     act(() =>
@@ -184,8 +205,10 @@ describe('useMigrationWizard', () => {
 
   it('validates repoConfig requires unique target names', () => {
     const { result } = renderHook(() => useMigrationWizard())
+    act(() => result.current.updateSource({ sourceType: 'azure' }))
+    act(() => result.current.nextStep()) // sourceType → azureConnect
     act(() => result.current.updateSource({ org: 'o', project: 'p', pat: 'p', validated: true }))
-    act(() => result.current.nextStep())
+    act(() => result.current.nextStep()) // → repoSelect
     act(() =>
       result.current.setRepos([
         { name: 'a', selected: true, targetName: 'same', visibility: 'private' },
@@ -201,6 +224,8 @@ describe('useMigrationWizard', () => {
   it('validates schedule requires date when mode is scheduled', () => {
     const { result } = renderHook(() => useMigrationWizard())
     // Navigate to schedule step
+    act(() => result.current.updateSource({ sourceType: 'azure' }))
+    act(() => result.current.nextStep()) // sourceType → azureConnect
     act(() => result.current.updateSource({ org: 'o', project: 'p', pat: 'p', validated: true }))
     act(() => result.current.nextStep()) // → repoSelect
     act(() =>
