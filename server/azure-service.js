@@ -8,12 +8,13 @@ const BASE_URL = 'https://dev.azure.com';
 const API_VERSION = '7.1';
 
 /**
- * Resolve PAT: use provided value, or fall back to AZURE_PAT env var.
+ * Resolve PAT: use provided value, or fall back to AZURE_PAT env var, or session token.
  * @param {string|undefined} pat - PAT from request body (may be undefined)
+ * @param {object|undefined} session - Express session (may be undefined)
  * @returns {string|null}
  */
-function resolvePat(pat) {
-    return pat || process.env.AZURE_PAT || null;
+function resolvePat(pat, session) {
+    return pat || process.env.AZURE_PAT || session?.azureToken || null;
 }
 
 function getHeaders(pat) {

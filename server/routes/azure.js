@@ -12,7 +12,7 @@ router.get('/azure/env-auth', requireAuth, (req, res) => {
 router.post('/azure/validate', requireAuth, async (req, res) => {
     try {
         const { org, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat);
+        const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org) {
             return errorResponse(res, 400, 'Organization is required');
         }
@@ -29,7 +29,7 @@ router.post('/azure/validate', requireAuth, async (req, res) => {
 router.post('/azure/projects', requireAuth, async (req, res) => {
     try {
         const { org, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat);
+        const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org) {
             return errorResponse(res, 400, 'Organization is required');
         }
@@ -46,7 +46,7 @@ router.post('/azure/projects', requireAuth, async (req, res) => {
 router.post('/azure/repos', requireAuth, async (req, res) => {
     try {
         const { org, project, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat);
+        const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org || !project) {
             return errorResponse(res, 400, 'Organization and project are required');
         }
@@ -71,7 +71,7 @@ router.post('/azure/repos', requireAuth, async (req, res) => {
 router.post('/azure/wikis', requireAuth, async (req, res) => {
     try {
         const { org, project, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat);
+        const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org || !project) {
             return errorResponse(res, 400, 'Organization and project are required');
         }
@@ -88,7 +88,7 @@ router.post('/azure/wikis', requireAuth, async (req, res) => {
 router.post('/azure/work-items/counts', requireAuth, async (req, res) => {
     try {
         const { org, project, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat);
+        const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org || !project) {
             return errorResponse(res, 400, 'Organization and project are required');
         }
@@ -105,7 +105,7 @@ router.post('/azure/work-items/counts', requireAuth, async (req, res) => {
 router.post('/azure/work-items/preview', requireAuth, async (req, res) => {
     try {
         const { org, project, pat: bodyPat, types } = req.body;
-        const pat = azureService.resolvePat(bodyPat);
+        const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org || !project) {
             return errorResponse(res, 400, 'Organization and project are required');
         }
@@ -122,7 +122,7 @@ router.post('/azure/work-items/preview', requireAuth, async (req, res) => {
 router.post('/azure/project-info', requireAuth, async (req, res) => {
     try {
         const { org, project, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat);
+        const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org || !project) {
             return errorResponse(res, 400, 'Organization and project are required');
         }
@@ -139,7 +139,7 @@ router.post('/azure/project-info', requireAuth, async (req, res) => {
 router.post('/azure/branches', requireAuth, async (req, res) => {
     try {
         const { org, project, repoId, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat);
+        const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org || !project || !repoId) {
             return errorResponse(res, 400, 'Organization, project, and repoId are required');
         }
@@ -156,7 +156,7 @@ router.post('/azure/branches', requireAuth, async (req, res) => {
 router.post('/azure/pat-permissions', requireAuth, async (req, res) => {
     try {
         const { org, project, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat);
+        const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org || !project) {
             return errorResponse(res, 400, 'Organization and project are required');
         }
@@ -193,7 +193,7 @@ router.post('/azure/pat-permissions', requireAuth, async (req, res) => {
 router.post('/azure/tfvc/items', requireAuth, async (req, res) => {
     try {
         const { org, project, pat: bodyPat, scopePath } = req.body;
-        const pat = azureService.resolvePat(bodyPat);
+        const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org || !project) {
             return errorResponse(res, 400, 'Organization and project are required');
         }
@@ -205,6 +205,81 @@ router.post('/azure/tfvc/items', requireAuth, async (req, res) => {
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to list TFVC items'));
     }
+});
+
+// GET /api/azure/oauth-status
+router.get('/azure/oauth-status', requireAuth, (req, res) => {
+    const configured = !!(
+        process.env.AZURE_CLIENT_ID &&
+        process.env.AZURE_CLIENT_SECRET &&
+        process.env.AZURE_TENANT_ID
+    );
+    res.json({ configured });
+});
+
+// GET /api/azure/oauth/start — redirect to Azure AD
+router.get('/azure/oauth/start', requireAuth, (req, res) => {
+    const { AZURE_CLIENT_ID, AZURE_TENANT_ID } = process.env;
+    if (!AZURE_CLIENT_ID || !AZURE_TENANT_ID) {
+        return res.status(503).json({ error: 'OAuth not configured' });
+    }
+    const redirectUri = encodeURIComponent(`${req.protocol}://${req.get('host')}/api/azure/oauth/callback`);
+    const scope = encodeURIComponent('https://app.vssps.visualstudio.com/.default offline_access');
+    const state = Buffer.from(JSON.stringify({ ts: Date.now() })).toString('base64');
+    req.session.oauthState = state;
+    const authUrl = `https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/authorize` +
+        `?client_id=${AZURE_CLIENT_ID}` +
+        `&response_type=code` +
+        `&redirect_uri=${redirectUri}` +
+        `&scope=${scope}` +
+        `&state=${state}`;
+    res.redirect(authUrl);
+});
+
+// GET /api/azure/oauth/callback — exchange code for token
+router.get('/azure/oauth/callback', requireAuth, async (req, res) => {
+    const { code } = req.query;
+    const { AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID } = process.env;
+
+    if (!code) {
+        return res.status(400).send('<html><body><p>OAuth error: no code received.</p></body></html>');
+    }
+
+    try {
+        const redirectUri = `${req.protocol}://${req.get('host')}/api/azure/oauth/callback`;
+        const body = new URLSearchParams({
+            client_id: AZURE_CLIENT_ID,
+            client_secret: AZURE_CLIENT_SECRET,
+            code,
+            redirect_uri: redirectUri,
+            grant_type: 'authorization_code',
+            scope: 'https://app.vssps.visualstudio.com/.default offline_access',
+        });
+        const tokenRes = await fetch(
+            `https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/token`,
+            { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body }
+        );
+        const tokenData = await tokenRes.json();
+        if (tokenData.access_token) {
+            req.session.azureToken = tokenData.access_token;
+            req.session.azureTokenReady = true;
+        }
+    } catch {
+        // Token exchange failed — azureTokenReady stays falsy
+    }
+
+    res.send(`<!DOCTYPE html>
+<html><head><title>Authentication Complete</title></head>
+<body style="font-family:sans-serif;text-align:center;padding:40px">
+  <h2>Authentication complete</h2>
+  <p>You can close this tab.</p>
+  <script>window.close();</script>
+</body></html>`);
+});
+
+// GET /api/azure/oauth/token — polling endpoint (never sends token to client)
+router.get('/azure/oauth/token', requireAuth, (req, res) => {
+    res.json({ ready: !!req.session.azureTokenReady });
 });
 
 export default router;
