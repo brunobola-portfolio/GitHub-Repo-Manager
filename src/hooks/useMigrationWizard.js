@@ -53,6 +53,11 @@ const INITIAL_SOURCE = {
   // System
   gitAvailable: null,
   envAuthAvailable: null,
+  // URL paste fields
+  urlParsedRepo: '',        // repo name extracted from URL paste
+  urlParsedProject: '',     // project name extracted from URL paste (pre-selects dropdown)
+  // Credential mode
+  credentialMode: '',       // 'serverPat' | 'personalPat' | 'oauth' | ''
 }
 
 const INITIAL_WORK_ITEMS = {
