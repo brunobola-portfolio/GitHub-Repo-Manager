@@ -38,6 +38,9 @@ export default function SourceTypeStep({ source, onChange }) {
       .catch(() => setGitAvailable(false))
   }, [])
 
+  // Clean up pending timer on unmount to avoid state updates after unmount
+  useEffect(() => () => clearTimeout(timerRef.current), [])
+
   const handleSelect = (value) => {
     if (pendingType) return // debounce double-clicks
     setPendingType(value)

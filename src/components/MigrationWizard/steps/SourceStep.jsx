@@ -38,7 +38,10 @@ export default function SourceStep({ source, onChange, oauthHook }) {
         if (!source.credentialMode) onChange({ credentialMode: 'personalPat' })
       })
       .finally(() => setCredLoading(false))
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Intentionally run once on mount: onChange is a stable setState setter,
+  // source.credentialMode is only read as a guard (if !mode → set default).
+  }, [])
 
   // ── smart URL paste ────────────────────────────────────────────────────
   const handleUrlPaste = useCallback((value) => {
@@ -54,8 +57,8 @@ export default function SourceStep({ source, onChange, oauthHook }) {
     }
   }, [onChange])
 
-  // ── destructure oauthHook for stable references in callbacks ───────────
-  const { oauthStatus: oauthStatusValue, pausePolling, resumePolling } = oauthHook
+  // ── destructure oauthHook for stable references in callbacks and JSX ───
+  const { oauthStatus: oauthStatusValue, startOAuth, retryOAuth, pausePolling, resumePolling } = oauthHook
 
   // ── credential mode switch ─────────────────────────────────────────────
   const handleModeSwitch = useCallback((newMode) => {
@@ -286,7 +289,7 @@ export default function SourceStep({ source, onChange, oauthHook }) {
                 <pre className="text-xs bg-slate-800 text-slate-300 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">{`1. Register an app in Azure Portal (Azure Active Directory → App Registrations).\n2. Set Redirect URI to: http://localhost:3001/api/azure/oauth/callback\n3. Add to your server .env file:\n     AZURE_CLIENT_ID=<app-client-id>\n     AZURE_CLIENT_SECRET=<app-client-secret>\n     AZURE_TENANT_ID=<tenant-id>  (or "common" for multi-tenant)\n4. Restart the server.`}</pre>
               ) : source.credentialMode === 'oauth' ? (
                 <div className="space-y-2">
-                  {oauthHook.oauthStatus === 'idle' && (
+                  {oauthStatusValue === 'idle' && (
                     <button
                       type="button"
                       onClick={() => {
@@ -295,7 +298,7 @@ export default function SourceStep({ source, onChange, oauthHook }) {
                           setValidationError('Popup blocked — allow popups for this page and try again.')
                           return
                         }
-                        oauthHook.startOAuth()
+                        startOAuth()
                       }}
                       className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white transition-colors"
                     >
@@ -303,23 +306,23 @@ export default function SourceStep({ source, onChange, oauthHook }) {
                       Open browser to authenticate
                     </button>
                   )}
-                  {oauthHook.oauthStatus === 'pending' && (
+                  {oauthStatusValue === 'pending' && (
                     <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Waiting for browser authentication...
                     </div>
                   )}
-                  {oauthHook.oauthStatus === 'success' && (
+                  {oauthStatusValue === 'success' && (
                     <span className="inline-flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
                       <CheckCircle2 className="w-4 h-4" />
                       Authenticated
                     </span>
                   )}
-                  {(oauthHook.oauthStatus === 'error' || oauthHook.oauthStatus === 'timeout') && (
+                  {(oauthStatusValue === 'error' || oauthStatusValue === 'timeout') && (
                     <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
                       <XCircle className="w-4 h-4" />
-                      {oauthHook.oauthStatus === 'timeout' ? 'Authentication timed out — ' : 'Authentication error — '}
-                      <button type="button" onClick={oauthHook.retryOAuth} className="underline">try again</button>
+                      {oauthStatusValue === 'timeout' ? 'Authentication timed out — ' : 'Authentication error — '}
+                      <button type="button" onClick={retryOAuth} className="underline">try again</button>
                     </div>
                   )}
                 </div>
