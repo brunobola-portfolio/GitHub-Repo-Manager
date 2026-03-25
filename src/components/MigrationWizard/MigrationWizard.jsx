@@ -2,6 +2,7 @@ import { Suspense, useState, useCallback, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { useMigrationWizard } from '../../hooks/useMigrationWizard'
+import { useAzureOAuth } from '../../hooks/useAzureOAuth'
 import { migrationApi } from '../../api/migration'
 import SourceTypeStep from './steps/SourceTypeStep'
 import SourceStep from './steps/SourceStep'
@@ -34,6 +35,22 @@ const STEP_LABELS = {
   schedule: 'Schedule',
   progress: 'Progress',
   summary: 'Summary',
+}
+
+const STEP_META = {
+  sourceType:  { title: 'Choose Source',            subtitle: 'Select where to import your repositories from.' },
+  azureConnect:{ title: 'Connect to Azure DevOps',  subtitle: 'Enter your organization and credentials.' },
+  urlInput:    { title: 'Repository URL',            subtitle: 'Enter the clone URL of the Git repository.' },
+  githubSource:{ title: 'GitHub Repository',         subtitle: 'Enter the GitHub repository to import.' },
+  targetConfig:{ title: 'Target Configuration',      subtitle: 'Configure where to import the repository.' },
+  repoSelect:  { title: 'Select Repositories',       subtitle: 'Choose which repositories to migrate.' },
+  repoConfig:  { title: 'Configure Repositories',    subtitle: 'Set target names and options for each repo.' },
+  workItems:   { title: 'Work Items',                subtitle: 'Configure work item migration settings.' },
+  wiki:        { title: 'Wiki',                      subtitle: 'Configure wiki migration settings.' },
+  aiReview:    { title: 'AI Review',                 subtitle: 'Review the migration plan with AI assistance.' },
+  schedule:    { title: 'Schedule',                  subtitle: 'Choose when to run the migration.' },
+  progress:    { title: 'Migration in Progress',     subtitle: 'Your migration is running.' },
+  summary:     { title: 'Migration Complete',        subtitle: 'Review the results of your migration.' },
 }
 
 const slideVariants = {
@@ -83,6 +100,8 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
     updateImportJobs,
     resetWizard,
   } = wizard
+
+  const oauthHook = useAzureOAuth()
 
   const selectedRepos = repos.filter((r) => r.selected)
   const [direction, setDirection] = useState(1)
@@ -192,7 +211,7 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
           />
         )
       case 'azureConnect':
-        return <SourceStep source={source} onChange={updateSource} />
+        return <SourceStep source={source} onChange={updateSource} oauthHook={oauthHook} />
       case 'urlInput':
         return <UrlInputStep source={source} onChange={updateSource} />
       case 'githubSource':
@@ -326,53 +345,57 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
         {/* Step Indicator — hide on sourceType step when no source selected */}
         {source.sourceType && (
           <nav aria-label="Wizard steps" className="mb-4">
-            <ol className="flex items-center justify-between gap-1">
+            <ol className="flex items-center">
               {steps.map((step, index) => {
                 const isActive = index === currentStepIndex
                 const isCompleted = index < currentStepIndex
                 const label = STEP_LABELS[step] || step
-
                 return (
-                  <li
-                    key={step}
-                    className="flex flex-col items-center flex-1 min-w-0"
-                    aria-current={isActive ? 'step' : undefined}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => goToStep(step)}
-                      disabled={!isCompleted}
-                      className={`
-                        w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all
-                        ${isActive
-                          ? 'bg-indigo-500 text-white ring-4 ring-indigo-500/20 scale-110'
-                          : isCompleted
-                            ? 'bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600'
-                            : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
-                        }
-                      `}
-                      aria-label={`${label}${isActive ? ' (current)' : isCompleted ? ' (completed)' : ''}`}
-                    >
-                      {isCompleted ? '\u2713' : index + 1}
-                    </button>
-                    <span
-                      className={`
-                        mt-1.5 text-[10px] font-medium truncate max-w-full text-center
-                        ${isActive
-                          ? 'text-indigo-600 dark:text-indigo-400'
-                          : isCompleted
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : 'text-slate-400 dark:text-slate-500'
-                        }
-                      `}
-                    >
-                      {label}
-                    </span>
+                  <li key={step} className="flex items-center flex-1 min-w-0">
+                    <div className="flex flex-col items-center">
+                      <button
+                        type="button"
+                        onClick={() => goToStep(step)}
+                        disabled={!isCompleted}
+                        aria-label={`${label}${isActive ? ' (current)' : isCompleted ? ' (completed)' : ''}`}
+                        aria-current={isActive ? 'step' : undefined}
+                        className={`
+                          flex items-center justify-center rounded-full text-xs font-bold transition-all
+                          ${isActive
+                            ? 'w-8 h-8 bg-indigo-500 text-white ring-4 ring-indigo-500/20 scale-110'
+                            : isCompleted
+                              ? 'w-6 h-6 bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600'
+                              : 'w-6 h-6 bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
+                          }
+                        `}
+                      >
+                        {isCompleted ? '✓' : index + 1}
+                      </button>
+                      <span className={`mt-1.5 text-[10px] font-medium truncate max-w-[52px] text-center
+                        ${isActive ? 'text-indigo-600 dark:text-indigo-400' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                        {label}
+                      </span>
+                    </div>
+                    {index < steps.length - 1 && (
+                      <div className={`flex-1 h-0.5 mx-1 mb-5 transition-colors ${isCompleted ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                    )}
                   </li>
                 )
               })}
             </ol>
           </nav>
+        )}
+
+        {/* Step title/subtitle from STEP_META */}
+        {STEP_META[currentStep] && (
+          <div className="mb-4">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+              {STEP_META[currentStep].title}
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              {STEP_META[currentStep].subtitle}
+            </p>
+          </div>
         )}
 
         {/* Breadcrumb Navigation (Azure only) */}
