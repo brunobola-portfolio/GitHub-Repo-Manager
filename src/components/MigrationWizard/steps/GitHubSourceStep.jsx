@@ -29,15 +29,6 @@ export default function GitHubSourceStep({ source, onChange }) {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-          GitHub Repository
-        </h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Enter the GitHub repository URL you want to clone or mirror.
-        </p>
-      </div>
-
       {/* URL Input */}
       <div>
         <label

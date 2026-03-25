@@ -211,16 +211,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Brain className="w-5 h-5 text-purple-500" />
-            AI Review
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Analysis and recommendations for your migration plan
-          </p>
-        </div>
+      <div className="flex items-center justify-end">
         <button
           type="button"
           onClick={analyze}

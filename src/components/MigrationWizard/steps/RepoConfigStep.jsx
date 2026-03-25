@@ -171,40 +171,24 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source }) {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-            Configure Repositories
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Configuring{' '}
-            <span className="font-medium text-indigo-500 dark:text-indigo-400">
-              {repos.length}
-            </span>{' '}
-            {repos.length === 1 ? 'repository' : 'repositories'}
-          </p>
-        </div>
-
-        {/* Bulk actions */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={makeAllPrivate}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
-          >
-            <Lock className="w-3.5 h-3.5" />
-            All Private
-          </button>
-          <button
-            type="button"
-            onClick={makeAllPublic}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
-          >
-            <Unlock className="w-3.5 h-3.5" />
-            All Public
-          </button>
-        </div>
+      {/* Bulk actions */}
+      <div className="flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={makeAllPrivate}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+        >
+          <Lock className="w-3.5 h-3.5" />
+          All Private
+        </button>
+        <button
+          type="button"
+          onClick={makeAllPublic}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+        >
+          <Unlock className="w-3.5 h-3.5" />
+          All Public
+        </button>
       </div>
 
       {/* LFS Warning Banner */}

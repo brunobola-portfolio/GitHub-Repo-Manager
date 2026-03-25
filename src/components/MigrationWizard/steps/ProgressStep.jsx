@@ -254,16 +254,11 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask })
 
   return (
     <div className="space-y-5">
-      {/* Header */}
+      {/* Connection status + task count */}
       <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-            Migration Progress
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            {completedCount}/{totalCount} tasks completed
-          </p>
-        </div>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {completedCount}/{totalCount} tasks completed
+        </p>
 
         <div className="flex items-center gap-2">
           {!connected && planStatus === 'running' && (
