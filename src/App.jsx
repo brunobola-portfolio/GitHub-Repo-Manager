@@ -71,7 +71,7 @@ function AppContent() {
   const { toasts, toast, dismissToast } = useToast()
   const { modalStates, openModal, openModalWithData, closeModal, getModalData } = useModal()
   const { selectedIds } = useSelection()
-  const { leftMode, rightMode, toggleLeft, toggleRight } = useResponsiveLayout()
+  const { leftMode, rightMode } = useResponsiveLayout()
   // showMigrationHistory is now in ModalContext
   const [isSwitchingOrg, setIsSwitchingOrg] = useState(false)
   const [teams, setTeams] = useState([])

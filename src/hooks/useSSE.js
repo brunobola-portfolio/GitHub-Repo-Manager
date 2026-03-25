@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 
 const MAX_RECONNECT_DELAY = 30000
 const BASE_RECONNECT_DELAY = 1000
@@ -7,24 +7,30 @@ export function useSSE(url) {
   const [events, setEvents] = useState([])
   const [connected, setConnected] = useState(false)
   const [lastPlanState, setLastPlanState] = useState(null)
-  const esRef = useRef(null)
-  const reconnectAttemptRef = useRef(0)
-  const reconnectTimerRef = useRef(null)
+
   const urlRef = useRef(url)
-  urlRef.current = url
+  const reconnectTimerRef = useRef(null)
+  const reconnectAttemptRef = useRef(0)
+  const eventSourceRef = useRef(null)
+  const connectRef = useRef(null)
+
+  // Update URL ref on every render - moved to effect for React 19 compliance
+  useLayoutEffect(() => {
+    urlRef.current = url
+  })
 
   const connect = useCallback(() => {
     const currentUrl = urlRef.current
     if (!currentUrl) return
 
     // Clean up existing connection
-    if (esRef.current) {
-      esRef.current.close()
-      esRef.current = null
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+      eventSourceRef.current = null
     }
 
     const es = new EventSource(currentUrl)
-    esRef.current = es
+    eventSourceRef.current = es
 
     es.onopen = () => {
       setConnected(true)
@@ -34,7 +40,7 @@ export function useSSE(url) {
     es.onerror = () => {
       setConnected(false)
       es.close()
-      esRef.current = null
+      eventSourceRef.current = null
 
       // Exponential backoff reconnect
       const delay = Math.min(
@@ -42,7 +48,7 @@ export function useSSE(url) {
         MAX_RECONNECT_DELAY
       )
       reconnectAttemptRef.current += 1
-      reconnectTimerRef.current = setTimeout(connect, delay)
+      reconnectTimerRef.current = setTimeout(() => connectRef.current?.(), delay)
     }
 
     const eventTypes = [
@@ -65,15 +71,19 @@ export function useSSE(url) {
         }
       })
     })
-  }, [])
+  }, []) // Stability is key, uses refs for current values
+
+  useLayoutEffect(() => {
+    connectRef.current = connect
+  })
 
   useEffect(() => {
     connect()
 
     return () => {
-      if (esRef.current) {
-        esRef.current.close()
-        esRef.current = null
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+        eventSourceRef.current = null
       }
       if (reconnectTimerRef.current) {
         clearTimeout(reconnectTimerRef.current)
@@ -81,7 +91,7 @@ export function useSSE(url) {
       }
       setConnected(false)
     }
-  }, [url, connect])
+  }, [connect]) // url is handled via urlRef
 
   const clearEvents = useCallback(() => setEvents([]), [])
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Loader2, CheckCircle2, XCircle, ExternalLink, Clock,
@@ -42,7 +42,7 @@ function StatusBadge({ status }) {
   )
 }
 
-export default function SimpleProgressStep({ importJobs, onUpdate, source }) {
+export default function SimpleProgressStep({ importJobs, onUpdate, source: _source }) {
   const abortRef = useRef(null)
   const intervalRef = useRef(null)
   const batchIntervalsRef = useRef({})

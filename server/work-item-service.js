@@ -6,7 +6,7 @@
  * Rate limiting: tracks X-RateLimit-Remaining header, pauses when < 100
  */
 
-import { getWorkItemCounts, fetchWorkItems } from './azure-service.js'
+import { fetchWorkItems } from './azure-service.js'
 
 /**
  * Escapes single quotes in a WIQL value to prevent injection.

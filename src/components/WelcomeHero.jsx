@@ -1,4 +1,4 @@
-import { motion, useMotionValue, useTransform } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import {
   Github, ArrowRight, GitBranch, Shield, Zap, Download,

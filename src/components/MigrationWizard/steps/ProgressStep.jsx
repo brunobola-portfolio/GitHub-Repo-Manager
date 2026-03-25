@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Package, ClipboardList, BookOpen, CheckCircle2, XCircle,
@@ -168,48 +168,58 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask })
     const { type, data } = latest
 
     if (type === 'catch-up' && data.tasks) {
-      setTasks(data.tasks)
-      if (data.status) setPlanStatus(data.status)
+      Promise.resolve().then(() => {
+        setTasks(data.tasks)
+        if (data.status) setPlanStatus(data.status)
+      })
     }
 
     if (type === 'task-progress') {
-      setTasks(prev => prev.map(t =>
-        t.id === data.taskId
-          ? { ...t, progress: data.progress, message: data.message, status: 'running' }
-          : t
-      ))
+      Promise.resolve().then(() => {
+        setTasks(prev => prev.map(t =>
+          t.id === data.taskId
+            ? { ...t, progress: data.progress, message: data.message, status: 'running' }
+            : t
+        ))
+      })
     }
 
     if (type === 'task-status') {
-      setTasks(prev => prev.map(t =>
-        t.id === data.taskId
-          ? { ...t, status: data.status, message: data.message || t.message, started_at: data.startedAt || t.started_at }
-          : t
-      ))
+      Promise.resolve().then(() => {
+        setTasks(prev => prev.map(t =>
+          t.id === data.taskId
+            ? { ...t, status: data.status, message: data.message || t.message, started_at: data.startedAt || t.started_at }
+            : t
+        ))
+      })
     }
 
     if (type === 'task-complete') {
-      setTasks(prev => prev.map(t =>
-        t.id === data.taskId
-          ? { ...t, status: 'complete', completed_at: data.completedAt || new Date().toISOString(), progress: 100 }
-          : t
-      ))
+      Promise.resolve().then(() => {
+        setTasks(prev => prev.map(t =>
+          t.id === data.taskId
+            ? { ...t, status: 'complete', completed_at: data.completedAt || new Date().toISOString(), progress: 100 }
+            : t
+        ))
+      })
     }
 
     if (type === 'task-failed') {
-      setTasks(prev => prev.map(t =>
-        t.id === data.taskId
-          ? { ...t, status: 'failed', error_message: data.error || data.message }
-          : t
-      ))
+      Promise.resolve().then(() => {
+        setTasks(prev => prev.map(t =>
+          t.id === data.taskId
+            ? { ...t, status: 'failed', error_message: data.error || data.message }
+            : t
+        ))
+      })
     }
 
     if (type === 'plan-status') {
-      setPlanStatus(data.status)
+      Promise.resolve().then(() => setPlanStatus(data.status))
     }
 
     if (type === 'plan-complete' || type === 'plan-interrupted') {
-      setPlanStatus(data.status || 'complete')
+      Promise.resolve().then(() => setPlanStatus(data.status || 'complete'))
     }
   }, [events])
 

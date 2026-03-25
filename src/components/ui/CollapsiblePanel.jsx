@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 
 export default function CollapsiblePanel({
-  side = 'left',
   mode = 'expanded',
   expandedWidth = 280,
   slimWidth = 60,

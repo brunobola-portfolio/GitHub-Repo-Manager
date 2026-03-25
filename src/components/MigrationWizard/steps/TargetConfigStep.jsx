@@ -14,7 +14,7 @@ import {
  *   onUpdateImportJobs - setter for import jobs
  *   onStartImport    - callback to trigger the import
  */
-export default function TargetConfigStep({ source, onChange, orgs, importJobs, onUpdateImportJobs, onStartImport }) {
+export default function TargetConfigStep({ source, onChange, orgs, importJobs: _importJobs, onUpdateImportJobs: _onUpdateImportJobs, onStartImport }) {
   const [nameStatus, setNameStatus] = useState('idle') // idle | checking | clear | conflict
   const debounceRef = useRef(null)
 
@@ -53,8 +53,10 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs, o
 
   // Re-check when org changes
   useEffect(() => {
-    if (source.targetName?.trim()) checkDuplicate(source.targetName)
-  }, [source.targetOrg]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (source.targetName?.trim()) {
+      Promise.resolve().then(() => checkDuplicate(source.targetName))
+    }
+  }, [source.targetOrg, source.targetName, checkDuplicate])
 
   // Cleanup timer
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current) }, [])

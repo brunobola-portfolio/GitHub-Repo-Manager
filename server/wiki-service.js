@@ -5,7 +5,7 @@
  */
 
 import { simpleGit } from 'simple-git';
-import { existsSync, mkdirSync, rmSync, readdirSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, rmSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join, relative, dirname, basename, extname } from 'path';
 import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
@@ -254,7 +254,6 @@ async function migrateWiki(config, azureCreds, githubToken, targetOwner, targetR
         onProgress('converting', 'Converting wiki content...', 35);
         const allFiles = walkDir(workDir);
         let pagesConverted = 0;
-        const sidebarEntries = [];
 
         for (const filePath of allFiles) {
             const relPath = relative(workDir, filePath);

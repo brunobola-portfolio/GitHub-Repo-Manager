@@ -34,7 +34,7 @@ router.post('/visibility', requireAuth, validate(bulkVisibilitySchema), async (r
     for (const repoFullName of repos) {
         try {
             req.log.info({ repo: repoFullName, makePublic }, 'Toggling repo visibility');
-            const response = await githubApi(`/repos/${repoFullName}`, req.session.accessToken, {
+            await githubApi(`/repos/${repoFullName}`, req.session.accessToken, {
                 method: 'PATCH',
                 body: JSON.stringify({ private: !makePublic })
             });

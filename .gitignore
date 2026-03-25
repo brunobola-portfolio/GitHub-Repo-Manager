@@ -53,8 +53,12 @@ server/data/
 .playwright-mcp/
 .superpowers/
 
-# Dev directory — memory and plans are committed, brainstorm is local
+# Dev directory — memory is committed, local working dirs are gitignored
 .dev/brainstorm/
+.dev/plans/
+.dev/screenshots/
+.dev/docs/
+.dev/checklists/
 
 # Screenshots and images (not part of source)
 *.png

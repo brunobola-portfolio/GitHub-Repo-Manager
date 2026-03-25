@@ -1,16 +1,5 @@
-import { createContext, useState, useCallback, useMemo } from 'react'
-
-/**
- * @typedef {Object} SelectionContextValue
- * @property {Set<string>} selectedIds - Set of selected repository IDs
- * @property {(id: string) => void} toggleSelect - Toggle selection for a single repo
- * @property {(ids: string[]) => void} selectRepos - Select multiple repos
- * @property {(ids: string[]) => void} deselectRepos - Deselect multiple repos
- * @property {(allIds: string[]) => void} invertSelection - Invert selection given all available IDs
- * @property {() => void} clearSelection - Clear all selections
- */
-
-export const SelectionContext = createContext(null)
+import { useState, useCallback, useMemo } from 'react'
+import { SelectionContext } from './contexts'
 
 /**
  * SelectionProvider - Manages repository selection state

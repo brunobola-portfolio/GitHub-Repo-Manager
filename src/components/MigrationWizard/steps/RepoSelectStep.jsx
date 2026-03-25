@@ -26,7 +26,7 @@ function EmptyRepoState({ isTfvc, source }) {
 
   useEffect(() => {
     if (isTfvc || !source.org || !source.project) return
-    setChecking(true)
+    Promise.resolve().then(() => setChecking(true))
     fetch('/api/azure/pat-permissions', {
       method: 'POST',
       credentials: 'include',
@@ -222,18 +222,19 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
     }
 
     fetchRepos()
-  }, [source.org, source.project, source.pat, onSetRepos, onChange, fetched])
+  }, [source.org, source.project, source.pat, source.credentialMode, onSetRepos, onChange, fetched])
 
   // Auto-select repo matching urlParsedRepo from URL paste
   useEffect(() => {
     if (!source.urlParsedRepo || !repos.length) return
     const match = repos.find((r) => r.name === source.urlParsedRepo)
     if (match && !match.selected) {
-      onSetRepos(repos.map((r) => r.name === source.urlParsedRepo ? { ...r, selected: true } : r))
+      Promise.resolve().then(() => {
+        onSetRepos(repos.map((r) => r.name === source.urlParsedRepo ? { ...r, selected: true } : r))
+      })
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   // onSetRepos is a stable useState setter — omitting it is safe and avoids re-running on every render.
-  }, [repos, source.urlParsedRepo])
+  }, [repos, source.urlParsedRepo, onSetRepos])
 
   // Filter by search
   const filteredRepos = useMemo(() => {
