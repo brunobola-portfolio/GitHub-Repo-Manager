@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { WizardPanel } from '../ui/WizardPanel'
+import { useMobileBreakpoint } from '../../hooks/useMobileBreakpoint'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { useMigrationWizard } from '../../hooks/useMigrationWizard'
 import { useAzureOAuth } from '../../hooks/useAzureOAuth'
@@ -255,16 +256,8 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
   const selectedRepos = repos.filter((r) => r.selected)
   const [direction, setDirection] = useState(1)
   const [showConfirm, setShowConfirm] = useState(false)
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches)
+  const isMobile = useMobileBreakpoint()
   const [isMaximized, setIsMaximized] = useState(true)
-
-  // Track mobile breakpoint
-  useEffect(() => {
-    const mql = window.matchMedia('(max-width: 767px)')
-    const onChange = (e) => setIsMobile(e.matches)
-    mql.addEventListener('change', onChange)
-    return () => mql.removeEventListener('change', onChange)
-  }, [])
 
   const handleToggleMaximize = useCallback(() => setIsMaximized((v) => !v), [])
 

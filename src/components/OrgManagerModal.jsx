@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import {
     Building2, X, Settings, Globe, Lock, Users, GitFork,
-    ExternalLink, RefreshCw, Camera, Edit3, Check, AlertTriangle,
+    ExternalLink, RefreshCw, Edit3, Check, AlertTriangle,
     Shield, Mail, MapPin, Link as LinkIcon
 } from 'lucide-react'
 import { Button } from './ui/Button'

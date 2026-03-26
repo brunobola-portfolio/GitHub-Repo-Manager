@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles, Brain, Lightbulb, Loader2, FileText, CheckCircle2, AlertCircle, BarChart3 } from 'lucide-react';
 import { aiApi } from '../../api/ai';
@@ -68,7 +68,13 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
     return (
         <AnimatePresence>
             {isOpen && (
-            <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 z-50 bg-black/60 dark:bg-black/75 backdrop-blur-md flex items-center justify-center p-4"
+            >
                 <motion.div
                     ref={modalRef}
                     role="dialog"
@@ -288,13 +294,13 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                         </button>
                         <button
                             onClick={onClose}
-                            className="px-6 py-2 bg-white text-black font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                            className="px-6 py-2 bg-white text-black font-medium rounded-lg hover:bg-slate-100 transition-colors"
                         >
                             Done
                         </button>
                     </div>
                 </motion.div>
-            </div>
+            </motion.div>
             )}
         </AnimatePresence>
     );
