@@ -82,25 +82,26 @@ export function CommitGeneratorModal({ isOpen, onClose, askAI }) {
             title="Commit Generator"
             icon={Wand2}
             stepInfo={{ title: 'AI-powered conventional commits' }}
-            size="md"
+            size="lg"
             footer={footer}
             isMaximized={isMaximized}
             isMobile={isMobile}
             onToggleMaximize={handleToggleMaximize}
         >
-            <div className="p-5 md:p-6 lg:p-8">
-                <div className="max-w-lg mx-auto space-y-5">
+            <div className="p-6 md:p-8 lg:p-10">
+                <div className="max-w-2xl mx-auto space-y-6">
                     {/* Input */}
                     <div>
-                        <label className="block text-[13px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                             Paste your changes (Diff or Summary)
                         </label>
                         <textarea
                             value={diff}
                             onChange={(e) => setDiff(e.target.value)}
-                            placeholder="e.g. Added user login functionality with JWT tokens..."
-                            className="w-full h-40 px-3.5 py-3 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 resize-none font-mono placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors"
+                            placeholder="e.g. Added user login functionality with JWT tokens, email validation, password hashing with bcrypt..."
+                            className="w-full h-52 px-4 py-3.5 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 resize-none font-mono placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors leading-relaxed"
                         />
+                        <p className="mt-1.5 text-xs text-slate-400 dark:text-slate-500">Paste a git diff, file changes, or describe what you changed in plain text.</p>
                     </div>
 
                     {/* Generated output */}
@@ -111,11 +112,11 @@ export function CommitGeneratorModal({ isOpen, onClose, askAI }) {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.25 }}
                             >
-                                <label className="block text-[13px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                     Generated Commit Message
                                 </label>
                                 <div className="relative group">
-                                    <div className="w-full px-4 py-3.5 bg-slate-900 dark:bg-slate-900/80 text-emerald-300 rounded-lg font-mono text-sm leading-relaxed border border-slate-700/50 ring-1 ring-emerald-500/10">
+                                    <div className="w-full px-4 py-4 bg-slate-900 dark:bg-slate-900/80 text-emerald-300 rounded-xl font-mono text-sm leading-relaxed border border-slate-700/50 ring-1 ring-emerald-500/10">
                                         {generatedMessage}
                                     </div>
                                     <button

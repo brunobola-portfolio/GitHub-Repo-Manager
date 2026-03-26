@@ -122,17 +122,17 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
             title="Create Repository"
             icon={Plus}
             headerGradient="from-emerald-600 via-emerald-500 to-teal-600"
-            size="sm"
+            size="md"
             footer={footer}
             isMaximized={isMaximized}
             isMobile={isMobile}
             onToggleMaximize={handleToggleMaximize}
         >
-            <form onSubmit={handleSubmit} className="p-5 md:p-6 lg:p-8">
-                <div className="max-w-md mx-auto space-y-5">
+            <form onSubmit={handleSubmit} className="p-6 md:p-8 lg:p-10">
+                <div className="max-w-lg mx-auto space-y-6">
                     {/* Owner */}
                     <div>
-                        <label className="block text-[13px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                             Owner
                         </label>
                         <Select
@@ -150,7 +150,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
 
                     {/* Repository Name */}
                     <div>
-                        <label className="block text-[13px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                             Repository Name <span className="text-red-400">*</span>
                         </label>
                         <div className="relative">
@@ -159,7 +159,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                                 value={name}
                                 onChange={(e) => setName(e.target.value.replace(/\s/g, '-'))}
                                 placeholder="my-awesome-project"
-                                className="w-full px-3.5 py-2.5 pr-9 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors"
+                                className="w-full px-4 py-3 pr-10 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors"
                                 autoComplete="off"
                             />
                             {nameStatus && (
@@ -188,7 +188,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
 
                     {/* Description */}
                     <div>
-                        <label className="block text-[13px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                             Description <span className="text-slate-400 font-normal">(optional)</span>
                         </label>
                         <div className="relative">
@@ -196,8 +196,8 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 placeholder="A short description of your repository"
-                                rows={2}
-                                className="w-full px-3.5 py-2.5 pr-10 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none transition-colors"
+                                rows={3}
+                                className="w-full px-4 py-3 pr-10 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none transition-colors"
                             />
                             <button
                                 type="button"
@@ -221,6 +221,9 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                     <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/40">
                         <button
                             type="button"
+                            role="switch"
+                            aria-checked={isPrivate}
+                            aria-label="Private repository"
                             onClick={() => setIsPrivate(!isPrivate)}
                             className={`
                                 relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0
