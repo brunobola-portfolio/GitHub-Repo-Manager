@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { WizardPanel } from './ui/WizardPanel'
+import { useMobileBreakpoint } from '../hooks/useMobileBreakpoint'
 import { Copy, RefreshCw, Wand2, Check } from 'lucide-react'
 
 export function CommitGeneratorModal({ isOpen, onClose, askAI }) {
@@ -9,14 +10,7 @@ export function CommitGeneratorModal({ isOpen, onClose, askAI }) {
     const [loading, setLoading] = useState(false)
     const [copied, setCopied] = useState(false)
     const [isMaximized, setIsMaximized] = useState(false)
-    const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches)
-
-    useEffect(() => {
-        const mql = window.matchMedia('(max-width: 767px)')
-        const onChange = (e) => setIsMobile(e.matches)
-        mql.addEventListener('change', onChange)
-        return () => mql.removeEventListener('change', onChange)
-    }, [])
+    const isMobile = useMobileBreakpoint()
 
     const handleToggleMaximize = useCallback(() => setIsMaximized((v) => !v), [])
 

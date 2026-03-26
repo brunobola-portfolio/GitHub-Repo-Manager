@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { WizardPanel } from './ui/WizardPanel'
+import { useMobileBreakpoint } from '../hooks/useMobileBreakpoint'
 import { Select } from './ui/Select'
 import { Plus, Sparkles, Loader2, CheckCircle2, XCircle, Lock, Globe } from 'lucide-react'
 
@@ -13,14 +14,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
     const [aiError, setAiError] = useState(null)
     const [nameStatus, setNameStatus] = useState(null)
     const [isMaximized, setIsMaximized] = useState(false)
-    const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches)
-
-    useEffect(() => {
-        const mql = window.matchMedia('(max-width: 767px)')
-        const onChange = (e) => setIsMobile(e.matches)
-        mql.addEventListener('change', onChange)
-        return () => mql.removeEventListener('change', onChange)
-    }, [])
+    const isMobile = useMobileBreakpoint()
 
     const handleToggleMaximize = useCallback(() => setIsMaximized((v) => !v), [])
 

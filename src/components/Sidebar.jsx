@@ -5,8 +5,8 @@ import { Card } from './ui/Card'
 import { Button } from './ui/Button'
 import {
     ArrowRightLeft, Lock, Unlock, History, Zap, CheckCircle, XCircle,
-    Loader2, Archive, Trash2, Sparkles, MoreHorizontal,
-    GitCommit, GitPullRequest, CircleDot, Play, Copy, ExternalLink,
+    Loader2, Archive, Trash2, MoreHorizontal,
+    GitCommit, GitPullRequest, CircleDot, Play, ExternalLink,
     Clock, ChevronRight, Download
 } from 'lucide-react'
 import { motion } from 'framer-motion'

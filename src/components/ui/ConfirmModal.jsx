@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AlertTriangle, X } from 'lucide-react'
 import { Button } from './Button'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
@@ -18,7 +18,6 @@ export function ConfirmModal({
 }) {
     const IconComponent = icon
     const modalRef = useFocusTrap(isOpen, onClose)
-    const firstFocusableRef = useRef(null)
     const [inputValue, setInputValue] = useState('')
     const [inputError, setInputError] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -132,7 +131,6 @@ export function ConfirmModal({
                             </label>
                             <input
                                 id="confirm-input"
-                                ref={firstFocusableRef}
                                 type="text"
                                 value={inputValue}
                                 onChange={(e) => { setInputValue(e.target.value); setInputError(''); }}
