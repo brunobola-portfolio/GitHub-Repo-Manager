@@ -266,6 +266,23 @@ async function listTfvcItems(org, project, pat, scopePath) {
 }
 
 /**
+ * Get total size of a TFVC folder by recursively listing all files.
+ * @param {string} org - Azure DevOps organization
+ * @param {string} project - Project name
+ * @param {string} pat - Personal Access Token
+ * @param {string} scopePath - TFVC folder path (e.g. "$/Project/Folder")
+ * @returns {Promise<number>} Total size in bytes
+ */
+async function getTfvcFolderSize(org, project, pat, scopePath) {
+    const path = scopePath || `$/${project}`;
+    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/tfvc/items?scopePath=${encodeURIComponent(path)}&recursionLevel=Full&api-version=${API_VERSION}`;
+    const data = await azureFetch(url, pat);
+    return (data.value || [])
+        .filter(item => !item.isFolder)
+        .reduce((sum, item) => sum + (item.size || 0), 0);
+}
+
+/**
  * Create a new Git repository in Azure DevOps (used as temp target for TFVC import)
  */
 async function createGitRepo(org, project, repoName, pat) {
@@ -387,5 +404,6 @@ export {
     importTfvcToGit,
     getImportStatus,
     deleteGitRepo,
-    downloadTfvcItems
+    downloadTfvcItems,
+    getTfvcFolderSize
 };
