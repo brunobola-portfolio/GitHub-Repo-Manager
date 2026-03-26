@@ -218,7 +218,7 @@ export function Sidebar({
             />
 
             {/* Recent Activity */}
-            <ActivityFeed activity={activity} />
+            <ActivityList activity={activity} />
         </aside>
     )
 }

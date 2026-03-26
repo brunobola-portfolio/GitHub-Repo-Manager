@@ -90,10 +90,10 @@ export function OrgManagerModal({
     const displayOrg = orgDetails || org
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="org-manager-title" className="bg-white dark:bg-slate-900 dark:text-slate-100 rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
+            <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="org-manager-title" className="bg-white dark:bg-slate-950 dark:text-slate-100 rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] ring-1 ring-slate-200/50 dark:ring-slate-700/50 max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-gradient-to-r from-indigo-500 to-purple-600">
+                <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600">
                     <div className="flex items-center gap-4">
                         <img
                             src={displayOrg.avatar_url}
@@ -101,7 +101,7 @@ export function OrgManagerModal({
                             className="w-16 h-16 rounded-xl ring-4 ring-white/30 shadow-lg"
                         />
                         <div className="text-white">
-                            <h2 id="org-manager-title" className="text-xl font-bold">{displayOrg.name || displayOrg.login}</h2>
+                            <h2 id="org-manager-title" className="text-sm font-semibold tracking-tight">{displayOrg.name || displayOrg.login}</h2>
                             <p className="text-white/80 text-sm flex items-center gap-2">
                                 <Building2 className="w-4 h-4" />
                                 @{displayOrg.login}
@@ -120,9 +120,10 @@ export function OrgManagerModal({
                         </Button>
                         <button
                             onClick={onClose}
-                            className="text-white/80 hover:text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+                            className="p-2 hover:bg-white/15 rounded-lg transition-colors"
+                            aria-label="Close modal"
                         >
-                            <X className="w-5 h-5" />
+                            <X className="w-4 h-4 text-white" />
                         </button>
                     </div>
                 </div>

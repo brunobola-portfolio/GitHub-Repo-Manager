@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react'
-import { Card } from './ui/Card'
-import { Button } from './ui/Button'
+import { useState, useEffect, useCallback } from 'react'
+import { motion } from 'framer-motion'
+import { WizardPanel } from './ui/WizardPanel'
 import { Select } from './ui/Select'
-import { Sparkles, Loader2, CheckCircle2, XCircle } from 'lucide-react'
-import { useFocusTrap } from '../hooks/useFocusTrap'
+import { Plus, Sparkles, Loader2, CheckCircle2, XCircle, Lock, Globe } from 'lucide-react'
 
 export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming, askAI }) {
     const [name, setName] = useState('')
@@ -12,8 +11,18 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
     const [isPrivate, setIsPrivate] = useState(true)
     const [isGenerating, setIsGenerating] = useState(false)
     const [aiError, setAiError] = useState(null)
-    const [nameStatus, setNameStatus] = useState(null) // null | 'checking' | 'available' | 'taken'
-    const modalRef = useFocusTrap(isOpen, onClose)
+    const [nameStatus, setNameStatus] = useState(null)
+    const [isMaximized, setIsMaximized] = useState(false)
+    const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches)
+
+    useEffect(() => {
+        const mql = window.matchMedia('(max-width: 767px)')
+        const onChange = (e) => setIsMobile(e.matches)
+        mql.addEventListener('change', onChange)
+        return () => mql.removeEventListener('change', onChange)
+    }, [])
+
+    const handleToggleMaximize = useCallback(() => setIsMaximized((v) => !v), [])
 
     // Debounced name availability check
     useEffect(() => {
@@ -44,24 +53,16 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
         return () => clearTimeout(timer)
     }, [name, targetOrg, isOpen])
 
-    // Scroll input into view when keyboard appears (mobile fix)
+    // Reset form on close
     useEffect(() => {
-        if (!isOpen) return
-
-        const handleFocus = (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                setTimeout(() => {
-                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                }, 300) // Delay for keyboard animation
-            }
+        if (!isOpen) {
+            setName('')
+            setDescription('')
+            setTargetOrg('')
+            setAiError(null)
+            setNameStatus(null)
         }
-
-        const modal = modalRef.current
-        modal?.addEventListener('focusin', handleFocus)
-        return () => modal?.removeEventListener('focusin', handleFocus)
-    }, [isOpen, modalRef])
-
-    if (!isOpen) return null
+    }, [isOpen])
 
     const handleMagicDescription = async () => {
         if (!name) return
@@ -69,7 +70,6 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
         setAiError(null)
         try {
             const res = await askAI(`Generate a short, professional, and catchy description (max 100 chars) for a GitHub repository named "${name}". Return ONLY the description text, no quotes.`)
-
             if (res.error === 'AI_NOT_CONFIGURED') {
                 setDescription('AI not configured. Set GEMINI_API_KEY in server/.env')
             } else if (res?.message) {
@@ -83,7 +83,8 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
     }
 
     const handleSubmit = async (e) => {
-        e.preventDefault()
+        if (e) e.preventDefault()
+        if (!name || isPerforming || nameStatus === 'taken') return
         const result = await onCreate(name, {
             description,
             org: targetOrg || undefined,
@@ -91,35 +92,47 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
         })
         if (result?.success) {
             onClose()
-            setName('')
-            setDescription('')
-            setTargetOrg('')
         }
     }
 
-    return (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div
-                ref={modalRef}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="create-repo-title"
-                className="w-full max-w-md max-h-[85vh] md:max-h-[90vh] flex flex-col overflow-hidden"
+    const footer = (
+        <div className="flex items-center justify-end gap-3">
+            <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2.5 text-[13px] font-medium rounded-lg text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-sm transition-all"
             >
-            <Card className="flex-1 overflow-y-auto p-6">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 id="create-repo-title" className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        <span className="text-2xl" aria-hidden="true">📦</span>
-                        Create Repository
-                    </h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-2xl" aria-label="Close modal">
-                        ×
-                    </button>
-                </div>
+                Cancel
+            </button>
+            <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!name || isPerforming || nameStatus === 'taken'}
+                className="ds-btn-shimmer px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-md shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+                {isPerforming ? 'Creating...' : 'Create Repository'}
+            </button>
+        </div>
+    )
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+    return (
+        <WizardPanel
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Create Repository"
+            icon={Plus}
+            headerGradient="from-emerald-600 via-emerald-500 to-teal-600"
+            size="sm"
+            footer={footer}
+            isMaximized={isMaximized}
+            isMobile={isMobile}
+            onToggleMaximize={handleToggleMaximize}
+        >
+            <form onSubmit={handleSubmit} className="p-5 md:p-6 lg:p-8">
+                <div className="max-w-md mx-auto space-y-5">
+                    {/* Owner */}
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-[13px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                             Owner
                         </label>
                         <Select
@@ -135,9 +148,10 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                         />
                     </div>
 
+                    {/* Repository Name */}
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            Repository Name *
+                        <label className="block text-[13px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                            Repository Name <span className="text-red-400">*</span>
                         </label>
                         <div className="relative">
                             <input
@@ -145,72 +159,93 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                                 value={name}
                                 onChange={(e) => setName(e.target.value.replace(/\s/g, '-'))}
                                 placeholder="my-awesome-project"
-                                className="w-full px-3 py-2 pr-9 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500 dark:placeholder:text-slate-400"
-                                required
+                                className="w-full px-3.5 py-2.5 pr-9 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors"
+                                autoComplete="off"
                             />
                             {nameStatus && (
-                                <span className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2">
                                     {nameStatus === 'checking' && <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />}
-                                    {nameStatus === 'available' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-                                    {nameStatus === 'taken' && <XCircle className="w-4 h-4 text-red-500" />}
+                                    {nameStatus === 'available' && (
+                                        <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                        </motion.span>
+                                    )}
+                                    {nameStatus === 'taken' && (
+                                        <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                                            <XCircle className="w-4 h-4 text-red-500" />
+                                        </motion.span>
+                                    )}
                                 </span>
                             )}
                         </div>
                         {nameStatus === 'taken' && (
-                            <p className="mt-1 text-xs text-red-500 dark:text-red-400">This repository name is already taken</p>
+                            <p className="mt-1.5 text-xs text-red-500 dark:text-red-400">This repository name is already taken</p>
+                        )}
+                        {nameStatus === 'available' && (
+                            <p className="mt-1.5 text-xs text-emerald-500 dark:text-emerald-400">Name is available</p>
                         )}
                     </div>
 
-                    <div className="relative">
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            Description (optional)
+                    {/* Description */}
+                    <div>
+                        <label className="block text-[13px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                            Description <span className="text-slate-400 font-normal">(optional)</span>
                         </label>
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="A short description of your repository"
-                            rows={2}
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500 dark:placeholder:text-slate-400 pr-10"
-                        />
-                        <button
-                            type="button"
-                            onClick={handleMagicDescription}
-                            disabled={!name || isGenerating}
-                            className="absolute right-2 top-8 text-indigo-500 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed p-1"
-                            title="Generate description with AI"
-                        >
-                            {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                        </button>
+                        <div className="relative">
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="A short description of your repository"
+                                rows={2}
+                                className="w-full px-3.5 py-2.5 pr-10 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none transition-colors"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleMagicDescription}
+                                disabled={!name || isGenerating}
+                                className="absolute right-2.5 bottom-2.5 text-emerald-500 hover:text-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed p-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                                title="Generate description with AI"
+                            >
+                                {isGenerating ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+                            </button>
+                        </div>
                     </div>
 
                     {aiError && (
-                        <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
+                        <div className="px-3.5 py-2.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-lg text-sm text-red-600 dark:text-red-400">
                             {aiError}
                         </div>
                     )}
 
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={isPrivate}
-                            onChange={(e) => setIsPrivate(e.target.checked)}
-                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700"
-                        />
-                        <span className="text-sm text-slate-700 dark:text-slate-300">Private repository</span>
-                    </label>
-
-                    <div className="flex gap-3 pt-2">
-                        <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
-                            Cancel
-                        </Button>
-                        <Button type="submit" disabled={!name || isPerforming} className="flex-1">
-                            {isPerforming ? 'Creating...' : 'Create Repository'}
-                        </Button>
+                    {/* Visibility */}
+                    <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/40">
+                        <button
+                            type="button"
+                            onClick={() => setIsPrivate(!isPrivate)}
+                            className={`
+                                relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0
+                                ${isPrivate ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}
+                            `}
+                        >
+                            <span className={`
+                                inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform
+                                ${isPrivate ? 'translate-x-[18px]' : 'translate-x-[3px]'}
+                            `} />
+                        </button>
+                        <div className="flex items-center gap-2">
+                            {isPrivate ? <Lock className="w-4 h-4 text-emerald-500" /> : <Globe className="w-4 h-4 text-slate-400" />}
+                            <div>
+                                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                    {isPrivate ? 'Private' : 'Public'}
+                                </span>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                    {isPrivate ? 'Only you and collaborators can see this repository' : 'Anyone on the internet can see this repository'}
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                </form>
-            </Card>
-            </div>
-        </div>
+                </div>
+            </form>
+        </WizardPanel>
     )
 }
-

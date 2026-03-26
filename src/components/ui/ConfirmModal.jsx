@@ -97,16 +97,16 @@ export function ConfirmModal({
     const styles = variantStyles[variant] || variantStyles.danger
 
 	    return (
-	        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4">
+	        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/75 backdrop-blur-md p-4">
             <div
                 ref={modalRef}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="confirm-modal-title"
                 aria-describedby="confirm-modal-body"
-                className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl dark:shadow-black/40 max-w-md w-full max-h-[85vh] md:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                className="bg-white dark:bg-slate-950 rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] ring-1 ring-slate-200/50 dark:ring-slate-700/50 max-w-md w-full max-h-[85vh] md:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 {/* Header */}
-	                <div className={`${styles.bg} ${styles.border} border-b p-4 flex items-center gap-3 flex-shrink-0`}>
+	                <div className={`${styles.bg} ${styles.border} border-b px-4 py-3.5 flex items-center gap-3 flex-shrink-0`}>
 	                    <div className={`p-2 rounded-full ${styles.bg}`}>
 	                        {IconComponent && <IconComponent className={`w-6 h-6 ${styles.iconColor}`} />}
                     </div>
@@ -114,7 +114,7 @@ export function ConfirmModal({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="p-1 hover:bg-white/50 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
+                        className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-colors"
                         aria-label="Close modal"
                     >
                         <X className="w-5 h-5 text-slate-700 dark:text-slate-300" />
@@ -122,7 +122,7 @@ export function ConfirmModal({
                 </div>
 
                 {/* Body - Scrollable */}
-                <div className="p-6 flex-1 overflow-y-auto">
+                <div className="p-6 bg-slate-50/30 dark:bg-slate-950/50 flex-1 overflow-y-auto">
                     <p id="confirm-modal-body" className="text-slate-600 dark:text-slate-300 leading-relaxed">{message}</p>
 
                     {requiresInput && (
@@ -153,7 +153,7 @@ export function ConfirmModal({
                 </div>
 
                 {/* Footer - Fixed */}
-                <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3 flex-shrink-0">
+                <div className="flex items-center justify-end gap-3 min-h-[68px] px-6 bg-white/80 dark:bg-slate-900/70 border-t border-slate-200/50 dark:border-slate-800/40 flex-shrink-0">
                     <Button variant="ghost" onClick={onClose} disabled={isLoading || isSubmitting}>
                         {cancelText}
                     </Button>
