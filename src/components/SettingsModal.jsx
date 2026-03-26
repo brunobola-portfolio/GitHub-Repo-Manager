@@ -123,6 +123,9 @@ export function SettingsModal({ isOpen, onClose }) {
                                 <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                                     <span className="text-sm text-slate-600 dark:text-slate-400">Enable stats caching</span>
                                     <button
+                                        role="switch"
+                                        aria-checked={cacheSettings.enabled}
+                                        aria-label="Enable stats caching"
                                         onClick={() => setCacheSettings({ ...cacheSettings, enabled: !cacheSettings.enabled })}
                                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${cacheSettings.enabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
                                     >

@@ -115,6 +115,7 @@ export function OrgManagerModal({
                             onClick={fetchOrgDetails}
                             className="text-white hover:bg-white/20"
                             disabled={loading}
+                            aria-label="Refresh organization details"
                         >
                             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         </Button>

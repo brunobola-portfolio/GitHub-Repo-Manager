@@ -105,7 +105,7 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                                     className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
                                         activeTab === tab.id
                                             ? 'text-purple-400 border-purple-400'
-                                            : 'text-gray-400 border-transparent hover:text-white'
+                                            : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-white'
                                     }`}
                                 >
                                     <tab.icon className="w-4 h-4" />
@@ -120,7 +120,7 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                         {loading ? (
                             <div className="flex flex-col items-center justify-center py-12 space-y-4">
                                 <Loader2 className="w-10 h-10 text-purple-500 animate-spin" />
-                                <p className="text-gray-400 animate-pulse">Analyzing repository structure & docs...</p>
+                                <p className="text-slate-500 dark:text-slate-400 animate-pulse">Analyzing repository structure & docs...</p>
                             </div>
                         ) : error ? (
                             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
@@ -141,19 +141,19 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                                                     <Brain className="w-6 h-6 text-white" />
                                                 </div>
                                                 <div>
-                                                    <h3 className="text-lg font-semibold text-white">Health Score</h3>
-                                                    <p className="text-sm text-gray-400">Based on docs, structure & metadata</p>
+                                                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Health Score</h3>
+                                                    <p className="text-sm text-slate-500 dark:text-slate-400">Based on docs, structure & metadata</p>
                                                 </div>
                                             </div>
-                                            <div className="text-4xl font-bold text-white">
-                                                {analysis.health_score}<span className="text-xl text-gray-500">/100</span>
+                                            <div className="text-4xl font-bold text-slate-900 dark:text-white">
+                                                {analysis.health_score}<span className="text-xl text-slate-400 dark:text-slate-500">/100</span>
                                             </div>
                                         </div>
 
                                         {/* TL;DR */}
                                         <div className="space-y-2">
-                                            <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">TL;DR Summary</h3>
-                                            <p className="text-gray-200 leading-relaxed bg-slate-100/50 dark:bg-white/5 p-4 rounded-xl border border-slate-200/30 dark:border-slate-800/30">
+                                            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">TL;DR Summary</h3>
+                                            <p className="text-slate-700 dark:text-slate-200 leading-relaxed bg-slate-100/50 dark:bg-white/5 p-4 rounded-xl border border-slate-200/30 dark:border-slate-800/30">
                                                 {analysis.summary}
                                             </p>
                                         </div>
@@ -161,7 +161,7 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                                         {/* Highlights */}
                                         {analysis.highlights?.length > 0 && (
                                             <div className="space-y-2">
-                                                <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Highlights</h3>
+                                                <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Highlights</h3>
                                                 <div className="grid gap-2">
                                                     {analysis.highlights.map((h, i) => (
                                                         <div key={i} className="flex items-center gap-2 text-green-400 text-sm">
@@ -176,7 +176,7 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                                         {/* Suggested Topics */}
                                         {analysis.suggested_topics?.length > 0 && (
                                             <div className="space-y-2">
-                                                <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Suggested Topics</h3>
+                                                <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Suggested Topics</h3>
                                                 <div className="flex flex-wrap gap-2">
                                                     {analysis.suggested_topics.map((topic, i) => (
                                                         <span key={i} className="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-sm">
@@ -195,13 +195,13 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                                         {/* Quality Breakdown */}
                                         {analysis.quality_breakdown && (
                                             <div className="space-y-4">
-                                                <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Quality Breakdown</h3>
+                                                <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Quality Breakdown</h3>
                                                 <div className="grid gap-3">
                                                     {Object.entries(analysis.quality_breakdown).map(([key, value]) => (
                                                         <div key={key} className="space-y-1">
                                                             <div className="flex justify-between text-sm">
-                                                                <span className="text-gray-300 capitalize">{key}</span>
-                                                                <span className="text-gray-400">{value}/30</span>
+                                                                <span className="text-slate-600 dark:text-slate-300 capitalize">{key}</span>
+                                                                <span className="text-slate-500 dark:text-slate-400">{value}/30</span>
                                                             </div>
                                                             <div className="h-2 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
                                                                 <div
@@ -218,12 +218,12 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                                         {/* Improvements */}
                                         {analysis.improvements?.length > 0 && (
                                             <div className="space-y-2">
-                                                <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Recommendations</h3>
+                                                <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Recommendations</h3>
                                                 <div className="grid gap-3">
                                                     {analysis.improvements.map((imp, i) => (
                                                         <div key={i} className="flex items-start gap-3 p-3 bg-yellow-500/5 border border-yellow-500/10 rounded-lg">
                                                             <Lightbulb className="w-5 h-5 text-yellow-500 mt-0.5 shrink-0" />
-                                                            <p className="text-gray-300 text-sm">{imp}</p>
+                                                            <p className="text-slate-600 dark:text-slate-300 text-sm">{imp}</p>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -233,10 +233,10 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                                         {/* Patterns */}
                                         {analysis.patterns && (
                                             <div className="space-y-2">
-                                                <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Detected Features</h3>
+                                                <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Detected Features</h3>
                                                 <div className="grid grid-cols-2 gap-2">
                                                     {Object.entries(analysis.patterns).filter(([k]) => k.startsWith('has')).map(([key, value]) => (
-                                                        <div key={key} className={`flex items-center gap-2 text-sm ${value ? 'text-green-400' : 'text-gray-500'}`}>
+                                                        <div key={key} className={`flex items-center gap-2 text-sm ${value ? 'text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
                                                             {value ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
                                                             <span>{key.replace('has', '').replace(/([A-Z])/g, ' $1').trim()}</span>
                                                         </div>
@@ -254,13 +254,13 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                                             <div className="space-y-4">
                                                 <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
                                                     <h3 className="text-blue-400 font-medium mb-2">README Enhancement Suggestions</h3>
-                                                    <p className="text-gray-400 text-sm">These sections could improve your documentation:</p>
+                                                    <p className="text-slate-500 dark:text-slate-400 text-sm">These sections could improve your documentation:</p>
                                                 </div>
                                                 <div className="grid gap-2">
                                                     {analysis.readme_suggestions.map((section, i) => (
                                                         <div key={i} className="flex items-center gap-3 p-3 bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-slate-800/40 rounded-lg">
                                                             <FileText className="w-5 h-5 text-purple-400" />
-                                                            <span className="text-gray-200">{section}</span>
+                                                            <span className="text-slate-700 dark:text-slate-200">{section}</span>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -282,7 +282,7 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                         <button
                             onClick={reanalyze}
                             disabled={loading}
-                            className="px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                            className="px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                         >
                             Re-analyze
                         </button>
