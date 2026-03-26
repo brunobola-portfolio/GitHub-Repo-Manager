@@ -376,7 +376,7 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
   function renderStep() {
     switch (currentStep) {
       case 'sourceType':
-        return <SourceTypeStep source={source} onChange={updateSource} />
+        return <SourceTypeStep source={source} onChange={updateSource} onAdvance={handleNext} />
       case 'azureConnect':
         return <SourceStep source={source} onChange={updateSource} oauthHook={oauthHook} />
       case 'urlInput':
@@ -465,6 +465,7 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
     || currentStep === 'summary'
 
   const isProgressOrSummary = currentStep === 'progress' || currentStep === 'summary'
+  const isFirstStep = currentStep === 'sourceType'
   const confirmMessage = currentStep === 'progress'
     ? 'A migration is in progress. Closing will not stop it, but you will lose visibility of the progress. Are you sure?'
     : 'You have unsaved progress. All entered data will be lost.'
@@ -474,17 +475,19 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
 
   // Footer
   const footer = (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex items-center justify-between gap-4">
       <button
         type="button"
         onClick={canGoBack ? handleBack : handleClose}
-        className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl
+        className="inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium rounded-lg
           text-slate-600 dark:text-slate-300
-          bg-slate-100 dark:bg-slate-800
-          hover:bg-slate-200 dark:hover:bg-slate-700
-          transition-colors"
+          bg-white dark:bg-slate-800
+          hover:bg-slate-50 dark:hover:bg-slate-700
+          border border-slate-200 dark:border-slate-700
+          shadow-sm hover:shadow
+          transition-all duration-200"
       >
-        <ArrowLeft className="w-4 h-4" />
+        <ArrowLeft className="w-3.5 h-3.5" />
         {canGoBack ? 'Back' : 'Cancel'}
       </button>
 
@@ -492,15 +495,15 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
         <button
           type="button"
           onClick={handleNext}
-          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl
+          className="ds-btn-shimmer inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg
             text-white
             bg-gradient-to-r from-indigo-500 to-purple-600
             hover:from-indigo-600 hover:to-purple-700
-            shadow-lg shadow-indigo-500/25
-            transition-all"
+            shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/25
+            transition-all duration-200"
         >
           Next
-          <ArrowRight className="w-4 h-4" />
+          <ArrowRight className="w-3.5 h-3.5" />
         </button>
       )}
     </div>
@@ -528,72 +531,74 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
         icon={wizardIcon}
         stepInfo={STEP_META[currentStep] || null}
         sidebar={sidebar}
-        footer={isProgressOrSummary ? null : footer}
+        footer={isProgressOrSummary || isFirstStep ? null : footer}
         disableEscape={disableEscape}
         isMaximized={isMaximized}
         isMobile={isMobile}
         onToggleMaximize={handleToggleMaximize}
       >
         <div role="form" aria-label={wizardTitle} className="p-4 md:p-6 lg:p-8">
-          {/* Horizontal stepper — desktop restored mode only */}
-          {showSidebar && !effectiveMaximized && (
-            <HorizontalStepper
-              steps={steps}
-              currentStepIndex={currentStepIndex}
-              onGoToStep={goToStep}
-            />
-          )}
+          <div className={!isMobile ? 'max-w-3xl mx-auto' : ''}>
+            {/* Horizontal stepper — desktop restored mode only */}
+            {showSidebar && !effectiveMaximized && (
+              <HorizontalStepper
+                steps={steps}
+                currentStepIndex={currentStepIndex}
+                onGoToStep={goToStep}
+              />
+            )}
 
-          {/* Mobile progress bar */}
-          {showSidebar && isMobile && (
-            <MobileProgressBar steps={steps} currentStepIndex={currentStepIndex} />
-          )}
+            {/* Mobile progress bar */}
+            {showSidebar && isMobile && (
+              <MobileProgressBar steps={steps} currentStepIndex={currentStepIndex} />
+            )}
 
-          {/* Step title/subtitle */}
-          {STEP_META[currentStep] && (
-            <div className="mb-4">
-              <h3 className={`font-semibold text-slate-900 dark:text-slate-100 ${effectiveMaximized && !isMobile ? 'text-lg' : 'text-base'}`}>
-                {STEP_META[currentStep].title}
-              </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                {STEP_META[currentStep].subtitle}
-              </p>
+            {/* Step title/subtitle */}
+            {STEP_META[currentStep] && (
+              <div className="mb-6">
+                <h3 className={`font-bold tracking-tight text-slate-900 dark:text-slate-50 ${!isMobile ? 'text-xl' : 'text-lg'}`}>
+                  {STEP_META[currentStep].title}
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  {STEP_META[currentStep].subtitle}
+                </p>
+              </div>
+            )}
+
+            {/* Breadcrumb — mobile and restored mode (sidebar handles it in fullscreen) */}
+            {(isMobile || !effectiveMaximized) && (
+              <BreadcrumbNav
+                source={source}
+                currentStep={currentStep}
+                selectedCount={selectedRepos.length}
+                onNavigate={handleBreadcrumbNavigate}
+              />
+            )}
+
+            {/* Error Display */}
+            {error && (
+              <div className="mb-4 flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* Step Content with Animation */}
+            <div className="relative">
+              <AnimatePresence mode="wait" custom={direction}>
+                <motion.div
+                  key={currentStep}
+                  custom={direction}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.25, ease: 'easeInOut' }}
+                >
+                  {renderStep()}
+                </motion.div>
+              </AnimatePresence>
             </div>
-          )}
-
-          {/* Breadcrumb — mobile and restored mode (sidebar handles it in fullscreen) */}
-          {(isMobile || !effectiveMaximized) && (
-            <BreadcrumbNav
-              source={source}
-              currentStep={currentStep}
-              selectedCount={selectedRepos.length}
-              onNavigate={handleBreadcrumbNavigate}
-            />
-          )}
-
-          {/* Error Display */}
-          {error && (
-            <div className="mb-4 flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Step Content with Animation */}
-          <div className={`relative ${effectiveMaximized && !isMobile ? 'max-w-3xl mx-auto' : ''}`}>
-            <AnimatePresence mode="wait" custom={direction}>
-              <motion.div
-                key={currentStep}
-                custom={direction}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.25, ease: 'easeInOut' }}
-              >
-                {renderStep()}
-              </motion.div>
-            </AnimatePresence>
           </div>
         </div>
       </WizardPanel>

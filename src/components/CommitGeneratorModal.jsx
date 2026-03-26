@@ -1,15 +1,24 @@
-import { useState } from 'react'
-import { X, Copy, RefreshCw, Wand2, Check } from 'lucide-react'
-import { Button } from './ui/Button'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useFocusTrap } from '../hooks/useFocusTrap'
+import { WizardPanel } from './ui/WizardPanel'
+import { Copy, RefreshCw, Wand2, Check } from 'lucide-react'
 
 export function CommitGeneratorModal({ isOpen, onClose, askAI }) {
-    const modalRef = useFocusTrap(isOpen, onClose)
     const [diff, setDiff] = useState('')
     const [generatedMessage, setGeneratedMessage] = useState('')
     const [loading, setLoading] = useState(false)
     const [copied, setCopied] = useState(false)
+    const [isMaximized, setIsMaximized] = useState(false)
+    const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches)
+
+    useEffect(() => {
+        const mql = window.matchMedia('(max-width: 767px)')
+        const onChange = (e) => setIsMobile(e.matches)
+        mql.addEventListener('change', onChange)
+        return () => mql.removeEventListener('change', onChange)
+    }, [])
+
+    const handleToggleMaximize = useCallback(() => setIsMaximized((v) => !v), [])
 
     const handleGenerate = async () => {
         if (!diff.trim()) return
@@ -36,97 +45,105 @@ export function CommitGeneratorModal({ isOpen, onClose, askAI }) {
         }
     }
 
-    if (!isOpen) return null
+    const footer = (
+        <div className="flex items-center justify-end gap-3">
+            <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2.5 text-[13px] font-medium rounded-lg text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-sm transition-all"
+            >
+                Close
+            </button>
+            <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={!diff.trim() || loading}
+                className="ds-btn-shimmer inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+                {loading ? (
+                    <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        Generating...
+                    </>
+                ) : (
+                    <>
+                        <Wand2 className="w-3.5 h-3.5" />
+                        Generate
+                    </>
+                )}
+            </button>
+        </div>
+    )
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <motion.div
-                ref={modalRef}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="commit-generator-title"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]"
-            >
-                {/* Header */}
-                <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                            <Wand2 className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                            <h2 id="commit-generator-title" className="text-xl font-bold text-white">Commit Generator</h2>
-                            <p className="text-white/80 text-xs">AI-powered conventional commits</p>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="text-white/70 hover:text-white p-2 hover:bg-white/10 rounded-lg transition-colors">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-
-                {/* Body */}
-                <div className="p-6 flex-1 overflow-y-auto space-y-4">
+        <WizardPanel
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Commit Generator"
+            icon={Wand2}
+            stepInfo={{ title: 'AI-powered conventional commits' }}
+            size="md"
+            footer={footer}
+            isMaximized={isMaximized}
+            isMobile={isMobile}
+            onToggleMaximize={handleToggleMaximize}
+        >
+            <div className="p-5 md:p-6 lg:p-8">
+                <div className="max-w-lg mx-auto space-y-5">
+                    {/* Input */}
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        <label className="block text-[13px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                             Paste your changes (Diff or Summary)
                         </label>
                         <textarea
                             value={diff}
                             onChange={(e) => setDiff(e.target.value)}
                             placeholder="e.g. Added user login functionality with JWT tokens..."
-                            className="w-full h-32 px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none font-mono text-sm"
+                            className="w-full h-40 px-3.5 py-3 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 resize-none font-mono placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors"
                         />
                     </div>
 
-                    <div className="flex justify-end">
-                        <Button
-                            onClick={handleGenerate}
-                            disabled={!diff.trim() || loading}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                        >
-                            {loading ? (
-                                <>
-                                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                                    Generating...
-                                </>
-                            ) : (
-                                <>
-                                    <Wand2 className="w-4 h-4 mr-2" />
-                                    Generate Message
-                                </>
-                            )}
-                        </Button>
-                    </div>
-
+                    {/* Generated output */}
                     <AnimatePresence>
                         {generatedMessage && (
                             <motion.div
-                                initial={{ opacity: 0, y: 10 }}
+                                initial={{ opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="mt-4"
+                                transition={{ duration: 0.25 }}
                             >
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                <label className="block text-[13px] font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                                     Generated Commit Message
                                 </label>
                                 <div className="relative group">
-                                    <div className="w-full px-4 py-4 bg-slate-900 text-slate-50 rounded-xl font-mono text-sm leading-relaxed border border-slate-700 shadow-inner">
+                                    <div className="w-full px-4 py-3.5 bg-slate-900 dark:bg-slate-900/80 text-emerald-300 rounded-lg font-mono text-sm leading-relaxed border border-slate-700/50 ring-1 ring-emerald-500/10">
                                         {generatedMessage}
                                     </div>
                                     <button
+                                        type="button"
                                         onClick={handleCopy}
-                                        className="absolute top-2 right-2 p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                        title="Copy to clipboard"
+                                        className="absolute top-2.5 right-2.5 p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-md transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                        aria-label="Copy commit message to clipboard"
                                     >
-                                        {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                                        {copied
+                                            ? <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                            : <Copy className="w-3.5 h-3.5" />
+                                        }
                                     </button>
                                 </div>
+                                {copied && (
+                                    <motion.p
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="mt-1.5 text-xs text-emerald-500"
+                                    >
+                                        Copied to clipboard
+                                    </motion.p>
+                                )}
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </div>
-            </motion.div>
-        </div>
+            </div>
+        </WizardPanel>
     )
 }

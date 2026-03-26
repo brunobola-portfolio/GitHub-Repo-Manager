@@ -67,14 +67,13 @@ export function SettingsModal({ isOpen, onClose }) {
     return (
         <AnimatePresence>
             {isOpen && (
-                <>
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={onClose}
-                        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50"
-                    />
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={onClose}
+                    className="fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                >
                     <motion.div
                         ref={modalRef}
                         role="dialog"
@@ -83,10 +82,11 @@ export function SettingsModal({ isOpen, onClose }) {
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md max-h-[85vh] md:max-h-[90vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full max-w-md max-h-[85vh] md:max-h-[90vh] bg-white dark:bg-slate-950 rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] ring-1 ring-slate-200/50 dark:ring-slate-700/50 overflow-hidden flex flex-col"
                     >
-                        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-xl flex-shrink-0">
-                            <h2 id="settings-modal-title" className="font-semibold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                        <div className="px-4 py-3.5 border-b border-slate-200/50 dark:border-slate-800/40 flex items-center justify-between bg-white/80 dark:bg-slate-900/70 flex-shrink-0">
+                            <h2 id="settings-modal-title" className="font-semibold text-base text-slate-900 dark:text-white flex items-center gap-2">
                                 <SettingsIcon className="w-5 h-5 text-indigo-500" />
                                 Settings
                             </h2>
@@ -225,7 +225,7 @@ export function SettingsModal({ isOpen, onClose }) {
                             </div>
                         </div>
 
-                        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex justify-end gap-3 flex-shrink-0">
+                        <div className="flex items-center justify-end gap-3 min-h-[68px] px-6 bg-white/80 dark:bg-slate-900/70 border-t border-slate-200/50 dark:border-slate-800/40 flex-shrink-0">
                             <button
                                 onClick={onClose}
                                 className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
@@ -240,7 +240,7 @@ export function SettingsModal({ isOpen, onClose }) {
                             </button>
                         </div>
                     </motion.div>
-                </>
+                </motion.div>
             )}
         </AnimatePresence>
     )

@@ -128,35 +128,35 @@ export function TransferModal({
 	}
 
 	    return (
-	        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4">
+	        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/75 backdrop-blur-md p-4">
             <div
                 ref={modalRef}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="transfer-modal-title"
-                className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl dark:shadow-slate-900/50 max-w-2xl w-full max-h-[85vh] md:max-h-[90vh] overflow-hidden flex flex-col">
+                className="bg-white dark:bg-slate-950 rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] ring-1 ring-slate-200/50 dark:ring-slate-700/50 max-w-2xl w-full max-h-[85vh] md:max-h-[90vh] overflow-hidden flex flex-col">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-5 text-white">
+                <div className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 px-5 py-3 text-white">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-white/20 rounded-lg">
                                 {action === 'transfer' ? (
-                                    <ArrowRightLeft className="w-6 h-6" />
+                                    <ArrowRightLeft className="w-4 h-4" />
                                 ) : (
-                                    <Copy className="w-6 h-6" />
+                                    <Copy className="w-4 h-4" />
                                 )}
                             </div>
                             <div>
-                                <h2 id="transfer-modal-title" className="text-xl font-bold">
+                                <h2 id="transfer-modal-title" className="text-sm font-semibold tracking-tight">
                                     {action === 'transfer' ? 'Transfer Repositories' : 'Mirror Repositories'}
                                 </h2>
-                                <p className="text-white/80 text-sm">
+                                <p className="text-white/80 text-xs">
                                     {repos.length} repo{repos.length !== 1 ? 's' : ''} selected
                                 </p>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors" aria-label="Close modal">
-                            <X className="w-5 h-5" />
+                        <button onClick={onClose} className="p-2 hover:bg-white/15 rounded-lg transition-colors" aria-label="Close modal">
+                            <X className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
@@ -351,7 +351,7 @@ export function TransferModal({
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 bg-slate-50 dark:bg-slate-700/50 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                <div className="flex items-center justify-between min-h-[72px] px-6 md:px-8 bg-white/80 dark:bg-slate-900/70 border-t border-slate-200/50 dark:border-slate-800/40">
                     <span className="text-sm text-slate-500 dark:text-slate-400">
                         {(() => {
                             const skipped = Object.values(resolutions).filter(r => r.action === 'skip').length

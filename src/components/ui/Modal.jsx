@@ -97,7 +97,7 @@ export function Modal({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         onClick={handleBackdropClick}
-                        className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                        className="fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4"
                     >
                         {/* Modal Container */}
                         <motion.div
@@ -106,19 +106,18 @@ export function Modal({
                             aria-modal="true"
                             aria-labelledby="modal-title"
                             aria-describedby="modal-body"
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            initial={{ opacity: 0, scale: 0.98, y: 24 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            transition={{ type: 'spring', duration: 0.4, bounce: 0.3 }}
+                            exit={{ opacity: 0, scale: 0.98, y: 24 }}
+                            transition={{ type: 'spring', duration: 0.4, bounce: 0.12 }}
                             onClick={(e) => e.stopPropagation()}
                             className={`
                                 ${sizeClasses[size]}
                                 w-full min-w-[320px]
-                                bg-white/95 dark:bg-slate-900/95
-                                backdrop-blur-2xl
-                                rounded-3xl
-                                shadow-2xl
-                                border-2 border-white/20 dark:border-slate-700/50
+                                bg-white dark:bg-slate-950
+                                rounded-2xl
+                                shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)]
+                                ring-1 ring-slate-200/50 dark:ring-slate-700/50
                                 overflow-hidden
                                 flex flex-col
                                 max-h-[85vh] md:max-h-[90vh]
@@ -126,45 +125,43 @@ export function Modal({
                             `}
                         >
                             {/* Header */}
-                            <div className={`${styles.headerBg} p-5 ${styles.textColor} flex-shrink-0`}>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        {Icon && (
-                                            <div className={`${styles.iconBg} p-2.5 rounded-xl backdrop-blur-sm`}>
-                                                <Icon className="w-6 h-6" strokeWidth={2.5} />
-                                            </div>
-                                        )}
-                                        <div className="flex-1 min-w-0">
-                                            {typeof title === 'string' ? (
-                                                <h2 id="modal-title" className="text-xl font-bold truncate">
-                                                    {title}
-                                                </h2>
-                                            ) : (
-                                                title
-                                            )}
-                                        </div>
+                            <div className={`${styles.headerBg} ${styles.textColor} flex-shrink-0 flex items-center h-12 md:h-[52px] px-4 md:px-5 gap-3`}>
+                                {Icon && (
+                                    <div className="bg-white/15 p-1.5 rounded-lg">
+                                        <Icon className="w-6 h-6" strokeWidth={2.5} />
                                     </div>
-                                    {showCloseButton && (
-                                        <button
-                                            onClick={onClose}
-                                            className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200 flex-shrink-0 ml-3"
-                                            aria-label="Close modal"
-                                        >
-                                            <X className="w-5 h-5" strokeWidth={2.5} />
-                                        </button>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                    {typeof title === 'string' ? (
+                                        <h2 id="modal-title" className="text-sm font-semibold tracking-tight truncate">
+                                            {title}
+                                        </h2>
+                                    ) : (
+                                        title
                                     )}
                                 </div>
+                                {showCloseButton && (
+                                    <button
+                                        onClick={onClose}
+                                        className="p-2 hover:bg-white/15 rounded-lg transition-all duration-200 flex-shrink-0"
+                                        aria-label="Close modal"
+                                    >
+                                        <X className="w-4 h-4" strokeWidth={2} />
+                                    </button>
+                                )}
                             </div>
 
                             {/* Body */}
-                            <div id="modal-body" className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                            <div id="modal-body" className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-50/30 dark:bg-slate-950">
                                 {children}
                             </div>
 
                             {/* Footer */}
                             {footer && (
-                                <div className="flex-shrink-0 px-6 py-4 bg-slate-50/80 dark:bg-slate-800/50 backdrop-blur-xl border-t border-slate-200/60 dark:border-slate-700/40">
-                                    {footer}
+                                <div className="flex-shrink-0 flex items-center min-h-[72px] px-6 md:px-8 bg-white/80 dark:bg-slate-900/70 ds-glass border-t border-slate-200/50 dark:border-slate-800/40">
+                                    <div className="w-full">
+                                        {footer}
+                                    </div>
                                 </div>
                             )}
                         </motion.div>

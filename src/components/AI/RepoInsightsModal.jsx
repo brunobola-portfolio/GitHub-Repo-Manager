@@ -59,8 +59,6 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
         }
     };
 
-    if (!isOpen) return null;
-
     const tabs = [
         { id: 'overview', label: 'Overview', icon: Sparkles },
         { id: 'quality', label: 'Quality', icon: BarChart3 },
@@ -69,7 +67,8 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            {isOpen && (
+            <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
                 <motion.div
                     ref={modalRef}
                     role="dialog"
@@ -78,27 +77,27 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-[#1C1C1E] border border-white/10 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden"
+                    className="bg-white dark:bg-slate-950 ring-1 ring-slate-200/50 dark:ring-slate-700/50 rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] w-full max-w-2xl overflow-hidden"
                 >
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#2C2C2E]/50">
+                    <div className="flex items-center justify-between p-6 bg-slate-50/80 dark:bg-slate-900/70 border-b border-slate-200/50 dark:border-slate-800/40">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-purple-500/20 rounded-lg">
                                 <Sparkles className="w-6 h-6 text-purple-400" />
                             </div>
                             <div>
-                                <h2 id="repo-insights-title" className="text-xl font-bold text-white">AI Insights</h2>
-                                <p className="text-sm text-gray-400">{repo?.full_name}</p>
+                                <h2 id="repo-insights-title" className="text-xl font-bold text-slate-900 dark:text-white">AI Insights</h2>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">{repo?.full_name}</p>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                            <X className="w-5 h-5 text-gray-400" />
+                        <button onClick={onClose} className="p-2 hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-lg transition-colors" aria-label="Close modal">
+                            <X className="w-5 h-5 text-slate-400 dark:text-slate-500" />
                         </button>
                     </div>
 
                     {/* Tabs */}
                     {analysis && !loading && (
-                        <div className="flex border-b border-white/10 px-4 bg-[#2C2C2E]/30">
+                        <div className="flex border-b border-slate-200/50 dark:border-slate-800/40 px-4 bg-slate-50/50 dark:bg-slate-900/50">
                             {tabs.map(tab => (
                                 <button
                                     key={tab.id}
@@ -136,7 +135,7 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                                 {activeTab === 'overview' && (
                                     <>
                                         {/* Health Score */}
-                                        <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                                        <div className="flex items-center justify-between p-4 bg-slate-100/50 dark:bg-white/5 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
                                             <div className="flex items-center gap-3">
                                                 <div className={`p-3 rounded-full ${getScoreColor(analysis.health_score)}`}>
                                                     <Brain className="w-6 h-6 text-white" />
@@ -154,7 +153,7 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                                         {/* TL;DR */}
                                         <div className="space-y-2">
                                             <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">TL;DR Summary</h3>
-                                            <p className="text-gray-200 leading-relaxed bg-white/5 p-4 rounded-xl border border-white/5">
+                                            <p className="text-gray-200 leading-relaxed bg-slate-100/50 dark:bg-white/5 p-4 rounded-xl border border-slate-200/30 dark:border-slate-800/30">
                                                 {analysis.summary}
                                             </p>
                                         </div>
@@ -204,7 +203,7 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                                                                 <span className="text-gray-300 capitalize">{key}</span>
                                                                 <span className="text-gray-400">{value}/30</span>
                                                             </div>
-                                                            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                                                            <div className="h-2 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
                                                                 <div
                                                                     className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
                                                                     style={{ width: `${(value / 30) * 100}%` }}
@@ -259,7 +258,7 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                                                 </div>
                                                 <div className="grid gap-2">
                                                     {analysis.readme_suggestions.map((section, i) => (
-                                                        <div key={i} className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-lg">
+                                                        <div key={i} className="flex items-center gap-3 p-3 bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-slate-800/40 rounded-lg">
                                                             <FileText className="w-5 h-5 text-purple-400" />
                                                             <span className="text-gray-200">{section}</span>
                                                         </div>
@@ -279,7 +278,7 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                     </div>
 
                     {/* Footer */}
-                    <div className="p-4 border-t border-white/10 bg-[#2C2C2E]/30 flex justify-end gap-3">
+                    <div className="flex items-center min-h-[68px] px-6 bg-white/80 dark:bg-slate-900/70 border-t border-slate-200/50 dark:border-slate-800/40 justify-end gap-3">
                         <button
                             onClick={reanalyze}
                             disabled={loading}
@@ -296,6 +295,7 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
                     </div>
                 </motion.div>
             </div>
+            )}
         </AnimatePresence>
     );
 };
