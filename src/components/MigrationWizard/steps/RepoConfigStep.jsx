@@ -376,24 +376,26 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source }) {
                       </span>
                     </label>
 
-                    {/* Branch filter toggle */}
-                    <button
-                      type="button"
-                      onClick={() => toggleBranchExpand(repo, index)}
-                      className="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
-                    >
-                      <GitBranch className="w-3 h-3" />
-                      {repo.branchFilter === 'selected'
-                        ? `${(repo.selectedBranches || []).length} branches`
-                        : 'All branches'}
-                      {expandedBranches[repo.id || repo.name]
-                        ? <ChevronUp className="w-3 h-3" />
-                        : <ChevronDown className="w-3 h-3" />}
-                    </button>
+                    {/* Branch filter toggle (Git repos only — TFVC has no branches) */}
+                    {!repo.isTfvc && (
+                      <button
+                        type="button"
+                        onClick={() => toggleBranchExpand(repo, index)}
+                        className="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                      >
+                        <GitBranch className="w-3 h-3" />
+                        {repo.branchFilter === 'selected'
+                          ? `${(repo.selectedBranches || []).length} branches`
+                          : 'All branches'}
+                        {expandedBranches[repo.id || repo.name]
+                          ? <ChevronUp className="w-3 h-3" />
+                          : <ChevronDown className="w-3 h-3" />}
+                      </button>
+                    )}
                   </div>
 
-                  {/* Branch filtering expanded section */}
-                  {expandedBranches[repo.id || repo.name] && (
+                  {/* Branch filtering expanded section (Git repos only) */}
+                  {!repo.isTfvc && expandedBranches[repo.id || repo.name] && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}

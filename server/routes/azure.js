@@ -202,7 +202,19 @@ router.post('/azure/tfvc/items', requireAuth, async (req, res) => {
             return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
         }
         const items = await azureService.listTfvcItems(org, project, pat, scopePath);
-        res.json({ items });
+        // Compute actual folder sizes via recursive listing
+        const enriched = await Promise.all(items.map(async (item) => {
+            if (item.isFolder && item.path) {
+                try {
+                    const size = await azureService.getTfvcFolderSize(org, project, pat, item.path);
+                    return { ...item, size };
+                } catch {
+                    return item; // keep original (0) on error
+                }
+            }
+            return item;
+        }));
+        res.json({ items: enriched });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to list TFVC items'));
     }
