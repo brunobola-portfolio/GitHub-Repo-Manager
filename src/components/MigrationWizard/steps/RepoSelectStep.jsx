@@ -135,6 +135,7 @@ const SORT_OPTIONS = [
 export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [tfvcWarning, setTfvcWarning] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('name')
   const [fetched, setFetched] = useState(false)
@@ -159,10 +160,27 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
         })
         const data = await res.json()
         if (res.ok && data.repos) {
-          // TFVC detection: no Git repos but project uses TFVC
-          if (data.repos.length === 0 && data.versionControlType === 'Tfvc') {
-            if (onChange) onChange({ versionControlType: 'Tfvc' })
-            // Fetch TFVC items
+          const isTfvcProject = data.versionControlType === 'Tfvc'
+          if (onChange) onChange({ versionControlType: isTfvcProject ? 'Tfvc' : null })
+
+          // Map Git repos
+          const gitMapped = data.repos.map((r) => ({
+            name: r.name,
+            selected: false,
+            targetName: r.name,
+            visibility: 'private',
+            description: '',
+            size: r.size || 0,
+            language: r.language || null,
+            branches: r.defaultBranch ? 1 : 0,
+            isDisabled: r.isDisabled || false,
+            isFork: r.isFork || false,
+            id: r.id,
+          }))
+
+          // For TFVC projects, also fetch TFVC folders
+          let tfvcMapped = []
+          if (isTfvcProject) {
             try {
               const tfvcRes = await fetch('/api/azure/tfvc/items', {
                 method: 'POST', credentials: 'include',
@@ -171,7 +189,7 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
               })
               const tfvcData = await tfvcRes.json()
               const items = (tfvcData.items || []).filter(i => i.isFolder)
-              const mapped = items.map(item => ({
+              tfvcMapped = items.map(item => ({
                 name: item.path.split('/').pop(),
                 selected: false,
                 targetName: item.path.split('/').pop(),
@@ -186,30 +204,12 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
                 tfvcPath: item.path,
                 isTfvc: true,
               }))
-              onSetRepos(mapped)
-              setFetched(true)
             } catch {
-              setError('Failed to load TFVC items')
+              setTfvcWarning('Could not load TFVC folders — only Git repos are shown.')
             }
-            setLoading(false)
-            return
           }
 
-          if (onChange) onChange({ versionControlType: null })
-          const mapped = data.repos.map((r) => ({
-            name: r.name,
-            selected: false,
-            targetName: r.name,
-            visibility: 'private',
-            description: '',
-            size: r.size || 0,
-            language: r.language || null,
-            branches: r.defaultBranch ? 1 : 0,
-            isDisabled: r.isDisabled || false,
-            isFork: r.isFork || false,
-            id: r.id,
-          }))
-          onSetRepos(mapped)
+          onSetRepos([...tfvcMapped, ...gitMapped])
           setFetched(true)
         } else {
           setError(data.error || 'Failed to load repositories')
@@ -344,6 +344,15 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
           <p className="text-xs text-amber-300">
             <AlertTriangle className="w-3.5 h-3.5 inline mr-1.5" />
             This project uses TFVC. Each folder will be converted to a Git repository and pushed to GitHub.
+          </p>
+        </div>
+      )}
+      {/* TFVC warning (non-blocking) */}
+      {tfvcWarning && (
+        <div className="p-3 bg-amber-900/20 border border-amber-700/30 rounded-xl">
+          <p className="text-xs text-amber-300">
+            <AlertTriangle className="w-3.5 h-3.5 inline mr-1.5" />
+            {tfvcWarning}
           </p>
         </div>
       )}
