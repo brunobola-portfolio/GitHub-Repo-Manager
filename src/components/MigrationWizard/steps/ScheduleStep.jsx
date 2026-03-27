@@ -69,19 +69,25 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
       // Build tasks from wizard state
       const selectedRepos = (wizard.repos || []).filter(r => r.selected)
       const source = wizard.source || {}
-      const tasks = selectedRepos.map(repo => ({
-        type: (repo.isTfvc || source.versionControlType === 'Tfvc') ? 'repo-tfvc' : 'repo',
-        sourceRef: `${source.org}/${source.project}/${repo.name}`,
-        targetRef: repo.targetName || repo.name,
-        config: { makePrivate: repo.visibility === 'private', description: repo.description || '' },
-      }))
+      const targetOrg = source.targetOrg || ''
+      const tasks = selectedRepos.map(repo => {
+        const repoName = repo.targetName || repo.name
+        return {
+          type: repo.isTfvc ? 'repo-tfvc' : 'repo',
+          sourceRef: `${source.org}/${source.project}/${repo.name}`,
+          targetRef: targetOrg ? `${targetOrg}/${repoName}` : repoName,
+          config: { makePrivate: repo.visibility === 'private', description: repo.description || '' },
+        }
+      })
 
-      // Add work item tasks
+      // Add work item tasks — target the first migrated repo for issues
       if (wizard.workItems?.enabled) {
+        const firstRepo = selectedRepos[0]
+        const firstRepoTarget = firstRepo?.targetName || firstRepo?.name || 'issues'
         tasks.push({
           type: 'work-items',
           sourceRef: `${source.org}/${source.project}`,
-          targetRef: 'GitHub Issues',
+          targetRef: targetOrg ? `${targetOrg}/${firstRepoTarget}` : firstRepoTarget,
           config: { types: wizard.workItems.types },
         })
       }
@@ -89,11 +95,12 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
       // Add wiki tasks
       if (wizard.wiki?.enabled) {
         for (const w of wizard.wiki.wikis || []) {
+          const destination = wizard.wiki.destinations?.[w.id] || 'wiki'
           tasks.push({
             type: 'wiki',
             sourceRef: w.name || w.id,
-            targetRef: wizard.wiki.destinations?.[w.id] || 'wiki',
-            config: {},
+            targetRef: destination,
+            config: { destination },
           })
         }
       }
@@ -103,15 +110,20 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
           type: wizard.source?.type || 'azure',
           org: wizard.source?.org,
           project: wizard.source?.project,
+          ...(wizard.source?.pat ? { pat: wizard.source.pat } : {}),
         },
         tasks,
-        targetOrg: wizard.source?.org || '',
-        schedule: schedule.mode === 'scheduled'
-          ? { scheduledAt: schedule.scheduledAt }
-          : undefined,
-        isDryRun: schedule.isDryRun,
+        targetOrg: targetOrg,
+        schedule: {
+          mode: schedule.mode || 'now',
+          isDryRun: !!schedule.isDryRun,
+          ...(schedule.mode === 'scheduled' && schedule.scheduledAt
+            ? { scheduledAt: new Date(schedule.scheduledAt).toISOString() }
+            : {}),
+        },
       }
 
+      console.log('[ScheduleStep] Plan data:', JSON.stringify(planData, null, 2))
       const { planId } = await migrationApi.createPlan(planData)
 
       if (schedule.mode === 'scheduled') {
@@ -120,11 +132,12 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
         setScheduled(true)
       } else {
         // Execute immediately and go to progress
-        await migrationApi.executePlan(planId)
+        await migrationApi.executePlan(planId, { azurePat: wizard.source?.pat || null })
         if (wizard.setPlanId) wizard.setPlanId(planId)
         if (wizard.nextStep) wizard.nextStep()
       }
     } catch (err) {
+      console.error('[ScheduleStep] Migration error:', err)
       setExecError(err.message || 'Failed to start migration')
     } finally {
       setExecuting(false)

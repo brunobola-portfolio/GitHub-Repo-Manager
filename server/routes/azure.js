@@ -1,9 +1,23 @@
 import crypto from 'node:crypto';
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import * as azureService from '../azure-service.js';
 import { requireAuth, safeError, errorResponse } from '../middleware/auth.js';
 
+const orgListLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests — try again in a minute' },
+});
+
 const router = express.Router();
+
+const ORG_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9-]*$/;
+function validateOrgName(org) {
+    return org && ORG_PATTERN.test(org);
+}
 
 // Check if server has AZURE_PAT configured (never returns the PAT itself)
 router.get('/azure/env-auth', requireAuth, (req, res) => {
@@ -16,6 +30,9 @@ router.post('/azure/validate', requireAuth, async (req, res) => {
         const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org) {
             return errorResponse(res, 400, 'Organization is required');
+        }
+        if (!validateOrgName(org)) {
+            return errorResponse(res, 400, 'Invalid organization name');
         }
         if (!pat) {
             return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
@@ -34,6 +51,9 @@ router.post('/azure/projects', requireAuth, async (req, res) => {
         if (!org) {
             return errorResponse(res, 400, 'Organization is required');
         }
+        if (!validateOrgName(org)) {
+            return errorResponse(res, 400, 'Invalid organization name');
+        }
         if (!pat) {
             return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
         }
@@ -51,19 +71,19 @@ router.post('/azure/repos', requireAuth, async (req, res) => {
         if (!org || !project) {
             return errorResponse(res, 400, 'Organization and project are required');
         }
+        if (!validateOrgName(org)) {
+            return errorResponse(res, 400, 'Invalid organization name');
+        }
         if (!pat) {
             return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
         }
-        const repos = await azureService.listRepos(org, project, pat);
-        // When no Git repos found, check if project uses TFVC
-        let versionControlType = null;
-        if (repos.length === 0) {
-            try {
-                const info = await azureService.getProjectInfo(org, project, pat);
-                versionControlType = info.versionControlType;
-            } catch { /* degrade gracefully */ }
-        }
-        res.json({ repos, ...(versionControlType ? { versionControlType } : {}) });
+        // Fetch Git repos and project info in parallel (always need VCS type)
+        const [repos, projectInfo] = await Promise.all([
+            azureService.listRepos(org, project, pat),
+            azureService.getProjectInfo(org, project, pat).catch(() => null),
+        ]);
+        const versionControlType = projectInfo?.versionControlType || 'Git';
+        res.json({ repos, versionControlType });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to list Azure repos'));
     }
@@ -217,6 +237,23 @@ router.post('/azure/tfvc/items', requireAuth, async (req, res) => {
         res.json({ items: enriched });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to list TFVC items'));
+    }
+});
+
+// GET /api/azure/organizations — list orgs for the authenticated user (OAuth only)
+router.get('/azure/organizations', requireAuth, orgListLimiter, async (req, res) => {
+    try {
+        const token = req.session?.azureToken;
+        if (!token) {
+            return errorResponse(res, 401, 'OAuth session required — authenticate via OAuth first');
+        }
+        const organizations = await azureService.listOrganizations(token);
+        res.json({ organizations });
+    } catch (error) {
+        if (error.status === 401) {
+            return errorResponse(res, 401, 'Token expired or invalid — please re-authenticate');
+        }
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to list organizations'));
     }
 });
 
