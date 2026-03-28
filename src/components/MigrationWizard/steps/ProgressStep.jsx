@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Package, ClipboardList, BookOpen, CheckCircle2, XCircle,
@@ -29,8 +29,19 @@ const STATUS_ICONS = {
 
 const TYPE_ICONS = {
   repo: Package,
+  'repo-tfvc': Package,
   'work-items': ClipboardList,
   wiki: BookOpen,
+}
+
+// Backend uses 'completed', frontend UI uses 'complete' — normalize on receipt
+function normalizeTaskStatus(status) {
+  if (status === 'completed') return 'complete'
+  return status
+}
+
+function normalizeTasks(tasks) {
+  return tasks.map(t => ({ ...t, status: normalizeTaskStatus(t.status) }))
 }
 
 function formatElapsed(startedAt) {
@@ -137,11 +148,12 @@ function TaskRow({ task, onRetry }) {
   )
 }
 
-export default function ProgressStep({ planId, onPause, onCancel, onRetryTask }) {
+export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, onComplete }) {
   const [tasks, setTasks] = useState([])
   const [planStatus, setPlanStatus] = useState('running')
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [loading, setLoading] = useState(true)
+  const completedRef = useRef(false)
 
   const sseUrl = planId ? migrationApi.streamUrl(planId) : null
   const { events, connected } = useSSE(sseUrl)
@@ -153,7 +165,7 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask })
     migrationApi.getPlan(planId)
       .then((plan) => {
         if (cancelled) return
-        setTasks(plan.tasks || [])
+        setTasks(normalizeTasks(plan.tasks || []))
         setPlanStatus(plan.status || 'running')
       })
       .catch(() => {})
@@ -161,67 +173,75 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask })
     return () => { cancelled = true }
   }, [planId])
 
-  // Process SSE events
+  // Process SSE events — track how many we've consumed so we process ALL new events
+  const processedCountRef = useRef(0)
+
   useEffect(() => {
-    if (events.length === 0) return
-    const latest = events[events.length - 1]
-    const { type, data } = latest
+    if (events.length <= processedCountRef.current) return
 
-    if (type === 'catch-up' && data.tasks) {
-      Promise.resolve().then(() => {
-        setTasks(data.tasks)
+    const newEvents = events.slice(processedCountRef.current)
+    processedCountRef.current = events.length
+
+    for (const evt of newEvents) {
+      const { type, data } = evt
+
+      if (type === 'catch-up' && data.tasks) {
+        setTasks(normalizeTasks(data.tasks))
         if (data.status) setPlanStatus(data.status)
-      })
-    }
+      }
 
-    if (type === 'task-progress') {
-      Promise.resolve().then(() => {
+      if (type === 'task-progress') {
         setTasks(prev => prev.map(t =>
           t.id === data.taskId
-            ? { ...t, progress: data.progress, message: data.message, status: 'running' }
+            ? { ...t, progress: data.pct ?? data.progress, message: data.message, status: 'running' }
             : t
         ))
-      })
-    }
+      }
 
-    if (type === 'task-status') {
-      Promise.resolve().then(() => {
+      if (type === 'task-status') {
         setTasks(prev => prev.map(t =>
           t.id === data.taskId
-            ? { ...t, status: data.status, message: data.message || t.message, started_at: data.startedAt || t.started_at }
+            ? { ...t, status: normalizeTaskStatus(data.status), message: data.message || t.message, started_at: data.startedAt || t.started_at }
             : t
         ))
-      })
-    }
+      }
 
-    if (type === 'task-complete') {
-      Promise.resolve().then(() => {
+      if (type === 'task-complete') {
         setTasks(prev => prev.map(t =>
           t.id === data.taskId
             ? { ...t, status: 'complete', completed_at: data.completedAt || new Date().toISOString(), progress: 100 }
             : t
         ))
-      })
-    }
+      }
 
-    if (type === 'task-failed') {
-      Promise.resolve().then(() => {
+      if (type === 'task-failed') {
         setTasks(prev => prev.map(t =>
           t.id === data.taskId
             ? { ...t, status: 'failed', error_message: data.error || data.message }
             : t
         ))
-      })
-    }
+      }
 
-    if (type === 'plan-status') {
-      Promise.resolve().then(() => setPlanStatus(data.status))
-    }
+      if (type === 'plan-status') {
+        setPlanStatus(data.status)
+      }
 
-    if (type === 'plan-complete' || type === 'plan-interrupted') {
-      Promise.resolve().then(() => setPlanStatus(data.status || 'complete'))
+      if (type === 'plan-complete' || type === 'plan-interrupted') {
+        setPlanStatus(data.status || 'completed')
+      }
     }
   }, [events])
+
+  // Auto-advance to summary when plan finishes
+  useEffect(() => {
+    const terminal = ['completed', 'failed', 'cancelled', 'interrupted']
+    if (terminal.includes(planStatus) && !completedRef.current && onComplete) {
+      completedRef.current = true
+      // Short delay so user sees final state before advancing
+      const timer = setTimeout(() => onComplete(planStatus), 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [planStatus, onComplete])
 
   const completedCount = tasks.filter(t => t.status === 'complete').length
   const totalCount = tasks.length
@@ -254,10 +274,21 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask })
 
   const isActive = planStatus === 'running' || planStatus === 'paused'
 
+  if (!planId) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 p-12 text-center">
+        <AlertTriangle className="w-8 h-8 text-amber-500" />
+        <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">No migration plan found</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Use the Start Migration button on the Schedule step to begin.</p>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-12">
+      <div className="flex flex-col items-center justify-center gap-3 p-12">
         <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+        <p className="text-sm text-slate-500 dark:text-slate-400">Loading migration tasks...</p>
       </div>
     )
   }

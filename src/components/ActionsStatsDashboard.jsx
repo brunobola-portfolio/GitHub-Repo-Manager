@@ -289,8 +289,8 @@ export function ActionsStatsDashboard({ repos, teamId }) {
                                 <TrendingUp className="w-5 h-5 text-emerald-500" />
                                 Success Rate Trend
                             </h3>
-                            <div style={{ height: '300px' }}>
-                                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
+                            <div style={{ height: '300px', overflow: 'hidden' }}>
+                                <ResponsiveContainer width="100%" height="100%" debounce={50}>
                                     <LineChart data={stats.trends}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
                                         <XAxis
@@ -351,8 +351,8 @@ export function ActionsStatsDashboard({ repos, teamId }) {
                                 <Clock className="w-5 h-5 text-purple-500" />
                                 Average Duration
                             </h3>
-                            <div style={{ height: '300px' }}>
-                                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
+                            <div style={{ height: '300px', overflow: 'hidden' }}>
+                                <ResponsiveContainer width="100%" height="100%" debounce={50}>
                                     <BarChart data={stats.trends}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
                                         <XAxis
@@ -404,8 +404,8 @@ export function ActionsStatsDashboard({ repos, teamId }) {
                             <Activity className="w-5 h-5 text-indigo-500" />
                             Workflow Execution Details
                         </h3>
-                        <div style={{ height: '350px' }}>
-                            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={50}>
+                        <div style={{ height: '350px', overflow: 'hidden' }}>
+                            <ResponsiveContainer width="100%" height="100%" debounce={50}>
                                 <BarChart data={stats.trends}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
                                     <XAxis

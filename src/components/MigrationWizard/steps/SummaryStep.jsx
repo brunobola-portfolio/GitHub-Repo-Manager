@@ -1,60 +1,337 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   CheckCircle2, XCircle, Clock, Package, ClipboardList, BookOpen,
   Download, Plus, History, Loader2, AlertTriangle, ExternalLink, Ban,
+  Sparkles, Trophy, ChevronDown, ChevronUp, Lightbulb, Copy, Check,
+  ArrowRight, Zap, Shield, BarChart3, Timer,
 } from 'lucide-react'
 import { migrationApi } from '../../../api/migration'
 
-const TYPE_ICONS = {
-  repo: Package,
-  'work-items': ClipboardList,
-  wiki: BookOpen,
+/* ═══════════════════════════════════════════
+   CONSTANTS & CONFIGURATION
+   ═══════════════════════════════════════════ */
+
+const TYPE_CONFIG = {
+  repo: { icon: Package, label: 'Git Repository', color: 'text-indigo-500 dark:text-indigo-400' },
+  'repo-tfvc': { icon: Package, label: 'TFVC Repository', color: 'text-violet-500 dark:text-violet-400' },
+  'work-items': { icon: ClipboardList, label: 'Work Items', color: 'text-cyan-500 dark:text-cyan-400' },
+  wiki: { icon: BookOpen, label: 'Wiki', color: 'text-amber-500 dark:text-amber-400' },
 }
+
+// Backend sends 'completed', normalize to 'complete' for consistent lookup
+const normalizeStatus = (s) => s === 'completed' ? 'complete' : s
 
 const STATUS_CONFIG = {
-  complete: { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-  failed: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20' },
-  skipped: { icon: Ban, color: 'text-gray-400', bg: 'bg-gray-50 dark:bg-gray-800' },
-  cancelled: { icon: Ban, color: 'text-gray-400', bg: 'bg-gray-50 dark:bg-gray-800' },
+  complete: {
+    icon: CheckCircle2,
+    label: 'Succeeded',
+    color: 'text-emerald-500',
+    bg: 'bg-emerald-500/10 dark:bg-emerald-500/10',
+    border: 'border-emerald-500/20 dark:border-emerald-500/20',
+    badge: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+  },
+  failed: {
+    icon: XCircle,
+    label: 'Failed',
+    color: 'text-red-500',
+    bg: 'bg-red-500/10 dark:bg-red-500/10',
+    border: 'border-red-500/20 dark:border-red-500/20',
+    badge: 'bg-red-500/15 text-red-600 dark:text-red-400',
+  },
+  skipped: {
+    icon: Ban,
+    label: 'Skipped',
+    color: 'text-slate-400',
+    bg: 'bg-slate-500/5 dark:bg-slate-500/5',
+    border: 'border-slate-300/30 dark:border-slate-600/30',
+    badge: 'bg-slate-500/10 text-slate-500 dark:text-slate-400',
+  },
+  cancelled: {
+    icon: Ban,
+    label: 'Cancelled',
+    color: 'text-slate-400',
+    bg: 'bg-slate-500/5 dark:bg-slate-500/5',
+    border: 'border-slate-300/30 dark:border-slate-600/30',
+    badge: 'bg-slate-500/10 text-slate-500 dark:text-slate-400',
+  },
 }
 
-function CircularProgress({ score, size = 80, strokeWidth = 6 }) {
+/* ═══════════════════════════════════════════
+   CIRCULAR PROGRESS — premium animated ring
+   ═══════════════════════════════════════════ */
+
+function CircularProgress({ score, size = 100, strokeWidth = 7 }) {
   const radius = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * radius
   const offset = circumference - (score / 100) * circumference
 
-  const color = score >= 80 ? 'text-emerald-500' : score >= 50 ? 'text-amber-500' : 'text-red-500'
+  const isPerfect = score === 100
+  const isGood = score >= 80
+  const isMedium = score >= 50
+
+  const ringColor = isPerfect
+    ? 'text-emerald-400'
+    : isGood
+      ? 'text-emerald-500'
+      : isMedium
+        ? 'text-amber-500'
+        : 'text-red-500'
+
+  const glowColor = isPerfect
+    ? 'drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]'
+    : isGood
+      ? 'drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]'
+      : isMedium
+        ? 'drop-shadow-[0_0_6px_rgba(245,158,11,0.4)]'
+        : 'drop-shadow-[0_0_6px_rgba(239,68,68,0.4)]'
 
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg className="transform -rotate-90" width={size} height={size}>
+      <svg className={`transform -rotate-90 ${glowColor}`} width={size} height={size}>
+        {/* Track */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          className="stroke-slate-200 dark:stroke-slate-700"
+          className="stroke-slate-200/60 dark:stroke-slate-700/60"
           fill="none"
           strokeWidth={strokeWidth}
         />
+        {/* Progress */}
         <motion.circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          className={`stroke-current ${color}`}
+          className={`stroke-current ${ringColor}`}
           fill="none"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1, ease: 'easeOut' }}
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
           strokeDasharray={circumference}
         />
       </svg>
-      <span className={`absolute text-lg font-bold ${color}`}>{score}%</span>
+      <div className="absolute flex flex-col items-center">
+        <motion.span
+          className={`text-2xl font-bold tracking-tight ${ringColor}`}
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.6, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {score}%
+        </motion.span>
+      </div>
+      {isPerfect && (
+        <motion.div
+          className="absolute -top-1 -right-1"
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ delay: 1.2, type: 'spring', stiffness: 300, damping: 15 }}
+        >
+          <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+            <Sparkles className="w-3.5 h-3.5 text-white" />
+          </div>
+        </motion.div>
+      )}
     </div>
   )
 }
+
+/* ═══════════════════════════════════════════
+   STAT PILL — compact metric display
+   ═══════════════════════════════════════════ */
+
+function StatPill({ icon: Icon, label, value, color }) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/60 dark:bg-white/5 border border-slate-200/50 dark:border-white/10">
+      <Icon className={`w-3.5 h-3.5 ${color}`} />
+      <span className="text-xs text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 tabular-nums">{value}</span>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════
+   TASK RESULT ROW — individual migration item
+   ═══════════════════════════════════════════ */
+
+function TaskResultRow({ task, index, maxIndex = 10 }) {
+  const status = normalizeStatus(task.status)
+  const typeConfig = TYPE_CONFIG[task.type] || TYPE_CONFIG.repo
+  const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.complete
+  const TypeIcon = typeConfig.icon
+  const StatusIcon = statusConfig.icon
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(index, maxIndex) * 0.06, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      className={`group relative flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-200
+        ${statusConfig.bg} ${statusConfig.border}
+        hover:shadow-sm`}
+    >
+      {/* Status indicator */}
+      <div className="shrink-0">
+        <StatusIcon className={`w-5 h-5 ${statusConfig.color}`} />
+      </div>
+
+      {/* Type badge */}
+      <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-white/80 dark:bg-white/5 border border-slate-200/50 dark:border-white/10`}>
+        <TypeIcon className={`w-4 h-4 ${typeConfig.color}`} />
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+            {task.sourceRef || task.type}
+          </span>
+          {task.targetRef && (
+            <>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="text-sm text-slate-600 dark:text-slate-300 truncate">
+                {task.targetRef}
+              </span>
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider ${statusConfig.badge}`}>
+            {statusConfig.label}
+          </span>
+          <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            {typeConfig.label}
+          </span>
+        </div>
+      </div>
+
+      {/* Duration */}
+      <div className="shrink-0 flex items-center gap-1.5">
+        {task.durationSeconds > 0 && (
+          <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums flex items-center gap-1">
+            <Timer className="w-3 h-3" />
+            {formatDuration(task.durationSeconds)}
+          </span>
+        )}
+        {task.metadata?.url && (
+          <a
+            href={task.metadata.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-indigo-500/10 transition-all"
+            title="Open in browser"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+/* ═══════════════════════════════════════════
+   ERROR CARD — detailed error display
+   ═══════════════════════════════════════════ */
+
+function ErrorCard({ error, index }) {
+  const [expanded, setExpanded] = useState(index === 0)
+  const [copied, setCopied] = useState(false)
+  const typeConfig = TYPE_CONFIG[error.type] || TYPE_CONFIG.repo
+  const TypeIcon = typeConfig.icon
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(error.error)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.08, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      className="rounded-xl border border-red-500/20 dark:border-red-500/15 bg-red-500/5 dark:bg-red-500/5 overflow-hidden"
+    >
+      {/* Header — always visible */}
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        aria-expanded={expanded}
+        aria-label={`${expanded ? 'Collapse' : 'Expand'} error details for task ${error.taskId}`}
+        className="w-full flex items-center gap-3 p-3.5 text-left hover:bg-red-500/5 transition-colors"
+      >
+        <div className="shrink-0 w-8 h-8 rounded-lg bg-red-500/10 dark:bg-red-500/10 flex items-center justify-center">
+          <XCircle className="w-4.5 h-4.5 text-red-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-red-700 dark:text-red-300">
+              Task #{error.taskId}
+            </span>
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/10 text-[10px] font-medium text-red-600 dark:text-red-400 uppercase tracking-wider">
+              <TypeIcon className="w-3 h-3" />
+              {error.type}
+            </span>
+          </div>
+        </div>
+        <div className="shrink-0">
+          {expanded ? (
+            <ChevronUp className="w-4 h-4 text-red-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-red-400" />
+          )}
+        </div>
+      </button>
+
+      {/* Expandable detail */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="px-3.5 pb-3.5 space-y-2.5">
+              {/* Error message */}
+              <div className="relative group/err">
+                <pre className="text-xs text-red-600 dark:text-red-400/90 bg-red-950/10 dark:bg-red-950/30 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all font-[var(--ds-font-mono)]">
+                  {error.error}
+                </pre>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  aria-label="Copy error message"
+                  className="absolute top-2 right-2 p-1 rounded-md bg-red-900/20 hover:bg-red-900/40 text-red-400 opacity-0 group-hover/err:opacity-100 focus:opacity-100 transition-all"
+                >
+                  {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                </button>
+              </div>
+
+              {/* Suggestion */}
+              {error.suggestion && (
+                <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-500/5 dark:bg-amber-500/5 border border-amber-500/15">
+                  <Lightbulb className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-700 dark:text-amber-300/90 leading-relaxed">
+                    {error.suggestion}
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+/* ═══════════════════════════════════════════
+   UTILITIES
+   ═══════════════════════════════════════════ */
 
 function formatDuration(seconds) {
   if (!seconds || seconds <= 0) return '-'
@@ -63,6 +340,25 @@ function formatDuration(seconds) {
   const secs = seconds % 60
   return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`
 }
+
+function getStatusHeadline(plan, score) {
+  if (plan.status === 'cancelled') return { title: 'Migration Cancelled', subtitle: 'The migration was stopped before completion.' }
+  if (score === 100) return { title: 'All Tasks Succeeded', subtitle: 'Every item was migrated successfully — your repositories are ready on GitHub.' }
+  if (score >= 80) return { title: 'Migration Complete', subtitle: 'Most tasks succeeded. Review the details below for any items that need attention.' }
+  if (score >= 50) return { title: 'Migration Partially Complete', subtitle: 'Some tasks encountered issues. Review the errors below and consider retrying.' }
+  if (score > 0) return { title: 'Migration Needs Attention', subtitle: 'Several tasks failed during migration. Check the error details for guidance.' }
+  return { title: 'Migration Failed', subtitle: 'All tasks encountered errors. Review the details below to understand what went wrong.' }
+}
+
+function getStatusIcon(score) {
+  if (score === 100) return { Icon: Trophy, color: 'text-emerald-500', bg: 'bg-emerald-500/10' }
+  if (score >= 50) return { Icon: BarChart3, color: 'text-amber-500', bg: 'bg-amber-500/10' }
+  return { Icon: AlertTriangle, color: 'text-red-500', bg: 'bg-red-500/10' }
+}
+
+/* ═══════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════ */
 
 export default function SummaryStep({ planId, onNewMigration, onViewHistory }) {
   const [report, setReport] = useState(null)
@@ -84,163 +380,198 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory }) {
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
+    a.style.display = 'none'
     a.href = url
     a.download = `migration-report-${planId}.json`
+    document.body.appendChild(a)
     a.click()
-    URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 100)
   }
 
+  /* Loading state */
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-12">
+      <div className="flex flex-col items-center justify-center gap-3 p-16">
         <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+        <p className="text-sm text-slate-500 dark:text-slate-400">Loading migration report...</p>
       </div>
     )
   }
 
+  /* Error state */
   if (error) {
     return (
-      <div className="p-6 text-center">
-        <XCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+      <div className="flex flex-col items-center gap-3 p-12 text-center">
+        <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center">
+          <XCircle className="w-6 h-6 text-red-500" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-red-600 dark:text-red-400">Failed to load report</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{error}</p>
+        </div>
       </div>
     )
   }
 
   if (!report) return null
 
-  const { plan, summary, tasks, errors } = report
+  const { plan, summary, tasks, errors: taskErrors } = report
   const score = summary.total > 0
     ? Math.round((summary.success / summary.total) * 100)
     : 0
 
   const isDryRun = plan.status === 'dry-run' || plan.isDryRun
+  const headline = getStatusHeadline(plan, score)
+  const statusIcon = getStatusIcon(score)
+  const StatusHeroIcon = statusIcon.Icon
+
+  const successTasks = tasks.filter(t => normalizeStatus(t.status) === 'complete')
+  const failedTasks = tasks.filter(t => t.status === 'failed')
+  const otherTasks = tasks.filter(t => normalizeStatus(t.status) !== 'complete' && t.status !== 'failed')
 
   return (
     <div className="space-y-5">
-      {/* Dry-run banner */}
+      {/* ── Dry-run banner ── */}
       {isDryRun && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm">
-          <AlertTriangle className="w-4 h-4 shrink-0" />
-          <span>This was a <strong>dry-run</strong> -- no changes were applied.</span>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-amber-500/5 dark:bg-amber-500/5 border border-amber-500/20 dark:border-amber-500/15"
+        >
+          <div className="shrink-0 w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
+            <Zap className="w-4 h-4 text-amber-500" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-amber-700 dark:text-amber-300">Dry Run Mode</p>
+            <p className="text-xs text-amber-600/80 dark:text-amber-400/70 mt-0.5">
+              This was a simulation — no repositories were actually migrated or modified.
+            </p>
+          </div>
+        </motion.div>
       )}
 
-      {/* Score card */}
+      {/* ── Hero score card ── */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex items-center gap-6 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700"
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/60 dark:to-slate-800/30 border border-slate-200/60 dark:border-white/10"
       >
-        <CircularProgress score={score} />
-        <div>
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-            Migration {plan.status === 'complete' ? 'Complete' : plan.status === 'cancelled' ? 'Cancelled' : 'Finished'}
-          </h3>
-          <div className="flex items-center gap-4 mt-1.5 text-sm text-slate-500 dark:text-slate-400">
-            <span className="flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-              {summary.success} succeeded
-            </span>
-            {summary.failed > 0 && (
-              <span className="flex items-center gap-1">
-                <XCircle className="w-3.5 h-3.5 text-red-500" />
-                {summary.failed} failed
-              </span>
-            )}
-            {summary.skipped > 0 && (
-              <span className="flex items-center gap-1">
-                <Ban className="w-3.5 h-3.5 text-gray-400" />
-                {summary.skipped} skipped
-              </span>
-            )}
-          </div>
-          {plan.durationSeconds > 0 && (
-            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              Total duration: {formatDuration(plan.durationSeconds)}
+        {/* Subtle gradient accent at top */}
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-80" />
+
+        <div className="flex items-center gap-6 p-6">
+          <CircularProgress score={score} />
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2.5 mb-1">
+              <StatusHeroIcon className={`w-5 h-5 ${statusIcon.color}`} />
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                {headline.title}
+              </h3>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+              {headline.subtitle}
             </p>
-          )}
+
+            {/* Stats row */}
+            <div className="flex items-center gap-2 mt-3 flex-wrap">
+              <StatPill
+                icon={CheckCircle2}
+                label="Succeeded"
+                value={summary.success}
+                color="text-emerald-500"
+              />
+              {summary.failed > 0 && (
+                <StatPill
+                  icon={XCircle}
+                  label="Failed"
+                  value={summary.failed}
+                  color="text-red-500"
+                />
+              )}
+              {summary.skipped > 0 && (
+                <StatPill
+                  icon={Ban}
+                  label="Skipped"
+                  value={summary.skipped}
+                  color="text-slate-400"
+                />
+              )}
+              {plan.durationSeconds > 0 && (
+                <StatPill
+                  icon={Clock}
+                  label="Duration"
+                  value={formatDuration(plan.durationSeconds)}
+                  color="text-indigo-500 dark:text-indigo-400"
+                />
+              )}
+            </div>
+          </div>
         </div>
       </motion.div>
 
-      {/* Task results */}
+      {/* ── Task results ── */}
       <div>
-        <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Task Results</h4>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Task Results
+          </h4>
+          <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums">
+            {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'} total
+          </span>
+        </div>
+
         <div className="space-y-2">
-          {tasks.map((task) => {
-            const TypeIcon = TYPE_ICONS[task.type] || Package
-            const config = STATUS_CONFIG[task.status] || STATUS_CONFIG.complete
-            const StatusIcon = config.icon
-            return (
-              <motion.div
-                key={task.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className={`flex items-center gap-3 p-3 rounded-xl ${config.bg}`}
-              >
-                <StatusIcon className={`w-4 h-4 shrink-0 ${config.color}`} />
-                <TypeIcon className="w-4 h-4 text-slate-400 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm text-slate-900 dark:text-slate-100 truncate block">
-                    {task.sourceRef || task.type}
-                    {task.targetRef && (
-                      <span className="text-slate-400"> &rarr; {task.targetRef}</span>
-                    )}
-                  </span>
-                </div>
-                <span className="text-xs text-slate-400 tabular-nums shrink-0">
-                  {formatDuration(task.durationSeconds)}
-                </span>
-                {task.metadata?.url && (
-                  <a
-                    href={task.metadata.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-500 hover:text-indigo-400 shrink-0"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                )}
-              </motion.div>
-            )
-          })}
+          {/* Successful tasks first */}
+          {successTasks.map((task, i) => (
+            <TaskResultRow key={task.id} task={task} index={i} />
+          ))}
+          {/* Failed tasks */}
+          {failedTasks.map((task, i) => (
+            <TaskResultRow key={task.id} task={task} index={successTasks.length + i} />
+          ))}
+          {/* Skipped/cancelled */}
+          {otherTasks.map((task, i) => (
+            <TaskResultRow key={task.id} task={task} index={successTasks.length + failedTasks.length + i} />
+          ))}
         </div>
       </div>
 
-      {/* Failed task errors */}
-      {errors.length > 0 && (
+      {/* ── Error details ── */}
+      {taskErrors.length > 0 && (
         <div>
-          <h4 className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">Errors</h4>
+          <div className="flex items-center gap-2 mb-3">
+            <Shield className="w-3.5 h-3.5 text-red-500" />
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
+              Error Details
+            </h4>
+            <span className="text-xs text-red-400 dark:text-red-500 tabular-nums">
+              {taskErrors.length} {taskErrors.length === 1 ? 'error' : 'errors'}
+            </span>
+          </div>
+
           <div className="space-y-2">
-            {errors.map((err) => (
-              <div
-                key={err.taskId}
-                className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
-              >
-                <p className="text-sm text-red-700 dark:text-red-300 font-medium">
-                  Task #{err.taskId} ({err.type})
-                </p>
-                <p className="text-xs text-red-600 dark:text-red-400 mt-1">{err.error}</p>
-                {err.suggestion && (
-                  <p className="text-xs text-red-500 dark:text-red-400/80 mt-1 italic">{err.suggestion}</p>
-                )}
-              </div>
+            {taskErrors.map((err, i) => (
+              <ErrorCard key={err.taskId} error={err} index={i} />
             ))}
           </div>
         </div>
       )}
 
-      {/* Action buttons */}
-      <div className="flex items-center gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+      {/* ── Action buttons ── */}
+      <div className="flex items-center gap-3 pt-3 border-t border-slate-200/60 dark:border-white/10">
         <button
           type="button"
           onClick={handleExport}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl
             text-slate-600 dark:text-slate-300
-            bg-slate-100 dark:bg-slate-800
-            hover:bg-slate-200 dark:hover:bg-slate-700
-            transition-colors"
+            bg-white/80 dark:bg-white/5
+            border border-slate-200/60 dark:border-white/10
+            hover:bg-slate-50 dark:hover:bg-white/10
+            hover:border-slate-300 dark:hover:border-white/20
+            transition-all duration-200"
         >
           <Download className="w-4 h-4" />
           Export Report
@@ -250,11 +581,13 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory }) {
           <button
             type="button"
             onClick={onViewHistory}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl
               text-slate-600 dark:text-slate-300
-              bg-slate-100 dark:bg-slate-800
-              hover:bg-slate-200 dark:hover:bg-slate-700
-              transition-colors"
+              bg-white/80 dark:bg-white/5
+              border border-slate-200/60 dark:border-white/10
+              hover:bg-slate-50 dark:hover:bg-white/10
+              hover:border-slate-300 dark:hover:border-white/20
+              transition-all duration-200"
           >
             <History className="w-4 h-4" />
             View in Migration History
@@ -265,12 +598,13 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory }) {
           <button
             type="button"
             onClick={onNewMigration}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl
               text-white
               bg-gradient-to-r from-indigo-500 to-purple-600
               hover:from-indigo-600 hover:to-purple-700
               shadow-lg shadow-indigo-500/25
-              transition-all"
+              hover:shadow-xl hover:shadow-indigo-500/30
+              transition-all duration-200 ml-auto"
           >
             <Plus className="w-4 h-4" />
             New Migration

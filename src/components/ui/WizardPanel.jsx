@@ -164,9 +164,14 @@ export function WizardPanel({
                   initial={{ opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: 0.08 }}
-                  className="flex-shrink-0 w-60 bg-white/80 dark:bg-slate-900/80 ds-glass border-r border-slate-200/60 dark:border-slate-800/50 overflow-y-auto custom-scrollbar"
+                  className="flex-shrink-0 w-60 bg-white/90 dark:bg-slate-900/90 ds-glass border-r border-slate-200/60 dark:border-slate-800/40 overflow-hidden relative"
                 >
-                  {sidebar}
+                  {/* Sidebar atmospheric glow */}
+                  <div className="absolute -bottom-20 -left-10 w-40 h-40 bg-indigo-400/[0.06] dark:bg-indigo-400/[0.08] rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-violet-400/[0.04] dark:bg-violet-400/[0.06] rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+                  <div className="relative h-full overflow-y-auto custom-scrollbar">
+                    {sidebar}
+                  </div>
                 </motion.aside>
               )}
 

@@ -5,6 +5,7 @@ import { useMobileBreakpoint } from '../../hooks/useMobileBreakpoint'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { useMigrationWizard } from '../../hooks/useMigrationWizard'
 import { useAzureOAuth } from '../../hooks/useAzureOAuth'
+import { useAzureOrganizations } from '../../hooks/useAzureOrganizations'
 import { migrationApi } from '../../api/migration'
 import SourceTypeStep from './steps/SourceTypeStep'
 import SourceStep from './steps/SourceStep'
@@ -23,7 +24,8 @@ import SummaryStep from './steps/SummaryStep'
 import BreadcrumbNav from './BreadcrumbNav'
 import {
   ArrowLeft, ArrowRight, Rocket, Download, AlertCircle,
-  Check,
+  Check, Radio, Link2, GitFork, Settings2, Sparkles,
+  CalendarClock, Activity, Flag, Cloud, ChevronRight,
 } from 'lucide-react'
 
 const STEP_LABELS = {
@@ -64,32 +66,129 @@ const slideVariants = {
   exit: (direction) => ({ x: direction > 0 ? -80 : 80, opacity: 0 }),
 }
 
+const STEP_ICONS = {
+  sourceType: Radio,
+  azureConnect: Link2,
+  urlInput: Link2,
+  githubSource: Link2,
+  targetConfig: Settings2,
+  repoSelect: GitFork,
+  repoConfig: Settings2,
+  workItems: Flag,
+  wiki: Flag,
+  aiReview: Sparkles,
+  schedule: CalendarClock,
+  progress: Activity,
+  summary: Check,
+}
+
+const STEP_HINTS = {
+  sourceType: 'Choose platform',
+  azureConnect: 'Authenticate',
+  urlInput: 'Paste clone URL',
+  githubSource: 'Select source',
+  targetConfig: 'Set destination',
+  repoSelect: 'Pick repositories',
+  repoConfig: 'Names & options',
+  workItems: 'Migrate items',
+  wiki: 'Migrate docs',
+  aiReview: 'AI validation',
+  schedule: 'Set timing',
+  progress: 'Live tracking',
+  summary: 'Review results',
+}
+
 /* ------------------------------------------------------------------ */
 /*  Sidebar Stepper (desktop fullscreen)                               */
 /* ------------------------------------------------------------------ */
 function SidebarStepper({ steps, currentStepIndex, onGoToStep, source, selectedCount, onBreadcrumbNavigate, currentStep }) {
+  const VISIBLE_BREADCRUMB_STEPS = ['repoSelect', 'repoConfig', 'workItems', 'wiki', 'aiReview', 'schedule']
+  const showBreadcrumb = source?.sourceType === 'azure' && VISIBLE_BREADCRUMB_STEPS.includes(currentStep)
+
   return (
     <div className="flex flex-col h-full">
-      {/* Breadcrumb (Azure only) */}
-      <div className="px-4 pt-4">
-        <BreadcrumbNav
-          source={source}
-          currentStep={currentStep}
-          selectedCount={selectedCount}
-          onNavigate={onBreadcrumbNavigate}
-        />
+      {/* Breadcrumb */}
+      {showBreadcrumb && (
+        <div className="px-3 pt-4 pb-1">
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gradient-to-r from-indigo-500/[0.08] to-violet-500/[0.08] dark:from-indigo-500/[0.12] dark:to-violet-500/[0.12] border border-indigo-500/10 dark:border-indigo-500/15">
+            <Cloud className="w-3 h-3 text-indigo-400 shrink-0" />
+            <button
+              type="button"
+              onClick={() => onBreadcrumbNavigate('org')}
+              className="text-[11px] font-semibold text-indigo-500 dark:text-indigo-400 hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors truncate max-w-[60px]"
+            >
+              {source.org}
+            </button>
+            <ChevronRight className="w-2.5 h-2.5 text-slate-400 dark:text-slate-600 shrink-0" />
+            <button
+              type="button"
+              onClick={() => onBreadcrumbNavigate('project')}
+              className="text-[11px] font-semibold text-indigo-500 dark:text-indigo-400 hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors truncate max-w-[70px]"
+            >
+              {source.project}
+            </button>
+            {selectedCount > 0 && (
+              <>
+                <ChevronRight className="w-2.5 h-2.5 text-slate-400 dark:text-slate-600 shrink-0" />
+                <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/15 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                  {selectedCount} repos
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Progress summary */}
+      <div className="px-4 pt-4 pb-2">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+            Progress
+          </span>
+          <span className="text-[11px] font-bold text-indigo-500 dark:text-indigo-400 tabular-nums">
+            {currentStepIndex + 1}/{steps.length}
+          </span>
+        </div>
+        <div className="h-1 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500"
+            initial={false}
+            animate={{ width: `${steps.length > 1 ? ((currentStepIndex) / (steps.length - 1)) * 100 : 0}%` }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          />
+        </div>
       </div>
 
       {/* Step list */}
-      <nav aria-label="Wizard steps" className="flex-1 px-3 py-4 overflow-y-auto custom-scrollbar">
-        <ol className="space-y-1">
+      <nav aria-label="Wizard steps" className="flex-1 px-3 py-2 overflow-y-auto custom-scrollbar">
+        <ol className="relative">
+          {/* Vertical track line */}
+          <div
+            className="absolute left-[22px] top-3 bottom-3 w-[2px] rounded-full bg-slate-100 dark:bg-slate-800"
+            aria-hidden="true"
+          />
+          {/* Animated progress fill on the track */}
+          <motion.div
+            className="absolute left-[22px] top-3 w-[2px] rounded-full bg-gradient-to-b from-emerald-400 via-emerald-400 to-indigo-500"
+            aria-hidden="true"
+            initial={false}
+            animate={{
+              height: steps.length > 1
+                ? `${(currentStepIndex / (steps.length - 1)) * 100}%`
+                : '0%',
+            }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          />
+
           {steps.map((step, index) => {
             const isActive = index === currentStepIndex
             const isCompleted = index < currentStepIndex
             const label = STEP_LABELS[step] || step
+            const hint = STEP_HINTS[step] || ''
+            const StepIcon = STEP_ICONS[step] || Radio
 
             return (
-              <li key={step}>
+              <li key={step} className="relative">
                 <button
                   type="button"
                   onClick={() => onGoToStep(step)}
@@ -97,50 +196,91 @@ function SidebarStepper({ steps, currentStepIndex, onGoToStep, source, selectedC
                   aria-label={`${label}${isActive ? ' (current)' : isCompleted ? ' (completed)' : ''}`}
                   aria-current={isActive ? 'step' : undefined}
                   className={`
-                    w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200
+                    w-full flex items-center gap-3 px-2 py-2 rounded-xl text-left transition-all duration-300 group relative
                     ${isActive
-                      ? 'bg-indigo-50 dark:bg-indigo-950/40 ring-1 ring-indigo-200 dark:ring-indigo-800/50'
+                      ? 'bg-gradient-to-r from-indigo-500/[0.12] to-violet-500/[0.08] dark:from-indigo-500/[0.18] dark:to-violet-500/[0.1]'
                       : isCompleted
-                        ? 'hover:bg-slate-100 dark:hover:bg-slate-800/50 cursor-pointer'
-                        : 'opacity-50 cursor-default'
+                        ? 'hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer'
+                        : 'cursor-default'
                     }
                   `}
                 >
-                  <span className={`
-                    flex items-center justify-center rounded-full text-xs font-bold flex-shrink-0 transition-all
-                    ${isActive
-                      ? 'w-8 h-8 bg-indigo-500 text-white ring-4 ring-indigo-500/20'
-                      : isCompleted
-                        ? 'w-6 h-6 bg-emerald-500 text-white'
-                        : 'w-6 h-6 bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
-                    }
-                  `}>
-                    {isCompleted ? <Check className="w-3.5 h-3.5" /> : index + 1}
-                  </span>
-
-                  <span className={`
-                    text-sm font-medium truncate
-                    ${isActive
-                      ? 'text-indigo-700 dark:text-indigo-300'
-                      : isCompleted
-                        ? 'text-slate-700 dark:text-slate-300'
-                        : 'text-slate-400 dark:text-slate-500'
-                    }
-                  `}>
-                    {label}
-                  </span>
-                </button>
-
-                {index < steps.length - 1 && (
-                  <div className="flex justify-center py-0.5">
-                    <div className={`w-0.5 h-3 rounded-full transition-colors ${isCompleted ? 'bg-emerald-400' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                  {/* Step indicator */}
+                  <div className="relative z-10 shrink-0">
+                    {isCompleted ? (
+                      <div className="w-[18px] h-[18px] rounded-full bg-emerald-500 flex items-center justify-center shadow-[0_0_8px_rgba(16,185,129,0.4)]">
+                        <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                      </div>
+                    ) : isActive ? (
+                      <div className="w-[18px] h-[18px] rounded-full bg-indigo-500 flex items-center justify-center shadow-[0_0_12px_rgba(99,102,241,0.5)] ring-[3px] ring-indigo-500/20">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                      </div>
+                    ) : (
+                      <div className="w-[18px] h-[18px] rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500" />
+                      </div>
+                    )}
                   </div>
-                )}
+
+                  {/* Step content */}
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div className={`
+                      w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300
+                      ${isActive
+                        ? 'bg-indigo-500/15 dark:bg-indigo-500/20 text-indigo-500 dark:text-indigo-400'
+                        : isCompleted
+                          ? 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 group-hover:bg-emerald-500/15'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600'
+                      }
+                    `}>
+                      <StepIcon className="w-3.5 h-3.5" strokeWidth={2} />
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className={`
+                        text-[13px] font-semibold truncate leading-tight transition-colors duration-300
+                        ${isActive
+                          ? 'text-indigo-700 dark:text-indigo-300'
+                          : isCompleted
+                            ? 'text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100'
+                            : 'text-slate-400 dark:text-slate-600'
+                        }
+                      `}>
+                        {label}
+                      </div>
+                      <div className={`
+                        text-[10px] truncate leading-tight mt-0.5 transition-colors duration-300
+                        ${isActive
+                          ? 'text-indigo-500/70 dark:text-indigo-400/60'
+                          : isCompleted
+                            ? 'text-slate-400 dark:text-slate-500'
+                            : 'text-slate-300 dark:text-slate-700'
+                        }
+                      `}>
+                        {hint}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Active indicator bar */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeStepBar"
+                      className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full bg-indigo-500"
+                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                </button>
               </li>
             )
           })}
         </ol>
       </nav>
+
+      {/* Bottom ambient glow */}
+      <div className="px-4 pb-4 pt-2">
+        <div className="h-px bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent" />
+      </div>
     </div>
   )
 }
@@ -253,6 +393,7 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
   } = wizard
 
   const oauthHook = useAzureOAuth()
+  const orgsHook = useAzureOrganizations()
   const selectedRepos = repos.filter((r) => r.selected)
   const [direction, setDirection] = useState(1)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -371,7 +512,7 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
       case 'sourceType':
         return <SourceTypeStep source={source} onChange={updateSource} onAdvance={handleNext} />
       case 'azureConnect':
-        return <SourceStep source={source} onChange={updateSource} oauthHook={oauthHook} />
+        return <SourceStep source={source} onChange={updateSource} oauthHook={oauthHook} orgsHook={orgsHook} />
       case 'urlInput':
         return <UrlInputStep source={source} onChange={updateSource} />
       case 'githubSource':
@@ -400,6 +541,8 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
               if (originalIndex !== -1) updateRepo(originalIndex, updates)
             }}
             source={source}
+            orgs={orgs}
+            onChangeDestination={(orgLogin) => updateSource({ targetOrg: orgLogin })}
           />
         )
       case 'workItems':
@@ -419,6 +562,10 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
               onCancel={() => {}}
               onRetryTask={(taskId) => {
                 if (planId) migrationApi.retryTask(planId, taskId).catch(() => {})
+              }}
+              onComplete={() => {
+                setDirection(1)
+                nextStep()
               }}
             />
           )
@@ -454,6 +601,7 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
 
   const hideNextButton = currentStep === 'sourceType'
     || currentStep === 'targetConfig'
+    || currentStep === 'schedule'
     || currentStep === 'progress'
     || currentStep === 'summary'
 
