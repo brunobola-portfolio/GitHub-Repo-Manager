@@ -193,7 +193,18 @@ export const createPlanSchema = z.object({
         z.object({
             type: z.literal('repo'),
             sourceRef: z.string().min(1),
-            targetRef: z.string().min(1).max(100),
+            targetRef: z.string().min(1).max(140),
+            config: z.object({
+                makePrivate: z.boolean().default(true),
+                description: z.string().max(350).default(''),
+                rollbackPolicy: z.enum(['delete', 'keep-empty']).default('delete'),
+                timeout: z.number().min(60000).max(3600000).default(1800000)
+            }).default({})
+        }),
+        z.object({
+            type: z.literal('repo-tfvc'),
+            sourceRef: z.string().min(1),
+            targetRef: z.string().min(1).max(140),
             config: z.object({
                 makePrivate: z.boolean().default(true),
                 description: z.string().max(350).default(''),

@@ -26,6 +26,10 @@ function getHeaders(pat) {
 }
 
 async function azureFetch(url, pat, options = {}) {
+    if (!pat) {
+        throw new Error('Azure DevOps PAT is required. Configure AZURE_PAT in .env or provide a personal PAT.');
+    }
+
     const res = await fetch(url, {
         ...options,
         headers: {
@@ -34,12 +38,22 @@ async function azureFetch(url, pat, options = {}) {
         }
     });
 
+    // Check content-type before parsing — Azure returns HTML on auth failures
+    const contentType = res.headers.get('content-type') || '';
+
     if (!res.ok) {
+        if (contentType.includes('text/html')) {
+            throw new Error(`Azure DevOps authentication failed (HTTP ${res.status}). Check your PAT permissions.`);
+        }
         const body = await res.json().catch(() => null);
         const message = body?.message || `Azure DevOps API error: ${res.status} ${res.statusText}`;
         const error = new Error(message);
         error.status = res.status;
         throw error;
+    }
+
+    if (contentType.includes('text/html')) {
+        throw new Error('Azure DevOps returned HTML instead of JSON. This usually means authentication failed.');
     }
 
     return res.json();
@@ -378,16 +392,71 @@ function escapeWiql(value) {
     return value.replace(/'/g, "''");
 }
 
+/**
+ * Fetch with Bearer token (for OAuth access tokens against VSSPS APIs).
+ * OAuth tokens require Bearer auth, unlike PATs which use Basic auth.
+ */
+async function bearerFetch(url, token) {
+    const res = await fetch(url, {
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    });
+
+    if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        const message = body?.message || `Azure API error: ${res.status} ${res.statusText}`;
+        const error = new Error(message);
+        error.status = res.status;
+        throw error;
+    }
+
+    return res.json();
+}
+
+/**
+ * List organizations the authenticated user has access to (OAuth tokens only).
+ * Uses the VSSPS profile + accounts API with Bearer authentication.
+ */
+async function listOrganizations(token) {
+    // 1. Get the user's profile to retrieve memberId
+    const profile = await bearerFetch(
+        'https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=7.1',
+        token
+    );
+    const memberId = profile.publicAlias || profile.id;
+    if (!memberId) {
+        throw new Error('Could not determine user profile ID');
+    }
+
+    // 2. List accounts (organizations) for this member
+    const accounts = await bearerFetch(
+        `https://app.vssps.visualstudio.com/_apis/accounts?memberId=${encodeURIComponent(memberId)}&api-version=7.1`,
+        token
+    );
+    return (accounts.value || accounts || []).map(a => ({
+        accountId: a.accountId,
+        accountName: a.accountName,
+        accountUri: a.accountUri || ''
+    }));
+}
+
 function buildAuthenticatedCloneUrl(remoteUrl, pat) {
     if (!remoteUrl || !pat) return null;
     // Azure DevOps URLs: https://dev.azure.com/org/project/_git/repo
     // Embed PAT: https://pat@dev.azure.com/org/project/_git/repo
-    return remoteUrl.replace('https://', `https://${encodeURIComponent(pat)}@`);
+    // Decode percent-encoded path segments (e.g. %20 for spaces) — git rejects them with embedded credentials
+    const parsed = new URL(remoteUrl);
+    parsed.pathname = parsed.pathname.split('/').map(seg => decodeURIComponent(seg)).join('/');
+    const cleanUrl = parsed.toString();
+    return cleanUrl.replace('https://', `https://${encodeURIComponent(pat)}@`);
 }
 
 export {
     validatePat,
     listProjects,
+    listOrganizations,
     listRepos,
     getRepoDetails,
     listBranches,

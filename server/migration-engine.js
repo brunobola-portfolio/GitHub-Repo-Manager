@@ -177,16 +177,18 @@ export class MigrationEngine extends EventEmitter {
       throw new Error(`Plan ${planId} not found`)
     }
 
-    // Only draft or paused plans can be executed/resumed
-    if (plan.status !== 'draft' && plan.status !== 'paused') {
+    // Only draft, paused, or running (retry) plans can be executed
+    if (plan.status !== 'draft' && plan.status !== 'paused' && plan.status !== 'running') {
       throw new Error(`Cannot execute plan with status '${plan.status}'`)
     }
 
-    // Transition to running
-    this.db.prepare(
-      'UPDATE migration_plans SET status = ?, started_at = datetime(?) WHERE id = ?'
-    ).run('running', new Date().toISOString(), planId)
-    this.emit('plan-status', { planId, status: 'running' })
+    // Transition to running (skip if already running from retry)
+    if (plan.status !== 'running') {
+      this.db.prepare(
+        'UPDATE migration_plans SET status = ?, started_at = datetime(?) WHERE id = ?'
+      ).run('running', new Date().toISOString(), planId)
+      this.emit('plan-status', { planId, status: 'running' })
+    }
 
     // Get pending tasks sorted by execution_order
     const tasks = this.db.prepare(
@@ -300,7 +302,7 @@ export class MigrationEngine extends EventEmitter {
     this._cancelledPlans.delete(planId)
     this._pausedPlans.delete(planId)
     this.emit('plan-status', { planId, status: finalStatus })
-    this.emit('plan-complete', { planId, summary })
+    this.emit('plan-complete', { planId, status: finalStatus, summary })
   }
 
   /**
@@ -351,7 +353,7 @@ export class MigrationEngine extends EventEmitter {
    * Resumes a paused plan — continues processing pending tasks.
    * @param {number} planId
    */
-  async resumePlan(planId) {
+  async resumePlan(planId, credentials = null) {
     const plan = this.db.prepare('SELECT id, status FROM migration_plans WHERE id = ?').get(planId)
     if (!plan) {
       throw new Error(`Plan ${planId} not found`)
@@ -364,7 +366,7 @@ export class MigrationEngine extends EventEmitter {
 
     // DB already has status 'paused' — executePlan accepts 'paused' and
     // transitions it to 'running', then processes remaining pending tasks
-    await this.executePlan(planId)
+    await this.executePlan(planId, credentials)
   }
 
   /**
@@ -372,8 +374,8 @@ export class MigrationEngine extends EventEmitter {
    * @param {number} planId
    * @param {number} taskId
    */
-  retryTask(planId, taskId) {
-    const plan = this.db.prepare('SELECT id, status FROM migration_plans WHERE id = ?').get(planId)
+  async retryTask(planId, taskId, credentials = null) {
+    const plan = this.db.prepare('SELECT * FROM migration_plans WHERE id = ?').get(planId)
     if (!plan) {
       throw new Error(`Plan ${planId} not found`)
     }
@@ -382,7 +384,7 @@ export class MigrationEngine extends EventEmitter {
     }
 
     const task = this.db.prepare(
-      'SELECT id, status, retries FROM migration_tasks WHERE id = ? AND plan_id = ?'
+      'SELECT * FROM migration_tasks WHERE id = ? AND plan_id = ?'
     ).get(taskId, planId)
     if (!task) {
       throw new Error(`Task ${taskId} not found in plan ${planId}`)
@@ -391,9 +393,22 @@ export class MigrationEngine extends EventEmitter {
       throw new Error(`Cannot retry task with status '${task.status}'`)
     }
 
+    // Reset task to pending
     this.db.prepare(
-      "UPDATE migration_tasks SET status = 'pending', error_message = NULL, retries = ?, started_at = NULL, completed_at = NULL WHERE id = ?"
+      "UPDATE migration_tasks SET status = 'pending', error_message = NULL, retries = ?, started_at = NULL, completed_at = NULL, progress_pct = 0, progress_message = NULL WHERE id = ?"
     ).run(task.retries + 1, taskId)
+    this.emit('task-status', { planId, taskId, status: 'pending' })
+
+    // Set plan back to running and re-execute remaining pending tasks
+    this.db.prepare(
+      "UPDATE migration_plans SET status = 'running', completed_at = NULL WHERE id = ?"
+    ).run(planId)
+    this._cancelledPlans.delete(planId)
+    this._pausedPlans.delete(planId)
+    this.emit('plan-status', { planId, status: 'running' })
+
+    // Re-execute (picks up pending tasks)
+    await this.executePlan(planId, credentials)
   }
 
   /**
@@ -404,13 +419,23 @@ export class MigrationEngine extends EventEmitter {
    */
   async _executeTask(task, credentials) {
     const config = typeof task.config === 'string' ? JSON.parse(task.config) : (task.config || {})
+    // Resolve Azure PAT: use provided credentials, fall back to server env var
+    const resolvedAzurePat = credentials?.azurePat || process.env.AZURE_PAT || null
+    const resolvedCredentials = { ...credentials, azurePat: resolvedAzurePat }
     const callbacks = {
       onProgress: (pct, msg) => this._updateTaskProgress(task.id, task.plan_id, pct, msg),
       isCancelled: () => this._isCancelled(task.plan_id)
     }
 
-    // Parse target_ref to get owner/repo
-    const [targetOwner, targetRepo] = (task.target_ref || '').split('/')
+    // Parse target_ref to get owner/repo — "org/repo" or just "repo" (user account)
+    const targetRefParts = (task.target_ref || '').split('/')
+    const targetOwner = targetRefParts.length > 1 ? targetRefParts[0] : ''
+    const targetRepo = targetRefParts.length > 1 ? targetRefParts.slice(1).join('/') : targetRefParts[0]
+
+    // Validate target repo name before hitting external APIs
+    if (!targetRepo || /^[_.]|[.]$|[/:~&%;@'"?<>|#$*\[\]\\]/.test(targetRepo) || targetRepo.length > 64) {
+      throw new Error(`Invalid target repository name: "${targetRepo}". Names cannot start with _ or ., end with ., contain special characters (/ : \\ ~ & % ; @ ' " ? < > | # $ * [ ]), or exceed 64 characters.`)
+    }
 
     switch (task.type) {
       case 'repo': {
@@ -420,16 +445,23 @@ export class MigrationEngine extends EventEmitter {
         const azureProject = parts[1]
         const azureRepo = parts.slice(2).join('/')
 
-        return await importRepository({
+        const result = await importRepository({
           sourceUrl: `https://dev.azure.com/${azureOrg}/${azureProject}/_git/${azureRepo}`,
-          credentials: credentials?.azurePat ? { type: 'pat', token: credentials.azurePat } : undefined,
+          credentials: resolvedCredentials.azurePat ? { type: 'pat', token: resolvedCredentials.azurePat } : undefined,
           targetOwner,
           targetName: targetRepo,
           isPrivate: config.makePrivate ?? true,
           description: config.description || '',
-          githubToken: credentials?.githubToken,
+          githubToken: resolvedCredentials.githubToken,
           onProgress: (status, message, pct) => callbacks.onProgress(pct, message)
         })
+
+        // importRepository catches errors and returns {success:false} instead of throwing —
+        // we must check the result and throw so the engine marks the task as failed
+        if (!result.success) {
+          throw new Error(result.error || 'GitHub import failed')
+        }
+        return result
       }
       case 'repo-tfvc': {
         // TFVC repo migration: convert TFVC → Git in Azure DevOps, then clone + push to GitHub
@@ -438,10 +470,12 @@ export class MigrationEngine extends EventEmitter {
         const tfvcProject = tfvcParts[1]
         const tfvcFolder = tfvcParts.slice(2).join('/')
         const tfvcPath = `$/${tfvcProject}/${tfvcFolder}`
-        const azurePat = credentials?.azurePat
+        const azurePat = resolvedCredentials.azurePat
 
         callbacks.onProgress(5, 'Creating temporary Git repo in Azure DevOps...')
-        const tempRepoName = `_tfvc-import-${targetRepo}-${Date.now()}`
+        // Sanitize temp repo name for Azure DevOps: no leading underscore/period, no invalid chars, max 64 chars
+        const safeName = targetRepo.replace(/[/:~&%;@'"?<>|#$*\[\]\\]/g, '-').replace(/^[_.]/, 't')
+        const tempRepoName = `tfvc-import-${safeName}-${Date.now()}`.slice(0, 64)
         const tempRepo = await azureService.createGitRepo(tfvcOrg, tfvcProject, tempRepoName, azurePat)
 
         try {
@@ -472,24 +506,34 @@ export class MigrationEngine extends EventEmitter {
             targetName: targetRepo,
             isPrivate: config.makePrivate ?? true,
             description: config.description || '',
-            githubToken: credentials?.githubToken,
+            githubToken: resolvedCredentials.githubToken,
             onProgress: (status, message, pct) => callbacks.onProgress(45 + Math.floor((pct / 100) * 50), message)
           })
 
+          // importRepository catches errors and returns {success:false} instead of throwing —
+          // we must check the result and throw so the engine marks the task as failed
+          if (!result.success) {
+            throw new Error(result.error || 'GitHub import failed after TFVC conversion')
+          }
+
           // Cleanup temp repo
-          try { await azureService.deleteGitRepo(tfvcOrg, tfvcProject, tempRepo.id, azurePat) } catch { /* ignore */ }
+          try { await azureService.deleteGitRepo(tfvcOrg, tfvcProject, tempRepo.id, azurePat) } catch (cleanupErr) {
+            console.warn(`[migration-engine] Failed to cleanup temp repo ${tempRepoName}:`, cleanupErr.message)
+          }
           return result
         } catch (err) {
           // Cleanup temp repo on failure
-          try { await azureService.deleteGitRepo(tfvcOrg, tfvcProject, tempRepo.id, azurePat) } catch { /* ignore */ }
+          try { await azureService.deleteGitRepo(tfvcOrg, tfvcProject, tempRepo.id, azurePat) } catch (cleanupErr) {
+            console.warn(`[migration-engine] Failed to cleanup temp repo ${tempRepoName} after error:`, cleanupErr.message)
+          }
           throw err
         }
       }
       case 'work-items': {
         return await migrateWorkItems(
-          { ...config, org: credentials?.azureOrg, project: credentials?.azureProject },
-          { pat: credentials?.azurePat },
-          credentials?.githubToken,
+          { ...config, org: resolvedCredentials.azureOrg, project: resolvedCredentials.azureProject },
+          { pat: resolvedCredentials.azurePat },
+          resolvedCredentials.githubToken,
           targetOwner,
           targetRepo,
           callbacks
@@ -497,9 +541,9 @@ export class MigrationEngine extends EventEmitter {
       }
       case 'wiki': {
         return await migrateWiki(
-          { ...config, org: credentials?.azureOrg, project: credentials?.azureProject },
-          { pat: credentials?.azurePat },
-          credentials?.githubToken,
+          { ...config, org: resolvedCredentials.azureOrg, project: resolvedCredentials.azureProject },
+          { pat: resolvedCredentials.azurePat },
+          resolvedCredentials.githubToken,
           targetOwner,
           targetRepo,
           { onProgress: (status, message, pct) => callbacks.onProgress(pct, message) }
@@ -609,11 +653,9 @@ export class MigrationEngine extends EventEmitter {
       this._sendSSE(res, 'plan-interrupted', { planId, status: 'interrupted' })
     }
 
-    // 4. If Last-Event-ID header present, emit catch-up event
+    // 4. Always emit catch-up event with current plan state so the client is in sync
     const lastEventId = req.headers['last-event-id']
-    if (lastEventId) {
-      this._sendSSE(res, 'catch-up', plan)
-    }
+    this._sendSSE(res, 'catch-up', plan)
 
     // 5. Register event listeners filtered by planId
     let eventCounter = parseInt(lastEventId) || 0

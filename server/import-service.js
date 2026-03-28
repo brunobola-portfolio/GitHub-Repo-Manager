@@ -161,21 +161,31 @@ function embedCredentials(url, credentials) {
 
     const { type, token, username, password } = credentials;
 
+    // Azure DevOps may return remoteUrl with percent-encoded path segments (e.g. %20 for spaces).
+    // Git's URL parser rejects these when credentials are embedded via @, so we decode path segments.
+    // We use per-segment decodeURIComponent (not decodeURI) to also handle %26, %23, etc.
+    let cleanUrl = url;
+    if (url.includes('dev.azure.com')) {
+        const parsed = new URL(url);
+        parsed.pathname = parsed.pathname.split('/').map(seg => decodeURIComponent(seg)).join('/');
+        cleanUrl = parsed.toString();
+    }
+
     switch (type) {
         case 'pat':
         case 'token':
             // For Azure DevOps: https://PAT@dev.azure.com/...
             // For GitHub: https://x-access-token:TOKEN@github.com/...
-            if (url.includes('dev.azure.com')) {
-                return url.replace('https://', `https://${encodeURIComponent(token)}@`);
+            if (cleanUrl.includes('dev.azure.com')) {
+                return cleanUrl.replace('https://', `https://${encodeURIComponent(token)}@`);
             }
-            return url.replace('https://', `https://x-access-token:${encodeURIComponent(token)}@`);
+            return cleanUrl.replace('https://', `https://x-access-token:${encodeURIComponent(token)}@`);
 
         case 'basic':
-            return url.replace('https://', `https://${encodeURIComponent(username)}:${encodeURIComponent(password)}@`);
+            return cleanUrl.replace('https://', `https://${encodeURIComponent(username)}:${encodeURIComponent(password)}@`);
 
         default:
-            return url;
+            return cleanUrl;
     }
 }
 

@@ -8,19 +8,65 @@ import db from '../db.js';
 const router = express.Router();
 const engine = new MigrationEngine(db);
 
+/**
+ * Generate a human-friendly suggestion for a migration error
+ */
+function getSuggestionForError(errorMsg, type) {
+  if (!errorMsg) return '';
+  const msg = errorMsg.toLowerCase();
+  // Auth errors
+  if (msg.includes('authentication') || msg.includes('401') || msg.includes('403') || msg.includes('pat is required'))
+    return 'Your access token may have expired or lacks the required permissions. Verify the token is valid and has repository read access.';
+  // Not found
+  if (msg.includes('not found') || msg.includes('404'))
+    return 'The source repository could not be found. Verify the organization, project, and repository name are correct.';
+  // Target already exists
+  if (msg.includes('already exists'))
+    return 'A repository with the same name already exists on the target. Rename the target or delete the existing repository first.';
+  // Invalid target repo name
+  if (msg.includes('invalid target repository name'))
+    return 'The target repository name is invalid. Names cannot start with _ or ., end with ., or contain special characters. Rename and try again.';
+  // URL/network issues
+  if (msg.includes('url rejected') || msg.includes('bad hostname'))
+    return 'The clone URL was rejected — this can happen with special characters in the project name. Try re-running the migration.';
+  if (msg.includes('private or internal network') || msg.includes('resolves to a private'))
+    return 'The repository URL was blocked because it resolved to a private or internal network address. Verify the source URL is a public Azure DevOps address.';
+  // Timeouts
+  if (msg.includes('timeout') || msg.includes('timed out'))
+    return 'The operation timed out. This can happen with very large repositories. Try again or consider migrating during off-peak hours.';
+  // TFVC conversion
+  if (msg.includes('tfvc conversion failed'))
+    return 'The TFVC-to-Git conversion failed on the Azure DevOps side. Verify the TFVC path exists and the project supports Git imports.';
+  // Rate limiting
+  if (msg.includes('rate limit'))
+    return 'A rate limit was hit. Wait a few minutes and retry the migration.';
+  // Wiki-specific
+  if (msg.includes('could not retrieve wiki clone url'))
+    return 'The wiki could not be found in Azure DevOps. Verify the wiki ID is correct and the project has an active wiki.';
+  // Type-specific fallbacks (must remain after more specific patterns above)
+  if (type === 'work-items')
+    return 'Work item migration encountered an error. Verify the Azure DevOps project has accessible work items and the token has work item read permissions.';
+  if (type === 'wiki')
+    return 'Wiki migration failed. Verify the wiki exists and is accessible with your current credentials.';
+  return '';
+}
+
 // POST /api/migration/plans — Create a new plan
 router.post('/migration/plans', requireAuth, async (req, res) => {
   try {
     const parsed = createPlanSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: 'Validation failed', details: parsed.error.flatten() });
+      const flat = parsed.error.flatten();
+      console.error('[migration] Plan validation failed:', JSON.stringify(flat, null, 2));
+      console.error('[migration] Request body:', JSON.stringify(req.body, null, 2));
+      return res.status(400).json({ error: 'Validation failed', details: flat });
     }
     const { source, tasks, targetOrg, schedule } = parsed.data;
     const planId = engine.createPlan(req.session.userId, source, tasks, { targetOrg, isDryRun: schedule?.isDryRun });
     if (schedule?.mode === 'scheduled' && schedule?.scheduledAt) {
       const credentials = {
         githubToken: req.session.accessToken,
-        azurePat: req.body.source?.pat || null,
+        azurePat: source.pat || null,
         azureOrg: source.org,
         azureProject: source.project
       };
@@ -106,7 +152,8 @@ router.post('/migration/plans/:id/execute', requireAuth, async (req, res) => {
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
 
     // Extract credentials from session for immediate execution
-    const azurePat = typeof req.body.azurePat === 'string' ? req.body.azurePat : null;
+    const body = req.body || {};
+    const azurePat = typeof body.azurePat === 'string' ? body.azurePat : null;
     const credentials = {
       githubToken: req.session.accessToken,
       azurePat,
@@ -153,7 +200,14 @@ router.post('/migration/plans/:id/resume', requireAuth, async (req, res) => {
   try {
     const plan = engine.getPlanStatus(parseInt(req.params.id));
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
-    engine.resumePlan(parseInt(req.params.id)).catch(err => {
+    const resumeBody = req.body || {};
+    const resumeCredentials = {
+      githubToken: req.session.accessToken,
+      azurePat: typeof resumeBody.azurePat === 'string' ? resumeBody.azurePat : null,
+      azureOrg: plan.source_org,
+      azureProject: plan.source_project
+    };
+    engine.resumePlan(parseInt(req.params.id), resumeCredentials).catch(err => {
       console.error('Plan resume error:', err);
     });
     res.json({ success: true });
@@ -167,7 +221,16 @@ router.post('/migration/plans/:id/tasks/:taskId/retry', requireAuth, async (req,
   try {
     const plan = engine.getPlanStatus(parseInt(req.params.id));
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
-    engine.retryTask(parseInt(req.params.id), parseInt(req.params.taskId));
+    const retryBody = req.body || {};
+    const retryCredentials = {
+      githubToken: req.session.accessToken,
+      azurePat: typeof retryBody.azurePat === 'string' ? retryBody.azurePat : null,
+      azureOrg: plan.source_org,
+      azureProject: plan.source_project
+    };
+    engine.retryTask(parseInt(req.params.id), parseInt(req.params.taskId), retryCredentials).catch(err => {
+      console.error('Task retry error:', err);
+    });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: safeError(err, 'Operation failed') });
@@ -211,10 +274,11 @@ router.get('/migration/plans/:id/report', requireAuth, async (req, res) => {
       metadata: t.metadata || {}
     }));
     const errors = plan.tasks.filter(t => t.status === 'failed').map(t => ({
-      taskId: t.id, type: t.type, error: t.error_message || 'Unknown error', suggestion: ''
+      taskId: t.id, type: t.type, error: t.error_message || 'Unknown error',
+      suggestion: getSuggestionForError(t.error_message, t.type)
     }));
     res.json({
-      plan: { id: plan.id, status: plan.status, startedAt, completedAt, durationSeconds },
+      plan: { id: plan.id, status: plan.status, isDryRun: !!plan.is_dry_run, startedAt, completedAt, durationSeconds },
       summary, tasks, errors, generatedAt: new Date().toISOString()
     });
   } catch (err) {
