@@ -43,8 +43,8 @@ import bulkRoutes from './routes/bulk.js';
 
 initDB();
 
-// Seed mock data if in mock mode (for demo/development)
-if (process.env.VITE_MOCK_MODE !== 'false') {
+// Seed mock data only when explicitly enabled (for demo/development)
+if (process.env.VITE_MOCK_MODE === 'true') {
     seedMockData();
 }
 

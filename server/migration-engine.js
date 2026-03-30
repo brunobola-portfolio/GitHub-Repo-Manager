@@ -4,6 +4,7 @@ import { migrateWorkItems } from './work-item-service.js'
 import { migrateWiki } from './wiki-service.js'
 import * as azureService from './azure-service.js'
 import { encryptCredentials, decryptCredentials, isSchedulingEnabled } from './lib/credential-encryption.js'
+import logger from './lib/logger.js'
 
 export class MigrationEngine extends EventEmitter {
   constructor(db) {
@@ -498,7 +499,7 @@ export class MigrationEngine extends EventEmitter {
 
           callbacks.onProgress(45, 'Cloning converted repository...')
           const repoDetails = await azureService.getRepoDetails(tfvcOrg, tfvcProject, tempRepoName, azurePat)
-          console.log(`[migration-engine] TFVC temp repo remoteUrl: ${repoDetails.remoteUrl?.replace(/\/\/[^@]*@/, '//***@')}`)
+          logger.debug({ remoteUrl: repoDetails.remoteUrl?.replace(/\/\/[^@]*@/, '//***@') }, 'TFVC temp repo created')
 
           const result = await importRepository({
             sourceUrl: repoDetails.remoteUrl,
@@ -519,13 +520,13 @@ export class MigrationEngine extends EventEmitter {
 
           // Cleanup temp repo
           try { await azureService.deleteGitRepo(tfvcOrg, tfvcProject, tempRepo.id, azurePat) } catch (cleanupErr) {
-            console.warn(`[migration-engine] Failed to cleanup temp repo ${tempRepoName}:`, cleanupErr.message)
+            logger.warn({ err: cleanupErr, tempRepoName }, 'Failed to cleanup temp repo')
           }
           return result
         } catch (err) {
           // Cleanup temp repo on failure
           try { await azureService.deleteGitRepo(tfvcOrg, tfvcProject, tempRepo.id, azurePat) } catch (cleanupErr) {
-            console.warn(`[migration-engine] Failed to cleanup temp repo ${tempRepoName} after error:`, cleanupErr.message)
+            logger.warn({ err: cleanupErr, tempRepoName }, 'Failed to cleanup temp repo after error')
           }
           throw err
         }
@@ -587,11 +588,11 @@ export class MigrationEngine extends EventEmitter {
           // Clear credentials immediately after reading
           this.db.prepare('UPDATE migration_plans SET credentials_enc = NULL WHERE id = ?').run(plan.id)
           this.executePlan(plan.id, credentials).catch(err => {
-            console.error(`Scheduled plan ${plan.id} failed:`, err)
+            logger.error({ err, planId: plan.id }, 'Scheduled plan failed')
           })
         }
       } catch (err) {
-        console.error('Scheduler tick error:', err)
+        logger.error({ err }, 'Scheduler tick error')
       }
     }, 30000)
   }

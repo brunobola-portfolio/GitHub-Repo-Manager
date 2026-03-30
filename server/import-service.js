@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { promises as dns } from 'dns';
+import logger from './lib/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -224,8 +225,7 @@ async function importRepository(params) {
         onProgress('validating', 'Validating source repository...', 5);
 
         const authSourceUrl = credentials ? embedCredentials(sourceUrl, credentials) : sourceUrl;
-        console.log(`[import-service] sourceUrl: ${safeUrl(sourceUrl)}`);
-        console.log(`[import-service] authUrl:   ${safeUrl(authSourceUrl)}`);
+        logger.debug({ sourceUrl: safeUrl(sourceUrl), authUrl: safeUrl(authSourceUrl) }, 'Import started');
         const validation = await validateSourceUrl(sourceUrl, credentials);
         if (!validation.valid) {
             throw new Error(validation.error);
@@ -283,7 +283,7 @@ async function importRepository(params) {
             try {
                 await lfsGit.raw(['lfs', 'fetch', '--all']);
             } catch (e) {
-                console.warn(`[import-service] LFS fetch warning: ${e.message}`);
+                logger.warn({ err: e }, 'LFS fetch warning');
                 // Continue even if LFS fetch fails - pointers will still be pushed
             }
         }
@@ -302,7 +302,7 @@ async function importRepository(params) {
             try {
                 await bareGit.raw(['lfs', 'push', '--all', 'github']);
             } catch (e) {
-                console.warn(`[import-service] LFS push warning: ${e.message}`);
+                logger.warn({ err: e }, 'LFS push warning');
             }
         }
 
@@ -338,7 +338,7 @@ async function importRepository(params) {
                 rmSync(workDir, { recursive: true, force: true });
             }
         } catch (e) {
-            console.warn(`[import-service] Cleanup warning: ${e.message}`);
+            logger.warn({ err: e }, 'Import cleanup warning');
         }
     }
 }
