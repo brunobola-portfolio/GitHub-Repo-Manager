@@ -498,6 +498,7 @@ export class MigrationEngine extends EventEmitter {
 
           callbacks.onProgress(45, 'Cloning converted repository...')
           const repoDetails = await azureService.getRepoDetails(tfvcOrg, tfvcProject, tempRepoName, azurePat)
+          console.log(`[migration-engine] TFVC temp repo remoteUrl: ${repoDetails.remoteUrl?.replace(/\/\/[^@]*@/, '//***@')}`)
 
           const result = await importRepository({
             sourceUrl: repoDetails.remoteUrl,
