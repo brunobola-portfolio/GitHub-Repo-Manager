@@ -92,4 +92,60 @@ Key services:
 - `server/migration-engine.js` — Plan-based migration with task types: `repo`, `repo-tfvc`, `work-items`, `wiki`.
 - `server/migration-planner.js` — AI-assisted (Gemini) or fallback risk analysis for migrations.
 
+## System Architecture Diagram
+
+```mermaid
+graph TB
+    subgraph Client["Browser"]
+        UI["React 19 SPA<br/>Vite 7 + Tailwind CSS 4"]
+        Hooks["Custom Hooks<br/>useGitHub, useAuth, useTheme"]
+        Wizard["Migration Wizard<br/>Multi-step planning UI"]
+        SSE["SSE Client<br/>Real-time progress"]
+    end
+
+    subgraph Server["Express 5 Backend :3001"]
+        direction TB
+        MW["Middleware Layer<br/>Helmet, Rate Limit, CORS, Auth"]
+        Routes["Route Handlers<br/>repos, orgs, teams, migration,<br/>azure, ai, import, stats"]
+        Engine["Migration Engine<br/>Plan execution, scheduling,<br/>task orchestration"]
+        Import["Import Service<br/>Git clone/push pipeline"]
+        AI["AI Service<br/>Gemini integration"]
+        Azure["Azure Service<br/>DevOps REST API v7.1"]
+    end
+
+    subgraph Storage["Data Layer"]
+        DB[("SQLite<br/>WAL mode")]
+        Sessions["Session Store<br/>Server-side"]
+    end
+
+    subgraph External["External Services"]
+        GH["GitHub REST API<br/>OAuth + Repos + Actions"]
+        Gemini["Google Gemini AI<br/>Analysis + Planning"]
+        ADO["Azure DevOps API<br/>Git, TFVC, Work Items, Wikis"]
+    end
+
+    UI --> Hooks
+    UI --> Wizard
+    Hooks -->|"/api/*"| MW
+    Wizard -->|"/api/migration/*"| MW
+    SSE -.->|"EventSource"| Routes
+
+    MW --> Routes
+    Routes --> Engine
+    Routes --> Import
+    Routes --> AI
+    Routes --> Azure
+    Engine --> Import
+    Engine --> Azure
+
+    Routes --> DB
+    MW --> Sessions
+    Sessions --> DB
+
+    Routes --> GH
+    AI --> Gemini
+    Azure --> ADO
+    Import -->|"simple-git"| GH
+```
+
 This document is a high-level guide; see inline comments and the README for more details.

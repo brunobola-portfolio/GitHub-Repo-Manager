@@ -118,26 +118,20 @@ Evaluate and improve repository community standards.
 - **⚡ Performance Cache**: Fast repeated access with intelligent caching
 - **🔍 Multi-Repo Comparison**: Compare health scores across repositories
 
-### 🔄 Azure DevOps Import (Basic)
-Import Git repositories from Azure DevOps to GitHub with a streamlined workflow.
+### 🔄 Azure DevOps Migration Suite
 
-**✅ Currently Supported:**
-- **📥 Git Repository Code**: Complete history, branches, and tags preservation
-- **🔗 Connection Verification**: Validate Azure DevOps credentials before import
-- **🎯 Flexible Targeting**: Import to personal account or organization
-- **🔒 Privacy Controls**: Choose public or private repository visibility
-- **🛡️ Safe Import**: Read-only operation that preserves your original Azure DevOps data
+Full-featured migration from Azure DevOps to GitHub with a guided multi-step wizard.
 
-**⚠️ Current Limitations:**
-- **Pull Requests**: Not automatically migrated (manual recreation required)
-- **Work Items/Boards**: Not migrated (Azure Boards → GitHub Issues conversion not available)
-- **Pipelines**: Not converted (Azure Pipelines → GitHub Actions requires manual setup)
-- **Wiki**: Not migrated (requires manual export/import)
-- **Test Plans**: Not supported
-- **Artifacts**: Not supported
-
-**🗺️ Future Roadmap:**
-Full Azure DevOps migration capabilities (Work Items, Pipelines, Wiki) are planned for **v3.0+**. Current version focuses on essential Git repository migration for quick project transfers.
+- **📥 Git Repositories**: Complete history, branches, and tags preservation
+- **📂 TFVC Repositories**: Automatic TFVC-to-Git conversion via Azure DevOps Import API (up to 180 days of history), with ZIP snapshot fallback
+- **📋 Work Items**: Migrate Azure Boards work items to GitHub Issues with field mapping, state conversion, and comment history
+- **📖 Wiki Migration**: Clone Azure DevOps project wikis to GitHub repositories
+- **🧙 Migration Wizard**: Step-by-step guided flow with source discovery, repo selection, target configuration, and real-time progress tracking
+- **🤖 AI-Assisted Planning**: Gemini-powered risk analysis and migration recommendations
+- **📅 Scheduled Migrations**: Queue plans for off-peak execution with encrypted credential storage
+- **⏸️ Pause/Resume**: Interrupt and continue long-running migrations without data loss
+- **🔄 Task Retry**: Retry individual failed tasks without re-running the entire plan
+- **📊 Migration History**: Full audit trail with per-task status, duration, and error details
 
 ### 🎯 Additional Power Features
 
@@ -543,17 +537,15 @@ A: In GitHub Issues with the `enhancement` label.
 - [x] **Mobile Responsiveness**: Responsive AI Assistant, touch-friendly repo actions, adaptive padding
 - [x] **GitHub API Optimization**: ETag conditional requests, rate limit tracking, batched team requests
 
-### v2.5 (Q2 2026)
+### v2.5 (Q2 2026) - IN PROGRESS
 
+- [x] **Azure DevOps Migration Suite**: Full TFVC, Work Items, and Wiki migration with guided wizard
+- [x] **AI-Assisted Migration Planning**: Gemini-powered risk analysis and recommendations
+- [x] **Migration Scheduling**: Queue migrations with encrypted credential storage
 - [ ] **Advanced Analytics**: Historical trends, commit activity heatmaps, contributor insights
 - [ ] **Custom Themes**: User-customizable color schemes and glassmorphism intensity
-- [ ] **Keyboard Shortcuts**: Power-user shortcuts for common actions
 - [ ] **Repository Templates**: Save and reuse repository configurations
-- [ ] **Mobile App**: React Native companion for on-the-go management
 - [ ] **GitHub Enterprise Support**: Connect to self-hosted GitHub instances
-- [ ] **Data Export**: Export repository data to CSV, JSON, or Excel
-- [ ] **Webhooks Dashboard**: Real-time webhook monitoring and debugging
-- [ ] **Collaborative Features**: Share repository collections with team members
 
 ### v3.0 (Q3 2026)
 

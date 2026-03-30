@@ -1,4 +1,5 @@
 import express from 'express';
+import logger from '../lib/logger.js';
 import { requireAuth, safeError } from '../middleware/auth.js';
 import { MigrationEngine } from '../migration-engine.js';
 import { createPlanSchema, updatePlanSchema } from '../lib/validators.js';
@@ -57,8 +58,7 @@ router.post('/migration/plans', requireAuth, async (req, res) => {
     const parsed = createPlanSchema.safeParse(req.body);
     if (!parsed.success) {
       const flat = parsed.error.flatten();
-      console.error('[migration] Plan validation failed:', JSON.stringify(flat, null, 2));
-      console.error('[migration] Request body:', JSON.stringify(req.body, null, 2));
+      logger.warn({ errors: flat }, 'Migration plan validation failed');
       return res.status(400).json({ error: 'Validation failed', details: flat });
     }
     const { source, tasks, targetOrg, schedule } = parsed.data;
@@ -163,7 +163,7 @@ router.post('/migration/plans/:id/execute', requireAuth, async (req, res) => {
 
     // Start execution asynchronously
     engine.executePlan(parseInt(req.params.id), credentials).catch(err => {
-      console.error('Plan execution error:', err);
+      logger.error({ err, planId: req.params.id }, 'Plan execution error');
     });
     res.json({ success: true, message: 'Execution started' });
   } catch (err) {
@@ -208,7 +208,7 @@ router.post('/migration/plans/:id/resume', requireAuth, async (req, res) => {
       azureProject: plan.source_project
     };
     engine.resumePlan(parseInt(req.params.id), resumeCredentials).catch(err => {
-      console.error('Plan resume error:', err);
+      logger.error({ err, planId: req.params.id }, 'Plan resume error');
     });
     res.json({ success: true });
   } catch (err) {
@@ -229,7 +229,7 @@ router.post('/migration/plans/:id/tasks/:taskId/retry', requireAuth, async (req,
       azureProject: plan.source_project
     };
     engine.retryTask(parseInt(req.params.id), parseInt(req.params.taskId), retryCredentials).catch(err => {
-      console.error('Task retry error:', err);
+      logger.error({ err, planId: req.params.id, taskId: req.params.taskId }, 'Task retry error');
     });
     res.json({ success: true });
   } catch (err) {
