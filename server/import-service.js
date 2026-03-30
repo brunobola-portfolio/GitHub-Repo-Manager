@@ -161,31 +161,25 @@ function embedCredentials(url, credentials) {
 
     const { type, token, username, password } = credentials;
 
-    // Azure DevOps may return remoteUrl with percent-encoded path segments (e.g. %20 for spaces).
-    // Git's URL parser rejects these when credentials are embedded via @, so we decode path segments.
-    // We use per-segment decodeURIComponent (not decodeURI) to also handle %26, %23, etc.
-    let cleanUrl = url;
-    if (url.includes('dev.azure.com')) {
-        const parsed = new URL(url);
-        parsed.pathname = parsed.pathname.split('/').map(seg => decodeURIComponent(seg)).join('/');
-        cleanUrl = parsed.toString();
-    }
+    // Azure DevOps may return remoteUrl with existing userinfo (e.g. org@dev.azure.com).
+    // Naive string replace ('https://' → 'https://PAT@') creates double @ which breaks URL parsing.
+    // We use URL.host (excludes userinfo) and URL.pathname (keeps %20 encoding intact) to build
+    // a clean URL with only the new credentials.
+    const parsed = new URL(url);
 
     switch (type) {
         case 'pat':
         case 'token':
-            // For Azure DevOps: https://PAT@dev.azure.com/...
-            // For GitHub: https://x-access-token:TOKEN@github.com/...
-            if (cleanUrl.includes('dev.azure.com')) {
-                return cleanUrl.replace('https://', `https://${encodeURIComponent(token)}@`);
+            if (parsed.hostname === 'dev.azure.com') {
+                return `https://${encodeURIComponent(token)}@${parsed.host}${parsed.pathname}`;
             }
-            return cleanUrl.replace('https://', `https://x-access-token:${encodeURIComponent(token)}@`);
+            return `https://x-access-token:${encodeURIComponent(token)}@${parsed.host}${parsed.pathname}`;
 
         case 'basic':
-            return cleanUrl.replace('https://', `https://${encodeURIComponent(username)}:${encodeURIComponent(password)}@`);
+            return `https://${encodeURIComponent(username)}:${encodeURIComponent(password)}@${parsed.host}${parsed.pathname}`;
 
         default:
-            return cleanUrl;
+            return url;
     }
 }
 
@@ -230,6 +224,8 @@ async function importRepository(params) {
         onProgress('validating', 'Validating source repository...', 5);
 
         const authSourceUrl = credentials ? embedCredentials(sourceUrl, credentials) : sourceUrl;
+        console.log(`[import-service] sourceUrl: ${safeUrl(sourceUrl)}`);
+        console.log(`[import-service] authUrl:   ${safeUrl(authSourceUrl)}`);
         const validation = await validateSourceUrl(sourceUrl, credentials);
         if (!validation.valid) {
             throw new Error(validation.error);

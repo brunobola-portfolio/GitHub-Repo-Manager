@@ -444,13 +444,10 @@ async function listOrganizations(token) {
 
 function buildAuthenticatedCloneUrl(remoteUrl, pat) {
     if (!remoteUrl || !pat) return null;
-    // Azure DevOps URLs: https://dev.azure.com/org/project/_git/repo
-    // Embed PAT: https://pat@dev.azure.com/org/project/_git/repo
-    // Decode percent-encoded path segments (e.g. %20 for spaces) — git rejects them with embedded credentials
+    // Azure DevOps URLs may contain existing userinfo (org@dev.azure.com).
+    // URL.host excludes userinfo, URL.pathname keeps %20 encoding intact.
     const parsed = new URL(remoteUrl);
-    parsed.pathname = parsed.pathname.split('/').map(seg => decodeURIComponent(seg)).join('/');
-    const cleanUrl = parsed.toString();
-    return cleanUrl.replace('https://', `https://${encodeURIComponent(pat)}@`);
+    return `https://${encodeURIComponent(pat)}@${parsed.host}${parsed.pathname}`;
 }
 
 export {
