@@ -128,13 +128,22 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                             <Sparkles size={20} />
                             <h3 className="font-semibold ds-font-display">Gemini Assistant</h3>
                         </div>
-                        <button
-                            onClick={() => setShowSettings(true)}
-                            className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-                            title="AI Settings"
-                        >
-                            <Settings size={16} />
-                        </button>
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => setShowSettings(true)}
+                                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+                                title="AI Settings"
+                            >
+                                <Settings size={16} />
+                            </button>
+                            <button
+                                onClick={() => setIsOpen(false)}
+                                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+                                title="Close assistant"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
                     </div>
 
                     {!isConfigured ? (
