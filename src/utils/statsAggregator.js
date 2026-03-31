@@ -10,7 +10,7 @@ export function shouldShowCategory(categoryKey, data) {
     pullRequests: () => data.repos?.some(r => r.has_issues) || data.stats?.totalPRs > 0,
     issues: () => data.repos?.some(r => r.has_issues) || data.stats?.totalIssues > 0,
     actions: () => data.stats?.hasActions || data.repos?.some(r => r.has_workflows),
-    health: () => data.stats?.healthAnalyzed > 0,
+    health: () => data.stats?.healthAnalyzed > 0 || data.repos?.length > 0,
     teams: () => data.teams?.length > 0,
     organizations: () => data.orgs?.length > 1
   }
