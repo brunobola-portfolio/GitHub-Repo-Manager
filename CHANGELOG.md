@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-03-31
+
+### Added
+
+- **Azure DevOps Migration Suite**: Guided multi-step wizard (8 steps) for comprehensive Azure DevOps-to-GitHub migration
+- **TFVC-to-Git Conversion**: Automatic conversion via Azure DevOps Import API
+- **Work Items Migration**: Azure Boards to GitHub Issues with field mapping
+- **Wiki Migration**: Azure DevOps to GitHub wiki with content conversion
+- **AI-Assisted Migration Planning**: Gemini-powered risk analysis and migration recommendations
+- **Migration Scheduling**: Encrypted credential storage (AES-256-GCM) for deferred migrations
+- **Pause/Resume**: Capability for long-running migrations
+- **Task Retry**: Individual failed migration tasks can be retried independently
+- **Migration History**: Full audit trail for all migration operations
+- **Smart Azure DevOps URL Parser**: Supports 6+ URL format variations with auto-fill
+- **Dry-Run Mode**: Test migrations without making changes
+- **Conflict Detection**: Pre-migration check for existing repositories in target organization
+
+### Changed
+
+- **Migration Wizard Redesign**: Fullscreen panel layout replacing modal-based wizard
+- **Summary Step**: Redesigned with detailed migration plan review
+- **Organization Field**: Smart auto-detection based on authentication method
+- **Configure Step**: Improved UX with dashboard header and compact card-row layout
+
+### Fixed
+
+- TFVC credential embedding double-`@` and URL encoding for PAT-based authentication
+- TFVC URL encoding for projects with spaces in their names
+- TFVC repositories now shown in mixed Git+TFVC Azure DevOps projects
+- TFVC folder size calculation and branch 404 errors
+- Wizard navigation state management fixes
+
+### Security
+
+- Structured logging with Pino (automatic credential redaction)
+- SSRF protection for work item attachment downloads
+- Encrypted credential storage (AES-256-GCM) for scheduled migrations
+
 ## [2.4.0] - 2026-02-07
 
 ### Added
@@ -229,12 +267,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## Links
-
-- [v2.4.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v2.4.0)
-- [v2.3.1](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v2.3.1)
-- [v2.3.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v2.3.0)
-- [v2.2.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v2.2.0)
-- [v2.1.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v2.1.0)
-- [v2.0.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v2.0.0)
-- [v1.0.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v1.0.0)
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.4.0...v2.5.0
+[2.4.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.3.1...v2.4.0
+[2.3.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.3.0...v2.3.1
+[2.3.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.2.0...v2.3.0
+[2.2.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.1.0...v2.2.0
+[2.1.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v1.0.0...v2.0.0
+[1.0.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v1.0.0
