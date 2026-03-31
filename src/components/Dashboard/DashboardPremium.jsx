@@ -230,18 +230,13 @@ export function DashboardPremium({
             )}
 
             {/* CATEGORY 4: Health & Quality (Conditional) */}
-            {categories.health && (
+            {categories.health && repos.length > 0 && (
                 <CategorySection
                     title="Health & Quality"
                     icon={Heart}
                     defaultExpanded={true}
                 >
-                    <EmptyState
-                        icon={CheckCircle2}
-                        title="Repository Health Overview Coming Soon"
-                        description="View community health scores, missing files, and improvement recommendations."
-                        gradient="from-emerald-500 to-teal-600"
-                    />
+                    <HealthOverview repos={repos} openModalWithData={openModalWithData} />
                 </CategorySection>
             )}
 
@@ -348,6 +343,75 @@ export function DashboardPremium({
                 </CategorySection>
             )}
         </motion.div>
+    )
+}
+
+/**
+ * HealthOverview - Shows top repos with quick health check buttons
+ */
+function HealthOverview({ repos, openModalWithData }) {
+    // Pick up to 6 repos sorted by stars (most popular first)
+    const topRepos = useMemo(() =>
+        [...repos]
+            .filter(r => !r.fork && !r.archived)
+            .sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0))
+            .slice(0, 6),
+        [repos]
+    )
+
+    const totalRepos = repos.filter(r => !r.fork && !r.archived).length
+
+    return (
+        <div className="space-y-4">
+            {/* Summary bar */}
+            <div className="flex flex-wrap items-center gap-3 px-1">
+                <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span><strong>{totalRepos}</strong> source repos available for health analysis</span>
+                </div>
+                <span className="text-xs text-slate-400 dark:text-slate-500">Click any repo to run a full health check</span>
+            </div>
+
+            {/* Repo grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                {topRepos.map(repo => (
+                    <motion.button
+                        key={repo.id}
+                        type="button"
+                        whileHover={{ y: -2 }}
+                        onClick={() => openModalWithData('showCommunityHealth', repo)}
+                        className="flex items-center gap-3 p-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/40 dark:border-slate-800/40 rounded-xl hover:border-emerald-300 dark:hover:border-emerald-500/50 hover:shadow-lg text-left transition-all group"
+                    >
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 flex items-center justify-center shrink-0 group-hover:from-emerald-500/20 group-hover:to-teal-500/20 transition-colors">
+                            <Heart className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-sm text-slate-900 dark:text-white truncate">
+                                {repo.name}
+                            </h4>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                {repo.language && (
+                                    <span className="text-xs text-slate-500 dark:text-slate-400">{repo.language}</span>
+                                )}
+                                {repo.stargazers_count > 0 && (
+                                    <span className="flex items-center gap-0.5 text-xs text-slate-400 dark:text-slate-500">
+                                        <Star className="w-3 h-3" /> {repo.stargazers_count}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        <CheckCircle2 className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors shrink-0" />
+                    </motion.button>
+                ))}
+            </div>
+
+            {/* Show more hint */}
+            {totalRepos > 6 && (
+                <p className="text-xs text-center text-slate-400 dark:text-slate-500 pt-1">
+                    Showing top 6 of {totalRepos} repos. Run individual health checks from the Repositories view.
+                </p>
+            )}
+        </div>
     )
 }
 
