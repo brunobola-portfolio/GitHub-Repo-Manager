@@ -288,8 +288,6 @@ docker compose up -d
 # App is now running at http://localhost:3001
 ```
 
-> **Note**: Docker support is part of the v3.0 roadmap. A `docker-compose.yml` will be provided in that release.
-
 ---
 
 ## Configuration
@@ -625,7 +623,7 @@ The next major release transforms GitHub Repo Manager from a local tool into an 
 
 #### Infrastructure & Architecture
 
-- [ ] Docker & Docker Compose support (self-host in one command)
+- [x] Docker & Docker Compose support (self-host in one command)
 - [ ] Database abstraction layer (SQLite for self-hosted, PostgreSQL for cloud)
 - [ ] Redis sessions & BullMQ job queues for horizontal scaling
 - [ ] Multi-tenancy with user-scoped data isolation
