@@ -541,7 +541,7 @@ A: No! Demo mode works without any accounts. Real mode requires GitHub OAuth.
 A: Yes. Encrypted session cookies, server-side token storage, parameterized SQL, and all data stays on your machine.
 
 **Q: Can I use this with GitHub Enterprise?**
-A: Not yet — it's on the roadmap for v3.0.
+A: Not yet — it's on the roadmap. See [Roadmap](#roadmap) for details.
 
 **Q: Does this work offline?**
 A: The UI works offline with cached data. Live features require internet.
@@ -598,14 +598,55 @@ A: No. Source repos are never modified. Use dry-run mode to test first.
 - [x] Smart URL Parser (6+ Azure DevOps URL formats)
 - [x] TFVC-to-Git Conversion (automatic, with fallback)
 
-### v3.0 (Q3 2026) — Planned
+### v3.0 — Platform Edition (In Progress)
 
-- [ ] Enhanced AI: code review agents, "chat with your codebase", AI issue triage
-- [ ] Premium Insights: dependency scanning, security checker, performance suggestions
-- [ ] Multi-Platform Migration: GitLab, Bitbucket source support
-- [ ] GitHub Enterprise Support
-- [ ] Advanced Analytics: historical trends, commit heatmaps, contributor insights
-- [ ] Custom Themes: user-customizable color schemes
+The next major release transforms GitHub Repo Manager from a local tool into an **open-core platform** with a hosted cloud edition.
+
+#### Infrastructure & Architecture
+
+- [ ] Docker & Docker Compose support (self-host in one command)
+- [ ] Database abstraction layer (SQLite for self-hosted, PostgreSQL for cloud)
+- [ ] Redis sessions & BullMQ job queues for horizontal scaling
+- [ ] Multi-tenancy with user-scoped data isolation
+- [ ] API versioning (`/api/v1/`)
+
+#### Cloud Edition (SaaS)
+
+- [ ] Hosted version — sign in with GitHub, zero setup
+- [ ] Vercel (frontend) + Railway (backend) deployment
+- [ ] Sentry error tracking & enhanced monitoring
+- [ ] Automated CI/CD deployment pipeline
+
+#### Security & Enterprise
+
+- [ ] API key authentication with scoped permissions
+- [ ] Comprehensive audit logging with searchable UI
+- [ ] Per-tenant rate limiting (tier-aware)
+- [ ] Subscription tiers (Free / Pro / Enterprise)
+- [ ] HSTS, CSP hardening, request ID tracing
+
+#### Monetization
+
+- [ ] Stripe billing integration (checkout, portal, webhooks)
+- [ ] Usage metering (AI queries, repos, migrations)
+- [ ] Pricing page with feature comparison
+- [ ] Billing & usage dashboard in Settings
+
+#### Go-to-Market
+
+- [ ] Public landing page with feature showcase
+- [ ] GitHub Marketplace listing
+- [ ] Product Hunt & Hacker News launches
+
+> See the full [Platform Transformation Spec](docs/specs/2026-04-01-platform-transformation-spec.md) and [implementation plans](docs/plans/) for details.
+
+### Future (v3.x+)
+
+- [ ] Multi-platform migration: GitLab, Bitbucket source support
+- [ ] GitHub Enterprise Server support
+- [ ] Plugin/extension system for community contributions
+- [ ] Advanced analytics: commit heatmaps, contributor insights, dependency graphs
+- [ ] Custom AI model selection (OpenAI, Claude, local models)
 
 ---
 
