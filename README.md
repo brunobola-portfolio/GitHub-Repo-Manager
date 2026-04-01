@@ -269,6 +269,27 @@ Open [http://localhost:5173](http://localhost:5173) and explore with **87 pre-lo
 
 5. **Open** [http://localhost:5173](http://localhost:5173)
 
+### Docker Quick Start
+
+Run the full stack with a single command using Docker Compose.
+
+```bash
+# Clone the repository
+git clone https://github.com/brunobola-portfolio/GitHub-Repo-Manager.git
+cd GitHub-Repo-Manager
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your values (see Configuration section)
+
+# Run with Docker Compose
+docker compose up -d
+
+# App is now running at http://localhost:3001
+```
+
+> **Note**: Docker support is part of the v3.0 roadmap. A `docker-compose.yml` will be provided in that release.
+
 ---
 
 ## Configuration
