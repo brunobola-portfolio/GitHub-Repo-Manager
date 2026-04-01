@@ -6,6 +6,7 @@ Quick reference for navigating project documentation.
 
 Design specifications and feature requirements.
 
+- [Platform Transformation](specs/2026-04-01-platform-transformation-spec.md) — Open-core + SaaS transformation master spec (Active)
 - [Dashboard Premium Redesign](specs/2026-02-05-dashboard-premium-redesign.md) — Category-based dashboard with premium filters and charts (In Progress)
 - [Azure DevOps Smart Import](specs/2026-03-12-azure-smart-import-design.md) — Smart URL parser + auto-PAT for simplified Azure imports (Implemented)
 - [Pixel-Perfect Layout Consistency](specs/2026-03-18-pixel-perfect-layout-consistency.md) — Layout alignment and spacing refinements
@@ -20,6 +21,17 @@ Design specifications and feature requirements.
 ## Plans (How to build it)
 
 Step-by-step implementation plans generated from approved specs.
+
+### Platform Transformation (Open-Core + SaaS)
+
+- [Phase 0: Open-Source Launch Prep](plans/2026-04-01-phase0-opensource-launch-prep.md) — Docker, community files, CI/CD, repo cleanup
+- [Phase 1: SaaS Architecture](plans/2026-04-01-phase1-saas-architecture.md) — DB abstraction, multi-tenancy, Redis sessions, job queues, API versioning
+- [Phase 2: Cloud Deployment](plans/2026-04-01-phase2-cloud-deployment.md) — Vercel + Railway, monitoring, CI/CD pipeline
+- [Phase 3: Auth & Enterprise](plans/2026-04-01-phase3-auth-security-enterprise.md) — API keys, audit logs, rate limits, tier system, security hardening
+- [Phase 4: Monetization](plans/2026-04-01-phase4-monetization.md) — Stripe billing, usage metering, pricing page, checkout flow
+- [Phase 5: Marketing & GTM](plans/2026-04-01-phase5-marketing-gtm.md) — Landing page, Product Hunt, content, community, partnerships
+
+### Feature Development
 
 - [Azure DevOps Smart Import](plans/2026-03-12-azure-smart-import-plan.md) — 7-task implementation plan for smart URL parser + env PAT (Complete)
 - [Pixel-Perfect Layout Consistency](plans/2026-03-18-pixel-perfect-layout-consistency.md) — Layout alignment and spacing fixes
