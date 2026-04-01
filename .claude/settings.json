@@ -1,7 +1,5 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(del \"src\\\\App.tsx\" \"src\\\\App.css\")"
-    ]
+    "allow": []
   }
 }
