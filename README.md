@@ -720,7 +720,7 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
 **Bruno Silva Marques** | [Bola Labs](https://github.com/brunobola-portfolio)
 
 [![GitHub](https://img.shields.io/badge/GitHub-brunobola--portfolio-181717?style=flat-square&logo=github)](https://github.com/brunobola-portfolio)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/brunobolamarques/)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/bolalabs/)
 
 ---
 
