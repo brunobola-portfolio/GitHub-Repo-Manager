@@ -20,6 +20,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 import { config } from './config.js';
+import { initMonitoring, getSentryErrorHandler } from './lib/monitoring.js';
 import db, { initDB, seedMockData } from './db.js';
 import { aiService } from './ai-service.js';
 import { safeError } from './middleware/auth.js';
@@ -28,6 +29,9 @@ import logger, { requestLoggerMiddleware } from './lib/logger.js';
 
 // API v1 route aggregator
 import v1Routes from './routes/v1/index.js';
+
+// Initialize monitoring before anything else
+await initMonitoring();
 
 initDB();
 
@@ -153,8 +157,24 @@ app.use(session(sessionConfig));
 // ------------------------------------------------------------------
 // Health check (used by useOnlineStatus for connectivity detection)
 // ------------------------------------------------------------------
+const startTime = Date.now();
 app.get('/api/health', (_req, res) => {
-    res.json({ ok: true });
+    const health = {
+        status: 'ok',
+        version: '2.5.0',
+        uptime: Math.floor((Date.now() - startTime) / 1000),
+        database: 'connected',
+    };
+    try {
+        db.prepare('SELECT 1').get();
+    } catch {
+        health.database = 'disconnected';
+        health.status = 'degraded';
+    }
+    if (config.redisUrl) {
+        health.redis = 'configured';
+    }
+    res.json(health);
 });
 
 // ------------------------------------------------------------------
@@ -179,6 +199,12 @@ if (config.nodeEnv === 'production') {
         });
     }
 }
+
+// -----------------------------------------------------------------------------
+// Error Tracking (Sentry)
+// -----------------------------------------------------------------------------
+
+app.use(getSentryErrorHandler());
 
 // -----------------------------------------------------------------------------
 // Global Error Handler
