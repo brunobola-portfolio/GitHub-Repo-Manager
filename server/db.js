@@ -279,6 +279,26 @@ export function initDB() {
         `);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id)`);
 
+        // Enhanced audit log v2
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS audit_log_v2 (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                action TEXT NOT NULL,
+                resource_type TEXT NOT NULL,
+                resource_id TEXT,
+                details TEXT,
+                ip_address TEXT,
+                user_agent TEXT,
+                api_key_id TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_v2_user ON audit_log_v2(user_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_v2_action ON audit_log_v2(action)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_v2_resource ON audit_log_v2(resource_type, resource_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_v2_created ON audit_log_v2(created_at)`);
+
         // Indexes for performance
         db.exec(`CREATE INDEX IF NOT EXISTS idx_members_user ON team_members(user_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_repos_team ON repo_assignments(team_id)`);
