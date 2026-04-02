@@ -331,14 +331,15 @@ router.post('/community-health/compare', requireAuth, async (req, res) => {
             return errorResponse(res, 400, 'Maximum 50 repos for comparison', 'TOO_MANY_REPOS');
         }
 
+        const userId = req.session.userId;
         const comparison = [];
 
         for (const repoFullName of repos) {
             const [owner, repo] = repoFullName.split('/');
             const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
 
-            const cached = db.prepare('SELECT health_score FROM community_health_cache WHERE repo_id = ?')
-                .get(repoData.id);
+            const cached = db.prepare('SELECT health_score FROM community_health_cache WHERE user_id = ? AND repo_id = ?')
+                .get(userId, repoData.id);
 
             comparison.push({
                 repo: repoFullName,

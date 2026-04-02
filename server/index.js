@@ -319,7 +319,7 @@ app.post('/api/teams/:id/actions/stats', requireAuth, async (req, res) => {
         }
 
         const repoIds = repos.map(r => r.repo_id);
-        const statsArray = actionsService.getMultiRepoStats(repoIds, parseInt(days));
+        const statsArray = actionsService.getMultiRepoStats(repoIds, parseInt(days), req.session.userId);
 
         const enrichedStats = statsArray.map(stat => {
             const repo = repos.find(r => r.repo_id === stat.repoId);

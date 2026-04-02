@@ -192,12 +192,12 @@ router.get('/global', requireAuth, async (req, res) => {
             }
         });
 
-        // Check if any repo has GitHub Actions (by checking workflow_runs table)
-        const actionsCount = db.prepare('SELECT COUNT(DISTINCT repo_id) as count FROM workflow_runs').get();
+        // Check if any repo has GitHub Actions (by checking workflow_runs table, scoped by user)
+        const actionsCount = db.prepare('SELECT COUNT(DISTINCT repo_id) as count FROM workflow_runs WHERE user_id = ?').get(userId);
         stats.hasActions = actionsCount.count > 0;
 
-        // Check how many repos have been analyzed for health
-        const healthCount = db.prepare('SELECT COUNT(*) as count FROM community_health_cache WHERE analyzed_at IS NOT NULL').get();
+        // Check how many repos have been analyzed for health (scoped by user)
+        const healthCount = db.prepare('SELECT COUNT(*) as count FROM community_health_cache WHERE user_id = ? AND analyzed_at IS NOT NULL').get(userId);
         stats.healthAnalyzed = healthCount.count;
 
         res.json(stats);
@@ -215,6 +215,7 @@ router.get('/global', requireAuth, async (req, res) => {
 // Actions Summary across all repos
 router.get('/actions', requireAuth, async (req, res) => {
     try {
+        const userId = req.session.userId;
         const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), 365);
         const cutoff = new Date();
         cutoff.setDate(cutoff.getDate() - days);
@@ -228,10 +229,10 @@ router.get('/actions', requireAuth, async (req, res) => {
                 AVG(duration_seconds) as avg_duration,
                 MAX(started_at) as last_run_at
             FROM workflow_runs
-            WHERE started_at >= ?
+            WHERE user_id = ? AND started_at >= ?
         `;
 
-        const stats = db.prepare(query).get(cutoff.toISOString());
+        const stats = db.prepare(query).get(userId, cutoff.toISOString());
 
         const successRate = stats.total_runs > 0
             ? (stats.success_count / stats.total_runs) * 100

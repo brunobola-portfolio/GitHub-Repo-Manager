@@ -16,6 +16,17 @@ const db = await createDatabaseAdapter();
 
 export function initDB() {
     const transactions = db.transaction(() => {
+        // Multi-tenancy migration: add user_id to tables that need it
+        // If tables exist without user_id, drop and recreate them
+        const tablesNeedingUserId = ['repo_metadata', 'repo_embeddings', 'community_health_cache', 'workflow_runs', 'workflows_meta'];
+        for (const table of tablesNeedingUserId) {
+            const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+            const hasUserId = cols.some(c => c.name === 'user_id');
+            if (!hasUserId && cols.length > 0) {
+                // Table exists but lacks user_id - recreate
+                db.exec(`DROP TABLE IF EXISTS ${table}`);
+            }
+        }
         // Users Table (Local cache of GitHub users)
         db.exec(`
             CREATE TABLE IF NOT EXISTS users (
@@ -80,11 +91,13 @@ export function initDB() {
         // Note: No foreign key - we can index any repo, not just assigned ones
         db.exec(`
             CREATE TABLE IF NOT EXISTS repo_metadata (
-                repo_id INTEGER PRIMARY KEY,
+                repo_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL DEFAULT 0,
                 summary TEXT,
                 topics TEXT, -- JSON array
                 health_score INTEGER,
-                last_indexed TEXT
+                last_indexed TEXT,
+                PRIMARY KEY (user_id, repo_id)
             )
         `);
 
@@ -93,9 +106,11 @@ export function initDB() {
         // (For production with millions of rows, use a vector extension or specialized DB)
         db.exec(`
             CREATE TABLE IF NOT EXISTS repo_embeddings (
-                repo_id INTEGER PRIMARY KEY,
+                repo_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL DEFAULT 0,
                 embedding TEXT NOT NULL, -- JSON string of float array
-                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, repo_id)
             )
         `);
 
@@ -105,6 +120,7 @@ export function initDB() {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 github_run_id INTEGER UNIQUE NOT NULL,
                 repo_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL DEFAULT 0,
                 workflow_id INTEGER NOT NULL,
                 workflow_name TEXT NOT NULL,
                 run_number INTEGER NOT NULL,
@@ -127,6 +143,7 @@ export function initDB() {
             CREATE TABLE IF NOT EXISTS workflows_meta (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 repo_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL DEFAULT 0,
                 github_workflow_id INTEGER UNIQUE NOT NULL,
                 name TEXT NOT NULL,
                 path TEXT,
@@ -139,32 +156,37 @@ export function initDB() {
                 last_success_at TEXT,
                 last_failure_at TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (repo_id) REFERENCES repo_metadata(repo_id)
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflow_runs_repo ON workflow_runs(repo_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_workflow_runs_user ON workflow_runs(user_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflow_runs_status ON workflow_runs(status)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflow_runs_conclusion ON workflow_runs(conclusion)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflow_runs_date ON workflow_runs(started_at)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflow_runs_workflow ON workflow_runs(workflow_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflows_meta_repo ON workflows_meta(repo_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_workflows_meta_user ON workflows_meta(user_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflows_meta_state ON workflows_meta(state)`);
 
         // Community Health Cache
         db.exec(`
             CREATE TABLE IF NOT EXISTS community_health_cache (
-                repo_id INTEGER PRIMARY KEY,
+                repo_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL DEFAULT 0,
                 health_score INTEGER NOT NULL,
                 metrics TEXT NOT NULL,
                 recommendations TEXT NOT NULL,
                 analyzed_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (repo_id) REFERENCES repo_metadata(repo_id)
+                PRIMARY KEY (user_id, repo_id)
             )
         `);
 
         db.exec(`CREATE INDEX IF NOT EXISTS idx_community_health_score ON community_health_cache(health_score DESC)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_community_health_user ON community_health_cache(user_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_repo_metadata_user ON repo_metadata(user_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_repo_embeddings_user ON repo_embeddings(user_id)`);
 
         // Migration jobs table for import tracking
         db.exec(`
@@ -340,8 +362,8 @@ export function seedMockData() {
         ];
 
         mockMetadata.forEach(meta => {
-            db.prepare('INSERT OR REPLACE INTO repo_metadata (repo_id, summary, topics, health_score, last_indexed) VALUES (?, ?, ?, ?, ?)').run(
-                meta.repoId, meta.summary, meta.topics, meta.healthScore, new Date().toISOString()
+            db.prepare('INSERT OR REPLACE INTO repo_metadata (repo_id, user_id, summary, topics, health_score, last_indexed) VALUES (?, ?, ?, ?, ?, ?)').run(
+                meta.repoId, MOCK_USER_ID, meta.summary, meta.topics, meta.healthScore, new Date().toISOString()
             );
         });
     });
