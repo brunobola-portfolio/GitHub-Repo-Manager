@@ -1,57 +1,18 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
+import { createDatabaseAdapter } from './lib/db-adapter.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dataDir = path.join(__dirname, 'data');
-
-// Ensure data directory exists
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-}
-
-// Import better-sqlite3 with helpful error handling for version mismatches
-let Database;
-try {
-    Database = (await import('better-sqlite3')).default;
-} catch (error) {
-    if (error.code === 'ERR_DLOPEN_FAILED' && error.message.includes('NODE_MODULE_VERSION')) {
-        const match = error.message.match(/NODE_MODULE_VERSION (\d+).*NODE_MODULE_VERSION (\d+)/);
-        const compiledFor = match ? match[1] : 'unknown';
-        const required = match ? match[2] : process.versions.modules;
-
-        console.error('\n' + '='.repeat(70));
-        console.error('❌ NATIVE MODULE VERSION MISMATCH');
-        console.error('='.repeat(70));
-        console.error(`\nThe better-sqlite3 module was compiled for a different Node.js version.`);
-        console.error(`  • Compiled for: NODE_MODULE_VERSION ${compiledFor}`);
-        console.error(`  • Required:     NODE_MODULE_VERSION ${required} (Node.js ${process.version})`);
-        console.error(`\n📋 How to fix:`);
-        console.error(`   1. Run: npm rebuild better-sqlite3`);
-        console.error(`   2. Or run: node server/check-native-modules.js --fix`);
-        console.error(`   3. Or clean reinstall: rm -rf node_modules && npm install`);
-        console.error('\n' + '='.repeat(70) + '\n');
-        process.exit(1);
-    }
-    throw error;
-}
-
-const dbPath = path.join(dataDir, 'manager.db');
-const db = new Database(dbPath, {
-    verbose: process.env.SQLITE_VERBOSE === 'true' ? console.log : undefined
-});
-
-// Enable foreign keys
-db.pragma('foreign_keys = ON');
-
-// Enable WAL mode for better concurrency and performance
-db.pragma('journal_mode = WAL');
-
-// Performance optimizations
-db.pragma('cache_size = 32000');      // 32MB cache (negative values are in KB, positive in pages)
-db.pragma('synchronous = NORMAL');    // Balance between safety and speed (safer than OFF, faster than FULL)
-db.pragma('temp_store = MEMORY');     // Store temporary tables in RAM for faster operations
-db.pragma('busy_timeout = 5000');       // Wait up to 5s for locked DB instead of failing immediately
+// ---------------------------------------------------------------------------
+// Initialise the database adapter.
+//
+// For SQLite (the default), this creates a thin wrapper around better-sqlite3
+// that preserves the synchronous `db.prepare('SQL').get/all/run()` API used
+// by every route in the codebase.
+//
+// For PostgreSQL (when DATABASE_URL is set), the adapter uses node-postgres
+// and exposes the same interface with async methods.
+//
+// Top-level await is supported because the project uses ESM ("type": "module").
+// ---------------------------------------------------------------------------
+const db = await createDatabaseAdapter();
 
 export function initDB() {
     const transactions = db.transaction(() => {
@@ -128,7 +89,7 @@ export function initDB() {
         `);
 
         // Vector Embeddings Table
-        // We store the embedding as a JSON string for simplicity in SQLite 
+        // We store the embedding as a JSON string for simplicity in SQLite
         // (For production with millions of rows, use a vector extension or specialized DB)
         db.exec(`
             CREATE TABLE IF NOT EXISTS repo_embeddings (
@@ -312,7 +273,7 @@ export function initDB() {
     });
 
     transactions();
-    console.log('✅ SQLite Database initialized successfully');
+    console.log('SQLite Database initialized successfully');
 }
 
 /**
@@ -333,11 +294,11 @@ export function seedMockData() {
     // Check if mock teams already exist
     const existingTeams = db.prepare('SELECT COUNT(*) as count FROM teams WHERE owner_id = ?').get(MOCK_USER_ID);
     if (existingTeams.count > 0) {
-        console.log('📦 Mock data already exists, skipping seed');
+        console.log('Mock data already exists, skipping seed');
         return;
     }
 
-    console.log('🌱 Seeding mock data for demo mode...');
+    console.log('Seeding mock data for demo mode...');
 
     const seedTransaction = db.transaction(() => {
         // Create mock teams
@@ -386,7 +347,7 @@ export function seedMockData() {
     });
 
     seedTransaction();
-    console.log('✅ Mock data seeded successfully');
+    console.log('Mock data seeded successfully');
 }
 
 export default db;
