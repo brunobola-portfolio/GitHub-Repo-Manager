@@ -3,15 +3,17 @@ import db from './db.js';
 class ActionsService {
     /**
      * Store or update a workflow run
+     * @param {object} runData - GitHub workflow run data
+     * @param {number} [userId=0] - Tenant user ID for multi-tenancy
      */
-    storeWorkflowRun(runData) {
+    storeWorkflowRun(runData, userId = 0) {
         const stmt = db.prepare(`
             INSERT INTO workflow_runs (
-                github_run_id, repo_id, workflow_id, workflow_name,
+                github_run_id, repo_id, user_id, workflow_id, workflow_name,
                 run_number, status, conclusion, started_at, completed_at,
                 duration_seconds, commit_sha, branch, event_type,
                 actor_login, html_url
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(github_run_id) DO UPDATE SET
                 status = excluded.status,
                 conclusion = excluded.conclusion,
@@ -27,6 +29,7 @@ class ActionsService {
         stmt.run(
             runData.id,
             runData.repository?.id || runData.repo_id,
+            userId,
             runData.workflow_id,
             runData.name,
             runData.run_number,
@@ -45,23 +48,41 @@ class ActionsService {
 
     /**
      * Get stats for a specific repository
+     * @param {number} repoId
+     * @param {number} [days=30]
+     * @param {number} [userId] - Tenant user ID (omit for unscoped)
      */
-    getRepoStats(repoId, days = 30) {
+    getRepoStats(repoId, days = 30, userId) {
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - days);
         const cutoff = cutoffDate.toISOString();
 
-        const stats = db.prepare(`
-            SELECT
-                COUNT(*) as total_runs,
-                SUM(CASE WHEN conclusion = 'success' THEN 1 ELSE 0 END) as success_count,
-                SUM(CASE WHEN conclusion = 'failure' THEN 1 ELSE 0 END) as failure_count,
-                SUM(CASE WHEN conclusion = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count,
-                AVG(duration_seconds) as avg_duration,
-                MAX(started_at) as last_run_at
-            FROM workflow_runs
-            WHERE repo_id = ? AND started_at >= ?
-        `).get(repoId, cutoff);
+        let stats;
+        if (userId !== undefined && userId !== null) {
+            stats = db.prepare(`
+                SELECT
+                    COUNT(*) as total_runs,
+                    SUM(CASE WHEN conclusion = 'success' THEN 1 ELSE 0 END) as success_count,
+                    SUM(CASE WHEN conclusion = 'failure' THEN 1 ELSE 0 END) as failure_count,
+                    SUM(CASE WHEN conclusion = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count,
+                    AVG(duration_seconds) as avg_duration,
+                    MAX(started_at) as last_run_at
+                FROM workflow_runs
+                WHERE repo_id = ? AND user_id = ? AND started_at >= ?
+            `).get(repoId, userId, cutoff);
+        } else {
+            stats = db.prepare(`
+                SELECT
+                    COUNT(*) as total_runs,
+                    SUM(CASE WHEN conclusion = 'success' THEN 1 ELSE 0 END) as success_count,
+                    SUM(CASE WHEN conclusion = 'failure' THEN 1 ELSE 0 END) as failure_count,
+                    SUM(CASE WHEN conclusion = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count,
+                    AVG(duration_seconds) as avg_duration,
+                    MAX(started_at) as last_run_at
+                FROM workflow_runs
+                WHERE repo_id = ? AND started_at >= ?
+            `).get(repoId, cutoff);
+        }
 
         const successRate = stats.total_runs > 0
             ? (stats.success_count / stats.total_runs)
@@ -80,24 +101,43 @@ class ActionsService {
 
     /**
      * Get daily trend data
+     * @param {number} repoId
+     * @param {number} [days=30]
+     * @param {number} [userId] - Tenant user ID (omit for unscoped)
      */
-    getDailyTrends(repoId, days = 30) {
+    getDailyTrends(repoId, days = 30, userId) {
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - days);
         const cutoff = cutoffDate.toISOString();
 
-        const trends = db.prepare(`
-            SELECT
-                DATE(started_at) as date,
-                COUNT(*) as runs,
-                SUM(CASE WHEN conclusion = 'success' THEN 1 ELSE 0 END) as successes,
-                SUM(CASE WHEN conclusion = 'failure' THEN 1 ELSE 0 END) as failures,
-                AVG(duration_seconds) as avg_duration
-            FROM workflow_runs
-            WHERE repo_id = ? AND started_at >= ?
-            GROUP BY DATE(started_at)
-            ORDER BY date ASC
-        `).all(repoId, cutoff);
+        let trends;
+        if (userId !== undefined && userId !== null) {
+            trends = db.prepare(`
+                SELECT
+                    DATE(started_at) as date,
+                    COUNT(*) as runs,
+                    SUM(CASE WHEN conclusion = 'success' THEN 1 ELSE 0 END) as successes,
+                    SUM(CASE WHEN conclusion = 'failure' THEN 1 ELSE 0 END) as failures,
+                    AVG(duration_seconds) as avg_duration
+                FROM workflow_runs
+                WHERE repo_id = ? AND user_id = ? AND started_at >= ?
+                GROUP BY DATE(started_at)
+                ORDER BY date ASC
+            `).all(repoId, userId, cutoff);
+        } else {
+            trends = db.prepare(`
+                SELECT
+                    DATE(started_at) as date,
+                    COUNT(*) as runs,
+                    SUM(CASE WHEN conclusion = 'success' THEN 1 ELSE 0 END) as successes,
+                    SUM(CASE WHEN conclusion = 'failure' THEN 1 ELSE 0 END) as failures,
+                    AVG(duration_seconds) as avg_duration
+                FROM workflow_runs
+                WHERE repo_id = ? AND started_at >= ?
+                GROUP BY DATE(started_at)
+                ORDER BY date ASC
+            `).all(repoId, cutoff);
+        }
 
         return trends.map(t => ({
             date: t.date,
@@ -111,30 +151,60 @@ class ActionsService {
 
     /**
      * Get workflow-specific stats
+     * @param {number} repoId
+     * @param {number} workflowId
+     * @param {number} [userId] - Tenant user ID (omit for unscoped)
      */
-    getWorkflowStats(repoId, workflowId) {
-        const stats = db.prepare(`
-            SELECT
-                workflow_name,
-                COUNT(*) as total_runs,
-                SUM(CASE WHEN conclusion = 'success' THEN 1 ELSE 0 END) as success_count,
-                SUM(CASE WHEN conclusion = 'failure' THEN 1 ELSE 0 END) as failure_count,
-                AVG(duration_seconds) as avg_duration,
-                MIN(duration_seconds) as min_duration,
-                MAX(duration_seconds) as max_duration
-            FROM workflow_runs
-            WHERE repo_id = ? AND workflow_id = ?
-        `).get(repoId, workflowId);
+    getWorkflowStats(repoId, workflowId, userId) {
+        let stats, recentRuns;
 
-        const recentRuns = db.prepare(`
-            SELECT
-                run_number, status, conclusion, started_at,
-                completed_at, duration_seconds, branch, html_url
-            FROM workflow_runs
-            WHERE repo_id = ? AND workflow_id = ?
-            ORDER BY started_at DESC
-            LIMIT 20
-        `).all(repoId, workflowId);
+        if (userId !== undefined && userId !== null) {
+            stats = db.prepare(`
+                SELECT
+                    workflow_name,
+                    COUNT(*) as total_runs,
+                    SUM(CASE WHEN conclusion = 'success' THEN 1 ELSE 0 END) as success_count,
+                    SUM(CASE WHEN conclusion = 'failure' THEN 1 ELSE 0 END) as failure_count,
+                    AVG(duration_seconds) as avg_duration,
+                    MIN(duration_seconds) as min_duration,
+                    MAX(duration_seconds) as max_duration
+                FROM workflow_runs
+                WHERE repo_id = ? AND workflow_id = ? AND user_id = ?
+            `).get(repoId, workflowId, userId);
+
+            recentRuns = db.prepare(`
+                SELECT
+                    run_number, status, conclusion, started_at,
+                    completed_at, duration_seconds, branch, html_url
+                FROM workflow_runs
+                WHERE repo_id = ? AND workflow_id = ? AND user_id = ?
+                ORDER BY started_at DESC
+                LIMIT 20
+            `).all(repoId, workflowId, userId);
+        } else {
+            stats = db.prepare(`
+                SELECT
+                    workflow_name,
+                    COUNT(*) as total_runs,
+                    SUM(CASE WHEN conclusion = 'success' THEN 1 ELSE 0 END) as success_count,
+                    SUM(CASE WHEN conclusion = 'failure' THEN 1 ELSE 0 END) as failure_count,
+                    AVG(duration_seconds) as avg_duration,
+                    MIN(duration_seconds) as min_duration,
+                    MAX(duration_seconds) as max_duration
+                FROM workflow_runs
+                WHERE repo_id = ? AND workflow_id = ?
+            `).get(repoId, workflowId);
+
+            recentRuns = db.prepare(`
+                SELECT
+                    run_number, status, conclusion, started_at,
+                    completed_at, duration_seconds, branch, html_url
+                FROM workflow_runs
+                WHERE repo_id = ? AND workflow_id = ?
+                ORDER BY started_at DESC
+                LIMIT 20
+            `).all(repoId, workflowId);
+        }
 
         return {
             name: stats.workflow_name,
@@ -153,8 +223,11 @@ class ActionsService {
 
     /**
      * Get stats for multiple repos (team view)
+     * @param {number[]} repoIds
+     * @param {number} [days=30]
+     * @param {number} [userId] - Tenant user ID (omit for unscoped)
      */
-    getMultiRepoStats(repoIds, days = 30) {
+    getMultiRepoStats(repoIds, days = 30, userId) {
         if (!repoIds || repoIds.length === 0) return [];
 
         const cutoffDate = new Date();
@@ -162,17 +235,33 @@ class ActionsService {
         const cutoff = cutoffDate.toISOString();
 
         const placeholders = repoIds.map(() => '?').join(',');
-        const stats = db.prepare(`
-            SELECT
-                repo_id,
-                COUNT(*) as total_runs,
-                SUM(CASE WHEN conclusion = 'success' THEN 1 ELSE 0 END) as success_count,
-                SUM(CASE WHEN conclusion = 'failure' THEN 1 ELSE 0 END) as failure_count,
-                AVG(duration_seconds) as avg_duration
-            FROM workflow_runs
-            WHERE repo_id IN (${placeholders}) AND started_at >= ?
-            GROUP BY repo_id
-        `).all(...repoIds, cutoff);
+        let stats;
+
+        if (userId !== undefined && userId !== null) {
+            stats = db.prepare(`
+                SELECT
+                    repo_id,
+                    COUNT(*) as total_runs,
+                    SUM(CASE WHEN conclusion = 'success' THEN 1 ELSE 0 END) as success_count,
+                    SUM(CASE WHEN conclusion = 'failure' THEN 1 ELSE 0 END) as failure_count,
+                    AVG(duration_seconds) as avg_duration
+                FROM workflow_runs
+                WHERE repo_id IN (${placeholders}) AND user_id = ? AND started_at >= ?
+                GROUP BY repo_id
+            `).all(...repoIds, userId, cutoff);
+        } else {
+            stats = db.prepare(`
+                SELECT
+                    repo_id,
+                    COUNT(*) as total_runs,
+                    SUM(CASE WHEN conclusion = 'success' THEN 1 ELSE 0 END) as success_count,
+                    SUM(CASE WHEN conclusion = 'failure' THEN 1 ELSE 0 END) as failure_count,
+                    AVG(duration_seconds) as avg_duration
+                FROM workflow_runs
+                WHERE repo_id IN (${placeholders}) AND started_at >= ?
+                GROUP BY repo_id
+            `).all(...repoIds, cutoff);
+        }
 
         return stats.map(s => ({
             repoId: s.repo_id,
@@ -188,8 +277,11 @@ class ActionsService {
 
     /**
      * Update workflow metadata after storing runs
+     * @param {number} repoId
+     * @param {number} workflowId
+     * @param {number} [userId=0] - Tenant user ID for multi-tenancy
      */
-    updateWorkflowMeta(repoId, workflowId) {
+    updateWorkflowMeta(repoId, workflowId, userId = 0) {
         const stats = db.prepare(`
             SELECT
                 COUNT(*) as total,
@@ -200,15 +292,15 @@ class ActionsService {
                 MAX(CASE WHEN conclusion = 'failure' THEN started_at END) as last_failure,
                 MAX(started_at) as last_run
             FROM workflow_runs
-            WHERE repo_id = ? AND workflow_id = ?
-        `).get(repoId, workflowId);
+            WHERE repo_id = ? AND workflow_id = ? AND user_id = ?
+        `).get(repoId, workflowId, userId);
 
         db.prepare(`
             INSERT INTO workflows_meta (
-                repo_id, github_workflow_id, name, total_runs,
+                repo_id, user_id, github_workflow_id, name, total_runs,
                 success_count, failure_count, avg_duration_seconds,
                 last_success_at, last_failure_at, last_run_at
-            ) VALUES (?, ?, '', ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(github_workflow_id) DO UPDATE SET
                 total_runs = excluded.total_runs,
                 success_count = excluded.success_count,
@@ -220,6 +312,7 @@ class ActionsService {
                 updated_at = CURRENT_TIMESTAMP
         `).run(
             repoId,
+            userId,
             workflowId,
             stats.total || 0,
             stats.successes || 0,
@@ -233,10 +326,13 @@ class ActionsService {
 
     /**
      * Sync workflow runs from GitHub API
+     * @param {string} repoFullName - e.g. "owner/repo"
+     * @param {string} token - GitHub access token
+     * @param {number} [userId=0] - Tenant user ID for multi-tenancy
      */
-    async syncWorkflowRuns(repoFullName, token) {
+    async syncWorkflowRuns(repoFullName, token, userId = 0) {
         const [owner, repo] = repoFullName.split('/');
-        
+
         try {
             const response = await fetch(
                 `https://api.github.com/repos/${owner}/${repo}/actions/runs?per_page=100`,
@@ -256,10 +352,10 @@ class ActionsService {
             const data = await response.json();
             const runs = data.workflow_runs || [];
 
-            // Store each run
+            // Store each run scoped by user
             runs.forEach(run => {
-                this.storeWorkflowRun(run);
-                this.updateWorkflowMeta(run.repository.id, run.workflow_id);
+                this.storeWorkflowRun(run, userId);
+                this.updateWorkflowMeta(run.repository.id, run.workflow_id, userId);
             });
 
             return { success: true, synced: runs.length };

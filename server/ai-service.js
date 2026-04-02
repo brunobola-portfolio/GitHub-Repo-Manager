@@ -190,18 +190,24 @@ class AIService {
 
     /**
      * Search usage natural language
-     * @param {string} query 
-     * @param {number} limit 
+     * @param {string} query
+     * @param {number} limit
+     * @param {number} [userId] - Tenant user ID to scope results (omit for all)
      */
-    async semanticSearch(query, limit = 5) {
+    async semanticSearch(query, limit = 5, userId) {
         if (!this.embeddingModel) return [];
 
         // 1. Embed the query
         const queryEmbedding = await this.embedText(query);
 
-        // 2. Fetch all repo embeddings
+        // 2. Fetch repo embeddings scoped by user (multi-tenancy)
         // Note: For large datasets, this is inefficient. optimize with FAISS or vector DB.
-        const rows = db.prepare('SELECT repo_id, embedding FROM repo_embeddings').all();
+        let rows;
+        if (userId !== undefined && userId !== null) {
+            rows = db.prepare('SELECT repo_id, embedding FROM repo_embeddings WHERE user_id = ?').all(userId);
+        } else {
+            rows = db.prepare('SELECT repo_id, embedding FROM repo_embeddings').all();
+        }
 
         // 3. Rank by similarity
         const results = rows.map(row => {

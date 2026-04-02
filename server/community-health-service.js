@@ -159,21 +159,26 @@ class CommunityHealthService {
 
     /**
      * Cache results in database
+     * @param {number} repoId - GitHub repository ID
+     * @param {object} metrics - Health metrics object
+     * @param {Array} recommendations - Recommendations array
+     * @param {number} [userId=0] - Tenant user ID for multi-tenancy
      */
-    cacheResults(repoId, metrics, recommendations) {
+    cacheResults(repoId, metrics, recommendations, userId = 0) {
         const stmt = db.prepare(`
             INSERT INTO community_health_cache (
-                repo_id, health_score, metrics, recommendations, analyzed_at
-            ) VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(repo_id) DO UPDATE SET
+                repo_id, user_id, health_score, metrics, recommendations, analyzed_at
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(user_id, repo_id) DO UPDATE SET
                 health_score = excluded.health_score,
                 metrics = excluded.metrics,
                 recommendations = excluded.recommendations,
                 analyzed_at = excluded.analyzed_at
         `);
-        
+
         stmt.run(
             repoId,
+            userId,
             metrics.healthScore,
             JSON.stringify(metrics),
             JSON.stringify(recommendations),
