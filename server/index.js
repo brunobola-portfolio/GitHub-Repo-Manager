@@ -16,12 +16,10 @@ import { randomUUID } from 'crypto';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
-dotenv.config();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+import { config } from './config.js';
 import db, { initDB, seedMockData } from './db.js';
 import { aiService } from './ai-service.js';
 import { safeError } from './middleware/auth.js';
@@ -34,45 +32,34 @@ import v1Routes from './routes/v1/index.js';
 initDB();
 
 // Seed mock data only when explicitly enabled (for demo/development)
-if (process.env.VITE_MOCK_MODE === 'true') {
+if (config.mockMode === 'true') {
     seedMockData();
 }
 
 const app = express();
-const PORT = process.env.PORT || 3001;
-
-// Environment Configuration
-const {
-    GITHUB_CLIENT_ID,
-    GITHUB_CLIENT_SECRET,
-    SESSION_SECRET = 'dev-secret-change-in-production',
-    FRONTEND_URL = 'http://localhost:5173',
-    GEMINI_API_KEY,
-    WEBHOOK_SECRET
-} = process.env;
 
 // Initialize Google AI only if key is present
-if (GEMINI_API_KEY) {
+if (config.geminiApiKey) {
     try {
-        aiService.initialize(GEMINI_API_KEY);
+        aiService.initialize(config.geminiApiKey);
     } catch (e) {
         logger.error({ err: e }, 'Failed to initialize Google AI');
     }
 }
 
 // Enforce SESSION_SECRET in production
-if (process.env.NODE_ENV === 'production' && SESSION_SECRET === 'dev-secret-change-in-production') {
+if (config.nodeEnv === 'production' && config.sessionSecret === 'dev-secret-change-in-production') {
     logger.fatal('SESSION_SECRET must be set in production. Exiting.');
     process.exit(1);
 }
 
-if (process.env.NODE_ENV !== 'production' && SESSION_SECRET === 'dev-secret-change-in-production') {
+if (config.nodeEnv !== 'production' && config.sessionSecret === 'dev-secret-change-in-production') {
     logger.warn('Using default session secret. Set SESSION_SECRET environment variable for deployment.');
-} else if (SESSION_SECRET.length < 32) {
+} else if (config.sessionSecret.length < 32) {
     logger.warn('SESSION_SECRET is shorter than 32 characters. Use a longer, random secret for better security.');
 }
 
-if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
+if (!config.githubClientId || !config.githubClientSecret) {
     logger.warn('GitHub OAuth credentials missing. OAuth login will not work. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in .env to enable.');
 }
 
@@ -85,7 +72,7 @@ app.use((req, res, next) => {
 
 // Middleware Setup
 app.use(helmet({
-    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
+    contentSecurityPolicy: config.nodeEnv === 'production' ? {
         directives: {
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'"],
@@ -98,7 +85,7 @@ app.use(helmet({
     crossOriginEmbedderPolicy: false // Allow embedded resources
 }));
 app.use(cors({
-    origin: FRONTEND_URL,
+    origin: config.frontendUrl,
     credentials: true
 }));
 app.use(express.json({ limit: '10kb' }));
@@ -115,7 +102,7 @@ app.use('/api/', (req, _res, next) => {
 
 // Rate limiting for API endpoints
 // Development: higher limits to accommodate React Strict Mode (double-invokes effects)
-const isDev = process.env.NODE_ENV !== 'production';
+const isDev = config.nodeEnv !== 'production';
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: isDev ? 1000 : 200, // Higher limit in dev for HMR + Strict Mode
@@ -139,23 +126,23 @@ app.use('/api/auth/', authLimiter);
 //   2. SQLite (production)    → single-instance persistent sessions
 //   3. MemoryStore (default)  → development only (non-persistent, acceptable)
 const sessionConfig = {
-    secret: SESSION_SECRET,
+    secret: config.sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: process.env.NODE_ENV === 'production',
+        secure: config.nodeEnv === 'production',
         httpOnly: true,
         sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
 };
 
-if (process.env.REDIS_URL) {
+if (config.redisUrl) {
     const { createRedisStore } = await import('./lib/session-store-redis.js');
     const { store } = createRedisStore();
     sessionConfig.store = store;
     logger.info('[sessions] Using Redis session store');
-} else if (process.env.NODE_ENV === 'production') {
+} else if (config.nodeEnv === 'production') {
     const SQLiteStore = createSQLiteStore(session);
     sessionConfig.store = new SQLiteStore(db);
     logger.info('[sessions] Using SQLite session store');
@@ -180,7 +167,7 @@ app.use('/api/v1', v1Routes);
 app.use('/api', v1Routes);
 
 // Serve frontend in production
-if (process.env.NODE_ENV === 'production') {
+if (config.nodeEnv === 'production') {
     const distPath = path.join(__dirname, '..', 'dist');
     if (fs.existsSync(distPath)) {
         app.use(express.static(distPath));
@@ -208,13 +195,13 @@ app.use((err, req, res, _next) => {
 // Start Server
 // -----------------------------------------------------------------------------
 
-const server = app.listen(PORT, () => {
-    logger.info({ port: PORT, frontend: FRONTEND_URL, mode: process.env.NODE_ENV || 'development' }, 'GitHub Repo Manager API is live');
+const server = app.listen(config.port, () => {
+    logger.info({ port: config.port, frontend: config.frontendUrl, mode: config.nodeEnv }, 'GitHub Repo Manager API is live');
 });
 
 server.on('error', (e) => {
     if (e.code === 'EADDRINUSE') {
-        logger.fatal({ port: PORT }, 'Port is already in use');
+        logger.fatal({ port: config.port }, 'Port is already in use');
         process.exit(1);
     } else {
         logger.error({ err: e }, 'Server error');
