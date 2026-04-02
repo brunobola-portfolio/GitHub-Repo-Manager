@@ -269,6 +269,25 @@ Open [http://localhost:5173](http://localhost:5173) and explore with **87 pre-lo
 
 5. **Open** [http://localhost:5173](http://localhost:5173)
 
+### Docker Quick Start
+
+Run the full stack with a single command using Docker Compose.
+
+```bash
+# Clone the repository
+git clone https://github.com/brunobola-portfolio/GitHub-Repo-Manager.git
+cd GitHub-Repo-Manager
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your values (see Configuration section)
+
+# Run with Docker Compose
+docker compose up -d
+
+# App is now running at http://localhost:3001
+```
+
 ---
 
 ## Configuration
@@ -604,7 +623,7 @@ The next major release transforms GitHub Repo Manager from a local tool into an 
 
 #### Infrastructure & Architecture
 
-- [ ] Docker & Docker Compose support (self-host in one command)
+- [x] Docker & Docker Compose support (self-host in one command)
 - [ ] Database abstraction layer (SQLite for self-hosted, PostgreSQL for cloud)
 - [ ] Redis sessions & BullMQ job queues for horizontal scaling
 - [ ] Multi-tenancy with user-scoped data isolation
