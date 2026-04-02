@@ -19,6 +19,7 @@ import statsRoutes from '../stats.js';
 import userRoutes from '../user.js';
 import bulkRoutes from '../bulk.js';
 import auditRoutes from '../audit.js';
+import apiKeysRoutes from '../api-keys.js';
 
 const router = Router();
 
@@ -37,6 +38,7 @@ router.use('/stats', statsRoutes);
 router.use('/', userRoutes);
 router.use('/', bulkRoutes);
 router.use('/audit', auditRoutes);
+router.use('/api-keys', apiKeysRoutes);
 
 // ------------------------------------------------------------------
 // Team-specific inline routes

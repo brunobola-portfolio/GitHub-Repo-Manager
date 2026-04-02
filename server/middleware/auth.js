@@ -11,6 +11,7 @@
  */
 
 import { createHmac, timingSafeEqual } from 'crypto';
+import { apiKeyAuth } from './api-key-auth.js';
 
 /**
  * Validate GitHub username format.
@@ -78,10 +79,25 @@ export function errorResponse(res, status, message, code = null) {
 }
 
 /**
- * Express middleware: reject requests that have no active session token.
- * Responds 401 when `req.session.accessToken` is absent.
+ * Express middleware: reject requests that have no active session token
+ * or valid API key.
+ *
+ * Flow:
+ * 1. If request has `Authorization: Bearer grm_live_...` -> validate API key
+ * 2. If request has session with accessToken -> use session
+ * 3. Otherwise -> 401
  */
 export const requireAuth = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer grm_live_')) {
+        return apiKeyAuth(req, res, (err) => {
+            if (err) return next(err);
+            // apiKeyAuth sets req.session.userId if valid; if it didn't 401 already, we're good
+            if (req.apiKeyId) return next();
+            return res.status(401).json({ error: 'Invalid API key' });
+        });
+    }
+
     if (!req.session.accessToken) {
         return res.status(401).json({ error: 'Session expired. Please login again.' });
     }
