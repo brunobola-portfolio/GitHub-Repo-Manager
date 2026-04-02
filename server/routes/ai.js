@@ -280,11 +280,12 @@ router.post('/ai/index', requireAuth, requireAI, async (req, res) => {
         const textToEmbed = `${repo.name} ${repo.description || ''} ${analysis.summary} ${analysis.suggested_topics.join(' ')}`;
         const embedding = await aiService.embedText(textToEmbed);
 
-        // 5. Save to DB
+        // 5. Save to DB (scoped by user_id for multi-tenancy)
+        const userId = req.session.userId;
         const stmtMeta = db.prepare(`
-            INSERT INTO repo_metadata (repo_id, summary, topics, health_score, last_indexed)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(repo_id) DO UPDATE SET
+            INSERT INTO repo_metadata (repo_id, user_id, summary, topics, health_score, last_indexed)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id, repo_id) DO UPDATE SET
                 summary = excluded.summary,
                 topics = excluded.topics,
                 health_score = excluded.health_score,
@@ -292,16 +293,16 @@ router.post('/ai/index', requireAuth, requireAI, async (req, res) => {
         `);
 
         const stmtEmbed = db.prepare(`
-            INSERT INTO repo_embeddings (repo_id, embedding, updated_at)
-            VALUES (?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(repo_id) DO UPDATE SET
+            INSERT INTO repo_embeddings (repo_id, user_id, embedding, updated_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id, repo_id) DO UPDATE SET
                 embedding = excluded.embedding,
                 updated_at = CURRENT_TIMESTAMP
         `);
 
         db.transaction(() => {
-            stmtMeta.run(repo.id, analysis.summary, JSON.stringify(analysis.suggested_topics), analysis.health_score);
-            stmtEmbed.run(repo.id, JSON.stringify(embedding));
+            stmtMeta.run(repo.id, userId, analysis.summary, JSON.stringify(analysis.suggested_topics), analysis.health_score);
+            stmtEmbed.run(repo.id, userId, JSON.stringify(embedding));
         })();
 
         res.json({ success: true, analysis });
@@ -318,8 +319,10 @@ router.get('/ai/search', requireAuth, requireAI, async (req, res) => {
     if (!q) return res.json([]);
 
     try {
-        // Get generic results (repo_ids and scores)
-        const results = await aiService.semanticSearch(q, 10);
+        const userId = req.session.userId;
+
+        // Get generic results (repo_ids and scores) scoped by user
+        const results = await aiService.semanticSearch(q, 10, userId);
 
         if (results.length === 0) return res.json([]);
 
@@ -328,7 +331,7 @@ router.get('/ai/search', requireAuth, requireAI, async (req, res) => {
         const safeIds = repoIds.slice(0, 100);
 
         const placeholders = safeIds.map(() => '?').join(',');
-        const metas = db.prepare(`SELECT * FROM repo_metadata WHERE repo_id IN (${placeholders})`).all(...safeIds);
+        const metas = db.prepare(`SELECT * FROM repo_metadata WHERE user_id = ? AND repo_id IN (${placeholders})`).all(userId, ...safeIds);
 
         // Merge score + metadata
         const enriched = results.map(r => {
@@ -347,7 +350,7 @@ router.get('/ai/search', requireAuth, requireAI, async (req, res) => {
 // Get Cached Metadata for a Repo
 router.get('/ai/metadata/:repoId', requireAuth, (req, res) => {
     try {
-        const meta = db.prepare('SELECT * FROM repo_metadata WHERE repo_id = ?').get(req.params.repoId);
+        const meta = db.prepare('SELECT * FROM repo_metadata WHERE user_id = ? AND repo_id = ?').get(req.session.userId, req.params.repoId);
         res.json(meta || null);
     } catch (error) {
         res.status(500).json({ error: safeError(error, 'Failed to fetch metadata') });
@@ -426,19 +429,21 @@ router.post('/ai/batch-index', requireAuth, requireAI, async (req, res) => {
     const results = [];
     const limit = Math.min(repos.length, 10); // Max 10 at a time
 
+    const userId = req.session.userId;
+
     // Prepare statements outside the loop for better performance
     const insertMetadata = db.prepare(`
-        INSERT INTO repo_metadata (repo_id, summary, topics, health_score, last_indexed)
-        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(repo_id) DO UPDATE SET
+        INSERT INTO repo_metadata (repo_id, user_id, summary, topics, health_score, last_indexed)
+        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, repo_id) DO UPDATE SET
             summary = excluded.summary, topics = excluded.topics,
             health_score = excluded.health_score, last_indexed = CURRENT_TIMESTAMP
     `);
 
     const insertEmbedding = db.prepare(`
-        INSERT INTO repo_embeddings (repo_id, embedding, updated_at)
-        VALUES (?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(repo_id) DO UPDATE SET embedding = excluded.embedding, updated_at = CURRENT_TIMESTAMP
+        INSERT INTO repo_embeddings (repo_id, user_id, embedding, updated_at)
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, repo_id) DO UPDATE SET embedding = excluded.embedding, updated_at = CURRENT_TIMESTAMP
     `);
 
     // Transaction wrapper for batch inserts (100x faster than individual inserts)
@@ -446,12 +451,14 @@ router.post('/ai/batch-index', requireAuth, requireAI, async (req, res) => {
         for (const repoData of repoDataArray) {
             insertMetadata.run(
                 repoData.repo.id,
+                userId,
                 repoData.analysis.summary,
                 JSON.stringify(repoData.analysis.suggested_topics),
                 repoData.analysis.health_score
             );
             insertEmbedding.run(
                 repoData.repo.id,
+                userId,
                 JSON.stringify(repoData.embedding)
             );
         }

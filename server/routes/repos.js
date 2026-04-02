@@ -950,7 +950,7 @@ router.post('/:owner/:repo/actions/sync', requireAuth, async (req, res) => {
         const { owner, repo } = req.params;
         const repoFullName = `${owner}/${repo}`;
 
-        const result = await actionsService.syncWorkflowRuns(repoFullName, req.session.accessToken);
+        const result = await actionsService.syncWorkflowRuns(repoFullName, req.session.accessToken, req.session.userId);
 
         if (result.success) {
             res.json({ success: true, message: `Synced ${result.synced} workflow runs` });
@@ -972,8 +972,8 @@ router.get('/:owner/:repo/actions/stats', requireAuth, async (req, res) => {
         const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
         const repoId = repoData.id;
 
-        const stats = actionsService.getRepoStats(repoId, parseInt(days));
-        const trends = actionsService.getDailyTrends(repoId, parseInt(days));
+        const stats = actionsService.getRepoStats(repoId, parseInt(days), req.session.userId);
+        const trends = actionsService.getDailyTrends(repoId, parseInt(days), req.session.userId);
 
         res.json({ stats, trends, repo: `${owner}/${repo}` });
     } catch (error) {
@@ -990,7 +990,7 @@ router.get('/:owner/:repo/workflows/:workflowId/stats', requireAuth, async (req,
         const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
         const repoId = repoData.id;
 
-        const stats = actionsService.getWorkflowStats(repoId, parseInt(workflowId));
+        const stats = actionsService.getWorkflowStats(repoId, parseInt(workflowId), req.session.userId);
 
         res.json(stats);
     } catch (error) {
@@ -1012,8 +1012,10 @@ router.get('/:owner/:repo/community-health', requireAuth, async (req, res) => {
         const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
         const repoId = repoData.id;
 
+        const userId = req.session.userId;
+
         if (!refresh) {
-            const cached = db.prepare('SELECT * FROM community_health_cache WHERE repo_id = ?').get(repoId);
+            const cached = db.prepare('SELECT * FROM community_health_cache WHERE user_id = ? AND repo_id = ?').get(userId, repoId);
             if (cached) {
                 return res.json({
                     score: cached.health_score,
@@ -1026,7 +1028,7 @@ router.get('/:owner/:repo/community-health', requireAuth, async (req, res) => {
         }
 
         const analysis = await communityHealthService.analyzeRepository(owner, repo, req.session.accessToken);
-        communityHealthService.cacheResults(repoId, analysis.metrics, analysis.recommendations);
+        communityHealthService.cacheResults(repoId, analysis.metrics, analysis.recommendations, userId);
 
         res.json({
             score: analysis.metrics.healthScore,

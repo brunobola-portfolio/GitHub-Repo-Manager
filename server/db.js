@@ -1,60 +1,32 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
+import { createDatabaseAdapter } from './lib/db-adapter.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dataDir = path.join(__dirname, 'data');
-
-// Ensure data directory exists
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-}
-
-// Import better-sqlite3 with helpful error handling for version mismatches
-let Database;
-try {
-    Database = (await import('better-sqlite3')).default;
-} catch (error) {
-    if (error.code === 'ERR_DLOPEN_FAILED' && error.message.includes('NODE_MODULE_VERSION')) {
-        const match = error.message.match(/NODE_MODULE_VERSION (\d+).*NODE_MODULE_VERSION (\d+)/);
-        const compiledFor = match ? match[1] : 'unknown';
-        const required = match ? match[2] : process.versions.modules;
-
-        console.error('\n' + '='.repeat(70));
-        console.error('❌ NATIVE MODULE VERSION MISMATCH');
-        console.error('='.repeat(70));
-        console.error(`\nThe better-sqlite3 module was compiled for a different Node.js version.`);
-        console.error(`  • Compiled for: NODE_MODULE_VERSION ${compiledFor}`);
-        console.error(`  • Required:     NODE_MODULE_VERSION ${required} (Node.js ${process.version})`);
-        console.error(`\n📋 How to fix:`);
-        console.error(`   1. Run: npm rebuild better-sqlite3`);
-        console.error(`   2. Or run: node server/check-native-modules.js --fix`);
-        console.error(`   3. Or clean reinstall: rm -rf node_modules && npm install`);
-        console.error('\n' + '='.repeat(70) + '\n');
-        process.exit(1);
-    }
-    throw error;
-}
-
-const dbPath = path.join(dataDir, 'manager.db');
-const db = new Database(dbPath, {
-    verbose: process.env.SQLITE_VERBOSE === 'true' ? console.log : undefined
-});
-
-// Enable foreign keys
-db.pragma('foreign_keys = ON');
-
-// Enable WAL mode for better concurrency and performance
-db.pragma('journal_mode = WAL');
-
-// Performance optimizations
-db.pragma('cache_size = 32000');      // 32MB cache (negative values are in KB, positive in pages)
-db.pragma('synchronous = NORMAL');    // Balance between safety and speed (safer than OFF, faster than FULL)
-db.pragma('temp_store = MEMORY');     // Store temporary tables in RAM for faster operations
-db.pragma('busy_timeout = 5000');       // Wait up to 5s for locked DB instead of failing immediately
+// ---------------------------------------------------------------------------
+// Initialise the database adapter.
+//
+// For SQLite (the default), this creates a thin wrapper around better-sqlite3
+// that preserves the synchronous `db.prepare('SQL').get/all/run()` API used
+// by every route in the codebase.
+//
+// For PostgreSQL (when DATABASE_URL is set), the adapter uses node-postgres
+// and exposes the same interface with async methods.
+//
+// Top-level await is supported because the project uses ESM ("type": "module").
+// ---------------------------------------------------------------------------
+const db = await createDatabaseAdapter();
 
 export function initDB() {
     const transactions = db.transaction(() => {
+        // Multi-tenancy migration: add user_id to tables that need it
+        // If tables exist without user_id, drop and recreate them
+        const tablesNeedingUserId = ['repo_metadata', 'repo_embeddings', 'community_health_cache', 'workflow_runs', 'workflows_meta'];
+        for (const table of tablesNeedingUserId) {
+            const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+            const hasUserId = cols.some(c => c.name === 'user_id');
+            if (!hasUserId && cols.length > 0) {
+                // Table exists but lacks user_id - recreate
+                db.exec(`DROP TABLE IF EXISTS ${table}`);
+            }
+        }
         // Users Table (Local cache of GitHub users)
         db.exec(`
             CREATE TABLE IF NOT EXISTS users (
@@ -119,22 +91,26 @@ export function initDB() {
         // Note: No foreign key - we can index any repo, not just assigned ones
         db.exec(`
             CREATE TABLE IF NOT EXISTS repo_metadata (
-                repo_id INTEGER PRIMARY KEY,
+                repo_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL DEFAULT 0,
                 summary TEXT,
                 topics TEXT, -- JSON array
                 health_score INTEGER,
-                last_indexed TEXT
+                last_indexed TEXT,
+                PRIMARY KEY (user_id, repo_id)
             )
         `);
 
         // Vector Embeddings Table
-        // We store the embedding as a JSON string for simplicity in SQLite 
+        // We store the embedding as a JSON string for simplicity in SQLite
         // (For production with millions of rows, use a vector extension or specialized DB)
         db.exec(`
             CREATE TABLE IF NOT EXISTS repo_embeddings (
-                repo_id INTEGER PRIMARY KEY,
+                repo_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL DEFAULT 0,
                 embedding TEXT NOT NULL, -- JSON string of float array
-                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, repo_id)
             )
         `);
 
@@ -144,6 +120,7 @@ export function initDB() {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 github_run_id INTEGER UNIQUE NOT NULL,
                 repo_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL DEFAULT 0,
                 workflow_id INTEGER NOT NULL,
                 workflow_name TEXT NOT NULL,
                 run_number INTEGER NOT NULL,
@@ -166,6 +143,7 @@ export function initDB() {
             CREATE TABLE IF NOT EXISTS workflows_meta (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 repo_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL DEFAULT 0,
                 github_workflow_id INTEGER UNIQUE NOT NULL,
                 name TEXT NOT NULL,
                 path TEXT,
@@ -178,32 +156,37 @@ export function initDB() {
                 last_success_at TEXT,
                 last_failure_at TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (repo_id) REFERENCES repo_metadata(repo_id)
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflow_runs_repo ON workflow_runs(repo_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_workflow_runs_user ON workflow_runs(user_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflow_runs_status ON workflow_runs(status)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflow_runs_conclusion ON workflow_runs(conclusion)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflow_runs_date ON workflow_runs(started_at)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflow_runs_workflow ON workflow_runs(workflow_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflows_meta_repo ON workflows_meta(repo_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_workflows_meta_user ON workflows_meta(user_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflows_meta_state ON workflows_meta(state)`);
 
         // Community Health Cache
         db.exec(`
             CREATE TABLE IF NOT EXISTS community_health_cache (
-                repo_id INTEGER PRIMARY KEY,
+                repo_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL DEFAULT 0,
                 health_score INTEGER NOT NULL,
                 metrics TEXT NOT NULL,
                 recommendations TEXT NOT NULL,
                 analyzed_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (repo_id) REFERENCES repo_metadata(repo_id)
+                PRIMARY KEY (user_id, repo_id)
             )
         `);
 
         db.exec(`CREATE INDEX IF NOT EXISTS idx_community_health_score ON community_health_cache(health_score DESC)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_community_health_user ON community_health_cache(user_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_repo_metadata_user ON repo_metadata(user_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_repo_embeddings_user ON repo_embeddings(user_id)`);
 
         // Migration jobs table for import tracking
         db.exec(`
@@ -312,7 +295,7 @@ export function initDB() {
     });
 
     transactions();
-    console.log('✅ SQLite Database initialized successfully');
+    console.log('SQLite Database initialized successfully');
 }
 
 /**
@@ -333,11 +316,11 @@ export function seedMockData() {
     // Check if mock teams already exist
     const existingTeams = db.prepare('SELECT COUNT(*) as count FROM teams WHERE owner_id = ?').get(MOCK_USER_ID);
     if (existingTeams.count > 0) {
-        console.log('📦 Mock data already exists, skipping seed');
+        console.log('Mock data already exists, skipping seed');
         return;
     }
 
-    console.log('🌱 Seeding mock data for demo mode...');
+    console.log('Seeding mock data for demo mode...');
 
     const seedTransaction = db.transaction(() => {
         // Create mock teams
@@ -379,14 +362,14 @@ export function seedMockData() {
         ];
 
         mockMetadata.forEach(meta => {
-            db.prepare('INSERT OR REPLACE INTO repo_metadata (repo_id, summary, topics, health_score, last_indexed) VALUES (?, ?, ?, ?, ?)').run(
-                meta.repoId, meta.summary, meta.topics, meta.healthScore, new Date().toISOString()
+            db.prepare('INSERT OR REPLACE INTO repo_metadata (repo_id, user_id, summary, topics, health_score, last_indexed) VALUES (?, ?, ?, ?, ?, ?)').run(
+                meta.repoId, MOCK_USER_ID, meta.summary, meta.topics, meta.healthScore, new Date().toISOString()
             );
         });
     });
 
     seedTransaction();
-    console.log('✅ Mock data seeded successfully');
+    console.log('Mock data seeded successfully');
 }
 
 export default db;
