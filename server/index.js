@@ -13,8 +13,14 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { randomUUID } from 'crypto';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 import db, { initDB, seedMockData } from './db.js';
 import { aiService } from './ai-service.js';
@@ -332,6 +338,20 @@ app.post('/api/teams/:id/actions/stats', requireAuth, async (req, res) => {
         res.status(500).json({ error: safeError(error, 'Failed to fetch team stats') });
     }
 });
+
+// Serve frontend in production
+if (process.env.NODE_ENV === 'production') {
+    const distPath = path.join(__dirname, '..', 'dist');
+    if (fs.existsSync(distPath)) {
+        app.use(express.static(distPath));
+        app.get('*', (req, res) => {
+            if (req.path.startsWith('/api/')) {
+                return res.status(404).json({ error: 'Not found' });
+            }
+            res.sendFile(path.join(distPath, 'index.html'));
+        });
+    }
+}
 
 // -----------------------------------------------------------------------------
 // Global Error Handler

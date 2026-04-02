@@ -1,0 +1,11 @@
+node_modules
+.git
+.dev
+.claude
+.env
+.env.local
+server/data/*.db
+server/data/tmp/
+dist
+coverage
+*.log
