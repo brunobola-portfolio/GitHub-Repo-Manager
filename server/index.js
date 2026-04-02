@@ -24,28 +24,12 @@ const __dirname = path.dirname(__filename);
 
 import db, { initDB, seedMockData } from './db.js';
 import { aiService } from './ai-service.js';
-import { actionsService } from './actions-service.js';
-import { githubApi } from './lib/github-api.js';
-import { requireAuth, safeError } from './middleware/auth.js';
+import { safeError } from './middleware/auth.js';
 import { createSQLiteStore } from './lib/session-store.js';
 import logger, { requestLoggerMiddleware } from './lib/logger.js';
 
-// Route modules (existing)
-import authRoutes from './routes/auth.js';
-import teamsRoutes from './routes/teams.js';
-import systemRoutes from './routes/system.js';
-import azureRoutes from './routes/azure.js';
-import importRoutes from './routes/import.js';
-import webhooksRoutes from './routes/webhooks.js';
-import migrationRoutes from './routes/migration.js';
-
-// Route modules (new)
-import reposRoutes from './routes/repos.js';
-import orgsRoutes from './routes/orgs.js';
-import aiRoutes from './routes/ai.js';
-import statsRoutes from './routes/stats.js';
-import userRoutes from './routes/user.js';
-import bulkRoutes from './routes/bulk.js';
+// API v1 route aggregator
+import v1Routes from './routes/v1/index.js';
 
 initDB();
 
@@ -190,161 +174,10 @@ app.get('/api/health', (_req, res) => {
 // Mounted Route Modules
 // ------------------------------------------------------------------
 
-// Existing route modules
-app.use('/api/auth', authRoutes);
-app.use('/api/teams', teamsRoutes);
-app.use('/api/system', systemRoutes);
-app.use('/api', azureRoutes);
-app.use('/api', importRoutes);
-app.use('/api', webhooksRoutes);
-app.use('/api', migrationRoutes);
-
-// New route modules
-app.use('/api/repos', reposRoutes);
-app.use('/api/orgs', orgsRoutes);
-app.use('/api', aiRoutes);
-app.use('/api/stats', statsRoutes);
-app.use('/api', userRoutes);
-app.use('/api', bulkRoutes);
-
-// ------------------------------------------------------------------
-// Team-specific routes (not in teams.js to avoid modifying existing module)
-// ------------------------------------------------------------------
-
-// In-memory TTL cache for team activity
-const activityCache = new Map();
-const ACTIVITY_CACHE_TTL = 60000; // 60 seconds
-
-// Team Activity Stream
-// Aggregates events from all repos assigned to the team
-app.get(['/api/teams/:id/activity', '/api/team/:id/activity'], requireAuth, async (req, res) => {
-    try {
-        const teamId = req.params.id;
-
-        // Verify team membership
-        const membership = db.prepare(
-            'SELECT role FROM team_members WHERE team_id = ? AND user_id = ?'
-        ).get(teamId, req.session.userId);
-        if (!membership) {
-            return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
-        }
-
-        // Check cache first
-        const cacheKey = `team-${teamId}`;
-        const cached = activityCache.get(cacheKey);
-        if (cached && Date.now() - cached.timestamp < ACTIVITY_CACHE_TTL) {
-            return res.json(cached.data);
-        }
-
-        // 1. Get Repos assigned to team
-        const repos = db.prepare('SELECT repo_full_name FROM repo_assignments WHERE team_id = ?').all(teamId);
-
-        if (!repos.length) {
-            return res.json([]);
-        }
-
-        // 2. Fetch events for each repo (Limit to first 10 repos to avoid rate limits/timeouts)
-        // Uses batched fetching (3 at a time) with small delays to avoid rate limit spikes.
-        const targetRepos = repos.slice(0, 10);
-        const BATCH_SIZE = 3;
-        const BATCH_DELAY_MS = 100;
-        const results = [];
-
-        for (let i = 0; i < targetRepos.length; i += BATCH_SIZE) {
-            const batch = targetRepos.slice(i, i + BATCH_SIZE);
-            const batchResults = await Promise.all(
-                batch.map(async (r) => {
-                    try {
-                        const { data } = await githubApi(`/repos/${r.repo_full_name}/events?per_page=10`, req.session.accessToken);
-                        return data.map(event => ({ ...event, repo_name: r.repo_full_name }));
-                    } catch (e) {
-                        logger.error({ err: e, repo: r.repo_full_name }, 'Failed to fetch repo events');
-                        return [];
-                    }
-                })
-            );
-            results.push(...batchResults);
-
-            // Small delay between batches to spread out rate limit usage
-            if (i + BATCH_SIZE < targetRepos.length) {
-                await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
-            }
-        }
-
-        // 3. Flatten, Deduplicate (by id), and Sort by Date
-        const allEvents = results.flat();
-        const uniqueEvents = Array.from(new Map(allEvents.map(item => [item.id, item])).values());
-
-        uniqueEvents.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-        // Return top 50
-        const activityData = uniqueEvents.slice(0, 50);
-
-        // Cache the result
-        activityCache.set(cacheKey, { data: activityData, timestamp: Date.now() });
-        // Evict old entries to prevent unbounded growth
-        if (activityCache.size > 100) {
-            const oldest = activityCache.keys().next().value;
-            activityCache.delete(oldest);
-        }
-
-        res.json(activityData);
-
-    } catch (error) {
-        logger.error({ err: error }, 'Team activity fetch failed');
-        res.status(500).json({ error: 'Failed to fetch team activity' });
-    }
-});
-
-// Get statistics for multiple repositories (team view)
-app.post('/api/teams/:id/actions/stats', requireAuth, async (req, res) => {
-    try {
-        const teamId = req.params.id;
-
-        // Verify team membership
-        const membership = db.prepare(
-            'SELECT role FROM team_members WHERE team_id = ? AND user_id = ?'
-        ).get(teamId, req.session.userId);
-        if (!membership) {
-            return res.status(403).json({ error: 'Access denied', code: 'FORBIDDEN' });
-        }
-
-        const { days = 30 } = req.body;
-
-        const repos = db.prepare('SELECT repo_id, repo_full_name FROM repo_assignments WHERE team_id = ?')
-            .all(teamId);
-
-        if (repos.length === 0) {
-            return res.json({ repos: [], teamAverages: {} });
-        }
-
-        const repoIds = repos.map(r => r.repo_id);
-        const statsArray = actionsService.getMultiRepoStats(repoIds, parseInt(days), req.session.userId);
-
-        const enrichedStats = statsArray.map(stat => {
-            const repo = repos.find(r => r.repo_id === stat.repoId);
-            return {
-                ...stat,
-                repoFullName: repo?.repo_full_name || 'unknown'
-            };
-        });
-
-        const teamAverages = {
-            totalRuns: enrichedStats.reduce((sum, s) => sum + s.totalRuns, 0),
-            avgSuccessRate: enrichedStats.length > 0
-                ? +(enrichedStats.reduce((sum, s) => sum + s.successRate, 0) / enrichedStats.length).toFixed(2)
-                : 0,
-            avgDuration: enrichedStats.length > 0
-                ? Math.round(enrichedStats.reduce((sum, s) => sum + s.avgDuration, 0) / enrichedStats.length)
-                : 0
-        };
-
-        res.json({ repos: enrichedStats, teamAverages });
-    } catch (error) {
-        logger.error({ err: error }, 'Team actions stats fetch failed');
-        res.status(500).json({ error: safeError(error, 'Failed to fetch team stats') });
-    }
-});
+// API v1 routes
+app.use('/api/v1', v1Routes);
+// Backward compatibility: /api/* maps to /api/v1/*
+app.use('/api', v1Routes);
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {
