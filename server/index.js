@@ -150,9 +150,10 @@ app.use('/api/', apiLimiter);
 app.use('/api/auth/', authLimiter);
 
 // Session configuration for secure auth persistence
-// In production, sessions are persisted to SQLite so they survive server restarts
-// and don't leak memory. In development, the default MemoryStore is used for
-// simplicity (no persistence needed, and warnings are acceptable).
+// Store selection priority:
+//   1. Redis (REDIS_URL set)  → distributed sessions for multi-instance deployments
+//   2. SQLite (production)    → single-instance persistent sessions
+//   3. MemoryStore (default)  → development only (non-persistent, acceptable)
 const sessionConfig = {
     secret: SESSION_SECRET,
     resave: false,
@@ -165,9 +166,15 @@ const sessionConfig = {
     }
 };
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.REDIS_URL) {
+    const { createRedisStore } = await import('./lib/session-store-redis.js');
+    const { store } = createRedisStore();
+    sessionConfig.store = store;
+    logger.info('[sessions] Using Redis session store');
+} else if (process.env.NODE_ENV === 'production') {
     const SQLiteStore = createSQLiteStore(session);
     sessionConfig.store = new SQLiteStore(db);
+    logger.info('[sessions] Using SQLite session store');
 }
 
 app.use(session(sessionConfig));
