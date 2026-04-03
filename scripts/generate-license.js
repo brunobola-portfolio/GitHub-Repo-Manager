@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (c) 2025-2026 Bola Labs. All rights reserved.
+
 import { generateLicenseKey, parseLicenseKey } from '../server/lib/license.js'
 import { readFileSync, existsSync } from 'fs'
 import { join, dirname } from 'path'
@@ -30,14 +33,27 @@ if (!['pro', 'enterprise'].includes(values.tier)) {
   process.exit(1)
 }
 
+const seats = parseInt(values.seats, 10)
+const months = parseInt(values.months, 10)
+
+if (!Number.isFinite(seats) || seats < 1) {
+  console.error('ERROR: --seats must be a positive integer')
+  process.exit(1)
+}
+
+if (!Number.isFinite(months) || months < 1) {
+  console.error('ERROR: --months must be a positive integer')
+  process.exit(1)
+}
+
 const privateKeyPem = readFileSync(keyFile, 'utf-8')
 
 const key = await generateLicenseKey({
   org: values.org,
   email: values.email,
   tier: values.tier,
-  seats: parseInt(values.seats, 10),
-  months: parseInt(values.months, 10),
+  seats,
+  months,
 }, privateKeyPem)
 
 const payload = parseLicenseKey(key)

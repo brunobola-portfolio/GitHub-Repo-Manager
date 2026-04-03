@@ -1,4 +1,9 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (c) 2025-2026 Bola Labs. All rights reserved.
+// Commercial license: https://bolalabs.pt/license
+
 import { Router } from 'express'
+import rateLimit from 'express-rate-limit'
 import { requireAuth } from '../middleware/auth.js'
 import { getLicenseInfo } from '../middleware/require-tier.js'
 import { validateLicenseKey } from '../lib/license.js'
@@ -12,6 +17,15 @@ const publicKeyPath = join(__dirname, '..', '..', 'keys', 'public.pem')
 const PUBLIC_KEY = existsSync(publicKeyPath)
   ? readFileSync(publicKeyPath, 'utf-8')
   : null
+
+// Strict rate limit for unauthenticated validate endpoint
+const validateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5, // 5 requests per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many validation requests. Try again in a minute.' },
+})
 
 const router = Router()
 
@@ -44,7 +58,7 @@ router.get('/', requireAuth, (req, res) => {
 })
 
 // POST /api/v1/license/validate — validate a key (for setup wizards)
-router.post('/validate', async (req, res) => {
+router.post('/validate', validateLimiter, async (req, res) => {
   const { key } = req.body
   if (!key || typeof key !== 'string') {
     return res.status(400).json({ error: 'Missing or invalid key' })

@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (c) 2025-2026 Bola Labs. All rights reserved.
+// Commercial license: https://bolalabs.pt/license
+
 import { SignJWT, jwtVerify, generateKeyPair as joseGenerateKeyPair, exportPKCS8, exportSPKI, importSPKI, importPKCS8 } from 'jose'
 import { randomUUID } from 'crypto'
 
@@ -13,15 +17,18 @@ export async function generateKeyPair() {
 }
 
 export async function generateLicenseKey(opts, privateKeyPem) {
-  const { org, email, tier, seats, months } = opts
+  const { org, email, tier, seats, months, features } = opts
   const lid = randomUUID()
   const now = Math.floor(Date.now() / 1000)
   const exp = months > 0
     ? now + (months * 30 * 24 * 60 * 60)
     : now - 1
 
+  const payload = { lid, org, email, tier, seats }
+  if (features && features.length > 0) payload.features = features
+
   const key = await importPKCS8(privateKeyPem, ALG)
-  const jwt = await new SignJWT({ lid, org, email, tier, seats })
+  const jwt = await new SignJWT(payload)
     .setProtectedHeader({ alg: ALG, typ: 'JWT' })
     .setIssuedAt(now)
     .setExpirationTime(exp)
@@ -40,6 +47,11 @@ export async function validateLicenseKey(licenseKey, publicKeyPem) {
   } catch {
     return null
   }
+}
+
+export function isLicenseExpired(payload) {
+  if (!payload || !payload.exp) return true
+  return Math.floor(Date.now() / 1000) > payload.exp
 }
 
 export function parseLicenseKey(licenseKey) {

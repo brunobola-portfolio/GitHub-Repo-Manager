@@ -1,9 +1,13 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (c) 2025-2026 Bola Labs. All rights reserved.
+// Commercial license: https://bolalabs.pt/license
+
 import { readFileSync, existsSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import db from '../db.js'
 import { getTierOrder } from '../lib/feature-flags.js'
-import { validateLicenseKey } from '../lib/license.js'
+import { validateLicenseKey, parseLicenseKey, isLicenseExpired } from '../lib/license.js'
 import { config } from '../config.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -46,10 +50,16 @@ export function getUserTier(userId) {
 
   const envKey = config.licenseKey || null
   if (envKey && PUBLIC_KEY) {
-    if (envKey === cachedLicenseKey && cachedLicenseTier) {
+    // Use cache if warm
+    if (cachedLicenseTier && envKey === cachedLicenseKey) {
       return cachedLicenseTier
     }
-    return cachedLicenseTier || 'free'
+    // Fallback: parse JWT without crypto verification (sync, safe for cold start)
+    // The cache will be populated by initLicenseCache() shortly after
+    const parsed = parseLicenseKey(envKey)
+    if (parsed && parsed.tier && !isLicenseExpired(parsed)) {
+      return parsed.tier
+    }
   }
 
   return 'free'

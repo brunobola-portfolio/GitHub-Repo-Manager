@@ -56,6 +56,15 @@ function LandingFooter() {
           >
             Changelog
           </a>
+          <span className="text-slate-200 dark:text-slate-700">·</span>
+          <a
+            href="https://bolalabs.pt/license"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200 ds-font-display"
+          >
+            AGPL v3
+          </a>
         </div>
       </div>
     </motion.footer>

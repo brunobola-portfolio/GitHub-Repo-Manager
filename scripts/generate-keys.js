@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: AGPL-3.0-only
+// Copyright (c) 2025-2026 Bola Labs. All rights reserved.
+
 import { generateKeyPair } from '../server/lib/license.js'
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
