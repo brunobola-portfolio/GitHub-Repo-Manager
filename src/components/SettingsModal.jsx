@@ -1,13 +1,26 @@
 import { useState, useEffect } from 'react'
-import { X, Moon, Sun, Monitor, Zap, Trash2, GitBranch } from 'lucide-react'
+import { X, Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, CreditCard, BarChart3 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTheme } from '../hooks/useTheme'
 import { API_BASE_URL } from '../config'
 import { useFocusTrap } from '../hooks/useFocusTrap'
+import { ApiKeysSection } from './Settings/ApiKeysSection'
+import { AuditLogSection } from './Settings/AuditLogSection'
+import { BillingSection } from './Settings/BillingSection'
+import { UsageSection } from './Settings/UsageSection'
+
+const TABS = [
+    { id: 'general', label: 'General', icon: SettingsIcon },
+    { id: 'api-keys', label: 'API Keys', icon: Key },
+    { id: 'usage', label: 'Usage', icon: BarChart3 },
+    { id: 'billing', label: 'Billing', icon: CreditCard },
+    { id: 'audit', label: 'Audit Log', icon: Shield },
+]
 
 export function SettingsModal({ isOpen, onClose }) {
     const { theme, setTheme } = useTheme()
     const modalRef = useFocusTrap(isOpen, onClose)
+    const [activeTab, setActiveTab] = useState('general')
 
     // Load cache settings from localStorage
     const [cacheSettings, setCacheSettings] = useState(() => {
@@ -21,6 +34,11 @@ export function SettingsModal({ isOpen, onClose }) {
 
     const [clearing, setClearing] = useState(false)
     const [cacheMessage, setCacheMessage] = useState(null)
+
+    // Reset to general tab when modal opens
+    useEffect(() => {
+        if (isOpen) setActiveTab('general')
+    }, [isOpen])
 
     const handleSave = () => {
         localStorage.setItem('cache-settings', JSON.stringify(cacheSettings))
@@ -83,8 +101,9 @@ export function SettingsModal({ isOpen, onClose }) {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-full max-w-md max-h-[85vh] md:max-h-[90vh] bg-white dark:bg-slate-950 rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] ring-1 ring-slate-200/50 dark:ring-slate-700/50 overflow-hidden flex flex-col"
+                        className="w-full max-w-3xl max-h-[85vh] md:max-h-[90vh] bg-white dark:bg-slate-950 rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] ring-1 ring-slate-200/50 dark:ring-slate-700/50 overflow-hidden flex flex-col"
                     >
+                        {/* Header */}
                         <div className="px-4 py-3.5 border-b border-slate-200/50 dark:border-slate-800/40 flex items-center justify-between bg-white/80 dark:bg-slate-900/70 flex-shrink-0">
                             <h2 id="settings-modal-title" className="font-semibold text-base text-slate-900 dark:text-white flex items-center gap-2">
                                 <SettingsIcon className="w-5 h-5 text-indigo-500" />
@@ -99,149 +118,206 @@ export function SettingsModal({ isOpen, onClose }) {
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-6 flex-1 overflow-y-auto">
-                            {/* Theme Selection */}
-                            <div className="space-y-3">
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    Appearance
-                                </label>
-                                <div className="grid grid-cols-3 gap-3">
-                                    <ThemeOption value="light" icon={Sun} label="Light" currentTheme={theme} setTheme={setTheme} />
-                                    <ThemeOption value="dark" icon={Moon} label="Dark" currentTheme={theme} setTheme={setTheme} />
-                                    <ThemeOption value="system" icon={Monitor} label="System" currentTheme={theme} setTheme={setTheme} />
-                                </div>
-                            </div>
-
-                            {/* Cache Settings */}
-                            <div className="space-y-3">
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                                    <Zap size={16} className="text-amber-500" />
-                                    Performance Cache
-                                </label>
-
-                                {/* Enable/Disable Toggle */}
-                                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                                    <span className="text-sm text-slate-600 dark:text-slate-400">Enable stats caching</span>
-                                    <button
-                                        role="switch"
-                                        aria-checked={cacheSettings.enabled}
-                                        aria-label="Enable stats caching"
-                                        onClick={() => setCacheSettings({ ...cacheSettings, enabled: !cacheSettings.enabled })}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${cacheSettings.enabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
-                                    >
-                                        <span
-                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${cacheSettings.enabled ? 'translate-x-6' : 'translate-x-1'}`}
-                                        />
-                                    </button>
-                                </div>
-
-                                {/* TTL Slider */}
-                                {cacheSettings.enabled && (
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-slate-600 dark:text-slate-400">Cache duration</span>
-                                            <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">{cacheSettings.ttl} min</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="1"
-                                            max="60"
-                                            value={cacheSettings.ttl}
-                                            onChange={(e) => setCacheSettings({ ...cacheSettings, ttl: parseInt(e.target.value) })}
-                                            className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                                        />
-                                        <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                                            <span>1 min</span>
-                                            <span>60 min</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Clear Cache Button */}
+                        {/* Tab bar */}
+                        <div className="flex border-b border-slate-200/50 dark:border-slate-800/40 bg-slate-50/50 dark:bg-slate-900/40 px-4 overflow-x-auto flex-shrink-0">
+                            {TABS.map(({ id, label, icon: TabIcon }) => (
                                 <button
-                                    onClick={handleClearCache}
-                                    disabled={clearing}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    key={id}
+                                    onClick={() => setActiveTab(id)}
+                                    className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                                        activeTab === id
+                                            ? 'text-indigo-600 dark:text-indigo-400'
+                                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                                    }`}
                                 >
-                                    <Trash2 size={16} />
-                                    {clearing ? 'Clearing...' : 'Clear Cache Now'}
+                                    <TabIcon className="w-4 h-4" />
+                                    {label}
+                                    {activeTab === id && (
+                                        <motion.div
+                                            layoutId="settings-tab-indicator"
+                                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full"
+                                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                        />
+                                    )}
                                 </button>
-                                {cacheMessage && (
-                                    <p role="status" className={`text-xs font-medium ${cacheMessage.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                        {cacheMessage.text}
-                                    </p>
-                                )}
-                                <p className="text-xs text-slate-500 dark:text-slate-400">
-                                    Cached stats improve loading times. Clear if you see stale data.
-                                </p>
-                            </div>
+                            ))}
+                        </div>
 
-                            {/* Migration Settings */}
-                            <div className="space-y-3">
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                                    <GitBranch size={16} className="text-indigo-500" />
-                                    Migration
-                                </label>
+                        {/* Tab content */}
+                        <div className="flex-1 overflow-y-auto">
+                            {activeTab === 'general' && (
+                                <div className="p-6 space-y-6">
+                                    {/* Theme Selection */}
+                                    <div className="space-y-3">
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                            Appearance
+                                        </label>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <ThemeOption value="light" icon={Sun} label="Light" currentTheme={theme} setTheme={setTheme} />
+                                            <ThemeOption value="dark" icon={Moon} label="Dark" currentTheme={theme} setTheme={setTheme} />
+                                            <ThemeOption value="system" icon={Monitor} label="System" currentTheme={theme} setTheme={setTheme} />
+                                        </div>
+                                    </div>
 
-                                {/* Default Visibility */}
-                                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                                    <span className="text-sm text-slate-600 dark:text-slate-400">Default visibility for imports</span>
-                                    <div className="flex gap-1 p-0.5 bg-slate-200 dark:bg-slate-700 rounded-lg">
+                                    {/* Cache Settings */}
+                                    <div className="space-y-3">
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                            <Zap size={16} className="text-amber-500" />
+                                            Performance Cache
+                                        </label>
+
+                                        {/* Enable/Disable Toggle */}
+                                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                                            <span className="text-sm text-slate-600 dark:text-slate-400">Enable stats caching</span>
+                                            <button
+                                                role="switch"
+                                                aria-checked={cacheSettings.enabled}
+                                                aria-label="Enable stats caching"
+                                                onClick={() => setCacheSettings({ ...cacheSettings, enabled: !cacheSettings.enabled })}
+                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${cacheSettings.enabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                            >
+                                                <span
+                                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${cacheSettings.enabled ? 'translate-x-6' : 'translate-x-1'}`}
+                                                />
+                                            </button>
+                                        </div>
+
+                                        {/* TTL Slider */}
+                                        {cacheSettings.enabled && (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-slate-600 dark:text-slate-400">Cache duration</span>
+                                                    <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">{cacheSettings.ttl} min</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="1"
+                                                    max="60"
+                                                    value={cacheSettings.ttl}
+                                                    onChange={(e) => setCacheSettings({ ...cacheSettings, ttl: parseInt(e.target.value) })}
+                                                    className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                                />
+                                                <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                                                    <span>1 min</span>
+                                                    <span>60 min</span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Clear Cache Button */}
                                         <button
-                                            onClick={() => setMigrationSettings({ ...migrationSettings, defaultVisibility: 'public' })}
-                                            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                                                migrationSettings.defaultVisibility === 'public'
-                                                    ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                                                    : 'text-slate-500 dark:text-slate-400'
-                                            }`}
+                                            onClick={handleClearCache}
+                                            disabled={clearing}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            Public
+                                            <Trash2 size={16} />
+                                            {clearing ? 'Clearing...' : 'Clear Cache Now'}
                                         </button>
-                                        <button
-                                            onClick={() => setMigrationSettings({ ...migrationSettings, defaultVisibility: 'private' })}
-                                            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                                                migrationSettings.defaultVisibility === 'private'
-                                                    ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                                                    : 'text-slate-500 dark:text-slate-400'
-                                            }`}
-                                        >
-                                            Private
-                                        </button>
+                                        {cacheMessage && (
+                                            <p role="status" className={`text-xs font-medium ${cacheMessage.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                {cacheMessage.text}
+                                            </p>
+                                        )}
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                            Cached stats improve loading times. Clear if you see stale data.
+                                        </p>
+                                    </div>
+
+                                    {/* Migration Settings */}
+                                    <div className="space-y-3">
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                            <GitBranch size={16} className="text-indigo-500" />
+                                            Migration
+                                        </label>
+
+                                        {/* Default Visibility */}
+                                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                                            <span className="text-sm text-slate-600 dark:text-slate-400">Default visibility for imports</span>
+                                            <div className="flex gap-1 p-0.5 bg-slate-200 dark:bg-slate-700 rounded-lg">
+                                                <button
+                                                    onClick={() => setMigrationSettings({ ...migrationSettings, defaultVisibility: 'public' })}
+                                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                                                        migrationSettings.defaultVisibility === 'public'
+                                                            ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                                                            : 'text-slate-500 dark:text-slate-400'
+                                                    }`}
+                                                >
+                                                    Public
+                                                </button>
+                                                <button
+                                                    onClick={() => setMigrationSettings({ ...migrationSettings, defaultVisibility: 'private' })}
+                                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                                                        migrationSettings.defaultVisibility === 'private'
+                                                            ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                                                            : 'text-slate-500 dark:text-slate-400'
+                                                    }`}
+                                                >
+                                                    Private
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Retry Policy */}
+                                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                                            <span className="text-sm text-slate-600 dark:text-slate-400">Max retries for failed tasks</span>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max="5"
+                                                value={migrationSettings.maxRetries}
+                                                onChange={(e) => {
+                                                    const val = Math.min(5, Math.max(1, parseInt(e.target.value) || 1))
+                                                    setMigrationSettings({ ...migrationSettings, maxRetries: val })
+                                                }}
+                                                className="w-16 px-2 py-1 text-sm text-center border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
+                            )}
 
-                                {/* Retry Policy */}
-                                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                                    <span className="text-sm text-slate-600 dark:text-slate-400">Max retries for failed tasks</span>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        max="5"
-                                        value={migrationSettings.maxRetries}
-                                        onChange={(e) => {
-                                            const val = Math.min(5, Math.max(1, parseInt(e.target.value) || 1))
-                                            setMigrationSettings({ ...migrationSettings, maxRetries: val })
-                                        }}
-                                        className="w-16 px-2 py-1 text-sm text-center border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                                    />
+                            {activeTab === 'api-keys' && (
+                                <div className="p-6">
+                                    <ApiKeysSection />
                                 </div>
-                            </div>
+                            )}
+
+                            {activeTab === 'usage' && (
+                                <div className="p-6">
+                                    <UsageSection />
+                                </div>
+                            )}
+
+                            {activeTab === 'billing' && (
+                                <div className="p-6">
+                                    <BillingSection />
+                                </div>
+                            )}
+
+                            {activeTab === 'audit' && (
+                                <div className="p-6">
+                                    <AuditLogSection />
+                                </div>
+                            )}
                         </div>
 
-                        <div className="flex items-center justify-end gap-3 min-h-[68px] px-6 bg-white/80 dark:bg-slate-900/70 border-t border-slate-200/50 dark:border-slate-800/40 flex-shrink-0">
-                            <button
-                                onClick={onClose}
-                                className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSave}
-                                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm shadow-indigo-500/20 transition-all"
-                            >
-                                Save Changes
-                            </button>
-                        </div>
+                        {/* Footer - only show Save for general tab */}
+                        {activeTab === 'general' && (
+                            <div className="flex items-center justify-end gap-3 min-h-[68px] px-6 bg-white/80 dark:bg-slate-900/70 border-t border-slate-200/50 dark:border-slate-800/40 flex-shrink-0">
+                                <button
+                                    onClick={onClose}
+                                    className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSave}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm shadow-indigo-500/20 transition-all"
+                                >
+                                    Save Changes
+                                </button>
+                            </div>
+                        )}
                     </motion.div>
                 </motion.div>
             )}

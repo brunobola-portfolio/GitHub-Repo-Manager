@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import {
     Github, LogOut, RefreshCw, FlaskConical, LayoutDashboard, FolderGit2, Plus,
     Bell, Settings, User, ChevronDown, Building2, Shield, Users,
-    CheckCircle2, AlertCircle, Sparkles, Moon, Sun, Wand2, Download, History, Menu
+    CheckCircle2, AlertCircle, Sparkles, Moon, Sun, Wand2, Download, History, Menu, CreditCard
 } from 'lucide-react'
 import { AppLogoIcon } from './AppLogo'
 import { useTheme } from '../hooks/useTheme.jsx'
@@ -108,6 +108,12 @@ export function Header({
                                 onClick={() => onViewChange?.('teams')}
                                 icon={Users}
                                 label="Teams"
+                            />
+                            <NavButton
+                                active={activeView === 'pricing'}
+                                onClick={() => onViewChange?.('pricing')}
+                                icon={CreditCard}
+                                label="Pricing"
                             />
                         </nav>
                     )}
@@ -241,11 +247,11 @@ export function Header({
                 { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
                 { id: 'repos', icon: FolderGit2, label: 'Repos' },
                 { id: 'teams', icon: Users, label: 'Teams' },
-                { id: 'ai', icon: Sparkles, label: 'AI' },
+                { id: 'pricing', icon: CreditCard, label: 'Pricing' },
               ].map(({ id, icon: Icon, label }) => (
                 <button
                   key={id}
-                  onClick={() => onViewChange?.(id === 'ai' ? 'repos' : id)}
+                  onClick={() => onViewChange?.(id)}
                   className={`flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-xl transition-colors ${
                     activeView === id
                       ? 'text-indigo-600 dark:text-indigo-400'
