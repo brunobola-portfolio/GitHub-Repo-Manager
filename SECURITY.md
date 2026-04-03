@@ -26,7 +26,7 @@ We will acknowledge your report within **48 hours** and aim to provide a fix wit
 
 ### Authentication
 
-- **GitHub OAuth 2.0** with PKCE flow for user authentication
+- **GitHub OAuth 2.0** for user authentication
 - **Session-based** with `httpOnly`, `sameSite: 'lax'`, and `secure` (production) cookies
 - **Azure DevOps OAuth** callback validates `state` parameter against session-stored nonce to prevent CSRF; `requireAuth` is intentionally omitted on the callback route since it runs in a popup before the session is established
 - Sessions stored server-side in SQLite (not in cookies)

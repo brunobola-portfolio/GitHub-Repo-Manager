@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { getStripe, isStripeEnabled } from '../lib/stripe.js';
 import { config } from '../config.js';
 import { z } from 'zod';
+import logger from '../lib/logger.js';
 
 const router = Router();
 
@@ -58,6 +59,7 @@ router.post('/checkout', requireAuth, requireStripe, async (req, res) => {
 
         res.json({ url: session.url });
     } catch (err) {
+        logger.error({ err }, 'Failed to create checkout session');
         res.status(500).json({ error: 'Failed to create checkout session' });
     }
 });
@@ -76,6 +78,7 @@ router.post('/portal', requireAuth, requireStripe, async (req, res) => {
 
         res.json({ url: session.url });
     } catch (err) {
+        logger.error({ err }, 'Failed to create portal session');
         res.status(500).json({ error: 'Failed to create portal session' });
     }
 });

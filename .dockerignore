@@ -9,3 +9,9 @@ server/data/tmp/
 dist
 coverage
 *.log
+tests/
+e2e/
+docs/
+.github/
+*.md
+!README.md
