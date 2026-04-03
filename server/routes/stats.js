@@ -193,11 +193,11 @@ router.get('/global', requireAuth, async (req, res) => {
         });
 
         // Check if any repo has GitHub Actions (by checking workflow_runs table, scoped by user)
-        const actionsCount = db.prepare('SELECT COUNT(DISTINCT repo_id) as count FROM workflow_runs WHERE user_id = ?').get(userId);
+        const actionsCount = db.prepare('SELECT COUNT(DISTINCT repo_id) as count FROM workflow_runs WHERE user_id = ?').get(req.session.userId);
         stats.hasActions = actionsCount.count > 0;
 
         // Check how many repos have been analyzed for health (scoped by user)
-        const healthCount = db.prepare('SELECT COUNT(*) as count FROM community_health_cache WHERE user_id = ? AND analyzed_at IS NOT NULL').get(userId);
+        const healthCount = db.prepare('SELECT COUNT(*) as count FROM community_health_cache WHERE user_id = ? AND analyzed_at IS NOT NULL').get(req.session.userId);
         stats.healthAnalyzed = healthCount.count;
 
         res.json(stats);

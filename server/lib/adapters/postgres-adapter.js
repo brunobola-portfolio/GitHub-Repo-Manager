@@ -149,8 +149,7 @@ export class PostgresAdapter {
      */
     prepare(sql) {
         const adapter = this;
-        const pgSql = convertPlaceholders(sql);
-        const pgSqlWithReturning = ensureReturningId(pgSql);
+        const _pgSql = convertPlaceholders(sql);
 
         return {
             get(...args) {
