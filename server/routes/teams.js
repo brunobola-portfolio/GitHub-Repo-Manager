@@ -3,6 +3,7 @@ import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, safeError, errorResponse } from '../middleware/auth.js';
 import { validate, teamCreateSchema, teamMemberSchema, teamRepoSchema } from '../lib/validators.js';
+import { auditLog } from '../lib/audit.js';
 
 const router = express.Router();
 
@@ -39,6 +40,7 @@ router.post('/', requireAuth, validate(teamCreateSchema), (req, res) => {
             return teamId;
         })();
 
+        auditLog(req, 'team.create', 'team', result, { name });
         res.json({ success: true, teamId: result });
     } catch (error) {
         errorResponse(res, 500, safeError(error, 'Operation failed'));
@@ -85,6 +87,7 @@ router.delete('/:id', requireAuth, (req, res) => {
         })();
 
         if (result.changes === 0) return errorResponse(res, 404, 'Team not found', 'NOT_FOUND');
+        auditLog(req, 'team.delete', 'team', id, { name: team?.name });
         res.json({ success: true });
 
         // Audit log: record team deletion
@@ -158,6 +161,7 @@ router.post('/:id/members', requireAuth, validate(teamMemberSchema), async (req,
             INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, 'member')
         `).run(req.params.id, user.id);
 
+        auditLog(req, 'team.member.add', 'team', req.params.id, { username, role: 'member' });
         res.json({ success: true });
 
         // Audit log: record member addition
@@ -222,6 +226,7 @@ router.delete('/:id/members/:userId', requireAuth, (req, res) => {
         db.prepare('DELETE FROM team_members WHERE team_id = ? AND user_id = ?')
             .run(req.params.id, req.params.userId);
 
+        auditLog(req, 'team.member.remove', 'team', req.params.id, { userId: req.params.userId });
         res.json({ success: true });
 
         // Audit log: record member removal

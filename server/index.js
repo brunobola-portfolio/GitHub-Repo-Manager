@@ -12,6 +12,7 @@ import session from 'express-session';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { createTenantLimiters, globalLimiter } from './middleware/tenant-rate-limit.js';
 import { randomUUID } from 'crypto';
 import path from 'path';
 import fs from 'fs';
@@ -83,14 +84,15 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "https://github.com", "https://avatars.githubusercontent.com", "https://*.githubusercontent.com"],
-            connectSrc: ["'self'"],
+            connectSrc: ["'self'", config.frontendUrl],
         }
     } : false,
-    crossOriginEmbedderPolicy: false // Allow embedded resources
+    crossOriginEmbedderPolicy: false,
+    hsts: config.nodeEnv === 'production' ? { maxAge: 63072000, includeSubDomains: true, preload: true } : false,
 }));
 app.use(cors({
-    origin: config.frontendUrl,
-    credentials: true
+    origin: config.nodeEnv === 'production' ? config.frontendUrl : true,
+    credentials: true,
 }));
 app.use(express.json({ limit: '10kb' }));
 app.use(requestLoggerMiddleware);
@@ -105,22 +107,22 @@ app.use('/api/', (req, _res, next) => {
 });
 
 // Rate limiting for API endpoints
-// Development: higher limits to accommodate React Strict Mode (double-invokes effects)
+// Per-tenant limits (free / pro / enterprise) backed by Redis when REDIS_URL is set.
+// Falls back to in-process MemoryStore for self-hosted / development.
+// The global safety-net limiter runs pre-session; per-tenant limiters use
+// req.userTier (populated by auth middleware) and fall back to the "free" tier.
 const isDev = config.nodeEnv !== 'production';
-const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: isDev ? 1000 : 200, // Higher limit in dev for HMR + Strict Mode
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many requests, please try again later.' }
-});
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: isDev ? 100 : 20, // Stricter limit for auth endpoints
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many authentication attempts, please try again later.' }
-});
+
+// Global safety-net: caps anonymous / pre-session traffic
+// (higher ceiling in dev to accommodate React Strict Mode double-invokes)
+const devSafetyNet = isDev
+    ? rateLimit({ windowMs: 15 * 60 * 1000, max: 1000, standardHeaders: true, legacyHeaders: false })
+    : globalLimiter;
+app.use('/api/', devSafetyNet);
+
+// Per-tenant limiters (tier-aware, Redis-backed when available)
+const apiLimiter  = await createTenantLimiters('api');
+const authLimiter = await createTenantLimiters('auth');
 app.use('/api/', apiLimiter);
 app.use('/api/auth/', authLimiter);
 
@@ -153,6 +155,10 @@ if (config.redisUrl) {
 }
 
 app.use(session(sessionConfig));
+
+// Attach user tier after session (for rate limiting and feature gating)
+import { attachTier } from './middleware/require-tier.js';
+app.use('/api/', attachTier);
 
 // ------------------------------------------------------------------
 // Health check (used by useOnlineStatus for connectivity detection)
