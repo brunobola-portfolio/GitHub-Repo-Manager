@@ -2,6 +2,7 @@ import { Router } from 'express';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { generateApiKey } from '../middleware/api-key-auth.js';
+import { auditLog } from '../lib/audit.js';
 import { z } from 'zod';
 
 const router = Router();
@@ -32,6 +33,7 @@ router.post('/', requireAuth, (req, res) => {
         'INSERT INTO api_keys (id, user_id, name, key_hash, key_prefix, scopes, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
     ).run(id, req.session.userId, name, keyHash, prefix, JSON.stringify(scopes), expires_at || null);
 
+    auditLog(req, 'api_key.create', 'api_key', id, { name, scopes });
     res.status(201).json({ id, key, name, prefix, scopes, expires_at });
 });
 
@@ -41,6 +43,7 @@ router.delete('/:id', requireAuth, (req, res) => {
         'UPDATE api_keys SET revoked_at = datetime(\'now\') WHERE id = ? AND user_id = ? AND revoked_at IS NULL'
     ).run(req.params.id, req.session.userId);
     if (result.changes === 0) return res.status(404).json({ error: 'Key not found or already revoked' });
+    auditLog(req, 'api_key.revoke', 'api_key', req.params.id);
     res.json({ success: true });
 });
 
