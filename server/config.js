@@ -33,6 +33,12 @@ const configSchema = z.object({
     // Webhooks (optional)
     webhookSecret: z.string().optional(),
 
+    // Stripe (optional, enables billing)
+    stripeSecretKey: z.string().optional(),
+    stripeWebhookSecret: z.string().optional(),
+    stripePriceProMonthly: z.string().optional(),
+    stripePriceEnterpriseMonthly: z.string().optional(),
+
     // Mock mode
     mockMode: z.string().optional(),
 });
@@ -51,6 +57,10 @@ function loadConfig() {
         geminiModel: process.env.GEMINI_MODEL,
         azurePat: process.env.AZURE_PAT,
         webhookSecret: process.env.WEBHOOK_SECRET,
+        stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+        stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+        stripePriceProMonthly: process.env.STRIPE_PRICE_PRO_MONTHLY,
+        stripePriceEnterpriseMonthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY,
         mockMode: process.env.VITE_MOCK_MODE,
     });
 

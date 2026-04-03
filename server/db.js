@@ -333,6 +333,20 @@ export function initDB() {
             )
         `);
 
+        // Usage Metrics Table (billing metering)
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS usage_metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                metric_type TEXT NOT NULL,
+                count INTEGER NOT NULL DEFAULT 0,
+                period_start TEXT NOT NULL,
+                period_end TEXT NOT NULL,
+                updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        `);
+        db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_unique ON usage_metrics(user_id, metric_type, period_start)`);
+
         // Indexes for performance
         db.exec(`CREATE INDEX IF NOT EXISTS idx_members_user ON team_members(user_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_repos_team ON repo_assignments(team_id)`);
