@@ -318,6 +318,20 @@ export function initDB() {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)`);
 
+        // User Subscriptions Table (tier management)
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS user_subscriptions (
+                user_id INTEGER PRIMARY KEY REFERENCES users(id),
+                tier TEXT NOT NULL DEFAULT 'free',
+                stripe_customer_id TEXT,
+                stripe_subscription_id TEXT,
+                current_period_start TEXT,
+                current_period_end TEXT,
+                status TEXT NOT NULL DEFAULT 'active',
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        `);
 
         // Indexes for performance
         db.exec(`CREATE INDEX IF NOT EXISTS idx_members_user ON team_members(user_id)`);
