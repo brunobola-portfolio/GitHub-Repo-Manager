@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Modern GitHub repository management dashboard with AI-powered insights, team collaboration, and Azure DevOps migration",
   "author": "Bruno Marques - Bola Labs, Inc.",
-  "license": "MIT",
+  "license": "AGPL-3.0-only",
   "keywords": [
     "github",
     "dashboard",
