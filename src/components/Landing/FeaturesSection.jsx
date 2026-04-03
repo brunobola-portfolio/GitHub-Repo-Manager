@@ -7,7 +7,7 @@ const features = [
     title: 'AI-Powered Insights',
     description:
       'Quality reports, code health scoring, migration risk analysis, and actionable suggestions — all powered by Gemini AI.',
-    gradient: 'from-indigo-500 to-purple-500',
+    iconColor: 'text-indigo-500 dark:text-indigo-400',
     glow: 'group-hover:shadow-indigo-500/20',
     iconBg: 'from-indigo-500/15 to-purple-500/15 dark:from-indigo-500/25 dark:to-purple-500/25',
     accent: 'from-indigo-500 to-purple-500',
@@ -17,7 +17,7 @@ const features = [
     title: 'Semantic Search',
     description:
       'Find repositories by meaning, not just keywords. Describe what you need and let AI surface the right repos instantly.',
-    gradient: 'from-cyan-500 to-blue-500',
+    iconColor: 'text-cyan-500 dark:text-cyan-400',
     glow: 'group-hover:shadow-cyan-500/20',
     iconBg: 'from-cyan-500/15 to-blue-500/15 dark:from-cyan-500/25 dark:to-blue-500/25',
     accent: 'from-cyan-500 to-blue-500',
@@ -27,7 +27,7 @@ const features = [
     title: 'Smart Migration',
     description:
       'Move from Azure DevOps (Git & TFVC) to GitHub with AI-assisted risk analysis, history preservation, and LFS support.',
-    gradient: 'from-amber-500 to-orange-500',
+    iconColor: 'text-amber-500 dark:text-amber-400',
     glow: 'group-hover:shadow-amber-500/20',
     iconBg: 'from-amber-500/15 to-orange-500/15 dark:from-amber-500/25 dark:to-orange-500/25',
     accent: 'from-amber-500 to-orange-500',
@@ -37,7 +37,7 @@ const features = [
     title: 'Team Collaboration',
     description:
       'Shared dashboards, activity feeds, per-team repo assignment, and fine-grained access management across organizations.',
-    gradient: 'from-emerald-500 to-teal-500',
+    iconColor: 'text-emerald-500 dark:text-emerald-400',
     glow: 'group-hover:shadow-emerald-500/20',
     iconBg: 'from-emerald-500/15 to-teal-500/15 dark:from-emerald-500/25 dark:to-teal-500/25',
     accent: 'from-emerald-500 to-teal-500',
@@ -47,7 +47,7 @@ const features = [
     title: 'README Generation',
     description:
       'AI-crafted documentation in seconds. Auto-detect project structure, tech stack, and generate polished READMEs.',
-    gradient: 'from-pink-500 to-rose-500',
+    iconColor: 'text-pink-500 dark:text-pink-400',
     glow: 'group-hover:shadow-pink-500/20',
     iconBg: 'from-pink-500/15 to-rose-500/15 dark:from-pink-500/25 dark:to-rose-500/25',
     accent: 'from-pink-500 to-rose-500',
@@ -57,7 +57,7 @@ const features = [
     title: 'Premium Dashboard',
     description:
       'Beautiful analytics, language breakdowns, commit activity, dark mode, and 20+ bulk operations at your fingertips.',
-    gradient: 'from-violet-500 to-purple-500',
+    iconColor: 'text-violet-500 dark:text-violet-400',
     glow: 'group-hover:shadow-violet-500/20',
     iconBg: 'from-violet-500/15 to-purple-500/15 dark:from-violet-500/25 dark:to-purple-500/25',
     accent: 'from-violet-500 to-purple-500',
@@ -149,13 +149,7 @@ export function FeaturesSection() {
                 className={`w-11 h-11 rounded-xl bg-gradient-to-br ${feat.iconBg} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}
               >
                 <feat.icon
-                  className={`w-5 h-5 bg-gradient-to-br ${feat.gradient} [&]:text-transparent`}
-                  style={{
-                    background: `linear-gradient(135deg, var(--tw-gradient-stops))`,
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                  }}
+                  className={`w-5 h-5 ${feat.iconColor}`}
                   strokeWidth={2}
                 />
               </div>

@@ -1,3 +1,4 @@
+import React from 'react'
 import { motion } from 'framer-motion'
 import { Check, X } from 'lucide-react'
 
@@ -189,9 +190,9 @@ export function FeatureComparison() {
 
           <tbody>
             {CATEGORIES.map((cat, catIdx) => (
-              <>
+              <React.Fragment key={catIdx}>
                 {/* Category header row */}
-                <tr key={`cat-${catIdx}`} className="border-b border-slate-100 dark:border-white/[0.04]">
+                <tr className="border-b border-slate-100 dark:border-white/[0.04]">
                   <td
                     colSpan={4}
                     className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 bg-slate-50/70 dark:bg-white/[0.02]"
@@ -224,7 +225,7 @@ export function FeatureComparison() {
                     </tr>
                   )
                 })}
-              </>
+              </React.Fragment>
             ))}
           </tbody>
         </table>
