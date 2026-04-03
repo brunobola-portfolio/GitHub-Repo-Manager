@@ -22,6 +22,7 @@ import auditRoutes from '../audit.js';
 import apiKeysRoutes from '../api-keys.js';
 import billingRoutes from '../billing.js';
 import usageRoutes from '../usage.js';
+import licenseRoutes from '../license.js';
 import { requireTier } from '../../middleware/require-tier.js';
 
 const router = Router();
@@ -44,6 +45,7 @@ router.use('/audit', auditRoutes);
 router.use('/api-keys', apiKeysRoutes);
 router.use('/billing', billingRoutes);
 router.use('/usage', usageRoutes);
+router.use('/license', licenseRoutes);
 
 // ------------------------------------------------------------------
 // Team-specific inline routes

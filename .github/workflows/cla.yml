@@ -1,0 +1,36 @@
+name: CLA Assistant
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, synchronize]
+
+permissions:
+  actions: write
+  contents: read
+  pull-requests: write
+  statuses: write
+
+jobs:
+  cla-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: CLA Assistant
+        if: (github.event.comment.body == 'I have read the CLA and I agree' || github.event_name == 'pull_request_target')
+        uses: contributor-assistant/github-action@v2.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          path-to-signatures: 'signatures/cla.json'
+          path-to-document: 'CLA.md'
+          branch: 'main'
+          allowlist: 'brunobola-portfolio,dependabot[bot],github-actions[bot]'
+          custom-notsigned-prcomment: |
+            Thank you for your contribution! Before we can merge this PR, you need to sign our
+            [Contributor License Agreement](CLA.md).
+
+            Please read the CLA and comment **"I have read the CLA and I agree"** to sign.
+
+            This is a one-time requirement. The CLA allows us to distribute your contributions
+            under both our open-source (AGPL v3) and commercial licenses.
+          custom-pr-sign-comment: 'I have read the CLA and I agree'
