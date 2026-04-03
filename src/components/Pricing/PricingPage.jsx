@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, ArrowRight, Sparkles } from 'lucide-react'
+import { ChevronDown, ArrowRight, Sparkles, GitBranch, Shield, Cpu } from 'lucide-react'
 import { PricingCard } from './PricingCard'
 import { FeatureComparison } from './FeatureComparison'
 
@@ -10,6 +10,7 @@ const TIERS_MONTHLY = [
     tier: 'Free',
     price: 0,
     highlighted: false,
+    enterprise: false,
     ctaText: 'Start for free',
     features: [
       { label: 'repositories', included: '20' },
@@ -25,9 +26,10 @@ const TIERS_MONTHLY = [
   },
   {
     tier: 'Pro',
-    price: 12,
+    price: 19,
     highlighted: true,
-    ctaText: 'Get Pro',
+    enterprise: false,
+    ctaText: 'Start 14-day free trial',
     features: [
       { label: 'repositories', included: 'Unlimited' },
       { label: 'AI queries / month', included: '500' },
@@ -44,6 +46,7 @@ const TIERS_MONTHLY = [
     tier: 'Enterprise',
     price: 49,
     highlighted: false,
+    enterprise: true,
     ctaText: 'Contact sales',
     features: [
       { label: 'repositories', included: 'Unlimited' },
@@ -65,6 +68,7 @@ function applyYearly(tier, isYearly) {
   if (!isYearly || tier.price === 0) return tier
   return {
     ...tier,
+    originalPrice: tier.price,
     price: Math.round(tier.price * YEARLY_DISCOUNT),
   }
 }
@@ -261,12 +265,31 @@ export function PricingPage({ onGetStarted, onTalkToSales } = {}) {
           </motion.div>
         </div>
 
+        {/* ── Social proof strip ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.35 }}
+          className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 mb-12 sm:mb-16"
+        >
+          {[
+            { icon: GitBranch, text: '10,000+ repos managed' },
+            { icon: Cpu, text: 'AI-powered insights' },
+            { icon: Shield, text: 'Enterprise-grade security' },
+          ].map(({ icon: Icon, text }) => (
+            <div key={text} className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500">
+              <Icon className="w-4 h-4 text-indigo-500/60 dark:text-indigo-400/50" />
+              <span>{text}</span>
+            </div>
+          ))}
+        </motion.div>
+
         {/* ── Pricing cards ── */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-20 sm:mb-28 items-stretch"
+          transition={{ duration: 0.65, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mb-20 sm:mb-28 items-stretch"
         >
           {tiers.map((tier) => (
             <PricingCard
@@ -299,8 +322,8 @@ export function PricingPage({ onGetStarted, onTalkToSales } = {}) {
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-lg mx-auto">
               Can't find the answer? Reach us at{' '}
-              <a href="mailto:support@bolalabs.com" className="text-indigo-500 hover:underline">
-                support@bolalabs.com
+              <a href="mailto:bruno@bolalabs.pt" className="text-indigo-500 hover:underline">
+                bruno@bolalabs.pt
               </a>
             </p>
           </motion.div>

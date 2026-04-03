@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Check, Zap } from 'lucide-react'
+import { Check, Zap, Crown } from 'lucide-react'
 
 const plans = [
   {
@@ -10,13 +10,14 @@ const plans = [
     cta: 'Get started free',
     ctaStyle: 'secondary',
     popular: false,
+    enterprise: false,
     features: [
       'Up to 20 repositories',
-      'Basic AI insights',
+      '50 AI queries / month',
       'GitHub OAuth login',
       'Repository dashboard',
       'Community support',
-      '1 organization',
+      '1 API key',
     ],
   },
   {
@@ -24,33 +25,35 @@ const plans = [
     price: '$19',
     period: 'per month',
     description: 'For developers and teams who need the full power of AI.',
-    cta: 'Start Pro free',
+    cta: 'Start 14-day free trial',
     ctaStyle: 'primary',
     popular: true,
+    enterprise: false,
     features: [
       'Unlimited repositories',
-      'Full AI suite (insights, README, search)',
+      '500 AI queries / month',
+      'Semantic search + AI suite',
       'Azure DevOps migration',
-      'Team collaboration',
-      'Bulk operations (20+)',
-      'Priority support',
+      'Team management (3 members)',
+      'Email support',
     ],
   },
   {
     name: 'Enterprise',
-    price: '$99',
+    price: '$49',
     period: 'per month',
-    description: 'For large organizations with advanced security needs.',
+    description: 'For organizations with advanced security and migration needs.',
     cta: 'Contact sales',
     ctaStyle: 'secondary',
     popular: false,
+    enterprise: true,
     features: [
       'Everything in Pro',
-      'SSO / SAML integration',
-      'Audit logs & compliance',
-      'Custom AI models',
-      'Dedicated infrastructure',
-      'SLA + priority support',
+      'Unlimited AI queries',
+      'Full migration (Azure + GitLab)',
+      'SSO / SAML + audit logs',
+      'Unlimited team members',
+      'Priority support + SLA',
     ],
   },
 ]
@@ -111,23 +114,35 @@ export function PricingPreview() {
               viewport={{ once: true, margin: '-60px' }}
               className={`relative rounded-2xl p-7 flex flex-col gap-6 ds-hover-lift transition-all duration-300
                 ${plan.popular
-                  ? 'bg-gradient-to-b from-indigo-600/90 to-purple-700/90 dark:from-indigo-600/80 dark:to-purple-700/80 border-2 border-indigo-400/30 shadow-2xl shadow-indigo-500/30 scale-[1.03] md:scale-[1.04]'
-                  : 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm'
+                  ? 'bg-gradient-to-b from-indigo-600/90 to-purple-700/90 dark:from-indigo-600/80 dark:to-purple-700/80 border-2 border-indigo-400/30 shadow-2xl shadow-indigo-500/30 scale-[1.03] md:scale-[1.05]'
+                  : plan.enterprise
+                    ? 'bg-white/60 dark:bg-white/[0.04] border border-amber-400/30 dark:border-amber-500/20 backdrop-blur-sm shadow-lg shadow-amber-500/5'
+                    : 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm'
                 }`}
             >
               {/* Popular badge */}
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 shadow-lg shadow-amber-500/30">
+                  <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 shadow-lg shadow-indigo-500/30">
                     <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
                     <span className="text-xs font-bold text-white tracking-wide">Most Popular</span>
                   </div>
                 </div>
               )}
 
+              {/* Enterprise badge */}
+              {plan.enterprise && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                  <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 shadow-lg shadow-amber-500/30">
+                    <Crown className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+                    <span className="text-xs font-bold text-white tracking-wide">Enterprise</span>
+                  </div>
+                </div>
+              )}
+
               {/* Plan header */}
               <div>
-                <p className={`text-sm font-semibold mb-1 ds-font-display ${plan.popular ? 'text-indigo-200' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                <p className={`text-sm font-semibold mb-1 ds-font-display ${plan.popular ? 'text-indigo-200' : plan.enterprise ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
                   {plan.name}
                 </p>
                 <div className="flex items-end gap-2 mb-2">
@@ -150,10 +165,12 @@ export function PricingPreview() {
                     <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0
                       ${plan.popular
                         ? 'bg-white/20'
-                        : 'bg-indigo-500/10 dark:bg-indigo-500/20'
+                        : plan.enterprise
+                          ? 'bg-amber-500/10 dark:bg-amber-500/20'
+                          : 'bg-indigo-500/10 dark:bg-indigo-500/20'
                       }`}
                     >
-                      <Check className={`w-3 h-3 ${plan.popular ? 'text-white' : 'text-indigo-600 dark:text-indigo-400'}`} strokeWidth={2.5} />
+                      <Check className={`w-3 h-3 ${plan.popular ? 'text-white' : plan.enterprise ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400'}`} strokeWidth={2.5} />
                     </div>
                     <span className={`text-sm ds-font-display ${plan.popular ? 'text-indigo-50' : 'text-slate-600 dark:text-slate-300'}`}>
                       {feat}
@@ -167,7 +184,9 @@ export function PricingPreview() {
                 className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ds-btn-shimmer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
                   ${plan.popular
                     ? 'bg-white text-indigo-700 hover:bg-indigo-50 shadow-lg shadow-white/20 hover:shadow-xl focus-visible:ring-white focus-visible:ring-offset-indigo-600'
-                    : 'bg-indigo-500/10 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20 dark:hover:bg-indigo-500/25 border border-indigo-300/40 dark:border-indigo-500/30 focus-visible:ring-indigo-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950'
+                    : plan.enterprise
+                      ? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 dark:hover:bg-amber-500/25 border border-amber-400/40 dark:border-amber-500/30 focus-visible:ring-amber-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950'
+                      : 'bg-indigo-500/10 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20 dark:hover:bg-indigo-500/25 border border-indigo-300/40 dark:border-indigo-500/30 focus-visible:ring-indigo-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950'
                   }`}
               >
                 {plan.cta}
