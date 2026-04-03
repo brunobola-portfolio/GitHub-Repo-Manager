@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Brain, Shield, AlertTriangle, CheckCircle2, XCircle, Loader2,
@@ -208,15 +208,18 @@ function AnalysisLoadingState() {
 
 function AnimatedCounter({ value, duration = 1.2 }) {
   const [display, setDisplay] = useState(0)
+  const displayRef = useRef(0)
 
   useEffect(() => {
-    if (value === 0) { setDisplay(0); return }
+    if (value === 0) { displayRef.current = 0; setDisplay(0); return } // eslint-disable-line react-hooks/set-state-in-effect
     const start = performance.now()
     const step = (now) => {
       const elapsed = (now - start) / (duration * 1000)
-      if (elapsed >= 1) { setDisplay(value); return }
+      if (elapsed >= 1) { displayRef.current = value; setDisplay(value); return }
       const eased = 1 - Math.pow(1 - elapsed, 3)
-      setDisplay(Math.round(value * eased))
+      const newVal = Math.round(value * eased)
+      displayRef.current = newVal
+      setDisplay(newVal)
       requestAnimationFrame(step)
     }
     requestAnimationFrame(step)
@@ -354,8 +357,6 @@ function MetricCard({ icon: Icon, label, value, unit, iconColor, iconBg, delay }
    ═══════════════════════════════════════════ */
 
 function ExecutionPipeline({ order, repos }) {
-  if (!order?.length) return null
-
   const repoMap = useMemo(() => {
     const map = {}
     ;(repos || []).filter(r => r.selected).forEach(r => {
@@ -363,6 +364,8 @@ function ExecutionPipeline({ order, repos }) {
     })
     return map
   }, [repos])
+
+  if (!order?.length) return null
 
   return (
     <motion.div
@@ -756,7 +759,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
     (aiPlan?.suggestions || []).filter(s => s._accepted === true).length,
     [aiPlan?.suggestions]
   )
-  const repoCount = useMemo(() =>
+  const _repoCount = useMemo(() =>
     (wizard.repos || []).filter(r => r.selected).length,
     [wizard.repos]
   )

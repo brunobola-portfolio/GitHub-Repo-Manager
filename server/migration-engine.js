@@ -434,7 +434,7 @@ export class MigrationEngine extends EventEmitter {
     const targetRepo = targetRefParts.length > 1 ? targetRefParts.slice(1).join('/') : targetRefParts[0]
 
     // Validate target repo name before hitting external APIs
-    if (!targetRepo || /^[_.]|[.]$|[/:~&%;@'"?<>|#$*\[\]\\]/.test(targetRepo) || targetRepo.length > 64) {
+    if (!targetRepo || /^[_.]|[.]$|[/:~&%;@'"?<>|#$*\[\]\\]/.test(targetRepo) || targetRepo.length > 64) { // eslint-disable-line no-useless-escape
       throw new Error(`Invalid target repository name: "${targetRepo}". Names cannot start with _ or ., end with ., contain special characters (/ : \\ ~ & % ; @ ' " ? < > | # $ * [ ]), or exceed 64 characters.`)
     }
 
@@ -475,7 +475,7 @@ export class MigrationEngine extends EventEmitter {
 
         callbacks.onProgress(5, 'Creating temporary Git repo in Azure DevOps...')
         // Sanitize temp repo name for Azure DevOps: no leading underscore/period, no invalid chars, max 64 chars
-        const safeName = targetRepo.replace(/[/:~&%;@'"?<>|#$*\[\]\\]/g, '-').replace(/^[_.]/, 't')
+        const safeName = targetRepo.replace(/[/:~&%;@'"?<>|#$*\[\]\\]/g, '-').replace(/^[_.]/, 't') // eslint-disable-line no-useless-escape
         const tempRepoName = `tfvc-import-${safeName}-${Date.now()}`.slice(0, 64)
         const tempRepo = await azureService.createGitRepo(tfvcOrg, tfvcProject, tempRepoName, azurePat)
 

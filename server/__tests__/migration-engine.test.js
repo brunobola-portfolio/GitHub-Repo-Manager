@@ -361,6 +361,11 @@ describe('MigrationEngine', () => {
   })
 
   describe('executePlan', () => {
+    beforeEach(() => {
+      // Mock _executeTask to avoid real API calls
+      engine._executeTask = async () => ({})
+    })
+
     it('transitions plan from draft to completed', async () => {
       const planId = engine.createPlan(1,
         { type: 'azure', org: 'o', project: 'p' },
@@ -503,6 +508,7 @@ describe('MigrationEngine', () => {
     })
 
     it('resumes a paused plan and completes it', async () => {
+      engine._executeTask = async () => ({})
       const planId = engine.createPlan(1,
         { type: 'azure', org: 'o', project: 'p' },
         [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
@@ -516,7 +522,8 @@ describe('MigrationEngine', () => {
   })
 
   describe('retryTask', () => {
-    it('resets failed task to pending', () => {
+    it('retries failed task and completes it', async () => {
+      engine._executeTask = async () => ({})
       const planId = engine.createPlan(1,
         { type: 'azure', org: 'o', project: 'p' },
         [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
@@ -524,24 +531,23 @@ describe('MigrationEngine', () => {
       const taskId = engine.getPlanStatus(planId).tasks[0].id
       db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('failed', planId)
       db.prepare("UPDATE migration_tasks SET status = 'failed', error_message = 'test error' WHERE id = ?").run(taskId)
-      engine.retryTask(planId, taskId)
+      await engine.retryTask(planId, taskId)
       const task = engine.getPlanStatus(planId).tasks[0]
-      expect(task.status).toBe('pending')
-      expect(task.error_message).toBeNull()
+      expect(task.status).toBe('completed')
       expect(task.retries).toBe(1)
     })
 
-    it('throws for non-failed task', () => {
+    it('rejects for non-failed task', async () => {
       const planId = engine.createPlan(1,
         { type: 'azure', org: 'o', project: 'p' },
         [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
       )
-      const taskId = engine.getPlanStatus(planId).tasks[0].id
       db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('failed', planId)
-      expect(() => engine.retryTask(planId, taskId)).toThrow(/Cannot retry task/)
+      await expect(engine.retryTask(planId, engine.getPlanStatus(planId).tasks[0].id))
+        .rejects.toThrow(/Cannot retry task/)
     })
 
-    it('throws for running plan', () => {
+    it('rejects for running plan', async () => {
       const planId = engine.createPlan(1,
         { type: 'azure', org: 'o', project: 'p' },
         [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
@@ -549,7 +555,8 @@ describe('MigrationEngine', () => {
       const taskId = engine.getPlanStatus(planId).tasks[0].id
       db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('running', planId)
       db.prepare("UPDATE migration_tasks SET status = 'failed' WHERE id = ?").run(taskId)
-      expect(() => engine.retryTask(planId, taskId)).toThrow(/Cannot retry tasks/)
+      await expect(engine.retryTask(planId, taskId))
+        .rejects.toThrow(/Cannot retry tasks/)
     })
   })
 

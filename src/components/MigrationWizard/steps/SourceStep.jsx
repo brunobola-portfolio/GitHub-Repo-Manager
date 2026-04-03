@@ -34,7 +34,7 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
   const { oauthStatus: oauthStatusValue, startOAuth, retryOAuth, pausePolling, resumePolling } = oauthHook
   const {
     organizations, orgsLoading, orgsError, orgProjectCounts,
-    fetchOrganizations, fetchProjectCounts, clearCache: clearOrgCache,
+    fetchOrganizations, fetchProjectCounts, clearCache: _clearOrgCache,
   } = orgsHook || {}
 
   const isOAuthMode = source.credentialMode === 'oauth'
