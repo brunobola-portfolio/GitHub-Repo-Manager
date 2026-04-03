@@ -21,6 +21,8 @@ import { githubApi } from '../lib/github-api.js';
 import { requireAuth, createRequireAI, safeError } from '../middleware/auth.js';
 import { aiService } from '../ai-service.js';
 import { safeJsonParse } from '../lib/utils.js';
+import { checkUsageLimit, incrementUsage } from '../lib/usage-meter.js';
+import { auditLog } from '../lib/audit.js';
 
 const router = express.Router();
 
@@ -44,6 +46,16 @@ router.get('/config/ai-status', (req, res) => {
 
 router.post('/ai/chat', requireAuth, requireAI, async (req, res) => {
     try {
+        // Check usage limits
+        const usage = checkUsageLimit(req.session.userId, 'ai_queries');
+        if (!usage.allowed) {
+            return res.status(429).json({
+                error: 'usage_limit_exceeded',
+                message: `You've used ${usage.current}/${usage.limit} AI queries this month`,
+                remaining: usage.remaining,
+            });
+        }
+
         const { message, context } = req.body;
 
         if (!message || message.trim().length === 0) {
@@ -91,6 +103,9 @@ router.post('/ai/chat', requireAuth, requireAI, async (req, res) => {
         const result = await chat.sendMessage(message);
         const response = await result.response;
         const text = response.text();
+
+        incrementUsage(req.session.userId, 'ai_queries');
+        auditLog(req, 'ai.chat', 'ai', null, { messageLength: message.length });
 
         res.json({ message: text });
     } catch (error) {

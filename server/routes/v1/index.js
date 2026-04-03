@@ -22,17 +22,18 @@ import auditRoutes from '../audit.js';
 import apiKeysRoutes from '../api-keys.js';
 import billingRoutes from '../billing.js';
 import usageRoutes from '../usage.js';
+import { requireTier } from '../../middleware/require-tier.js';
 
 const router = Router();
 
-// Mount routes exactly as they were in index.js
+// Mount routes — tier-gated where appropriate
 router.use('/auth', authRoutes);
-router.use('/teams', teamsRoutes);
+router.use('/teams', requireTier('pro'), teamsRoutes);
 router.use('/system', systemRoutes);
 router.use('/', azureRoutes);
 router.use('/', importRoutes);
 router.use('/', webhooksRoutes);
-router.use('/', migrationRoutes);
+router.use('/', requireTier('pro'), migrationRoutes);
 router.use('/repos', reposRoutes);
 router.use('/orgs', orgsRoutes);
 router.use('/', aiRoutes);

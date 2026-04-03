@@ -26,6 +26,10 @@ const configSchema = z.object({
     // AI (optional)
     geminiApiKey: z.string().optional(),
     geminiModel: z.string().default('gemini-2.5-flash'),
+    geminiEmbeddingModel: z.string().default('text-embedding-004'),
+
+    // Monitoring (optional)
+    sentryDsn: z.string().optional(),
 
     // Azure DevOps (optional)
     azurePat: z.string().optional(),
@@ -55,6 +59,8 @@ function loadConfig() {
         redisUrl: process.env.REDIS_URL,
         geminiApiKey: process.env.GEMINI_API_KEY,
         geminiModel: process.env.GEMINI_MODEL,
+        geminiEmbeddingModel: process.env.GEMINI_EMBEDDING_MODEL,
+        sentryDsn: process.env.SENTRY_DSN,
         azurePat: process.env.AZURE_PAT,
         webhookSecret: process.env.WEBHOOK_SECRET,
         stripeSecretKey: process.env.STRIPE_SECRET_KEY,
