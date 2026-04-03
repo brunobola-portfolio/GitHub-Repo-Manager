@@ -1,7 +1,7 @@
 import express from 'express';
 import logger from '../lib/logger.js';
 import db, { initDB } from '../db.js';
-import { safeError } from '../middleware/auth.js';
+import { requireAuth, safeError } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ router.get('/status', (req, res) => {
     }
 });
 
-router.post('/setup', async (req, res) => {
+router.post('/setup', requireAuth, async (req, res) => {
     try {
         // Ensure tables exist (idempotent)
         initDB();

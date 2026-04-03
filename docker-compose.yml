@@ -11,20 +11,27 @@ services:
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3001}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - WEBHOOK_SECRET=${WEBHOOK_SECRET:-}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
       - REDIS_URL=redis://redis:6379
     volumes:
       - app-data:/app/server/data
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
     volumes:
       - redis-data:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 volumes:
   app-data:

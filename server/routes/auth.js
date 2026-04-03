@@ -139,6 +139,7 @@ router.post('/logout', (req, res) => {
     const userId = req.session?.userId;
     auditLog(req, 'auth.logout', 'user', userId);
     req.session.destroy();
+    res.clearCookie('connect.sid');
     res.json({ success: true });
 });
 

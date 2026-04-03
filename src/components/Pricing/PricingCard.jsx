@@ -93,10 +93,10 @@ export function PricingCard({
 
         {/* Feature list */}
         <ul className="flex flex-col gap-3 flex-1 mb-8">
-          {features.map(({ label, included }, i) => {
+          {features.map(({ label, included }) => {
             const isIncluded = included !== false && included !== null
             return (
-              <li key={i} className="flex items-start gap-3">
+              <li key={label} className="flex items-start gap-3">
                 <span
                   className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center
                     ${isIncluded

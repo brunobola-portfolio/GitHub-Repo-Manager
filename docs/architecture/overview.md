@@ -92,6 +92,68 @@ Key services:
 - `server/migration-engine.js` — Plan-based migration with task types: `repo`, `repo-tfvc`, `work-items`, `wiki`.
 - `server/migration-planner.js` — AI-assisted (Gemini) or fallback risk analysis for migrations.
 
+## Database Abstraction Layer
+
+The application supports two database backends via `server/lib/db-adapter.js`:
+
+- **SQLite** (default): Uses `better-sqlite3` with WAL mode. The adapter preserves the synchronous `db.prepare().get/all/run()` API used throughout the route layer.
+- **PostgreSQL**: Activated when the `DATABASE_URL` environment variable is set. Uses `node-postgres` (`pg`) and exposes the same interface with async methods (top-level `await` is supported via ESM `"type": "module"`).
+
+Schema is defined in `server/db.js` (`initDB()`) and kept in sync with `server/migrations/001-initial-schema.sql`, which is the SQLite source-of-truth file. A PostgreSQL equivalent (`001-initial-schema.pg.sql`) will be provided when full PostgreSQL support ships.
+
+Multi-tenancy: all per-user tables (`repo_metadata`, `repo_embeddings`, `community_health_cache`, `workflow_runs`, `workflows_meta`) carry a `user_id` column and use composite primary keys `(user_id, repo_id)` to isolate data between accounts.
+
+## Redis
+
+Redis is used for three concerns, each with a dedicated `ioredis` client:
+
+- **Sessions**: `connect-redis` replaces the in-process session store for horizontal scaling and persistence across restarts.
+- **Rate limiting**: `rate-limit-redis` backs `express-rate-limit` so rate-limit counters survive server restarts and work across multiple instances.
+- **Job queues**: `bullmq` uses Redis streams to run background jobs (e.g. long-running Git imports, migration plan execution) outside the HTTP request lifecycle.
+
+Set `REDIS_URL` in the environment to enable Redis. When the variable is absent the application falls back to in-memory stores (development only).
+
+## API Key Authentication
+
+In addition to the GitHub OAuth session flow, the backend supports programmatic access via API keys stored in the `api_keys` table:
+
+- Keys are issued through `/api/v1/api-keys` and stored as a bcrypt hash (`key_hash`) with a short plaintext prefix (`key_prefix`) for identification.
+- Scopes are stored as a JSON array (e.g. `["read", "write"]`) and validated per-endpoint.
+- Revocation is soft-delete via the `revoked_at` timestamp.
+- All API key activity is written to `audit_log_v2` with the `api_key_id` field populated.
+
+## Subscription Tiers
+
+The application implements three tiers managed through the `user_subscriptions` table:
+
+| Tier | Description |
+| ---- | ----------- |
+| `free` | Default for all new accounts. Limited API calls and migration jobs. |
+| `pro` | Increased limits, priority job queue, advanced analytics. |
+| `enterprise` | Unlimited usage, dedicated support, custom integrations. |
+
+Tier enforcement is applied in middleware by reading `user_subscriptions.tier` for the authenticated user. Usage is metered per `metric_type` and billing period in the `usage_metrics` table.
+
+## Stripe Billing Integration
+
+Stripe handles payment collection and subscription lifecycle:
+
+- `stripe_customer_id` and `stripe_subscription_id` are stored in `user_subscriptions` after checkout.
+- Webhook events (`customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`) update the local subscription status in real time.
+- The Stripe webhook endpoint validates signatures using `STRIPE_WEBHOOK_SECRET` before processing any event.
+
+## Sentry Monitoring
+
+Error tracking uses `@sentry/node` on the backend and `@sentry/react` on the frontend:
+
+- Backend: initialized in `server/index.js` before route registration; captures unhandled exceptions and slow transactions.
+- Frontend: wraps the React tree with `Sentry.ErrorBoundary`; reports component-level errors with full stack traces.
+- Set `SENTRY_DSN` in the environment to enable. Omitting the variable disables Sentry silently.
+
+## API Versioning
+
+All REST endpoints are namespaced under `/api/v1/` to allow non-breaking evolution of the API surface. The version prefix is enforced at the Express router level. Legacy unversioned routes (e.g. `/api/auth/*`) remain for backward compatibility with the OAuth flow and will be migrated in a future release.
+
 ## System Architecture Diagram
 
 ```mermaid

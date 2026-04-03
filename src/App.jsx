@@ -23,6 +23,10 @@ import { Menu, Building2, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { WelcomeHero } from './components/WelcomeHero'
 import { SessionBanner } from './components/SessionBanner'
+import { LandingPage } from './components/Landing/LandingPage'
+
+// Lazy load Pricing page
+const PricingPage = lazy(() => import('./components/Pricing/PricingPage').then(m => ({ default: m.PricingPage })))
 
 // Lazy load heavy route components for code splitting
 const DashboardPremium = lazy(() => import('./components/Dashboard/DashboardPremium').then(m => ({ default: m.DashboardPremium })))
@@ -462,6 +466,11 @@ function AppContent() {
     )
   }
 
+  // Show Landing Page for unauthenticated users
+  if (!user) {
+    return <LandingPage onSignIn={handleLogin} />
+  }
+
   return (
     <>
       {/* Skip Links - WCAG 2.1 requirement */}
@@ -509,8 +518,14 @@ function AppContent() {
       />
 
       <main id="main-content" className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 pt-3 md:pt-4 lg:pt-5 pb-20 md:pb-6 transition-all duration-300 relative z-[1]">
-        {!user && activeView === 'dashboard' && (
-          <WelcomeHero onLogin={handleLogin} />
+        {activeView === 'pricing' && (
+          <div className="animate-in fade-in duration-500">
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingFallback />}>
+                <PricingPage />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
         )}
 
         {activeView === 'dashboard' && user && (

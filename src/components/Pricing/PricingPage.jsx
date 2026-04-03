@@ -139,7 +139,7 @@ function FaqItem({ q, a, index }) {
 }
 
 /* ─── Main page ─── */
-export function PricingPage() {
+export function PricingPage({ onGetStarted, onTalkToSales } = {}) {
   const [isYearly, setIsYearly] = useState(false)
 
   const tiers = TIERS_MONTHLY.map(t => applyYearly(t, isYearly))
@@ -162,7 +162,7 @@ export function PricingPage() {
           transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
         />
         <motion.div
-          className="absolute rounded-full blur-3xl bg-cyan-500 opacity-8 dark:opacity-12"
+          className="absolute rounded-full blur-3xl bg-cyan-500 opacity-[0.08] dark:opacity-[0.12]"
           style={{ width: 300, height: 300, left: '40%', top: '55%' }}
           animate={{ y: [0, -20, 0] }}
           transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
@@ -274,8 +274,7 @@ export function PricingPage() {
               {...tier}
               period={isYearly ? 'year' : 'month'}
               ctaAction={() => {
-                // placeholder — wire up to auth / contact flow as needed
-                console.log(`CTA clicked: ${tier.tier}`)
+                // TODO: wire to checkout
               }}
             />
           ))}
@@ -300,15 +299,15 @@ export function PricingPage() {
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-lg mx-auto">
               Can't find the answer? Reach us at{' '}
-              <a href="mailto:support@example.com" className="text-indigo-500 hover:underline">
-                support@example.com
+              <a href="mailto:support@bolalabs.com" className="text-indigo-500 hover:underline">
+                support@bolalabs.com
               </a>
             </p>
           </motion.div>
 
           <div className="max-w-2xl mx-auto flex flex-col gap-3">
             {FAQS.map((faq, i) => (
-              <FaqItem key={i} index={i} q={faq.q} a={faq.a} />
+              <FaqItem key={faq.q} index={i} q={faq.q} a={faq.a} />
             ))}
           </div>
         </div>
@@ -348,6 +347,7 @@ export function PricingPage() {
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
+                  onClick={onGetStarted}
                   className="group px-8 py-3.5 rounded-xl font-bold text-sm text-white
                     bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-[length:200%_100%]
                     hover:bg-right shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/50
@@ -359,6 +359,7 @@ export function PricingPage() {
                   </span>
                 </button>
                 <button
+                  onClick={onTalkToSales}
                   className="px-8 py-3.5 rounded-xl font-semibold text-sm text-slate-200
                     border border-white/15 hover:border-white/30
                     hover:bg-white/[0.07] active:scale-[0.97]
