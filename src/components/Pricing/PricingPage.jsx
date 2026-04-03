@@ -268,7 +268,7 @@ export function PricingPage() {
           transition={{ duration: 0.65, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
           className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-20 sm:mb-28 items-stretch"
         >
-          {tiers.map((tier, i) => (
+          {tiers.map((tier) => (
             <PricingCard
               key={tier.tier}
               {...tier}
