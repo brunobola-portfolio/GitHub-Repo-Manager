@@ -39,18 +39,18 @@ class AIService {
                 console.log(`✓ AI Service: Initialized with model: ${model}`);
             } catch (modelError) {
                 console.error(`✗ AI Service: Failed to initialize model "${model}":`, modelError.message);
-                console.warn(`  Suggestion: Verify GEMINI_MODEL in .env or try: gemini-2.0-flash-exp, gemini-1.5-flash, gemini-1.5-pro`);
+                console.warn(`  Suggestion: Verify GEMINI_MODEL in .env or try: gemini-2.5-flash-lite, gemini-3-flash-preview`);
                 this.model = null;
             }
             
             // Initialize embedding model (separate from main model)
             try {
-                const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || "text-embedding-004";
+                const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-001";
                 this.embeddingModel = this.genAI.getGenerativeModel({ model: embeddingModel });
                 console.log(`✓ AI Service: Embedding model initialized (${embeddingModel})`);
             } catch (embedError) {
                 console.error(`✗ AI Service: Failed to initialize embedding model:`, embedError.message);
-                console.warn(`  Suggestion: Verify GEMINI_EMBEDDING_MODEL in .env or try: text-embedding-004, embedding-001`);
+                console.warn(`  Suggestion: Verify GEMINI_EMBEDDING_MODEL in .env or try: gemini-embedding-001, gemini-embedding-2-preview`);
                 this.embeddingModel = null;
             }
         } catch (error) {
@@ -163,7 +163,7 @@ class AIService {
         } catch (error) {
             console.error('Embedding generation failed:', error);
             if (error.message?.includes('not found') || error.status === 404) {
-                const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || "text-embedding-004";
+                const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-001";
                 throw new Error(`Embedding model "${embeddingModel}" is not available. Please verify your API access and GEMINI_EMBEDDING_MODEL configuration.`);
             }
             throw error;

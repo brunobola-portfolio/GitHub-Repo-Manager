@@ -53,7 +53,7 @@ function getSuggestionForError(errorMsg, type) {
 }
 
 // POST /api/migration/plans — Create a new plan
-router.post('/migration/plans', requireAuth, async (req, res) => {
+router.post('/plans', requireAuth, async (req, res) => {
   try {
     const parsed = createPlanSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -79,7 +79,7 @@ router.post('/migration/plans', requireAuth, async (req, res) => {
 });
 
 // GET /api/migration/plans — List user's plans (paginated)
-router.get('/migration/plans', requireAuth, async (req, res) => {
+router.get('/plans', requireAuth, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const perPage = Math.min(100, Math.max(1, parseInt(req.query.per_page) || 20));
@@ -95,7 +95,7 @@ router.get('/migration/plans', requireAuth, async (req, res) => {
 });
 
 // GET /api/migration/plans/:id — Get plan with all tasks
-router.get('/migration/plans/:id', requireAuth, async (req, res) => {
+router.get('/plans/:id', requireAuth, async (req, res) => {
   try {
     const plan = engine.getPlanStatus(parseInt(req.params.id));
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
@@ -107,7 +107,7 @@ router.get('/migration/plans/:id', requireAuth, async (req, res) => {
 });
 
 // PUT /api/migration/plans/:id — Update plan (before execution)
-router.put('/migration/plans/:id', requireAuth, async (req, res) => {
+router.put('/plans/:id', requireAuth, async (req, res) => {
   try {
     const plan = engine.getPlanStatus(parseInt(req.params.id));
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
@@ -121,7 +121,7 @@ router.put('/migration/plans/:id', requireAuth, async (req, res) => {
 });
 
 // DELETE /api/migration/plans/:id
-router.delete('/migration/plans/:id', requireAuth, async (req, res) => {
+router.delete('/plans/:id', requireAuth, async (req, res) => {
   try {
     const plan = engine.getPlanStatus(parseInt(req.params.id));
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
@@ -134,7 +134,7 @@ router.delete('/migration/plans/:id', requireAuth, async (req, res) => {
 });
 
 // POST /api/migration/plans/:id/validate — Pre-flight validation
-router.post('/migration/plans/:id/validate', requireAuth, async (req, res) => {
+router.post('/plans/:id/validate', requireAuth, async (req, res) => {
   try {
     const plan = engine.getPlanStatus(parseInt(req.params.id));
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
@@ -146,7 +146,7 @@ router.post('/migration/plans/:id/validate', requireAuth, async (req, res) => {
 });
 
 // POST /api/migration/plans/:id/execute — Start execution
-router.post('/migration/plans/:id/execute', requireAuth, async (req, res) => {
+router.post('/plans/:id/execute', requireAuth, async (req, res) => {
   try {
     const plan = engine.getPlanStatus(parseInt(req.params.id));
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
@@ -172,7 +172,7 @@ router.post('/migration/plans/:id/execute', requireAuth, async (req, res) => {
 });
 
 // POST /api/migration/plans/:id/cancel
-router.post('/migration/plans/:id/cancel', requireAuth, async (req, res) => {
+router.post('/plans/:id/cancel', requireAuth, async (req, res) => {
   try {
     const plan = engine.getPlanStatus(parseInt(req.params.id));
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
@@ -184,7 +184,7 @@ router.post('/migration/plans/:id/cancel', requireAuth, async (req, res) => {
 });
 
 // POST /api/migration/plans/:id/pause
-router.post('/migration/plans/:id/pause', requireAuth, async (req, res) => {
+router.post('/plans/:id/pause', requireAuth, async (req, res) => {
   try {
     const plan = engine.getPlanStatus(parseInt(req.params.id));
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
@@ -196,7 +196,7 @@ router.post('/migration/plans/:id/pause', requireAuth, async (req, res) => {
 });
 
 // POST /api/migration/plans/:id/resume
-router.post('/migration/plans/:id/resume', requireAuth, async (req, res) => {
+router.post('/plans/:id/resume', requireAuth, async (req, res) => {
   try {
     const plan = engine.getPlanStatus(parseInt(req.params.id));
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
@@ -217,7 +217,7 @@ router.post('/migration/plans/:id/resume', requireAuth, async (req, res) => {
 });
 
 // POST /api/migration/plans/:id/tasks/:taskId/retry
-router.post('/migration/plans/:id/tasks/:taskId/retry', requireAuth, async (req, res) => {
+router.post('/plans/:id/tasks/:taskId/retry', requireAuth, async (req, res) => {
   try {
     const plan = engine.getPlanStatus(parseInt(req.params.id));
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
@@ -238,12 +238,12 @@ router.post('/migration/plans/:id/tasks/:taskId/retry', requireAuth, async (req,
 });
 
 // GET /api/migration/stream/:id — SSE stream
-router.get('/migration/stream/:id', requireAuth, (req, res) => {
+router.get('/stream/:id', requireAuth, (req, res) => {
   engine.handleSSEConnection(parseInt(req.params.id), req.session.userId, req, res);
 });
 
 // POST /api/migration/analyze — AI-powered or fallback analysis
-router.post('/migration/analyze', requireAuth, async (req, res) => {
+router.post('/analyze', requireAuth, async (req, res) => {
   try {
     const context = req.body;
     if (!context || !Array.isArray(context.repos) || context.repos.length > 200) {
@@ -257,7 +257,7 @@ router.post('/migration/analyze', requireAuth, async (req, res) => {
 });
 
 // GET /api/migration/plans/:id/report — Export report
-router.get('/migration/plans/:id/report', requireAuth, async (req, res) => {
+router.get('/plans/:id/report', requireAuth, async (req, res) => {
   try {
     const plan = engine.getPlanStatus(parseInt(req.params.id));
     if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });

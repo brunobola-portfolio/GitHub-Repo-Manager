@@ -33,7 +33,7 @@ router.use('/system', systemRoutes);
 router.use('/', azureRoutes);
 router.use('/', importRoutes);
 router.use('/', webhooksRoutes);
-router.use('/', requireTier('pro'), migrationRoutes);
+router.use('/migration', requireTier('pro'), migrationRoutes);
 router.use('/repos', reposRoutes);
 router.use('/orgs', orgsRoutes);
 router.use('/', aiRoutes);

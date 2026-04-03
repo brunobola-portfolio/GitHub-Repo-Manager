@@ -234,8 +234,8 @@ npm run dev:server   # Backend only
 
 - Implement fallback to mock responses when API key missing
 - Cache AI analysis results in database
-- Use `text-embedding-004` for embeddings
-- Use `gemini-1.5-flash` for analysis
+- Use `gemini-embedding-001` for embeddings
+- Use `gemini-2.5-flash` for analysis
 
 ---
 

@@ -199,7 +199,7 @@ startup. The schema covers:
 - **Database**: `DATABASE_URL` (optional; SQLite if absent)
 - **Redis**: `REDIS_URL` (optional; enables distributed sessions and BullMQ)
 - **AI**: `GEMINI_API_KEY`, `GEMINI_MODEL` (default `gemini-2.5-flash`),
-  `GEMINI_EMBEDDING_MODEL` (default `text-embedding-004`)
+  `GEMINI_EMBEDDING_MODEL` (default `gemini-embedding-001`)
 - **Monitoring**: `SENTRY_DSN`
 - **Azure DevOps**: `AZURE_PAT`
 - **Webhooks**: `WEBHOOK_SECRET`

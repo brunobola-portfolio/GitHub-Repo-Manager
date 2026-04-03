@@ -114,7 +114,7 @@ router.post('/ai/chat', requireAuth, requireAI, async (req, res) => {
         // User-friendly error handling
         if (error.message?.includes('not found') || error.status === 404) {
             return res.status(404).json({
-                error: `The AI model "${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}" is not available. Please verify your GEMINI_MODEL configuration in .env file. Try using: gemini-2.0-flash-exp, gemini-1.5-flash, or gemini-1.5-pro`,
+                error: `The AI model "${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}" is not available. Please verify your GEMINI_MODEL configuration in .env file. Try using: gemini-2.5-flash-lite, gemini-3-flash-preview, or gemini-2.5-pro`,
                 code: 'MODEL_NOT_FOUND'
             });
         }
@@ -198,7 +198,7 @@ router.post('/ai/suggest', requireAuth, requireAI, async (req, res) => {
         // User-friendly error handling
         if (error.message?.includes('not found') || error.status === 404) {
             return res.status(404).json({
-                error: `The AI model "${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}" is not available. Please verify your GEMINI_MODEL configuration in .env file. Try using: gemini-2.0-flash-exp, gemini-1.5-flash, or gemini-1.5-pro`,
+                error: `The AI model "${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}" is not available. Please verify your GEMINI_MODEL configuration in .env file. Try using: gemini-2.5-flash-lite, gemini-3-flash-preview, or gemini-2.5-pro`,
                 code: 'MODEL_NOT_FOUND'
             });
         }

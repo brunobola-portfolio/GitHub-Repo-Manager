@@ -398,7 +398,7 @@ For detailed architecture documentation, see [`docs/architecture/overview.md`](d
 | **Backend** | Node.js 20+, Express 5.1 |
 | **Database** | Better-SQLite3 12.6 (WAL mode, 32MB cache) |
 | **Security** | Helmet.js, express-rate-limit, Zod validation, SSRF protection |
-| **AI** | Google Gemini API (text-embedding-004, gemini-2.5-flash) |
+| **AI** | Google Gemini API (gemini-embedding-001, gemini-2.5-flash) |
 | **APIs** | GitHub REST API (v2022-11-28), Azure DevOps API (v7.1) |
 | **Logging** | Pino (structured JSON logging with credential redaction) |
 | **Testing** | Vitest, Testing Library, Playwright |
@@ -438,7 +438,7 @@ This project demonstrates the power of **AI-assisted software development** at e
 ```
 Development:   Claude Code (Anthropic) — architecture, code, tests, docs
 Application:   Google Gemini 2.5 Flash — analysis, search, generation
-Embeddings:    text-embedding-004 — semantic similarity & search
+Embeddings:    gemini-embedding-001 — semantic similarity & search
 Fallbacks:     Programmatic analysis — works without any AI API key
 ```
 

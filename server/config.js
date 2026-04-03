@@ -26,7 +26,7 @@ const configSchema = z.object({
     // AI (optional)
     geminiApiKey: z.string().optional(),
     geminiModel: z.string().default('gemini-2.5-flash'),
-    geminiEmbeddingModel: z.string().default('text-embedding-004'),
+    geminiEmbeddingModel: z.string().default('gemini-embedding-001'),
 
     // Monitoring (optional)
     sentryDsn: z.string().optional(),
