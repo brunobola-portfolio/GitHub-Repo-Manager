@@ -27,6 +27,7 @@ import { actionsService } from '../actions-service.js';
 import { communityHealthService } from '../community-health-service.js';
 import { safeJsonParse } from '../lib/utils.js';
 import { validate, createRepoSchema, repoUpdateSchema, topicsSchema, forkSchema, issueCreateSchema, prCreateSchema, templateGenerateSchema, releaseCreateSchema, webhookCreateSchema } from '../lib/validators.js';
+import { auditLog } from '../lib/audit.js';
 
 const router = express.Router();
 
@@ -148,6 +149,11 @@ router.patch('/:owner/:repo', requireAuth, validate(repoUpdateSchema), async (re
             method: 'PATCH',
             body: JSON.stringify(req.body)
         });
+
+        const action = req.body.archived === true ? 'repo.archive'
+            : req.body.archived === false ? 'repo.unarchive'
+            : 'repo.update';
+        auditLog(req, action, 'repo', `${owner}/${repo}`, req.body);
         res.json(data);
 
         // Audit log: record repo settings update

@@ -1,6 +1,7 @@
 import express from 'express';
 import { randomUUID } from 'crypto';
 import db from '../db.js';
+import { auditLog } from '../lib/audit.js';
 
 const router = express.Router();
 
@@ -109,6 +110,7 @@ router.get('/callback', async (req, res) => {
                     req.log.error({ err }, 'Session save failed');
                     return res.redirect(`${FRONTEND_URL}?error=session_error`);
                 }
+                auditLog(req, 'auth.login', 'user', req.session.userId);
                 res.redirect(FRONTEND_URL);
             });
         });
@@ -134,6 +136,8 @@ router.get('/session', (req, res) => {
 });
 
 router.post('/logout', (req, res) => {
+    const userId = req.session?.userId;
+    auditLog(req, 'auth.logout', 'user', userId);
     req.session.destroy();
     res.json({ success: true });
 });

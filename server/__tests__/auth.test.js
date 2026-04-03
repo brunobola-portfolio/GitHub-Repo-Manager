@@ -139,7 +139,7 @@ describe('errorResponse', () => {
 
 describe('requireAuth middleware', () => {
     it('calls next when session has accessToken', () => {
-        const req = { session: { accessToken: 'ghp_xxx' } }
+        const req = { headers: {}, session: { accessToken: 'ghp_xxx' } }
         const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
         const next = vi.fn()
 
@@ -149,7 +149,7 @@ describe('requireAuth middleware', () => {
     })
 
     it('returns 401 when no accessToken', () => {
-        const req = { session: {} }
+        const req = { headers: {}, session: {} }
         const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
         const next = vi.fn()
 
