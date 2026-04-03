@@ -37,6 +37,9 @@ const configSchema = z.object({
     // Webhooks (optional)
     webhookSecret: z.string().optional(),
 
+    // License key (optional, for self-hosted Pro/Enterprise)
+    licenseKey: z.string().optional(),
+
     // Stripe (optional, enables billing)
     stripeSecretKey: z.string().optional(),
     stripeWebhookSecret: z.string().optional(),
@@ -63,6 +66,7 @@ function loadConfig() {
         sentryDsn: process.env.SENTRY_DSN,
         azurePat: process.env.AZURE_PAT,
         webhookSecret: process.env.WEBHOOK_SECRET,
+        licenseKey: process.env.LICENSE_KEY,
         stripeSecretKey: process.env.STRIPE_SECRET_KEY,
         stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
         stripePriceProMonthly: process.env.STRIPE_PRICE_PRO_MONTHLY,

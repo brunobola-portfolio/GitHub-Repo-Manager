@@ -347,6 +347,26 @@ export function initDB() {
         `);
         db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_unique ON usage_metrics(user_id, metric_type, period_start)`);
 
+        // License Keys Table (admin tracking for issued licenses)
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS license_keys (
+                id TEXT PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                license_key_hash TEXT NOT NULL UNIQUE,
+                tier TEXT NOT NULL CHECK(tier IN ('pro', 'enterprise')),
+                seats INTEGER NOT NULL DEFAULT 1,
+                org_name TEXT,
+                email TEXT,
+                issued_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                revoked_at TEXT,
+                metadata TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_license_keys_hash ON license_keys(license_key_hash)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_license_keys_tier ON license_keys(tier)`);
+
         // Indexes for performance
         db.exec(`CREATE INDEX IF NOT EXISTS idx_members_user ON team_members(user_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_repos_team ON repo_assignments(team_id)`);
