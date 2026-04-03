@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { CreditCard, Zap, Building2, Star, AlertTriangle, ExternalLink, RefreshCw, ArrowRight } from 'lucide-react'
+import { CreditCard, Zap, Building2, Star, AlertTriangle, ExternalLink, RefreshCw, ArrowRight, Shield, Key } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
 import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
@@ -164,8 +164,68 @@ function UpgradePrompt({ onUpgradePro, onUpgradeEnterprise }) {
     )
 }
 
+function LicenseCard({ license }) {
+    const tierConfig = TIER_CONFIG[license.tier] || TIER_CONFIG.free
+    const IconComp = tierConfig.icon
+    const seatPct = license.seats > 0 ? Math.min(100, Math.round((license.seatsUsed / license.seats) * 100)) : 0
+
+    return (
+        <Card className="p-6 bg-white/80 dark:bg-slate-800/80">
+            <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-2xl ${tierConfig.iconBg} flex items-center justify-center shrink-0`}>
+                        <IconComp className={`w-6 h-6 ${tierConfig.iconColor}`} />
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{tierConfig.label} Plan</h3>
+                            <Badge variant={tierConfig.badgeVariant}>Licensed</Badge>
+                        </div>
+                        {license.org && (
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{license.org}</p>
+                        )}
+                    </div>
+                </div>
+                <a
+                    href="https://bolalabs.pt/license"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition-colors shrink-0"
+                >
+                    <ExternalLink className="w-4 h-4" />
+                    Manage License
+                </a>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Seats</p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-white">
+                        {license.seatsUsed} of {license.seats} used
+                    </p>
+                    <div className="mt-2 h-1.5 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
+                        <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                                seatPct > 90 ? 'bg-red-500' : seatPct > 70 ? 'bg-amber-500' : 'bg-emerald-500'
+                            }`}
+                            style={{ width: `${seatPct}%` }}
+                        />
+                    </div>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Expires</p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-white">
+                        {formatDate(license.expiresAt)}
+                    </p>
+                </div>
+            </div>
+        </Card>
+    )
+}
+
 export function BillingSection() {
     const [subscription, setSubscription] = useState(null)
+    const [license, setLicense] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [billingUnavailable, setBillingUnavailable] = useState(false)
@@ -177,6 +237,22 @@ export function BillingSection() {
             setLoading(true)
             setError(null)
             setBillingUnavailable(false)
+
+            // Check license first
+            try {
+                const licRes = await fetch(`${API_BASE_URL}/api/v1/license`, { credentials: 'include' })
+                if (licRes.ok) {
+                    const licData = await licRes.json()
+                    if (licData.active && licData.source === 'license_key') {
+                        setLicense(licData)
+                        setLoading(false)
+                        return // Skip Stripe billing fetch
+                    }
+                }
+            } catch {
+                // License endpoint not available, continue with Stripe
+            }
+
             try {
                 const res = await fetch(`${API_BASE_URL}/api/v1/billing/subscription`, { credentials: 'include' })
                 if (res.status === 503 || res.status === 501) {
@@ -265,6 +341,8 @@ export function BillingSection() {
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     {error}
                 </div>
+            ) : license ? (
+                <LicenseCard license={license} />
             ) : subscription ? (
                 <div className="space-y-5">
                     <PlanCard
