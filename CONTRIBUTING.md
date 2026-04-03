@@ -2,6 +2,20 @@
 
 Thank you for your interest in contributing to GitHub Repo Manager! This document covers everything you need to get started.
 
+## Contributor License Agreement (CLA)
+
+This project uses a dual-license model:
+
+- **AGPL v3** for the open-source community
+- **Commercial license** for organizations (see [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md))
+
+Before your first contribution can be merged, you must sign our [CLA](CLA.md) by
+commenting "I have read the CLA and I agree" on your pull request. This is a one-time
+requirement.
+
+The CLA grants Bola Labs the right to include your contributions in both the open-source
+and commercially licensed versions. You retain full copyright over your work.
+
 ## Prerequisites
 
 - **Node.js** 20 or later
@@ -144,8 +158,9 @@ Use the [feature request template](https://github.com/brunobola-portfolio/GitHub
 
 ## Code of Conduct
 
-This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating you agree to uphold it. Report unacceptable behaviour to [bruno@bolalabs.com](mailto:bruno@bolalabs.com).
+This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating you agree to uphold it. Report unacceptable behaviour to [bruno@bolalabs.pt](mailto:bruno@bolalabs.pt).
 
 ## License
 
-By contributing you agree that your contributions will be licensed under the [MIT License](LICENSE).
+By contributing you agree that your contributions will be licensed under the
+[AGPL v3 License](LICENSE) and the terms of the [CLA](CLA.md).
