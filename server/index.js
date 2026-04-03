@@ -43,6 +43,11 @@ if (config.mockMode === 'true') {
 
 const app = express();
 
+// Trust first proxy (Nginx, Cloudflare, Railway) for correct client IP in rate limiting
+if (config.nodeEnv === 'production') {
+    app.set('trust proxy', 1);
+}
+
 // Initialize Google AI only if key is present
 if (config.geminiApiKey) {
     try {
@@ -124,12 +129,6 @@ const devSafetyNet = isDev
     : globalLimiter;
 app.use('/api/', devSafetyNet);
 
-// Per-tenant limiters (tier-aware, Redis-backed when available)
-const apiLimiter  = await createTenantLimiters('api');
-const authLimiter = await createTenantLimiters('auth');
-app.use('/api/', apiLimiter);
-app.use('/api/auth/', authLimiter);
-
 // Session configuration for secure auth persistence
 // Store selection priority:
 //   1. Redis (REDIS_URL set)  → distributed sessions for multi-instance deployments
@@ -163,6 +162,12 @@ app.use(session(sessionConfig));
 // Attach user tier after session (for rate limiting and feature gating)
 import { attachTier } from './middleware/require-tier.js';
 app.use('/api/', attachTier);
+
+// Per-tenant limiters AFTER session + tier attachment so req.userTier is available
+const apiLimiter  = await createTenantLimiters('api');
+const authLimiter = await createTenantLimiters('auth');
+app.use('/api/', apiLimiter);
+app.use('/api/auth/', authLimiter);
 
 // ------------------------------------------------------------------
 // Health check (used by useOnlineStatus for connectivity detection)
