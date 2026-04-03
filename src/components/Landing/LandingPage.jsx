@@ -30,7 +30,7 @@ function LandingFooter() {
 
         <div className="flex items-center gap-5">
           <a
-            href="https://github.com/brunomarques-eu/github-repo-manager"
+            href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-sm text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200"
@@ -40,7 +40,7 @@ function LandingFooter() {
           </a>
           <span className="text-slate-200 dark:text-slate-700">·</span>
           <a
-            href="https://github.com/brunomarques-eu/github-repo-manager/blob/main/README.md"
+            href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/README.md"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200 ds-font-display"
@@ -49,7 +49,7 @@ function LandingFooter() {
           </a>
           <span className="text-slate-200 dark:text-slate-700">·</span>
           <a
-            href="https://github.com/brunomarques-eu/github-repo-manager/releases"
+            href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200 ds-font-display"
@@ -85,7 +85,7 @@ export function LandingPage({ onSignIn }) {
 
           <div className="flex items-center gap-3">
             <a
-              href="https://github.com/brunomarques-eu/github-repo-manager"
+              href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager"
               target="_blank"
               rel="noopener noreferrer"
               className="hidden sm:flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors duration-200 ds-font-display"

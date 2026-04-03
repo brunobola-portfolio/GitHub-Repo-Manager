@@ -106,7 +106,7 @@ export function HeroSection({ onSignIn }) {
         </button>
 
         <a
-          href="https://github.com/brunomarques-eu/github-repo-manager"
+          href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager"
           target="_blank"
           rel="noopener noreferrer"
           className="group flex items-center gap-2.5 px-8 py-3.5 rounded-2xl font-semibold text-base

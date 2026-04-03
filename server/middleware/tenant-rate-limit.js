@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import logger from '../lib/logger.js';
 
 const TIER_LIMITS = {
@@ -39,7 +39,7 @@ export async function createTenantLimiters(type = 'api') {
             return TIER_LIMITS[tier]?.[type] ?? TIER_LIMITS.free[type];
         },
         keyGenerator: (req) => {
-            const userId = req.session?.userId || req.tenantId || req.ip;
+            const userId = req.session?.userId || req.tenantId || ipKeyGenerator(req);
             return `rl:${userId}:${type}`;
         },
         store,
