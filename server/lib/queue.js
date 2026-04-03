@@ -5,7 +5,7 @@ class InMemoryQueue {
         this.name = name;
     }
 
-    async add(jobName, data, opts = {}) {
+    async add(jobName, data, _opts = {}) {
         // Execute immediately in-process
         const jobId = `${this.name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         logger.info({ queue: this.name, jobName, jobId }, 'Job queued (in-memory)');

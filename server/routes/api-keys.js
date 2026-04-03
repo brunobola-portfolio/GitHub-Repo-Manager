@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { generateApiKey, hashKey } from '../middleware/api-key-auth.js';
+import { generateApiKey } from '../middleware/api-key-auth.js';
 import { z } from 'zod';
 
 const router = Router();
