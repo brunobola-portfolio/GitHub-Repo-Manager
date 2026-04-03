@@ -1,257 +1,221 @@
-# GitHub Repo Manager - Teams Architecture
+# Teams Architecture
 
-## 📋 Visão Geral
+Last Updated: 2026-04-03
 
-**Princípio Fundamental:** Tudo é gerido via GitHub API. Azure DevOps é usado APENAS para migração de repositórios.
+## Overview
 
----
-
-## 🏗️ Arquitetura de Teams
-
-### Frontend Components
-
-1. **TeamHub.jsx** - Lista e gestão de equipas
-   - Criar/Editar/Eliminar equipas
-   - Visualizar membros e repositórios
-   - Dados armazenados em SQLite local
-
-2. **TeamDetails.jsx** - Gestão detalhada de equipa
-   - **Activity Tab**: Eventos do GitHub (commits, PRs, issues) via GitHub API
-   - **Members Tab**: Adicionar/Remover membros via GitHub API Search
-   - **Repositories Tab**: Assignar repos GitHub e gerir colaboradores
-   - **Actions Tab**: Workflows e runs do GitHub Actions
-
-3. **ActivityTab.jsx** - Stream de atividade
-   - Busca eventos via GitHub API `/repos/{owner}/{repo}/events`
-   - Suporta MOCK_MODE para desenvolvimento
+Teams in GitHub Repo Manager are **local groupings** managed in SQLite. All GitHub-related
+operations (activity feeds, collaborator management, Actions workflows) go through the
+GitHub REST API. Azure DevOps is used exclusively for repository migration and is not
+involved in day-to-day team management.
 
 ---
 
-## 🔗 Integrações GitHub API
+## Frontend Components
 
-### Teams & Members
-```
-GET  /api/teams                       → Lista teams do user
-POST /api/teams                       → Cria team (SQLite)
-GET  /api/teams/:id                   → Detalhes team + members + repos
-POST /api/teams/:id/members           → Adiciona member (via GitHub API Search)
-PUT  /api/teams/:id/members/:userId   → Atualiza role
-DELETE /api/teams/:id/members/:userId → Remove member
-```
+All team UI lives in `src/components/Teams/`.
 
-### Repositories Assignment
-```
-POST /api/teams/:id/repos             → Assign repo GitHub ao team
-GET  /api/repos/:owner/:repo/collaborators → Lista colaboradores GitHub
-PUT  /api/repos/:owner/:repo/collaborators/:username → Adiciona colaborador GitHub
-```
+### TeamHub (`src/components/Teams/TeamHub.jsx`)
 
-### Activity Stream
-```
-GET /api/teams/:id/activity           → Agrega eventos de todos repos assigned
-  └─→ Para cada repo: GET /repos/{owner}/{repo}/events (GitHub API)
-```
+Top-level list and management view for teams.
 
-### GitHub Actions
-```
-GET  /api/repos/:owner/:repo/actions/workflows       → Lista workflows
-POST /api/repos/:owner/:repo/actions/workflows/:id/dispatches → Trigger workflow
-GET  /api/repos/:owner/:repo/actions/runs            → Lista runs
-POST /api/repos/:owner/:repo/actions/sync            → Sync runs para DB
-GET  /api/repos/:owner/:repo/actions/stats           → Estatísticas calculadas
-```
+- Create, edit, and delete teams.
+- Displays member count and repository count per team.
+- Clicking a team card navigates to the detail view.
+
+### TeamDetails (`src/components/Teams/TeamDetails.jsx`)
+
+Detail view for a single team with four tabs:
+
+| Tab | Icon | Description |
+| --- | ---- | ----------- |
+| **Activity** | Activity | Aggregated GitHub event stream across all assigned repos. |
+| **Members** | Users | Invite members by GitHub username, update roles, remove members. |
+| **Repos** | Github | Assign repositories from the user's GitHub account to the team. |
+| **Actions** | Zap | View GitHub Actions workflows and runs for assigned repos. |
+
+Permissions are enforced per role: owners and admins can manage members and repos;
+regular members have read-only access.
+
+### ActivityTab (`src/components/Teams/ActivityTab.jsx`)
+
+Renders the activity feed for a team. Fetches events from `GET /api/teams/:id/activity`.
+Supports `MOCK_MODE` for local development when the backend is unavailable.
 
 ---
 
-## 💾 Database Schema (SQLite)
+## API Endpoints
 
-### Tables
+All team routes are defined in `server/routes/teams.js` and mounted at `/api/teams`.
+Requests require an authenticated session (`requireAuth` middleware). Input is validated
+with schemas from `server/lib/validators.js`.
 
-**users** - Cache de users GitHub
+### Team CRUD
+
+| Method | Path | Description | Permission |
+| ------ | ---- | ----------- | ---------- |
+| `GET` | `/api/teams` | List teams the authenticated user belongs to | Member |
+| `POST` | `/api/teams` | Create a new team (creator becomes owner) | Authenticated |
+| `GET` | `/api/teams/:id` | Get team details including members and assigned repos | Member |
+| `PUT` | `/api/teams/:id` | Update team name and description | Owner / Admin |
+| `DELETE` | `/api/teams/:id` | Delete team and all associated data | Owner only |
+
+### Members
+
+| Method | Path | Description | Permission |
+| ------ | ---- | ----------- | ---------- |
+| `POST` | `/api/teams/:id/members` | Add a member by GitHub username (fetches from GitHub API if not cached locally) | Owner / Admin |
+| `PUT` | `/api/teams/:id/members/:userId` | Update member role (`admin` or `member`) | Owner / Admin |
+| `DELETE` | `/api/teams/:id/members/:userId` | Remove a member (cannot remove the owner) | Owner / Admin |
+
+### Repository Assignments
+
+| Method | Path | Description | Permission |
+| ------ | ---- | ----------- | ---------- |
+| `POST` | `/api/teams/:id/repos` | Assign a GitHub repository to the team | Owner / Admin |
+
+---
+
+## Database Schema
+
+Schema is defined in `server/db.js` (`initDB()`). All team-related tables use foreign
+keys with `ON DELETE CASCADE` where appropriate.
+
+### `users`
+
+Caches GitHub user profiles retrieved via the GitHub API.
+
 ```sql
-CREATE TABLE users (
-    id INTEGER PRIMARY KEY,        -- GitHub ID
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY,          -- GitHub user ID
     username TEXT NOT NULL,
     avatar_url TEXT,
     email TEXT,
-    last_login TEXT,
-    created_at TEXT
+    last_login TEXT DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
 )
 ```
 
-**teams** - Equipas locais
+### `teams`
+
+Local team definitions owned by a user.
+
 ```sql
-CREATE TABLE teams (
+CREATE TABLE IF NOT EXISTS teams (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     description TEXT,
     owner_id INTEGER NOT NULL,
-    created_at TEXT,
-    FOREIGN KEY (owner_id) REFERENCES users(id)
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
 )
 ```
 
-**team_members** - Membros de equipas
+### `team_members`
+
+Many-to-many relationship between teams and users with a role.
+
 ```sql
-CREATE TABLE team_members (
+CREATE TABLE IF NOT EXISTS team_members (
     team_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
-    role TEXT CHECK(role IN ('owner', 'admin', 'member')),
-    joined_at TEXT,
+    role TEXT CHECK(role IN ('owner', 'admin', 'member')) DEFAULT 'member',
+    joined_at TEXT DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (team_id, user_id),
-    FOREIGN KEY (team_id) REFERENCES teams(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 )
 ```
 
-**repo_assignments** - Repos assigned a teams
+### `repo_assignments`
+
+Associates GitHub repositories with teams.
+
 ```sql
-CREATE TABLE repo_assignments (
+CREATE TABLE IF NOT EXISTS repo_assignments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     team_id INTEGER NOT NULL,
-    repo_full_name TEXT NOT NULL,  -- e.g. "owner/repo"
-    repo_id INTEGER NOT NULL,       -- GitHub Repo ID
+    repo_full_name TEXT NOT NULL,    -- e.g. "owner/repo"
+    repo_id INTEGER NOT NULL,        -- GitHub Repo ID
     assigned_by INTEGER NOT NULL,
-    assigned_at TEXT,
-    FOREIGN KEY (team_id) REFERENCES teams(id),
+    assigned_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
     FOREIGN KEY (assigned_by) REFERENCES users(id)
 )
 ```
 
-**workflow_runs** - Cache de GitHub Actions runs
-```sql
-CREATE TABLE workflow_runs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    github_run_id INTEGER UNIQUE NOT NULL,
-    repo_id INTEGER NOT NULL,
-    workflow_id INTEGER NOT NULL,
-    status TEXT NOT NULL,
-    conclusion TEXT,
-    started_at TEXT NOT NULL,
-    duration_seconds INTEGER,
-    -- ... outros campos
-)
+### `workflow_runs` / `workflows_meta`
+
+Used by the Actions tab to cache GitHub Actions data locally for statistics. Defined in
+`server/db.js` alongside the tables above; see the full schema there.
+
+---
+
+## Data Flows
+
+### Activity Feed
+
+```
+User opens Activity tab
+  -> TeamDetails fetches GET /api/teams/:id/activity
+    -> Backend looks up repos assigned to the team (repo_assignments)
+      -> For each repo: GET /repos/{owner}/{repo}/events (GitHub API)
+        -> Aggregates, deduplicates, sorts by date
+          -> Returns unified event list
+```
+
+### Adding a Member
+
+```
+User searches for a GitHub username
+  -> POST /api/teams/:id/members { username }
+    -> Backend checks local users table
+      -> If not found: GET /users/{username} (GitHub API) and caches the result
+        -> Inserts into team_members with role 'member'
+          -> Audit log entry created
+```
+
+### Assigning a Repository
+
+```
+User selects a repo from their GitHub account
+  -> POST /api/teams/:id/repos { repoFullName, repoId }
+    -> Backend validates membership and admin/owner role
+      -> Inserts into repo_assignments
+        -> Team can now manage collaborators for this repo via GitHub API
+```
+
+### Managing Collaborators
+
+```
+User expands a repo in the Repos tab
+  -> GET /api/repos/{owner}/{repo}/collaborators (GitHub API)
+    -> Shows current collaborators
+      -> User clicks "Add" for a team member
+        -> PUT /api/repos/{owner}/{repo}/collaborators/{username} (GitHub API)
+          -> GitHub sends invitation
 ```
 
 ---
 
-## 🔄 Fluxos de Dados
+## Audit Logging
 
-### 1. Activity Feed
-```
-User → ActivityTab
-  → GET /api/teams/{id}/activity
-    → Backend: Busca repos assigned ao team
-      → Para cada repo: GET /repos/{owner}/{repo}/events (GitHub API)
-        → Agrega, deduplica, ordena por data
-          → Retorna eventos unificados
-```
-
-### 2. Adicionar Member
-```
-User → Search GitHub Username
-  → GET /api/search/users?q={username} (GitHub API)
-    → Seleciona user
-      → POST /api/teams/{id}/members
-        → Backend: Verifica se user existe no GitHub
-          → Adiciona a team_members (SQLite)
-            → Retorna sucesso
-```
-
-### 3. Assign Repository
-```
-User → Seleciona repo da lista
-  → POST /api/teams/{id}/repos
-    → Backend: Salva em repo_assignments (SQLite)
-      → Team pode agora gerir colaboradores via GitHub API
-```
-
-### 4. Adicionar Colaborador ao Repo
-```
-User → Expande repo no TeamDetails
-  → GET /api/repos/{owner}/{repo}/collaborators (GitHub API)
-    → Mostra colaboradores atuais
-      → User clica "Add" num team member
-        → PUT /api/repos/{owner}/{repo}/collaborators/{username} (GitHub API)
-          → Envia convite via GitHub
-```
-
-### 5. GitHub Actions Stats
-```
-User → Abre Actions tab
-  → Seleciona repo
-    → GET /api/repos/{owner}/{repo}/actions/workflows (GitHub API)
-    → GET /api/repos/{owner}/{repo}/actions/runs (GitHub API)
-      → Mostra workflows e runs
-        → User clica "Sync"
-          → POST /api/repos/{owner}/{repo}/actions/sync
-            → Guarda runs em workflow_runs (SQLite)
-              → Calcula estatísticas localmente
-```
+Team operations (create, delete, member add, member remove) are recorded via
+`auditLog()` from `server/lib/audit.js`. Actions are also written to the `audit_log`
+table with the acting user's ID, action type, target, and details as JSON.
 
 ---
 
-## ☁️ Azure DevOps Integration
+## Key Files
 
-**IMPORTANTE**: Azure DevOps é usado APENAS para MIGRAÇÃO, não para gestão.
-
-### Componentes
-- **AzureImportModal.jsx** - UI para importar repos
-- **useGitHub.js** - `importFromAzure()` function
-- Botões em Header/Sidebar para abrir modal
-
-### Fluxo de Migração
-```
-User → Clica "Azure Import"
-  → Preenche: Org, Project, Repo, PAT
-    → POST /api/import-azure (se implementado)
-      → Backend conecta ao Azure DevOps
-        → Clona repo para GitHub
-          → Retorna novo repo GitHub
-```
-
-**Após migração**: Repo é gerido 100% via GitHub API.
-
----
-
-## ✅ Validação
-
-### Teams ✅
-- Criar/Editar/Eliminar: SQLite local
-- Members: GitHub API Search + SQLite
-- Repos: GitHub repos assignados no SQLite
-
-### Activity ✅
-- 100% GitHub API `/repos/{owner}/{repo}/events`
-- Agregado de todos repos assigned ao team
-
-### Actions ✅
-- 100% GitHub API `/repos/{owner}/{repo}/actions/*`
-- Cache de runs em SQLite para estatísticas
-
-### Members ✅
-- Search: GitHub API `/search/users`
-- Invite: GitHub API (via colaboradores)
-
-### Repositories ✅
-- Listagem: GitHub API `/user/repos`
-- Colaboradores: GitHub API `/repos/{owner}/{repo}/collaborators`
-
-### Azure DevOps ✅
-- APENAS para migração
-- Não usado para gestão diária
-
----
-
-## 🎯 Conclusão
-
-**Tudo está correto!** A arquitetura segue os princípios:
-
-1. ✅ Teams geridos localmente (SQLite)
-2. ✅ Members via GitHub API
-3. ✅ Activity via GitHub API
-4. ✅ Actions via GitHub API
-5. ✅ Repositories via GitHub API
-6. ✅ Azure DevOps apenas para migração
-
-Não há confusão entre GitHub e Azure DevOps. Cada um tem o seu papel bem definido.
+| File | Purpose |
+| ---- | ------- |
+| `server/routes/teams.js` | All team API route handlers |
+| `server/db.js` | Database schema including team tables |
+| `server/lib/validators.js` | Request validation schemas (`teamCreateSchema`, `teamMemberSchema`, `teamRepoSchema`) |
+| `server/lib/audit.js` | Audit logging helper |
+| `server/lib/github-api.js` | GitHub API client used for user lookup |
+| `server/middleware/auth.js` | `requireAuth`, `safeError`, `errorResponse` |
+| `src/components/Teams/TeamHub.jsx` | Team list and CRUD UI |
+| `src/components/Teams/TeamDetails.jsx` | Team detail view with tabs |
+| `src/components/Teams/ActivityTab.jsx` | Activity feed component |

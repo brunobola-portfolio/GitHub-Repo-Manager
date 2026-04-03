@@ -1,4 +1,4 @@
-import React, { useState, memo } from 'react'
+import { useState, memo } from 'react'
 import {
 	Building2, Plus, Search,
 	Settings, Shield,
@@ -8,7 +8,7 @@ import {
 import { formatNumber, formatCompact } from '../utils/format'
 import { motion, AnimatePresence } from 'framer-motion'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { SettingsModal } from './SettingsModal'
+import { useModal } from '../hooks/useModal'
 
 export function OrgPanel({
 	orgs = [],
@@ -20,7 +20,7 @@ export function OrgPanel({
 }) {
 	const [searchTerm, setSearchTerm] = useState('')
 	const [viewMode, setViewMode] = useState('list') // 'list' or 'grid'
-	const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+	const { openModal } = useModal()
 
 	const filteredOrgs = orgs.filter(org =>
 		org.login?.toLowerCase()?.includes(searchTerm.toLowerCase())
@@ -144,7 +144,7 @@ export function OrgPanel({
 							>
 								<DropdownMenu.Item
 									className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-600 dark:hover:text-indigo-300 rounded-xl cursor-pointer outline-none transition-colors"
-									onSelect={() => setIsSettingsOpen(true)}
+									onSelect={() => openModal('showSettings')}
 								>
 									<Settings size={15} />
 									Settings
@@ -172,7 +172,6 @@ export function OrgPanel({
 				</div>
 			</div>
 
-			<SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
 		</div>
 	)
 }

@@ -11,7 +11,7 @@
 ![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=for-the-badge&logo=node.js&logoColor=white)
 ![Gemini AI](https://img.shields.io/badge/Gemini_AI-Powered-8E75B2?style=for-the-badge&logo=google-gemini&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-WAL-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-109%20passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-404%20passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 
 **A full-stack AI-powered dashboard for managing repositories, teams, CI/CD, and migrating from Azure DevOps — all in one beautiful interface.**
@@ -366,7 +366,7 @@ VITE_MOCK_MODE=true
 |  +----------------------------------------------------------+  |
 |  +-------------+  +-----------+  +--------------------------+  |
 |  |   Routes    |  | AI Service|  |   Database (SQLite WAL)  |  |
-|  | 143+ endpts |  | (Gemini)  |  |   better-sqlite3         |  |
+|  | 156+ endpts |  | (Gemini)  |  |   better-sqlite3         |  |
 |  +-------------+  +-----------+  +--------------------------+  |
 |  +----------------------------------------------------------+  |
 |  |  Migration Engine | Planner | Import Service | Git Ops   |  |
@@ -442,7 +442,7 @@ Embeddings:    text-embedding-004 — semantic similarity & search
 Fallbacks:     Programmatic analysis — works without any AI API key
 ```
 
-> **The result**: A production-quality full-stack application with 143+ API endpoints, 109+ tests, enterprise-grade security, and a polished glassmorphism UI — built faster and better with AI.
+> **The result**: A production-quality full-stack application with 156+ API endpoints, 404+ tests, enterprise-grade security, and a polished glassmorphism UI — built faster and better with AI.
 
 ---
 

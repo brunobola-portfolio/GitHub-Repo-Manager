@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Plus, ChevronRight, Github, MoreVertical, Trash2, Edit2 } from 'lucide-react';
 import { useToast } from '../../hooks/useToast';

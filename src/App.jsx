@@ -21,7 +21,6 @@ import CollapsiblePanel from './components/ui/CollapsiblePanel'
 import { SlimSidebar } from './components/Sidebar'
 import { Menu, Building2, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { WelcomeHero } from './components/WelcomeHero'
 import { SessionBanner } from './components/SessionBanner'
 import { LandingPage } from './components/Landing/LandingPage'
 

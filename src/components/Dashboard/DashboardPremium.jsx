@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import {
     BarChart3, TrendingUp, Activity, GitPullRequest, GitMerge,
     Zap, PlayCircle, Heart, Users, Building2,

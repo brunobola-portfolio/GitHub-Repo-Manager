@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { X, Send, Sparkles, Loader2, Settings, Key, Minus } from 'lucide-react'
 import { Card } from './ui/Card'
 import ReactMarkdown from 'react-markdown'
-import { SettingsModal } from './SettingsModal'
+import { useModal } from '../hooks/useModal'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export function AIAssistant({ askAI, user, checkAIStatus }) {
@@ -15,7 +15,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
     const [isLoading, setIsLoading] = useState(false)
     const messagesEndRef = useRef(null)
     const [isConfigured, setIsConfigured] = useState(true)
-    const [showSettings, setShowSettings] = useState(false)
+    const { openModal } = useModal()
     const [isIdle, setIsIdle] = useState(false)
     const idleTimerRef = useRef(null)
 
@@ -161,7 +161,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                 </div>
                                 <div className="flex items-center gap-0.5">
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); setShowSettings(true) }}
+                                        onClick={(e) => { e.stopPropagation(); openModal('showSettings') }}
                                         className="p-1.5 hover:bg-white/15 rounded-lg transition-colors"
                                         title="AI Settings"
                                     >
@@ -199,7 +199,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                                 To use the AI Assistant, you need to configure your Gemini API key.
                                             </p>
                                             <button
-                                                onClick={() => setShowSettings(true)}
+                                                onClick={() => openModal('showSettings')}
                                                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm shadow-indigo-500/20"
                                             >
                                                 Configure API Key
@@ -278,14 +278,6 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                 )}
             </AnimatePresence>
 
-            <SettingsModal
-                isOpen={showSettings}
-                onClose={async () => {
-                    setShowSettings(false)
-                    const status = await checkAIStatus()
-                    setIsConfigured(status.configured)
-                }}
-            />
         </>
     )
 }

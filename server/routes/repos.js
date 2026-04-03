@@ -65,6 +65,9 @@ router.get('/', requireAuth, async (req, res) => {
 
         let endpoint;
         if (org && org !== '') {
+            if (!isValidGitHubUsername(org)) {
+                return errorResponse(res, 400, 'Invalid organization name', 'INVALID_PARAM');
+            }
             // Specific organization - fetch org repos
             endpoint = `/orgs/${org}/repos?page=${page}&per_page=${perPage}&sort=updated`;
         } else {
@@ -445,7 +448,14 @@ router.get('/:owner/:repo/issues', requireAuth, async (req, res) => {
         const { owner, repo } = req.params;
         const { state = 'open', labels, sort = 'created', direction = 'desc' } = req.query;
 
-        let url = `/repos/${owner}/${repo}/issues?state=${state}&sort=${sort}&direction=${direction}&per_page=${clampPerPage(req.query.per_page)}`;
+        const allowedStates = ['open', 'closed', 'all'];
+        const allowedSort = ['created', 'updated', 'comments'];
+        const allowedDir = ['asc', 'desc'];
+        const safeState = allowedStates.includes(state) ? state : 'open';
+        const safeSort = allowedSort.includes(sort) ? sort : 'created';
+        const safeDir = allowedDir.includes(direction) ? direction : 'desc';
+
+        let url = `/repos/${owner}/${repo}/issues?state=${safeState}&sort=${safeSort}&direction=${safeDir}&per_page=${clampPerPage(req.query.per_page)}`;
         if (labels) url += `&labels=${encodeURIComponent(labels)}`;
 
         const { data } = await githubApi(url, req.session.accessToken);
@@ -541,7 +551,14 @@ router.get('/:owner/:repo/pulls', requireAuth, async (req, res) => {
         const { owner, repo } = req.params;
         const { state = 'open', sort = 'created', direction = 'desc' } = req.query;
 
-        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls?state=${state}&sort=${sort}&direction=${direction}&per_page=${clampPerPage(req.query.per_page)}`, req.session.accessToken);
+        const allowedStates = ['open', 'closed', 'all'];
+        const allowedSort = ['created', 'updated', 'popularity', 'long-running'];
+        const allowedDir = ['asc', 'desc'];
+        const safeState = allowedStates.includes(state) ? state : 'open';
+        const safeSort = allowedSort.includes(sort) ? sort : 'created';
+        const safeDir = allowedDir.includes(direction) ? direction : 'desc';
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls?state=${safeState}&sort=${safeSort}&direction=${safeDir}&per_page=${clampPerPage(req.query.per_page)}`, req.session.accessToken);
         res.json(data);
     } catch (error) {
         req.log.error({ err: error }, 'List pull requests failed');
@@ -744,7 +761,7 @@ router.get('/:owner/:repo/contents', requireAuth, async (req, res) => {
         }
 
         let url = `/repos/${owner}/${repo}/contents/${path}`;
-        if (ref) url += `?ref=${ref}`;
+        if (ref) url += `?ref=${encodeURIComponent(ref)}`;
 
         const { data } = await githubApi(url, req.session.accessToken);
         res.json(data);
@@ -874,11 +891,11 @@ router.get('/:owner/:repo/commits', requireAuth, async (req, res) => {
         const { sha, path, author, since, until } = req.query;
 
         let url = `/repos/${owner}/${repo}/commits?per_page=${clampPerPage(req.query.per_page)}`;
-        if (sha) url += `&sha=${sha}`;
+        if (sha) url += `&sha=${encodeURIComponent(sha)}`;
         if (path) url += `&path=${encodeURIComponent(path)}`;
-        if (author) url += `&author=${author}`;
-        if (since) url += `&since=${since}`;
-        if (until) url += `&until=${until}`;
+        if (author) url += `&author=${encodeURIComponent(author)}`;
+        if (since) url += `&since=${encodeURIComponent(since)}`;
+        if (until) url += `&until=${encodeURIComponent(until)}`;
 
         const { data } = await githubApi(url, req.session.accessToken);
         res.json(data);

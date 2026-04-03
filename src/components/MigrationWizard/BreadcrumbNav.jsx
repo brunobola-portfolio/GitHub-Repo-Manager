@@ -1,4 +1,5 @@
-import React from 'react';
+
+
 import { Cloud, ChevronRight } from 'lucide-react';
 
 const VISIBLE_STEPS = ['repoSelect', 'repoConfig', 'workItems', 'wiki', 'aiReview', 'schedule'];

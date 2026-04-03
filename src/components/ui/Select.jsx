@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { ChevronDown, Check, Search } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 

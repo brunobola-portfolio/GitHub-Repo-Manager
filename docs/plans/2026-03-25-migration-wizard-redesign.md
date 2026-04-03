@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19, Framer Motion, Tailwind CSS v4, Express, express-session, Lucide icons, Vite.
 
-**Spec:** `docs/superpowers/specs/2026-03-25-migration-wizard-redesign.md`
+**Spec:** `docs/specs/2026-03-25-migration-wizard-redesign.md`
 
 ---
 

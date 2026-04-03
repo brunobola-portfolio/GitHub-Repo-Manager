@@ -2,7 +2,7 @@
 
 **Base URL:** `http://localhost:3001/api`
 **Authentication:** GitHub OAuth via session cookies. Most endpoints require an authenticated session (`requireAuth` middleware). The server never exposes raw access tokens to the client.
-**Total Endpoints:** 143
+**Total Endpoints:** 154
 
 ---
 
@@ -18,8 +18,14 @@
 - [Import](#import-apiimportx)
 - [Azure DevOps](#azure-devops-apiazurex)
 - [Webhooks](#webhooks-apiwebhooksx)
+- [Migration Plans](#migration-plans-apimigrationx)
 - [Statistics](#statistics-apistatsx)
 - [System](#system-apisystemx)
+- [Billing](#billing-apibillingx)
+- [Audit Log](#audit-log-apiauditx)
+- [Usage Metrics](#usage-metrics-apiusagex)
+- [API Keys](#api-keys-apiapi-keysx)
+- [Stripe Webhooks](#stripe-webhooks-apiv1webhooksstripe)
 
 ---
 
@@ -2091,6 +2097,54 @@ Transfer multiple repositories to an organization.
 
 ---
 
+### `POST /api/transfer/check-conflicts`
+
+Check for naming conflicts before transferring repositories to an organization. For each repo, checks whether a repo with the same name already exists in the target org and returns metadata for both source and target.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `repos` | string[] | Yes | Array of `owner/repo` strings |
+| `targetOrg` | string | Yes | Target organization login |
+
+**Response (200):**
+```json
+{
+  "conflicts": {
+    "repo-name": {
+      "exists": true,
+      "source": {
+        "full_name": "owner/repo-name",
+        "updated_at": "...",
+        "size": 1024,
+        "language": "JavaScript",
+        "description": "..."
+      },
+      "target": {
+        "full_name": "org/repo-name",
+        "updated_at": "...",
+        "size": 2048,
+        "language": "JavaScript",
+        "description": "..."
+      }
+    },
+    "other-repo": {
+      "exists": false
+    }
+  }
+}
+```
+
+**Error Codes:**
+- `400` (`INVALID_ORG`) - Invalid target organization name
+
+---
+
 ### `POST /api/mirror`
 
 Mirror (fork) multiple repositories to an organization.
@@ -2287,6 +2341,45 @@ Import a repository from Azure DevOps to GitHub. The import runs asynchronously.
 
 ---
 
+### `POST /api/import/azure/batch`
+
+Batch import multiple Azure DevOps repositories to GitHub. Runs imports with a concurrency limit of 2.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Max repos | 20 |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `azureOrg` | string | Yes | Azure DevOps organization |
+| `azureProject` | string | Yes | Azure DevOps project |
+| `azurePat` | string | No | PAT (uses server PAT if omitted) |
+| `targetOrg` | string | No | Target GitHub organization |
+| `makePrivate` | boolean | No | Default `true` |
+| `repos` | object[] | Yes | Array of `{ azureRepo, targetName }` objects |
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "jobs": [
+    { "repoName": "source-repo", "targetName": "target-repo", "jobId": 1, "skipped": false, "error": null },
+    { "repoName": "other-repo", "targetName": "other-repo", "jobId": null, "skipped": true, "error": "Import already in progress" }
+  ]
+}
+```
+
+**Error Codes:**
+- `400` (`MISSING_PARAMS`) - Missing org, project, or repos array
+- `400` (`MISSING_PAT`) - No PAT available
+- `400` (`TOO_MANY_REPOS`) - More than 20 repos in batch
+
+---
+
 ### `POST /api/import/url`
 
 Import a repository from any Git URL to GitHub. The import runs asynchronously.
@@ -2384,6 +2477,24 @@ List all migration jobs for the authenticated user (paginated).
 
 ## Azure DevOps (`/api/azure/*`)
 
+### `GET /api/azure/env-auth`
+
+Check if the server has an Azure DevOps PAT configured via environment variable. The PAT value itself is never exposed.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Response (200):**
+
+```json
+{
+  "available": true
+}
+```
+
+---
+
 ### `POST /api/azure/validate`
 
 Validate Azure DevOps credentials (organization + PAT).
@@ -2463,6 +2574,94 @@ List repositories in an Azure DevOps project.
 
 ---
 
+### `POST /api/azure/wikis`
+
+List wikis in an Azure DevOps project.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `org` | string | Yes | Azure DevOps organization name |
+| `project` | string | Yes | Project name |
+| `pat` | string | No | PAT (uses server PAT if omitted) |
+
+**Response (200):**
+
+```json
+{
+  "wikis": [ ... ]
+}
+```
+
+**Error Codes:**
+- `400` - Organization and project are required
+
+---
+
+### `POST /api/azure/work-items/counts`
+
+Get work item counts by type for an Azure DevOps project.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `org` | string | Yes | Azure DevOps organization name |
+| `project` | string | Yes | Project name |
+| `pat` | string | No | PAT (uses server PAT if omitted) |
+
+**Response (200):**
+
+```json
+{
+  "counts": { ... }
+}
+```
+
+**Error Codes:**
+- `400` - Organization and project are required
+
+---
+
+### `POST /api/azure/work-items/preview`
+
+Preview work items from an Azure DevOps project, optionally filtered by type.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `org` | string | Yes | Azure DevOps organization name |
+| `project` | string | Yes | Project name |
+| `pat` | string | No | PAT (uses server PAT if omitted) |
+| `types` | string[] | No | Work item types to filter (empty for all) |
+
+**Response (200):**
+
+```json
+{
+  "items": [ ... ]
+}
+```
+
+**Error Codes:**
+- `400` - Organization and project are required
+
+---
+
 ### `POST /api/azure/project-info`
 
 Get project info including version control type (Git or TFVC).
@@ -2491,6 +2690,69 @@ Get project info including version control type (Git or TFVC).
 
 ---
 
+### `POST /api/azure/branches`
+
+List branches for a specific repository in an Azure DevOps project.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `org` | string | Yes | Azure DevOps organization name |
+| `project` | string | Yes | Project name |
+| `repoId` | string | Yes | Azure DevOps repository ID |
+| `pat` | string | No | PAT (uses server PAT if omitted) |
+
+**Response (200):**
+
+```json
+{
+  "branches": [ ... ]
+}
+```
+
+**Error Codes:**
+- `400` - Organization, project, and repoId are required
+
+---
+
+### `POST /api/azure/pat-permissions`
+
+Check what permissions a PAT has for a given Azure DevOps project. Tests code (repos), work items, and wiki access.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `org` | string | Yes | Azure DevOps organization name |
+| `project` | string | Yes | Project name |
+| `pat` | string | No | PAT (uses server PAT if omitted) |
+
+**Response (200):**
+
+```json
+{
+  "permissions": {
+    "code": true,
+    "workItems": true,
+    "wiki": false
+  }
+}
+```
+
+**Error Codes:**
+- `400` - Organization and project are required
+
+---
+
 ### `POST /api/azure/tfvc/items`
 
 List TFVC items (files/folders) under a given path.
@@ -2515,6 +2777,103 @@ List TFVC items (files/folders) under a given path.
   "items": [
     { "path": "$/MyProject/Folder", "isFolder": true, "size": 0, "changeDate": "..." }
   ]
+}
+```
+
+---
+
+### `GET /api/azure/organizations`
+
+List Azure DevOps organizations for the authenticated user. Requires an active Azure OAuth session (not PAT-based). Rate-limited to 10 requests per minute.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes (Azure OAuth session) |
+
+**Response (200):**
+
+```json
+{
+  "organizations": [ ... ]
+}
+```
+
+**Error Codes:**
+- `401` - OAuth session required or token expired
+- `429` - Too many requests
+
+---
+
+### `GET /api/azure/oauth-status`
+
+Check whether Azure DevOps OAuth is configured on the server (environment variables present).
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Response (200):**
+
+```json
+{
+  "configured": true
+}
+```
+
+---
+
+### `GET /api/azure/oauth/start`
+
+Initiate the Azure DevOps OAuth flow. Redirects the user to Azure AD for authentication.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Response:** `302` redirect to Azure AD authorization URL.
+
+**Error Codes:**
+- `503` - OAuth not configured
+
+---
+
+### `GET /api/azure/oauth/callback`
+
+Handle the OAuth callback from Azure AD. Exchanges the authorization code for an access token and stores it in the session.
+
+| Detail | Value |
+|---|---|
+| Auth required | No (state parameter provides CSRF protection) |
+
+**Query Parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `code` | string | Authorization code from Azure AD |
+| `state` | string | CSRF protection state parameter |
+
+**Response:** HTML page indicating success or failure. The popup window auto-closes on completion.
+
+**Error Codes:**
+- `400` - No code received or invalid state parameter
+- `503` - OAuth not configured
+
+---
+
+### `GET /api/azure/oauth/token`
+
+Poll for Azure OAuth token readiness. Used by the frontend after initiating the OAuth flow in a popup. Never exposes the token to the client.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Response (200):**
+
+```json
+{
+  "ready": true,
+  "error": false
 }
 ```
 
@@ -2591,6 +2950,392 @@ Get migration statistics summary for the dashboard.
   "recent": [ { "id": 1, "sourceType": "azure-tfvc", "sourceName": "...", "status": "complete", ... } ]
 }
 ```
+
+---
+
+### `POST /api/import/check-duplicates`
+
+Check whether target repository names already exist on GitHub before importing. Used to warn users about potential conflicts.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `repos` | string[] | Yes | Array of repository names to check |
+| `targetOwner` | string | Yes | Target GitHub owner (user or org) |
+
+**Response (200):**
+
+```json
+{
+  "duplicates": {
+    "repo-name": true,
+    "other-repo": false
+  }
+}
+```
+
+**Error Codes:**
+- `400` (`MISSING_REPOS`) - Repos array is required
+- `400` (`MISSING_OWNER`) - Target owner is required
+
+---
+
+## Migration Plans (`/api/migration/*`)
+
+Migration plans provide a structured way to plan, validate, execute, and monitor multi-step migrations from Azure DevOps to GitHub. Plans can include repositories, wikis, and work items. All migration plan endpoints require the Pro tier.
+
+### `POST /api/migration/plans`
+
+Create a new migration plan.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Pro |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `source` | object | Yes | Source configuration (`org`, `project`, `pat`) |
+| `tasks` | object[] | Yes | Array of migration tasks |
+| `targetOrg` | string | No | Target GitHub organization |
+| `schedule` | object | No | Schedule config (`mode`, `scheduledAt`, `isDryRun`) |
+
+**Response (200):**
+
+```json
+{
+  "planId": 1
+}
+```
+
+**Error Codes:**
+- `400` - Validation failed
+
+---
+
+### `GET /api/migration/plans`
+
+List migration plans for the authenticated user (paginated).
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Pro |
+
+**Query Parameters:**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `page` | number | 1 | Page number |
+| `per_page` | number | 20 | Results per page (max 100) |
+
+**Response (200):**
+
+```json
+{
+  "plans": [ ... ],
+  "total": 15,
+  "page": 1,
+  "perPage": 20
+}
+```
+
+---
+
+### `GET /api/migration/plans/:id`
+
+Get a migration plan with all tasks and their statuses.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Pro |
+| Authorization | Plan owner only |
+
+**Response (200):** Plan object with tasks array.
+
+**Error Codes:**
+- `403` - Not the plan owner
+- `404` - Plan not found
+
+---
+
+### `PUT /api/migration/plans/:id`
+
+Update a migration plan. Only draft plans can be updated.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Pro |
+| Authorization | Plan owner only |
+
+**Response (200):**
+
+```json
+{
+  "success": true
+}
+```
+
+**Error Codes:**
+- `400` - Can only update draft plans or validation failed
+- `403` - Not the plan owner
+
+---
+
+### `DELETE /api/migration/plans/:id`
+
+Delete a migration plan. Active plans cannot be deleted.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Pro |
+| Authorization | Plan owner only |
+
+**Response (200):**
+
+```json
+{
+  "success": true
+}
+```
+
+**Error Codes:**
+- `400` - Cannot delete an active plan
+- `403` - Not the plan owner
+
+---
+
+### `POST /api/migration/plans/:id/validate`
+
+Run pre-flight validation on a migration plan (check credentials, target availability, etc.).
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Pro |
+| Authorization | Plan owner only |
+
+**Response (200):** Validation result object.
+
+**Error Codes:**
+- `403` - Not the plan owner
+
+---
+
+### `POST /api/migration/plans/:id/execute`
+
+Start executing a migration plan. Runs asynchronously.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Pro |
+| Authorization | Plan owner only |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `azurePat` | string | No | Azure PAT for this execution |
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Execution started"
+}
+```
+
+**Error Codes:**
+- `403` - Not the plan owner
+
+---
+
+### `POST /api/migration/plans/:id/cancel`
+
+Cancel a running migration plan.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Pro |
+| Authorization | Plan owner only |
+
+**Response (200):**
+
+```json
+{
+  "success": true
+}
+```
+
+**Error Codes:**
+- `403` - Not the plan owner
+
+---
+
+### `POST /api/migration/plans/:id/pause`
+
+Pause a running migration plan.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Pro |
+| Authorization | Plan owner only |
+
+**Response (200):**
+
+```json
+{
+  "success": true
+}
+```
+
+**Error Codes:**
+- `403` - Not the plan owner
+
+---
+
+### `POST /api/migration/plans/:id/resume`
+
+Resume a paused migration plan.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Pro |
+| Authorization | Plan owner only |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `azurePat` | string | No | Azure PAT for resumed execution |
+
+**Response (200):**
+
+```json
+{
+  "success": true
+}
+```
+
+**Error Codes:**
+- `403` - Not the plan owner
+
+---
+
+### `POST /api/migration/plans/:id/tasks/:taskId/retry`
+
+Retry a failed task within a migration plan.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Pro |
+| Authorization | Plan owner only |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `azurePat` | string | No | Azure PAT for the retry |
+
+**Response (200):**
+
+```json
+{
+  "success": true
+}
+```
+
+**Error Codes:**
+- `403` - Not the plan owner
+
+---
+
+### `GET /api/migration/stream/:id`
+
+Subscribe to real-time migration progress via Server-Sent Events (SSE).
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Pro |
+| Authorization | Plan owner only |
+| Content-Type | `text/event-stream` |
+
+**Response:** SSE stream with progress events for the migration plan.
+
+---
+
+### `POST /api/migration/analyze`
+
+Analyze a set of repositories for migration planning. Uses AI-powered analysis when available, with a deterministic fallback.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Pro |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `repos` | object[] | Yes | Array of repository objects (max 200) |
+
+**Response (200):** Analysis result object with recommendations.
+
+**Error Codes:**
+- `400` - Invalid context or repos array required
+
+---
+
+### `GET /api/migration/plans/:id/report`
+
+Export a migration report for a completed (or failed) plan.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Pro |
+| Authorization | Plan owner only |
+
+**Response (200):**
+
+```json
+{
+  "plan": {
+    "id": 1,
+    "status": "completed",
+    "isDryRun": false,
+    "startedAt": "...",
+    "completedAt": "...",
+    "durationSeconds": 120
+  },
+  "summary": { "total": 5, "success": 4, "failed": 1, "skipped": 0 },
+  "tasks": [ ... ],
+  "errors": [
+    { "taskId": 3, "type": "repo", "error": "...", "suggestion": "..." }
+  ],
+  "generatedAt": "2025-01-01T00:00:00Z"
+}
+```
+
+**Error Codes:**
+- `403` - Not the plan owner
 
 ---
 
@@ -2827,6 +3572,277 @@ Report a client-side error. Used by the frontend error boundary. No authenticati
   "received": true
 }
 ```
+
+---
+
+## Billing (`/api/billing/*`)
+
+Billing endpoints manage Stripe-based subscriptions. All billing mutation endpoints require Stripe to be configured on the server (`requireStripe` middleware). Returns `503` if Stripe is not configured.
+
+### `POST /api/billing/checkout`
+
+Create a Stripe Checkout session to subscribe to a paid tier.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Stripe required | Yes |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `tier` | string | Yes | Subscription tier: `pro` or `enterprise` |
+
+**Response (200):**
+
+```json
+{
+  "url": "https://checkout.stripe.com/c/pay/..."
+}
+```
+
+**Error Codes:**
+- `400` - Invalid input or price not configured for tier
+- `503` - Billing is not configured
+
+---
+
+### `POST /api/billing/portal`
+
+Create a Stripe Customer Portal session for managing an existing subscription (update payment method, cancel, etc.).
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Stripe required | Yes |
+
+**Response (200):**
+
+```json
+{
+  "url": "https://billing.stripe.com/p/session/..."
+}
+```
+
+**Error Codes:**
+- `400` - No billing account found
+- `503` - Billing is not configured
+
+---
+
+### `GET /api/billing/subscription`
+
+Get the current subscription status for the authenticated user.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Response (200):**
+
+```json
+{
+  "tier": "pro",
+  "status": "active",
+  "current_period_end": "2025-02-01T00:00:00Z",
+  "stripe_subscription_id": "sub_..."
+}
+```
+
+**Default (no subscription):**
+
+```json
+{
+  "tier": "free",
+  "status": "active",
+  "current_period_end": null
+}
+```
+
+---
+
+## Audit Log (`/api/audit/*`)
+
+### `GET /api/audit`
+
+List audit log entries for the authenticated user (paginated). Supports filtering by action, resource type, and date range.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Query Parameters:**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `page` | number | 1 | Page number |
+| `limit` | number | 50 | Results per page |
+| `action` | string | - | Filter by action (e.g., `api_key.create`) |
+| `resource_type` | string | - | Filter by resource type |
+| `from` | string | - | Start date (ISO 8601) |
+| `to` | string | - | End date (ISO 8601) |
+
+**Response (200):**
+
+```json
+{
+  "entries": [ ... ],
+  "total": 150,
+  "page": 1,
+  "limit": 50
+}
+```
+
+---
+
+## Usage Metrics (`/api/usage/*`)
+
+### `GET /api/usage`
+
+Get current usage metrics for the authenticated user across all tracked dimensions, including tier-based limits.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Response (200):**
+
+```json
+{
+  "tier": "pro",
+  "period_start": "2025-01-01T00:00:00.000Z",
+  "metrics": {
+    "ai_queries": { "current": 42, "limit": 500 },
+    "repos_managed": { "current": 15, "limit": 100 }
+  }
+}
+```
+
+---
+
+## API Keys (`/api/api-keys/*`)
+
+### `GET /api/api-keys`
+
+List all API keys for the authenticated user. Key hashes are never returned; only the prefix is shown for identification.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Response (200):** Array of API key objects.
+
+```json
+[
+  {
+    "id": "uuid",
+    "name": "My CI Key",
+    "key_prefix": "ghrm_abc1",
+    "scopes": "[\"read\",\"write\"]",
+    "last_used_at": null,
+    "expires_at": null,
+    "created_at": "2025-01-01T00:00:00Z",
+    "revoked_at": null
+  }
+]
+```
+
+---
+
+### `POST /api/api-keys`
+
+Generate a new API key. The full key is returned only once in this response and cannot be retrieved later.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | Yes | Descriptive name for the key (1-100 chars) |
+| `scopes` | string[] | No | Permissions: `read`, `write`, `admin`, `ai` (default: `["read"]`) |
+| `expires_at` | string | No | Expiration date (ISO 8601 datetime) |
+
+**Response (201):**
+
+```json
+{
+  "id": "uuid",
+  "key": "ghrm_abc123...",
+  "name": "My CI Key",
+  "prefix": "ghrm_abc1",
+  "scopes": ["read", "write"],
+  "expires_at": null
+}
+```
+
+**Error Codes:**
+- `400` - Invalid input (name too short/long, invalid scopes)
+
+---
+
+### `DELETE /api/api-keys/:id`
+
+Revoke an API key. The key is soft-deleted (marked with `revoked_at` timestamp) and can no longer be used for authentication.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Response (200):**
+
+```json
+{
+  "success": true
+}
+```
+
+**Error Codes:**
+- `404` - Key not found or already revoked
+
+---
+
+## Stripe Webhooks (`/api/v1/webhooks/stripe`)
+
+### `POST /api/v1/webhooks/stripe`
+
+Receive and process Stripe webhook events for subscription lifecycle management. Authenticated via Stripe webhook signature, not session cookies. The request body must be raw (not JSON-parsed).
+
+| Detail | Value |
+|---|---|
+| Auth required | No (Stripe signature via `stripe-signature` header) |
+| Content-Type | `application/json` (raw body) |
+
+**Headers:**
+
+| Header | Required | Description |
+|---|---|---|
+| `stripe-signature` | Yes | Stripe webhook signature |
+
+**Handled Events:**
+
+| Event | Effect |
+|---|---|
+| `checkout.session.completed` | Activates subscription for the user |
+| `customer.subscription.updated` | Updates tier, status, and billing period |
+| `customer.subscription.deleted` | Downgrades user to free tier |
+| `invoice.payment_failed` | Marks subscription as `past_due` |
+| `invoice.paid` | Re-activates subscription after successful payment |
+
+**Response (200):**
+
+```json
+{
+  "received": true
+}
+```
+
+**Error Codes:**
+- `400` - Invalid signature
+- `503` - Stripe webhooks not configured
 
 ---
 

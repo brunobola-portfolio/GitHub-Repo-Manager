@@ -65,56 +65,6 @@
 			radial-gradient(ellipse 60% 40% at 100% 100%, rgba(168, 85, 247, 0.08), transparent);
 	}
 
-	/* Global Dark Mode Polish */
-	.dark .card-border {
-		@apply border border-white/10 shadow-xl shadow-black/20;
-	}
-
-	/* Glassmorphism Panel Base */
-	.glass-panel {
-		@apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-black/40 rounded-2xl;
-	}
-
-	/* Elegant Card Style */
-	.glass-card {
-		@apply bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/70 dark:border-slate-700/50 shadow-lg shadow-slate-200/30 dark:shadow-black/30 rounded-xl transition-all duration-200;
-	}
-
-	.glass-card:hover {
-		@apply shadow-xl shadow-slate-300/40 dark:shadow-black/50 border-slate-300/80 dark:border-slate-600/60 -translate-y-0.5;
-	}
-
-	/* Premium Card with Extra Blur */
-	.glass-card-premium {
-		@apply bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/60 shadow-xl;
-	}
-
-	/* Glass Button */
-	.glass-button {
-		@apply bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-2 border-slate-200/60 dark:border-slate-700/60 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300;
-	}
-
-	/* Glass Dropdown/Popover */
-	.glass-dropdown {
-		@apply bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-2 border-slate-200/60 dark:border-slate-700/60 shadow-2xl;
-	}
-
-	/* Hover Border Effects */
-	.glass-hover-border-indigo:hover {
-		@apply border-indigo-300/60 dark:border-indigo-500/40;
-	}
-
-	.glass-hover-border-pink:hover {
-		@apply border-pink-400/50 dark:border-pink-500/40;
-	}
-
-	.glass-hover-border-purple:hover {
-		@apply border-purple-400/50 dark:border-purple-500/40;
-	}
-
-	.glass-hover-border-emerald:hover {
-		@apply border-emerald-400/50 dark:border-emerald-500/40;
-	}
 }
 
 @layer utilities {

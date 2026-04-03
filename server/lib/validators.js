@@ -114,6 +114,7 @@ export const repoUpdateSchema = z.object({
     description: z.string().max(500).optional(),
     homepage: z.string().url().max(2000).optional().or(z.literal('')),
     private: z.boolean().optional(),
+    archived: z.boolean().optional(),
     has_issues: z.boolean().optional(),
     has_projects: z.boolean().optional(),
     has_wiki: z.boolean().optional(),

@@ -1,4 +1,4 @@
-import React, { memo } from 'react'
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'

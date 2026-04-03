@@ -50,11 +50,16 @@ Step-by-step implementation plans generated from approved specs.
 
 ## API
 
-- [API Reference](api/API.md) — Complete endpoint documentation (143 endpoints)
+- [API Reference](api/API.md) — Complete endpoint documentation (154 endpoints)
 
 ## Reports
 
-- [Validation Report](reports/VALIDATION-REPORT.md) — Code analysis and validation results
+- [Validation Report](reports/VALIDATION-REPORT.md) — Code analysis and validation results (Dec 2025, partially outdated)
+- [Mobile Validation Snapshot](reports/validation-mobile-snapshot.md) — Playwright accessibility tree snapshot
+
+## Articles
+
+- [Article](ARTICLE.md) — Project article/blog post
 
 ## Images
 

@@ -20,7 +20,7 @@ Entry point: `src/main.jsx`
 Root component: `src/App.jsx`
 
 - Wires together:
-  - **Header** (`HeaderNew`) for navigation, auth controls, and theme toggle.
+  - **Header** for navigation, auth controls, and theme toggle.
   - **Dashboard** for high-level stats.
   - **Sidebar** for actions and activity history.
   - **RepoList** for the main repository table.
@@ -45,15 +45,29 @@ State & data:
 Entry point: `server/index.js`
 
 - Loads configuration from environment variables (see `.env.example`).
-- Configures CORS, JSON parsing, and `express-session`.
+- Configures CORS, JSON parsing, `express-session` (backed by Redis when `REDIS_URL` is set), Helmet, and rate limiting.
 - Validates the presence of GitHub OAuth credentials at startup.
-- Exposes endpoints for:
-  - **Auth**: `/api/auth/login`, `/api/auth/callback`, `/api/auth/logout`, `/api/user`.
-  - **Repositories**: listing, creating, visibility changes, transfer, mirror, archive, delete.
-  - **Organizations**: list orgs, get org details, list org repos.
-  - **Azure Import**: Git repo imports, TFVC-to-Git conversion, batch imports, migration stats.
-  - **Migration Engine**: plan-based migrations with work items, wikis, and scheduling.
-  - **Stats**: aggregate repository statistics.
+- Uses a **modular route structure** with 18 route files under `server/routes/` (plus a `v1/` sub-router for versioned endpoints). Each domain area has its own route module:
+  - **Auth** (`routes/auth.js`): login, callback, logout, user session.
+  - **Repositories** (`routes/repos.js`): listing, creating, visibility, transfer, mirror, archive, delete.
+  - **Organizations** (`routes/orgs.js`): list orgs, get org details, list org repos.
+  - **Teams** (`routes/teams.js`): team CRUD, member management, repo assignments.
+  - **Azure Import** (`routes/azure.js`, `routes/import.js`): Git repo imports, TFVC-to-Git conversion, batch imports.
+  - **Migration** (`routes/migration.js`): plan-based migrations with work items, wikis, and scheduling.
+  - **Billing & Stripe** (`routes/billing.js`, `routes/stripe-webhooks.js`): subscription management and payment webhooks.
+  - **AI** (`routes/ai.js`): Gemini-powered analysis endpoints.
+  - **Stats, Audit, Usage, System** (`routes/stats.js`, `routes/audit.js`, `routes/usage.js`, `routes/system.js`): aggregate statistics, audit trails, usage metering, and health checks.
+  - **Bulk, Webhooks, API Keys, User** (`routes/bulk.js`, `routes/webhooks.js`, `routes/api-keys.js`, `routes/user.js`): bulk operations, webhook handling, API key management, and user profile.
+
+Key infrastructure:
+
+- **Redis** (`ioredis`): session storage (`connect-redis`), rate-limit counters (`rate-limit-redis`), and BullMQ job queue streams.
+- **BullMQ**: background job queue for long-running Git imports and migration plan execution.
+- **Stripe**: payment collection and subscription lifecycle via webhooks.
+- **Sentry** (`@sentry/node`): error tracking and performance monitoring, initialized before route registration.
+- **Pino**: structured JSON logging with request-level context via `pino-http`.
+
+The full modular route structure is documented in detail in `docs/architecture/backend.md`.
 
 ## Configuration
 
@@ -209,5 +223,7 @@ graph TB
     Azure --> ADO
     Import -->|"simple-git"| GH
 ```
+
+> **Note:** The Mermaid diagram above shows the high-level data flow. The full modular route structure (18 route files, middleware stack, and infrastructure wiring) is documented in [`docs/architecture/backend.md`](backend.md).
 
 This document is a high-level guide; see inline comments and the README for more details.

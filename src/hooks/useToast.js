@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 
 // Hook to manage toasts with auto-dismiss
 export function useToast() {
@@ -38,12 +38,12 @@ export function useToast() {
 		return id
 	}, [dismissToast])
 
-	const toast = {
+	const toast = useMemo(() => ({
 		success: (msg, dur) => addToast('success', msg, dur),
 		error: (msg, dur) => addToast('error', msg, dur),
 		info: (msg, dur) => addToast('info', msg, dur),
 		warning: (msg, dur) => addToast('warning', msg, dur)
-	}
+	}), [addToast])
 
 	return { toasts, toast, dismissToast }
 }
