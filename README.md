@@ -624,30 +624,30 @@ The next major release transforms GitHub Repo Manager from a local tool into an 
 #### Infrastructure & Architecture
 
 - [x] Docker & Docker Compose support (self-host in one command)
-- [ ] Database abstraction layer (SQLite for self-hosted, PostgreSQL for cloud)
-- [ ] Redis sessions & BullMQ job queues for horizontal scaling
-- [ ] Multi-tenancy with user-scoped data isolation
-- [ ] API versioning (`/api/v1/`)
+- [x] Database abstraction layer (SQLite for self-hosted, PostgreSQL for cloud)
+- [x] Redis sessions & BullMQ job queues for horizontal scaling
+- [x] Multi-tenancy with user-scoped data isolation
+- [x] API versioning (`/api/v1/`)
 
 #### Cloud Edition (SaaS)
 
-- [ ] Hosted version — sign in with GitHub, zero setup
-- [ ] Vercel (frontend) + Railway (backend) deployment
-- [ ] Sentry error tracking & enhanced monitoring
-- [ ] Automated CI/CD deployment pipeline
+- [x] Hosted version — sign in with GitHub, zero setup
+- [x] Vercel (frontend) + Railway (backend) deployment
+- [x] Sentry error tracking & enhanced monitoring
+- [x] Automated CI/CD deployment pipeline
 
 #### Security & Enterprise
 
-- [ ] API key authentication with scoped permissions
-- [ ] Comprehensive audit logging with searchable UI
-- [ ] Per-tenant rate limiting (tier-aware)
-- [ ] Subscription tiers (Free / Pro / Enterprise)
-- [ ] HSTS, CSP hardening, request ID tracing
+- [x] API key authentication with scoped permissions
+- [x] Comprehensive audit logging with searchable UI
+- [x] Per-tenant rate limiting (tier-aware)
+- [x] Subscription tiers (Free / Pro / Enterprise)
+- [x] HSTS, CSP hardening, request ID tracing
 
 #### Monetization
 
-- [ ] Stripe billing integration (checkout, portal, webhooks)
-- [ ] Usage metering (AI queries, repos, migrations)
+- [x] Stripe billing integration (checkout, portal, webhooks)
+- [x] Usage metering (AI queries, repos, migrations)
 - [ ] Pricing page with feature comparison
 - [ ] Billing & usage dashboard in Settings
 
