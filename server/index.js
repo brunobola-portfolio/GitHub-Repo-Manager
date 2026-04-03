@@ -94,6 +94,10 @@ app.use(cors({
     origin: config.nodeEnv === 'production' ? config.frontendUrl : true,
     credentials: true,
 }));
+// Stripe webhooks need raw body (must be before express.json())
+import { stripeWebhookHandler } from './routes/stripe-webhooks.js';
+app.post('/api/v1/webhooks/stripe', express.raw({ type: 'application/json' }), stripeWebhookHandler);
+
 app.use(express.json({ limit: '10kb' }));
 app.use(requestLoggerMiddleware);
 

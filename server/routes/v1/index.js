@@ -20,6 +20,8 @@ import userRoutes from '../user.js';
 import bulkRoutes from '../bulk.js';
 import auditRoutes from '../audit.js';
 import apiKeysRoutes from '../api-keys.js';
+import billingRoutes from '../billing.js';
+import usageRoutes from '../usage.js';
 
 const router = Router();
 
@@ -39,6 +41,8 @@ router.use('/', userRoutes);
 router.use('/', bulkRoutes);
 router.use('/audit', auditRoutes);
 router.use('/api-keys', apiKeysRoutes);
+router.use('/billing', billingRoutes);
+router.use('/usage', usageRoutes);
 
 // ------------------------------------------------------------------
 // Team-specific inline routes
