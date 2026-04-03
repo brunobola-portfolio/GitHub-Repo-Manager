@@ -1,10 +1,10 @@
 -- 001-initial-schema.sql
 --
--- Source-of-truth schema for the GitHub Repo Manager database.
+-- SOURCE-OF-TRUTH schema for the GitHub Repo Manager database.
+-- This file is kept in sync with server/db.js initDB().
 -- Written in SQLite-compatible SQL.
 --
--- A separate PostgreSQL equivalent (001-initial-schema.pg.sql) will be
--- provided when PostgreSQL support is fully enabled.  Key differences:
+-- PostgreSQL differences (for future reference):
 --   - INTEGER PRIMARY KEY AUTOINCREMENT  →  SERIAL PRIMARY KEY
 --   - TEXT DEFAULT CURRENT_TIMESTAMP     →  TIMESTAMPTZ DEFAULT NOW()
 --   - datetime('now')                    →  NOW()
@@ -73,22 +73,28 @@ CREATE TABLE IF NOT EXISTS system_meta (
 
 -- =====================================================================
 -- AI Metadata (repo summarization cache)
+-- Composite PK on (user_id, repo_id) for multi-tenancy.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS repo_metadata (
-    repo_id INTEGER PRIMARY KEY,
+    repo_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL DEFAULT 0,
     summary TEXT,
     topics TEXT, -- JSON array
     health_score INTEGER,
-    last_indexed TEXT
+    last_indexed TEXT,
+    PRIMARY KEY (user_id, repo_id)
 );
 
 -- =====================================================================
 -- Vector Embeddings
+-- Composite PK on (user_id, repo_id) for multi-tenancy.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS repo_embeddings (
-    repo_id INTEGER PRIMARY KEY,
+    repo_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL DEFAULT 0,
     embedding TEXT NOT NULL, -- JSON string of float array
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, repo_id)
 );
 
 -- =====================================================================
@@ -98,6 +104,7 @@ CREATE TABLE IF NOT EXISTS workflow_runs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     github_run_id INTEGER UNIQUE NOT NULL,
     repo_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL DEFAULT 0,
     workflow_id INTEGER NOT NULL,
     workflow_name TEXT NOT NULL,
     run_number INTEGER NOT NULL,
@@ -121,6 +128,7 @@ CREATE TABLE IF NOT EXISTS workflow_runs (
 CREATE TABLE IF NOT EXISTS workflows_meta (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     repo_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL DEFAULT 0,
     github_workflow_id INTEGER UNIQUE NOT NULL,
     name TEXT NOT NULL,
     path TEXT,
@@ -133,20 +141,21 @@ CREATE TABLE IF NOT EXISTS workflows_meta (
     last_success_at TEXT,
     last_failure_at TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (repo_id) REFERENCES repo_metadata(repo_id)
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =====================================================================
 -- Community Health Cache
+-- Composite PK on (user_id, repo_id) for multi-tenancy.
 -- =====================================================================
 CREATE TABLE IF NOT EXISTS community_health_cache (
-    repo_id INTEGER PRIMARY KEY,
+    repo_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL DEFAULT 0,
     health_score INTEGER NOT NULL,
     metrics TEXT NOT NULL,
     recommendations TEXT NOT NULL,
     analyzed_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (repo_id) REFERENCES repo_metadata(repo_id)
+    PRIMARY KEY (user_id, repo_id)
 );
 
 -- =====================================================================
@@ -231,11 +240,73 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 
 -- =====================================================================
+-- Audit Log v2 (enhanced with IP, user-agent, and API key tracking)
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS audit_log_v2 (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    resource_type TEXT NOT NULL,
+    resource_id TEXT,
+    details TEXT,
+    ip_address TEXT,
+    user_agent TEXT,
+    api_key_id TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- =====================================================================
+-- API Keys (programmatic access)
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS api_keys (
+    id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    key_hash TEXT NOT NULL UNIQUE,
+    key_prefix TEXT NOT NULL,
+    scopes TEXT NOT NULL DEFAULT '["read"]',
+    last_used_at TEXT,
+    expires_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    revoked_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- =====================================================================
+-- User Subscriptions (tier management)
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS user_subscriptions (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id),
+    tier TEXT NOT NULL DEFAULT 'free',
+    stripe_customer_id TEXT,
+    stripe_subscription_id TEXT,
+    current_period_start TEXT,
+    current_period_end TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- =====================================================================
+-- Usage Metrics (billing metering)
+-- =====================================================================
+CREATE TABLE IF NOT EXISTS usage_metrics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    metric_type TEXT NOT NULL,
+    count INTEGER NOT NULL DEFAULT 0,
+    period_start TEXT NOT NULL,
+    period_end TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- =====================================================================
 -- Indexes
 -- =====================================================================
 
 -- Workflow runs
 CREATE INDEX IF NOT EXISTS idx_workflow_runs_repo ON workflow_runs(repo_id);
+CREATE INDEX IF NOT EXISTS idx_workflow_runs_user ON workflow_runs(user_id);
 CREATE INDEX IF NOT EXISTS idx_workflow_runs_status ON workflow_runs(status);
 CREATE INDEX IF NOT EXISTS idx_workflow_runs_conclusion ON workflow_runs(conclusion);
 CREATE INDEX IF NOT EXISTS idx_workflow_runs_date ON workflow_runs(started_at);
@@ -244,11 +315,19 @@ CREATE INDEX IF NOT EXISTS idx_workflow_runs_repo_created ON workflow_runs(repo_
 
 -- Workflows meta
 CREATE INDEX IF NOT EXISTS idx_workflows_meta_repo ON workflows_meta(repo_id);
+CREATE INDEX IF NOT EXISTS idx_workflows_meta_user ON workflows_meta(user_id);
 CREATE INDEX IF NOT EXISTS idx_workflows_meta_state ON workflows_meta(state);
 
 -- Community health
 CREATE INDEX IF NOT EXISTS idx_community_health_score ON community_health_cache(health_score DESC);
+CREATE INDEX IF NOT EXISTS idx_community_health_user ON community_health_cache(user_id);
 CREATE INDEX IF NOT EXISTS idx_community_health_repo ON community_health_cache(repo_id);
+
+-- Repo metadata / embeddings
+CREATE INDEX IF NOT EXISTS idx_repo_metadata_user ON repo_metadata(user_id);
+CREATE INDEX IF NOT EXISTS idx_repo_metadata_repo ON repo_metadata(repo_id);
+CREATE INDEX IF NOT EXISTS idx_repo_embeddings_user ON repo_embeddings(user_id);
+CREATE INDEX IF NOT EXISTS idx_repo_embeddings_repo ON repo_embeddings(repo_id);
 
 -- Migration jobs
 CREATE INDEX IF NOT EXISTS idx_mig_user ON migration_jobs(user_id);
@@ -263,6 +342,22 @@ CREATE INDEX IF NOT EXISTS idx_plan_scheduled ON migration_plans(scheduled_at) W
 CREATE INDEX IF NOT EXISTS idx_task_plan ON migration_tasks(plan_id);
 CREATE INDEX IF NOT EXISTS idx_task_status ON migration_tasks(status);
 
+-- Audit log
+CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id);
+
+-- Audit log v2
+CREATE INDEX IF NOT EXISTS idx_audit_v2_user ON audit_log_v2(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_v2_action ON audit_log_v2(action);
+CREATE INDEX IF NOT EXISTS idx_audit_v2_resource ON audit_log_v2(resource_type, resource_id);
+CREATE INDEX IF NOT EXISTS idx_audit_v2_created ON audit_log_v2(created_at);
+
+-- API keys
+CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id);
+CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash);
+
+-- Usage metrics
+CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_unique ON usage_metrics(user_id, metric_type, period_start);
+
 -- Team members
 CREATE INDEX IF NOT EXISTS idx_members_user ON team_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_team_members_team ON team_members(team_id);
@@ -272,10 +367,3 @@ CREATE INDEX IF NOT EXISTS idx_team_members_user_team ON team_members(user_id, t
 -- Repo assignments
 CREATE INDEX IF NOT EXISTS idx_repos_team ON repo_assignments(team_id);
 CREATE INDEX IF NOT EXISTS idx_repo_assignments_repo ON repo_assignments(repo_id);
-
--- Metadata / embeddings
-CREATE INDEX IF NOT EXISTS idx_repo_metadata_repo ON repo_metadata(repo_id);
-CREATE INDEX IF NOT EXISTS idx_repo_embeddings_repo ON repo_embeddings(repo_id);
-
--- Audit log
-CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id);
