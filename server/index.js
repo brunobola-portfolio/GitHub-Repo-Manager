@@ -84,14 +84,15 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "https://github.com", "https://avatars.githubusercontent.com", "https://*.githubusercontent.com"],
-            connectSrc: ["'self'"],
+            connectSrc: ["'self'", config.frontendUrl],
         }
     } : false,
-    crossOriginEmbedderPolicy: false // Allow embedded resources
+    crossOriginEmbedderPolicy: false,
+    hsts: config.nodeEnv === 'production' ? { maxAge: 63072000, includeSubDomains: true, preload: true } : false,
 }));
 app.use(cors({
-    origin: config.frontendUrl,
-    credentials: true
+    origin: config.nodeEnv === 'production' ? config.frontendUrl : true,
+    credentials: true,
 }));
 app.use(express.json({ limit: '10kb' }));
 app.use(requestLoggerMiddleware);
@@ -154,6 +155,10 @@ if (config.redisUrl) {
 }
 
 app.use(session(sessionConfig));
+
+// Attach user tier after session (for rate limiting and feature gating)
+import { attachTier } from './middleware/require-tier.js';
+app.use('/api/', attachTier);
 
 // ------------------------------------------------------------------
 // Health check (used by useOnlineStatus for connectivity detection)
