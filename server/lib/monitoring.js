@@ -30,5 +30,5 @@ export function getSentryErrorHandler() {
     if (Sentry?.expressErrorHandler) {
         return Sentry.expressErrorHandler();
     }
-    return (_err, _req, _res, next) => next();
+    return (err, _req, _res, next) => next(err);
 }
