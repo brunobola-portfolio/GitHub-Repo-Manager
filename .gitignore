@@ -80,3 +80,6 @@ dashboard-improved.md
 
 # Temporary files
 nul
+
+# License signing keys (NEVER commit the private key)
+keys/private.pem
