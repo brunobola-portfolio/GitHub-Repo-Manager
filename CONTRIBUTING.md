@@ -7,7 +7,7 @@ Thank you for your interest in contributing to GitHub Repo Manager! This documen
 This project uses a dual-license model:
 
 - **AGPL v3** for the open-source community
-- **Commercial license** for organizations (see [LICENSE-COMMERCIAL.md](LICENSE-COMMERCIAL.md))
+- **Commercial license** for organizations (see [LICENSE-COMMERCIAL.md](docs/LICENSE-COMMERCIAL.md))
 
 Before your first contribution can be merged, you must sign our [CLA](CLA.md) by
 commenting "I have read the CLA and I agree" on your pull request. This is a one-time

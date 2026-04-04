@@ -67,7 +67,9 @@ const cardVariants = {
   }),
 }
 
-export function PricingPreview() {
+const SALES_EMAIL = 'bruno@bolalabs.pt'
+
+export function PricingPreview({ onSignIn }) {
   return (
     <section className="relative py-20 sm:py-28 px-4 overflow-hidden">
 
@@ -103,7 +105,7 @@ export function PricingPreview() {
         </motion.div>
 
         {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start pt-5">
           {plans.map((plan, i) => (
             <motion.div
               key={plan.name}
@@ -181,6 +183,13 @@ export function PricingPreview() {
 
               {/* CTA */}
               <button
+                onClick={() => {
+                  if (plan.enterprise) {
+                    window.open(`mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Enterprise inquiry')}`, '_self')
+                  } else if (onSignIn) {
+                    onSignIn()
+                  }
+                }}
                 className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ds-btn-shimmer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
                   ${plan.popular
                     ? 'bg-white text-indigo-700 hover:bg-indigo-50 shadow-lg shadow-white/20 hover:shadow-xl focus-visible:ring-white focus-visible:ring-offset-indigo-600'

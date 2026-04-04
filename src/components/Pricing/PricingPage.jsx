@@ -143,7 +143,19 @@ function FaqItem({ q, a, index }) {
 }
 
 /* ─── Main page ─── */
-export function PricingPage({ onGetStarted, onTalkToSales } = {}) {
+const SALES_EMAIL = 'bruno@bolalabs.pt'
+
+function handleTierAction(tier, onGetStarted) {
+  if (tier === 'Enterprise') {
+    window.open(`mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Enterprise inquiry')}&body=${encodeURIComponent('Hi Bruno,\n\nI\'m interested in the Enterprise plan for GitHub Repo Manager.\n\nOrganization: \nTeam size: \nUse case: \n\nThanks!')}`, '_self')
+    return
+  }
+  if (onGetStarted) {
+    onGetStarted(tier === 'Pro' ? 'pro' : 'free')
+  }
+}
+
+export function PricingPage({ onGetStarted } = {}) {
   const [isYearly, setIsYearly] = useState(false)
 
   const tiers = TIERS_MONTHLY.map(t => applyYearly(t, isYearly))
@@ -289,16 +301,14 @@ export function PricingPage({ onGetStarted, onTalkToSales } = {}) {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mb-20 sm:mb-28 items-stretch"
+          className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mb-20 sm:mb-28 items-stretch pt-5"
         >
           {tiers.map((tier) => (
             <PricingCard
               key={tier.tier}
               {...tier}
               period={isYearly ? 'year' : 'month'}
-              ctaAction={() => {
-                // TODO: wire to checkout
-              }}
+              ctaAction={() => handleTierAction(tier.tier, onGetStarted)}
             />
           ))}
         </motion.div>
@@ -370,7 +380,7 @@ export function PricingPage({ onGetStarted, onTalkToSales } = {}) {
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
-                  onClick={onGetStarted}
+                  onClick={() => onGetStarted && onGetStarted('free')}
                   className="group px-8 py-3.5 rounded-xl font-bold text-sm text-white
                     bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-[length:200%_100%]
                     hover:bg-right shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/50
@@ -382,7 +392,7 @@ export function PricingPage({ onGetStarted, onTalkToSales } = {}) {
                   </span>
                 </button>
                 <button
-                  onClick={onTalkToSales}
+                  onClick={() => handleTierAction('Enterprise', onGetStarted)}
                   className="px-8 py-3.5 rounded-xl font-semibold text-sm text-slate-200
                     border border-white/15 hover:border-white/30
                     hover:bg-white/[0.07] active:scale-[0.97]

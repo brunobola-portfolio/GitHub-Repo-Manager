@@ -18,7 +18,7 @@ function LandingFooter() {
         <p className="text-sm text-slate-400 dark:text-slate-500 ds-font-display">
           Built by{' '}
           <a
-            href="https://linkedin.com/in/brunomsilvamarques"
+            href="https://www.linkedin.com/in/bolalabs/"
             target="_blank"
             rel="noopener noreferrer"
             className="text-slate-600 dark:text-slate-300 font-medium hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200"
@@ -58,7 +58,7 @@ function LandingFooter() {
           </a>
           <span className="text-slate-200 dark:text-slate-700">·</span>
           <a
-            href="https://bolalabs.pt/license"
+            href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/LICENSE"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200 ds-font-display"
@@ -135,7 +135,7 @@ export function LandingPage({ onSignIn }) {
           <div className="h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-white/[0.06] to-transparent" />
         </div>
 
-        <PricingPreview />
+        <PricingPreview onSignIn={onSignIn} />
 
         <div className="max-w-6xl mx-auto px-4">
           <div className="h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-white/[0.06] to-transparent" />

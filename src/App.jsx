@@ -521,7 +521,7 @@ function AppContent() {
           <div className="animate-in fade-in duration-500">
             <ErrorBoundary>
               <Suspense fallback={<LoadingFallback />}>
-                <PricingPage />
+                <PricingPage onGetStarted={() => setActiveView('dashboard')} />
               </Suspense>
             </ErrorBoundary>
           </div>
