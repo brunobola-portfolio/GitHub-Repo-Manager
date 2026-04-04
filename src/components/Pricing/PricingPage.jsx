@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ArrowRight, Sparkles, GitBranch, Shield, Cpu } from 'lucide-react'
 import { PricingCard } from './PricingCard'
 import { FeatureComparison } from './FeatureComparison'
+import { API_BASE_URL } from '../../config'
 
 /* ─── Tier definitions ─── */
 const TIERS_MONTHLY = [
@@ -145,18 +146,46 @@ function FaqItem({ q, a, index }) {
 /* ─── Main page ─── */
 const SALES_EMAIL = 'bruno@bolalabs.pt'
 
-function handleTierAction(tier, onGetStarted) {
-  if (tier === 'Enterprise') {
-    window.open(`mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Enterprise inquiry')}&body=${encodeURIComponent('Hi Bruno,\n\nI\'m interested in the Enterprise plan for GitHub Repo Manager.\n\nOrganization: \nTeam size: \nUse case: \n\nThanks!')}`, '_self')
-    return
-  }
-  if (onGetStarted) {
-    onGetStarted(tier === 'Pro' ? 'pro' : 'free')
-  }
-}
-
 export function PricingPage({ onGetStarted } = {}) {
   const [isYearly, setIsYearly] = useState(false)
+  const [checkoutLoading, setCheckoutLoading] = useState(null)
+
+  const handleCheckout = useCallback(async (tier) => {
+    setCheckoutLoading(tier)
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/billing/checkout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else if (res.status === 503) {
+        // Stripe not configured — fall back to dashboard
+        if (onGetStarted) onGetStarted(tier)
+      }
+    } catch {
+      // Billing not available — fall back
+      if (onGetStarted) onGetStarted(tier)
+    } finally {
+      setCheckoutLoading(null)
+    }
+  }, [onGetStarted])
+
+  const handleTierAction = useCallback((tier) => {
+    if (tier === 'Enterprise') {
+      window.location.href = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Enterprise inquiry')}&body=${encodeURIComponent('Hi Bruno,\n\nI\'m interested in the Enterprise plan for GitHub Repo Manager.\n\nOrganization: \nTeam size: \nUse case: \n\nThanks!')}`
+      return
+    }
+    if (tier === 'Pro') {
+      handleCheckout('pro')
+      return
+    }
+    // Free tier — go to dashboard
+    if (onGetStarted) onGetStarted('free')
+  }, [handleCheckout, onGetStarted])
 
   const tiers = TIERS_MONTHLY.map(t => applyYearly(t, isYearly))
 
@@ -308,7 +337,8 @@ export function PricingPage({ onGetStarted } = {}) {
               key={tier.tier}
               {...tier}
               period={isYearly ? 'year' : 'month'}
-              ctaAction={() => handleTierAction(tier.tier, onGetStarted)}
+              ctaText={checkoutLoading === tier.tier.toLowerCase() ? 'Redirecting...' : tier.ctaText}
+              ctaAction={() => handleTierAction(tier.tier)}
             />
           ))}
         </motion.div>
@@ -380,7 +410,7 @@ export function PricingPage({ onGetStarted } = {}) {
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
-                  onClick={() => onGetStarted && onGetStarted('free')}
+                  onClick={() => handleTierAction('Free')}
                   className="group px-8 py-3.5 rounded-xl font-bold text-sm text-white
                     bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-[length:200%_100%]
                     hover:bg-right shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/50
@@ -392,7 +422,7 @@ export function PricingPage({ onGetStarted } = {}) {
                   </span>
                 </button>
                 <button
-                  onClick={() => handleTierAction('Enterprise', onGetStarted)}
+                  onClick={() => handleTierAction('Enterprise')}
                   className="px-8 py-3.5 rounded-xl font-semibold text-sm text-slate-200
                     border border-white/15 hover:border-white/30
                     hover:bg-white/[0.07] active:scale-[0.97]
