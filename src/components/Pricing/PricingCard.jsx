@@ -1,19 +1,6 @@
 import { motion } from 'framer-motion'
 import { Check, X, Zap, Crown } from 'lucide-react'
 
-/**
- * PricingCard
- * Props:
- *   tier           – tier name (string, e.g. "Free")
- *   price          – displayed price as number (0 for free)
- *   originalPrice  – monthly price before discount (shows strike-through when differs)
- *   period         – "month" | "year"
- *   features       – array of { label, included } where included is bool/string/number
- *   highlighted    – bool — show gradient border + "Popular" badge (Pro)
- *   enterprise     – bool — show premium gold styling (Enterprise)
- *   ctaText        – string for the CTA button
- *   ctaAction      – function to call on CTA click
- */
 export function PricingCard({
   tier,
   price,
@@ -42,7 +29,6 @@ export function PricingCard({
           >
             <div className="absolute inset-0 rounded-2xl bg-slate-900" />
           </div>
-          {/* Glow effect */}
           <div
             className="absolute -inset-1 rounded-3xl opacity-40 blur-xl pointer-events-none"
             style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4)' }}
@@ -60,10 +46,9 @@ export function PricingCard({
         </div>
       )}
 
-      {/* Card body */}
-      {/* Badge rendered OUTSIDE card body to avoid overflow clipping */}
+      {/* Badge — absolute on the outer wrapper (no overflow-hidden here) */}
       {highlighted && (
-        <div className="flex justify-center mb-[-14px] relative z-10">
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20">
           <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 shadow-lg shadow-indigo-500/30">
             <Zap className="w-3 h-3" />
             Most Popular
@@ -72,7 +57,7 @@ export function PricingCard({
       )}
 
       {enterprise && (
-        <div className="flex justify-center mb-[-14px] relative z-10">
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20">
           <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 shadow-lg shadow-amber-500/30">
             <Crown className="w-3 h-3" />
             Enterprise
@@ -80,6 +65,7 @@ export function PricingCard({
         </div>
       )}
 
+      {/* Card body */}
       <div
         className={`relative flex flex-col h-full rounded-2xl p-7 ds-card-shimmer
           ${highlighted
@@ -89,7 +75,6 @@ export function PricingCard({
               : 'bg-white/60 dark:bg-white/[0.04] backdrop-blur-xl border border-slate-200/60 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.15] transition-colors duration-300'
           }`}
       >
-
         {/* Tier name */}
         <div className="mb-5 pt-2">
           <span
