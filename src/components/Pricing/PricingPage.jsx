@@ -190,7 +190,7 @@ export function PricingPage({ onGetStarted } = {}) {
   const tiers = TIERS_MONTHLY.map(t => applyYearly(t, isYearly))
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative min-h-screen overflow-x-hidden">
 
       {/* Background orbs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">

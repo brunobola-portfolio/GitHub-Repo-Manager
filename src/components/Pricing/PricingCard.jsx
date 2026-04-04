@@ -31,7 +31,7 @@ export function PricingCard({
     <motion.div
       whileHover={{ scale: highlighted ? 1.03 : 1.02, y: -4 }}
       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className={`relative flex flex-col h-full ${highlighted || enterprise ? 'mt-4' : ''}`}
+      className="relative flex flex-col h-full"
     >
       {/* Gradient border wrapper for highlighted (Pro) card */}
       {highlighted && (
@@ -61,6 +61,25 @@ export function PricingCard({
       )}
 
       {/* Card body */}
+      {/* Badge rendered OUTSIDE card body to avoid overflow clipping */}
+      {highlighted && (
+        <div className="flex justify-center mb-[-14px] relative z-10">
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 shadow-lg shadow-indigo-500/30">
+            <Zap className="w-3 h-3" />
+            Most Popular
+          </span>
+        </div>
+      )}
+
+      {enterprise && (
+        <div className="flex justify-center mb-[-14px] relative z-10">
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 shadow-lg shadow-amber-500/30">
+            <Crown className="w-3 h-3" />
+            Enterprise
+          </span>
+        </div>
+      )}
+
       <div
         className={`relative flex flex-col h-full rounded-2xl p-7 ds-card-shimmer
           ${highlighted
@@ -70,25 +89,6 @@ export function PricingCard({
               : 'bg-white/60 dark:bg-white/[0.04] backdrop-blur-xl border border-slate-200/60 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.15] transition-colors duration-300'
           }`}
       >
-        {/* Popular badge (Pro) */}
-        {highlighted && (
-          <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 shadow-lg shadow-indigo-500/30">
-              <Zap className="w-3 h-3" />
-              Most Popular
-            </span>
-          </div>
-        )}
-
-        {/* Enterprise badge */}
-        {enterprise && (
-          <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 shadow-lg shadow-amber-500/30">
-              <Crown className="w-3 h-3" />
-              Enterprise
-            </span>
-          </div>
-        )}
 
         {/* Tier name */}
         <div className="mb-5 pt-2">

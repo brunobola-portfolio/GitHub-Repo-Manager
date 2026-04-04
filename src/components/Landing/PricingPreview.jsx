@@ -114,18 +114,11 @@ export function PricingPreview({ onSignIn }) {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: '-60px' }}
-              className={`relative rounded-2xl p-7 flex flex-col gap-6 ds-hover-lift transition-all duration-300
-                ${plan.popular || plan.enterprise ? 'mt-4' : ''}
-                ${plan.popular
-                  ? 'bg-gradient-to-b from-indigo-600/90 to-purple-700/90 dark:from-indigo-600/80 dark:to-purple-700/80 border-2 border-indigo-400/30 shadow-2xl shadow-indigo-500/30 scale-[1.03] md:scale-[1.05]'
-                  : plan.enterprise
-                    ? 'bg-white/60 dark:bg-white/[0.04] border border-amber-400/30 dark:border-amber-500/20 backdrop-blur-sm shadow-lg shadow-amber-500/5'
-                    : 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm'
-                }`}
+              className="flex flex-col"
             >
-              {/* Popular badge */}
+              {/* Badge rendered OUTSIDE card to avoid overflow clipping */}
               {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <div className="flex justify-center mb-[-14px] relative z-10">
                   <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 shadow-lg shadow-indigo-500/30">
                     <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
                     <span className="text-xs font-bold text-white tracking-wide">Most Popular</span>
@@ -133,15 +126,23 @@ export function PricingPreview({ onSignIn }) {
                 </div>
               )}
 
-              {/* Enterprise badge */}
               {plan.enterprise && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <div className="flex justify-center mb-[-14px] relative z-10">
                   <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 shadow-lg shadow-amber-500/30">
                     <Crown className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
                     <span className="text-xs font-bold text-white tracking-wide">Enterprise</span>
                   </div>
                 </div>
               )}
+
+              <div className={`relative rounded-2xl p-7 flex flex-col gap-6 flex-1 ds-hover-lift transition-all duration-300
+                ${plan.popular
+                  ? 'bg-gradient-to-b from-indigo-600/90 to-purple-700/90 dark:from-indigo-600/80 dark:to-purple-700/80 border-2 border-indigo-400/30 shadow-2xl shadow-indigo-500/30 scale-[1.03] md:scale-[1.05]'
+                  : plan.enterprise
+                    ? 'bg-white/60 dark:bg-white/[0.04] border border-amber-400/30 dark:border-amber-500/20 backdrop-blur-sm shadow-lg shadow-amber-500/5'
+                    : 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm'
+                }`}
+              >
 
               {/* Plan header */}
               <div>
@@ -201,6 +202,7 @@ export function PricingPreview({ onSignIn }) {
               >
                 {plan.cta}
               </button>
+              </div>
             </motion.div>
           ))}
         </div>
