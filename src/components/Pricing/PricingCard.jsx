@@ -31,7 +31,7 @@ export function PricingCard({
     <motion.div
       whileHover={{ scale: highlighted ? 1.03 : 1.02, y: -4 }}
       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className="relative flex flex-col h-full"
+      className={`relative flex flex-col h-full ${highlighted || enterprise ? 'mt-4' : ''}`}
     >
       {/* Gradient border wrapper for highlighted (Pro) card */}
       {highlighted && (

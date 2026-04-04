@@ -115,6 +115,7 @@ export function PricingPreview({ onSignIn }) {
               whileInView="visible"
               viewport={{ once: true, margin: '-60px' }}
               className={`relative rounded-2xl p-7 flex flex-col gap-6 ds-hover-lift transition-all duration-300
+                ${plan.popular || plan.enterprise ? 'mt-4' : ''}
                 ${plan.popular
                   ? 'bg-gradient-to-b from-indigo-600/90 to-purple-700/90 dark:from-indigo-600/80 dark:to-purple-700/80 border-2 border-indigo-400/30 shadow-2xl shadow-indigo-500/30 scale-[1.03] md:scale-[1.05]'
                   : plan.enterprise
