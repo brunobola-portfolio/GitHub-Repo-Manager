@@ -347,44 +347,11 @@ VITE_MOCK_MODE=true
 
 ## Architecture
 
-```mermaid
-graph TB
-    subgraph Frontend["Frontend — React 19 + Vite 7"]
-        UI["Components<br/><small>Dashboard · RepoList · Wizard · AI Chat</small>"]
-        Hooks["Hooks<br/><small>useGitHub · useTheme · useRepoDetail</small>"]
-        API_Utils["API Utilities<br/><small>Mock/Real mode · Error handling</small>"]
-    end
+<div align="center">
 
-    subgraph Backend["Backend — Express 5 + Node 20"]
-        Security["Security Layer<br/><small>Helmet · Rate Limit · Zod · SSRF Protection</small>"]
-        Routes["API Routes<br/><small>156+ endpoints · Auth · Repos · Teams · Orgs</small>"]
-        AI_Service["AI Service<br/><small>Gemini 2.5 Flash �� Embeddings · Fallbacks</small>"]
-        DB["Database<br/><small>SQLite WAL · better-sqlite3 · Redis sessions</small>"]
-        Migration["Migration Engine<br/><small>Planner · Import · Git Ops · Scheduler</small>"]
-        GH_Client["GitHub Client<br/><small>ETag Cache · Rate Limit Tracking · Batching</small>"]
-    end
+![Architecture](docs/images/architecture.svg)
 
-    subgraph External["External Services"]
-        GitHub["GitHub API<br/><small>REST v2022-11-28</small>"]
-        Gemini["Google Gemini AI<br/><small>Analysis · Search · Generation</small>"]
-        Azure["Azure DevOps API<br/><small>v7.1 — Git + TFVC + Boards</small>"]
-    end
-
-    Frontend -->|"Vite Proxy / API calls"| Security
-    Security --> Routes
-    Routes --> AI_Service
-    Routes --> DB
-    Routes --> Migration
-    Routes --> GH_Client
-    GH_Client --> GitHub
-    AI_Service --> Gemini
-    Migration --> Azure
-    Migration --> GitHub
-
-    style Frontend fill:#1e293b,stroke:#3b82f6,color:#e2e8f0
-    style Backend fill:#1e293b,stroke:#10b981,color:#e2e8f0
-    style External fill:#1e293b,stroke:#8b5cf6,color:#e2e8f0
-```
+</div>
 
 For detailed architecture documentation, see [`docs/architecture/overview.md`](docs/architecture/overview.md).
 
@@ -436,16 +403,11 @@ Real examples of what the AI can do for your repositories:
 
 ### How It Works
 
-```mermaid
-graph LR
-    A["Your Request"] --> B{"AI Available?"}
-    B -->|"Gemini API key set"| C["Google Gemini 2.5 Flash"]
-    B -->|"No key configured"| D["Programmatic Analysis"]
-    C --> E["Result"]
-    D --> E
-    style C fill:#8b5cf6,stroke:#7c3aed,color:#fff
-    style D fill:#3b82f6,stroke:#2563eb,color:#fff
-```
+<div align="center">
+
+![AI Flow](docs/images/ai-flow.svg)
+
+</div>
 
 - **With Gemini API key**: Full AI-powered analysis, semantic search with vector embeddings, natural language chat
 - **Without API key**: Algorithmic fallbacks for quality scoring, pattern detection, and smart suggestions — the app works perfectly either way
