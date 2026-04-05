@@ -599,8 +599,6 @@ A: No. Source repos are never modified. Use dry-run mode to test first.
 - [x] Self-hosted and cloud deployment options
 - [x] Error tracking and monitoring
 - [x] AGPL v3 open-core licensing with commercial option
-- [ ] Pricing page with feature comparison
-- [ ] Billing and usage dashboard
 
 ### Future (v3.x+)
 
