@@ -46,7 +46,6 @@ server/data/
 *.njsproj
 *.sln
 *.sw?
-.roo/
 
 # Claude Code and MCP — personal tooling, not part of the project
 .claude/

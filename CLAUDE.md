@@ -45,20 +45,10 @@
 - `docs/images/` — Screenshots (`0X_description_hd.png`, Playwright MCP at 1920x1080)
 - When creating specs or plans, ALWAYS use `docs/specs/` or `docs/plans/` — never create custom subdirectories
 
-## Dev Files
-- `.dev/claude/memory/` — Claude persistent memory for this project (committed)
-- `.dev/claude/plans/` — Implementation plans generated during development (committed)
-- `.claude/settings.json` — Claude Code project settings (committed)
-- `.claude/settings.local.json` — Local overrides (gitignored)
+## Local Dev Files (gitignored)
 
-## Workspace Organisation
-
-### Folder `.dev/` (local working dirs are gitignored)
-
-- **Screenshots/design refs**: ALWAYS in `.dev/screenshots/[page]/`
-- **Technical documentation drafts**: ALWAYS in `.dev/docs/[topic]/`
-- **Local plan copies**: ALWAYS in `.dev/plans/`
-- **Validation checklists**: ALWAYS in `.dev/checklists/`
+- `.dev/` — Local workspace (screenshots, drafts, checklists, plans)
+- `.claude/` — Claude Code settings (local only)
 
 ### File rules
 
