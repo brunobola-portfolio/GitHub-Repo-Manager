@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-04-05
+
+### Added
+
+- **AGPL Open-Core Licensing**: Transitioned from MIT to AGPL v3 with commercial dual-license
+  - Ed25519 JWT license key generation and validation
+  - License info and validation API endpoints
+  - License keys table and `LICENSE_KEY` config
+  - Tier middleware resolves from Stripe subscription or license key
+  - License info display in billing section for self-hosted instances
+  - CLA bot workflow and updated contributing guide
+- **SaaS Architecture Foundation**: Multi-phase platform transformation
+  - Phase 1: SaaS architecture foundation (multi-tenancy, user_id scoping)
+  - Phase 2: Cloud deployment and infrastructure (Vercel, Railway, Docker, Redis)
+  - Phase 3: Auth, security, and enterprise features (API keys, SSO prep, audit logs)
+  - Phase 4: Monetization and billing (Stripe checkout, portal, webhooks, usage metering)
+  - Phase 5: Marketing and GTM (landing page, pricing page)
+- **Pricing Page**: Redesigned layout with tier alignment and monetization strategy
+  - Pro checkout wired to Stripe billing API
+  - Stripe setup guide documentation
+
+### Changed
+
+- **License**: MIT → AGPL v3 with commercial license option (CLA required for contributions)
+- **Landing Page**: Updated URLs and branding
+
+### Fixed
+
+- Sign-in unblocked by scoping migration tier gate
+- IPv6 rate-limit validation and wrong landing page URLs
+- Critical security review findings resolved
+- All lint errors and test failures resolved
+- Pricing badge alignment and overflow clipping
+- Broken license link in plan documentation
+
+### Security
+
+- Security review: critical findings resolved (credential handling, input validation)
+- Dangerous auto-allow del permission removed from Claude settings
+
 ## [2.5.0] - 2026-03-31
 
 ### Added
@@ -267,7 +307,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.5.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.5.0...v3.0.0
 [2.5.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.3.0...v2.3.1

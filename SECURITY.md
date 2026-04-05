@@ -4,6 +4,7 @@
 
 | Version | Supported          |
 |---------|--------------------|
+| 3.x     | :white_check_mark: |
 | 2.x     | :white_check_mark: |
 | < 2.0   | :x:                |
 
@@ -13,7 +14,7 @@ If you discover a security vulnerability in GitHub Repo Manager, please report i
 
 **Do NOT open a public GitHub Issue for security vulnerabilities.**
 
-Instead, please email **security@bolalabs.com** with:
+Instead, please email **bruno@bolalabs.pt** with:
 
 1. A description of the vulnerability
 2. Steps to reproduce the issue
