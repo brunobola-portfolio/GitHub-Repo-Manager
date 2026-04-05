@@ -62,7 +62,7 @@ Managing a growing GitHub ecosystem is hard. Between dozens of repositories, mul
 - [Configuration](#configuration)
 - [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
-- [Built with AI](#built-with-ai)
+- [AI Workflow Examples](#ai-workflow-examples)
 - [Screenshots Gallery](#screenshots-gallery)
 - [Troubleshooting](#troubleshooting)
 - [FAQ](#faq)
@@ -347,42 +347,43 @@ VITE_MOCK_MODE=true
 
 ## Architecture
 
-```
-+---------------------------------------------------------------+
-|                   Frontend (React 19 + Vite 7)                 |
-|  +-------------+  +-----------+  +--------------------------+  |
-|  | Components  |  |   Hooks   |  |     API Utilities        |  |
-|  | (UI Layer)  |  | (useGitHub|  |  (src/api/, utils/)      |  |
-|  |             |  |  useTheme) |  |  Mock/Real mode switch   |  |
-|  +-------------+  +-----------+  +--------------------------+  |
-+---------------------------------------------------------------+
-                            |
-                   Vite Dev Proxy / Build
-                            |
-+---------------------------------------------------------------+
-|                  Backend (Express 5 + Node 20)                 |
-|  +----------------------------------------------------------+  |
-|  |  Security: Helmet | Rate Limit | Zod Validation | SSRF   |  |
-|  +----------------------------------------------------------+  |
-|  +-------------+  +-----------+  +--------------------------+  |
-|  |   Routes    |  | AI Service|  |   Database (SQLite WAL)  |  |
-|  | 156+ endpts |  | (Gemini)  |  |   better-sqlite3         |  |
-|  +-------------+  +-----------+  +--------------------------+  |
-|  +----------------------------------------------------------+  |
-|  |  Migration Engine | Planner | Import Service | Git Ops   |  |
-|  +----------------------------------------------------------+  |
-|  +----------------------------------------------------------+  |
-|  |  GitHub API: ETag Cache | Rate Limit Tracking | Batching |  |
-|  +----------------------------------------------------------+  |
-+---------------------------------------------------------------+
-                            |
-+---------------------------------------------------------------+
-|                     External Services                          |
-|  +-------------+  +-----------+  +--------------------------+  |
-|  |  GitHub API |  | Gemini AI |  |   Azure DevOps API       |  |
-|  | v2022-11-28 |  | 2.5 Flash |  |   v7.1 (Git + TFVC)      |  |
-|  +-------------+  +-----------+  +--------------------------+  |
-+---------------------------------------------------------------+
+```mermaid
+graph TB
+    subgraph Frontend["Frontend — React 19 + Vite 7"]
+        UI["Components<br/><small>Dashboard · RepoList · Wizard · AI Chat</small>"]
+        Hooks["Hooks<br/><small>useGitHub · useTheme · useRepoDetail</small>"]
+        API_Utils["API Utilities<br/><small>Mock/Real mode · Error handling</small>"]
+    end
+
+    subgraph Backend["Backend — Express 5 + Node 20"]
+        Security["Security Layer<br/><small>Helmet · Rate Limit · Zod · SSRF Protection</small>"]
+        Routes["API Routes<br/><small>156+ endpoints · Auth · Repos · Teams · Orgs</small>"]
+        AI_Service["AI Service<br/><small>Gemini 2.5 Flash �� Embeddings · Fallbacks</small>"]
+        DB["Database<br/><small>SQLite WAL · better-sqlite3 · Redis sessions</small>"]
+        Migration["Migration Engine<br/><small>Planner · Import · Git Ops · Scheduler</small>"]
+        GH_Client["GitHub Client<br/><small>ETag Cache · Rate Limit Tracking · Batching</small>"]
+    end
+
+    subgraph External["External Services"]
+        GitHub["GitHub API<br/><small>REST v2022-11-28</small>"]
+        Gemini["Google Gemini AI<br/><small>Analysis · Search · Generation</small>"]
+        Azure["Azure DevOps API<br/><small>v7.1 — Git + TFVC + Boards</small>"]
+    end
+
+    Frontend -->|"Vite Proxy / API calls"| Security
+    Security --> Routes
+    Routes --> AI_Service
+    Routes --> DB
+    Routes --> Migration
+    Routes --> GH_Client
+    GH_Client --> GitHub
+    AI_Service --> Gemini
+    Migration --> Azure
+    Migration --> GitHub
+
+    style Frontend fill:#1e293b,stroke:#3b82f6,color:#e2e8f0
+    style Backend fill:#1e293b,stroke:#10b981,color:#e2e8f0
+    style External fill:#1e293b,stroke:#8b5cf6,color:#e2e8f0
 ```
 
 For detailed architecture documentation, see [`docs/architecture/overview.md`](docs/architecture/overview.md).
@@ -418,31 +419,38 @@ For detailed architecture documentation, see [`docs/architecture/overview.md`](d
 
 ---
 
-## Built with AI
+## AI Workflow Examples
 
-This project demonstrates the power of **AI-assisted software development** at every level:
+Real examples of what the AI can do for your repositories:
 
-### AI in the Application
-- **10+ AI features** powered by Google Gemini (analysis, search, generation, migration planning)
-- **Semantic search** with vector embeddings stored in SQLite
-- **Quality scoring** that combines algorithmic analysis with AI insights
-- **Graceful degradation** — every AI feature has a programmatic fallback
+| Task | How | What You Get |
+|------|-----|--------------|
+| **Find repos without CI** | Type "repos without CI/CD" in search | Filtered list with setup recommendations |
+| **Generate documentation** | Click "Generate README" on any repo | Professional README based on project structure |
+| **Assess migration risk** | AI Review step in migration wizard | Risk report with severity levels and mitigation plan |
+| **Check repo quality** | Click "Analyze" on any repository | Score 0-100 across docs, community, engineering, polish |
+| **Find similar projects** | Search "repos like my-api-service" | Embedding-based similarity results across all your repos |
+| **Write commit messages** | Open commit generator with a diff | Conventional commit message matching your changes |
+| **Improve discoverability** | Click "Suggest Topics" on a repo | AI-generated tags based on project content |
+| **Enhance existing docs** | Click "Enhance README" | Missing sections added intelligently to your existing README |
 
-### AI in Development
-- **Claude Code** (Anthropic's Claude AI) was used extensively throughout development
-- Architecture decisions, code generation, testing, and documentation — all AI-assisted
-- Specs and implementation plans in `docs/specs/` and `docs/plans/` were co-created with AI
-- This README itself was crafted with AI assistance
+### How It Works
 
-### The AI Stack
+```mermaid
+graph LR
+    A["Your Request"] --> B{"AI Available?"}
+    B -->|"Gemini API key set"| C["Google Gemini 2.5 Flash"]
+    B -->|"No key configured"| D["Programmatic Analysis"]
+    C --> E["Result"]
+    D --> E
+    style C fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style D fill:#3b82f6,stroke:#2563eb,color:#fff
 ```
-Development:   Claude Code (Anthropic) — architecture, code, tests, docs
-Application:   Google Gemini 2.5 Flash — analysis, search, generation
-Embeddings:    gemini-embedding-001 — semantic similarity & search
-Fallbacks:     Programmatic analysis — works without any AI API key
-```
 
-> **The result**: A production-quality full-stack application with 156+ API endpoints, 404+ tests, enterprise-grade security, and a polished glassmorphism UI — built faster and better with AI.
+- **With Gemini API key**: Full AI-powered analysis, semantic search with vector embeddings, natural language chat
+- **Without API key**: Algorithmic fallbacks for quality scoring, pattern detection, and smart suggestions — the app works perfectly either way
+
+> **Free tier available**: Google Gemini offers 250 requests/day at no cost. [Get your API key](https://aistudio.google.com/apikey)
 
 ---
 
@@ -619,45 +627,18 @@ A: No. Source repos are never modified. Use dry-run mode to test first.
 
 ### v3.0 — Platform Edition (In Progress)
 
-The next major release transforms GitHub Repo Manager from a local tool into an **open-core platform** with a hosted cloud edition.
-
-#### Infrastructure & Architecture
-
 - [x] Docker & Docker Compose support (self-host in one command)
-- [x] Database abstraction layer (SQLite for self-hosted, PostgreSQL for cloud)
-- [x] Redis sessions & BullMQ job queues for horizontal scaling
-- [x] Multi-tenancy with user-scoped data isolation
+- [x] Database abstraction (SQLite + PostgreSQL)
+- [x] Redis sessions & job queues for horizontal scaling
+- [x] Multi-tenancy with data isolation
 - [x] API versioning (`/api/v1/`)
-
-#### Cloud Edition (SaaS)
-
-- [x] Hosted version — sign in with GitHub, zero setup
-- [x] Vercel (frontend) + Railway (backend) deployment
-- [x] Sentry error tracking & enhanced monitoring
-- [x] Automated CI/CD deployment pipeline
-
-#### Security & Enterprise
-
 - [x] API key authentication with scoped permissions
-- [x] Comprehensive audit logging with searchable UI
-- [x] Per-tenant rate limiting (tier-aware)
-- [x] Subscription tiers (Free / Pro / Enterprise)
-- [x] HSTS, CSP hardening, request ID tracing
-
-#### Monetization
-
-- [x] Stripe billing integration (checkout, portal, webhooks)
-- [x] Usage metering (AI queries, repos, migrations)
+- [x] Audit logging with searchable API
+- [x] Self-hosted and cloud deployment options
+- [x] Error tracking and monitoring
+- [x] AGPL v3 open-core licensing with commercial option
 - [ ] Pricing page with feature comparison
-- [ ] Billing & usage dashboard in Settings
-
-#### Go-to-Market
-
-- [ ] Public landing page with feature showcase
-- [ ] GitHub Marketplace listing
-- [ ] Product Hunt & Hacker News launches
-
-> See the full [Platform Transformation Spec](docs/specs/2026-04-01-platform-transformation-spec.md) and [implementation plans](docs/plans/) for details.
+- [ ] Billing and usage dashboard
 
 ### Future (v3.x+)
 
