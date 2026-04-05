@@ -5,12 +5,16 @@
 - Stripe account at [dashboard.stripe.com](https://dashboard.stripe.com)
 - Products already created (see below)
 
-## Products (already created)
+## Products
 
-| Product | Stripe Product ID | Monthly Price |
-|---------|-------------------|---------------|
-| **Pro** | `prod_YOUR_PRO_PRODUCT_ID` | $19/month |
-| **Enterprise** | `prod_YOUR_ENTERPRISE_PRODUCT_ID` | $49/month |
+Create two products in Stripe Dashboard > Product catalog:
+
+| Product | Monthly Price |
+|---------|---------------|
+| **Pro** | $19/month |
+| **Enterprise** | $49/month |
+
+Copy each product's **Product ID** (starts with `prod_...`) — you'll need them for reference.
 
 ## Step 1: Get Price IDs
 

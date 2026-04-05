@@ -8,7 +8,7 @@ const configSchema = z.object({
     port: z.coerce.number().default(3001),
 
     // Session
-    sessionSecret: z.string().default('CHANGE_THIS_SECRET'),
+    sessionSecret: z.string().min(16, 'SESSION_SECRET must be at least 16 characters — generate with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'),
 
     // GitHub OAuth (optional - app runs in mock mode without these)
     githubClientId: z.string().optional(),
