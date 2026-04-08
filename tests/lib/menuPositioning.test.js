@@ -103,5 +103,49 @@ describe('calculateMenuPosition', () => {
       expect(pos.left).toBe(800)
       expect(pos.submenuDirection).toBe('left')
     })
+
+    it('submenu parent-left: opens to the left when there is room', () => {
+      const pos = calculateMenuPosition({
+        clickX: 500, clickY: 200,
+        menuWidth: 180, menuHeight: 120,
+        viewport, margin,
+        isSubmenu: true,
+        parentDirection: 'left',
+      })
+      expect(pos.left).toBe(500 - 180)
+      expect(pos.submenuDirection).toBe('left')
+    })
+
+    it('submenu parent-left: flips right when left does not fit', () => {
+      const pos = calculateMenuPosition({
+        clickX: 50, clickY: 200,
+        menuWidth: 180, menuHeight: 120,
+        viewport, margin,
+        isSubmenu: true,
+        parentDirection: 'left',
+        parentWidth: 200,
+      })
+      // 50 - 180 = -130 < margin, must flip right
+      // flipped position = 50 + 200 = 250
+      expect(pos.left).toBe(250)
+      expect(pos.submenuDirection).toBe('right')
+    })
+
+    it('submenu clamps when flip-right overflows viewport', () => {
+      // Small clickX but viewport is narrow — flip-right with parentWidth pushes menu off-screen
+      const narrowViewport = { width: 300, height: 800 }
+      const pos = calculateMenuPosition({
+        clickX: 10, clickY: 200,
+        menuWidth: 180, menuHeight: 120,
+        viewport: narrowViewport,
+        margin,
+        isSubmenu: true,
+        parentDirection: 'left',
+        parentWidth: 200,
+      })
+      // Preferred left = 10 - 180 = -170 (doesn't fit) → flip right = 10 + 200 = 210
+      // But 210 + 180 = 390 > 300 - 8 = 292, so final clamp pulls left to 300 - 180 - 8 = 112
+      expect(pos.left).toBe(112)
+    })
   })
 })

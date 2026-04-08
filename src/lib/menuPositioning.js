@@ -82,7 +82,15 @@ export function calculateMenuPosition({
 		}
 	}
 
-	// Final safety clamps in case caller gives out-of-range input.
+	// Final safety clamps: fix right/bottom overflow first, then left/top.
+	// Order matters — for a menu larger than the viewport, left/top clamps
+	// win so at least the top-left corner remains visible.
+	if (left + menuWidth > viewport.width - margin) {
+		left = viewport.width - menuWidth - margin
+	}
+	if (top + menuHeight > viewport.height - margin) {
+		top = viewport.height - menuHeight - margin
+	}
 	if (left < margin) left = margin
 	if (top < margin) top = margin
 
