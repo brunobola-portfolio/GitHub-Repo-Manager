@@ -56,14 +56,16 @@ test.describe('Context Menu — scroll-free and flip behavior', () => {
 	})
 
 	test('batch menu shows no scrollbar with multiple repos selected', async ({ page }) => {
-		const checkboxes = page.locator('[data-testid="repo-card-checkbox"]')
-		const count = await checkboxes.count()
+		const cards = page.locator('[data-testid="repo-card"]')
+		const count = await cards.count()
 		if (count < 2) test.skip()
-		await checkboxes.nth(0).click()
-		await checkboxes.nth(1).click()
 
-		const card = page.locator('[data-testid="repo-card"]').first()
-		await card.click({ button: 'right' })
+		// Click two cards to select them (clicking the whole card toggles selection).
+		await cards.nth(0).click()
+		await cards.nth(1).click()
+
+		// Right-click one of the selected cards to open the batch context menu.
+		await cards.nth(0).click({ button: 'right' })
 		const menu = page.getByRole('menu').first()
 		await expect(menu).toBeVisible()
 
