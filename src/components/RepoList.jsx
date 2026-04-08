@@ -565,6 +565,7 @@ const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, isContextT
 		<motion.div
 			tabIndex={0}
 			role="button"
+			data-testid="repo-card"
 			aria-label={`${repo.name}${repo.private ? ' (private)' : ' (public)'}${isSelected ? ', selected' : ''}`}
 			onClick={onToggle}
 			onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
