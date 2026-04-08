@@ -103,6 +103,7 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 			icon: Archive,
 			onClick: () => onAction('archive_selected', selectedRepos)
 		},
+		{ type: 'separator' },
 		{
 			label: 'Migration',
 			icon: Rocket,
