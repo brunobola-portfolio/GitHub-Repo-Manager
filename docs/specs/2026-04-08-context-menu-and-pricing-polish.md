@@ -100,9 +100,18 @@ Every pricing card, across both landing preview and `/pricing` page, should resp
 
 ### 3.3 Scope
 
-- Extend [PricingCard.jsx](../../src/components/Pricing/PricingCard.jsx) to host the new hover system.
-- Add a `variant="full" | "preview"` prop to support the landing preview (more compact: fewer features shown, smaller padding, same hover mechanics).
-- Refactor [PricingPreview.jsx](../../src/components/Landing/PricingPreview.jsx) to consume `PricingCard` with `variant="preview"` instead of having its own inlined markup. Consistency across both surfaces is a design requirement (see brainstorm decision — choice C).
+The two pricing surfaces have deliberately different visual designs — `PricingPage.jsx` uses a subtle slate/gradient-border look, while `PricingPreview.jsx` uses a vibrant full-color gradient Pro card for marketing impact. Rather than unifying the visuals (which would erase that intentional difference), the hover *system* is extracted into a reusable hook and applied to both surfaces independently.
+
+- Create a new shared hook `src/hooks/usePricingCardHover.js` that returns:
+  - `cardRef` — ref to attach to the card root.
+  - Event handlers (`onMouseMove`, `onMouseEnter`, `onMouseLeave`).
+  - State flags (`isHovered`, `hoverKey`).
+  - A helper `renderHoverLayers(config)` or set of layer components that both pages can drop into their cards.
+  - Tier awareness through a `tier: 'free' | 'pro' | 'enterprise'` argument.
+  - Reduced-motion detection built-in (returns a `reducedMotion` flag so layers can be conditionally rendered).
+- Extend [PricingCard.jsx](../../src/components/Pricing/PricingCard.jsx) to consume the hook and render the layers inside its card body, keeping its existing visual identity.
+- Extend [PricingPreview.jsx](../../src/components/Landing/PricingPreview.jsx) to consume the **same** hook and render the **same** layers in each card, keeping its existing vibrant identity.
+- The hook is the single source of truth for the hover behavior — both surfaces stay in sync behaviorally while diverging visually.
 
 ### 3.4 Tier accent tokens
 
@@ -239,8 +248,9 @@ The layers are conditionally rendered (or simply given `display: none` via a cla
 
 - [src/components/ui/ContextMenu.jsx](../../src/components/ui/ContextMenu.jsx) — remove scroll constraint, add measure-then-position logic, apply polish classes.
 - [src/components/RepoContextMenu.jsx](../../src/components/RepoContextMenu.jsx) — add group separator elements between Archive / (Migration + Management) / Delete in batch mode.
-- [src/components/Pricing/PricingCard.jsx](../../src/components/Pricing/PricingCard.jsx) — add `TIER_ACCENTS`, hover layers, `variant` prop, magnetic button, reduced-motion guard.
-- [src/components/Landing/PricingPreview.jsx](../../src/components/Landing/PricingPreview.jsx) — refactor to consume `PricingCard` with `variant="preview"`.
+- `src/hooks/usePricingCardHover.js` — new, shared hook exporting state, handlers, and layer components.
+- [src/components/Pricing/PricingCard.jsx](../../src/components/Pricing/PricingCard.jsx) — consume `usePricingCardHover`, render hover layers, tint hover shadow per tier, make CTA button magnetic.
+- [src/components/Landing/PricingPreview.jsx](../../src/components/Landing/PricingPreview.jsx) — consume `usePricingCardHover`, render hover layers inside each mapped card, magnetic CTA, keep existing vibrant visual identity.
 - `tests/components/ui/ContextMenu.test.jsx` — new, unit tests for position calculation.
 - `tests/components/Pricing/PricingCard.test.jsx` — new, unit tests for accents, variant, reduced motion.
 - `e2e/context-menu-no-scroll.spec.js` — new, E2E scroll-free assertion.
@@ -268,6 +278,6 @@ No backend, no database, no API changes.
 3. Context menu visually matches native OS menu conventions (shadow, blur, border, separators, padding).
 4. Pricing cards respond to hover with the six-layer system as specified, with per-tier intensity differences.
 5. All hover effects gracefully degrade under `prefers-reduced-motion: reduce`.
-6. `PricingPreview` and `/pricing` page render the same `PricingCard` component, ensuring consistency.
+6. `PricingPreview` and `/pricing` page share the **same** hover behavior via `usePricingCardHover`, while keeping their distinct visual identities intact.
 7. All new unit and E2E tests pass.
 8. No regression in existing context menu call sites or pricing routes.

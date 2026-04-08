@@ -42,6 +42,7 @@ Step-by-step implementation plans generated from approved specs.
 - [Migration Wizard Redesign](plans/2026-03-25-migration-wizard-redesign.md) — Smart URL paste, credentials panel, auto-validation, visual refresh
 - [Wizard Fullscreen Panel](plans/2026-03-25-wizard-fullscreen-panel.md) — Fullscreen panel container with sidebar stepper and dirty-state safety
 - [Configure Step Redesign](plans/2026-03-26-configure-step-redesign.md) — Dashboard header + compact card-rows for Configure Repositories step
+- [Context Menu + Pricing Polish](plans/2026-04-08-context-menu-and-pricing-polish.md) — Scroll-free context menu fix + dazzle hover system for pricing cards
 
 ## Architecture
 
