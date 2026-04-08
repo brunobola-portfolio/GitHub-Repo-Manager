@@ -15,8 +15,8 @@ export function PricingCard({
 }) {
   const showStrike = originalPrice != null && originalPrice !== price && price > 0
 
-  const tier2 = highlighted ? 'pro' : enterprise ? 'enterprise' : 'free'
-  const hover = usePricingCardHover({ tier: tier2 })
+  const pricingTier = highlighted ? 'pro' : enterprise ? 'enterprise' : 'free'
+  const hover = usePricingCardHover({ tier: pricingTier })
   const accent = hover.accent
   const rawX = useMotionValue(0)
   const rawY = useMotionValue(0)
@@ -103,7 +103,7 @@ export function PricingCard({
           }`}
       >
         <PricingCardHoverLayers
-          tier={tier2}
+          tier={pricingTier}
           isHovered={hover.isHovered}
           hoverKey={hover.hoverKey}
           reducedMotion={hover.reducedMotion}
