@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight } from 'lucide-react'
+import { calculateMenuPosition } from '@/lib/menuPositioning'
 
 /**
  * ContextMenu - Reusable cascading context menu with keyboard navigation
@@ -40,40 +41,30 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 		.map((item, i) => (item.type !== 'separator' && item.type !== 'header') ? i : -1)
 		.filter(i => i !== -1)
 
-	// Viewport clamping
-	useEffect(() => {
+	// Flip-first positioning: measure menu, then compute final placement.
+	useLayoutEffect(() => {
 		if (!menuRef.current) return
 		const rect = menuRef.current.getBoundingClientRect()
-		const margin = 8
-		let newTop = y
-		let newLeft = x
+		const parentWidth = isSubmenu
+			? (menuRef.current.parentElement?.getBoundingClientRect().width || 0)
+			: 0
 
-		// Clamp vertically
-		if (newTop + rect.height > window.innerHeight - margin) {
-			newTop = Math.max(margin, window.innerHeight - rect.height - margin)
-		}
-		if (newTop < margin) newTop = margin
+		const result = calculateMenuPosition({
+			clickX: x,
+			clickY: y,
+			menuWidth: rect.width,
+			menuHeight: rect.height,
+			viewport: { width: window.innerWidth, height: window.innerHeight },
+			margin: 8,
+			isSubmenu,
+			parentDirection,
+			parentWidth,
+		})
 
-		// Clamp horizontally (flip submenu if needed)
-		if (isSubmenu) {
-			if (parentDirection === 'right' && newLeft + rect.width > window.innerWidth - margin) {
-				// Flip to left
-				newLeft = x - rect.width - (menuRef.current.parentElement?.getBoundingClientRect().width || 0)
-				Promise.resolve().then(() => setSubmenuDirection('left'))
-			} else if (parentDirection === 'left' && newLeft < margin) {
-				newLeft = x + rect.width
-				Promise.resolve().then(() => setSubmenuDirection('right'))
-			} else {
-				Promise.resolve().then(() => setSubmenuDirection(parentDirection))
-			}
-		} else {
-			if (newLeft + rect.width > window.innerWidth - margin) {
-				newLeft = Math.max(margin, window.innerWidth - rect.width - margin)
-			}
-		}
-
-		if (newLeft < margin) newLeft = margin
-		Promise.resolve().then(() => setPosition({ top: newTop, left: newLeft }))
+		Promise.resolve().then(() => {
+			setPosition({ top: result.top, left: result.left })
+			if (isSubmenu) setSubmenuDirection(result.submenuDirection)
+		})
 	}, [x, y, isSubmenu, parentDirection])
 
 	// Handle hover with delay for submenus
@@ -270,7 +261,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 				animate={{ opacity: 1, scale: 1 }}
 				exit={{ opacity: 0, scale: 0.95 }}
 				transition={{ duration: 0.12, ease: 'easeOut' }}
-				className="fixed z-[100] min-w-[200px] max-w-[280px] max-h-[calc(100vh-16px)] overflow-y-auto py-1.5 rounded-xl border border-slate-200/70 dark:border-slate-700/60 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl shadow-2xl shadow-slate-900/20 dark:shadow-black/50 outline-none"
+				className="fixed z-[100] min-w-[200px] max-w-[280px] overflow-visible p-1 rounded-xl border border-black/5 dark:border-white/10 bg-white/85 dark:bg-neutral-900/85 backdrop-blur-xl outline-none shadow-[0_20px_40px_-12px_rgba(0,0,0,0.25),0_2px_6px_-2px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.55),0_2px_6px_-2px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.06)]"
 				style={{ top: position.top, left: position.left }}
 				onClick={(e) => e.stopPropagation()}
 			>
@@ -279,7 +270,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 						return (
 							<div
 								key={`sep-${index}`}
-								className="my-1.5 mx-2 border-t border-slate-200/80 dark:border-slate-700/60"
+								className="my-1 h-px bg-black/[0.06] dark:bg-white/[0.08]"
 								role="separator"
 							/>
 						)
@@ -289,7 +280,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 						return (
 							<div
 								key={`hdr-${index}`}
-								className="px-3 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none"
+								className="text-[10.5px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-[0.08em] px-2.5 pt-1.5 pb-1 select-none"
 								role="presentation"
 							>
 								{item.label}
@@ -311,17 +302,17 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 							tabIndex={-1}
 							title={item.disabled ? item.tooltip : undefined}
 							className={`
-								mx-1.5 px-2.5 py-1.5 rounded-lg flex items-center gap-2.5 text-sm select-none transition-colors duration-75
+								px-2.5 py-1.5 rounded-lg flex items-center gap-2.5 text-sm select-none transition-colors duration-75
 								${item.disabled
 									? 'opacity-40 cursor-not-allowed'
 									: 'cursor-pointer'
 								}
 								${item.danger && !item.disabled
 									? isHovered
-										? 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+										? 'bg-red-500/10 dark:bg-red-500/15 text-red-600 dark:text-red-400'
 										: 'text-red-600 dark:text-red-400'
 									: isHovered && !item.disabled
-										? 'bg-slate-100 dark:bg-slate-700/70 text-slate-900 dark:text-white'
+										? 'bg-black/[0.06] dark:bg-white/[0.08] text-slate-900 dark:text-white'
 										: 'text-slate-700 dark:text-slate-300'
 								}
 							`}
