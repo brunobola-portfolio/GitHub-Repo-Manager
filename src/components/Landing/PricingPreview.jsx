@@ -1,5 +1,6 @@
-import { motion } from 'framer-motion'
+import { motion, useMotionValue, useSpring } from 'framer-motion'
 import { Check, Zap, Crown } from 'lucide-react'
+import { usePricingCardHover, PricingCardHoverLayers } from '@/hooks/usePricingCardHover'
 
 const plans = [
   {
@@ -69,6 +70,160 @@ const cardVariants = {
 
 const SALES_EMAIL = 'bruno@bolalabs.pt'
 
+function PreviewCard({ plan, i, onSignIn }) {
+	const tier = plan.popular ? 'pro' : plan.enterprise ? 'enterprise' : 'free'
+	const hover = usePricingCardHover({ tier })
+	const rawX = useMotionValue(0)
+	const rawY = useMotionValue(0)
+	const springX = useSpring(rawX, { stiffness: 150, damping: 15 })
+	const springY = useSpring(rawY, { stiffness: 150, damping: 15 })
+
+	return (
+		<motion.div
+			ref={hover.cardRef}
+			custom={i}
+			variants={cardVariants}
+			initial="hidden"
+			whileInView="visible"
+			viewport={{ once: true, margin: '-60px' }}
+			onMouseEnter={hover.handlers.onMouseEnter}
+			onMouseLeave={() => {
+				hover.handlers.onMouseLeave()
+				rawX.set(0)
+				rawY.set(0)
+			}}
+			onMouseMove={(e) => {
+				hover.handlers.onMouseMove(e)
+				if (hover.reducedMotion || !hover.accent.hasMagneticButton) return
+				const rect = hover.cardRef.current?.getBoundingClientRect()
+				if (!rect) return
+				const dx = (e.clientX - (rect.left + rect.width / 2)) / rect.width
+				const dy = (e.clientY - (rect.top + rect.height / 2)) / rect.height
+				rawX.set(dx * 6)
+				rawY.set(dy * 6)
+			}}
+			className={`relative rounded-2xl p-7 flex flex-col gap-6 ds-hover-lift transition-all duration-300 overflow-hidden
+				${plan.popular
+					? 'bg-gradient-to-b from-indigo-600/90 to-purple-700/90 dark:from-indigo-600/80 dark:to-purple-700/80 border-2 border-indigo-400/30 shadow-2xl shadow-indigo-500/30 scale-[1.03] md:scale-[1.05] hover:shadow-violet-500/40'
+					: plan.enterprise
+						? 'bg-white/60 dark:bg-white/[0.04] border border-amber-400/30 dark:border-amber-500/20 backdrop-blur-sm shadow-lg shadow-amber-500/5 hover:shadow-amber-500/30'
+						: 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm hover:shadow-indigo-500/20 hover:shadow-xl'
+				}`}
+			style={{ '--mx': '50%', '--my': '50%' }}
+		>
+			<PricingCardHoverLayers
+				tier={tier}
+				isHovered={hover.isHovered}
+				hoverKey={hover.hoverKey}
+				reducedMotion={hover.reducedMotion}
+			/>
+
+			{/* All existing content wrapped in a relative z-[1] container so it sits above the layers */}
+			<div className="relative z-[1] flex flex-col gap-6 h-full">
+				{/* Badge — absolute on outer wrapper (overflow-visible by default) */}
+				{plan.popular && (
+					<div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+						<div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 shadow-lg shadow-indigo-500/30">
+							<Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+							<span className="text-xs font-bold text-white tracking-wide">Most Popular</span>
+						</div>
+					</div>
+				)}
+
+				{plan.enterprise && (
+					<div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+						<div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 shadow-lg shadow-amber-500/30">
+							<Crown className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+							<span className="text-xs font-bold text-white tracking-wide">Enterprise</span>
+						</div>
+					</div>
+				)}
+
+				{/* Plan header */}
+				<div>
+					<p className={`text-sm font-semibold mb-1 ds-font-display ${plan.popular ? 'text-indigo-200' : plan.enterprise ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
+						{plan.name}
+					</p>
+					<div className="flex items-end gap-2 mb-2">
+						<span
+							className={`text-4xl font-extrabold tracking-tight ds-font-display transition-[background-image] duration-500 ${plan.popular ? 'text-white' : 'text-slate-900 dark:text-white'}`}
+							style={hover.isHovered && !hover.reducedMotion ? {
+								backgroundImage: `linear-gradient(135deg, ${hover.accent.primary}, ${hover.accent.secondary})`,
+								backgroundClip: 'text',
+								WebkitBackgroundClip: 'text',
+								WebkitTextFillColor: 'transparent',
+							} : undefined}
+						>
+							{plan.price}
+						</span>
+						<span className={`text-sm pb-1.5 ds-font-display ${plan.popular ? 'text-indigo-200/80' : 'text-slate-400'}`}>
+							/{plan.period}
+						</span>
+					</div>
+					<p className={`text-sm leading-relaxed ds-font-display ${plan.popular ? 'text-indigo-100/90' : 'text-slate-500 dark:text-slate-400'}`}>
+						{plan.description}
+					</p>
+				</div>
+
+				{/* Feature list — with stagger pop animation on hover (Layer 5) */}
+				<motion.ul
+					className="flex flex-col gap-3 flex-1"
+					animate={hover.isHovered && !hover.reducedMotion ? 'hover' : 'rest'}
+					variants={{
+						hover: { transition: { staggerChildren: 0.03 } },
+						rest: {},
+					}}
+				>
+					{plan.features.map((feat) => (
+						<li key={feat} className="flex items-start gap-2.5">
+							<motion.div
+								variants={{
+									hover: { scale: [1, 1.15, 1], transition: { duration: 0.3 } },
+									rest: { scale: 1 },
+								}}
+								className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0
+									${plan.popular
+										? 'bg-white/20'
+										: plan.enterprise
+											? 'bg-amber-500/10 dark:bg-amber-500/20'
+											: 'bg-indigo-500/10 dark:bg-indigo-500/20'
+									}`}
+							>
+								<Check className={`w-3 h-3 ${plan.popular ? 'text-white' : plan.enterprise ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400'}`} strokeWidth={2.5} />
+							</motion.div>
+							<span className={`text-sm ds-font-display ${plan.popular ? 'text-indigo-50' : 'text-slate-600 dark:text-slate-300'}`}>
+								{feat}
+							</span>
+						</li>
+					))}
+				</motion.ul>
+
+				{/* CTA — magnetic wrapper for popular/enterprise */}
+				<motion.div style={hover.accent.hasMagneticButton ? { x: springX, y: springY } : undefined}>
+					<button
+						onClick={() => {
+							if (plan.enterprise) {
+								window.open(`mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Enterprise inquiry')}`, '_self')
+							} else if (onSignIn) {
+								onSignIn()
+							}
+						}}
+						className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ds-btn-shimmer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+							${plan.popular
+								? 'bg-white text-indigo-700 hover:bg-indigo-50 shadow-lg shadow-white/20 hover:shadow-xl focus-visible:ring-white focus-visible:ring-offset-indigo-600'
+								: plan.enterprise
+									? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 dark:hover:bg-amber-500/25 border border-amber-400/40 dark:border-amber-500/30 focus-visible:ring-amber-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950'
+									: 'bg-indigo-500/10 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20 dark:hover:bg-indigo-500/25 border border-indigo-300/40 dark:border-indigo-500/30 focus-visible:ring-indigo-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950'
+							}`}
+					>
+						{plan.cta}
+					</button>
+				</motion.div>
+			</div>
+		</motion.div>
+	)
+}
+
 export function PricingPreview({ onSignIn }) {
   return (
     <section className="relative py-20 sm:py-28 px-4 overflow-hidden">
@@ -106,101 +261,9 @@ export function PricingPreview({ onSignIn }) {
 
         {/* Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start pt-5">
-          {plans.map((plan, i) => (
-            <motion.div
-              key={plan.name}
-              custom={i}
-              variants={cardVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: '-60px' }}
-              className={`relative rounded-2xl p-7 flex flex-col gap-6 ds-hover-lift transition-all duration-300
-                ${plan.popular
-                  ? 'bg-gradient-to-b from-indigo-600/90 to-purple-700/90 dark:from-indigo-600/80 dark:to-purple-700/80 border-2 border-indigo-400/30 shadow-2xl shadow-indigo-500/30 scale-[1.03] md:scale-[1.05]'
-                  : plan.enterprise
-                    ? 'bg-white/60 dark:bg-white/[0.04] border border-amber-400/30 dark:border-amber-500/20 backdrop-blur-sm shadow-lg shadow-amber-500/5'
-                    : 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm'
-                }`}
-            >
-              {/* Badge — absolute on outer wrapper (overflow-visible by default) */}
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
-                  <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 shadow-lg shadow-indigo-500/30">
-                    <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-                    <span className="text-xs font-bold text-white tracking-wide">Most Popular</span>
-                  </div>
-                </div>
-              )}
-
-              {plan.enterprise && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
-                  <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 shadow-lg shadow-amber-500/30">
-                    <Crown className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-                    <span className="text-xs font-bold text-white tracking-wide">Enterprise</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Plan header */}
-              <div>
-                <p className={`text-sm font-semibold mb-1 ds-font-display ${plan.popular ? 'text-indigo-200' : plan.enterprise ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
-                  {plan.name}
-                </p>
-                <div className="flex items-end gap-2 mb-2">
-                  <span className={`text-4xl font-extrabold tracking-tight ds-font-display ${plan.popular ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
-                    {plan.price}
-                  </span>
-                  <span className={`text-sm pb-1.5 ds-font-display ${plan.popular ? 'text-indigo-200/80' : 'text-slate-400'}`}>
-                    /{plan.period}
-                  </span>
-                </div>
-                <p className={`text-sm leading-relaxed ds-font-display ${plan.popular ? 'text-indigo-100/90' : 'text-slate-500 dark:text-slate-400'}`}>
-                  {plan.description}
-                </p>
-              </div>
-
-              {/* Feature list */}
-              <ul className="flex flex-col gap-3 flex-1">
-                {plan.features.map((feat) => (
-                  <li key={feat} className="flex items-start gap-2.5">
-                    <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0
-                      ${plan.popular
-                        ? 'bg-white/20'
-                        : plan.enterprise
-                          ? 'bg-amber-500/10 dark:bg-amber-500/20'
-                          : 'bg-indigo-500/10 dark:bg-indigo-500/20'
-                      }`}
-                    >
-                      <Check className={`w-3 h-3 ${plan.popular ? 'text-white' : plan.enterprise ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400'}`} strokeWidth={2.5} />
-                    </div>
-                    <span className={`text-sm ds-font-display ${plan.popular ? 'text-indigo-50' : 'text-slate-600 dark:text-slate-300'}`}>
-                      {feat}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* CTA */}
-              <button
-                onClick={() => {
-                  if (plan.enterprise) {
-                    window.open(`mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Enterprise inquiry')}`, '_self')
-                  } else if (onSignIn) {
-                    onSignIn()
-                  }
-                }}
-                className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ds-btn-shimmer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
-                  ${plan.popular
-                    ? 'bg-white text-indigo-700 hover:bg-indigo-50 shadow-lg shadow-white/20 hover:shadow-xl focus-visible:ring-white focus-visible:ring-offset-indigo-600'
-                    : plan.enterprise
-                      ? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 dark:hover:bg-amber-500/25 border border-amber-400/40 dark:border-amber-500/30 focus-visible:ring-amber-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950'
-                      : 'bg-indigo-500/10 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20 dark:hover:bg-indigo-500/25 border border-indigo-300/40 dark:border-indigo-500/30 focus-visible:ring-indigo-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950'
-                  }`}
-              >
-                {plan.cta}
-              </button>
-            </motion.div>
-          ))}
+					{plans.map((plan, i) => (
+						<PreviewCard key={plan.name} plan={plan} i={i} onSignIn={onSignIn} />
+					))}
         </div>
 
         {/* Self-host note */}
