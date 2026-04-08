@@ -17,6 +17,7 @@ Design specifications and feature requirements.
 - [Wizard Fullscreen Panel Design](specs/2026-03-25-wizard-fullscreen-panel-design.md) — Fullscreen takeover panel with sidebar navigation and state safety
 - [Configure Step Redesign](specs/2026-03-26-configure-step-redesign.md) — Dashboard + compact card-rows layout for Configure Repositories step
 - [Smart Organization Field](specs/2026-03-26-smart-organization-field-design.md) — Adaptive organization field based on authentication method
+- [Context Menu + Pricing Polish](specs/2026-04-08-context-menu-and-pricing-polish.md) — Scroll-free native context menu + hybrid dazzle hover on pricing cards
 
 ## Plans (How to build it)
 
