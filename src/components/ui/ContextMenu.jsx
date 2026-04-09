@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, memo } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight } from 'lucide-react'
 import { calculateMenuPosition } from '@/lib/menuPositioning'
@@ -25,7 +26,7 @@ import { calculateMenuPosition } from '@/lib/menuPositioning'
  *   danger: boolean,
  * }
  */
-function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirection = 'right' }) {
+function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirection = 'right', parentMenuWidth = 0 }) {
 	const menuRef = useRef(null)
 	const [position, setPosition] = useState({ top: y, left: x })
 	const [hoveredIndex, setHoveredIndex] = useState(-1)
@@ -34,7 +35,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 	const [focusedIndex, setFocusedIndex] = useState(-1)
 	const hoverTimerRef = useRef(null)
 	const itemRefs = useRef([])
-	const [submenuPos, setSubmenuPos] = useState({ x: 0, y: 0 })
+	const [submenuPos, setSubmenuPos] = useState({ x: 0, y: 0, parentMenuWidth: 0 })
 
 	// Get only actionable items (not separators/headers) for keyboard nav
 	const actionableIndices = items
@@ -45,9 +46,6 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 	useLayoutEffect(() => {
 		if (!menuRef.current) return
 		const rect = menuRef.current.getBoundingClientRect()
-		const parentWidth = isSubmenu
-			? (menuRef.current.parentElement?.getBoundingClientRect().width || 0)
-			: 0
 
 		const result = calculateMenuPosition({
 			clickX: x,
@@ -58,14 +56,14 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 			margin: 8,
 			isSubmenu,
 			parentDirection,
-			parentWidth,
+			parentWidth: parentMenuWidth,
 		})
 
 		Promise.resolve().then(() => {
 			setPosition({ top: result.top, left: result.left })
 			if (isSubmenu) setSubmenuDirection(result.submenuDirection)
 		})
-	}, [x, y, isSubmenu, parentDirection])
+	}, [x, y, isSubmenu, parentDirection, parentMenuWidth])
 
 	// Handle hover with delay for submenus
 	const handleItemHover = useCallback((index) => {
@@ -225,7 +223,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 	// Calculate submenu position
 	const getSubmenuPosition = useCallback((index) => {
 		const itemEl = itemRefs.current[index]
-		if (!itemEl || !menuRef.current) return { x: 0, y: 0 }
+		if (!itemEl || !menuRef.current) return { x: 0, y: 0, parentMenuWidth: 0 }
 		const itemRect = itemEl.getBoundingClientRect()
 		const menuRect = menuRef.current.getBoundingClientRect()
 
@@ -234,7 +232,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 			: menuRect.left - menuRect.width + 4
 		const subY = itemRect.top
 
-		return { x: subX, y: subY }
+		return { x: subX, y: subY, parentMenuWidth: menuRect.width }
 	}, [submenuDirection])
 
 	useLayoutEffect(() => {
@@ -243,7 +241,9 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 		}
 	}, [activeSubmenu, getSubmenuPosition])
 
-	return (
+	if (typeof document === 'undefined') return null
+
+	const content = (
 		<>
 			{/* Backdrop for root menu only */}
 			{!isSubmenu && (
@@ -342,23 +342,29 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 					)
 				})}
 
-				{/* Render active submenu */}
-				<AnimatePresence>
-					{activeSubmenu >= 0 && items[activeSubmenu]?.children && (
-						<ContextMenuInner
-							key={`sub-${activeSubmenu}`}
-							items={items[activeSubmenu].children}
-							x={submenuPos.x}
-							y={submenuPos.y}
-							onClose={() => setActiveSubmenu(-1)}
-							isSubmenu
-							parentDirection={submenuDirection}
-						/>
-					)}
-				</AnimatePresence>
 			</motion.div>
+
+			{/* Render active submenu as a sibling (not child) so framer-motion's
+			    transform on the parent motion.div doesn't become a containing
+			    block for the submenu's fixed positioning. */}
+			<AnimatePresence>
+				{activeSubmenu >= 0 && items[activeSubmenu]?.children && (
+					<ContextMenuInner
+						key={`sub-${activeSubmenu}`}
+						items={items[activeSubmenu].children}
+						x={submenuPos.x}
+						y={submenuPos.y}
+						onClose={() => setActiveSubmenu(-1)}
+						isSubmenu
+						parentDirection={submenuDirection}
+						parentMenuWidth={submenuPos.parentMenuWidth}
+					/>
+				)}
+			</AnimatePresence>
 		</>
 	)
+
+	return createPortal(content, document.body)
 }
 
 const ContextMenu = memo(function ContextMenu(props) {
