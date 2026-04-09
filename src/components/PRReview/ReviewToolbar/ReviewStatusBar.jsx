@@ -1,5 +1,8 @@
+import { useState, useEffect } from 'react'
+
 /**
  * Fixed bottom status bar showing review progress, pending comments, and keyboard shortcuts.
+ * Keyboard shortcut hints are automatically hidden after 3 sessions to reduce noise.
  *
  * @param {object} props
  * @param {number} props.totalFiles           - Total number of files in the PR
@@ -7,6 +10,17 @@
  * @param {number} [props.pendingCommentCount] - Number of pending (unsaved) comments
  */
 export function ReviewStatusBar({ totalFiles, reviewedCount, pendingCommentCount = 0 }) {
+  const [showHints] = useState(() => {
+    const count = parseInt(localStorage.getItem('pr-review-hint-sessions') || '0')
+    return count < 3
+  })
+
+  useEffect(() => {
+    const key = 'pr-review-hint-sessions'
+    const count = parseInt(localStorage.getItem(key) || '0')
+    localStorage.setItem(key, String(count + 1))
+  }, [])
+
   const pct = totalFiles > 0 ? Math.round((reviewedCount / totalFiles) * 100) : 0
   const allReviewed = totalFiles > 0 && reviewedCount >= totalFiles
 
@@ -48,10 +62,12 @@ export function ReviewStatusBar({ totalFiles, reviewedCount, pendingCommentCount
       {/* Spacer */}
       <span className="flex-1" />
 
-      {/* Keyboard shortcut hints (hidden on small screens) */}
-      <span className="hidden sm:inline text-gray-400 dark:text-gray-500 tabular-nums">
-        j/k navigate &middot; x mark reviewed &middot; c comment
-      </span>
+      {/* Keyboard shortcut hints — auto-hidden after 3 sessions */}
+      {showHints && (
+        <span className="hidden sm:inline text-gray-400 dark:text-gray-500 tabular-nums">
+          j/k navigate &middot; x mark reviewed &middot; c comment
+        </span>
+      )}
     </footer>
   )
 }

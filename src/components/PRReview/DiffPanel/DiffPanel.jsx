@@ -1,5 +1,27 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { DiffRenderer } from './DiffRenderer'
+import { InlineComment } from './InlineComment'
+
+/**
+ * Group a flat list of GitHub review comments into top-level threads with
+ * their replies nested under each root comment.
+ *
+ * @param {Array} comments - Flat array of GitHub comment objects
+ * @returns {Array} Array of root comments, each augmented with a `replies` array
+ */
+function groupCommentsIntoThreads(comments) {
+  const threads = []
+  const replyMap = {}
+  for (const c of comments) {
+    if (c.in_reply_to_id) {
+      if (!replyMap[c.in_reply_to_id]) replyMap[c.in_reply_to_id] = []
+      replyMap[c.in_reply_to_id].push(c)
+    } else {
+      threads.push(c)
+    }
+  }
+  return threads.map(t => ({ ...t, replies: replyMap[t.id] || [] }))
+}
 
 /**
  * Map of file extension → highlight.js language id (mirrors DiffRenderer for the header).
@@ -52,18 +74,26 @@ function getLang(filename) {
  * inline comment input.
  *
  * @param {object}    props
- * @param {object}    [props.file]             - PR file object: { filename, patch, additions, deletions }
- * @param {'split'|'unified'} props.viewMode   - Diff view mode
- * @param {object}    [props.comments]         - Map of filename → [comment, ...]
- * @param {Array}     [props.pendingComments]  - Array of pending (unsaved) comments
- * @param {Function}  [props.onAddComment]     - Called with { filename, line, side, body }
- * @param {Function}  [props.onReply]          - Called with { commentId, body }
+ * @param {object}    [props.file]               - PR file object: { filename, patch, additions, deletions }
+ * @param {'split'|'unified'} props.viewMode     - Diff view mode
+ * @param {Array}     [props.comments]           - Array of GitHub review comments for this file
+ * @param {Array}     [props.pendingComments]    - Array of pending (unsaved) comments
+ * @param {string[]}  [props.resolvedComments]   - Array of comment IDs that are resolved
+ * @param {Function}  [props.onAddComment]       - Called with { filename, line, side, body }
+ * @param {Function}  [props.onReply]            - Called with { commentId, body }
+ * @param {Function}  [props.onResolve]          - Called with comment id to toggle resolved state
  */
-export function DiffPanel({ file, viewMode, comments, pendingComments, onAddComment, onReply }) {
+export function DiffPanel({ file, viewMode, comments, pendingComments, resolvedComments = [], onAddComment, onReply, onResolve }) {
   const [commentingLine, setCommentingLine] = useState(null) // { lineNumber, side }
   const [commentBody, setCommentBody] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const textareaRef = useRef(null)
+
+  // Group submitted comments into threads (root + replies)
+  const commentThreads = useMemo(
+    () => groupCommentsIntoThreads(Array.isArray(comments) ? comments : []),
+    [comments]
+  )
 
   // Focus the textarea whenever commentingLine becomes set
   useEffect(() => {
@@ -149,6 +179,35 @@ export function DiffPanel({ file, viewMode, comments, pendingComments, onAddComm
           highlightLanguage={lang}
         />
       </div>
+
+      {/* Submitted comment threads */}
+      {commentThreads.length > 0 && (
+        <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 space-y-2 max-h-64 overflow-y-auto">
+          {commentThreads.map(thread => (
+            <InlineComment
+              key={thread.id}
+              comment={thread}
+              replies={thread.replies}
+              onReply={onReply}
+              isResolved={resolvedComments.includes(thread.id)}
+              onResolve={() => onResolve?.(thread.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Pending (unsaved) comments */}
+      {pendingComments?.length > 0 && (
+        <div className="border-t border-gray-200 dark:border-gray-700 bg-amber-50 dark:bg-amber-900/10 px-4 py-3 space-y-2 max-h-40 overflow-y-auto">
+          {pendingComments.map((c, i) => (
+            <InlineComment
+              key={i}
+              comment={{ id: `pending-${i}`, user: { login: 'you' }, body: c.body, line: c.line, created_at: null }}
+              isPending
+            />
+          ))}
+        </div>
+      )}
 
       {/* Inline comment input */}
       {commentingLine && (
