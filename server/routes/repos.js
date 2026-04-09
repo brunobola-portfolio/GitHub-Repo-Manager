@@ -641,12 +641,27 @@ router.get('/:owner/:repo/pulls/:pull_number/reviews', requireAuth, async (req, 
     }
 });
 
-// List PR files changed
+// List PR files changed (with auto-pagination for large PRs)
 router.get('/:owner/:repo/pulls/:pull_number/files', requireAuth, async (req, res) => {
     try {
         const { owner, repo, pull_number } = req.params;
-        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls/${pull_number}/files?per_page=100`, req.session.accessToken);
-        res.json(data);
+        let allFiles = [];
+        let page = 1;
+        const perPage = 100;
+
+        while (true) {
+            const { data, headers } = await githubApi(
+                `/repos/${owner}/${repo}/pulls/${pull_number}/files?per_page=${perPage}&page=${page}`,
+                req.session.accessToken
+            );
+            allFiles = allFiles.concat(data);
+            const linkHeader = headers?.get('link') || '';
+            if (!linkHeader.includes('rel="next"')) break;
+            page++;
+            if (allFiles.length >= 3000) break;
+        }
+
+        res.json(allFiles);
     } catch (error) {
         req.log.error({ err: error }, 'List PR files failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
