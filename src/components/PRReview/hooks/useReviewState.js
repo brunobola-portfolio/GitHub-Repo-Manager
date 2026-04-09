@@ -63,6 +63,7 @@ function buildInitialState(owner, repo, pullNumber) {
         fileTreeCollapsed: false,
         aiSummaryCollapsed: persisted?.aiSummaryCollapsed ?? false,
         pendingComments: persisted?.pendingComments ?? [],
+        resolvedComments: [], // array of comment IDs resolved in this session
         aiSummary: null,
         aiLoading: false,
     }
@@ -118,6 +119,16 @@ function reducer(state, action) {
         }
         case 'CLEAR_PENDING_COMMENTS': {
             return { ...state, pendingComments: [] }
+        }
+        case 'TOGGLE_RESOLVED': {
+            const { commentId } = action
+            const already = state.resolvedComments.includes(commentId)
+            return {
+                ...state,
+                resolvedComments: already
+                    ? state.resolvedComments.filter(id => id !== commentId)
+                    : [...state.resolvedComments, commentId],
+            }
         }
         case 'ADD_SUBMITTED_COMMENT': {
             const { filename, comment } = action

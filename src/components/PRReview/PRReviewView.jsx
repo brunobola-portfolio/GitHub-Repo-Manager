@@ -40,6 +40,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   )
 
   const [submitting, setSubmitting] = useState(false)
+  const [sortMode, setSortMode] = useState('risk')
 
   // Load PR data into state when it arrives
   useEffect(() => {
@@ -68,7 +69,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     }
   }, [aiSummary, state.aiSummary, dispatch])
 
-  // Memoized sorted files
+  // Memoized sorted files (by risk, used as base for navigation)
   const sortedFiles = useMemo(() => {
     if (!state.files?.length) return []
     const aiFileRisks = state.aiSummary?.fileRisks
@@ -78,6 +79,14 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
       : {}
     return sortFilesByRisk(state.files, aiFileRisks)
   }, [state.files, state.aiSummary])
+
+  // Display files reflect the active sort mode
+  const displayFiles = useMemo(() => {
+    if (sortMode === 'alpha') {
+      return [...(state.files ?? [])].sort((a, b) => a.filename.localeCompare(b.filename))
+    }
+    return sortedFiles
+  }, [state.files, sortedFiles, sortMode])
 
   // Memoized heuristic scores map
   const heuristicScores = useMemo(() => {
@@ -94,20 +103,20 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     [state.files, state.activeFile]
   )
 
-  // Navigation helpers
+  // Navigation helpers (use displayFiles so j/k follow the visible order)
   const handleNextFile = useCallback(() => {
-    if (!sortedFiles.length) return
-    const idx = sortedFiles.findIndex((f) => f.filename === state.activeFile)
-    const next = sortedFiles[Math.min(idx + 1, sortedFiles.length - 1)]
+    if (!displayFiles.length) return
+    const idx = displayFiles.findIndex((f) => f.filename === state.activeFile)
+    const next = displayFiles[Math.min(idx + 1, displayFiles.length - 1)]
     if (next) dispatch({ type: 'SET_ACTIVE_FILE', filename: next.filename })
-  }, [sortedFiles, state.activeFile, dispatch])
+  }, [displayFiles, state.activeFile, dispatch])
 
   const handlePrevFile = useCallback(() => {
-    if (!sortedFiles.length) return
-    const idx = sortedFiles.findIndex((f) => f.filename === state.activeFile)
-    const prev = sortedFiles[Math.max(idx - 1, 0)]
+    if (!displayFiles.length) return
+    const idx = displayFiles.findIndex((f) => f.filename === state.activeFile)
+    const prev = displayFiles[Math.max(idx - 1, 0)]
     if (prev) dispatch({ type: 'SET_ACTIVE_FILE', filename: prev.filename })
-  }, [sortedFiles, state.activeFile, dispatch])
+  }, [displayFiles, state.activeFile, dispatch])
 
   // Submit review with staleness check
   const handleSubmitReview = useCallback(async () => {
@@ -136,7 +145,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
 
   // Keyboard shortcuts
   useReviewKeyboard({
-    files: sortedFiles,
+    files: displayFiles,
     activeFile: state.activeFile,
     onNextFile: handleNextFile,
     onPrevFile: handlePrevFile,
@@ -197,7 +206,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
         {!state.fileTreeCollapsed && (
           <div className="w-64 shrink-0 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
             <FileTree
-              files={sortedFiles}
+              files={displayFiles}
               activeFile={state.activeFile}
               reviewedFiles={state.reviewedFiles}
               aiFileRisks={
@@ -214,8 +223,8 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
               onFileSelect={(filename) =>
                 dispatch({ type: 'SET_ACTIVE_FILE', filename })
               }
-              sortMode="risk"
-              onSortChange={() => {}}
+              sortMode={sortMode === 'alpha' ? 'az' : 'risk'}
+              onSortChange={(mode) => setSortMode(mode === 'az' ? 'alpha' : 'risk')}
             />
           </div>
         )}
@@ -240,10 +249,14 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
             pendingComments={state.pendingComments.filter(
               (c) => c.path === state.activeFile
             )}
+            resolvedComments={state.resolvedComments}
             onAddComment={(comment) =>
               dispatch({ type: 'ADD_PENDING_COMMENT', comment })
             }
             onReply={() => {}}
+            onResolve={(commentId) =>
+              dispatch({ type: 'TOGGLE_RESOLVED', commentId })
+            }
           />
         </div>
       </div>
