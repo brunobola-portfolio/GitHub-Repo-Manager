@@ -65,4 +65,40 @@ describe('useCountdown', () => {
         expect(clearSpy).toHaveBeenCalled()
         clearSpy.mockRestore()
     })
+
+    it('pauses the interval while the document is hidden and recomputes on visibilitychange', () => {
+        const retryAt = Date.now() + 10_000
+        const { result } = renderHook(() => useCountdown(retryAt))
+        expect(result.current.secondsLeft).toBe(10)
+
+        // Simulate tab hidden
+        Object.defineProperty(document, 'visibilityState', {
+            configurable: true,
+            get: () => 'hidden',
+        })
+        act(() => {
+            document.dispatchEvent(new Event('visibilitychange'))
+        })
+        // Time passes while hidden — interval should NOT run
+        act(() => { vi.advanceTimersByTime(3000) })
+        // secondsLeft still reflects the last tick before hide (minus the immediate
+        // recompute at visibilitychange time, which happens at the same clock)
+        expect(result.current.secondsLeft).toBe(10)
+
+        // Simulate tab visible again — recompute should reflect real elapsed time
+        Object.defineProperty(document, 'visibilityState', {
+            configurable: true,
+            get: () => 'visible',
+        })
+        act(() => {
+            document.dispatchEvent(new Event('visibilitychange'))
+        })
+        // The recompute on visibilitychange uses Date.now(), and fake timers advanced
+        // 3000 ms, so 10 - 3 = 7 seconds should remain.
+        expect(result.current.secondsLeft).toBe(7)
+
+        // Normal tick resumes
+        act(() => { vi.advanceTimersByTime(1000) })
+        expect(result.current.secondsLeft).toBe(6)
+    })
 })

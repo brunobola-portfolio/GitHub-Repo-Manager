@@ -38,13 +38,52 @@ export function useCountdown(retryAt) {
             setState({ secondsLeft: 0, progress01: 0, isReady: true })
             return
         }
-        const id = setInterval(() => {
+
+        let intervalId = null
+
+        const tick = () => {
             setState(compute())
-            if (Date.now() >= retryAt) {
-                clearInterval(id)
+            if (Date.now() >= retryAt && intervalId !== null) {
+                clearInterval(intervalId)
+                intervalId = null
             }
-        }, 1000)
-        return () => clearInterval(id)
+        }
+
+        const startInterval = () => {
+            if (intervalId !== null) return
+            intervalId = setInterval(tick, 1000)
+        }
+
+        const stopInterval = () => {
+            if (intervalId === null) return
+            clearInterval(intervalId)
+            intervalId = null
+        }
+
+        const handleVisibilityChange = () => {
+            // Recompute immediately so the user sees the correct value on return.
+            tick()
+            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+                stopInterval()
+            } else {
+                startInterval()
+            }
+        }
+
+        if (typeof document === 'undefined' || document.visibilityState !== 'hidden') {
+            startInterval()
+        }
+
+        if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', handleVisibilityChange)
+        }
+
+        return () => {
+            stopInterval()
+            if (typeof document !== 'undefined') {
+                document.removeEventListener('visibilitychange', handleVisibilityChange)
+            }
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [retryAt])
 
