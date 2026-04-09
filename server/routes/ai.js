@@ -434,6 +434,52 @@ router.post('/ai/quality-report', requireAuth, requireAI, async (req, res) => {
     }
 });
 
+// ------------------------------------------------------------------
+// AI PR Review Summary
+// ------------------------------------------------------------------
+
+// Generate an AI-powered PR review summary
+router.post('/ai/review-summary', requireAuth, async (req, res) => {
+    try {
+        if (process.env.DISABLE_AI_REVIEW === 'true') {
+            return res.status(404).json({
+                error: 'AI review summaries are disabled on this server.',
+                code: 'AI_REVIEW_DISABLED'
+            });
+        }
+
+        if (!aiService.model) {
+            return res.status(503).json({
+                error: 'AI service is not available. Please check server configuration.',
+                code: 'AI_UNAVAILABLE'
+            });
+        }
+
+        const { fileManifest, topFilePatches, prMetadata } = req.body;
+
+        if (!fileManifest || !prMetadata) {
+            return res.status(400).json({
+                error: 'fileManifest and prMetadata are required.',
+                code: 'VALIDATION_ERROR'
+            });
+        }
+
+        const summary = await aiService.reviewPullRequest(fileManifest, topFilePatches, prMetadata);
+
+        if (summary === null) {
+            return res.status(404).json({
+                error: 'AI review summaries are disabled on this server.',
+                code: 'AI_REVIEW_DISABLED'
+            });
+        }
+
+        res.json({ success: true, summary });
+    } catch (error) {
+        req.log.error({ err: error }, 'AI PR review summary failed');
+        res.status(500).json({ error: safeError(error, 'Failed to generate review summary') });
+    }
+});
+
 // Batch Index - Index multiple repos at once
 router.post('/ai/batch-index', requireAuth, requireAI, async (req, res) => {
     const { repos } = req.body; // Array of repo objects

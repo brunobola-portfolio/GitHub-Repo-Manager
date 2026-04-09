@@ -391,6 +391,97 @@ class AIService {
         if (score >= 50) return 'Decent foundation. Consider adding documentation and tests.';
         return 'Needs attention. Focus on documentation and community standards.';
     }
+
+    /**
+     * Generate an AI-powered review summary for a pull request.
+     * @param {Array} fileManifest - Array of file change objects from GitHub /files API
+     * @param {string} topFilePatches - Raw diff patch text for the most relevant files
+     * @param {object} prMetadata - PR metadata (title, body, base, head, author, etc.)
+     * @returns {Promise<object|null>} Structured review summary, or null if AI review is disabled
+     */
+    async reviewPullRequest(fileManifest, topFilePatches, prMetadata) {
+        if (process.env.DISABLE_AI_REVIEW === 'true') {
+            return null;
+        }
+
+        if (!this.model) {
+            throw new Error('AI model not initialized. Please check GEMINI_API_KEY and GEMINI_MODEL configuration.');
+        }
+
+        const responseSchema = {
+            type: 'object',
+            properties: {
+                overview: { type: 'string' },
+                riskLevel: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
+                keyChanges: {
+                    type: 'array',
+                    items: { type: 'string' }
+                },
+                fileRisks: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            file: { type: 'string' },
+                            risk: { type: 'string', enum: ['low', 'medium', 'high'] },
+                            reason: { type: 'string' }
+                        },
+                        required: ['file', 'risk', 'reason']
+                    }
+                },
+                suggestedReviewOrder: {
+                    type: 'array',
+                    items: { type: 'string' }
+                },
+                estimatedReviewTime: { type: 'string' }
+            },
+            required: ['overview', 'riskLevel', 'keyChanges', 'fileRisks', 'suggestedReviewOrder', 'estimatedReviewTime']
+        };
+
+        const systemPrompt = `You are an expert code reviewer analyzing a GitHub pull request.
+Provide a structured review summary to help reviewers understand the scope, risk, and focus areas of this PR.
+Be concise and actionable. Focus on architectural impact, potential bugs, and review priority.`;
+
+        const prContext = `PR Title: ${sanitizeForPrompt(prMetadata.title, 200)}
+Author: ${sanitizeForPrompt(prMetadata.author || prMetadata.user?.login, 100)}
+Base branch: ${sanitizeForPrompt(prMetadata.base?.ref || prMetadata.base, 100)}
+Head branch: ${sanitizeForPrompt(prMetadata.head?.ref || prMetadata.head, 100)}
+Description: ${sanitizeForPrompt(prMetadata.body, 1000) || 'No description provided.'}
+Files changed: ${fileManifest?.length || 0}
+Additions: ${prMetadata.additions || 'unknown'}
+Deletions: ${prMetadata.deletions || 'unknown'}
+
+File manifest (name, status, changes):
+${sanitizeForPrompt(JSON.stringify(
+    (fileManifest || []).map(f => ({
+        filename: f.filename,
+        status: f.status,
+        additions: f.additions,
+        deletions: f.deletions,
+        changes: f.changes
+    })),
+    null, 2
+), 3000)}`;
+
+        const result = await this.model.generateContent({
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        { text: systemPrompt + '\n\n' + prContext },
+                        // Diff content passed as a separate part to mitigate prompt injection
+                        { text: 'Diff patches for key files:\n```diff\n' + sanitizeForPrompt(topFilePatches, 8000) + '\n```' }
+                    ]
+                }
+            ],
+            generationConfig: {
+                responseMimeType: 'application/json',
+                responseSchema,
+            }
+        });
+
+        return JSON.parse(result.response.text());
+    }
 }
 
 export const aiService = new AIService();
