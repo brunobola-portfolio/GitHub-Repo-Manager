@@ -134,6 +134,22 @@ export function useRepoDetail(owner, repo) {
     const fetchPullFiles = useCallback((number) =>
         apiFetch(`${base}/pulls/${number}/files`), [base])
 
+    const fetchPullComments = useCallback((number) =>
+        apiFetch(`${base}/pulls/${number}/comments`), [base])
+
+    const fetchPullDiff = useCallback(async (number) => {
+        const r = await fetch(`${base}/pulls/${number}`, {
+            credentials: 'include',
+            headers: { Accept: 'application/vnd.github.diff' },
+        })
+        if (!r.ok) {
+            const err = new Error(`API error: ${r.status}`)
+            err.status = r.status
+            throw err
+        }
+        return r.text()
+    }, [base])
+
     const createPull = useCallback((data) =>
         withLoading(() => apiFetch(`${base}/pulls`, { method: 'POST', body: JSON.stringify(data) })),
         [base, withLoading])
@@ -232,7 +248,8 @@ export function useRepoDetail(owner, repo) {
         // Issues
         fetchIssues, fetchIssue, fetchIssueComments, createIssue, updateIssue, commentOnIssue,
         // Pull Requests
-        fetchPulls, fetchPull, fetchPullReviews, fetchPullFiles, createPull, mergePull, updatePull,
+        fetchPulls, fetchPull, fetchPullReviews, fetchPullFiles, fetchPullComments, fetchPullDiff,
+        createPull, mergePull, updatePull,
         // Webhooks
         fetchWebhooks, createWebhook, updateWebhook, deleteWebhook, pingWebhook,
         // Labels
