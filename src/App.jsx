@@ -516,7 +516,22 @@ function AppContent() {
 
   // Show Landing Page for unauthenticated users
   if (!user) {
-    return <LandingPage onSignIn={handleLogin} />
+    return (
+      <>
+        {rateLimitBanner && (
+          <RateLimitNotice
+            variant="banner"
+            retryAt={rateLimitBanner.retryAt}
+            onRetry={() => {
+              setRateLimitBanner(null)
+              window.location.href = '/api/auth/login'
+            }}
+            onDismiss={() => setRateLimitBanner(null)}
+          />
+        )}
+        <LandingPage onSignIn={handleLogin} />
+      </>
+    )
   }
 
   return (
