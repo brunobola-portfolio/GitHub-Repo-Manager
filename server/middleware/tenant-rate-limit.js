@@ -60,7 +60,8 @@ export async function createTenantLimiters(type = 'api', options = {}) {
             const retryAfterSec = Math.ceil(opts.windowMs / 1000);
             res.set('Retry-After', String(retryAfterSec));
             if (req.accepts(['json', 'html']) === 'html') {
-                const frontend = process.env.FRONTEND_URL || '';
+                // Strip trailing slashes to avoid "https://app.example.com//?..."
+                const frontend = (process.env.FRONTEND_URL || '').replace(/\/+$/, '');
                 return res.redirect(
                     `${frontend}/?error=rate_limited&retry=${retryAfterSec}`
                 );

@@ -13,14 +13,18 @@ function buildApp(limiter, routePath = '/api/auth') {
 }
 
 describe('createTenantLimiters', () => {
-    const originalEnv = process.env.NODE_ENV
+    const originalNodeEnv = process.env.NODE_ENV
+    const originalFrontendUrl = process.env.FRONTEND_URL
 
     beforeEach(() => {
         process.env.NODE_ENV = 'production'
     })
 
     afterEach(() => {
-        process.env.NODE_ENV = originalEnv
+        if (originalNodeEnv === undefined) delete process.env.NODE_ENV
+        else process.env.NODE_ENV = originalNodeEnv
+        if (originalFrontendUrl === undefined) delete process.env.FRONTEND_URL
+        else process.env.FRONTEND_URL = originalFrontendUrl
     })
 
     it('skips paths that match the skip predicate', async () => {
@@ -76,5 +80,22 @@ describe('createTenantLimiters', () => {
             const r = await request(app).get('/api/auth/login')
             expect(r.status).toBe(200)
         }
+    })
+
+    it('strips trailing slashes from FRONTEND_URL before building the redirect', async () => {
+        process.env.FRONTEND_URL = 'http://localhost:5173/'
+        const limiter = await createTenantLimiters('auth')
+        const app = buildApp(limiter)
+        for (let i = 0; i < 12; i++) {
+            await request(app).get('/api/auth/login').set('Accept', 'text/html')
+        }
+        const res = await request(app)
+            .get('/api/auth/login')
+            .set('Accept', 'text/html')
+        expect(res.status).toBe(302)
+        // No double slash — single '/' between origin and query
+        expect(res.headers.location).toBe(
+            'http://localhost:5173/?error=rate_limited&retry=900'
+        )
     })
 })
