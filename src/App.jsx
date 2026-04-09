@@ -46,6 +46,7 @@ const MigrationHistory = lazy(() => import('./components/MigrationHistory').then
 const KeyboardShortcutsHelp = lazy(() => import('./components/KeyboardShortcutsHelp').then(m => ({ default: m.KeyboardShortcutsHelp })))
 const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ default: m.AIAssistant })))
 const MigrationWizard = lazy(() => import('./components/MigrationWizard/MigrationWizard'))
+const PRReviewView = lazy(() => import('./components/PRReview/PRReviewView').then(m => ({ default: m.PRReviewView })))
 
 // Loading fallback component
 function LoadingFallback() {
@@ -67,6 +68,7 @@ function AppContent() {
   const [systemInitialized, setSystemInitialized] = useState(null)
   const [org, setOrg] = useState('')
   const [selectedRepoDetail, setSelectedRepoDetail] = useState(null)
+  const [reviewingPR, setReviewingPR] = useState(null)
   const [syncStatus, setSyncStatus] = useState({ lastSync: null, hasUpdates: false })
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [orgDrawerOpen, setOrgDrawerOpen] = useState(false)
@@ -735,6 +737,29 @@ function AppContent() {
                   onBack={() => {
                     setSelectedRepoDetail(null)
                     setActiveView('repos')
+                  }}
+                  onStartReview={(pr) => {
+                    setReviewingPR(pr)
+                    setActiveView('pr-review')
+                  }}
+                />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        )}
+
+        {activeView === 'pr-review' && user && reviewingPR && selectedRepoDetail && (
+          <div className="animate-in fade-in duration-300">
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingFallback />}>
+                <PRReviewView
+                  owner={selectedRepoDetail.owner?.login || selectedRepoDetail.owner}
+                  repo={selectedRepoDetail.name}
+                  pullNumber={reviewingPR.number}
+                  repoName={selectedRepoDetail.full_name || selectedRepoDetail.name}
+                  onBack={() => {
+                    setReviewingPR(null)
+                    setActiveView('repo-detail')
                   }}
                 />
               </Suspense>

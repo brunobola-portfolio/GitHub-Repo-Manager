@@ -22,7 +22,7 @@ const TABS = [
     { id: 'settings', label: 'Settings', icon: Settings }
 ]
 
-export function RepoDetail({ repo, onBack }) {
+export function RepoDetail({ repo, onBack, onStartReview }) {
     const [activeTab, setActiveTab] = useState('overview')
     const [repoData, setRepoData] = useState(repo)
     const [loadingRepo, setLoadingRepo] = useState(false)
@@ -157,7 +157,7 @@ export function RepoDetail({ repo, onBack }) {
                 {activeTab === 'branches' && <BranchesTab owner={owner} repo={repoName} api={api} />}
                 {activeTab === 'releases' && <ReleasesTab owner={owner} repo={repoName} api={api} />}
                 {activeTab === 'issues' && <IssuesTab owner={owner} repo={repoName} api={api} />}
-                {activeTab === 'pulls' && <PullRequestsTab owner={owner} repo={repoName} api={api} />}
+                {activeTab === 'pulls' && <PullRequestsTab owner={owner} repo={repoName} api={api} onStartReview={onStartReview} />}
                 {activeTab === 'settings' && <SettingsTab owner={owner} repo={repoName} api={api} repoData={r} onUpdate={setRepoData} />}
             </div>
         </div>
