@@ -165,7 +165,12 @@ app.use('/api/', attachTier);
 
 // Per-tenant limiters AFTER session + tier attachment so req.userTier is available
 const apiLimiter  = await createTenantLimiters('api');
-const authLimiter = await createTenantLimiters('auth');
+const authLimiter = await createTenantLimiters('auth', {
+    // /api/auth/session is an idempotent polled read, not a brute-force target.
+    // Letting it flow through the general apiLimiter keeps dev HMR from exhausting
+    // the tight auth budget.
+    skip: (req) => req.path === '/session',
+});
 app.use('/api/', apiLimiter);
 app.use('/api/auth/', authLimiter);
 
