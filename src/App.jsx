@@ -72,6 +72,7 @@ function AppContent() {
   const [orgDrawerOpen, setOrgDrawerOpen] = useState(false)
   const [orgOverlayOpen, setOrgOverlayOpen] = useState(false)
   const [sessionExpired, setSessionExpired] = useState(false)
+  const [rateLimitBanner, setRateLimitBanner] = useState(null) // { retryAt: number } | null
   const { toasts, toast, dismissToast } = useToast()
   const { modalStates, openModal, openModalWithData, closeModal, getModalData } = useModal()
   const { selectedIds } = useSelection()
@@ -170,6 +171,21 @@ function AppContent() {
     })
     return unsubscribe
   }, [toast, dismissToast])
+
+  // Direct-navigation rate-limit case — the backend redirected us here with
+  // ?error=rate_limited&retry=N when the /api/auth/* limiter tripped for a browser.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('error') !== 'rate_limited') return
+    const retry = Number.parseInt(params.get('retry') || '60', 10)
+    const retryAt = Date.now() + (Number.isFinite(retry) ? retry : 60) * 1000
+    setRateLimitBanner({ retryAt })
+    // Strip the query params so a refresh doesn't re-show a stale banner.
+    params.delete('error')
+    params.delete('retry')
+    const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : '')
+    window.history.replaceState({}, '', cleanUrl)
+  }, [])
 
   useEffect(() => {
     if (!initCalled.current) {
@@ -542,6 +558,19 @@ function AppContent() {
         onToggleOrgDrawer={() => setOrgDrawerOpen(true)}
       />
 
+      {rateLimitBanner && (
+        <RateLimitNotice
+          variant="banner"
+          retryAt={rateLimitBanner.retryAt}
+          onRetry={() => {
+            setRateLimitBanner(null)
+            // After countdown, re-attempt the original action. For the login case,
+            // navigating directly to /api/auth/login restarts the OAuth flow.
+            window.location.href = '/api/auth/login'
+          }}
+          onDismiss={() => setRateLimitBanner(null)}
+        />
+      )}
       {/* Session expired banner */}
       <SessionBanner
         visible={sessionExpired}
