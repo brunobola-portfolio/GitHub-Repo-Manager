@@ -10,7 +10,7 @@ import { ToastContainer } from './components/ui/Toast'
 import { useToast } from './hooks/useToast'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
-import { onSessionExpired, resetSessionExpired, fetchWithRetry, safeParseJson } from './utils/api'
+import { onSessionExpired, onRateLimit, resetSessionExpired, fetchWithRetry, safeParseJson } from './utils/api'
 import { SelectionProvider } from './contexts/SelectionContext'
 import { ModalProvider } from './contexts/ModalContext'
 import { useSelection } from './hooks/useSelection'
@@ -22,6 +22,7 @@ import { SlimSidebar } from './components/Sidebar'
 import { Menu, Building2, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SessionBanner } from './components/SessionBanner'
+import { RateLimitNotice } from './components/ui/RateLimitNotice'
 import { LandingPage } from './components/Landing/LandingPage'
 
 // Lazy load Pricing page
@@ -137,6 +138,38 @@ function AppContent() {
     })
     return unsubscribe
   }, [toast])
+
+  // Rate-limit toasts — one at a time, auto-dismisses after the countdown ends.
+  const rateLimitToastIdRef = useRef(null)
+  useEffect(() => {
+    const unsubscribe = onRateLimit(({ retryAfterSec }) => {
+      if (rateLimitToastIdRef.current !== null) return // dedupe
+      const retryAt = Date.now() + retryAfterSec * 1000
+      const id = toast.custom({
+        type: 'warning',
+        duration: (retryAfterSec + 1) * 1000,
+        content: (
+          <RateLimitNotice
+            retryAt={retryAt}
+            variant="toast"
+            onRetry={() => {
+              if (rateLimitToastIdRef.current !== null) {
+                dismissToast(rateLimitToastIdRef.current)
+                rateLimitToastIdRef.current = null
+              }
+            }}
+          />
+        ),
+      })
+      rateLimitToastIdRef.current = id
+      setTimeout(() => {
+        if (rateLimitToastIdRef.current === id) {
+          rateLimitToastIdRef.current = null
+        }
+      }, (retryAfterSec + 1) * 1000)
+    })
+    return unsubscribe
+  }, [toast, dismissToast])
 
   useEffect(() => {
     if (!initCalled.current) {
