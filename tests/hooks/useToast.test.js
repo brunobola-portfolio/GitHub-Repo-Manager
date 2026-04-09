@@ -197,3 +197,32 @@ describe('useToast', () => {
     expect(result.current.toasts[0].id).toBe(toastId)
   })
 })
+
+describe('useToast — custom content', () => {
+    it('toast.custom stores a ReactNode content and skips message', () => {
+        const { result } = renderHook(() => useToast())
+        const node = { type: 'div', props: { children: 'hi' } } // shape-only stand-in
+        act(() => {
+            result.current.toast.custom({ type: 'warning', content: node, duration: 0 })
+        })
+        expect(result.current.toasts).toHaveLength(1)
+        expect(result.current.toasts[0]).toMatchObject({
+            type: 'warning',
+            content: node,
+            duration: 0,
+        })
+        // No message key from the custom path
+        expect(result.current.toasts[0].message).toBeUndefined()
+    })
+
+    it('toast.custom with duration 0 does not auto-dismiss', () => {
+        vi.useFakeTimers()
+        const { result } = renderHook(() => useToast())
+        act(() => {
+            result.current.toast.custom({ type: 'warning', content: 'x', duration: 0 })
+        })
+        act(() => { vi.advanceTimersByTime(60_000) })
+        expect(result.current.toasts).toHaveLength(1)
+        vi.useRealTimers()
+    })
+})

@@ -10,7 +10,7 @@ import { ToastContainer } from './components/ui/Toast'
 import { useToast } from './hooks/useToast'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
-import { onSessionExpired, resetSessionExpired, fetchWithRetry, safeParseJson } from './utils/api'
+import { onSessionExpired, onRateLimit, resetSessionExpired, fetchWithRetry, safeParseJson } from './utils/api'
 import { SelectionProvider } from './contexts/SelectionContext'
 import { ModalProvider } from './contexts/ModalContext'
 import { useSelection } from './hooks/useSelection'
@@ -22,6 +22,7 @@ import { SlimSidebar } from './components/Sidebar'
 import { Menu, Building2, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SessionBanner } from './components/SessionBanner'
+import { RateLimitNotice } from './components/ui/RateLimitNotice'
 import { LandingPage } from './components/Landing/LandingPage'
 
 // Lazy load Pricing page
@@ -71,6 +72,7 @@ function AppContent() {
   const [orgDrawerOpen, setOrgDrawerOpen] = useState(false)
   const [orgOverlayOpen, setOrgOverlayOpen] = useState(false)
   const [sessionExpired, setSessionExpired] = useState(false)
+  const [rateLimitBanner, setRateLimitBanner] = useState(null) // { retryAt: number } | null
   const { toasts, toast, dismissToast } = useToast()
   const { modalStates, openModal, openModalWithData, closeModal, getModalData } = useModal()
   const { selectedIds } = useSelection()
@@ -137,6 +139,53 @@ function AppContent() {
     })
     return unsubscribe
   }, [toast])
+
+  // Rate-limit toasts — one at a time, auto-dismisses after the countdown ends.
+  const rateLimitToastIdRef = useRef(null)
+  useEffect(() => {
+    const unsubscribe = onRateLimit(({ retryAfterSec }) => {
+      if (rateLimitToastIdRef.current !== null) return // dedupe
+      const retryAt = Date.now() + retryAfterSec * 1000
+      const id = toast.custom({
+        type: 'warning',
+        duration: (retryAfterSec + 1) * 1000,
+        content: (
+          <RateLimitNotice
+            retryAt={retryAt}
+            variant="toast"
+            onRetry={() => {
+              if (rateLimitToastIdRef.current !== null) {
+                dismissToast(rateLimitToastIdRef.current)
+                rateLimitToastIdRef.current = null
+              }
+            }}
+          />
+        ),
+      })
+      rateLimitToastIdRef.current = id
+      setTimeout(() => {
+        if (rateLimitToastIdRef.current === id) {
+          rateLimitToastIdRef.current = null
+        }
+      }, (retryAfterSec + 1) * 1000)
+    })
+    return unsubscribe
+  }, [toast, dismissToast])
+
+  // Direct-navigation rate-limit case — the backend redirected us here with
+  // ?error=rate_limited&retry=N when the /api/auth/* limiter tripped for a browser.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('error') !== 'rate_limited') return
+    const retry = Number.parseInt(params.get('retry') || '60', 10)
+    const retryAt = Date.now() + (Number.isFinite(retry) ? retry : 60) * 1000
+    setRateLimitBanner({ retryAt })
+    // Strip the query params so a refresh doesn't re-show a stale banner.
+    params.delete('error')
+    params.delete('retry')
+    const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : '')
+    window.history.replaceState({}, '', cleanUrl)
+  }, [])
 
   useEffect(() => {
     if (!initCalled.current) {
@@ -467,7 +516,22 @@ function AppContent() {
 
   // Show Landing Page for unauthenticated users
   if (!user) {
-    return <LandingPage onSignIn={handleLogin} />
+    return (
+      <>
+        {rateLimitBanner && (
+          <RateLimitNotice
+            variant="banner"
+            retryAt={rateLimitBanner.retryAt}
+            onRetry={() => {
+              setRateLimitBanner(null)
+              window.location.href = '/api/auth/login'
+            }}
+            onDismiss={() => setRateLimitBanner(null)}
+          />
+        )}
+        <LandingPage onSignIn={handleLogin} />
+      </>
+    )
   }
 
   return (
@@ -509,6 +573,19 @@ function AppContent() {
         onToggleOrgDrawer={() => setOrgDrawerOpen(true)}
       />
 
+      {rateLimitBanner && (
+        <RateLimitNotice
+          variant="banner"
+          retryAt={rateLimitBanner.retryAt}
+          onRetry={() => {
+            setRateLimitBanner(null)
+            // After countdown, re-attempt the original action. For the login case,
+            // navigating directly to /api/auth/login restarts the OAuth flow.
+            window.location.href = '/api/auth/login'
+          }}
+          onDismiss={() => setRateLimitBanner(null)}
+        />
+      )}
       {/* Session expired banner */}
       <SessionBanner
         visible={sessionExpired}
