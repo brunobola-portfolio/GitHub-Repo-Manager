@@ -72,7 +72,7 @@ const SALES_EMAIL = 'bruno@bolalabs.pt'
 
 function PreviewCard({ plan, i, onSignIn }) {
 	const tier = plan.popular ? 'pro' : plan.enterprise ? 'enterprise' : 'free'
-	const hover = usePricingCardHover({ tier })
+	const { cardRef, isHovered, hoverKey, reducedMotion, accent, handlers } = usePricingCardHover({ tier })
 	const rawX = useMotionValue(0)
 	const rawY = useMotionValue(0)
 	const springX = useSpring(rawX, { stiffness: 150, damping: 15 })
@@ -80,22 +80,22 @@ function PreviewCard({ plan, i, onSignIn }) {
 
 	return (
 		<motion.div
-			ref={hover.cardRef}
+			ref={cardRef}
 			custom={i}
 			variants={cardVariants}
 			initial="hidden"
 			whileInView="visible"
 			viewport={{ once: true, margin: '-60px' }}
-			onMouseEnter={hover.handlers.onMouseEnter}
+			onMouseEnter={handlers.onMouseEnter}
 			onMouseLeave={() => {
-				hover.handlers.onMouseLeave()
+				handlers.onMouseLeave()
 				rawX.set(0)
 				rawY.set(0)
 			}}
 			onMouseMove={(e) => {
-				hover.handlers.onMouseMove(e)
-				if (hover.reducedMotion || !hover.accent.hasMagneticButton) return
-				const rect = hover.cardRef.current?.getBoundingClientRect()
+				handlers.onMouseMove(e)
+				if (reducedMotion || !accent.hasMagneticButton) return
+				const rect = cardRef.current?.getBoundingClientRect()
 				if (!rect) return
 				const dx = (e.clientX - (rect.left + rect.width / 2)) / rect.width
 				const dy = (e.clientY - (rect.top + rect.height / 2)) / rect.height
@@ -136,9 +136,9 @@ function PreviewCard({ plan, i, onSignIn }) {
 			>
 				<PricingCardHoverLayers
 					tier={tier}
-					isHovered={hover.isHovered}
-					hoverKey={hover.hoverKey}
-					reducedMotion={hover.reducedMotion}
+					isHovered={isHovered}
+					hoverKey={hoverKey}
+					reducedMotion={reducedMotion}
 				/>
 
 				{/* Content wrapper above the absolute hover layers */}
@@ -151,8 +151,8 @@ function PreviewCard({ plan, i, onSignIn }) {
 						<div className="flex items-end gap-2 mb-2">
 							<span
 								className={`text-4xl font-extrabold tracking-tight ds-font-display transition-[background-image] duration-500 ${plan.popular ? 'text-white' : 'text-slate-900 dark:text-white'}`}
-								style={hover.isHovered && !hover.reducedMotion ? {
-									backgroundImage: `linear-gradient(135deg, ${hover.accent.primary}, ${hover.accent.secondary})`,
+								style={isHovered && !reducedMotion ? {
+									backgroundImage: `linear-gradient(135deg, ${accent.primary}, ${accent.secondary})`,
 									backgroundClip: 'text',
 									WebkitBackgroundClip: 'text',
 									WebkitTextFillColor: 'transparent',
@@ -172,7 +172,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 					{/* Feature list — with stagger pop animation on hover (Layer 5) */}
 					<motion.ul
 						className="flex flex-col gap-3 flex-1"
-						animate={hover.isHovered && !hover.reducedMotion ? 'hover' : 'rest'}
+						animate={isHovered && !reducedMotion ? 'hover' : 'rest'}
 						variants={{
 							hover: { transition: { staggerChildren: 0.03 } },
 							rest: {},
@@ -203,7 +203,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 					</motion.ul>
 
 					{/* CTA — magnetic wrapper for popular/enterprise */}
-					<motion.div style={hover.accent.hasMagneticButton ? { x: springX, y: springY } : undefined}>
+					<motion.div style={accent.hasMagneticButton ? { x: springX, y: springY } : undefined}>
 						<button
 							onClick={() => {
 								if (plan.enterprise) {

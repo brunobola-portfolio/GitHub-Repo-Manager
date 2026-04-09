@@ -16,8 +16,7 @@ export function PricingCard({
   const showStrike = originalPrice != null && originalPrice !== price && price > 0
 
   const pricingTier = highlighted ? 'pro' : enterprise ? 'enterprise' : 'free'
-  const hover = usePricingCardHover({ tier: pricingTier })
-  const accent = hover.accent
+  const { cardRef, isHovered, hoverKey, reducedMotion, accent, handlers } = usePricingCardHover({ tier: pricingTier })
   const rawX = useMotionValue(0)
   const rawY = useMotionValue(0)
   const springX = useSpring(rawX, { stiffness: 150, damping: 15 })
@@ -25,24 +24,24 @@ export function PricingCard({
 
   return (
     <motion.div
-      ref={hover.cardRef}
-      onMouseEnter={hover.handlers.onMouseEnter}
+      ref={cardRef}
+      onMouseEnter={handlers.onMouseEnter}
       onMouseLeave={() => {
-        hover.handlers.onMouseLeave()
+        handlers.onMouseLeave()
         rawX.set(0)
         rawY.set(0)
       }}
       onMouseMove={(e) => {
-        hover.handlers.onMouseMove(e)
-        if (hover.reducedMotion || !accent.hasMagneticButton) return
-        const rect = hover.cardRef.current?.getBoundingClientRect()
+        handlers.onMouseMove(e)
+        if (reducedMotion || !accent.hasMagneticButton) return
+        const rect = cardRef.current?.getBoundingClientRect()
         if (!rect) return
         const dx = (e.clientX - (rect.left + rect.width / 2)) / rect.width
         const dy = (e.clientY - (rect.top + rect.height / 2)) / rect.height
         rawX.set(dx * 6)
         rawY.set(dy * 6)
       }}
-      whileHover={hover.reducedMotion ? {} : { scale: highlighted ? 1.02 : 1.015, y: -6 }}
+      whileHover={reducedMotion ? {} : { scale: highlighted ? 1.02 : 1.015, y: -6 }}
       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
       className="relative flex flex-col h-full"
       style={{ '--mx': '50%', '--my': '50%' }}
@@ -104,9 +103,9 @@ export function PricingCard({
       >
         <PricingCardHoverLayers
           tier={pricingTier}
-          isHovered={hover.isHovered}
-          hoverKey={hover.hoverKey}
-          reducedMotion={hover.reducedMotion}
+          isHovered={isHovered}
+          hoverKey={hoverKey}
+          reducedMotion={reducedMotion}
         />
         {/* All existing content wrapped so it sits above the absolute hover layers */}
         <div className="relative z-[1] flex flex-col h-full">
@@ -141,7 +140,7 @@ export function PricingCard({
                     ? 'text-slate-800 dark:text-white'
                     : 'text-slate-800 dark:text-white'
                 }`}
-              style={hover.isHovered && !hover.reducedMotion ? {
+              style={isHovered && !reducedMotion ? {
                 backgroundImage: `linear-gradient(135deg, ${accent.primary}, ${accent.secondary})`,
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
@@ -174,7 +173,7 @@ export function PricingCard({
           {/* Feature list */}
           <motion.ul
             className="flex flex-col gap-3 flex-1 mb-8"
-            animate={hover.isHovered && !hover.reducedMotion ? 'hover' : 'rest'}
+            animate={isHovered && !reducedMotion ? 'hover' : 'rest'}
             variants={{
               hover: { transition: { staggerChildren: 0.03 } },
               rest: {},

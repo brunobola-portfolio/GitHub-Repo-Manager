@@ -87,5 +87,5 @@ export function useCountdown(retryAt) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [retryAt])
 
-    return useMemo(() => state, [state.secondsLeft, state.progress01, state.isReady])
+    return useMemo(() => state, [state])
 }
