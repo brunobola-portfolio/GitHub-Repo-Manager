@@ -22,11 +22,17 @@ function timeAgo(dateStr) {
 /**
  * Compact avatar placeholder using the first letter of the username.
  */
+const avatarSizeClasses = {
+  6: 'w-6 h-6 text-xs',
+  5: 'w-5 h-5 text-[10px]',
+}
+
 function Avatar({ login, size = 6 }) {
   const letter = (login ?? '?')[0].toUpperCase()
+  const sizeClass = avatarSizeClasses[size] || avatarSizeClasses[6]
   return (
     <span
-      className={`inline-flex items-center justify-center w-${size} h-${size} rounded-full bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold shrink-0 select-none`}
+      className={`inline-flex items-center justify-center ${sizeClass} rounded-full bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold shrink-0 select-none`}
       aria-hidden="true"
     >
       {letter}
@@ -164,7 +170,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
       {/* Collapsible body */}
       {!collapsed && (
         <div className="px-3 py-2">
-          {/* Comment body */}
+          {/* Comment body — ReactMarkdown with default settings escapes HTML — safe against XSS */}
           <div className="prose prose-sm dark:prose-invert max-w-none">
             <ReactMarkdown>{comment.body ?? ''}</ReactMarkdown>
           </div>

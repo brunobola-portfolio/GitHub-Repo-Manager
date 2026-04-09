@@ -29,11 +29,13 @@ export function FileTree({
   const parentRef = useRef(null)
 
   // Build AI risk lookup: filename -> level string (e.g. 'high')
+  // AI fileRisks items use `file` as the filename property
   const aiRiskMap = useMemo(() => {
     const map = {}
     if (Array.isArray(aiFileRisks)) {
       for (const entry of aiFileRisks) {
-        if (entry?.filename) map[entry.filename] = entry.level ?? entry.risk
+        const key = entry?.file ?? entry?.filename
+        if (key) map[key] = entry.level ?? entry.risk
       }
     }
     return map
@@ -49,22 +51,10 @@ export function FileTree({
     return map
   }, [heuristicScores, files])
 
-  // Sort files
-  const sortedFiles = useMemo(() => {
-    if (sortMode === 'az') {
-      return [...files].sort((a, b) => a.filename.localeCompare(b.filename))
-    }
-    // Risk sort: named AI level first, then heuristic score
-    const riskOrder = { critical: 5, high: 4, medium: 3, low: 2 }
-    return [...files].sort((a, b) => {
-      const aiA = riskOrder[aiRiskMap[a.filename]] ?? heuristicMap[a.filename] ?? 0
-      const aiB = riskOrder[aiRiskMap[b.filename]] ?? heuristicMap[b.filename] ?? 0
-      return aiB - aiA
-    })
-  }, [files, sortMode, aiRiskMap, heuristicMap])
+  // Files are already sorted by PRReviewView — use them directly
 
   const rowVirtualizer = useVirtualizer({
-    count: sortedFiles.length,
+    count: files.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 32,
     overscan: 15,
@@ -73,11 +63,11 @@ export function FileTree({
   // Scroll active file into view when it changes
   useEffect(() => {
     if (!activeFile) return
-    const idx = sortedFiles.findIndex(f => f.filename === activeFile)
+    const idx = files.findIndex(f => f.filename === activeFile)
     if (idx !== -1) {
       rowVirtualizer.scrollToIndex(idx, { align: 'auto' })
     }
-  }, [activeFile, sortedFiles, rowVirtualizer])
+  }, [activeFile, files, rowVirtualizer])
 
   const nextSortMode = sortMode === 'risk' ? 'az' : 'risk'
 
@@ -110,7 +100,7 @@ export function FileTree({
           style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}
         >
           {rowVirtualizer.getVirtualItems().map(virtualRow => {
-            const file = sortedFiles[virtualRow.index]
+            const file = files[virtualRow.index]
             const isActive = file.filename === activeFile
             const isReviewed = reviewedFiles.includes(file.filename)
             const aiRisk = aiRiskMap[file.filename]

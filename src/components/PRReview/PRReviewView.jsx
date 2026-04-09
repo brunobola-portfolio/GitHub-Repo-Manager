@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useCallback, useState } from 'react'
-import '@git-diff-view/react/styles/diff-view.css'
-
 import { useRepoDetail } from '../../hooks/useRepoDetail'
 import { useReviewState } from './hooks/useReviewState'
 import { useReviewData } from './hooks/useReviewData'
@@ -24,6 +22,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     refetch,
     checkStaleness,
     submitReview,
+    replyToComment,
   } = useReviewData(owner, repo, pullNumber, api)
 
   const {
@@ -119,7 +118,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   }, [displayFiles, state.activeFile, dispatch])
 
   // Submit review with staleness check
-  const handleSubmitReview = useCallback(async () => {
+  const handleSubmitReview = useCallback(async ({ event, body }) => {
     setSubmitting(true)
     try {
       const { isStale } = await checkStaleness()
@@ -130,10 +129,10 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
         if (!ok) return
       }
       await submitReview({
-        event: 'COMMENT',
-        body: '',
-        comments: state.pendingComments,
+        event,
+        body: body || '',
         commitId: state.headSha,
+        comments: state.pendingComments,
       })
       dispatch({ type: 'CLEAR_PENDING_COMMENTS' })
     } catch (e) {
@@ -209,16 +208,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
               files={displayFiles}
               activeFile={state.activeFile}
               reviewedFiles={state.reviewedFiles}
-              aiFileRisks={
-                state.aiSummary?.fileRisks
-                  ? Object.fromEntries(
-                      state.aiSummary.fileRisks.map((r) => [
-                        r.filename ?? r.file,
-                        r.score ?? r.riskScore ?? 0,
-                      ])
-                    )
-                  : {}
-              }
+              aiFileRisks={state.aiSummary?.fileRisks}
               heuristicScores={heuristicScores}
               onFileSelect={(filename) =>
                 dispatch({ type: 'SET_ACTIVE_FILE', filename })
@@ -253,7 +243,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
             onAddComment={(comment) =>
               dispatch({ type: 'ADD_PENDING_COMMENT', comment })
             }
-            onReply={() => {}}
+            onReply={replyToComment}
             onResolve={(commentId) =>
               dispatch({ type: 'TOGGLE_RESOLVED', commentId })
             }

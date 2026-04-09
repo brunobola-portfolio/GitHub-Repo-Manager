@@ -72,12 +72,14 @@ function buildInitialState(owner, repo, pullNumber) {
 function reducer(state, action) {
     switch (action.type) {
         case 'LOAD_DATA': {
+            const { pr, headSha, files, comments } = action.payload
             return {
                 ...state,
-                pr: action.pr,
-                headSha: action.headSha,
-                files: action.files,
-                comments: action.comments,
+                pr,
+                headSha,
+                files,
+                comments,
+                activeFile: state.activeFile || files[0]?.filename || null,
             }
         }
         case 'SET_ACTIVE_FILE': {

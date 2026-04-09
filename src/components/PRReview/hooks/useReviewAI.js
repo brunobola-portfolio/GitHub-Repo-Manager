@@ -109,11 +109,24 @@ export function useReviewAI(owner, repo, pullNumber, headSha, files) {
                 patch: patch ?? '',
             }))
 
+            const totalAdditions = files.reduce((sum, f) => sum + (f.additions || 0), 0)
+            const totalDeletions = files.reduce((sum, f) => sum + (f.deletions || 0), 0)
+
             const res = await fetch('/api/ai/review-summary', {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fileManifest, topFilePatches }),
+                body: JSON.stringify({
+                    fileManifest,
+                    topFilePatches,
+                    prMetadata: {
+                        title: `PR #${pullNumber}`,
+                        description: '',
+                        filesChanged: files.length,
+                        additions: totalAdditions,
+                        deletions: totalDeletions,
+                    },
+                }),
             })
 
             if (!res.ok) {

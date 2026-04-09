@@ -415,15 +415,17 @@ class AIService {
                 riskLevel: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
                 keyChanges: {
                     type: 'array',
-                    items: { type: 'string' }
+                    items: { type: 'string' },
+                    maxItems: 5
                 },
                 fileRisks: {
                     type: 'array',
+                    maxItems: 30,
                     items: {
                         type: 'object',
                         properties: {
                             file: { type: 'string' },
-                            risk: { type: 'string', enum: ['low', 'medium', 'high'] },
+                            risk: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
                             reason: { type: 'string' }
                         },
                         required: ['file', 'risk', 'reason']
@@ -431,7 +433,8 @@ class AIService {
                 },
                 suggestedReviewOrder: {
                     type: 'array',
-                    items: { type: 'string' }
+                    items: { type: 'string' },
+                    maxItems: 15
                 },
                 estimatedReviewTime: { type: 'string' }
             },
@@ -470,7 +473,7 @@ ${sanitizeForPrompt(JSON.stringify(
                     parts: [
                         { text: systemPrompt + '\n\n' + prContext },
                         // Diff content passed as a separate part to mitigate prompt injection
-                        { text: 'Diff patches for key files:\n```diff\n' + sanitizeForPrompt(topFilePatches, 8000) + '\n```' }
+                        { text: 'Diff patches for key files:\n```diff\n' + sanitizeForPrompt(topFilePatches, 80000) + '\n```' }
                     ]
                 }
             ],

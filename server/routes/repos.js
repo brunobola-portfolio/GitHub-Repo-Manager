@@ -52,6 +52,20 @@ router.param('repo', (req, res, next, val) => {
     next();
 });
 
+router.param('pull_number', (req, res, next, val) => {
+    if (!/^\d+$/.test(val) || val.length > 10) {
+        return res.status(400).json({ error: 'Invalid pull request number' });
+    }
+    next();
+});
+
+router.param('comment_id', (req, res, next, val) => {
+    if (!/^\d+$/.test(val) || val.length > 15) {
+        return res.status(400).json({ error: 'Invalid comment ID' });
+    }
+    next();
+});
+
 // ------------------------------------------------------------------
 // Repository CRUD
 // ------------------------------------------------------------------

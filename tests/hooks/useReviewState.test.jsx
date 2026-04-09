@@ -175,10 +175,7 @@ describe('useReviewState', () => {
         act(() => {
             result.current.dispatch({
                 type: 'LOAD_DATA',
-                pr,
-                headSha: 'abc123',
-                files,
-                comments,
+                payload: { pr, headSha: 'abc123', files, comments },
             })
         })
 
@@ -186,5 +183,6 @@ describe('useReviewState', () => {
         expect(result.current.state.headSha).toBe('abc123')
         expect(result.current.state.files).toEqual(files)
         expect(result.current.state.comments).toEqual(comments)
+        expect(result.current.state.activeFile).toBe('a.js')
     })
 })
