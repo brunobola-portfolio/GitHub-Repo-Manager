@@ -55,6 +55,9 @@ server/data/
 # Dev directory — local workspace only
 .dev/
 
+# Git worktrees for isolated feature development
+.worktrees/
+
 # Screenshots and images (not part of source)
 *.png
 *.jpg
