@@ -49,6 +49,24 @@ function notifySessionExpired() {
     })
 }
 
+// ============ Rate Limit Event Bus ============
+// Fires whenever a 429 is encountered, regardless of call site. App.jsx
+// subscribes once and surfaces a toast; individual call sites don't need
+// to wire anything up.
+
+const rateLimitListeners = new Set()
+
+export function onRateLimit(callback) {
+    rateLimitListeners.add(callback)
+    return () => rateLimitListeners.delete(callback)
+}
+
+function notifyRateLimit(info) {
+    rateLimitListeners.forEach(cb => {
+        try { cb(info) } catch (e) { console.error('RateLimit listener error', e) }
+    })
+}
+
 // User-friendly error messages
 const ERROR_MESSAGES = {
     [ErrorType.NETWORK]: 'Unable to connect to the server. Please check your internet connection.',
@@ -181,6 +199,17 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
             // Parse error response body to preserve server-provided details
             let errorData = null
             try { errorData = await response.json() } catch (_e) { /* ignore parse error */ }
+
+            // Parse Retry-After header (in seconds). Falls back to 60 if unparseable.
+            if (response.status === 429) {
+                const retryAfterHeader = response.headers.get('Retry-After')
+                const retryAfterSec = Number.parseInt(retryAfterHeader, 10)
+                errorData = {
+                    ...(errorData || {}),
+                    retryAfterSec: Number.isFinite(retryAfterSec) ? retryAfterSec : 60,
+                }
+                notifyRateLimit({ retryAfterSec: errorData.retryAfterSec })
+            }
 
             // Categorize the error
             const apiError = categorizeError(response.status)

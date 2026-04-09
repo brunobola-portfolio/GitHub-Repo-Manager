@@ -417,3 +417,45 @@ describe('apiCall', () => {
     )
   })
 })
+
+describe('onRateLimit event bus', () => {
+    it('fires listeners with retryAfterSec from Retry-After header', async () => {
+        const { onRateLimit, fetchWithRetry } = await import('@/utils/api')
+        const received = []
+        const unsub = onRateLimit((info) => received.push(info))
+
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+            new Response(JSON.stringify({ error: 'rate' }), {
+                status: 429,
+                headers: { 'Content-Type': 'application/json', 'Retry-After': '45' },
+            })
+        )
+
+        await expect(
+            fetchWithRetry('/api/whatever', {}, { maxRetries: 0 })
+        ).rejects.toMatchObject({ type: 'RATE_LIMIT' })
+
+        expect(received).toHaveLength(1)
+        expect(received[0].retryAfterSec).toBe(45)
+
+        unsub()
+        fetchSpy.mockRestore()
+    })
+
+    it('attaches retryAfterSec to the ApiError data', async () => {
+        const { fetchWithRetry } = await import('@/utils/api')
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+            new Response('{}', {
+                status: 429,
+                headers: { 'Content-Type': 'application/json', 'Retry-After': '12' },
+            })
+        )
+        try {
+            await fetchWithRetry('/api/whatever', {}, { maxRetries: 0 })
+        } catch (err) {
+            expect(err.type).toBe('RATE_LIMIT')
+            expect(err.data?.retryAfterSec).toBe(12)
+        }
+        fetchSpy.mockRestore()
+    })
+})
