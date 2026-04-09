@@ -26,7 +26,7 @@ const ICON_STYLES = {
     warning: 'text-amber-500 dark:text-amber-400'
 }
 
-export function Toast({ id, type = 'info', message, onDismiss, duration = 5000 }) {
+export function Toast({ id, type = 'info', message, content, onDismiss, duration = 5000 }) {
     const [isLeaving, setIsLeaving] = useState(false)
     const timerRef = useRef(null)
     const onDismissRef = useRef(onDismiss)
@@ -62,7 +62,11 @@ export function Toast({ id, type = 'info', message, onDismiss, duration = 5000 }
 			} ${isLeaving ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'}`}
 		>
             <Icon className={`w-5 h-5 shrink-0 ${ICON_STYLES[type]}`} />
-            <p className="flex-1 text-sm font-medium">{message}</p>
+            {content ? (
+                <div className="flex-1 text-sm">{content}</div>
+            ) : (
+                <p className="flex-1 text-sm font-medium">{message}</p>
+            )}
             <button
                 onClick={handleDismiss}
                 className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors"
