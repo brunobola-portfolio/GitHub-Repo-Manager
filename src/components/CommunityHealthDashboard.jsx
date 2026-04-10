@@ -7,6 +7,19 @@ import {
 import { useToast } from '../hooks/useToast';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 
+function useIsDesktop() {
+    const [isDesktop, setIsDesktop] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
+
+    useEffect(() => {
+        const mql = window.matchMedia('(min-width: 1024px)');
+        const onChange = (e) => setIsDesktop(e.matches);
+        mql.addEventListener('change', onChange);
+        return () => mql.removeEventListener('change', onChange);
+    }, []);
+
+    return isDesktop;
+}
+
 function getScoreConfig(score) {
     if (score >= 80) return { color: '#10b981', tailwind: 'emerald', label: 'Excellent' };
     if (score >= 60) return { color: '#3b82f6', tailwind: 'blue', label: 'Good' };
