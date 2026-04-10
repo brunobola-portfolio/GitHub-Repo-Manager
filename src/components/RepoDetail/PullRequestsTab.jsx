@@ -6,7 +6,7 @@ import { ConfirmModal } from '../ui/ConfirmModal'
 import { GitPullRequest, Plus, Loader2, CheckCircle2, XCircle, GitMerge, ExternalLink, ChevronDown } from 'lucide-react'
 import { PRDetailPanel } from './PRDetailPanel'
 
-export function PullRequestsTab({ owner, repo, api }) {
+export function PullRequestsTab({ owner, repo, api, onStartReview }) {
     const [pulls, setPulls] = useState([])
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState('open')
@@ -101,6 +101,7 @@ export function PullRequestsTab({ owner, repo, api }) {
                     api={api}
                     onClose={() => setSelectedPR(null)}
                     onUpdate={() => { setSelectedPR(null); loadPulls() }}
+                    onStartReview={onStartReview}
                 />
             </AnimatePresence>
         )

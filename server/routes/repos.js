@@ -52,6 +52,20 @@ router.param('repo', (req, res, next, val) => {
     next();
 });
 
+router.param('pull_number', (req, res, next, val) => {
+    if (!/^\d+$/.test(val) || val.length > 10) {
+        return res.status(400).json({ error: 'Invalid pull request number' });
+    }
+    next();
+});
+
+router.param('comment_id', (req, res, next, val) => {
+    if (!/^\d+$/.test(val) || val.length > 15) {
+        return res.status(400).json({ error: 'Invalid comment ID' });
+    }
+    next();
+});
+
 // ------------------------------------------------------------------
 // Repository CRUD
 // ------------------------------------------------------------------
@@ -641,14 +655,197 @@ router.get('/:owner/:repo/pulls/:pull_number/reviews', requireAuth, async (req, 
     }
 });
 
-// List PR files changed
+// List PR files changed (with auto-pagination for large PRs)
 router.get('/:owner/:repo/pulls/:pull_number/files', requireAuth, async (req, res) => {
     try {
         const { owner, repo, pull_number } = req.params;
-        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls/${pull_number}/files?per_page=100`, req.session.accessToken);
-        res.json(data);
+        let allFiles = [];
+        let page = 1;
+        const perPage = 100;
+
+        while (true) {
+            const { data, headers } = await githubApi(
+                `/repos/${owner}/${repo}/pulls/${pull_number}/files?per_page=${perPage}&page=${page}`,
+                req.session.accessToken
+            );
+            allFiles = allFiles.concat(data);
+            const linkHeader = headers?.get('link') || '';
+            if (!linkHeader.includes('rel="next"')) break;
+            page++;
+            if (allFiles.length >= 3000) break;
+        }
+
+        res.json(allFiles);
     } catch (error) {
         req.log.error({ err: error }, 'List PR files failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Get raw diff for a pull request
+router.get('/:owner/:repo/pulls/:pull_number/diff', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, pull_number } = req.params;
+        const token = req.session.accessToken;
+
+        const response = await fetch(
+            `https://api.github.com/repos/${owner}/${repo}/pulls/${pull_number}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github.diff',
+                    'X-GitHub-Api-Version': '2022-11-28',
+                },
+                signal: AbortSignal.timeout(30000),
+            }
+        );
+
+        if (!response.ok) {
+            const err = new Error(`GitHub API error: ${response.status}`);
+            err.status = response.status;
+            throw err;
+        }
+
+        const diffText = await response.text();
+        res.type('text/plain').send(diffText);
+    } catch (error) {
+        req.log.error({ err: error }, 'Get PR diff failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// List PR review comments (inline code comments, not issue comments)
+router.get('/:owner/:repo/pulls/:pull_number/comments', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, pull_number } = req.params;
+        const { data } = await githubApi(
+            `/repos/${owner}/${repo}/pulls/${pull_number}/comments?per_page=100`,
+            req.session.accessToken
+        );
+        res.json(data);
+    } catch (error) {
+        req.log.error({ err: error }, 'List PR review comments failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Create inline review comment
+router.post('/:owner/:repo/pulls/:pull_number/comments', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, pull_number } = req.params;
+        const { body, commit_id, path, line, side, start_line, start_side } = req.body;
+
+        if (!body || !path || !commit_id) {
+            return res.status(400).json({
+                error: 'body, path, and commit_id are required',
+                code: 'VALIDATION_ERROR'
+            });
+        }
+
+        if (line != null && (!Number.isInteger(line) || line < 1)) {
+            return res.status(400).json({
+                error: 'line must be a positive integer',
+                code: 'VALIDATION_ERROR'
+            });
+        }
+
+        // Normalize side to GitHub's expected values
+        const VALID_SIDES = ['LEFT', 'RIGHT'];
+        const normalizedSide = side ? String(side).toUpperCase() : undefined;
+        if (normalizedSide && !VALID_SIDES.includes(normalizedSide)) {
+            return res.status(400).json({
+                error: 'side must be LEFT or RIGHT',
+                code: 'VALIDATION_ERROR'
+            });
+        }
+
+        const payload = { body, commit_id, path, line, side: normalizedSide };
+        if (start_line !== undefined) payload.start_line = start_line;
+        if (start_side !== undefined) payload.start_side = start_side;
+
+        const { data } = await githubApi(
+            `/repos/${owner}/${repo}/pulls/${pull_number}/comments`,
+            req.session.accessToken,
+            { method: 'POST', body: JSON.stringify(payload) }
+        );
+        res.status(201).json(data);
+    } catch (error) {
+        req.log.error({ err: error }, 'Create PR review comment failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Reply to a PR review comment thread
+router.post('/:owner/:repo/pulls/:pull_number/comments/:comment_id/replies', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, pull_number, comment_id } = req.params;
+        const { body } = req.body;
+
+        if (!body) {
+            return res.status(400).json({ error: 'body is required', code: 'VALIDATION_ERROR' });
+        }
+
+        try {
+            const { data } = await githubApi(
+                `/repos/${owner}/${repo}/pulls/comments/${comment_id}/replies`,
+                req.session.accessToken,
+                { method: 'POST', body: JSON.stringify({ body }) }
+            );
+            return res.status(201).json(data);
+        } catch (replyError) {
+            // Fallback for GHES < 3.6: use in_reply_to field on pull comments endpoint
+            if (replyError.status === 404) {
+                const { data } = await githubApi(
+                    `/repos/${owner}/${repo}/pulls/${pull_number}/comments`,
+                    req.session.accessToken,
+                    { method: 'POST', body: JSON.stringify({ body, in_reply_to: parseInt(comment_id, 10) }) }
+                );
+                return res.status(201).json(data);
+            }
+            throw replyError;
+        }
+    } catch (error) {
+        req.log.error({ err: error }, 'Reply to PR review comment failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Submit a PR review (approve, request changes, or comment)
+router.post('/:owner/:repo/pulls/:pull_number/reviews', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, pull_number } = req.params;
+        const { commit_id, event, body, comments } = req.body;
+
+        if (!event) {
+            return res.status(400).json({ error: 'event is required', code: 'VALIDATION_ERROR' });
+        }
+
+        const VALID_EVENTS = ['APPROVE', 'REQUEST_CHANGES', 'COMMENT'];
+        if (!VALID_EVENTS.includes(event)) {
+            return res.status(400).json({
+                error: `event must be one of: ${VALID_EVENTS.join(', ')}`,
+                code: 'VALIDATION_ERROR'
+            });
+        }
+
+        const payload = { event };
+        if (commit_id) payload.commit_id = commit_id;
+        if (body) payload.body = body;
+        if (Array.isArray(comments)) {
+            payload.comments = comments.map(c => ({
+                ...c,
+                side: c.side ? String(c.side).toUpperCase() : c.side,
+            }));
+        }
+
+        const { data } = await githubApi(
+            `/repos/${owner}/${repo}/pulls/${pull_number}/reviews`,
+            req.session.accessToken,
+            { method: 'POST', body: JSON.stringify(payload) }
+        );
+        res.status(200).json(data);
+    } catch (error) {
+        req.log.error({ err: error }, 'Submit PR review failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });

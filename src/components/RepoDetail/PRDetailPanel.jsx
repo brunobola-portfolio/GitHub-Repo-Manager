@@ -27,7 +27,7 @@ function getFileIcon(status) {
     }
 }
 
-export function PRDetailPanel({ pr, api, onClose, onUpdate }) {
+export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview }) {
     const [detail, setDetail] = useState(null)
     const [reviews, setReviews] = useState([])
     const [files, setFiles] = useState([])
@@ -217,6 +217,16 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate }) {
                         </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
+                        {onStartReview && (
+                            <Button
+                                size="sm"
+                                onClick={() => onStartReview?.(pr)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
+                                <Eye className="w-4 h-4 mr-1" />
+                                Review
+                            </Button>
+                        )}
                         {current.html_url && (
                             <a
                                 href={current.html_url}
