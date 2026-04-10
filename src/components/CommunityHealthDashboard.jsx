@@ -83,10 +83,37 @@ const TABS = [
 ];
 
 function TabBar({ activeTab, onTabChange }) {
+    const handleKeyDown = (e) => {
+        const currentIndex = TABS.findIndex(t => t.id === activeTab);
+        let nextIndex;
+
+        switch (e.key) {
+            case 'ArrowRight':
+                nextIndex = (currentIndex + 1) % TABS.length;
+                break;
+            case 'ArrowLeft':
+                nextIndex = (currentIndex - 1 + TABS.length) % TABS.length;
+                break;
+            case 'Home':
+                nextIndex = 0;
+                break;
+            case 'End':
+                nextIndex = TABS.length - 1;
+                break;
+            default:
+                return;
+        }
+
+        e.preventDefault();
+        onTabChange(TABS[nextIndex].id);
+        document.getElementById(`tab-${TABS[nextIndex].id}`)?.focus();
+    };
+
     return (
         <div
             role="tablist"
             className="flex gap-1 p-1 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/40 dark:border-slate-700/40"
+            onKeyDown={handleKeyDown}
         >
             {TABS.map(({ id, label, icon: Icon }) => {
                 const isActive = activeTab === id;
@@ -96,6 +123,7 @@ function TabBar({ activeTab, onTabChange }) {
                         id={`tab-${id}`}
                         role="tab"
                         aria-selected={isActive}
+                        tabIndex={isActive ? 0 : -1}
                         aria-controls={`tabpanel-${id}`}
                         onClick={() => onTabChange(id)}
                         className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${

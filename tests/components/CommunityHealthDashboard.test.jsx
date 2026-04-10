@@ -229,6 +229,62 @@ describe('CommunityHealthDashboard', () => {
         });
     });
 
+    it('supports keyboard navigation between tabs on desktop', async () => {
+        window.matchMedia = vi.fn().mockImplementation(query => ({
+            matches: query === '(min-width: 1024px)',
+            media: query,
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+        }));
+
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(mockHealthData)
+        });
+
+        const user = userEvent.setup();
+        render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
+
+        await waitFor(() => {
+            expect(screen.getByRole('tablist')).toBeInTheDocument();
+        });
+
+        // Focus the active tab (Files)
+        const filesTab = screen.getByRole('tab', { name: /Files/i });
+        filesTab.focus();
+
+        // ArrowRight moves to Activity
+        await user.keyboard('{ArrowRight}');
+        await waitFor(() => {
+            expect(screen.getByText('Contributors')).toBeInTheDocument();
+        });
+        expect(screen.getByRole('tab', { name: /Activity/i })).toHaveAttribute('aria-selected', 'true');
+
+        // ArrowRight moves to Recommendations
+        await user.keyboard('{ArrowRight}');
+        await waitFor(() => {
+            expect(screen.getByText('Add CONTRIBUTING.md')).toBeInTheDocument();
+        });
+
+        // ArrowRight wraps to Files
+        await user.keyboard('{ArrowRight}');
+        await waitFor(() => {
+            expect(screen.getByText('Community Files')).toBeInTheDocument();
+        });
+
+        // Home goes to first tab
+        await user.keyboard('{Home}');
+        await waitFor(() => {
+            expect(screen.getByRole('tab', { name: /Files/i })).toHaveAttribute('aria-selected', 'true');
+        });
+
+        // End goes to last tab
+        await user.keyboard('{End}');
+        await waitFor(() => {
+            expect(screen.getByRole('tab', { name: /Recommendations/i })).toHaveAttribute('aria-selected', 'true');
+        });
+    });
+
     it('does not render tab bar on mobile viewport', async () => {
         window.matchMedia = vi.fn().mockImplementation(query => ({
             matches: false,
