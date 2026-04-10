@@ -127,3 +127,37 @@ describe('Modal — staggerChildren and iconGradient', () => {
     expect(iconTile.className).toMatch(/from-indigo-500/)
   })
 })
+
+describe('Modal — mobileVariant', () => {
+  afterEach(() => { cleanup(); document.body.style.overflow = '' })
+
+  it('applies sheet classes when mobileVariant=sheet', () => {
+    const { container } = render(
+      <Modal isOpen={true} onClose={() => {}} title="Hi" mobileVariant="sheet">x</Modal>
+    )
+    const backdrop = container.querySelector('[data-modal-backdrop="true"]')
+    expect(backdrop.className).toMatch(/md:items-center/)
+    expect(backdrop.className).toMatch(/items-end/)
+
+    const dialog = container.querySelector('[role="dialog"]')
+    expect(dialog.className).toMatch(/max-md:rounded-t-3xl/)
+    expect(dialog.className).toMatch(/max-md:rounded-b-none/)
+  })
+
+  it('applies centered classes when mobileVariant=centered', () => {
+    const { container } = render(
+      <Modal isOpen={true} onClose={() => {}} title="Hi" mobileVariant="centered">x</Modal>
+    )
+    const backdrop = container.querySelector('[data-modal-backdrop="true"]')
+    expect(backdrop.className).toMatch(/items-center/)
+    expect(backdrop.className).not.toMatch(/items-end/)
+  })
+
+  it('defaults to sheet on mobile', () => {
+    const { container } = render(
+      <Modal isOpen={true} onClose={() => {}} title="Hi">x</Modal>
+    )
+    const backdrop = container.querySelector('[data-modal-backdrop="true"]')
+    expect(backdrop.className).toMatch(/items-end/)
+  })
+})

@@ -41,6 +41,7 @@ export function Modal({
     staggerChildren = false,
     iconGradient = 'none',
     bodyClassName = '',
+    mobileVariant = 'sheet',
 }) {
     const sizeClasses = {
         sm:    'max-w-md',
@@ -117,12 +118,13 @@ export function Modal({
                 <>
                     {/* Backdrop */}
                     <motion.div
+                        data-modal-backdrop="true"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         onClick={handleBackdropClick}
-                        className="fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                        className={`fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-md z-[60] flex justify-center md:items-center md:p-4 ${mobileVariant === 'sheet' ? 'items-end p-0 md:p-4' : 'items-center p-4'}`}
                     >
                         {/* Modal Container */}
                         <motion.div
@@ -131,9 +133,9 @@ export function Modal({
                             aria-modal="true"
                             aria-labelledby="modal-title"
                             aria-describedby="modal-body"
-                            initial={{ opacity: 0, scale: 0.98, y: 24 }}
+                            initial={mobileVariant === 'sheet' ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.98, y: 24 }}
+                            exit={mobileVariant === 'sheet' ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 }}
                             transition={{ type: 'spring', duration: 0.4, bounce: 0.12 }}
                             onClick={(e) => e.stopPropagation()}
                             className={`
@@ -141,11 +143,12 @@ export function Modal({
                                 w-full min-w-[320px]
                                 bg-white dark:bg-slate-950
                                 rounded-2xl
+                                ${mobileVariant === 'sheet' ? 'max-md:rounded-t-3xl max-md:rounded-b-none max-md:max-w-full' : ''}
                                 shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)]
                                 ring-1 ring-slate-200/50 dark:ring-slate-700/50
                                 overflow-hidden
                                 flex flex-col
-                                max-h-[85vh] md:max-h-[90vh]
+                                max-h-[92vh] md:max-h-[88vh]
                                 ${className}
                             `}
                         >
@@ -215,7 +218,9 @@ export function Modal({
 
                             {/* Footer */}
                             {footer && (
-                                <div className="flex-shrink-0 flex items-center min-h-[72px] px-6 md:px-8 bg-white/80 dark:bg-slate-900/70 ds-glass border-t border-slate-200/50 dark:border-slate-800/40">
+                                <div
+                                    className={`flex-shrink-0 flex items-center min-h-[72px] px-6 md:px-8 bg-white/80 dark:bg-slate-900/70 ds-glass border-t border-slate-200/50 dark:border-slate-800/40 ${mobileVariant === 'sheet' ? 'pb-[calc(1rem+env(safe-area-inset-bottom))] md:pb-0' : ''}`}
+                                >
                                     <div className="w-full">
                                         {footer}
                                     </div>
