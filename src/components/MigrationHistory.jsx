@@ -8,6 +8,12 @@ import {
 } from 'lucide-react'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { migrationApi } from '../api/migration'
+import { TabBar } from './ui/TabBar'
+
+const MIGRATION_TABS = [
+    { id: 'plans', label: 'Plans', icon: ListChecks },
+    { id: 'legacy', label: 'Legacy Jobs', icon: History },
+]
 
 const SOURCE_ICONS = {
     azure: Cloud,
@@ -116,25 +122,15 @@ export function MigrationHistory({ isOpen, onClose }) {
                 </div>
 
                 {/* Tab Toggle */}
-                <div className="flex items-center gap-1 mb-4 rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 overflow-hidden w-fit">
-                    <button onClick={() => setActiveTab('plans')}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5
-                            ${activeTab === 'plans'
-                                ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                            }`}>
-                        <ListChecks className="w-3.5 h-3.5" />
-                        Plans
-                    </button>
-                    <button onClick={() => setActiveTab('legacy')}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1.5
-                            ${activeTab === 'legacy'
-                                ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                            }`}>
-                        <History className="w-3.5 h-3.5" />
-                        Legacy Jobs
-                    </button>
+                <div className="mb-4 w-fit">
+                    <TabBar
+                        tabs={MIGRATION_TABS}
+                        activeTab={activeTab}
+                        onTabChange={setActiveTab}
+                        variant="segmented"
+                        layoutId="migration-tabs"
+                        size="sm"
+                    />
                 </div>
 
                 {activeTab === 'legacy' && (
@@ -154,7 +150,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                 )}
 
                 {/* Content area */}
-                <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar" role="tabpanel" id={`tabpanel-migration-tabs-${activeTab}`} aria-labelledby={`tab-migration-tabs-${activeTab}`}>
                     {loading ? (
                         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-indigo-500 animate-spin" /></div>
                     ) : activeTab === 'plans' ? (
