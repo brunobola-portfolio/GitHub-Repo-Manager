@@ -365,21 +365,22 @@ function RecommendationItem({ recommendation }) {
     );
 }
 
+const SKELETON_MESSAGES = [
+    'Checking community files...',
+    'Analyzing repository activity...',
+    'Calculating health score...',
+    'Generating recommendations...'
+];
+
 function SkeletonState() {
     const [messageIndex, setMessageIndex] = useState(0);
-    const messages = [
-        'Checking community files...',
-        'Analyzing repository activity...',
-        'Calculating health score...',
-        'Generating recommendations...'
-    ];
 
     useEffect(() => {
         const interval = setInterval(() => {
-            setMessageIndex(i => (i + 1) % messages.length);
+            setMessageIndex(i => (i + 1) % SKELETON_MESSAGES.length);
         }, 1500);
         return () => clearInterval(interval);
-    }, [messages.length]);
+    }, []);
 
     return (
         <div className="space-y-6">
@@ -392,7 +393,7 @@ function SkeletonState() {
                         exit={{ opacity: 0, y: -8, transition: { duration: 0.25 } }}
                         className="text-sm font-medium text-indigo-600 dark:text-indigo-400"
                     >
-                        {messages[messageIndex]}
+                        {SKELETON_MESSAGES[messageIndex]}
                     </motion.p>
                 </AnimatePresence>
             </div>
