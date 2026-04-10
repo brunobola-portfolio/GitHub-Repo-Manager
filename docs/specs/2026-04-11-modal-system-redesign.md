@@ -22,7 +22,7 @@ Across the app there are **10 registered modals** in [src/contexts/ModalContext.
 | Hand-rolled motion.div wrapper | `RepoInsightsModal`, `OrgManagerModal`, `TransferModal` |
 | Wrapped in `<WizardPanel />` | `CreateRepoModal`, `CommitGeneratorModal` |
 
-The design system in [src/design-system.css](../../src/design-system.css) already ships rich primitives (`ds-stagger`, `ds-animate-fade-in-up`, `ds-card-shimmer`, `ds-hover-lift`, `ds-scrollbar`, `ds-skeleton`, full `prefers-reduced-motion` support) — they are simply not used by the hand-rolled modals.
+The design system in [src/design-system.css](../../src/design-system.css) already ships rich primitives (`ds-stagger`, `ds-animate-fade-in-up`, `ds-card-shimmer`, `ds-hover-lift`, `custom-scrollbar`, `ds-skeleton`, full `prefers-reduced-motion` support) — they are simply not used by the hand-rolled modals.
 
 ## Goals
 
@@ -161,7 +161,7 @@ Called inside `Modal.jsx` with `useBodyScrollLock(isOpen)`.
 
 **Scrollbar:**
 
-Body container always uses `ds-scrollbar` class. No more default browser scrollbar.
+Body container always uses `custom-scrollbar` class. No more default browser scrollbar.
 
 ---
 
@@ -301,7 +301,7 @@ File: [src/components/AI/RepoInsightsModal.jsx](../../src/components/AI/RepoInsi
 ┌──────────────────────┬──────────────────────────┐
 │ Quality Breakdown    │ Detected Features        │
 │ (4x StatBar)         │ (grid-cols-2 internal,   │
-│ col-span-1           │  max-h with ds-scrollbar)│
+│ col-span-1           │  max-h with custom-scrollbar)│
 │                      │ col-span-1               │
 ├──────────────────────┴──────────────────────────┤
 │ Recommendations (grid md:grid-cols-2)           │
@@ -394,7 +394,7 @@ Each section checks its source (`highlights?.length`, `suggested_topics?.length`
   - Same entrance animation (spring scale + y)
   - Same header gradient classes
   - Same footer glass classes
-  - Same `ds-scrollbar` on body
+  - Same `custom-scrollbar` on body
 - Internal cards → `<InsightCard>`.
 
 ---
@@ -429,7 +429,7 @@ Every edge case below has a documented mitigation. These are test criteria, not 
 |---|---|---|
 | 1 | TL;DR summary > 4 lines | `line-clamp-4` + "Show more" toggle; `needsClamp` detected via ref on mount |
 | 2 | Variable number of quality breakdown items (4, 5, 6…) | `StatBar` container uses flex column, no fixed slot count |
-| 3 | Many detected features (>12) | `grid-cols-2 lg:grid-cols-3` + internal `max-h-[240px] ds-scrollbar` on the card only |
+| 3 | Many detected features (>12) | `grid-cols-2 lg:grid-cols-3` + internal `max-h-[240px] custom-scrollbar` on the card only |
 | 4 | Re-analyze during view | Inline loading (spinner in footer button + body `opacity-60 pointer-events-none`); content preserved |
 | 5 | State update after unmount | `AbortController` in `fetchAnalysis`, aborted on modal close or `repo.id` change |
 | 6 | Rapid open/close/open double-fetch | Same AbortController + ref cache of last `analysis` by `repo.id` — skip fetch if fresh (<60s) |
@@ -513,7 +513,7 @@ Saved to `docs/images/2026-04-11_modal-redesign_*_hd.png`:
 
 - [ ] Desktop 1920×1080: no scrollbar on any AI Insights tab
 - [ ] Desktop 1440×900: no scrollbar on any AI Insights tab
-- [ ] Laptop 1366×768: scrollbar acceptable on Quality if needed, styled `ds-scrollbar`
+- [ ] Laptop 1366×768: scrollbar acceptable on Quality if needed, styled `custom-scrollbar`
 - [ ] Mobile portrait: bottom-sheet enters from bottom, footer above safe area
 - [ ] Mobile landscape: centered, not sheet
 - [ ] Dark mode: all borders/text readable, no bleed
