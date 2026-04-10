@@ -1,11 +1,67 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useReducedMotion } from 'framer-motion';
 import {
     FileText, Users, Activity, CheckCircle,
     XCircle, AlertCircle, TrendingUp, RefreshCw
 } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+
+function getScoreConfig(score) {
+    if (score >= 80) return { color: '#10b981', tailwind: 'emerald', label: 'Excellent' };
+    if (score >= 60) return { color: '#3b82f6', tailwind: 'blue', label: 'Good' };
+    if (score >= 40) return { color: '#f59e0b', tailwind: 'amber', label: 'Fair' };
+    return { color: '#ef4444', tailwind: 'red', label: 'Needs Improvement' };
+}
+
+function HealthScoreRing({ score }) {
+    const reducedMotion = useReducedMotion();
+    const config = getScoreConfig(score);
+    const normalizedScore = Math.min(Math.max(score, 0), 100) / 100;
+    const motionValue = useMotionValue(0);
+    const springValue = useSpring(motionValue, { stiffness: 80, damping: 20, duration: reducedMotion ? 0 : 1.2 });
+    const [displayScore, setDisplayScore] = useState(reducedMotion ? score : 0);
+
+    useEffect(() => { motionValue.set(score); }, [score, motionValue]);
+    useEffect(() => {
+        const unsubscribe = springValue.on('change', v => setDisplayScore(Math.round(v)));
+        return unsubscribe;
+    }, [springValue]);
+
+    const radius = 52, strokeWidth = 8, center = 64;
+
+    return (
+        <div className="w-28 h-28 md:w-36 md:h-36 relative">
+            <svg viewBox="0 0 128 128" className="w-full h-full -rotate-90" aria-label={`Health score: ${score}% — ${config.label}`} role="img">
+                <circle cx={center} cy={center} r={radius} fill="none" stroke="currentColor" strokeWidth={strokeWidth} className="text-slate-200/40 dark:text-slate-700/40" />
+                <motion.circle cx={center} cy={center} r={radius} fill="none" stroke={config.color} strokeWidth={strokeWidth} strokeLinecap="round"
+                    initial={{ pathLength: reducedMotion ? normalizedScore : 0 }}
+                    animate={{ pathLength: normalizedScore }}
+                    transition={reducedMotion ? { duration: 0 } : { duration: 1.2, ease: 'easeOut' }}
+                />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center rotate-0">
+                <span className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white">{displayScore}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{config.label}</span>
+            </div>
+        </div>
+    );
+}
+
+function ScoreBadge({ score, className = '' }) {
+    const config = getScoreConfig(score);
+    const badgeColors = {
+        emerald: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+        blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+        amber: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+        red: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
+    };
+    return (
+        <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${badgeColors[config.tailwind]} ${className}`}>
+            {config.label}
+        </span>
+    );
+}
 
 export function CommunityHealthDashboard({ repo, onClose }) {
     const [health, setHealth] = useState(null);
@@ -62,7 +118,10 @@ export function CommunityHealthDashboard({ repo, onClose }) {
             >
                 <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-white/10 dark:border-white/5 px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-3xl">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Community Health</h1>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Community Health</h1>
+                            {showContent && <ScoreBadge score={health.score} />}
+                        </div>
                         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{repo.full_name}</p>
                     </div>
 
@@ -96,15 +155,13 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                 className="space-y-6"
                             >
                                 {/* Health Score */}
-                                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl p-8 text-white">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <div className="text-sm uppercase tracking-wide text-indigo-100 mb-2">Overall Health Score</div>
-                                            <div className="text-6xl font-bold">{health.score}</div>
-                                            <div className="text-xl text-indigo-100 mt-2">{getScoreLabel(health.score)}</div>
-                                        </div>
-                                        <div className="w-32 h-32 rounded-full border-8 border-white/30 flex items-center justify-center">
-                                            <div className="text-4xl font-bold">{health.score}%</div>
+                                <div className="rounded-3xl p-8 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 border border-indigo-200/30 dark:border-indigo-500/20">
+                                    <div className="flex flex-col sm:flex-row items-center gap-6">
+                                        <HealthScoreRing score={health.score} />
+                                        <div className="text-center sm:text-left space-y-1">
+                                            <div className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400">Overall Health Score</div>
+                                            <div className="text-4xl font-bold text-slate-900 dark:text-white">{health.score}<span className="text-lg text-slate-400">%</span></div>
+                                            <ScoreBadge score={health.score} />
                                         </div>
                                     </div>
                                 </div>
@@ -190,13 +247,6 @@ export function CommunityHealthDashboard({ repo, onClose }) {
             </motion.div>
         </div>
     );
-}
-
-function getScoreLabel(score) {
-    if (score >= 80) return 'Excellent';
-    if (score >= 60) return 'Good';
-    if (score >= 40) return 'Fair';
-    return 'Needs Improvement';
 }
 
 function FileCheckItem({ file, exists, size }) {
