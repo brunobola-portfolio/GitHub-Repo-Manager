@@ -8,6 +8,7 @@ import { ApiKeysSection } from './Settings/ApiKeysSection'
 import { AuditLogSection } from './Settings/AuditLogSection'
 import { BillingSection } from './Settings/BillingSection'
 import { UsageSection } from './Settings/UsageSection'
+import { TabBar } from './ui/TabBar'
 
 const TABS = [
     { id: 'general', label: 'General', icon: SettingsIcon },
@@ -119,32 +120,18 @@ export function SettingsModal({ isOpen, onClose }) {
                         </div>
 
                         {/* Tab bar */}
-                        <div className="flex border-b border-slate-200/50 dark:border-slate-800/40 bg-slate-50/50 dark:bg-slate-900/40 px-4 overflow-x-auto flex-shrink-0">
-                            {TABS.map(({ id, label, icon: TabIcon }) => (
-                                <button
-                                    key={id}
-                                    onClick={() => setActiveTab(id)}
-                                    className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                                        activeTab === id
-                                            ? 'text-indigo-600 dark:text-indigo-400'
-                                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                                    }`}
-                                >
-                                    <TabIcon className="w-4 h-4" />
-                                    {label}
-                                    {activeTab === id && (
-                                        <motion.div
-                                            layoutId="settings-tab-indicator"
-                                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full"
-                                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                                        />
-                                    )}
-                                </button>
-                            ))}
+                        <div className="bg-slate-50/50 dark:bg-slate-900/40 px-4 overflow-x-auto flex-shrink-0">
+                            <TabBar
+                                tabs={TABS}
+                                activeTab={activeTab}
+                                onTabChange={setActiveTab}
+                                variant="underline"
+                                layoutId="settings-tabs"
+                            />
                         </div>
 
                         {/* Tab content */}
-                        <div className="flex-1 overflow-y-auto">
+                        <div className="flex-1 overflow-y-auto" role="tabpanel" id={`tabpanel-settings-tabs-${activeTab}`} aria-labelledby={`tab-settings-tabs-${activeTab}`}>
                             {activeTab === 'general' && (
                                 <div className="p-6 space-y-6">
                                     {/* Theme Selection */}
