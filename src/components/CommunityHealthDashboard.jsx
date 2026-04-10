@@ -127,6 +127,16 @@ export function CommunityHealthDashboard({ repo, onClose }) {
     const [refreshing, setRefreshing] = useState(false);
     const { toast } = useToast();
     const modalRef = useFocusTrap(true, onClose);
+    const isDesktop = useIsDesktop();
+    const [activeTab, setActiveTab] = useState('files');
+    const [tabDirection, setTabDirection] = useState(0);
+
+    const handleTabChange = (newTab) => {
+        const currentIndex = TABS.findIndex(t => t.id === activeTab);
+        const newIndex = TABS.findIndex(t => t.id === newTab);
+        setTabDirection(newIndex > currentIndex ? 1 : -1);
+        setActiveTab(newTab);
+    };
 
     useEffect(() => {
         if (repo) {
@@ -212,7 +222,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                 transition={{ duration: 0.3 }}
                                 className="space-y-6"
                             >
-                                {/* Health Score */}
+                                {/* Health Score — always visible (KEEP AS-IS) */}
                                 <div className="rounded-3xl p-8 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 border border-indigo-200/30 dark:border-indigo-500/20">
                                     <div className="flex flex-col sm:flex-row items-center gap-6">
                                         <HealthScoreRing score={health.score} />
@@ -224,80 +234,119 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                     </div>
                                 </div>
 
-                                {/* File Checklist */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 12 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.2, duration: 0.4 }}
-                                    className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60"
-                                >
-                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                                        <FileText className="w-5 h-5 text-indigo-500" />
-                                        Community Files
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {Object.entries(health.metrics.files).map(([file, data]) => (
-                                            <FileCheckItem key={file} file={file} exists={data.exists} size={data.size} />
-                                        ))}
-                                    </div>
-                                </motion.div>
+                                {isDesktop ? (
+                                    <>
+                                        {/* Tab Bar */}
+                                        <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
 
-                                {/* Activity Metrics */}
-                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                    <MetricCard
-                                        title="Contributors"
-                                        value={health.metrics.activity.contributorCount}
-                                        icon={Users}
-                                        color="blue"
-                                        index={0}
-                                    />
-                                    <MetricCard
-                                        title="Commits (30d)"
-                                        value={health.metrics.activity.commitsLast30Days}
-                                        icon={Activity}
-                                        color="green"
-                                        index={1}
-                                    />
-                                    <MetricCard
-                                        title="Open Issues"
-                                        value={health.metrics.activity.openIssues}
-                                        icon={AlertCircle}
-                                        color="amber"
-                                        index={2}
-                                    />
-                                    <MetricCard
-                                        title="Closed Issues"
-                                        value={health.metrics.activity.closedIssues}
-                                        icon={CheckCircle}
-                                        color="emerald"
-                                        index={3}
-                                    />
-                                </div>
+                                        {/* Tab Content */}
+                                        <AnimatePresence mode="wait" custom={tabDirection}>
+                                            <motion.div
+                                                key={activeTab}
+                                                role="tabpanel"
+                                                id={`tabpanel-${activeTab}`}
+                                                custom={tabDirection}
+                                                initial={{ opacity: 0, x: tabDirection * 24 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, x: tabDirection * -24 }}
+                                                transition={{ duration: 0.2 }}
+                                            >
+                                                {activeTab === 'files' && (
+                                                    <div className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60">
+                                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                                                            <FileText className="w-5 h-5 text-indigo-500" />
+                                                            Community Files
+                                                        </h3>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                            {Object.entries(health.metrics.files).map(([file, data]) => (
+                                                                <FileCheckItem key={file} file={file} exists={data.exists} size={data.size} />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
 
-                                {/* Recommendations */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 12 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.6, duration: 0.4 }}
-                                    className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60"
-                                >
-                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                                        <TrendingUp className="w-5 h-5 text-indigo-500" />
-                                        Recommendations
-                                    </h3>
-                                    <div className="space-y-3">
-                                        {health.recommendations.map((rec, idx) => (
-                                            <RecommendationItem key={idx} recommendation={rec} />
-                                        ))}
-                                        {health.recommendations.length === 0 && (
-                                            <p className="text-slate-500 dark:text-slate-400 italic">
-                                                Great job! No recommendations at this time.
-                                            </p>
-                                        )}
-                                    </div>
-                                </motion.div>
+                                                {activeTab === 'activity' && (
+                                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                                        <MetricCard title="Contributors" value={health.metrics.activity.contributorCount} icon={Users} color="blue" index={0} />
+                                                        <MetricCard title="Commits (30d)" value={health.metrics.activity.commitsLast30Days} icon={Activity} color="green" index={1} />
+                                                        <MetricCard title="Open Issues" value={health.metrics.activity.openIssues} icon={AlertCircle} color="amber" index={2} />
+                                                        <MetricCard title="Closed Issues" value={health.metrics.activity.closedIssues} icon={CheckCircle} color="emerald" index={3} />
+                                                    </div>
+                                                )}
 
-                                {/* Last Updated */}
+                                                {activeTab === 'recommendations' && (
+                                                    <div className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60">
+                                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                                                            <TrendingUp className="w-5 h-5 text-indigo-500" />
+                                                            Recommendations
+                                                        </h3>
+                                                        <div className="space-y-3">
+                                                            {health.recommendations.map((rec, idx) => (
+                                                                <RecommendationItem key={idx} recommendation={rec} />
+                                                            ))}
+                                                            {health.recommendations.length === 0 && (
+                                                                <p className="text-slate-500 dark:text-slate-400 italic">
+                                                                    Great job! No recommendations at this time.
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </motion.div>
+                                        </AnimatePresence>
+                                    </>
+                                ) : (
+                                    <>
+                                        {/* Mobile: stacked scroll layout (unchanged from current code) */}
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 12 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.2, duration: 0.4 }}
+                                            className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60"
+                                        >
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                                                <FileText className="w-5 h-5 text-indigo-500" />
+                                                Community Files
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {Object.entries(health.metrics.files).map(([file, data]) => (
+                                                    <FileCheckItem key={file} file={file} exists={data.exists} size={data.size} />
+                                                ))}
+                                            </div>
+                                        </motion.div>
+
+                                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                            <MetricCard title="Contributors" value={health.metrics.activity.contributorCount} icon={Users} color="blue" index={0} />
+                                            <MetricCard title="Commits (30d)" value={health.metrics.activity.commitsLast30Days} icon={Activity} color="green" index={1} />
+                                            <MetricCard title="Open Issues" value={health.metrics.activity.openIssues} icon={AlertCircle} color="amber" index={2} />
+                                            <MetricCard title="Closed Issues" value={health.metrics.activity.closedIssues} icon={CheckCircle} color="emerald" index={3} />
+                                        </div>
+
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 12 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.6, duration: 0.4 }}
+                                            className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60"
+                                        >
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                                                <TrendingUp className="w-5 h-5 text-indigo-500" />
+                                                Recommendations
+                                            </h3>
+                                            <div className="space-y-3">
+                                                {health.recommendations.map((rec, idx) => (
+                                                    <RecommendationItem key={idx} recommendation={rec} />
+                                                ))}
+                                                {health.recommendations.length === 0 && (
+                                                    <p className="text-slate-500 dark:text-slate-400 italic">
+                                                        Great job! No recommendations at this time.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    </>
+                                )}
+
+                                {/* Last Updated — always visible */}
                                 <div className="text-center text-sm text-slate-400">
                                     Last analyzed: {new Date(health.lastUpdated).toLocaleString()}
                                     {health.cached && ' (cached)'}
