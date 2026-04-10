@@ -5,6 +5,14 @@ import { useToast } from '../../hooks/useToast';
 import { ActivityTab } from './ActivityTab';
 import { Select } from '../ui/Select';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { TabBar } from '../ui/TabBar';
+
+const TEAM_TABS = [
+    { id: 'activity', label: 'Activity', icon: Activity },
+    { id: 'members', label: 'Members', icon: Users },
+    { id: 'repos', label: 'Repositories', icon: Github },
+    { id: 'actions', label: 'Actions', icon: Zap },
+];
 
 export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsStats }) {
     const [activeTab, setActiveTab] = useState('activity');
@@ -154,19 +162,14 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                     <p className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl">{team.description}</p>
                 </div>
 
-                <div className="flex gap-4 mt-8">
-                    <TabButton active={activeTab === 'activity'} onClick={() => setActiveTab('activity')} icon={Activity}>
-                        Activity
-                    </TabButton>
-                    <TabButton active={activeTab === 'members'} onClick={() => setActiveTab('members')} icon={Users}>
-                        Members ({members.length})
-                    </TabButton>
-                    <TabButton active={activeTab === 'repos'} onClick={() => setActiveTab('repos')} icon={Github}>
-                        Repositories ({assignedRepos.length})
-                    </TabButton>
-                    <TabButton active={activeTab === 'actions'} onClick={() => setActiveTab('actions')} icon={Zap}>
-                        Actions
-                    </TabButton>
+                <div className="mt-8">
+                    <TabBar
+                        tabs={TEAM_TABS}
+                        activeTab={activeTab}
+                        onTabChange={setActiveTab}
+                        variant="pill"
+                        layoutId="team-detail-tabs"
+                    />
                 </div>
             </header>
 
@@ -177,6 +180,9 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
+                        role="tabpanel"
+                        id="tabpanel-team-detail-tabs-activity"
+                        aria-labelledby="tab-team-detail-tabs-activity"
                     >
                         <ActivityTab teamId={team.id} />
                     </motion.div>
@@ -188,6 +194,9 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
+                        role="tabpanel"
+                        id="tabpanel-team-detail-tabs-members"
+                        aria-labelledby="tab-team-detail-tabs-members"
                     >
                         <div className="flex justify-end mb-4">
                             <button
@@ -285,6 +294,9 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
+                        role="tabpanel"
+                        id="tabpanel-team-detail-tabs-repos"
+                        aria-labelledby="tab-team-detail-tabs-repos"
                     >
                         <div className="flex justify-end mb-4">
                             <button
@@ -372,7 +384,17 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                 )}
 
                 {activeTab === 'actions' && (
-                    <ActionsTab assignedRepos={assignedRepos} onShowStats={onShowActionsStats} />
+                    <motion.div
+                        key="actions"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        role="tabpanel"
+                        id="tabpanel-team-detail-tabs-actions"
+                        aria-labelledby="tab-team-detail-tabs-actions"
+                    >
+                        <ActionsTab assignedRepos={assignedRepos} onShowStats={onShowActionsStats} />
+                    </motion.div>
                 )}
             </AnimatePresence>
 
@@ -386,21 +408,6 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                 variant="danger"
             />
         </div>
-    );
-}
-
-function TabButton({ children, active, onClick, icon: Icon }) {
-    return (
-        <button
-            onClick={onClick}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${active
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
-                }`}
-        >
-            {Icon && <Icon className="w-4 h-4" />}
-            {children}
-        </button>
     );
 }
 
