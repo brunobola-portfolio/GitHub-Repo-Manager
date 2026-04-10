@@ -92,7 +92,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
     if (!replyText.trim() || submitting) return
     setSubmitting(true)
     try {
-      await onReply?.({ commentId: comment.id, body: replyText.trim() })
+      await onReply?.(comment.id, replyText.trim())
       setReplyText('')
       setShowReply(false)
     } finally {
