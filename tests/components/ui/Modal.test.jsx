@@ -54,3 +54,46 @@ describe('Modal — base', () => {
     expect(document.body.style.overflow).toBe('')
   })
 })
+
+import { fireEvent } from '@testing-library/react'
+import { Sparkles, FileText } from 'lucide-react'
+
+describe('Modal — tabs', () => {
+  afterEach(() => { cleanup(); document.body.style.overflow = '' })
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: Sparkles },
+    { id: 'readme',   label: 'README',   icon: FileText },
+  ]
+
+  it('renders tabs when tabs prop is provided', () => {
+    render(
+      <Modal
+        isOpen={true} onClose={() => {}} title="AI"
+        tabs={tabs} activeTab="overview" onTabChange={() => {}}
+        tabsLayoutId="test-tabs"
+      >body</Modal>
+    )
+    expect(screen.getByRole('tablist')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Overview/ })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /README/ })).toBeInTheDocument()
+  })
+
+  it('calls onTabChange when a tab is clicked', () => {
+    const onTabChange = vi.fn()
+    render(
+      <Modal
+        isOpen={true} onClose={() => {}} title="AI"
+        tabs={tabs} activeTab="overview" onTabChange={onTabChange}
+        tabsLayoutId="test-tabs"
+      >body</Modal>
+    )
+    fireEvent.click(screen.getByRole('tab', { name: /README/ }))
+    expect(onTabChange).toHaveBeenCalledWith('readme')
+  })
+
+  it('does not render tabs when tabs prop is absent', () => {
+    render(<Modal isOpen={true} onClose={() => {}} title="AI">body</Modal>)
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+  })
+})

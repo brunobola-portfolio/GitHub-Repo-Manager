@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import { TabBar } from './TabBar'
 
 /**
  * Modal - Premium base modal component with consistent styling
@@ -20,7 +21,11 @@ export function Modal({
     icon: Icon,
     closeOnBackdrop = true,
     showCloseButton = true,
-    className = ''
+    className = '',
+    tabs,
+    activeTab,
+    onTabChange,
+    tabsLayoutId,
 }) {
     const sizeClasses = {
         sm:    'max-w-md',
@@ -160,6 +165,18 @@ export function Modal({
                                     </button>
                                 )}
                             </div>
+                            {tabs && tabs.length > 0 && (
+                                <div className="flex-shrink-0 px-4 md:px-5 bg-slate-50/80 dark:bg-slate-900/70 border-b border-slate-200/50 dark:border-slate-800/40">
+                                    <TabBar
+                                        tabs={tabs}
+                                        activeTab={activeTab}
+                                        onTabChange={onTabChange}
+                                        variant="underline"
+                                        layoutId={tabsLayoutId || 'modal-tabs'}
+                                        size="md"
+                                    />
+                                </div>
+                            )}
 
                             {/* Body */}
                             <div id="modal-body" className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-50/30 dark:bg-slate-950">
