@@ -93,6 +93,7 @@ function TabBar({ activeTab, onTabChange }) {
                 return (
                     <button
                         key={id}
+                        id={`tab-${id}`}
                         role="tab"
                         aria-selected={isActive}
                         aria-controls={`tabpanel-${id}`}
@@ -222,7 +223,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                 transition={{ duration: 0.3 }}
                                 className="space-y-6"
                             >
-                                {/* Health Score — always visible (KEEP AS-IS) */}
+                                {/* Health Score — always visible */}
                                 <div className="rounded-3xl p-8 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 border border-indigo-200/30 dark:border-indigo-500/20">
                                     <div className="flex flex-col sm:flex-row items-center gap-6">
                                         <HealthScoreRing score={health.score} />
@@ -245,6 +246,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                                 key={activeTab}
                                                 role="tabpanel"
                                                 id={`tabpanel-${activeTab}`}
+                                                aria-labelledby={`tab-${activeTab}`}
                                                 custom={tabDirection}
                                                 initial={{ opacity: 0, x: tabDirection * 24 }}
                                                 animate={{ opacity: 1, x: 0 }}
