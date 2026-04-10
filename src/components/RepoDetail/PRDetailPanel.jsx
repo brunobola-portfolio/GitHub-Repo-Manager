@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import { motion } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
+import { TabBar } from '../ui/TabBar'
 import {
     GitPullRequest, GitMerge, X, MessageSquare, Clock,
     ExternalLink, Loader2, Send, CheckCircle2, XCircle,
@@ -255,22 +256,15 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview }) {
             ) : (
                 <>
                     {/* Tabs */}
-                    <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                        {tabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-                                    activeTab === tab.id
-                                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                                }`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
-                    </div>
+                    <TabBar
+                        tabs={tabs}
+                        activeTab={activeTab}
+                        onTabChange={setActiveTab}
+                        variant="segmented"
+                        layoutId="pr-detail-tabs"
+                    />
 
+                    <div role="tabpanel" id={`tabpanel-pr-detail-tabs-${activeTab}`} aria-labelledby={`tab-pr-detail-tabs-${activeTab}`}>
                     {/* Overview tab */}
                     {activeTab === 'overview' && (
                         <div className="space-y-4">
@@ -490,6 +484,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview }) {
                             })}
                         </div>
                     )}
+                    </div>
                 </>
             )}
         </motion.div>
