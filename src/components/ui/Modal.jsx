@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 
 /**
  * Modal - Premium base modal component with consistent styling
@@ -11,6 +12,7 @@ export function Modal({
     isOpen,
     onClose,
     title,
+    subtitle,
     children,
     footer,
     size = 'md', // 'sm', 'md', 'lg', 'xl'
@@ -21,11 +23,13 @@ export function Modal({
     className = ''
 }) {
     const sizeClasses = {
-        sm: 'max-w-md',
-        md: 'max-w-lg',
-        lg: 'max-w-2xl',
-        xl: 'max-w-4xl',
-        full: 'max-w-7xl'
+        sm:    'max-w-md',
+        md:    'max-w-lg',
+        lg:    'max-w-2xl',
+        xl:    'max-w-4xl',
+        '2xl': 'max-w-5xl',
+        '3xl': 'max-w-6xl',
+        full:  'max-w-7xl'
     }
 
     const variantStyles = {
@@ -59,6 +63,7 @@ export function Modal({
     const styles = variantStyles[variant] || variantStyles.default
 
     const modalRef = useFocusTrap(isOpen, onClose)
+    useBodyScrollLock(isOpen)
 
     const handleBackdropClick = (e) => {
         if (closeOnBackdrop && e.target === e.currentTarget) {
@@ -138,6 +143,11 @@ export function Modal({
                                         </h2>
                                     ) : (
                                         title
+                                    )}
+                                    {subtitle && (
+                                        <p className="text-[11px] text-white/70 truncate mt-0.5">
+                                            {subtitle}
+                                        </p>
                                     )}
                                 </div>
                                 {showCloseButton && (
