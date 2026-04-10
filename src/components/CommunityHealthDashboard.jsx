@@ -217,7 +217,12 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                 </div>
 
                                 {/* Recommendations */}
-                                <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.6, duration: 0.4 }}
+                                    className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60"
+                                >
                                     <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                                         <TrendingUp className="w-5 h-5 text-indigo-500" />
                                         Recommendations
@@ -232,7 +237,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                             </p>
                                         )}
                                     </div>
-                                </div>
+                                </motion.div>
 
                                 {/* Last Updated */}
                                 <div className="text-center text-sm text-slate-400">
@@ -325,22 +330,38 @@ function RecommendationItem({ recommendation }) {
     const priorityColors = {
         high: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
         medium: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
-        low: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+        low: 'bg-blue-100/60 dark:bg-blue-900/20 text-blue-600 dark:text-blue-500 border-blue-200/60 dark:border-blue-800/40'
+    };
+
+    const iconGradients = {
+        high: 'from-red-500/20 to-orange-500/10 dark:from-red-500/30 dark:to-orange-500/20',
+        medium: 'from-amber-500/20 to-yellow-500/10 dark:from-amber-500/30 dark:to-yellow-500/20',
+        low: 'from-blue-500/15 to-indigo-500/5 dark:from-blue-500/20 dark:to-indigo-500/10'
+    };
+
+    const iconColors = {
+        high: 'text-red-500',
+        medium: 'text-amber-500',
+        low: 'text-blue-400 dark:text-blue-500'
     };
 
     return (
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-            <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5" />
+        <motion.div whileHover={{ y: -1 }}
+            className="flex items-start gap-3 p-4 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/40 dark:border-slate-800/40 transition-all"
+        >
+            <div className={`p-1.5 rounded-lg bg-gradient-to-br ${iconGradients[recommendation.priority]}`}>
+                <AlertCircle className={`w-4 h-4 ${iconColors[recommendation.priority]}`} />
+            </div>
             <div className="flex-1">
                 <div className="font-medium text-slate-900 dark:text-white">{recommendation.action}</div>
                 <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                     Category: {recommendation.category}
                 </div>
             </div>
-            <span className={`text-xs px-2 py-1 rounded-full border ${priorityColors[recommendation.priority]}`}>
+            <span className={`text-xs px-2 py-1 rounded-full border ${priorityColors[recommendation.priority]} ${recommendation.priority === 'high' ? 'animate-pulse' : ''}`}>
                 {recommendation.priority}
             </span>
-        </div>
+        </motion.div>
     );
 }
 
