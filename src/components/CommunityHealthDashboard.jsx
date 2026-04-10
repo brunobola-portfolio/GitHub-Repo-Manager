@@ -114,7 +114,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                 ref={modalRef}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-auto"
+                className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-auto ds-scrollbar"
             >
                 <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-white/10 dark:border-white/5 px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-3xl">
                     <div>
@@ -185,7 +185,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                 </motion.div>
 
                                 {/* Activity Metrics */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                     <MetricCard
                                         title="Contributors"
                                         value={health.metrics.activity.contributorCount}
@@ -384,6 +384,7 @@ function SkeletonState() {
 
     return (
         <div className="space-y-6">
+            {/* Loading message */}
             <div className="flex justify-center py-2">
                 <AnimatePresence mode="wait">
                     <motion.p
@@ -397,38 +398,62 @@ function SkeletonState() {
                     </motion.p>
                 </AnimatePresence>
             </div>
+
+            {/* Health Score skeleton */}
             <div className="rounded-3xl p-8 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 border border-indigo-200/30 dark:border-indigo-500/20">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
-                    <div className="w-28 h-28 md:w-36 md:h-36 rounded-full bg-slate-200/60 dark:bg-slate-700/40 animate-pulse" />
+                    <div className="w-28 h-28 md:w-36 md:h-36 rounded-full ds-skeleton" />
                     <div className="space-y-3 flex-1">
-                        <div className="h-4 w-40 bg-slate-200/60 dark:bg-slate-700/40 rounded-lg animate-pulse" />
-                        <div className="h-8 w-24 bg-slate-200/60 dark:bg-slate-700/40 rounded-lg animate-pulse" />
-                        <div className="h-4 w-32 bg-slate-200/60 dark:bg-slate-700/40 rounded-lg animate-pulse" />
+                        <div className="h-4 w-40 ds-skeleton" />
+                        <div className="h-8 w-24 ds-skeleton" />
+                        <div className="h-6 w-20 ds-skeleton rounded-full" />
                     </div>
                 </div>
             </div>
+
+            {/* Community Files skeleton */}
             <div className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60">
-                <div className="h-5 w-36 bg-slate-200/60 dark:bg-slate-700/40 rounded-lg animate-pulse mb-4" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-2 mb-4">
+                    <div className="w-5 h-5 ds-skeleton rounded-md" />
+                    <div className="h-5 w-36 ds-skeleton" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="h-12 bg-slate-200/40 dark:bg-slate-700/30 rounded-xl animate-pulse" />
+                        <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200/20 dark:border-slate-700/20">
+                            <div className="w-5 h-5 ds-skeleton rounded-full shrink-0" />
+                            <div className="h-4 ds-skeleton flex-1" style={{ maxWidth: `${100 + (i % 3) * 40}px` }} />
+                        </div>
                     ))}
                 </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+            {/* Activity Metrics skeleton */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="rounded-2xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60">
-                        <div className="w-12 h-12 bg-slate-200/60 dark:bg-slate-700/40 rounded-xl animate-pulse mb-4" />
-                        <div className="h-7 w-16 bg-slate-200/60 dark:bg-slate-700/40 rounded-lg animate-pulse mb-2" />
-                        <div className="h-4 w-24 bg-slate-200/60 dark:bg-slate-700/40 rounded-lg animate-pulse" />
+                    <div key={i} className="rounded-2xl p-5 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60">
+                        <div className="w-10 h-10 ds-skeleton rounded-xl mb-3" />
+                        <div className="h-6 w-12 ds-skeleton mb-2" />
+                        <div className="h-3.5 w-20 ds-skeleton" />
                     </div>
                 ))}
             </div>
+
+            {/* Recommendations skeleton */}
             <div className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60">
-                <div className="h-5 w-40 bg-slate-200/60 dark:bg-slate-700/40 rounded-lg animate-pulse mb-4" />
+                <div className="flex items-center gap-2 mb-4">
+                    <div className="w-5 h-5 ds-skeleton rounded-md" />
+                    <div className="h-5 w-40 ds-skeleton" />
+                </div>
                 <div className="space-y-3">
                     {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="h-16 bg-slate-200/40 dark:bg-slate-700/30 rounded-xl animate-pulse" />
+                        <div key={i} className="flex items-start gap-3 p-4 rounded-xl border border-slate-200/20 dark:border-slate-700/20">
+                            <div className="w-7 h-7 ds-skeleton rounded-lg shrink-0" />
+                            <div className="flex-1 space-y-2">
+                                <div className="h-4 ds-skeleton" style={{ maxWidth: `${200 + i * 60}px` }} />
+                                <div className="h-3 ds-skeleton w-28" />
+                            </div>
+                            <div className="w-14 h-5 ds-skeleton rounded-full shrink-0" />
+                        </div>
                     ))}
                 </div>
             </div>
