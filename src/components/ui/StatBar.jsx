@@ -41,9 +41,12 @@ export function StatBar({
   size = 'md',
 }) {
   const reduced = useReducedMotion()
-  const safeMax = max > 0 ? max : 1
-  const clamped = Math.max(0, Math.min(value, safeMax))
-  const pct = (clamped / safeMax) * 100
+  // Harden against NaN / undefined / non-numeric inputs — callers may
+  // pipe live API data that's briefly undefined during state transitions.
+  const numMax = Number.isFinite(max) && max > 0 ? max : 1
+  const numValue = Number.isFinite(value) ? value : 0
+  const clamped = Math.max(0, Math.min(numValue, numMax))
+  const pct = (clamped / numMax) * 100
 
   const gradientClass = GRADIENT_CLASSES[gradient] ?? GRADIENT_CLASSES.primary
   const sizeClass = SIZE_CLASSES[size] ?? SIZE_CLASSES.md
@@ -54,7 +57,7 @@ export function StatBar({
         <span className="text-slate-600 dark:text-slate-300 capitalize">{label}</span>
         {showValue && (
           <span className="text-slate-500 dark:text-slate-400 tabular-nums">
-            {clamped}/{safeMax}
+            {clamped}/{numMax}
           </span>
         )}
       </div>
@@ -63,7 +66,7 @@ export function StatBar({
         aria-label={label}
         aria-valuenow={clamped}
         aria-valuemin={0}
-        aria-valuemax={safeMax}
+        aria-valuemax={numMax}
         className={`${sizeClass} bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden`}
       >
         {animated && !reduced ? (

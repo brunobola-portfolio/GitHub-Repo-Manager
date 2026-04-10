@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { StatBar } from '@/components/ui/StatBar'
 
@@ -73,5 +73,46 @@ describe('StatBar', () => {
     render(<StatBar label="G" value={5} max={10} gradient="secondary" animated={false} />)
     const fill = screen.getByTestId('statbar-fill')
     expect(fill.className).toMatch(/from-cyan-500/)
+  })
+
+  it('handles undefined value as 0', () => {
+    render(<StatBar label="Und" value={undefined} max={30} animated={false} />)
+    const bar = screen.getByRole('progressbar')
+    expect(bar.getAttribute('aria-valuenow')).toBe('0')
+    const fill = screen.getByTestId('statbar-fill')
+    expect(fill.style.width).toBe('0%')
+  })
+
+  it('handles NaN value as 0', () => {
+    render(<StatBar label="Nan" value={NaN} max={30} animated={false} />)
+    const bar = screen.getByRole('progressbar')
+    expect(bar.getAttribute('aria-valuenow')).toBe('0')
+  })
+
+  it('handles undefined max by using 1', () => {
+    render(<StatBar label="UndMax" value={0.5} max={undefined} animated={false} />)
+    const bar = screen.getByRole('progressbar')
+    expect(bar.getAttribute('aria-valuemax')).toBe('1')
+  })
+})
+
+describe('StatBar — reduced motion', () => {
+  it('renders without error when reduced motion is preferred', async () => {
+    vi.resetModules()
+    vi.doMock('framer-motion', async () => {
+      const actual = await vi.importActual('framer-motion')
+      return { ...actual, useReducedMotion: () => true }
+    })
+    const { StatBar: Bar } = await import('@/components/ui/StatBar')
+    const { render, screen } = await import('@testing-library/react')
+    render(<Bar label="RM" value={25} max={100} />)
+    expect(screen.getByRole('progressbar')).toBeInTheDocument()
+    expect(screen.getByText('25/100')).toBeInTheDocument()
+    // When reduced motion is active, the component should use the
+    // inline-width path even without animated=false, so the fill element
+    // has a concrete width style.
+    const fill = screen.getByTestId('statbar-fill')
+    expect(fill.style.width).toBe('25%')
+    vi.doUnmock('framer-motion')
   })
 })
