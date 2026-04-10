@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Shield, FileText, Users, Activity, CheckCircle,
+    FileText, Users, Activity, CheckCircle,
     XCircle, AlertCircle, TrendingUp, RefreshCw
 } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
@@ -47,22 +47,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
         fetchHealth(repo.full_name, true);
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center p-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
-            </div>
-        );
-    }
-
-    if (!health) return null;
-
-    const getScoreLabel = (score) => {
-        if (score >= 80) return 'Excellent';
-        if (score >= 60) return 'Good';
-        if (score >= 40) return 'Fair';
-        return 'Needs Improvement';
-    };
+    const showContent = !loading && health;
 
     return (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
@@ -73,9 +58,9 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                 ref={modalRef}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-auto"
+                className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-auto"
             >
-                <div className="sticky top-0 z-10 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between rounded-t-3xl">
+                <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-white/10 dark:border-white/5 px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-3xl">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Community Health</h1>
                         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{repo.full_name}</p>
@@ -85,14 +70,14 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                         <button
                             onClick={handleRefresh}
                             disabled={refreshing}
-                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                         >
                             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
                             Refresh
                         </button>
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
+                            className="px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
                         >
                             Close
                         </button>
@@ -100,88 +85,120 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                 </div>
 
                 <div className="p-6 space-y-6">
-                    {/* Health Score */}
-                    <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl p-8 text-white">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <div className="text-sm uppercase tracking-wide text-indigo-100 mb-2">Overall Health Score</div>
-                                <div className="text-6xl font-bold">{health.score}</div>
-                                <div className="text-xl text-indigo-100 mt-2">{getScoreLabel(health.score)}</div>
-                            </div>
-                            <div className="w-32 h-32 rounded-full border-8 border-white/30 flex items-center justify-center">
-                                <div className="text-4xl font-bold">{health.score}%</div>
-                            </div>
-                        </div>
-                    </div>
+                    <AnimatePresence mode="wait">
+                        {showContent ? (
+                            <motion.div
+                                key="content"
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -12 }}
+                                transition={{ duration: 0.3 }}
+                                className="space-y-6"
+                            >
+                                {/* Health Score */}
+                                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl p-8 text-white">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <div className="text-sm uppercase tracking-wide text-indigo-100 mb-2">Overall Health Score</div>
+                                            <div className="text-6xl font-bold">{health.score}</div>
+                                            <div className="text-xl text-indigo-100 mt-2">{getScoreLabel(health.score)}</div>
+                                        </div>
+                                        <div className="w-32 h-32 rounded-full border-8 border-white/30 flex items-center justify-center">
+                                            <div className="text-4xl font-bold">{health.score}%</div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                    {/* File Checklist */}
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-indigo-500" />
-                            Community Files
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {Object.entries(health.metrics.files).map(([file, data]) => (
-                                <FileCheckItem key={file} file={file} exists={data.exists} size={data.size} />
-                            ))}
-                        </div>
-                    </div>
+                                {/* File Checklist */}
+                                <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700">
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                                        <FileText className="w-5 h-5 text-indigo-500" />
+                                        Community Files
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {Object.entries(health.metrics.files).map(([file, data]) => (
+                                            <FileCheckItem key={file} file={file} exists={data.exists} size={data.size} />
+                                        ))}
+                                    </div>
+                                </div>
 
-                    {/* Activity Metrics */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <MetricCard
-                            title="Contributors"
-                            value={health.metrics.activity.contributorCount}
-                            icon={Users}
-                            color="blue"
-                        />
-                        <MetricCard
-                            title="Commits (30d)"
-                            value={health.metrics.activity.commitsLast30Days}
-                            icon={Activity}
-                            color="green"
-                        />
-                        <MetricCard
-                            title="Open Issues"
-                            value={health.metrics.activity.openIssues}
-                            icon={AlertCircle}
-                            color="amber"
-                        />
-                        <MetricCard
-                            title="Closed Issues"
-                            value={health.metrics.activity.closedIssues}
-                            icon={CheckCircle}
-                            color="emerald"
-                        />
-                    </div>
+                                {/* Activity Metrics */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                    <MetricCard
+                                        title="Contributors"
+                                        value={health.metrics.activity.contributorCount}
+                                        icon={Users}
+                                        color="blue"
+                                    />
+                                    <MetricCard
+                                        title="Commits (30d)"
+                                        value={health.metrics.activity.commitsLast30Days}
+                                        icon={Activity}
+                                        color="green"
+                                    />
+                                    <MetricCard
+                                        title="Open Issues"
+                                        value={health.metrics.activity.openIssues}
+                                        icon={AlertCircle}
+                                        color="amber"
+                                    />
+                                    <MetricCard
+                                        title="Closed Issues"
+                                        value={health.metrics.activity.closedIssues}
+                                        icon={CheckCircle}
+                                        color="emerald"
+                                    />
+                                </div>
 
-                    {/* Recommendations */}
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                            <TrendingUp className="w-5 h-5 text-indigo-500" />
-                            Recommendations
-                        </h3>
-                        <div className="space-y-3">
-                            {health.recommendations.map((rec, idx) => (
-                                <RecommendationItem key={idx} recommendation={rec} />
-                            ))}
-                            {health.recommendations.length === 0 && (
-                                <p className="text-slate-500 dark:text-slate-400 italic">
-                                    Great job! No recommendations at this time.
-                                </p>
-                            )}
-                        </div>
-                    </div>
+                                {/* Recommendations */}
+                                <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700">
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                                        <TrendingUp className="w-5 h-5 text-indigo-500" />
+                                        Recommendations
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {health.recommendations.map((rec, idx) => (
+                                            <RecommendationItem key={idx} recommendation={rec} />
+                                        ))}
+                                        {health.recommendations.length === 0 && (
+                                            <p className="text-slate-500 dark:text-slate-400 italic">
+                                                Great job! No recommendations at this time.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
 
-                    {/* Last Updated */}
-                    <div className="text-center text-sm text-slate-400">
-                        Last analyzed: {new Date(health.lastUpdated).toLocaleString()}
-                        {health.cached && ' (cached)'}
-                    </div>
+                                {/* Last Updated */}
+                                <div className="text-center text-sm text-slate-400">
+                                    Last analyzed: {new Date(health.lastUpdated).toLocaleString()}
+                                    {health.cached && ' (cached)'}
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="skeleton"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <div className="flex items-center justify-center p-12">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </motion.div>
         </div>
     );
+}
+
+function getScoreLabel(score) {
+    if (score >= 80) return 'Excellent';
+    if (score >= 60) return 'Good';
+    if (score >= 40) return 'Fair';
+    return 'Needs Improvement';
 }
 
 function FileCheckItem({ file, exists, size }) {
