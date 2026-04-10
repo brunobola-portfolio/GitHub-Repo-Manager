@@ -59,6 +59,15 @@ describe('CommunityHealthDashboard', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         global.fetch = vi.fn();
+        // Ensure matchMedia is available (jsdom default: mobile)
+        if (!window.matchMedia) {
+            window.matchMedia = vi.fn().mockImplementation(query => ({
+                matches: false,
+                media: query,
+                addEventListener: vi.fn(),
+                removeEventListener: vi.fn(),
+            }));
+        }
     });
 
     it('shows skeleton loading state with rotating messages', async () => {
@@ -151,5 +160,100 @@ describe('CommunityHealthDashboard', () => {
         });
         const highBadge = screen.getByText('high');
         expect(highBadge.className).toContain('animate-pulse');
+    });
+
+    it('renders tab bar on desktop viewport', async () => {
+        // Mock desktop viewport
+        window.matchMedia = vi.fn().mockImplementation(query => ({
+            matches: query === '(min-width: 1024px)',
+            media: query,
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+        }));
+
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(mockHealthData)
+        });
+
+        render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
+
+        await waitFor(() => {
+            expect(screen.getByRole('tablist')).toBeInTheDocument();
+        });
+
+        const tabs = screen.getAllByRole('tab');
+        expect(tabs).toHaveLength(3);
+        expect(tabs[0]).toHaveTextContent('Files');
+        expect(tabs[1]).toHaveTextContent('Activity');
+        expect(tabs[2]).toHaveTextContent('Recommendations');
+    });
+
+    it('switches tab content when clicking a tab on desktop', async () => {
+        window.matchMedia = vi.fn().mockImplementation(query => ({
+            matches: query === '(min-width: 1024px)',
+            media: query,
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+        }));
+
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(mockHealthData)
+        });
+
+        const user = userEvent.setup();
+        render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
+
+        await waitFor(() => {
+            expect(screen.getByRole('tablist')).toBeInTheDocument();
+        });
+
+        // Default tab is Files — verify Files content visible
+        expect(screen.getByText('Community Files')).toBeInTheDocument();
+
+        // Click Activity tab
+        const activityTab = screen.getByRole('tab', { name: /Activity/i });
+        await user.click(activityTab);
+
+        await waitFor(() => {
+            expect(screen.getByText('Contributors')).toBeInTheDocument();
+        });
+
+        // Click Recommendations tab
+        const recsTab = screen.getByRole('tab', { name: /Recommendations/i });
+        await user.click(recsTab);
+
+        await waitFor(() => {
+            expect(screen.getByText('Add CONTRIBUTING.md')).toBeInTheDocument();
+        });
+    });
+
+    it('does not render tab bar on mobile viewport', async () => {
+        window.matchMedia = vi.fn().mockImplementation(query => ({
+            matches: false,
+            media: query,
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+        }));
+
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(mockHealthData)
+        });
+
+        render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
+
+        await waitFor(() => {
+            expect(screen.getByText('Overall Health Score')).toBeInTheDocument();
+        });
+
+        // No tablist on mobile
+        expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+
+        // All sections visible simultaneously on mobile
+        expect(screen.getByText('Community Files')).toBeInTheDocument();
+        expect(screen.getByText('Contributors')).toBeInTheDocument();
+        expect(screen.getByText('Add CONTRIBUTING.md')).toBeInTheDocument();
     });
 });
