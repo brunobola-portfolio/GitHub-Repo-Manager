@@ -12,6 +12,7 @@ import {
     ArrowLeft, GitBranch, Tag, CircleDot, GitPullRequest, Settings,
     FileText, Star, Eye, GitFork, ExternalLink, Lock, Globe, Loader2
 } from 'lucide-react'
+import { TabBar } from '../ui/TabBar'
 
 const TABS = [
     { id: 'overview', label: 'Overview', icon: FileText },
@@ -128,31 +129,17 @@ export function RepoDetail({ repo, onBack, onStartReview }) {
             </div>
 
             {/* Tabs */}
-            <div className="border-b border-slate-200 dark:border-slate-700">
-                <nav className="flex gap-1 -mb-px overflow-x-auto custom-scrollbar">
-                    {TABS.map(tab => {
-                        const Icon = tab.icon
-                        const isActive = activeTab === tab.id
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
-                                    ${isActive
-                                        ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                                        : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
-                                    }`}
-                            >
-                                <Icon className="w-4 h-4" />
-                                {tab.label}
-                            </button>
-                        )
-                    })}
-                </nav>
-            </div>
+            <TabBar
+                tabs={TABS}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                variant="underline"
+                layoutId="repo-detail-tabs"
+                className="overflow-x-auto"
+            />
 
             {/* Tab Content */}
-            <div>
+            <div role="tabpanel" id={`tabpanel-repo-detail-tabs-${activeTab}`} aria-labelledby={`tab-repo-detail-tabs-${activeTab}`}>
                 {activeTab === 'overview' && <OverviewTab owner={owner} repo={repoName} api={api} repoData={r} />}
                 {activeTab === 'branches' && <BranchesTab owner={owner} repo={repoName} api={api} />}
                 {activeTab === 'releases' && <ReleasesTab owner={owner} repo={repoName} api={api} />}
