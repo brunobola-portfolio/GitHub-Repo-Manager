@@ -78,6 +78,12 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
   const [resolvedLocally, setResolvedLocally] = useState(isResolved)
   const textareaRef = useRef(null)
 
+  // Sync local resolved state when parent prop changes
+  useEffect(() => {
+    setResolvedLocally(isResolved)
+    if (isResolved) setCollapsed(true)
+  }, [isResolved])
+
   const login = comment.user?.login ?? 'unknown'
   const lineNumber = comment.line ?? comment.original_line ?? null
 

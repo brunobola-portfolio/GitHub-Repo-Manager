@@ -71,9 +71,13 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   // Memoized sorted files (by risk, used as base for navigation)
   const sortedFiles = useMemo(() => {
     if (!state.files?.length) return []
+    const RISK_SCORES = { critical: 10, high: 8, medium: 6, low: 4 }
     const aiFileRisks = state.aiSummary?.fileRisks
       ? Object.fromEntries(
-          state.aiSummary.fileRisks.map((r) => [r.filename ?? r.file, r.score ?? r.riskScore ?? 0])
+          state.aiSummary.fileRisks.map((r) => [
+            r.filename ?? r.file,
+            r.score ?? r.riskScore ?? RISK_SCORES[r.risk] ?? 0,
+          ])
         )
       : {}
     return sortFilesByRisk(state.files, aiFileRisks)
@@ -118,7 +122,8 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   }, [displayFiles, state.activeFile, dispatch])
 
   // Submit review with staleness check
-  const handleSubmitReview = useCallback(async ({ event, body }) => {
+  const handleSubmitReview = useCallback(async (args) => {
+    const { event = 'COMMENT', body = '' } = args ?? {}
     setSubmitting(true)
     try {
       const { isStale } = await checkStaleness()

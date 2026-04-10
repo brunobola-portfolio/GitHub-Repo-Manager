@@ -103,11 +103,12 @@ export function useReviewAI(owner, repo, pullNumber, headSha, files) {
                 riskScore: heuristicRisk({ filename, additions, deletions }),
             }))
 
-            // topFilePatches: patch text for top 30 by heuristic
-            const topFilePatches = sorted.slice(0, 30).map(({ filename, patch }) => ({
-                filename,
-                patch: patch ?? '',
-            }))
+            // topFilePatches: concatenated patch text for top 30 by heuristic
+            const topFilePatches = sorted
+                .slice(0, 30)
+                .filter((f) => f.patch)
+                .map(({ filename, patch }) => `--- ${filename} ---\n${patch}`)
+                .join('\n\n')
 
             const totalAdditions = files.reduce((sum, f) => sum + (f.additions || 0), 0)
             const totalDeletions = files.reduce((sum, f) => sum + (f.deletions || 0), 0)

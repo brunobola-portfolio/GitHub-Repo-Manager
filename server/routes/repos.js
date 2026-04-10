@@ -742,7 +742,24 @@ router.post('/:owner/:repo/pulls/:pull_number/comments', requireAuth, async (req
             });
         }
 
-        const payload = { body, commit_id, path, line, side };
+        if (line != null && (!Number.isInteger(line) || line < 1)) {
+            return res.status(400).json({
+                error: 'line must be a positive integer',
+                code: 'VALIDATION_ERROR'
+            });
+        }
+
+        // Normalize side to GitHub's expected values
+        const VALID_SIDES = ['LEFT', 'RIGHT'];
+        const normalizedSide = side ? String(side).toUpperCase() : undefined;
+        if (normalizedSide && !VALID_SIDES.includes(normalizedSide)) {
+            return res.status(400).json({
+                error: 'side must be LEFT or RIGHT',
+                code: 'VALIDATION_ERROR'
+            });
+        }
+
+        const payload = { body, commit_id, path, line, side: normalizedSide };
         if (start_line !== undefined) payload.start_line = start_line;
         if (start_side !== undefined) payload.start_side = start_side;
 
@@ -814,7 +831,12 @@ router.post('/:owner/:repo/pulls/:pull_number/reviews', requireAuth, async (req,
         const payload = { event };
         if (commit_id) payload.commit_id = commit_id;
         if (body) payload.body = body;
-        if (Array.isArray(comments)) payload.comments = comments;
+        if (Array.isArray(comments)) {
+            payload.comments = comments.map(c => ({
+                ...c,
+                side: c.side ? String(c.side).toUpperCase() : c.side,
+            }));
+        }
 
         const { data } = await githubApi(
             `/repos/${owner}/${repo}/pulls/${pull_number}/reviews`,

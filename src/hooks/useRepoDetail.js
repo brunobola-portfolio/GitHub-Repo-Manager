@@ -138,9 +138,8 @@ export function useRepoDetail(owner, repo) {
         apiFetch(`${base}/pulls/${number}/comments`), [base])
 
     const fetchPullDiff = useCallback(async (number) => {
-        const r = await fetch(`${base}/pulls/${number}`, {
+        const r = await fetch(`${base}/pulls/${number}/diff`, {
             credentials: 'include',
-            headers: { Accept: 'application/vnd.github.diff' },
         })
         if (!r.ok) {
             const err = new Error(`API error: ${r.status}`)

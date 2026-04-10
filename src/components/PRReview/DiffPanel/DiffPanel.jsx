@@ -111,10 +111,15 @@ export function DiffPanel({ file, viewMode, comments, pendingComments, resolvedC
     if (!commentBody.trim() || !commentingLine || !file) return
     setSubmitting(true)
     try {
+      // Normalize side from @git-diff-view values to GitHub API format
+      const rawSide = commentingLine.side
+      const side = (rawSide === 'old' || rawSide === 'left' || rawSide === 'LEFT')
+        ? 'LEFT'
+        : 'RIGHT'
       await onAddComment?.({
-        filename: file.filename,
+        path: file.filename,
         line: commentingLine.lineNumber,
-        side: commentingLine.side,
+        side,
         body: commentBody.trim(),
       })
       setCommentingLine(null)
@@ -217,7 +222,7 @@ export function DiffPanel({ file, viewMode, comments, pendingComments, resolvedC
             <span className="font-mono font-semibold text-gray-700 dark:text-gray-200">
               {commentingLine.lineNumber}
             </span>{' '}
-            ({commentingLine.side === 'right' ? 'new' : 'old'} side)
+            ({commentingLine.side === 'old' || commentingLine.side === 'left' ? 'old' : 'new'} side)
           </p>
           <textarea
             ref={textareaRef}

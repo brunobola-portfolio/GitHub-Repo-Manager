@@ -139,18 +139,19 @@ export function AISummaryPanel({ summary, loading, error, collapsed, onToggle, o
                           const level = entry.level ?? entry.risk ?? 'medium'
                           const textColor = RISK_TEXT[level] ?? 'text-gray-700 dark:text-gray-300'
                           const bgColor = RISK_BG[level] ?? 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+                          const fname = entry.filename ?? entry.file
                           return (
                             <button
                               key={i}
-                              onClick={() => onFileClick?.(entry.filename)}
+                              onClick={() => onFileClick?.(fname)}
                               className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left transition-colors ${bgColor}`}
-                              title={entry.filename}
+                              title={fname}
                             >
                               <span className={`shrink-0 text-xs font-semibold uppercase ${textColor}`}>
                                 {level}
                               </span>
                               <span className="flex-1 truncate font-mono text-xs text-gray-700 dark:text-gray-300">
-                                {entry.filename}
+                                {fname}
                               </span>
                               {entry.reason && (
                                 <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 truncate max-w-[140px]">
