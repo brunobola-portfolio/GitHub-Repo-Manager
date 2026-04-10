@@ -191,24 +191,28 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                         value={health.metrics.activity.contributorCount}
                                         icon={Users}
                                         color="blue"
+                                        index={0}
                                     />
                                     <MetricCard
                                         title="Commits (30d)"
                                         value={health.metrics.activity.commitsLast30Days}
                                         icon={Activity}
                                         color="green"
+                                        index={1}
                                     />
                                     <MetricCard
                                         title="Open Issues"
                                         value={health.metrics.activity.openIssues}
                                         icon={AlertCircle}
                                         color="amber"
+                                        index={2}
                                     />
                                     <MetricCard
                                         title="Closed Issues"
                                         value={health.metrics.activity.closedIssues}
                                         icon={CheckCircle}
                                         color="emerald"
+                                        index={3}
                                     />
                                 </div>
 
@@ -271,22 +275,49 @@ function FileCheckItem({ file, exists, size }) {
     );
 }
 
-function MetricCard({ title, value, icon: Icon, color }) {
-    const colors = {
-        blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
-        green: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
-        amber: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
-        emerald: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+function AnimatedNumber({ value }) {
+    const reducedMotion = useReducedMotion();
+    const motionValue = useMotionValue(0);
+    const springValue = useSpring(motionValue, { stiffness: 100, damping: 20, duration: reducedMotion ? 0 : 0.8 });
+    const [display, setDisplay] = useState(reducedMotion ? value : 0);
+    useEffect(() => { motionValue.set(value); }, [value, motionValue]);
+    useEffect(() => {
+        const unsubscribe = springValue.on('change', v => setDisplay(Math.round(v)));
+        return unsubscribe;
+    }, [springValue]);
+    return <>{display}</>;
+}
+
+function MetricCard({ title, value, icon: Icon, color, index = 0 }) {
+    const gradientColors = {
+        blue: 'from-blue-500/20 to-blue-600/10 dark:from-blue-500/30 dark:to-blue-600/20',
+        green: 'from-green-500/20 to-green-600/10 dark:from-green-500/30 dark:to-green-600/20',
+        amber: 'from-amber-500/20 to-amber-600/10 dark:from-amber-500/30 dark:to-amber-600/20',
+        emerald: 'from-emerald-500/20 to-emerald-600/10 dark:from-emerald-500/30 dark:to-emerald-600/20'
+    };
+
+    const iconColors = {
+        blue: 'text-blue-600 dark:text-blue-400',
+        green: 'text-green-600 dark:text-green-400',
+        amber: 'text-amber-600 dark:text-amber-400',
+        emerald: 'text-emerald-600 dark:text-emerald-400'
     };
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-            <div className={`p-3 rounded-xl ${colors[color]} w-fit mb-4`}>
-                <Icon className="w-6 h-6" />
+        <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 + index * 0.08, duration: 0.4 }}
+            className="rounded-2xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60"
+        >
+            <div className={`p-3 rounded-xl bg-gradient-to-br ${gradientColors[color]} w-fit mb-4`}>
+                <Icon className={`w-6 h-6 ${iconColors[color]}`} />
             </div>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{value}</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
+                <AnimatedNumber value={value} />
+            </div>
             <div className="text-sm text-slate-500 dark:text-slate-400">{title}</div>
-        </div>
+        </motion.div>
     );
 }
 
