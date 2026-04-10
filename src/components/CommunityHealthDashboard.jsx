@@ -182,9 +182,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                 exit={{ opacity: 0 }}
                                 transition={{ duration: 0.2 }}
                             >
-                                <div className="flex items-center justify-center p-12">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
-                                </div>
+                                <SkeletonState />
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -257,6 +255,76 @@ function RecommendationItem({ recommendation }) {
             <span className={`text-xs px-2 py-1 rounded-full border ${priorityColors[recommendation.priority]}`}>
                 {recommendation.priority}
             </span>
+        </div>
+    );
+}
+
+function SkeletonState() {
+    const [messageIndex, setMessageIndex] = useState(0);
+    const messages = [
+        'Checking community files...',
+        'Analyzing repository activity...',
+        'Calculating health score...',
+        'Generating recommendations...'
+    ];
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setMessageIndex(i => (i + 1) % messages.length);
+        }, 1500);
+        return () => clearInterval(interval);
+    }, [messages.length]);
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-center py-2">
+                <AnimatePresence mode="wait">
+                    <motion.p
+                        key={messageIndex}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0, transition: { duration: 0.35 } }}
+                        exit={{ opacity: 0, y: -8, transition: { duration: 0.25 } }}
+                        className="text-sm font-medium text-indigo-600 dark:text-indigo-400"
+                    >
+                        {messages[messageIndex]}
+                    </motion.p>
+                </AnimatePresence>
+            </div>
+            <div className="rounded-3xl p-8 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 border border-indigo-200/30 dark:border-indigo-500/20">
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                    <div className="w-28 h-28 md:w-36 md:h-36 rounded-full bg-slate-200/60 dark:bg-slate-700/40 animate-pulse" />
+                    <div className="space-y-3 flex-1">
+                        <div className="h-4 w-40 bg-slate-200/60 dark:bg-slate-700/40 rounded-lg animate-pulse" />
+                        <div className="h-8 w-24 bg-slate-200/60 dark:bg-slate-700/40 rounded-lg animate-pulse" />
+                        <div className="h-4 w-32 bg-slate-200/60 dark:bg-slate-700/40 rounded-lg animate-pulse" />
+                    </div>
+                </div>
+            </div>
+            <div className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60">
+                <div className="h-5 w-36 bg-slate-200/60 dark:bg-slate-700/40 rounded-lg animate-pulse mb-4" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="h-12 bg-slate-200/40 dark:bg-slate-700/30 rounded-xl animate-pulse" />
+                    ))}
+                </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="rounded-2xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60">
+                        <div className="w-12 h-12 bg-slate-200/60 dark:bg-slate-700/40 rounded-xl animate-pulse mb-4" />
+                        <div className="h-7 w-16 bg-slate-200/60 dark:bg-slate-700/40 rounded-lg animate-pulse mb-2" />
+                        <div className="h-4 w-24 bg-slate-200/60 dark:bg-slate-700/40 rounded-lg animate-pulse" />
+                    </div>
+                ))}
+            </div>
+            <div className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60">
+                <div className="h-5 w-40 bg-slate-200/60 dark:bg-slate-700/40 rounded-lg animate-pulse mb-4" />
+                <div className="space-y-3">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="h-16 bg-slate-200/40 dark:bg-slate-700/30 rounded-xl animate-pulse" />
+                    ))}
+                </div>
+            </div>
         </div>
     );
 }
