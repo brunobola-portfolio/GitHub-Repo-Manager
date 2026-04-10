@@ -97,3 +97,33 @@ describe('Modal — tabs', () => {
     expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
   })
 })
+
+describe('Modal — staggerChildren and iconGradient', () => {
+  afterEach(() => { cleanup(); document.body.style.overflow = '' })
+
+  it('wraps body in stagger container when staggerChildren=true', () => {
+    const { container } = render(
+      <Modal isOpen={true} onClose={() => {}} title="Hi" staggerChildren>
+        <div data-testid="child">x</div>
+      </Modal>
+    )
+    expect(container.querySelector('[data-stagger-root="true"]')).not.toBeNull()
+  })
+
+  it('does not add stagger wrapper by default', () => {
+    const { container } = render(
+      <Modal isOpen={true} onClose={() => {}} title="Hi">x</Modal>
+    )
+    expect(container.querySelector('[data-stagger-root="true"]')).toBeNull()
+  })
+
+  it('renders icon with primary gradient class when iconGradient=primary', () => {
+    const Icon = () => <svg data-testid="icon" />
+    const { container } = render(
+      <Modal isOpen={true} onClose={() => {}} title="Hi" icon={Icon} iconGradient="primary">x</Modal>
+    )
+    const iconTile = container.querySelector('[data-icon-tile="true"]')
+    expect(iconTile).not.toBeNull()
+    expect(iconTile.className).toMatch(/from-indigo-500/)
+  })
+})

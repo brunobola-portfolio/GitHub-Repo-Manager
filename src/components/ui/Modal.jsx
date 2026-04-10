@@ -5,6 +5,18 @@ import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { TabBar } from './TabBar'
 
+const ICON_GRADIENT_CLASSES = {
+    none:    'bg-white/15',
+    primary: 'bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/25',
+    premium: 'bg-gradient-to-br from-indigo-500 via-cyan-500 to-pink-500 shadow-lg shadow-purple-500/25',
+    success: 'bg-gradient-to-br from-emerald-500 to-cyan-500 shadow-lg shadow-emerald-500/25',
+}
+
+const STAGGER_VARIANTS = {
+    hidden:  {},
+    visible: { transition: { staggerChildren: 0.04, delayChildren: 0.08 } },
+}
+
 /**
  * Modal - Premium base modal component with consistent styling
  * Provides a standardized modal experience across the app with glassmorphism and animations
@@ -26,6 +38,9 @@ export function Modal({
     activeTab,
     onTabChange,
     tabsLayoutId,
+    staggerChildren = false,
+    iconGradient = 'none',
+    bodyClassName = '',
 }) {
     const sizeClasses = {
         sm:    'max-w-md',
@@ -137,7 +152,10 @@ export function Modal({
                             {/* Header */}
                             <div className={`${styles.headerBg} ${styles.textColor} flex-shrink-0 flex items-center h-12 md:h-[52px] px-4 md:px-5 gap-3`}>
                                 {Icon && (
-                                    <div className="bg-white/15 p-1.5 rounded-lg">
+                                    <div
+                                        data-icon-tile="true"
+                                        className={`${ICON_GRADIENT_CLASSES[iconGradient] || ICON_GRADIENT_CLASSES.none} p-1.5 rounded-lg`}
+                                    >
                                         <Icon className="w-6 h-6" strokeWidth={2.5} />
                                     </div>
                                 )}
@@ -179,8 +197,20 @@ export function Modal({
                             )}
 
                             {/* Body */}
-                            <div id="modal-body" className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-50/30 dark:bg-slate-950">
-                                {children}
+                            <div id="modal-body" className={`flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-50/30 dark:bg-slate-950 ${bodyClassName}`}>
+                                {staggerChildren ? (
+                                    <motion.div
+                                        data-stagger-root="true"
+                                        variants={STAGGER_VARIANTS}
+                                        initial="hidden"
+                                        animate="visible"
+                                        key={activeTab || 'default'}
+                                    >
+                                        {children}
+                                    </motion.div>
+                                ) : (
+                                    children
+                                )}
                             </div>
 
                             {/* Footer */}
