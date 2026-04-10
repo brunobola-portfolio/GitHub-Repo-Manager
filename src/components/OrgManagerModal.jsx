@@ -6,6 +6,13 @@ import {
 } from 'lucide-react'
 import { Button } from './ui/Button'
 import { useFocusTrap } from '../hooks/useFocusTrap'
+import { TabBar } from './ui/TabBar'
+
+const ORG_TABS = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'members', label: 'Members' },
+    { id: 'settings', label: 'Settings' },
+]
 
 export function OrgManagerModal({
     isOpen,
@@ -130,19 +137,14 @@ export function OrgManagerModal({
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b border-slate-200 dark:border-slate-700 px-6 bg-white/80 dark:bg-slate-900/60">
-                    {['overview', 'members', 'settings'].map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors capitalize ${activeTab === tab
-                                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-300'
-                                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                                }`}
-                        >
-                            {tab}
-                        </button>
-                    ))}
+                <div className="px-6 bg-white/80 dark:bg-slate-900/60">
+                    <TabBar
+                        tabs={ORG_TABS}
+                        activeTab={activeTab}
+                        onTabChange={setActiveTab}
+                        variant="underline"
+                        layoutId="org-manager-tabs"
+                    />
                 </div>
 
                 {/* Error Banner */}
@@ -153,7 +155,7 @@ export function OrgManagerModal({
                 )}
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-6" role="tabpanel" id={`tabpanel-org-manager-tabs-${activeTab}`} aria-labelledby={`tab-org-manager-tabs-${activeTab}`}>
                     {loading && !orgDetails ? (
                         <div className="flex items-center justify-center py-12">
                             <RefreshCw className="w-8 h-8 text-slate-400 animate-spin" />
