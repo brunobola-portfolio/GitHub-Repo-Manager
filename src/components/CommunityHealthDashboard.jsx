@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { TabBar } from './ui/TabBar';
 
 function useIsDesktop() {
     const [isDesktop, setIsDesktop] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
@@ -76,79 +77,11 @@ function ScoreBadge({ score, className = '' }) {
     );
 }
 
-const TABS = [
+const HEALTH_TABS = [
     { id: 'files', label: 'Files', icon: FileText },
     { id: 'activity', label: 'Activity', icon: Activity },
     { id: 'recommendations', label: 'Recommendations', icon: TrendingUp },
 ];
-
-function TabBar({ activeTab, onTabChange }) {
-    const handleKeyDown = (e) => {
-        const currentIndex = TABS.findIndex(t => t.id === activeTab);
-        let nextIndex;
-
-        switch (e.key) {
-            case 'ArrowRight':
-                nextIndex = (currentIndex + 1) % TABS.length;
-                break;
-            case 'ArrowLeft':
-                nextIndex = (currentIndex - 1 + TABS.length) % TABS.length;
-                break;
-            case 'Home':
-                nextIndex = 0;
-                break;
-            case 'End':
-                nextIndex = TABS.length - 1;
-                break;
-            default:
-                return;
-        }
-
-        e.preventDefault();
-        onTabChange(TABS[nextIndex].id);
-        document.getElementById(`tab-${TABS[nextIndex].id}`)?.focus();
-    };
-
-    return (
-        <div
-            role="tablist"
-            className="flex gap-1 p-1 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/40 dark:border-slate-700/40"
-            onKeyDown={handleKeyDown}
-        >
-            {TABS.map(({ id, label, icon: Icon }) => {
-                const isActive = activeTab === id;
-                return (
-                    <button
-                        key={id}
-                        id={`tab-${id}`}
-                        role="tab"
-                        aria-selected={isActive}
-                        tabIndex={isActive ? 0 : -1}
-                        aria-controls={`tabpanel-${id}`}
-                        onClick={() => onTabChange(id)}
-                        className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                            isActive
-                                ? 'text-slate-900 dark:text-white'
-                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                        }`}
-                    >
-                        {isActive && (
-                            <motion.div
-                                layoutId="health-tab-indicator"
-                                className="absolute inset-0 rounded-xl bg-white dark:bg-slate-700 shadow-sm"
-                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                            />
-                        )}
-                        <span className="relative z-10 flex items-center gap-2">
-                            <Icon className="w-4 h-4" />
-                            {label}
-                        </span>
-                    </button>
-                );
-            })}
-        </div>
-    );
-}
 
 export function CommunityHealthDashboard({ repo, onClose }) {
     const [health, setHealth] = useState(null);
@@ -158,14 +91,6 @@ export function CommunityHealthDashboard({ repo, onClose }) {
     const modalRef = useFocusTrap(true, onClose);
     const isDesktop = useIsDesktop();
     const [activeTab, setActiveTab] = useState('files');
-    const [tabDirection, setTabDirection] = useState(0);
-
-    const handleTabChange = (newTab) => {
-        const currentIndex = TABS.findIndex(t => t.id === activeTab);
-        const newIndex = TABS.findIndex(t => t.id === newTab);
-        setTabDirection(newIndex > currentIndex ? 1 : -1);
-        setActiveTab(newTab);
-    };
 
     useEffect(() => {
         if (repo) {
@@ -266,20 +191,25 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                 {isDesktop ? (
                                     <>
                                         {/* Tab Bar */}
-                                        <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
+                                        <TabBar
+                                            tabs={HEALTH_TABS}
+                                            activeTab={activeTab}
+                                            onTabChange={setActiveTab}
+                                            variant="pill"
+                                            layoutId="health-tabs"
+                                        />
 
                                         {/* Tab Content */}
-                                        <AnimatePresence mode="wait" custom={tabDirection}>
+                                        <AnimatePresence mode="wait">
                                             <motion.div
                                                 key={activeTab}
                                                 role="tabpanel"
-                                                id={`tabpanel-${activeTab}`}
-                                                aria-labelledby={`tab-${activeTab}`}
-                                                custom={tabDirection}
-                                                initial={{ opacity: 0, x: tabDirection * 24 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: tabDirection * -24 }}
-                                                transition={{ duration: 0.2 }}
+                                                id={`tabpanel-health-tabs-${activeTab}`}
+                                                aria-labelledby={`tab-health-tabs-${activeTab}`}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.15 }}
                                             >
                                                 {activeTab === 'files' && (
                                                     <div className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60">
