@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles, Brain, Lightbulb, Loader2, FileText, CheckCircle2, AlertCircle, BarChart3 } from 'lucide-react';
 import { aiApi } from '../../api/ai';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { TabBar } from '../ui/TabBar';
 
 const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
     const modalRef = useFocusTrap(isOpen, onClose);
@@ -103,26 +104,19 @@ const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
 
                     {/* Tabs */}
                     {analysis && !loading && (
-                        <div className="flex border-b border-slate-200/50 dark:border-slate-800/40 px-4 bg-slate-50/50 dark:bg-slate-900/50">
-                            {tabs.map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
-                                        activeTab === tab.id
-                                            ? 'text-purple-400 border-purple-400'
-                                            : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-white'
-                                    }`}
-                                >
-                                    <tab.icon className="w-4 h-4" />
-                                    {tab.label}
-                                </button>
-                            ))}
+                        <div className="px-4 bg-slate-50/50 dark:bg-slate-900/50">
+                            <TabBar
+                                tabs={tabs}
+                                activeTab={activeTab}
+                                onTabChange={setActiveTab}
+                                variant="underline"
+                                layoutId="repo-insights-tabs"
+                            />
                         </div>
                     )}
 
                     {/* Content */}
-                    <div className="p-6 max-h-[60vh] overflow-y-auto">
+                    <div className="p-6 max-h-[60vh] overflow-y-auto" role="tabpanel" id={`tabpanel-repo-insights-tabs-${activeTab}`} aria-labelledby={`tab-repo-insights-tabs-${activeTab}`}>
                         {loading ? (
                             <div className="flex flex-col items-center justify-center py-12 space-y-4">
                                 <Loader2 className="w-10 h-10 text-purple-500 animate-spin" />
