@@ -167,7 +167,12 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                 </div>
 
                                 {/* File Checklist */}
-                                <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.2, duration: 0.4 }}
+                                    className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60"
+                                >
                                     <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                                         <FileText className="w-5 h-5 text-indigo-500" />
                                         Community Files
@@ -177,7 +182,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                             <FileCheckItem key={file} file={file} exists={data.exists} size={data.size} />
                                         ))}
                                     </div>
-                                </div>
+                                </motion.div>
 
                                 {/* Activity Metrics */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -251,19 +256,18 @@ export function CommunityHealthDashboard({ repo, onClose }) {
 
 function FileCheckItem({ file, exists, size }) {
     return (
-        <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+        <motion.div whileHover={{ y: -1 }}
+            className={`flex items-center justify-between p-3 rounded-xl min-h-[44px] ds-card-shimmer bg-white/60 dark:bg-slate-900/60 border ${exists ? 'border-slate-200/40 dark:border-slate-800/40' : 'border-red-300/40 dark:border-red-500/20'} transition-all`}>
             <div className="flex items-center gap-3">
                 {exists ? (
-                    <CheckCircle className="w-5 h-5 text-emerald-500" />
-                ) : (
-                    <XCircle className="w-5 h-5 text-slate-400" />
-                )}
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
+                        <CheckCircle className="w-5 h-5 text-emerald-500" />
+                    </motion.div>
+                ) : (<XCircle className="w-5 h-5 text-red-400 dark:text-red-500" />)}
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{file}</span>
             </div>
-            {exists && size > 0 && (
-                <span className="text-xs text-slate-400">{(size / 1024).toFixed(1)} KB</span>
-            )}
-        </div>
+            {exists && size > 0 && (<span className="text-xs text-slate-400">{(size / 1024).toFixed(1)} KB</span>)}
+        </motion.div>
     );
 }
 
