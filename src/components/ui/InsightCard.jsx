@@ -24,9 +24,10 @@ const VARIANTS_REDUCED = {
  *
  * - Tones: default, info, success, warning, danger, ai
  * - Hover: ds-card-shimmer + ds-hover-lift (opt-out with hover={false})
- * - Consumes parent Framer Motion stagger variants when wrapped in a
- *   motion.div with `initial="hidden" animate="visible"` and
- *   `variants={{ visible: { transition: { staggerChildren: 0.04 } } }}`
+ * - Animates in on mount with its own `hidden → visible` variants. When
+ *   placed inside a parent with matching `staggerChildren` variants,
+ *   Framer Motion's variant name matching will still propagate the
+ *   parent's stagger timing to this card.
  * - Respects prefers-reduced-motion via useReducedMotion()
  */
 export function InsightCard({
@@ -42,6 +43,8 @@ export function InsightCard({
 
   return (
     <motion.div
+      initial="hidden"
+      animate="visible"
       variants={reduced ? VARIANTS_REDUCED : VARIANTS}
       className={`rounded-xl p-4 ring-1 ${toneClass} ${hoverClass} ${className}`}
       {...rest}
