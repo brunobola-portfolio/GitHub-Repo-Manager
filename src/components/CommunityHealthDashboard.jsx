@@ -76,6 +76,51 @@ function ScoreBadge({ score, className = '' }) {
     );
 }
 
+const TABS = [
+    { id: 'files', label: 'Files', icon: FileText },
+    { id: 'activity', label: 'Activity', icon: Activity },
+    { id: 'recommendations', label: 'Recommendations', icon: TrendingUp },
+];
+
+function TabBar({ activeTab, onTabChange }) {
+    return (
+        <div
+            role="tablist"
+            className="flex gap-1 p-1 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/40 dark:border-slate-700/40"
+        >
+            {TABS.map(({ id, label, icon: Icon }) => {
+                const isActive = activeTab === id;
+                return (
+                    <button
+                        key={id}
+                        role="tab"
+                        aria-selected={isActive}
+                        aria-controls={`tabpanel-${id}`}
+                        onClick={() => onTabChange(id)}
+                        className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                            isActive
+                                ? 'text-slate-900 dark:text-white'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                        }`}
+                    >
+                        {isActive && (
+                            <motion.div
+                                layoutId="health-tab-indicator"
+                                className="absolute inset-0 rounded-xl bg-white dark:bg-slate-700 shadow-sm"
+                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                            />
+                        )}
+                        <span className="relative z-10 flex items-center gap-2">
+                            <Icon className="w-4 h-4" />
+                            {label}
+                        </span>
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
 export function CommunityHealthDashboard({ repo, onClose }) {
     const [health, setHealth] = useState(null);
     const [loading, setLoading] = useState(true);
