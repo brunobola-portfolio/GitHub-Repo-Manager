@@ -99,9 +99,14 @@ export function validateInput(raw) {
  * Compute a short fingerprint of a public key PEM for cross-referencing
  * audit entries with the signing keypair. Used for "which key signed this?"
  * lookups after future key rotation.
+ *
+ * Normalizes CRLF → LF before hashing so the fingerprint is stable across
+ * OSes (Windows checkouts would otherwise produce a different hash than
+ * Linux runners for the byte-identical public key).
  */
 function fingerprintPublicKey(publicKeyPem) {
-  const hash = createHash('sha256').update(publicKeyPem).digest('hex')
+  const normalized = publicKeyPem.replace(/\r\n/g, '\n')
+  const hash = createHash('sha256').update(normalized).digest('hex')
   return 'SHA256:' + hash.slice(0, 32)
 }
 

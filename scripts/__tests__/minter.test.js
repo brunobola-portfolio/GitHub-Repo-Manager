@@ -245,6 +245,24 @@ describe('mintLicense', () => {
       })
     ).rejects.toBeInstanceOf(MintError)
   })
+
+  it('produces the same fingerprint for CRLF and LF public key PEMs', async () => {
+    const lfPem = publicKey.replace(/\r\n/g, '\n')
+    const crlfPem = lfPem.replace(/\n/g, '\r\n')
+    const lfResult = await mintLicense(validInput, {
+      privateKeyPem: privateKey,
+      publicKeyPem: lfPem,
+      kid: 'k-test-07',
+      dryRun: true,
+    })
+    const crlfResult = await mintLicense(validInput, {
+      privateKeyPem: privateKey,
+      publicKeyPem: crlfPem,
+      kid: 'k-test-07',
+      dryRun: true,
+    })
+    expect(lfResult.fingerprint).toBe(crlfResult.fingerprint)
+  })
 })
 
 describe('deliverLicense', () => {
