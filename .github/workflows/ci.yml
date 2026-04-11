@@ -20,6 +20,13 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    env:
+      # server/config.js loadConfig() requires SESSION_SECRET ≥16 chars. Test
+      # code transitively imports this via require-tier.js; without a value
+      # loadConfig throws and every test that touches require-tier fails.
+      # This is a synthetic test value, not a real secret.
+      SESSION_SECRET: ci-test-session-secret-not-real-32chars
+      NODE_ENV: test
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
