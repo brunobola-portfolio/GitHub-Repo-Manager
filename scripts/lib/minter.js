@@ -229,3 +229,140 @@ export async function deliverLicense({ key, payload, recipient, fromEmail, resen
   const json = await response.json()
   return { messageId: json.id }
 }
+
+const MAX_AUDIT_RETRIES = 3
+
+/**
+ * Build a single JSONL entry (one line, no trailing newline).
+ * Uses JSON.stringify on the full object so `notes` and other string
+ * fields are safely encoded — never concatenated into a template literal.
+ */
+function buildAuditEntry({ status, payload, fingerprint, notes, messageId, runId, kid }) {
+  const entry = {
+    ts: new Date().toISOString(),
+    status,
+    lid: payload.lid,
+    kid,
+    tier: payload.tier,
+    org: payload.org,
+    email: payload.email,
+    seats: payload.seats,
+    issuedAt: new Date(payload.iat * 1000).toISOString(),
+    expiresAt: new Date(payload.exp * 1000).toISOString(),
+    fingerprint,
+    notes: notes || '',
+    mintedBy: 'github-actions',
+    runId: runId || null,
+    messageId: messageId || null,
+    dryRun: false,
+  }
+  return JSON.stringify(entry)
+}
+
+/**
+ * Fetch + decode the current licenses.jsonl from the audit repo.
+ * Returns { sha, lines } on 200, { sha: null, lines: [] } on 404.
+ * Throws on any other error.
+ */
+async function fetchAuditFile({ auditRepo, pat, filename }) {
+  const url = `https://api.github.com/repos/${auditRepo}/contents/${filename}`
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${pat}`,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  })
+  if (response.status === 404) return { sha: null, lines: [] }
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new AuditWriteError(`GET audit failed: ${response.status} ${err.message || ''}`)
+  }
+  const body = await response.json()
+  const content = Buffer.from(body.content, 'base64').toString('utf8')
+  const lines = content.split('\n').filter(Boolean)
+  return { sha: body.sha, lines }
+}
+
+/**
+ * Put updated content to the audit file. sha is optional (absent = create).
+ * Returns the new commit sha on success; throws AuditWriteError on 409 or other failure.
+ */
+async function putAuditFile({ auditRepo, pat, filename, sha, contentBase64, message }) {
+  const url = `https://api.github.com/repos/${auditRepo}/contents/${filename}`
+  const body = {
+    message,
+    content: contentBase64,
+  }
+  if (sha) body.sha = sha
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${pat}`,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+  if (response.status === 409) {
+    throw new AuditWriteError('409 Conflict (sha mismatch)', { lastSha: sha })
+  }
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new AuditWriteError(`PUT audit failed: ${response.status} ${err.message || ''}`, { lastSha: sha })
+  }
+  const json = await response.json()
+  return json.commit?.sha || 'unknown'
+}
+
+/**
+ * Append (supersede pattern) a new audit entry to licenses.jsonl.
+ *
+ * Two-phase pattern: called first with status=pending (before email delivery),
+ * then again with status=delivered (after). Each call APPENDS — the delivered
+ * entry does not replace the pending entry, it supersedes it. Readers of the
+ * audit file must collapse entries by `lid` at read time, interpreting the
+ * latest entry as authoritative.
+ *
+ * Uses GitHub Contents API with optimistic concurrency (sha on PUT, retry on 409).
+ * Entries NEVER include the license `key` field — only metadata.
+ */
+export async function logMint(params) {
+  const {
+    status, payload, fingerprint, notes, messageId,
+    auditRepo, pat, runId, kid,
+  } = params
+
+  if (!auditRepo) throw new AuditWriteError('auditRepo is required')
+  if (!pat) throw new AuditWriteError('pat is required')
+  if (!payload?.lid) throw new AuditWriteError('payload.lid is required')
+
+  const filename = 'licenses.jsonl'
+  const entry = buildAuditEntry({ status, payload, fingerprint, notes, messageId, runId, kid })
+  const commitMessage = `${status}: ${payload.lid} (${payload.tier}, ${payload.org})`
+
+  let lastError
+  for (let attempt = 1; attempt <= MAX_AUDIT_RETRIES; attempt++) {
+    try {
+      const { sha, lines } = await fetchAuditFile({ auditRepo, pat, filename })
+      const newLines = [...lines, entry]
+      const contentBase64 = Buffer.from(newLines.join('\n') + '\n').toString('base64')
+      const commitSha = await putAuditFile({
+        auditRepo, pat, filename, sha, contentBase64, message: commitMessage,
+      })
+      return { commitSha, entryIndex: newLines.length - 1 }
+    } catch (e) {
+      lastError = e
+      if (e instanceof AuditWriteError && e.message.startsWith('409')) {
+        // Retry on conflict — loop continues to refresh sha
+        continue
+      }
+      throw e
+    }
+  }
+  throw new AuditWriteError(
+    `audit write failed after ${MAX_AUDIT_RETRIES} attempts (409 conflicts)`,
+    { lastSha: lastError?.lastSha }
+  )
+}

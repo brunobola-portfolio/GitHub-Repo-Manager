@@ -7,6 +7,7 @@ import {
   validateInput,
   mintLicense,
   deliverLicense,
+  logMint,
 } from '../lib/minter.js'
 import { generateKeyPair, validateLicenseKey } from '../../server/lib/license.js'
 
@@ -353,5 +354,172 @@ describe('deliverLicense', () => {
         resendApiKey: 'test-key',
       })
     ).rejects.toBeInstanceOf(DeliveryError)
+  })
+})
+
+describe('logMint', () => {
+  let fetchMock, originalFetch
+
+  beforeEach(() => {
+    originalFetch = global.fetch
+    fetchMock = vi.fn()
+    global.fetch = fetchMock
+  })
+
+  afterEach(() => {
+    global.fetch = originalFetch
+  })
+
+  const sampleEntry = {
+    status: 'pending',
+    payload: {
+      lid: 'lic_abc',
+      tier: 'enterprise',
+      org: 'Bola Labs Dev',
+      email: 'bruno@bolalabs.pt',
+      seats: 100,
+      iat: 1744372800,
+      exp: 2059732800,
+    },
+    fingerprint: 'SHA256:fp123',
+    notes: 'Dev self-license',
+    auditRepo: 'brunobola-portfolio/license-log',
+    pat: 'test-pat',
+    runId: '1234567890',
+    kid: 'k-test-01',
+  }
+
+  // Helper to build a GET response for the contents API
+  function contentsResponse(lines = [], sha = 'current-sha') {
+    const content = Buffer.from(lines.join('\n') + (lines.length ? '\n' : '')).toString('base64')
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ content, sha }),
+    }
+  }
+
+  function notFoundResponse() {
+    return { ok: false, status: 404, json: async () => ({ message: 'Not Found' }) }
+  }
+
+  function putSuccessResponse(commitSha = 'new-commit-sha') {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ commit: { sha: commitSha } }),
+    }
+  }
+
+  function conflictResponse() {
+    return { ok: false, status: 409, json: async () => ({ message: 'sha does not match' }) }
+  }
+
+  it('creates licenses.jsonl on first write (GET 404 → PUT without sha)', async () => {
+    fetchMock
+      .mockResolvedValueOnce(notFoundResponse())
+      .mockResolvedValueOnce(putSuccessResponse('sha-init'))
+
+    const result = await logMint(sampleEntry)
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[0][0]).toContain('/repos/brunobola-portfolio/license-log/contents/licenses.jsonl')
+    // Default method for fetch is GET, which some mocks represent as undefined method
+    const firstCallMethod = fetchMock.mock.calls[0][1]?.method ?? 'GET'
+    expect(firstCallMethod).toBe('GET')
+
+    const putCall = fetchMock.mock.calls[1]
+    expect(putCall[1].method).toBe('PUT')
+    const putBody = JSON.parse(putCall[1].body)
+    expect(putBody.sha).toBeUndefined() // no sha on initial create
+    const decoded = Buffer.from(putBody.content, 'base64').toString('utf8')
+    expect(decoded).toMatch(/"lid":"lic_abc"/)
+    expect(decoded).toMatch(/"status":"pending"/)
+    // Must NOT include the key
+    expect(decoded).not.toMatch(/"key":/)
+    expect(result.commitSha).toBe('sha-init')
+  })
+
+  it('appends to existing licenses.jsonl (GET sha → PUT with sha)', async () => {
+    const existing = ['{"lid":"lic_old","status":"delivered"}']
+    fetchMock
+      .mockResolvedValueOnce(contentsResponse(existing, 'old-sha'))
+      .mockResolvedValueOnce(putSuccessResponse('new-sha'))
+
+    await logMint(sampleEntry)
+
+    const putCall = fetchMock.mock.calls[1]
+    const putBody = JSON.parse(putCall[1].body)
+    expect(putBody.sha).toBe('old-sha')
+    const decoded = Buffer.from(putBody.content, 'base64').toString('utf8')
+    // Old line preserved
+    expect(decoded).toMatch(/"lid":"lic_old"/)
+    // New line appended
+    expect(decoded).toMatch(/"lid":"lic_abc"/)
+    // Lines are newline-separated
+    expect(decoded.split('\n').filter(Boolean).length).toBe(2)
+  })
+
+  it('retries on 409 Conflict with a fresh sha', async () => {
+    fetchMock
+      .mockResolvedValueOnce(contentsResponse([], 'sha-attempt-1'))
+      .mockResolvedValueOnce(conflictResponse())
+      .mockResolvedValueOnce(contentsResponse([], 'sha-attempt-2'))
+      .mockResolvedValueOnce(putSuccessResponse('sha-final'))
+
+    const result = await logMint(sampleEntry)
+
+    expect(fetchMock).toHaveBeenCalledTimes(4) // GET, PUT(fail), GET, PUT(success)
+    expect(result.commitSha).toBe('sha-final')
+  })
+
+  it('throws AuditWriteError after 3 consecutive 409 conflicts', async () => {
+    fetchMock.mockImplementation((url, init) => {
+      if (!init || init.method !== 'PUT') return Promise.resolve(contentsResponse([], 'sha-race'))
+      return Promise.resolve(conflictResponse())
+    })
+
+    await expect(logMint(sampleEntry)).rejects.toBeInstanceOf(AuditWriteError)
+
+    // 3 attempts × (GET + PUT) = 6 fetches
+    expect(fetchMock.mock.calls.length).toBe(6)
+  })
+
+  it('JSON-stringifies the notes field (prevents raw concatenation)', async () => {
+    fetchMock
+      .mockResolvedValueOnce(notFoundResponse())
+      .mockResolvedValueOnce(putSuccessResponse())
+
+    const hostile = { ...sampleEntry, notes: 'line1\nline2","injected":"yes' }
+    await logMint(hostile)
+
+    const putBody = JSON.parse(fetchMock.mock.calls[1][1].body)
+    const decoded = Buffer.from(putBody.content, 'base64').toString('utf8')
+    // The decoded content is itself a JSONL line. Parse it to verify structural integrity.
+    const parsed = JSON.parse(decoded.trim())
+    expect(parsed.notes).toBe('line1\nline2","injected":"yes')
+    // The "injected" field should NOT appear as a top-level field
+    expect(parsed.injected).toBeUndefined()
+  })
+
+  it('writes delivered status with messageId on phase-2 audit update', async () => {
+    fetchMock
+      .mockResolvedValueOnce(contentsResponse([
+        '{"lid":"lic_abc","status":"pending","tier":"enterprise"}',
+      ], 'sha-1'))
+      .mockResolvedValueOnce(putSuccessResponse('sha-2'))
+
+    await logMint({
+      ...sampleEntry,
+      status: 'delivered',
+      messageId: 'resend-msg-xyz',
+    })
+
+    const putBody = JSON.parse(fetchMock.mock.calls[1][1].body)
+    const decoded = Buffer.from(putBody.content, 'base64').toString('utf8')
+    // Both entries present (supersede append pattern)
+    expect(decoded).toMatch(/"status":"pending"/)
+    expect(decoded).toMatch(/"status":"delivered"/)
+    expect(decoded).toMatch(/"messageId":"resend-msg-xyz"/)
   })
 })
