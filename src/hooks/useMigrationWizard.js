@@ -153,42 +153,16 @@ const validators = {
 }
 
 /**
- * Derive the source type implied by a step ID.
- * Returns 'azure' for any step that only exists in the Azure flow,
- * otherwise returns '' (unknown / no pre-selection).
- */
-function sourceTypeForStep(stepId) {
-  const AZURE_ONLY_STEPS = ['azureConnect', 'repoSelect', 'repoConfig', 'workItems', 'wiki', 'aiReview']
-  if (AZURE_ONLY_STEPS.includes(stepId)) return 'azure'
-  return ''
-}
-
-/**
  * State machine hook that powers the unified Migration/Import Wizard.
  * Manages step navigation, validation, and all wizard state.
  * Steps are computed dynamically based on source type.
  *
  * @param {object} [options]
  * @param {boolean} [options.initialDryRun=false] - Seed schedule.isDryRun on mount
- * @param {string|null} [options.initialStep=null] - Jump directly to this step ID on mount
  */
-export function useMigrationWizard({ initialDryRun = false, initialStep = null } = {}) {
-  // If initialStep implies a specific source type, pre-seed source so the steps
-  // array is computed correctly on the very first render.
-  const [currentStepIndex, setCurrentStepIndex] = useState(() => {
-    if (!initialStep) return 0
-    const impliedSourceType = sourceTypeForStep(initialStep)
-    if (!impliedSourceType) return 0
-    const stepList = getStepsForSourceType(impliedSourceType, false, false)
-    const idx = stepList.indexOf(initialStep)
-    return idx >= 0 ? idx : 0
-  })
-  const [source, setSource] = useState(() => {
-    if (!initialStep) return INITIAL_SOURCE
-    const impliedSourceType = sourceTypeForStep(initialStep)
-    if (!impliedSourceType) return INITIAL_SOURCE
-    return { ...INITIAL_SOURCE, sourceType: impliedSourceType }
-  })
+export function useMigrationWizard({ initialDryRun = false } = {}) {
+  const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  const [source, setSource] = useState(INITIAL_SOURCE)
   const [repos, setRepos] = useState([])
   const [workItems, setWorkItems] = useState(INITIAL_WORK_ITEMS)
   const [wiki, setWiki] = useState(INITIAL_WIKI)

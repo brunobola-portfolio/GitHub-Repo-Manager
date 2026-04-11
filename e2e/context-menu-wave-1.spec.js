@@ -16,12 +16,10 @@ test.describe('Wave 1 — Context menu items', () => {
     await expect(page.locator('[data-testid="dry-run-pill"]')).toHaveText(/dry.?run/i)
   })
 
-  test('Migration Risk Analysis opens wizard directly on AI Review step', async ({ page }) => {
+  test('Migration Risk Analysis is not shown in the context menu', async ({ page }) => {
     const firstCard = page.locator('[data-testid="repo-card"]').first()
     await firstCard.click({ button: 'right' })
     await page.getByRole('menuitem', { name: 'AI', exact: true }).hover()
-    await page.getByRole('menuitem', { name: 'Migration Risk Analysis', exact: true }).click()
-    await expect(page.locator('[data-testid="migration-wizard"]')).toBeVisible()
-    await expect(page.locator('[data-testid="wizard-step-aiReview"]')).toBeVisible()
+    await expect(page.getByRole('menuitem', { name: 'Migration Risk Analysis', exact: true })).toHaveCount(0)
   })
 })

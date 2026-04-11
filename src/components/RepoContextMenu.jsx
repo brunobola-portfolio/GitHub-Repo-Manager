@@ -2,7 +2,7 @@ import { memo } from 'react'
 import ContextMenu from './ui/ContextMenu'
 import {
 	ExternalLink, Copy, Settings, Rocket, Sparkles, Package,
-	Lock, Unlock, Archive, Trash2, ShieldAlert
+	Lock, Unlock, Archive, Trash2
 } from 'lucide-react'
 
 /**
@@ -62,11 +62,6 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 				// Wired features — open RepoInsightsModal on the matching tab.
 				{ label: 'Quality Report', onClick: () => onAction('aiQuality', repo) },
 				{ label: 'Suggest Name & Description', onClick: () => onAction('aiSuggest', repo) },
-				{
-					label: 'Migration Risk Analysis',
-					icon: ShieldAlert,
-					onClick: () => onAction('aiRisk', repo)
-				},
 				// Coming-soon features — no backend yet. Disabled so users can
 				// still discover the roadmap without being routed to an
 				// unrelated modal.

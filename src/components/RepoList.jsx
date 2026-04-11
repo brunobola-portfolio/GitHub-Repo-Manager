@@ -516,17 +516,14 @@ export function RepoList({
 								break
 							// AI context-menu actions route to the right tab in
 							// RepoInsightsModal so each menu item feels distinct.
-							// `aiRisk`, `aiCompare`, `aiSecurity` are currently
-							// disabled in the context menu (no backend), so this
-							// switch only handles the two wired features.
+							// `aiCompare`, `aiSecurity` are currently disabled in
+							// the context menu (no backend), so this switch only
+							// handles the two wired features.
 							case 'aiQuality':
 								openModalWithData('showRepoInsights', { repo: data, initialTab: 'quality' })
 								break
 							case 'aiSuggest':
 								openModalWithData('showRepoInsights', { repo: data, initialTab: 'suggestions' })
-								break
-							case 'aiRisk':
-								openModalWithData('showMigrationWizard', { initialStep: 'aiReview' })
 								break
 							default:
 								// For actions not yet wired, pass through to onQuickAction
