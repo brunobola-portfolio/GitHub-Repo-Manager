@@ -3,6 +3,12 @@
 /* Make Tailwind's `dark:` variant follow the `.dark` class on <html> (Tailwind v4) */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Safelist modal size classes used inside lookup tables (src/components/ui/Modal.jsx).
+ * Tailwind's JIT scans for whole class tokens but these live inside an object literal
+ * used via runtime indexing — the scanner finds them when spelled out here so they
+ * always ship in the CSS bundle. */
+@source inline("md:max-w-md md:max-w-lg md:max-w-2xl md:max-w-4xl md:max-w-5xl md:max-w-6xl md:max-w-7xl");
+
 /* Safe area insets for iOS notch/Dynamic Island */
 :root {
 	--safe-area-inset-top: env(safe-area-inset-top, 0px);

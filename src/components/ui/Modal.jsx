@@ -17,6 +17,29 @@ const STAGGER_VARIANTS = {
     visible: { transition: { staggerChildren: 0.04, delayChildren: 0.08 } },
 }
 
+// Static lookup tables so Tailwind's JIT scanner can discover every class.
+// IMPORTANT: never build these at runtime (e.g. `md:${sizeClasses[size]}`) —
+// Tailwind only picks up complete, static class names in source.
+const SIZE_CLASSES = {
+    sm:    'max-w-md',
+    md:    'max-w-lg',
+    lg:    'max-w-2xl',
+    xl:    'max-w-4xl',
+    '2xl': 'max-w-5xl',
+    '3xl': 'max-w-6xl',
+    full:  'max-w-7xl',
+}
+
+const SHEET_SIZE_CLASSES = {
+    sm:    'md:max-w-md',
+    md:    'md:max-w-lg',
+    lg:    'md:max-w-2xl',
+    xl:    'md:max-w-4xl',
+    '2xl': 'md:max-w-5xl',
+    '3xl': 'md:max-w-6xl',
+    full:  'md:max-w-7xl',
+}
+
 /**
  * Modal - Premium base modal component with consistent styling
  * Provides a standardized modal experience across the app with glassmorphism and animations
@@ -43,15 +66,8 @@ export function Modal({
     bodyClassName = '',
     mobileVariant = 'sheet',
 }) {
-    const sizeClasses = {
-        sm:    'max-w-md',
-        md:    'max-w-lg',
-        lg:    'max-w-2xl',
-        xl:    'max-w-4xl',
-        '2xl': 'max-w-5xl',
-        '3xl': 'max-w-6xl',
-        full:  'max-w-7xl'
-    }
+    // Use module-level lookup tables so Tailwind's JIT discovers every class.
+    const sizeClass = (mobileVariant === 'sheet' ? SHEET_SIZE_CLASSES[size] : SIZE_CLASSES[size]) || SIZE_CLASSES.md
 
     const variantStyles = {
         default: {
@@ -89,6 +105,9 @@ export function Modal({
     const reactId = useId()
     const titleId = `modal-title-${reactId}`
     const bodyId = `modal-body-${reactId}`
+    // Per-instance fallback so two modals with tabs that don't pass an
+    // explicit tabsLayoutId don't collide on DOM tab/tabpanel ids.
+    const effectiveTabsLayoutId = tabsLayoutId || `modal-tabs-${reactId}`
 
     const handleBackdropClick = (e) => {
         if (closeOnBackdrop && e.target === e.currentTarget) {
@@ -128,7 +147,7 @@ export function Modal({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         onClick={handleBackdropClick}
-                        className={`fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-md z-[60] flex justify-center md:items-center md:p-4 ${mobileVariant === 'sheet' ? 'items-end p-0 md:p-4' : 'items-center p-4'}`}
+                        className={`fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-md z-[60] flex justify-center md:items-center md:p-4 ${mobileVariant === 'sheet' ? 'items-end p-0 md:p-4 max-[500px]:items-center max-[500px]:p-4' : 'items-center p-4'}`}
                     >
                         {/* Modal Container */}
                         <motion.div
@@ -143,16 +162,16 @@ export function Modal({
                             transition={{ type: 'spring', duration: 0.4, bounce: 0.12 }}
                             onClick={(e) => e.stopPropagation()}
                             className={`
-                                ${mobileVariant === 'sheet' ? `md:${sizeClasses[size]} max-md:w-full` : sizeClasses[size]}
+                                ${sizeClass}
                                 w-full min-w-[320px]
                                 bg-white dark:bg-slate-950
                                 rounded-2xl
-                                ${mobileVariant === 'sheet' ? 'max-md:rounded-t-3xl max-md:rounded-b-none' : ''}
+                                ${mobileVariant === 'sheet' ? 'max-md:rounded-t-3xl max-md:rounded-b-none max-md:max-w-none max-[500px]:rounded-2xl max-[500px]:max-w-[calc(100%-2rem)]' : ''}
                                 shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)]
                                 ring-1 ring-slate-200/50 dark:ring-slate-700/50
                                 overflow-hidden
                                 flex flex-col
-                                max-h-[92vh] md:max-h-[88vh]
+                                max-h-[92vh] md:max-h-[88vh] max-[500px]:max-h-[90vh]
                                 ${className}
                             `}
                         >
@@ -197,7 +216,7 @@ export function Modal({
                                         activeTab={activeTab}
                                         onTabChange={onTabChange}
                                         variant="underline"
-                                        layoutId={tabsLayoutId || 'modal-tabs'}
+                                        layoutId={effectiveTabsLayoutId}
                                         size="md"
                                     />
                                 </div>
@@ -205,9 +224,9 @@ export function Modal({
 
                             {/* Body */}
                             <div
-                                id={tabs && tabs.length > 0 && activeTab ? `tabpanel-${tabsLayoutId || 'modal-tabs'}-${activeTab}` : bodyId}
+                                id={tabs && tabs.length > 0 && activeTab ? `tabpanel-${effectiveTabsLayoutId}-${activeTab}` : bodyId}
                                 role={tabs && tabs.length > 0 ? 'tabpanel' : undefined}
-                                aria-labelledby={tabs && tabs.length > 0 && activeTab ? `tab-${tabsLayoutId || 'modal-tabs'}-${activeTab}` : undefined}
+                                aria-labelledby={tabs && tabs.length > 0 && activeTab ? `tab-${effectiveTabsLayoutId}-${activeTab}` : undefined}
                                 className={`flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-50/30 dark:bg-slate-950 ${bodyClassName}`}
                             >
                                 {staggerChildren ? (
