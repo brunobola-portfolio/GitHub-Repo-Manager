@@ -26,11 +26,19 @@ let cachedLicensePayload = null
 /**
  * Resolve the effective tier from Stripe subscription and/or license key.
  * Exported for testing.
+ *
+ * `publicKey` may be either a PEM string (legacy single-key) or a
+ * `resolveKeyByKid` function (Phase 1 single-key stub, Phase 2+ multi-key map).
  */
 export async function resolveEffectiveTier(stripeTier, licenseKey, publicKey) {
   if (stripeTier && stripeTier !== 'free') return stripeTier
   if (licenseKey && publicKey) {
-    const payload = await validateLicenseKey(licenseKey, publicKey)
+    // Wrap a static key as a resolver that ignores kid (Phase 1 stub).
+    // When Phase 2 ships multi-key support, callers pass a real lookup fn.
+    const resolver = typeof publicKey === 'function'
+      ? publicKey
+      : () => publicKey
+    const payload = await validateLicenseKey(licenseKey, resolver)
     if (payload && payload.tier) return payload.tier
   }
   return 'free'

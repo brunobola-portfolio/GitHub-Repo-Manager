@@ -59,4 +59,57 @@ describe('license key generation and validation', () => {
     const payload = await validateLicenseKey('not-a-valid-key', publicKey)
     expect(payload).toBeNull()
   })
+
+  it('should include kid in the JWT header', async () => {
+    const key = await generateLicenseKey({
+      org: 'Test Corp', email: 'test@example.com', tier: 'pro', seats: 1, months: 12,
+      kid: 'k-test-01',
+    }, privateKey)
+    const jwt = key.slice('grm_lic_'.length)
+    const headerB64 = jwt.split('.')[0]
+    const header = JSON.parse(Buffer.from(headerB64, 'base64url').toString())
+    expect(header.kid).toBe('k-test-01')
+    expect(header.alg).toBe('EdDSA')
+  })
+
+  it('should reject a key signed with a disallowed algorithm', async () => {
+    // Manually craft a JWT with HS256 using the public key as a shared secret
+    // This simulates the classic "alg confusion" attack pattern
+    const { SignJWT } = await import('jose')
+    const forgedJwt = await new SignJWT({ lid: 'x', tier: 'enterprise', org: 'Attacker', seats: 9999 })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime(Math.floor(new Date('2100-01-01').getTime() / 1000))
+      .sign(new TextEncoder().encode(publicKey))
+    const forged = 'grm_lic_' + forgedJwt
+    const payload = await validateLicenseKey(forged, publicKey)
+    expect(payload).toBeNull()
+  })
+
+  it('should validate using a resolveKeyByKid lookup function', async () => {
+    const key = await generateLicenseKey({
+      org: 'Resolver Corp', email: 'r@example.com', tier: 'pro', seats: 2, months: 12,
+      kid: 'k-alpha',
+    }, privateKey)
+
+    const calls = []
+    const resolver = (kid) => {
+      calls.push(kid)
+      return publicKey // single-key Phase 1 stub: return the one known key regardless of kid
+    }
+
+    const payload = await validateLicenseKey(key, resolver)
+    expect(payload).not.toBeNull()
+    expect(payload.tier).toBe('pro')
+    expect(calls).toEqual(['k-alpha'])
+  })
+
+  it('should return null when resolver returns nothing', async () => {
+    const key = await generateLicenseKey({
+      org: 'Unknown Corp', email: 'u@example.com', tier: 'pro', seats: 1, months: 12,
+      kid: 'k-unknown',
+    }, privateKey)
+    const payload = await validateLicenseKey(key, () => null)
+    expect(payload).toBeNull()
+  })
 })

@@ -17,7 +17,7 @@ export async function generateKeyPair() {
 }
 
 export async function generateLicenseKey(opts, privateKeyPem) {
-  const { org, email, tier, seats, months, features } = opts
+  const { org, email, tier, seats, months, features, kid } = opts
   const lid = randomUUID()
   const now = Math.floor(Date.now() / 1000)
   const exp = months > 0
@@ -27,9 +27,12 @@ export async function generateLicenseKey(opts, privateKeyPem) {
   const payload = { lid, org, email, tier, seats }
   if (features && features.length > 0) payload.features = features
 
+  const header = { alg: ALG, typ: 'JWT' }
+  if (kid) header.kid = kid
+
   const key = await importPKCS8(privateKeyPem, ALG)
   const jwt = await new SignJWT(payload)
-    .setProtectedHeader({ alg: ALG, typ: 'JWT' })
+    .setProtectedHeader(header)
     .setIssuedAt(now)
     .setExpirationTime(exp)
     .sign(key)
@@ -37,12 +40,25 @@ export async function generateLicenseKey(opts, privateKeyPem) {
   return LICENSE_PREFIX + jwt
 }
 
-export async function validateLicenseKey(licenseKey, publicKeyPem) {
+export async function validateLicenseKey(licenseKey, publicKeyOrResolver) {
   try {
     if (!licenseKey || !licenseKey.startsWith(LICENSE_PREFIX)) return null
     const jwt = licenseKey.slice(LICENSE_PREFIX.length)
+
+    // If caller passed a function, resolve the public key by kid from the JWT header.
+    // Otherwise treat the second arg as a static PEM string (backward compat).
+    let publicKeyPem
+    if (typeof publicKeyOrResolver === 'function') {
+      const headerB64 = jwt.split('.')[0]
+      const header = JSON.parse(Buffer.from(headerB64, 'base64url').toString())
+      publicKeyPem = publicKeyOrResolver(header.kid)
+      if (!publicKeyPem) return null
+    } else {
+      publicKeyPem = publicKeyOrResolver
+    }
+
     const key = await importSPKI(publicKeyPem, ALG)
-    const { payload } = await jwtVerify(jwt, key)
+    const { payload } = await jwtVerify(jwt, key, { algorithms: ['EdDSA'] })
     return payload
   } catch {
     return null
