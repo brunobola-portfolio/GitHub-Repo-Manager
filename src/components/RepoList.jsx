@@ -525,6 +525,9 @@ export function RepoList({
 							case 'aiSuggest':
 								openModalWithData('showRepoInsights', { repo: data, initialTab: 'suggestions' })
 								break
+							case 'aiRisk':
+								openModalWithData('showMigrationWizard', { initialStep: 'aiReview' })
+								break
 							default:
 								// For actions not yet wired, pass through to onQuickAction
 								onQuickAction(action, data)

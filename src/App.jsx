@@ -921,6 +921,7 @@ function AppContent() {
             onClose={() => closeModal('showMigrationWizard')}
             orgs={orgs}
             initialDryRun={getModalData('showMigrationWizard')?.initialDryRun}
+            initialStep={getModalData('showMigrationWizard')?.initialStep}
           />
         </Suspense>
       )}

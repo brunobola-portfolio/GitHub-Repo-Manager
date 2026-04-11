@@ -359,8 +359,8 @@ function MobileProgressBar({ steps, currentStepIndex }) {
 /* ------------------------------------------------------------------ */
 /*  Main Wizard Component                                              */
 /* ------------------------------------------------------------------ */
-export default function MigrationWizard({ onClose, orgs = [], initialDryRun = false }) {
-  const wizard = useMigrationWizard({ initialDryRun })
+export default function MigrationWizard({ onClose, orgs = [], initialDryRun = false, initialStep = null }) {
+  const wizard = useMigrationWizard({ initialDryRun, initialStep })
 
   const {
     steps,
@@ -741,6 +741,7 @@ export default function MigrationWizard({ onClose, orgs = [], initialDryRun = fa
               <AnimatePresence mode="wait" custom={direction}>
                 <motion.div
                   key={currentStep}
+                  data-testid={`wizard-step-${currentStep}`}
                   custom={direction}
                   variants={slideVariants}
                   initial="enter"
