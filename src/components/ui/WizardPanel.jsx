@@ -95,7 +95,7 @@ export function WizardPanel({
               {/* Left: Icon + Title */}
               <div className="flex items-center gap-2.5 min-w-0">
                 {Icon && (
-                  <div className="bg-white/15 p-1.5 rounded-lg flex-shrink-0">
+                  <div className="bg-white/15 ds-hover-glow p-1.5 rounded-lg flex-shrink-0 transition-all">
                     <Icon className="w-4 h-4" strokeWidth={2.5} />
                   </div>
                 )}
