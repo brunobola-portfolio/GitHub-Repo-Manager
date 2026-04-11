@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { WizardPanel } from './ui/WizardPanel'
+import { InsightCard } from './ui/InsightCard'
 import { useMobileBreakpoint } from '../hooks/useMobileBreakpoint'
 import { Select } from './ui/Select'
 import { Plus, Sparkles, Loader2, CheckCircle2, XCircle, Lock, Globe } from 'lucide-react'
@@ -212,7 +213,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                     )}
 
                     {/* Visibility */}
-                    <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/40">
+                    <InsightCard hover={false} className="flex items-center gap-3 p-3.5">
                         <button
                             type="button"
                             role="switch"
@@ -240,7 +241,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                                 </p>
                             </div>
                         </div>
-                    </div>
+                    </InsightCard>
                 </div>
             </form>
         </WizardPanel>
