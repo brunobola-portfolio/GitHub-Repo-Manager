@@ -360,7 +360,7 @@ function MobileProgressBar({ steps, currentStepIndex }) {
 /*  Main Wizard Component                                              */
 /* ------------------------------------------------------------------ */
 export default function MigrationWizard({ onClose, orgs = [], initialDryRun = false }) {
-  const wizard = useMigrationWizard()
+  const wizard = useMigrationWizard({ initialDryRun })
 
   const {
     steps,
@@ -399,8 +399,6 @@ export default function MigrationWizard({ onClose, orgs = [], initialDryRun = fa
   const [showConfirm, setShowConfirm] = useState(false)
   const isMobile = useMobileBreakpoint()
   const [isMaximized, setIsMaximized] = useState(true)
-  const [isDryRun, setIsDryRun] = useState(initialDryRun)
-
   const handleToggleMaximize = useCallback(() => setIsMaximized((v) => !v), [])
 
   const handleNext = useCallback(() => { setDirection(1); nextStep() }, [nextStep])
@@ -665,7 +663,7 @@ export default function MigrationWizard({ onClose, orgs = [], initialDryRun = fa
   ) : null
 
   return (
-    <div data-testid="migration-wizard">
+    <>
       <WizardPanel
         isOpen={true}
         onClose={handleClose}
@@ -679,7 +677,7 @@ export default function MigrationWizard({ onClose, orgs = [], initialDryRun = fa
         isMobile={isMobile}
         onToggleMaximize={handleToggleMaximize}
       >
-        <div role="form" aria-label={wizardTitle} className="p-4 md:p-6 lg:p-8">
+        <div data-testid="migration-wizard" role="form" aria-label={wizardTitle} className="p-4 md:p-6 lg:p-8">
           <div className={!isMobile ? 'max-w-3xl mx-auto' : ''}>
             {/* Horizontal stepper — desktop restored mode only */}
             {showSidebar && !effectiveMaximized && (
@@ -702,9 +700,14 @@ export default function MigrationWizard({ onClose, orgs = [], initialDryRun = fa
                   <h3 className={`font-bold tracking-tight text-slate-900 dark:text-slate-50 ${!isMobile ? 'text-xl' : 'text-lg'}`}>
                     {STEP_META[currentStep].title}
                   </h3>
-                  {isDryRun && (
-                    <span data-testid="dry-run-pill" className="ds-animate-scale-in inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-900">
-                      <Zap className="w-3 h-3" />
+                  {schedule.isDryRun && (
+                    <span
+                      data-testid="dry-run-pill"
+                      role="status"
+                      aria-live="polite"
+                      className="ds-animate-scale-in inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-900"
+                    >
+                      <Zap className="w-3 h-3" aria-hidden="true" />
                       Dry-Run Mode
                     </span>
                   )}
@@ -764,6 +767,6 @@ export default function MigrationWizard({ onClose, orgs = [], initialDryRun = fa
         cancelText="Continue Editing"
         variant="warning"
       />
-    </div>
+    </>
   )
 }
