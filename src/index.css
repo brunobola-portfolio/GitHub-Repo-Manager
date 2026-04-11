@@ -9,6 +9,10 @@
  * always ship in the CSS bundle. */
 @source inline("md:max-w-md md:max-w-lg md:max-w-2xl md:max-w-4xl md:max-w-5xl md:max-w-6xl md:max-w-7xl");
 
+/* Safelist modal landscape fallback classes (viewport height ≤ 500px).
+ * Used for the mobileVariant=sheet → centered override on landscape phones. */
+@source inline("max-[500px]:items-center max-[500px]:p-4 max-[500px]:rounded-2xl max-[500px]:max-w-[calc(100%-2rem)] max-[500px]:max-h-[90vh]");
+
 /* Safe area insets for iOS notch/Dynamic Island */
 :root {
 	--safe-area-inset-top: env(safe-area-inset-top, 0px);
