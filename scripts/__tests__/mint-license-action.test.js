@@ -74,7 +74,8 @@ describe('mint-license-action', () => {
     const summary = readFileSync(summaryPath, 'utf8')
     expect(summary).toMatch(/tier.*enterprise/i)
     expect(summary).toMatch(/Test Co/)
-    expect(summary).toMatch(/lic_/)
+    // `lid` is a randomUUID() from license.js — match the UUID v4 format
+    expect(summary).toMatch(/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/)
     // Must NOT contain the full license key
     expect(summary).not.toMatch(/grm_lic_[A-Za-z0-9._-]{20}/)
   })
