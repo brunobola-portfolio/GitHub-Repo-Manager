@@ -59,11 +59,30 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 			label: 'AI',
 			icon: Sparkles,
 			children: [
-				{ label: 'Migration Risk Analysis', onClick: () => onAction('aiRisk', repo) },
-				{ label: 'Suggest Name & Description', onClick: () => onAction('aiSuggest', repo) },
+				// Wired features — open RepoInsightsModal on the matching tab.
 				{ label: 'Quality Report', onClick: () => onAction('aiQuality', repo) },
-				{ label: 'Compare with Existing', onClick: () => onAction('aiCompare', repo) },
-				{ label: 'Security / Secrets Scan', onClick: () => onAction('aiSecurity', repo) }
+				{ label: 'Suggest Name & Description', onClick: () => onAction('aiSuggest', repo) },
+				// Coming-soon features — no backend yet. Disabled so users can
+				// still discover the roadmap without being routed to an
+				// unrelated modal.
+				{
+					label: 'Migration Risk Analysis',
+					disabled: true,
+					tooltip: 'Coming soon — planned for the migration wizard',
+					onClick: () => onAction('aiRisk', repo)
+				},
+				{
+					label: 'Compare with Existing',
+					disabled: true,
+					tooltip: 'Coming soon — will use semantic search to find similar repos',
+					onClick: () => onAction('aiCompare', repo)
+				},
+				{
+					label: 'Security / Secrets Scan',
+					disabled: true,
+					tooltip: 'Coming soon — credential & vulnerability scanning',
+					onClick: () => onAction('aiSecurity', repo)
+				}
 			]
 		},
 		{

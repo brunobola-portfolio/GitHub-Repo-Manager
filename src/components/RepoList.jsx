@@ -412,7 +412,7 @@ export function RepoList({
 							onToggle={() => toggleSelect(repo.id)}
 							onAction={onQuickAction}
 							onContextMenu={(e) => handleContextMenu(e, repo)}
-							onOpenInsights={() => openModalWithData('showRepoInsights', repo)}
+							onOpenInsights={() => openModalWithData('showRepoInsights', { repo })}
 							onOpenHealth={() => openModalWithData('showCommunityHealth', repo)}
 							onRepoClick={onRepoClick}
 						/>
@@ -508,12 +508,16 @@ export function RepoList({
 							case 'migrationHistory':
 								openModal('showMigrationHistory')
 								break
-							case 'aiRisk':
-							case 'aiSuggest':
+							// AI context-menu actions route to the right tab in
+							// RepoInsightsModal so each menu item feels distinct.
+							// `aiRisk`, `aiCompare`, `aiSecurity` are currently
+							// disabled in the context menu (no backend), so this
+							// switch only handles the two wired features.
 							case 'aiQuality':
-							case 'aiCompare':
-							case 'aiSecurity':
-								openModalWithData('showRepoInsights', data)
+								openModalWithData('showRepoInsights', { repo: data, initialTab: 'quality' })
+								break
+							case 'aiSuggest':
+								openModalWithData('showRepoInsights', { repo: data, initialTab: 'suggestions' })
 								break
 							default:
 								// For actions not yet wired, pass through to onQuickAction

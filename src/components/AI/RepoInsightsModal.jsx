@@ -9,6 +9,8 @@ import {
     CheckCircle2,
     AlertCircle,
     BarChart3,
+    Wand2,
+    Info,
 } from 'lucide-react'
 import { aiApi } from '../../api/ai'
 import { Modal, ModalFooter } from '../ui/Modal'
@@ -16,10 +18,14 @@ import { InsightCard } from '../ui/InsightCard'
 import { StatBar } from '../ui/StatBar'
 
 const TABS = [
-    { id: 'overview', label: 'Overview', icon: Sparkles },
-    { id: 'quality',  label: 'Quality',  icon: BarChart3 },
-    { id: 'readme',   label: 'README',   icon: FileText },
+    { id: 'overview',    label: 'Overview',    icon: Sparkles },
+    { id: 'quality',     label: 'Quality',     icon: BarChart3 },
+    { id: 'suggestions', label: 'Suggestions', icon: Wand2 },
+    { id: 'readme',      label: 'README',      icon: FileText },
 ]
+
+const DEFAULT_TAB = 'overview'
+const VALID_TABS = new Set(TABS.map((t) => t.id))
 
 /**
  * RepoInsightsModal — AI-powered repository insights dialog.
@@ -28,31 +34,57 @@ const TABS = [
  * 2-column grid (Breakdown + Detected Features + Recommendations) fits
  * on a 1080p desktop without a scrollbar. On mobile the Modal's sheet
  * variant slides up from the bottom.
+ *
+ * `initialTab` lets callers route the user straight to a specific tab —
+ * e.g. clicking "Quality Report" in the repo context menu opens the
+ * modal on the Quality tab instead of the default Overview.
  */
-export default function RepoInsightsModal({ repo, isOpen, onClose }) {
+export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = DEFAULT_TAB }) {
     const [analysis, setAnalysis] = useState(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
-    const [activeTab, setActiveTab] = useState('overview')
+    const [activeTab, setActiveTab] = useState(DEFAULT_TAB)
+
+    // Suggestions tab is lazy-loaded to avoid burning an AI call when the
+    // user never opens it. State/error/loading are isolated from the main
+    // metadata fetch so one failing call doesn't break the other.
+    const [suggestionsData, setSuggestionsData] = useState(null)
+    const [suggestionsLoading, setSuggestionsLoading] = useState(false)
+    const [suggestionsError, setSuggestionsError] = useState(null)
+
     const abortRef = useRef(null)
+    const suggestionsAbortRef = useRef(null)
 
     useEffect(() => {
         if (!isOpen || !repo) {
             setAnalysis(null)
             setError(null)
+            setSuggestionsData(null)
+            setSuggestionsError(null)
+            setSuggestionsLoading(false)
             return
         }
 
         // Abort any previous in-flight controller (rapid open/close/re-open).
         abortRef.current?.abort()
+        suggestionsAbortRef.current?.abort()
         const ctrl = new AbortController()
         abortRef.current = ctrl
-        setActiveTab('overview')
+        // Reset suggestions cache so a different repo re-fetches.
+        setSuggestionsData(null)
+        setSuggestionsError(null)
+        setSuggestionsLoading(false)
+        // Clamp initialTab to a valid id so callers can't open the modal
+        // on a non-existent tab (defensive — the union is tiny).
+        setActiveTab(VALID_TABS.has(initialTab) ? initialTab : DEFAULT_TAB)
         fetchAnalysis(ctrl.signal)
 
-        return () => ctrl.abort()
+        return () => {
+            ctrl.abort()
+            suggestionsAbortRef.current?.abort()
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, repo?.id])
+    }, [isOpen, repo?.id, initialTab])
 
     // Kick off a new fetch with a fresh AbortController. Used by the error-card
     // retry button and by the mount effect. Always aborts any previous inflight
@@ -103,6 +135,37 @@ export default function RepoInsightsModal({ repo, isOpen, onClose }) {
         }
     }
 
+    // Lazy-load suggestions only when the user actually opens that tab.
+    // Separate controller so switching tabs mid-flight doesn't cancel the
+    // main analysis fetch (and vice versa).
+    const fetchSuggestions = async (signal) => {
+        setSuggestionsLoading(true)
+        setSuggestionsError(null)
+        try {
+            const result = await aiApi.getSuggestions(repo)
+            if (!signal?.aborted) setSuggestionsData(result)
+        } catch {
+            if (!signal?.aborted) setSuggestionsError('Failed to generate suggestions. Please try again.')
+        } finally {
+            if (!signal?.aborted) setSuggestionsLoading(false)
+        }
+    }
+
+    const startSuggestionsFetch = () => {
+        suggestionsAbortRef.current?.abort()
+        const ctrl = new AbortController()
+        suggestionsAbortRef.current = ctrl
+        fetchSuggestions(ctrl.signal)
+    }
+
+    useEffect(() => {
+        if (!isOpen || !repo) return
+        if (activeTab !== 'suggestions') return
+        if (suggestionsData || suggestionsLoading || suggestionsError) return
+        startSuggestionsFetch()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab, isOpen, repo?.id])
+
     const showTabs = Boolean(analysis && !loading && !error)
 
     return (
@@ -142,9 +205,17 @@ export default function RepoInsightsModal({ repo, isOpen, onClose }) {
         >
             {loading && !analysis && <InsightsSkeletonGrid />}
             {error && <InsightsErrorCard message={error} onRetry={startFetch} />}
-            {analysis && !loading && activeTab === 'overview' && <OverviewGrid data={analysis} />}
-            {analysis && !loading && activeTab === 'quality'  && <QualityGrid  data={analysis} />}
-            {analysis && !loading && activeTab === 'readme'   && <ReadmeGrid   data={analysis} />}
+            {analysis && !loading && activeTab === 'overview'    && <OverviewGrid    data={analysis} />}
+            {analysis && !loading && activeTab === 'quality'     && <QualityGrid     data={analysis} />}
+            {analysis && !loading && activeTab === 'readme'      && <ReadmeGrid      data={analysis} />}
+            {analysis && !loading && activeTab === 'suggestions' && (
+                <SuggestionsGrid
+                    data={suggestionsData}
+                    loading={suggestionsLoading}
+                    error={suggestionsError}
+                    onRetry={startSuggestionsFetch}
+                />
+            )}
         </Modal>
     )
 }
@@ -437,6 +508,125 @@ function ReadmeGrid({ data }) {
                     ))}
                 </div>
             </InsightCard>
+        </div>
+    )
+}
+
+// ============================================================================
+// SuggestionsGrid — AI-powered name/description/topic improvement suggestions
+// ============================================================================
+// Tone mapping: `improvement` suggestions get the warm amber "recommendation"
+// look (matches the Quality tab's Recommendations card). `info` + anything
+// else defaults to the neutral indigo/blue palette so the surface reads as
+// informational rather than as an action item.
+const SUGGESTION_TYPE_STYLES = {
+    improvement: {
+        icon: Lightbulb,
+        wrapper:
+            'bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/20 hover:border-amber-500/40',
+        iconColor: 'text-amber-500 dark:text-amber-400',
+        badgeBg: 'bg-amber-500/15 text-amber-600 dark:text-amber-300',
+    },
+    info: {
+        icon: Info,
+        wrapper:
+            'bg-blue-500/5 dark:bg-blue-500/10 border-blue-500/20 hover:border-blue-500/40',
+        iconColor: 'text-blue-500 dark:text-blue-400',
+        badgeBg: 'bg-blue-500/15 text-blue-600 dark:text-blue-300',
+    },
+}
+
+function SuggestionsGrid({ data, loading, error, onRetry }) {
+    if (loading) {
+        return (
+            <div className="grid gap-4" aria-hidden="true" role="presentation">
+                <div className="ds-skeleton h-[88px] rounded-xl" />
+                <div className="ds-skeleton h-[120px] rounded-xl" />
+                <div className="ds-skeleton h-[120px] rounded-xl" />
+                <div className="ds-skeleton h-[120px] rounded-xl" />
+            </div>
+        )
+    }
+
+    if (error) {
+        return <InsightsErrorCard message={error} onRetry={onRetry} />
+    }
+
+    const suggestions = data?.suggestions || []
+    const analysis = data?.analysis
+
+    if (suggestions.length === 0 && !analysis) {
+        return (
+            <InsightCard tone="success" hover={false} className="text-center py-8">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+                <p className="text-emerald-600 dark:text-emerald-400 font-medium">
+                    No suggestions — looking great!
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    We couldn&apos;t find anything worth improving right now.
+                </p>
+            </InsightCard>
+        )
+    }
+
+    return (
+        <div className="grid gap-4">
+            {analysis && (
+                <InsightCard tone="ai">
+                    <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 shrink-0">
+                            <Wand2 className="w-5 h-5 text-indigo-500 dark:text-indigo-300" />
+                        </div>
+                        <div className="min-w-0">
+                            <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                                AI Analysis
+                            </h3>
+                            <p className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed break-words">
+                                {analysis}
+                            </p>
+                        </div>
+                    </div>
+                </InsightCard>
+            )}
+
+            {suggestions.length > 0 && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                    {suggestions.map((s, i) => {
+                        const style =
+                            SUGGESTION_TYPE_STYLES[s.type] || SUGGESTION_TYPE_STYLES.info
+                        const Icon = style.icon
+                        const label = s.type === 'improvement' ? 'Improve' : 'Info'
+                        return (
+                            <InsightCard key={i} hover={false} className="!p-0">
+                                <div
+                                    className={`h-full p-4 rounded-xl border ${style.wrapper} transition-colors`}
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <div className="shrink-0 mt-0.5">
+                                            <Icon className={`w-5 h-5 ${style.iconColor}`} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h4 className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                                                    {s.title}
+                                                </h4>
+                                                <span
+                                                    className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ${style.badgeBg}`}
+                                                >
+                                                    {label}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed break-words">
+                                                {s.description}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </InsightCard>
+                        )
+                    })}
+                </div>
+            )}
         </div>
     )
 }

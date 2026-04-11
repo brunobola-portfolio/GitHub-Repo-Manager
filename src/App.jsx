@@ -880,13 +880,24 @@ function AppContent() {
         />
       </Suspense>
 
-      <Suspense fallback={null}>
-        <RepoInsightsModal
-          isOpen={modalStates.showRepoInsights}
-          onClose={() => closeModal('showRepoInsights')}
-          repo={getModalData('showRepoInsights')}
-        />
-      </Suspense>
+      {(() => {
+        // `showRepoInsights` accepts either a raw repo object (legacy) or
+        // { repo, initialTab } so call sites can open the modal directly
+        // on a specific tab (e.g. Quality Report → quality tab).
+        const insightsPayload = getModalData('showRepoInsights')
+        const insightsRepo = insightsPayload?.repo ?? insightsPayload
+        const insightsInitialTab = insightsPayload?.initialTab
+        return (
+          <Suspense fallback={null}>
+            <RepoInsightsModal
+              isOpen={modalStates.showRepoInsights}
+              onClose={() => closeModal('showRepoInsights')}
+              repo={insightsRepo}
+              initialTab={insightsInitialTab}
+            />
+          </Suspense>
+        )
+      })()}
 
       {modalStates.showCommunityHealth && (
         <Suspense fallback={null}>
