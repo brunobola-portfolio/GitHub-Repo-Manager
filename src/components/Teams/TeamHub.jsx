@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, ChevronRight, Github, MoreVertical, Trash2, Edit2 } from 'lucide-react';
+import { Users, Plus, ChevronRight, Github, MoreVertical, Trash2, Edit2, Lock, Sparkles } from 'lucide-react';
 import { useToast } from '../../hooks/useToast';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { listTeams } from '../../api/teams';
 
 export function TeamHub({ onTeamSelect }) {
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [upgradeRequired, setUpgradeRequired] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
 
     // Create/Edit State
@@ -19,17 +21,16 @@ export function TeamHub({ onTeamSelect }) {
     const { toast } = useToast();
 
     const fetchTeams = async () => {
-        try {
-            setLoading(true);
-            const res = await fetch('/api/teams');
-            if (!res.ok) throw new Error('Failed to fetch teams');
-            const data = await res.json();
-            setTeams(data);
-        } catch {
+        setLoading(true);
+        // listTeams() already handles MOCK_MODE + free-tier 403 silently
+        // and returns a normalized { teams, upgradeRequired, error } shape.
+        const result = await listTeams();
+        setTeams(result.teams);
+        setUpgradeRequired(result.upgradeRequired);
+        if (result.error) {
             toast.error('Could not load teams');
-        } finally {
-            setLoading(false);
         }
+        setLoading(false);
     };
 
     useEffect(() => {
@@ -111,9 +112,11 @@ export function TeamHub({ onTeamSelect }) {
                         setIsEditing(false);
                         setShowCreate(true);
                     }}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all active:scale-95"
+                    disabled={upgradeRequired}
+                    title={upgradeRequired ? 'Teams require the Pro plan' : undefined}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
                 >
-                    <Plus className="w-5 h-5" />
+                    {upgradeRequired ? <Lock className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
                     <span>Create Team</span>
                 </button>
             </header>
@@ -190,11 +193,32 @@ export function TeamHub({ onTeamSelect }) {
                         />
                     ))}
 
-                    {teams.length === 0 && (
+                    {teams.length === 0 && !upgradeRequired && (
                         <div className="col-span-full py-12 text-center text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
                             <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
                             <p className="text-lg font-medium">No teams yet</p>
                             <p className="text-sm">Create your first team to start collaborating.</p>
+                        </div>
+                    )}
+
+                    {teams.length === 0 && upgradeRequired && (
+                        <div className="col-span-full py-14 px-6 text-center bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent dark:from-indigo-500/15 dark:via-purple-500/10 rounded-3xl ring-1 ring-indigo-500/20">
+                            <div className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/25">
+                                <Sparkles className="w-7 h-7 text-white" strokeWidth={2.5} />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                                Teams are a Pro feature
+                            </h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
+                                Collaborate with teammates, assign repositories, and track team activity. Upgrade to unlock shared workspaces and member management.
+                            </p>
+                            <button
+                                onClick={() => window.location.hash = '#pricing'}
+                                className="ds-btn-shimmer inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-400 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/25"
+                            >
+                                <Sparkles className="w-4 h-4" />
+                                View Pricing
+                            </button>
                         </div>
                     )}
                 </div>

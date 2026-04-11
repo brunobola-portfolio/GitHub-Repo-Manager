@@ -10,6 +10,7 @@ import { ToastContainer } from './components/ui/Toast'
 import { useToast } from './hooks/useToast'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
+import { listTeams } from './api/teams'
 import { onSessionExpired, onRateLimit, resetSessionExpired, fetchWithRetry, safeParseJson } from './utils/api'
 import { SelectionProvider } from './contexts/SelectionContext'
 import { ModalProvider } from './contexts/ModalContext'
@@ -246,15 +247,12 @@ function AppContent() {
   }
 
   const fetchTeams = useCallback(async () => {
-    try {
-      const res = await fetch('/api/teams', { credentials: 'include' })
-      if (res.ok) {
-        const data = await res.json()
-        setTeams(Array.isArray(data) ? data : [])
-      }
-    } catch {
-      // Teams fetch is non-critical
-    }
+    // listTeams() wraps /api/teams with MOCK_MODE short-circuit and
+    // graceful free-tier handling — see src/api/teams.js. This
+    // replaces a raw fetch that produced a 403 console error on every
+    // mount for free-tier users (teams are a pro-gated feature).
+    const { teams: loaded } = await listTeams()
+    setTeams(loaded)
   }, [])
 
   // Fetch teams when user becomes available
