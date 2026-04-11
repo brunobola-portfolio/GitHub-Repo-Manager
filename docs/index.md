@@ -81,4 +81,16 @@ Step-by-step implementation plans generated from approved specs.
 
 ## Images
 
-Screenshots stored in `docs/images/` — named `0X_description_hd.png` for HD captures.
+Screenshots stored in `docs/images/` — named `NN_description_hd.png` for HD captures (Playwright MCP at 1920x1080).
+
+Recent captures (April 2026):
+
+- `21_license_badge_enterprise_hd.png`, `22_license_badge_header_hd.png` — LicenseBadge header pill showing Enterprise tier from `/api/v1/license`
+- `23_context_menu_fix_hd.png` — Scroll-free context menu validation ([2026-04-08 spec](specs/2026-04-08-context-menu-and-pricing-polish.md))
+- `24_rate_limit_banner_landing_hd.png`, `25_rate_limit_banner_ready_hd.png`, `26_rate_limit_banner_verify_hd.png` — Rate limit banner states ([2026-04-09 spec](specs/2026-04-09-rate-limit-ux-and-dev-fix.md))
+- `27_landing_validated_hd.png` — Landing page served by `npm run dev:all`, captured after CHANGELOG/docs/test reorganization pass
+- `28_releases_tab_empty_hd.png` — RepoDetail → Releases tab, empty state ("No releases yet") after navigation in mock mode
+- `29_releases_tab_create_form_hd.png` — Releases tab with the New Release form opened (Tag, Title, Release Notes, Draft/Pre-release toggles)
+- `30_releases_tab_form_filled_hd.png` — Create form populated with `v3.1.0` / Modal System Redesign / pre-release toggle enabled, Publish button active
+- `31_releases_tab_form_dark_hd.png` — Same filled form in dark mode, validating Tailwind `.dark` variants on Card/Input/Button/TabBar
+- `32_releases_tab_publish_error_hd.png` — Error state after Publish: backend surfaces `"GitHub token expired or revoked"` banner (expected in mock mode — real backend refuses the fake token)

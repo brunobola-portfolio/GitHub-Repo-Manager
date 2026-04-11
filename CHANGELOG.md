@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **License Mint Automation**: GitHub Actions-based Ed25519 license minting pipeline
+  - `scripts/lib/minter.js` primitives: `validateInput`, `mintLicense`, `deliverLicense`, `logMint`, `mint-license-action.js` CLI wrapper
+  - `mint-license.yml` workflow with SHA-pinned actions and scoped `LICENSE_PRIVATE_PEM` secret
+  - Resend-based text-only email delivery
+  - Optimistic concurrency and audit trail (separate private audit repo pattern)
+  - `::add-mask::` safety for sensitive values; `mint-failure-notify.js` standalone error handler
+  - Dependabot-managed GitHub Actions and Docker bumps (Node 24 compat)
+- **License Kid Header & Resolver API**: `server/lib/license.js`
+  - JWT `kid` header and algorithms allowlist for key rotation
+  - Unified resolver wrapping with async support
+- **License Badge UI**: Header pill showing active tier from `/api/v1/license` endpoint
+  - Reads tier from Stripe subscription or license key
+  - Dark-mode friendly
+- **Modal System Redesign**: Shared `Modal` primitive consolidation
+  - `useBodyScrollLock` hook, safe for stacked modals and React Strict Mode
+  - `InsightCard` shared component with tones and stagger animations
+  - `StatBar` animated progress bar, hardened against NaN/undefined
+  - `Modal` enhancements: subtitle, 2xl/3xl sizes, body scroll lock, `staggerChildren`, `iconGradient`, `tabs` prop (embeds `TabBar` in header), `mobileVariant` (sheet/centered) with safe-area
+  - Migrations to shared primitive: `SettingsModal`, `TransferModal`, `OrgManagerModal`, `RepoInsightsModal`, `CreateRepoModal`, `CommitGeneratorModal`
+  - a11y ids, tab-panel association, sheet size ordering fixes
+- **Reusable TabBar**: Shared component with 3 variants and WAI-ARIA keyboard navigation
+  - Migrations: `Teams`, `Migration`, `PRDetail`, `OrgManager`, `Insights`, `Settings`, `RepoDetail`, `Health`
+  - Unit tests for variants, ARIA, keyboard nav
+- **Community Health Tabs**: Tabbed reorganization of health dashboard with animated sliding indicator
+  - Desktop-only integration (mobile preserved as stacked)
+  - Tab switching tests and mobile exclusion tests
+  - `aria-labelledby` for tab panels
+- **Health Dashboard Premium**: Visual overhaul of community health dashboard
+- **PR Review Experience (in progress)**: Spec + plan for premium PR review UI with file tree, diff viewer, AI insights, conversation threads
+- **Context Menu + Pricing Polish**: Scroll-free native context menu and dazzle-hover pricing cards
+- **Rate Limit UX + Dev Fix**: User-friendly banners + dev-mode rate limit exemption
+- **AI Submenu Redesign**: Per-item tab routing for AI Assistant submenu
+
+### Changed
+
+- `WizardPanel` now uses shared `useBodyScrollLock`; icon tile gained hover-glow for consistency
+
+### Fixed
+
+- Teams fetch gracefully handles `MOCK_MODE` and free-tier 403
+- Tailwind JIT safelist for landscape fallback classes
+- Minter CRLF→LF normalization before fingerprinting public key
+- SESSION_SECRET test env var for vitest CI runs
+- Mint-license workflow: private PEM scoped only to needed steps, surfaces audit commitSha
+- Minter shebang removal + `.gitattributes` for cross-platform line endings
+
+### Docs
+
+- Specs and plans for all April 2026 work indexed in [docs/index.md](docs/index.md)
+- Validation screenshots reorganized into `docs/images/` with sequential numbering
+- Setup checklist months cap and Secrets vs Variables split corrected
+
 ## [3.0.0] - 2026-04-05
 
 ### Added
