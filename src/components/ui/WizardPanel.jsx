@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Maximize2, Minimize2 } from 'lucide-react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 
 const PANEL_SIZES = {
   sm: 'w-[min(92vw,520px)]',
@@ -46,13 +47,7 @@ export function WizardPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps -- panelRef is a stable ref
   }, [isOpen])
 
-  // Lock body scroll when open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-      return () => { document.body.style.overflow = '' }
-    }
-  }, [isOpen])
+  useBodyScrollLock(isOpen)
 
   const effectiveMaximized = isMobile || isMaximized
 
