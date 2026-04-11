@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { ArrowRight, Building2, GitFork, X, AlertTriangle, ArrowRightLeft, Copy, Loader2, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, Building2, GitFork, AlertTriangle, ArrowRightLeft, Copy, Loader2, CheckCircle2, CheckCircle, XCircle } from 'lucide-react'
 import { Button } from './ui/Button'
-import { ProgressBar } from './ui/ProgressBar'
-import { useFocusTrap } from '../hooks/useFocusTrap'
+import { Modal, ModalFooter } from './ui/Modal'
+import { InsightCard } from './ui/InsightCard'
+import { StatBar } from './ui/StatBar'
 import { ConflictPanel } from './ConflictPanel'
 import { API_ENDPOINTS } from '../config'
 
@@ -23,24 +24,6 @@ export function TransferModal({
 	const [checkingConflicts, setCheckingConflicts] = useState(false)
 	const [resolutions, setResolutions] = useState({}) // { repoName: { action, newName? } }
 	const [dryRun, setDryRun] = useState(false)
-	const modalRef = useFocusTrap(isOpen, onClose)
-
-	// Scroll input into view when keyboard appears (mobile fix)
-	useEffect(() => {
-		if (!isOpen) return
-
-		const handleFocus = (e) => {
-			if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-				setTimeout(() => {
-					e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-				}, 300)
-			}
-		}
-
-		const modal = modalRef.current
-		modal?.addEventListener('focusin', handleFocus)
-		return () => modal?.removeEventListener('focusin', handleFocus)
-	}, [isOpen, modalRef])
 
 	// Check conflicts when targetOrg changes (transfer mode only) - debounced 500ms
 	useEffect(() => {
@@ -84,8 +67,6 @@ export function TransferModal({
 		return () => { cancelled = true; clearTimeout(timer) }
 	}, [targetOrg, repos, action])
 
-	if (!isOpen) return null
-
 	// Detect if all selected repos belong to the same owner as the target
 	const repoOwners = [...new Set(repos.map(r => r.owner?.login).filter(Boolean))]
 	const isTransferToSelf = action === 'transfer' && repoOwners.length === 1 && targetOrg === repoOwners[0]
@@ -127,263 +108,277 @@ export function TransferModal({
 		}
 	}
 
-	    return (
-	        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/75 backdrop-blur-md p-4">
-            <div
-                ref={modalRef}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="transfer-modal-title"
-                className="bg-white dark:bg-slate-950 rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] ring-1 ring-slate-200/50 dark:ring-slate-700/50 max-w-2xl w-full max-h-[85vh] md:max-h-[90vh] overflow-hidden flex flex-col">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 px-5 py-3 text-white">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-white/20 rounded-lg">
-                                {action === 'transfer' ? (
-                                    <ArrowRightLeft className="w-4 h-4" />
-                                ) : (
-                                    <Copy className="w-4 h-4" />
-                                )}
-                            </div>
-                            <div>
-                                <h2 id="transfer-modal-title" className="text-sm font-semibold tracking-tight">
-                                    {action === 'transfer' ? 'Transfer Repositories' : 'Mirror Repositories'}
-                                </h2>
-                                <p className="text-white/80 text-xs">
-                                    {repos.length} repo{repos.length !== 1 ? 's' : ''} selected
-                                </p>
-                            </div>
-                        </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/15 rounded-lg transition-colors" aria-label="Close modal">
-                            <X className="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
+	const footerSummary = (() => {
+		const skipped = Object.values(resolutions).filter(r => r.action === 'skip').length
+		const replaced = Object.values(resolutions).filter(r => r.action === 'replace').length
+		const renamed = Object.values(resolutions).filter(r => r.action === 'rename').length
+		const transferCount = repos.length - skipped
 
-                {/* Body */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {/* Action Toggle */}
-                    <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                        <button
-                            onClick={() => setAction('transfer')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                                action === 'transfer'
-                                    ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                            }`}
-                        >
-                            <ArrowRightLeft className="w-4 h-4" />
-                            Transfer (Move)
-                        </button>
-                        <button
-                            onClick={() => setAction('mirror')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
-                                action === 'mirror'
-                                    ? 'bg-white dark:bg-slate-600 text-purple-600 dark:text-purple-400 shadow-sm'
-                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                            }`}
-                        >
-                            <Copy className="w-4 h-4" />
-                            Mirror (Fork)
-                        </button>
-                    </div>
+		if (replaced || renamed || skipped) {
+			const parts = []
+			if (transferCount > 0) parts.push(`${transferCount} transfer`)
+			if (replaced > 0) parts.push(`${replaced} replace`)
+			if (renamed > 0) parts.push(`${renamed} rename`)
+			if (skipped > 0) parts.push(`${skipped} skip`)
+			return parts.join(', ')
+		}
+		return `${repos.length} repo${repos.length !== 1 ? 's' : ''} will be ${action === 'transfer' ? 'transferred' : 'mirrored'}${dryRun ? ' (dry-run)' : ''}`
+	})()
 
-                    {/* Info Box */}
-                    <div className={`p-4 rounded-lg border ${
-                        action === 'transfer'
-                            ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
-                            : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200'
-                    }`}>
-                        <div className="flex gap-3">
-                            <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
-                            <div className="text-sm">
-                                {action === 'transfer' ? (
-                                    <>
-                                        <strong>Transfer</strong> will move repositories to the target organization.
-                                        The original URLs will redirect automatically.
-                                    </>
-                                ) : (
-                                    <>
-                                        <strong>Mirror</strong> creates independent copies (forks) in the target
-                                        organization. Original repos remain unchanged.
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    </div>
+	return (
+		<Modal
+			isOpen={isOpen}
+			onClose={onClose}
+			title={action === 'mirror' ? 'Mirror Repositories' : 'Transfer Repositories'}
+			subtitle={repos.length ? `${repos.length} repositor${repos.length !== 1 ? 'ies' : 'y'} selected` : undefined}
+			icon={action === 'mirror' ? Copy : ArrowRightLeft}
+			iconGradient="primary"
+			size="xl"
+			staggerChildren={!isPerforming}
+			mobileVariant="sheet"
+			closeOnBackdrop={!isPerforming}
+			footer={
+				<ModalFooter align="between">
+					<span className="text-sm text-slate-500 dark:text-slate-400">
+						{footerSummary}
+					</span>
+					<div className="flex items-center gap-3">
+						<Button variant="ghost" onClick={onClose} disabled={isPerforming}>
+							Cancel
+						</Button>
+						<Button
+							variant={action === 'transfer' ? 'primary' : 'secondary'}
+							onClick={handleSubmit}
+							disabled={!targetOrg || isPerforming || checkingConflicts || (conflicts && repos.some(r => conflicts[r.name]?.exists && !resolutions[r.name]))}
+						>
+							{isPerforming ? 'Processing...' : (dryRun ? 'Simulate' : (action === 'transfer' ? 'Transfer' : 'Mirror'))}
+						</Button>
+					</div>
+				</ModalFooter>
+			}
+		>
+			<div className="space-y-5">
+				{/* Action Toggle */}
+				<InsightCard hover={false} className="p-1">
+					<div className="flex gap-2">
+						<button
+							onClick={() => setAction('transfer')}
+							className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+								action === 'transfer'
+									? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+									: 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+							}`}
+						>
+							<ArrowRightLeft className="w-4 h-4" />
+							Transfer (Move)
+						</button>
+						<button
+							onClick={() => setAction('mirror')}
+							className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+								action === 'mirror'
+									? 'bg-white dark:bg-slate-600 text-purple-600 dark:text-purple-400 shadow-sm'
+									: 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+							}`}
+						>
+							<Copy className="w-4 h-4" />
+							Mirror (Fork)
+						</button>
+					</div>
+				</InsightCard>
 
-                    {/* Target Organization */}
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                            Target Organization
-                        </label>
-                        {orgs.length > 0 ? (
-                            <div className="grid grid-cols-2 gap-2">
-                                {orgs.map(org => (
-                                    <button
-                                        key={org.login}
-	                                        onClick={() => {
-	                                            setTargetOrg(org.login)
-	                                            setFormError('')
-	                                        }}
-                                        className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
-                                            targetOrg === org.login
-                                                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
-                                                : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
-                                        }`}
-                                    >
-                                        <img
-                                            src={org.avatar_url}
-                                            alt={org.login}
-                                            className="w-8 h-8 rounded-lg"
-                                        />
-                                        <div className="text-left">
-                                            <div className="font-medium text-slate-900 dark:text-slate-100">{org.login}</div>
-                                            <div className="text-xs text-slate-500 dark:text-slate-400">
-                                                {org.public_repos || 0} repos
-                                            </div>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-lg">
-                                <Building2 className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                                <p className="text-slate-500 dark:text-slate-400 mb-3">No organizations found</p>
-                                <a
-                                    href="https://github.com/organizations/plan"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium text-sm"
-                                >
-                                    Create an organization on GitHub →
-                                </a>
-                            </div>
-                        )}
-	                        {formError && (
-	                            <p className="mt-2 flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
-	                                <AlertTriangle className="w-4 h-4" />
-	                                <span>{formError}</span>
-	                            </p>
-	                        )}
-                    </div>
+				{/* Info Box */}
+				<InsightCard tone={action === 'transfer' ? 'warning' : 'info'} hover={false}>
+					<div className="flex gap-3">
+						<AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-amber-500 dark:text-amber-400" />
+						<div className="text-sm text-slate-700 dark:text-slate-300">
+							{action === 'transfer' ? (
+								<>
+									<strong>Transfer</strong> will move repositories to the target organization.
+									The original URLs will redirect automatically.
+								</>
+							) : (
+								<>
+									<strong>Mirror</strong> creates independent copies (forks) in the target
+									organization. Original repos remain unchanged.
+								</>
+							)}
+						</div>
+					</div>
+				</InsightCard>
 
-                    {/* Repository Preview with Conflict Status */}
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                            Repositories to {action === 'transfer' ? 'Transfer' : 'Mirror'}
-                        </label>
-                        <div className="max-h-60 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-700">
-                            {repos.map(repo => {
-                                const conflict = conflicts?.[repo.name]
-                                const hasConflict = conflict?.exists === true
-                                const resolution = resolutions[repo.name]
+				{/* Target Organization */}
+				<InsightCard hover={false}>
+					<label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+						Target Organization
+					</label>
+					{orgs.length > 0 ? (
+						<div className="grid grid-cols-2 gap-2">
+							{orgs.map(org => (
+								<button
+									key={org.login}
+									onClick={() => {
+										setTargetOrg(org.login)
+										setFormError('')
+									}}
+									className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
+										targetOrg === org.login
+											? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+											: 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
+									}`}
+								>
+									<img
+										src={org.avatar_url}
+										alt={org.login}
+										className="w-8 h-8 rounded-lg"
+									/>
+									<div className="text-left">
+										<div className="font-medium text-slate-900 dark:text-slate-100">{org.login}</div>
+										<div className="text-xs text-slate-500 dark:text-slate-400">
+											{org.public_repos || 0} repos
+										</div>
+									</div>
+								</button>
+							))}
+						</div>
+					) : (
+						<div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-lg">
+							<Building2 className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+							<p className="text-slate-500 dark:text-slate-400 mb-3">No organizations found</p>
+							<a
+								href="https://github.com/organizations/plan"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium text-sm"
+							>
+								Create an organization on GitHub &rarr;
+							</a>
+						</div>
+					)}
+					{formError && (
+						<p className="mt-3 flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+							<AlertTriangle className="w-4 h-4" />
+							<span>{formError}</span>
+						</p>
+					)}
+				</InsightCard>
 
-                                return (
-                                    <div key={repo.id} className="p-3">
-                                        <div className="flex items-center gap-3">
-                                            {checkingConflicts ? (
-                                                <Loader2 className="w-4 h-4 text-slate-400 animate-spin shrink-0" />
-                                            ) : hasConflict ? (
-                                                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-                                            ) : conflicts ? (
-                                                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                                            ) : (
-                                                <GitFork className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-medium text-slate-900 dark:text-slate-100 truncate">{repo.name}</div>
-                                                <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{repo.full_name}</div>
-                                            </div>
-                                            {targetOrg && !hasConflict && (
-                                                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                                                    <ArrowRight className="w-4 h-4" />
-                                                    <span className="text-indigo-600 dark:text-indigo-400 font-medium">{targetOrg}/{repo.name}</span>
-                                                </div>
-                                            )}
-                                            {hasConflict && !resolution && (
-                                                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Conflict</span>
-                                            )}
-                                        </div>
-                                        {hasConflict && (
-                                            <ConflictPanel
-                                                conflict={conflict}
-                                                repoName={repo.name}
-                                                resolution={resolution}
-                                                onResolve={(r) => setResolutions(prev => {
-                                                    const next = { ...prev }
-                                                    if (r === null) { delete next[repo.name] }
-                                                    else { next[repo.name] = r }
-                                                    return next
-                                                })}
-                                            />
-                                        )}
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
+				{/* Repository Preview with Conflict Status */}
+				<div>
+					<label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+						Repositories to {action === 'transfer' ? 'Transfer' : 'Mirror'}
+					</label>
+					<InsightCard hover={false} className="p-0 overflow-hidden">
+						<div className="max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
+							{repos.map(repo => {
+								const conflict = conflicts?.[repo.name]
+								const hasConflict = conflict?.exists === true
+								const resolution = resolutions[repo.name]
 
-                    {/* Progress */}
-                    {progress && (
-                        <ProgressBar
-                            current={progress.current}
-                            total={progress.total}
-                            status={progress.status}
-                            message={progress.message}
-                            results={progress.results}
-                        />
-                    )}
-                </div>
+								return (
+									<div key={repo.id} className="p-3">
+										<div className="flex items-center gap-3">
+											{checkingConflicts ? (
+												<Loader2 className="w-4 h-4 text-slate-400 animate-spin shrink-0" />
+											) : hasConflict ? (
+												<AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+											) : conflicts ? (
+												<CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+											) : (
+												<GitFork className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
+											)}
+											<div className="flex-1 min-w-0">
+												<div className="font-medium text-slate-900 dark:text-slate-100 truncate">{repo.name}</div>
+												<div className="text-xs text-slate-500 dark:text-slate-400 truncate">{repo.full_name}</div>
+											</div>
+											{targetOrg && !hasConflict && (
+												<div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+													<ArrowRight className="w-4 h-4" />
+													<span className="text-indigo-600 dark:text-indigo-400 font-medium">{targetOrg}/{repo.name}</span>
+												</div>
+											)}
+											{hasConflict && !resolution && (
+												<span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Conflict</span>
+											)}
+										</div>
+										{hasConflict && (
+											<ConflictPanel
+												conflict={conflict}
+												repoName={repo.name}
+												resolution={resolution}
+												onResolve={(r) => setResolutions(prev => {
+													const next = { ...prev }
+													if (r === null) { delete next[repo.name] }
+													else { next[repo.name] = r }
+													return next
+												})}
+											/>
+										)}
+									</div>
+								)
+							})}
+						</div>
+					</InsightCard>
+				</div>
 
-                {/* Dry-run toggle */}
-                <div className="px-6 py-2 border-t border-slate-100 dark:border-slate-700">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={dryRun}
-                            onChange={(e) => setDryRun(e.target.checked)}
-                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700"
-                        />
-                        <span className="text-sm text-slate-600 dark:text-slate-400">Simulate transfer (dry-run)</span>
-                    </label>
-                </div>
+				{/* Progress */}
+				{progress && (
+					<InsightCard hover={false} tone={progress.status === 'error' ? 'danger' : progress.status === 'success' ? 'success' : 'info'}>
+						<div className="space-y-3">
+							<StatBar
+								label={progress.status === 'running' ? 'Processing...' : progress.status === 'success' ? 'Completed' : 'Failed'}
+								value={progress.current}
+								max={progress.total}
+								gradient={progress.status === 'error' ? 'accent' : progress.status === 'success' ? 'success' : 'primary'}
+								animated={false}
+								showValue
+							/>
+							{progress.message && (
+								<p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
+									{progress.status === 'running' && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
+									{progress.status === 'success' && <CheckCircle className="w-4 h-4 text-emerald-500" />}
+									{progress.status === 'error' && <XCircle className="w-4 h-4 text-red-500" />}
+									{progress.message}
+								</p>
+							)}
+							{progress.results?.length > 0 && (
+								<div className="max-h-40 overflow-y-auto space-y-1 border border-slate-200 dark:border-slate-700 rounded-lg p-2">
+									{progress.results.map((r, i) => (
+										<div
+											key={i}
+											className={`text-xs px-2 py-1 rounded flex items-center gap-2 ${
+												r.success
+													? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+													: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+											}`}
+										>
+											{r.success ? (
+												<CheckCircle className="w-3 h-3" />
+											) : (
+												<XCircle className="w-3 h-3" />
+											)}
+											<span className="font-medium truncate">{r.name}</span>
+											{r.error && (
+												<span className="text-red-500 dark:text-red-400 truncate ml-auto">{r.error}</span>
+											)}
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+					</InsightCard>
+				)}
 
-                {/* Footer */}
-                <div className="flex items-center justify-between min-h-[72px] px-6 md:px-8 bg-white/80 dark:bg-slate-900/70 border-t border-slate-200/50 dark:border-slate-800/40">
-                    <span className="text-sm text-slate-500 dark:text-slate-400">
-                        {(() => {
-                            const skipped = Object.values(resolutions).filter(r => r.action === 'skip').length
-                            const replaced = Object.values(resolutions).filter(r => r.action === 'replace').length
-                            const renamed = Object.values(resolutions).filter(r => r.action === 'rename').length
-                            const transferCount = repos.length - skipped
-
-                            if (replaced || renamed || skipped) {
-                                const parts = []
-                                if (transferCount > 0) parts.push(`${transferCount} transfer`)
-                                if (replaced > 0) parts.push(`${replaced} replace`)
-                                if (renamed > 0) parts.push(`${renamed} rename`)
-                                if (skipped > 0) parts.push(`${skipped} skip`)
-                                return parts.join(', ')
-                            }
-                            return `${repos.length} repo${repos.length !== 1 ? 's' : ''} will be ${action === 'transfer' ? 'transferred' : 'mirrored'}${dryRun ? ' (dry-run)' : ''}`
-                        })()}
-                    </span>
-                    <div className="flex gap-3">
-                        <Button variant="ghost" onClick={onClose} disabled={isPerforming}>
-                            Cancel
-                        </Button>
-                        <Button
-                            variant={action === 'transfer' ? 'primary' : 'secondary'}
-                            onClick={handleSubmit}
-                            disabled={!targetOrg || isPerforming || checkingConflicts || (conflicts && repos.some(r => conflicts[r.name]?.exists && !resolutions[r.name]))}
-                        >
-                            {isPerforming ? 'Processing...' : (dryRun ? 'Simulate' : (action === 'transfer' ? 'Transfer' : 'Mirror'))}
-                        </Button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    )
+				{/* Dry-run toggle */}
+				<label className="flex items-center gap-2 cursor-pointer px-1">
+					<input
+						type="checkbox"
+						checked={dryRun}
+						onChange={(e) => setDryRun(e.target.checked)}
+						className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700"
+					/>
+					<span className="text-sm text-slate-600 dark:text-slate-400">Simulate transfer (dry-run)</span>
+				</label>
+			</div>
+		</Modal>
+	)
 }
