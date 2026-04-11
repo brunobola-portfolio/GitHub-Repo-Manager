@@ -1,0 +1,100 @@
+name: Mint License
+
+# Self-hosted license minting. See docs/specs/2026-04-11-license-mint-automation-design.md
+# for the full design rationale and threat model.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tier:
+        type: choice
+        description: 'License tier'
+        options: [pro, enterprise]
+        default: pro
+        required: true
+      org:
+        description: 'Licensee organization'
+        required: true
+      email:
+        description: 'Recipient email address'
+        required: true
+      seats:
+        description: 'Number of seats'
+        default: '1'
+      months:
+        description: 'Validity in months (max 24)'
+        default: '12'
+      notes:
+        description: 'Internal notes (audit only, ≤500 chars)'
+        default: ''
+      dry_run:
+        type: boolean
+        description: 'Dry-run: mint + summarize only, no email, no audit commit'
+        default: false
+  repository_dispatch:
+    types: [mint-license]
+
+concurrency:
+  group: license-mint
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  mint:
+    # Only the repo owner can trigger via repository_dispatch. workflow_dispatch
+    # is already maintainer-gated at the platform level by GitHub.
+    if: github.event_name == 'workflow_dispatch' || github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Only the private key is in secrets. The matching public key is
+      # committed at keys/public.pem and read from disk by the mint script.
+      LICENSE_PRIVATE_PEM: ${{ secrets.LICENSE_PRIVATE_PEM }}
+    steps:
+      - name: Pre-emptive secret masking
+        # Runs BEFORE checkout/Node. Any later step that accidentally prints
+        # LICENSE_PRIVATE_PEM via a stack trace is redacted by the GH log
+        # processor. Masking must happen at the workflow level — crashes
+        # during Node module load would otherwise precede in-process masking.
+        run: |
+          echo "::add-mask::$LICENSE_PRIVATE_PEM"
+          echo "::add-mask::${{ inputs.email || github.event.client_payload.email }}"
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a  # v4.2.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install dependencies
+        # --ignore-scripts: dependency postinstall hooks are disabled so a
+        #   compromised transitive dep can't run with LICENSE_PRIVATE_PEM
+        #   in the environment.
+        # --omit=dev: trims the install footprint — the mint script only
+        #   depends on `jose` at runtime, which is a production dep already.
+        run: npm ci --ignore-scripts --omit=dev
+      - name: Mint license
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          LICENSE_LOG_PAT: ${{ secrets.LICENSE_LOG_PAT }}
+          AUDIT_REPO: ${{ vars.AUDIT_REPO }}
+          FROM_EMAIL: licenses@bolalabs.pt
+          KID: ${{ vars.LICENSE_KID || 'k-default' }}
+          TIER: ${{ inputs.tier || github.event.client_payload.tier }}
+          ORG: ${{ inputs.org || github.event.client_payload.org }}
+          EMAIL: ${{ inputs.email || github.event.client_payload.email }}
+          SEATS: ${{ inputs.seats || github.event.client_payload.seats }}
+          MONTHS: ${{ inputs.months || github.event.client_payload.months }}
+          NOTES: ${{ inputs.notes || github.event.client_payload.notes }}
+          DRY_RUN: ${{ inputs.dry_run || github.event.client_payload.dry_run || 'false' }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: node scripts/mint-license-action.js
+      - name: Notify on failure
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          node scripts/mint-failure-notify.js \
+            --run-id "${{ github.run_id }}" \
+            --repo "${{ github.repository }}" \
+            --event "${{ github.event_name }}"
