@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import {
-    Building2, X, Settings, Globe, Lock, Users, GitFork,
+    Building2, Settings, Globe, Lock, Users, GitFork,
     ExternalLink, RefreshCw, Edit3, Check, AlertTriangle,
     Shield, Mail, MapPin, Link as LinkIcon
 } from 'lucide-react'
 import { Button } from './ui/Button'
-import { useFocusTrap } from '../hooks/useFocusTrap'
-import { TabBar } from './ui/TabBar'
+import { Modal, ModalFooter } from './ui/Modal'
+import { InsightCard } from './ui/InsightCard'
 
 const ORG_TABS = [
     { id: 'overview', label: 'Overview' },
@@ -20,7 +20,6 @@ export function OrgManagerModal({
     org,
     onUpdateOrg
 }) {
-    const modalRef = useFocusTrap(isOpen, onClose)
     const [loading, setLoading] = useState(false)
     const [orgDetails, setOrgDetails] = useState(null)
     const [members, setMembers] = useState([])
@@ -92,100 +91,94 @@ export function OrgManagerModal({
         }
     }
 
-    if (!isOpen) return null
-
     const displayOrg = orgDetails || org
 
     return (
-        <div className="fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
-            <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="org-manager-title" className="bg-white dark:bg-slate-950 dark:text-slate-100 rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] ring-1 ring-slate-200/50 dark:ring-slate-700/50 max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600">
-                    <div className="flex items-center gap-4">
-                        <img
-                            src={displayOrg.avatar_url}
-                            alt={displayOrg.login}
-                            className="w-16 h-16 rounded-xl ring-4 ring-white/30 shadow-lg"
-                        />
-                        <div className="text-white">
-                            <h2 id="org-manager-title" className="text-sm font-semibold tracking-tight">{displayOrg.name || displayOrg.login}</h2>
-                            <p className="text-white/80 text-sm flex items-center gap-2">
-                                <Building2 className="w-4 h-4" />
-                                @{displayOrg.login}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={fetchOrgDetails}
-                            className="text-white hover:bg-white/20"
-                            disabled={loading}
-                            aria-label="Refresh organization details"
-                        >
-                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                        </Button>
-                        <button
-                            onClick={onClose}
-                            className="p-2 hover:bg-white/15 rounded-lg transition-colors"
-                            aria-label="Close modal"
-                        >
-                            <X className="w-4 h-4 text-white" />
-                        </button>
-                    </div>
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Organization Manager"
+            subtitle={org?.login ? `@${org.login}` : undefined}
+            icon={Building2}
+            iconGradient="primary"
+            size="lg"
+            tabs={ORG_TABS}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            tabsLayoutId="org-manager-tabs"
+            staggerChildren
+            mobileVariant="sheet"
+            footer={
+                <ModalFooter align="right">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                    >
+                        Close
+                    </button>
+                </ModalFooter>
+            }
+        >
+            {/* Error Banner */}
+            {error && (
+                <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
+                    {error}
                 </div>
+            )}
 
-                {/* Tabs */}
-                <div className="px-6 bg-white/80 dark:bg-slate-900/60">
-                    <TabBar
-                        tabs={ORG_TABS}
-                        activeTab={activeTab}
-                        onTabChange={setActiveTab}
-                        variant="underline"
-                        layoutId="org-manager-tabs"
-                    />
+            {loading && !orgDetails ? (
+                <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="w-8 h-8 text-slate-400 animate-spin" />
                 </div>
-
-                {/* Error Banner */}
-                {error && (
-                    <div className="mx-6 mt-4 px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
-                        {error}
-                    </div>
-                )}
-
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6" role="tabpanel" id={`tabpanel-org-manager-tabs-${activeTab}`} aria-labelledby={`tab-org-manager-tabs-${activeTab}`}>
-                    {loading && !orgDetails ? (
-                        <div className="flex items-center justify-center py-12">
-                            <RefreshCw className="w-8 h-8 text-slate-400 animate-spin" />
-                        </div>
-                    ) : activeTab === 'overview' ? (
-                        <OverviewTab
-                            org={displayOrg}
-                            editing={editing}
-                            editForm={editForm}
-                            setEditForm={setEditForm}
-                            onEdit={() => setEditing(true)}
-                            onSave={handleSave}
-                            onCancel={() => setEditing(false)}
-                            loading={loading}
-                        />
-                    ) : activeTab === 'members' ? (
-                        <MembersTab members={members} orgLogin={displayOrg.login} />
-                    ) : (
-                        <SettingsTab org={displayOrg} />
-                    )}
-                </div>
-            </div>
-        </div>
+            ) : activeTab === 'overview' ? (
+                <OverviewTab
+                    org={displayOrg}
+                    editing={editing}
+                    editForm={editForm}
+                    setEditForm={setEditForm}
+                    onEdit={() => setEditing(true)}
+                    onSave={handleSave}
+                    onCancel={() => setEditing(false)}
+                    loading={loading}
+                    onRefresh={fetchOrgDetails}
+                />
+            ) : activeTab === 'members' ? (
+                <MembersTab members={members} orgLogin={displayOrg.login} />
+            ) : (
+                <SettingsTab org={displayOrg} />
+            )}
+        </Modal>
     )
 }
 
 // Overview Tab Component
-function OverviewTab({ org, editing, editForm, setEditForm, onEdit, onSave, onCancel, loading }) {
+function OverviewTab({ org, editing, editForm, setEditForm, onEdit, onSave, onCancel, loading, onRefresh }) {
     return (
         <div className="space-y-6">
+            {/* Org Avatar + Refresh */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <img
+                        src={org.avatar_url}
+                        alt={org.login}
+                        className="w-12 h-12 rounded-xl ring-2 ring-slate-200 dark:ring-slate-700 shadow"
+                    />
+                    <div>
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">{org.name || org.login}</div>
+                        <div className="text-sm text-slate-500 dark:text-slate-400">@{org.login}</div>
+                    </div>
+                </div>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onRefresh}
+                    disabled={loading}
+                    aria-label="Refresh organization details"
+                >
+                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                </Button>
+            </div>
+
             {/* Stats Grid */}
             <div className="grid grid-cols-4 gap-4">
                 <StatCard icon={Globe} label="Public Repos" value={org.public_repos || 0} color="blue" />
@@ -195,8 +188,8 @@ function OverviewTab({ org, editing, editForm, setEditForm, onEdit, onSave, onCa
             </div>
 
             {/* Details */}
-            <div className="bg-slate-50 dark:bg-slate-900/40 rounded-lg p-4 space-y-4 border border-slate-200 dark:border-slate-700">
-                <div className="flex items-center justify-between">
+            <InsightCard tone="default">
+                <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold text-slate-900 dark:text-slate-100">Organization Details</h3>
                     {!editing ? (
                         <Button variant="ghost" size="sm" onClick={onEdit}>
@@ -229,7 +222,7 @@ function OverviewTab({ org, editing, editForm, setEditForm, onEdit, onSave, onCa
                         <DetailRow label="Created" value={org.created_at ? new Date(org.created_at).toLocaleDateString() : null} />
                     </div>
                 )}
-            </div>
+            </InsightCard>
 
             {/* Quick Actions */}
             <div className="flex gap-2">
@@ -302,9 +295,9 @@ function MembersTab({ members, orgLogin }) {
 function SettingsTab({ org }) {
     return (
         <div className="space-y-4">
-            <div className="p-4 bg-amber-50 dark:bg-amber-900/40 border border-amber-200 dark:border-amber-700 rounded-lg">
+            <InsightCard tone="warning" hover={false}>
                 <div className="flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                     <div>
                         <h4 className="font-medium text-amber-800 dark:text-amber-200">Advanced Settings</h4>
                         <p className="text-sm text-amber-700 dark:text-amber-100/80 mt-1">
@@ -312,7 +305,7 @@ function SettingsTab({ org }) {
                         </p>
                     </div>
                 </div>
-            </div>
+            </InsightCard>
 
             <div className="grid gap-3">
                 <SettingsLink
@@ -355,7 +348,6 @@ function StatCard({ icon: IconComp, label, value, color }) {
     )
 }
 
- 
 function DetailRow({ label, value, icon: IconComp, isLink }) {
     if (!value) return null
     return (
@@ -371,7 +363,6 @@ function DetailRow({ label, value, icon: IconComp, isLink }) {
     )
 }
 
- 
 function EditField({ label, value, onChange, icon: IconComp, multiline }) {
     return (
         <div>
