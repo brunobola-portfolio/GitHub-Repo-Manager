@@ -10,6 +10,9 @@
  * See: docs/specs/2026-04-11-license-mint-automation-design.md
  */
 
+import { generateLicenseKey, validateLicenseKey } from '../../server/lib/license.js'
+import { createHash } from 'node:crypto'
+
 /** Base class so `instanceof Error` + step-level matching both work. */
 class MinterError extends Error {
   constructor(message, step) {
@@ -90,4 +93,56 @@ export function validateInput(raw) {
   if (notes.length > NOTES_MAX) throw new InputValidationError(`notes must be ≤ ${NOTES_MAX} characters`)
 
   return { tier, org, email, seats, months, notes }
+}
+
+/**
+ * Compute a short fingerprint of a public key PEM for cross-referencing
+ * audit entries with the signing keypair. Used for "which key signed this?"
+ * lookups after future key rotation.
+ */
+function fingerprintPublicKey(publicKeyPem) {
+  const hash = createHash('sha256').update(publicKeyPem).digest('hex')
+  return 'SHA256:' + hash.slice(0, 32)
+}
+
+/**
+ * Mint a license key from validated input.
+ *
+ * Contract:
+ *  - On success, emits `::add-mask::<key>` to stdout as the FIRST action
+ *    after signing, so GitHub Actions redacts the key in every subsequent
+ *    log line (including exception stack traces).
+ *  - In dry-run mode, returns { key: null, ... } — the key string is never
+ *    populated, so there is nothing to leak.
+ *  - Throws MintError wrapping any underlying crypto error.
+ */
+export async function mintLicense(validatedInput, options) {
+  const { privateKeyPem, publicKeyPem, kid, dryRun } = options
+  if (!privateKeyPem) throw new MintError('privateKeyPem is required')
+  if (!publicKeyPem) throw new MintError('publicKeyPem is required')
+  if (!kid) throw new MintError('kid is required')
+
+  const fingerprint = fingerprintPublicKey(publicKeyPem)
+  let key
+  let payload
+  try {
+    key = await generateLicenseKey({ ...validatedInput, kid }, privateKeyPem)
+    // Round-trip validation to extract the exact payload (with lid + timestamps)
+    // for the audit log. Also verifies the just-minted key is well-formed.
+    payload = await validateLicenseKey(key, publicKeyPem)
+    if (!payload) throw new Error('minted key failed round-trip validation')
+  } catch (e) {
+    throw new MintError(`mint failed: ${e.message}`)
+  }
+
+  if (dryRun) {
+    // Do not populate `key`, do not emit ::add-mask::. Nothing to leak.
+    return { key: null, payload, fingerprint, kid }
+  }
+
+  // FIRST action after signing — mask the key in GitHub Actions logs.
+  // This is defense-in-depth with the YAML-level masking in the workflow.
+  process.stdout.write(`::add-mask::${key}\n`)
+
+  return { key, payload, fingerprint, kid }
 }

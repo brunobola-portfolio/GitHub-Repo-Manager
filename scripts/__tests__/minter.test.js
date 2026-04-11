@@ -1,11 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import {
   InputValidationError,
   MintError,
   DeliveryError,
   AuditWriteError,
   validateInput,
+  mintLicense,
 } from '../lib/minter.js'
+import { generateKeyPair, validateLicenseKey } from '../../server/lib/license.js'
 
 describe('minter error classes', () => {
   it('InputValidationError carries the "validate" step', () => {
@@ -126,5 +128,119 @@ describe('validateInput', () => {
       expect(e).toBeInstanceOf(InputValidationError)
       expect(e.step).toBe('validate')
     }
+  })
+})
+
+describe('mintLicense', () => {
+  let privateKey, publicKey
+
+  beforeAll(async () => {
+    const pair = await generateKeyPair()
+    privateKey = pair.privateKey
+    publicKey = pair.publicKey
+  })
+
+  const validInput = {
+    tier: 'enterprise',
+    org: 'Bola Labs Dev',
+    email: 'bruno@bolalabs.pt',
+    seats: 100,
+    months: 24,
+    notes: 'Dev self-license',
+  }
+
+  it('returns { key, payload, fingerprint, kid } for a normal mint', async () => {
+    const result = await mintLicense(validInput, {
+      privateKeyPem: privateKey,
+      publicKeyPem: publicKey,
+      kid: 'k-test-01',
+      dryRun: false,
+    })
+    expect(result.key).toMatch(/^grm_lic_/)
+    expect(result.payload).toBeDefined()
+    expect(result.payload.tier).toBe('enterprise')
+    expect(result.payload.org).toBe('Bola Labs Dev')
+    expect(result.payload.seats).toBe(100)
+    expect(result.fingerprint).toMatch(/^SHA256:/)
+    expect(result.kid).toBe('k-test-01')
+  })
+
+  it('produces a key that validates round-trip with the public key', async () => {
+    const result = await mintLicense(validInput, {
+      privateKeyPem: privateKey,
+      publicKeyPem: publicKey,
+      kid: 'k-test-02',
+      dryRun: false,
+    })
+    const verified = await validateLicenseKey(result.key, publicKey)
+    expect(verified).not.toBeNull()
+    expect(verified.org).toBe('Bola Labs Dev')
+    expect(verified.tier).toBe('enterprise')
+  })
+
+  it('returns key: null in dry-run mode (nothing to leak)', async () => {
+    const result = await mintLicense(validInput, {
+      privateKeyPem: privateKey,
+      publicKeyPem: publicKey,
+      kid: 'k-test-03',
+      dryRun: true,
+    })
+    expect(result.key).toBeNull()
+    expect(result.payload).toBeDefined()
+    expect(result.payload.tier).toBe('enterprise')
+    expect(result.fingerprint).toMatch(/^SHA256:/)
+  })
+
+  it('emits ::add-mask:: on the key to stdout before returning', async () => {
+    const originalWrite = process.stdout.write.bind(process.stdout)
+    const captured = []
+    process.stdout.write = (chunk, ...rest) => {
+      captured.push(String(chunk))
+      return originalWrite(chunk, ...rest)
+    }
+    try {
+      await mintLicense(validInput, {
+        privateKeyPem: privateKey,
+        publicKeyPem: publicKey,
+        kid: 'k-test-04',
+        dryRun: false,
+      })
+    } finally {
+      process.stdout.write = originalWrite
+    }
+    const joined = captured.join('')
+    expect(joined).toMatch(/::add-mask::grm_lic_/)
+  })
+
+  it('does NOT emit ::add-mask:: in dry-run mode (no key to mask)', async () => {
+    const originalWrite = process.stdout.write.bind(process.stdout)
+    const captured = []
+    process.stdout.write = (chunk, ...rest) => {
+      captured.push(String(chunk))
+      return originalWrite(chunk, ...rest)
+    }
+    try {
+      await mintLicense(validInput, {
+        privateKeyPem: privateKey,
+        publicKeyPem: publicKey,
+        kid: 'k-test-05',
+        dryRun: true,
+      })
+    } finally {
+      process.stdout.write = originalWrite
+    }
+    const joined = captured.join('')
+    expect(joined).not.toMatch(/::add-mask::grm_lic_/)
+  })
+
+  it('throws MintError on invalid private key PEM', async () => {
+    await expect(
+      mintLicense(validInput, {
+        privateKeyPem: 'not a pem',
+        publicKeyPem: publicKey,
+        kid: 'k-test-06',
+        dryRun: false,
+      })
+    ).rejects.toBeInstanceOf(MintError)
   })
 })
