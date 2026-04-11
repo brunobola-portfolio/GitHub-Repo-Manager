@@ -1,16 +1,19 @@
 
 import { useState, useRef, useEffect } from 'react'
 import {
-    Github, LogOut, RefreshCw, FlaskConical, LayoutDashboard, FolderGit2, Plus,
+    Github, LogOut, RefreshCw, LayoutDashboard, FolderGit2, Plus,
     Bell, Settings, User, ChevronDown, Building2, Shield, Users,
     CheckCircle2, AlertCircle, Sparkles, Moon, Sun, Wand2, Download, History, Menu, CreditCard
 } from 'lucide-react'
 import { AppLogoIcon } from './AppLogo'
+import LicenseBadge from './LicenseBadge'
 import { useTheme } from '../hooks/useTheme.jsx'
 
 export function Header({
     user,
-    isMockMode,
+    // isMockMode: the inline Demo pill was replaced by the <LicenseBadge />
+    // component which reads MOCK_MODE from config directly. The prop is still
+    // accepted for backward compat but consumed inside the badge.
     onLogin,
     onLogout,
     onCreateRepo,
@@ -75,12 +78,7 @@ export function Header({
                         <div className="min-w-0 hidden sm:block">
                             <h1 className="text-[13px] font-bold text-slate-900 dark:text-slate-100 leading-none ds-font-display truncate">
                                 Repo Manager
-                                {isMockMode && (
-                                    <span className="inline-flex items-center gap-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full text-[9px] font-semibold ml-1.5 flex-shrink-0 uppercase tracking-wider">
-                                        <FlaskConical className="w-2.5 h-2.5" />
-                                        Demo
-                                    </span>
-                                )}
+                                <LicenseBadge />
                             </h1>
                             <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-none mt-0.5">Organize & migrate</p>
                         </div>
