@@ -505,6 +505,12 @@ export function RepoList({
 							case 'migrate_selected':
 								openModal('showMigrationWizard')
 								break
+							case 'dryRun':
+								openModalWithData('showMigrationWizard', { targetRepo: data, initialDryRun: true })
+								break
+							case 'dryRun_selected':
+								openModalWithData('showMigrationWizard', { targetRepos: data, initialDryRun: true })
+								break
 							case 'migrationHistory':
 								openModal('showMigrationHistory')
 								break

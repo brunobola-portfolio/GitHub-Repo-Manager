@@ -917,7 +917,11 @@ function AppContent() {
 
       {modalStates.showMigrationWizard && (
         <Suspense fallback={null}>
-          <MigrationWizard onClose={() => closeModal('showMigrationWizard')} orgs={orgs} />
+          <MigrationWizard
+            onClose={() => closeModal('showMigrationWizard')}
+            orgs={orgs}
+            initialDryRun={getModalData('showMigrationWizard')?.initialDryRun}
+          />
         </Suspense>
       )}
 
