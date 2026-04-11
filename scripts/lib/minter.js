@@ -146,3 +146,86 @@ export async function mintLicense(validatedInput, options) {
 
   return { key, payload, fingerprint, kid }
 }
+
+/**
+ * Format the license payload into a plaintext email body.
+ * Text-only to eliminate stored-XSS risk from attacker-controlled `notes`
+ * reaching customer email clients that render HTML.
+ */
+function formatEmailBody({ key, payload }) {
+  const tierLabel = payload.tier === 'enterprise' ? 'Enterprise' : 'Pro'
+  const issued = new Date(payload.iat * 1000).toISOString().slice(0, 10)
+  const expires = new Date(payload.exp * 1000).toISOString().slice(0, 10)
+  return [
+    'Hi,',
+    '',
+    'Your license for GitHub Repo Manager is ready.',
+    '',
+    'License Key:',
+    key,
+    '',
+    'Details:',
+    `  Tier:         ${tierLabel}`,
+    `  Organization: ${payload.org}`,
+    `  Seats:        ${payload.seats}`,
+    `  Issued:       ${issued}`,
+    `  Expires:      ${expires}`,
+    '',
+    'To activate, add this line to your .env file:',
+    '',
+    `  LICENSE_KEY=${key}`,
+    '',
+    'Then restart the server. To verify activation, check the server logs for:',
+    '',
+    `  License validated: ${payload.tier} tier (org: ${payload.org}, expires: ${expires})`,
+    '',
+    'Questions? Reply to this email.',
+    '',
+    '— Bola Labs',
+  ].join('\n')
+}
+
+/**
+ * Send a license key to the recipient via Resend.
+ *
+ * Text-only body. Throws DeliveryError on non-2xx or network failure,
+ * with `lid` attached so the caller can reconcile from the pending audit entry.
+ */
+export async function deliverLicense({ key, payload, recipient, fromEmail, resendApiKey }) {
+  if (!key) throw new DeliveryError('key is required (cannot deliver a dry-run)', { lid: payload?.lid })
+  if (!recipient) throw new DeliveryError('recipient is required', { lid: payload?.lid })
+  if (!fromEmail) throw new DeliveryError('fromEmail is required', { lid: payload?.lid })
+  if (!resendApiKey) throw new DeliveryError('resendApiKey is required', { lid: payload?.lid })
+
+  const body = {
+    from: fromEmail,
+    to: [recipient],
+    subject: 'Your GitHub Repo Manager license key',
+    text: formatEmailBody({ key, payload }),
+  }
+
+  let response
+  try {
+    response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+  } catch (e) {
+    throw new DeliveryError(`network error: ${e.message}`, { lid: payload?.lid })
+  }
+
+  if (!response.ok) {
+    const errBody = await response.json().catch(() => ({}))
+    throw new DeliveryError(
+      `Resend returned ${response.status}: ${errBody.message || 'unknown error'}`,
+      { lid: payload?.lid }
+    )
+  }
+
+  const json = await response.json()
+  return { messageId: json.id }
+}

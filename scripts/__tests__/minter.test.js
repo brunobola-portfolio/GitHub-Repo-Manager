@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
 import {
   InputValidationError,
   MintError,
@@ -6,6 +6,7 @@ import {
   AuditWriteError,
   validateInput,
   mintLicense,
+  deliverLicense,
 } from '../lib/minter.js'
 import { generateKeyPair, validateLicenseKey } from '../../server/lib/license.js'
 
@@ -242,5 +243,115 @@ describe('mintLicense', () => {
         dryRun: false,
       })
     ).rejects.toBeInstanceOf(MintError)
+  })
+})
+
+describe('deliverLicense', () => {
+  let fetchMock, originalFetch
+
+  beforeEach(() => {
+    originalFetch = global.fetch
+    fetchMock = vi.fn()
+    global.fetch = fetchMock
+  })
+
+  afterEach(() => {
+    global.fetch = originalFetch
+  })
+
+  const sampleLicense = {
+    key: 'grm_lic_sample',
+    payload: {
+      lid: 'lic_abc',
+      tier: 'enterprise',
+      org: 'Bola Labs Dev',
+      seats: 100,
+      iat: 1744372800,
+      exp: 2059732800,
+    },
+  }
+
+  it('POSTs to Resend with correct headers and text/plain body', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ id: 'resend-msg-001' }),
+    })
+
+    const result = await deliverLicense({
+      ...sampleLicense,
+      recipient: 'bruno@bolalabs.pt',
+      fromEmail: 'licenses@bolalabs.pt',
+      resendApiKey: 'test-key',
+    })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe('https://api.resend.com/emails')
+    expect(init.method).toBe('POST')
+    expect(init.headers.Authorization).toBe('Bearer test-key')
+    expect(init.headers['Content-Type']).toBe('application/json')
+
+    const body = JSON.parse(init.body)
+    expect(body.from).toBe('licenses@bolalabs.pt')
+    expect(body.to).toEqual(['bruno@bolalabs.pt'])
+    expect(body.subject).toMatch(/license key/i)
+    expect(body.text).toContain('grm_lic_sample')
+    expect(body.text).toContain('Enterprise')
+    expect(body.text).toContain('Bola Labs Dev')
+    // Must NOT send html — text only
+    expect(body.html).toBeUndefined()
+
+    expect(result).toEqual({ messageId: 'resend-msg-001' })
+  })
+
+  it('throws DeliveryError on non-2xx response', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 429,
+      json: async () => ({ message: 'rate limit' }),
+    })
+
+    await expect(
+      deliverLicense({
+        ...sampleLicense,
+        recipient: 'bruno@bolalabs.pt',
+        fromEmail: 'licenses@bolalabs.pt',
+        resendApiKey: 'test-key',
+      })
+    ).rejects.toBeInstanceOf(DeliveryError)
+  })
+
+  it('attaches the lid to DeliveryError for recovery', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({}),
+    })
+
+    try {
+      await deliverLicense({
+        ...sampleLicense,
+        recipient: 'bruno@bolalabs.pt',
+        fromEmail: 'licenses@bolalabs.pt',
+        resendApiKey: 'test-key',
+      })
+      expect.fail('should have thrown')
+    } catch (e) {
+      expect(e.lid).toBe('lic_abc')
+      expect(e.message).toMatch(/500/)
+    }
+  })
+
+  it('throws DeliveryError if fetch itself rejects (network error)', async () => {
+    fetchMock.mockRejectedValue(new Error('ECONNREFUSED'))
+    await expect(
+      deliverLicense({
+        ...sampleLicense,
+        recipient: 'bruno@bolalabs.pt',
+        fromEmail: 'licenses@bolalabs.pt',
+        resendApiKey: 'test-key',
+      })
+    ).rejects.toBeInstanceOf(DeliveryError)
   })
 })
