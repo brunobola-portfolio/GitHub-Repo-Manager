@@ -1,309 +1,453 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, Brain, Lightbulb, Loader2, FileText, CheckCircle2, AlertCircle, BarChart3 } from 'lucide-react';
-import { aiApi } from '../../api/ai';
-import { useFocusTrap } from '../../hooks/useFocusTrap';
-import { TabBar } from '../ui/TabBar';
+import { useState, useEffect, useRef } from 'react'
+import { motion } from 'framer-motion'
+import {
+    Sparkles,
+    Brain,
+    Lightbulb,
+    Loader2,
+    FileText,
+    CheckCircle2,
+    AlertCircle,
+    BarChart3,
+} from 'lucide-react'
+import { aiApi } from '../../api/ai'
+import { Modal, ModalFooter } from '../ui/Modal'
+import { InsightCard } from '../ui/InsightCard'
+import { StatBar } from '../ui/StatBar'
 
-const RepoInsightsModal = ({ repo, isOpen, onClose }) => {
-    const modalRef = useFocusTrap(isOpen, onClose);
-    const [analysis, setAnalysis] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('overview'); // overview, quality, readme
+const TABS = [
+    { id: 'overview', label: 'Overview', icon: Sparkles },
+    { id: 'quality',  label: 'Quality',  icon: BarChart3 },
+    { id: 'readme',   label: 'README',   icon: FileText },
+]
+
+/**
+ * RepoInsightsModal — AI-powered repository insights dialog.
+ *
+ * Uses the shared Modal primitive with size="3xl" so the Quality tab's
+ * 2-column grid (Breakdown + Detected Features + Recommendations) fits
+ * on a 1080p desktop without a scrollbar. On mobile the Modal's sheet
+ * variant slides up from the bottom.
+ */
+export default function RepoInsightsModal({ repo, isOpen, onClose }) {
+    const [analysis, setAnalysis] = useState(null)
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState(null)
+    const [activeTab, setActiveTab] = useState('overview')
+    const abortRef = useRef(null)
 
     useEffect(() => {
-        if (isOpen && repo) {
-            fetchAnalysis();
-            setActiveTab('overview');
-        } else {
-            setAnalysis(null);
-            setError(null);
+        if (!isOpen || !repo) {
+            setAnalysis(null)
+            setError(null)
+            return
         }
+
+        const ctrl = new AbortController()
+        abortRef.current = ctrl
+        setActiveTab('overview')
+        fetchAnalysis(ctrl.signal)
+
+        return () => ctrl.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, repo]);
+    }, [isOpen, repo?.id])
 
-    const fetchAnalysis = async () => {
-        setLoading(true);
-        setError(null);
+    const fetchAnalysis = async (signal) => {
+        setLoading(true)
+        setError(null)
         try {
-            // 1. Try to get cached metadata first
-            let data = await aiApi.getMetadata(repo.id);
-
-            // 2. If no data, trigger indexing (Auto-analyze on first view)
+            let data = await aiApi.getMetadata(repo.id)
+            if (signal?.aborted) return
             if (!data) {
-                const indexResult = await aiApi.indexRepo(repo);
-                data = indexResult.analysis;
+                const indexResult = await aiApi.indexRepo(repo)
+                if (signal?.aborted) return
+                data = indexResult.analysis
             } else {
-                // Parse JSON strings if coming from DB
-                if (typeof data.topics === 'string') data.suggested_topics = JSON.parse(data.topics);
-                if (data.topics && !data.suggested_topics) data.suggested_topics = JSON.parse(data.topics);
+                if (typeof data.topics === 'string') data.suggested_topics = JSON.parse(data.topics)
+                if (data.topics && !data.suggested_topics) data.suggested_topics = JSON.parse(data.topics)
             }
-
-            setAnalysis(data);
+            if (!signal?.aborted) setAnalysis(data)
         } catch {
-            setError('Failed to generate insights. Please try again.');
+            if (!signal?.aborted) setError('Failed to generate insights. Please try again.')
         } finally {
-            setLoading(false);
+            if (!signal?.aborted) setLoading(false)
         }
-    };
+    }
 
     const reanalyze = async () => {
-        setLoading(true);
+        const ctrl = new AbortController()
+        abortRef.current = ctrl
+        setLoading(true)
         try {
-            const indexResult = await aiApi.indexRepo(repo);
-            setAnalysis(indexResult.analysis);
-        } catch (err) {
-            setError('Re-analysis failed');
+            const indexResult = await aiApi.indexRepo(repo)
+            if (!ctrl.signal.aborted) setAnalysis(indexResult.analysis)
+        } catch {
+            if (!ctrl.signal.aborted) setError('Re-analysis failed')
         } finally {
-            setLoading(false);
+            if (!ctrl.signal.aborted) setLoading(false)
         }
-    };
+    }
 
-    const tabs = [
-        { id: 'overview', label: 'Overview', icon: Sparkles },
-        { id: 'quality', label: 'Quality', icon: BarChart3 },
-        { id: 'readme', label: 'README', icon: FileText }
-    ];
+    const showTabs = Boolean(analysis && !loading && !error)
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="fixed inset-0 z-50 bg-black/60 dark:bg-black/75 backdrop-blur-md flex items-center justify-center p-4"
-            >
-                <motion.div
-                    ref={modalRef}
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="repo-insights-title"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white dark:bg-slate-950 ring-1 ring-slate-200/50 dark:ring-slate-700/50 rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] w-full max-w-2xl overflow-hidden"
-                >
-                    {/* Header */}
-                    <div className="flex items-center justify-between p-6 bg-slate-50/80 dark:bg-slate-900/70 border-b border-slate-200/50 dark:border-slate-800/40">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-purple-500/20 rounded-lg">
-                                <Sparkles className="w-6 h-6 text-purple-400" />
-                            </div>
-                            <div>
-                                <h2 id="repo-insights-title" className="text-xl font-bold text-slate-900 dark:text-white">AI Insights</h2>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">{repo?.full_name}</p>
-                            </div>
-                        </div>
-                        <button onClick={onClose} className="p-2 hover:bg-slate-200/50 dark:hover:bg-white/10 rounded-lg transition-colors" aria-label="Close modal">
-                            <X className="w-5 h-5 text-slate-400 dark:text-slate-500" />
-                        </button>
-                    </div>
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="AI Insights"
+            subtitle={repo?.full_name}
+            icon={Sparkles}
+            iconGradient="primary"
+            size="3xl"
+            tabs={showTabs ? TABS : undefined}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            tabsLayoutId="repo-insights-tabs"
+            staggerChildren={showTabs}
+            mobileVariant="sheet"
+            footer={
+                <ModalFooter align="right">
+                    <button
+                        onClick={reanalyze}
+                        disabled={loading}
+                        className="px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors inline-flex items-center gap-2 disabled:opacity-50"
+                    >
+                        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                        Re-analyze
+                    </button>
+                    <button
+                        onClick={onClose}
+                        className="ds-btn-shimmer px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-lg hover:from-indigo-400 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/25"
+                    >
+                        Done
+                    </button>
+                </ModalFooter>
+            }
+        >
+            {loading && !analysis && <InsightsSkeletonGrid />}
+            {error && <InsightsErrorCard message={error} onRetry={() => fetchAnalysis()} />}
+            {analysis && !loading && activeTab === 'overview' && <OverviewGrid data={analysis} />}
+            {analysis && !loading && activeTab === 'quality'  && <QualityGrid  data={analysis} />}
+            {analysis && !loading && activeTab === 'readme'   && <ReadmeGrid   data={analysis} />}
+        </Modal>
+    )
+}
 
-                    {/* Tabs */}
-                    {analysis && !loading && (
-                        <div className="px-4 bg-slate-50/50 dark:bg-slate-900/50">
-                            <TabBar
-                                tabs={tabs}
-                                activeTab={activeTab}
-                                onTabChange={setActiveTab}
-                                variant="underline"
-                                layoutId="repo-insights-tabs"
-                            />
-                        </div>
+// ============================================================================
+// CircularScore — SVG health score ring
+// ============================================================================
+function CircularScore({ value, max = 100 }) {
+    const size = 120
+    const stroke = 10
+    const radius = (size - stroke) / 2
+    const circumference = 2 * Math.PI * radius
+    const clamped = Math.max(0, Math.min(value ?? 0, max))
+    const offset = circumference - (clamped / max) * circumference
+
+    const colorClass =
+        clamped >= 80 ? 'stroke-emerald-500' :
+        clamped >= 50 ? 'stroke-amber-500'  :
+                        'stroke-red-500'
+
+    return (
+        <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+            <svg width={size} height={size} className="-rotate-90">
+                <circle
+                    cx={size / 2} cy={size / 2} r={radius}
+                    strokeWidth={stroke}
+                    fill="none"
+                    className="stroke-slate-200 dark:stroke-slate-800"
+                />
+                <motion.circle
+                    cx={size / 2} cy={size / 2} r={radius}
+                    strokeWidth={stroke}
+                    fill="none"
+                    strokeLinecap="round"
+                    className={colorClass}
+                    strokeDasharray={circumference}
+                    initial={{ strokeDashoffset: circumference }}
+                    animate={{ strokeDashoffset: offset }}
+                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+                />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-3xl font-bold text-slate-900 dark:text-white tabular-nums">
+                    {clamped}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">/{max}</span>
+            </div>
+        </div>
+    )
+}
+
+// ============================================================================
+// OverviewGrid — Health score + TL;DR + Highlights + Topics
+// ============================================================================
+function OverviewGrid({ data }) {
+    const summaryRef = useRef(null)
+    const [expanded, setExpanded] = useState(false)
+    const [needsClamp, setNeedsClamp] = useState(false)
+
+    useEffect(() => {
+        const el = summaryRef.current
+        if (!el) return
+        setNeedsClamp(el.scrollHeight > el.clientHeight + 2)
+    }, [data?.summary])
+
+    const hasHighlights = data.highlights?.length > 0
+    const hasTopics = data.suggested_topics?.length > 0
+    const hasSummary = Boolean(data.summary)
+
+    if (!hasHighlights && !hasTopics && !hasSummary && (data.health_score == null)) {
+        return (
+            <InsightCard hover={false}>
+                <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
+                    Analysis in progress — some sections may appear later.
+                </p>
+            </InsightCard>
+        )
+    }
+
+    return (
+        <div className="grid gap-4 lg:grid-cols-3">
+            {/* Health Score */}
+            <InsightCard tone="ai" className="lg:col-span-1 flex flex-col items-center justify-center text-center">
+                <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
+                    <Brain className="w-4 h-4" />
+                    Health Score
+                </div>
+                <CircularScore value={data.health_score ?? 0} />
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-4">
+                    Based on docs, structure &amp; metadata
+                </p>
+            </InsightCard>
+
+            {/* TL;DR */}
+            <InsightCard className="lg:col-span-2">
+                <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                    TL;DR Summary
+                </h3>
+                <div className="relative">
+                    <p
+                        ref={summaryRef}
+                        className={`text-slate-700 dark:text-slate-200 leading-relaxed ${expanded ? '' : 'line-clamp-5'}`}
+                    >
+                        {data.summary || 'No summary available yet.'}
+                    </p>
+                    {needsClamp && !expanded && (
+                        <button
+                            onClick={() => setExpanded(true)}
+                            className="mt-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                        >
+                            Show more
+                        </button>
                     )}
+                </div>
+            </InsightCard>
 
-                    {/* Content */}
-                    <div className="p-6 max-h-[60vh] overflow-y-auto" role="tabpanel" id={`tabpanel-repo-insights-tabs-${activeTab}`} aria-labelledby={`tab-repo-insights-tabs-${activeTab}`}>
-                        {loading ? (
-                            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                                <Loader2 className="w-10 h-10 text-purple-500 animate-spin" />
-                                <p className="text-slate-500 dark:text-slate-400 animate-pulse">Analyzing repository structure & docs...</p>
+            {/* Highlights */}
+            {hasHighlights && (
+                <InsightCard tone="success" className="lg:col-span-3">
+                    <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+                        Highlights
+                    </h3>
+                    <div className="grid sm:grid-cols-2 gap-2">
+                        {data.highlights.map((h, i) => (
+                            <div key={i} className="flex items-start gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+                                <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+                                <span className="break-words">{h}</span>
                             </div>
-                        ) : error ? (
-                            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
-                                <p className="text-red-400 mb-4">{error}</p>
-                                <button onClick={fetchAnalysis} className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg transition-colors">
-                                    Retry
-                                </button>
-                            </div>
-                        ) : analysis ? (
-                            <div className="space-y-6">
-                                {/* Overview Tab */}
-                                {activeTab === 'overview' && (
-                                    <>
-                                        {/* Health Score */}
-                                        <div className="flex items-center justify-between p-4 bg-slate-100/50 dark:bg-white/5 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`p-3 rounded-full ${getScoreColor(analysis.health_score)}`}>
-                                                    <Brain className="w-6 h-6 text-white" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Health Score</h3>
-                                                    <p className="text-sm text-slate-500 dark:text-slate-400">Based on docs, structure & metadata</p>
-                                                </div>
-                                            </div>
-                                            <div className="text-4xl font-bold text-slate-900 dark:text-white">
-                                                {analysis.health_score}<span className="text-xl text-slate-400 dark:text-slate-500">/100</span>
-                                            </div>
-                                        </div>
-
-                                        {/* TL;DR */}
-                                        <div className="space-y-2">
-                                            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">TL;DR Summary</h3>
-                                            <p className="text-slate-700 dark:text-slate-200 leading-relaxed bg-slate-100/50 dark:bg-white/5 p-4 rounded-xl border border-slate-200/30 dark:border-slate-800/30">
-                                                {analysis.summary}
-                                            </p>
-                                        </div>
-
-                                        {/* Highlights */}
-                                        {analysis.highlights?.length > 0 && (
-                                            <div className="space-y-2">
-                                                <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Highlights</h3>
-                                                <div className="grid gap-2">
-                                                    {analysis.highlights.map((h, i) => (
-                                                        <div key={i} className="flex items-center gap-2 text-green-400 text-sm">
-                                                            <CheckCircle2 className="w-4 h-4" />
-                                                            <span>{h}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Suggested Topics */}
-                                        {analysis.suggested_topics?.length > 0 && (
-                                            <div className="space-y-2">
-                                                <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Suggested Topics</h3>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {analysis.suggested_topics.map((topic, i) => (
-                                                        <span key={i} className="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-sm">
-                                                            #{topic}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-
-                                {/* Quality Tab */}
-                                {activeTab === 'quality' && (
-                                    <>
-                                        {/* Quality Breakdown */}
-                                        {analysis.quality_breakdown && (
-                                            <div className="space-y-4">
-                                                <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Quality Breakdown</h3>
-                                                <div className="grid gap-3">
-                                                    {Object.entries(analysis.quality_breakdown).map(([key, value]) => (
-                                                        <div key={key} className="space-y-1">
-                                                            <div className="flex justify-between text-sm">
-                                                                <span className="text-slate-600 dark:text-slate-300 capitalize">{key}</span>
-                                                                <span className="text-slate-500 dark:text-slate-400">{value}/30</span>
-                                                            </div>
-                                                            <div className="h-2 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
-                                                                <div
-                                                                    className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
-                                                                    style={{ width: `${(value / 30) * 100}%` }}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Improvements */}
-                                        {analysis.improvements?.length > 0 && (
-                                            <div className="space-y-2">
-                                                <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Recommendations</h3>
-                                                <div className="grid gap-3">
-                                                    {analysis.improvements.map((imp, i) => (
-                                                        <div key={i} className="flex items-start gap-3 p-3 bg-yellow-500/5 border border-yellow-500/10 rounded-lg">
-                                                            <Lightbulb className="w-5 h-5 text-yellow-500 mt-0.5 shrink-0" />
-                                                            <p className="text-slate-600 dark:text-slate-300 text-sm">{imp}</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Patterns */}
-                                        {analysis.patterns && (
-                                            <div className="space-y-2">
-                                                <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Detected Features</h3>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    {Object.entries(analysis.patterns).filter(([k]) => k.startsWith('has')).map(([key, value]) => (
-                                                        <div key={key} className={`flex items-center gap-2 text-sm ${value ? 'text-green-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                                                            {value ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                                                            <span>{key.replace('has', '').replace(/([A-Z])/g, ' $1').trim()}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-
-                                {/* README Tab */}
-                                {activeTab === 'readme' && (
-                                    <>
-                                        {analysis.readme_suggestions?.length > 0 ? (
-                                            <div className="space-y-4">
-                                                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                                                    <h3 className="text-blue-400 font-medium mb-2">README Enhancement Suggestions</h3>
-                                                    <p className="text-slate-500 dark:text-slate-400 text-sm">These sections could improve your documentation:</p>
-                                                </div>
-                                                <div className="grid gap-2">
-                                                    {analysis.readme_suggestions.map((section, i) => (
-                                                        <div key={i} className="flex items-center gap-3 p-3 bg-slate-100/50 dark:bg-white/5 border border-slate-200/50 dark:border-slate-800/40 rounded-lg">
-                                                            <FileText className="w-5 h-5 text-purple-400" />
-                                                            <span className="text-slate-700 dark:text-slate-200">{section}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl text-center">
-                                                <CheckCircle2 className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                                                <p className="text-green-400">README looks complete!</p>
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        ) : null}
+                        ))}
                     </div>
-
-                    {/* Footer */}
-                    <div className="flex items-center min-h-[68px] px-6 bg-white/80 dark:bg-slate-900/70 border-t border-slate-200/50 dark:border-slate-800/40 justify-end gap-3">
-                        <button
-                            onClick={reanalyze}
-                            disabled={loading}
-                            className="px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-                        >
-                            Re-analyze
-                        </button>
-                        <button
-                            onClick={onClose}
-                            className="px-6 py-2 bg-white text-black font-medium rounded-lg hover:bg-slate-100 transition-colors"
-                        >
-                            Done
-                        </button>
-                    </div>
-                </motion.div>
-            </motion.div>
+                </InsightCard>
             )}
-        </AnimatePresence>
-    );
-};
 
-const getScoreColor = (score) => {
-    if (score >= 80) return 'bg-green-500';
-    if (score >= 50) return 'bg-yellow-500';
-    return 'bg-red-500';
-};
+            {/* Topics */}
+            {hasTopics && (
+                <InsightCard tone="info" className="lg:col-span-3">
+                    <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+                        Suggested Topics
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                        {data.suggested_topics.map((topic, i) => (
+                            <span
+                                key={i}
+                                className="px-3 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded-full text-sm"
+                            >
+                                #{topic}
+                            </span>
+                        ))}
+                    </div>
+                </InsightCard>
+            )}
+        </div>
+    )
+}
 
-export default RepoInsightsModal;
+// ============================================================================
+// QualityGrid — Breakdown bars + Detected Features + Recommendations
+// ============================================================================
+function QualityGrid({ data }) {
+    const breakdown = data.quality_breakdown || {}
+    const breakdownEntries = Object.entries(breakdown)
+    const patterns = data.patterns || {}
+    const featureEntries = Object.entries(patterns).filter(([k]) => k.startsWith('has'))
+    const improvements = data.improvements || []
+
+    const hasBreakdown = breakdownEntries.length > 0
+    const hasFeatures = featureEntries.length > 0
+    const hasImprovements = improvements.length > 0
+
+    if (!hasBreakdown && !hasFeatures && !hasImprovements) {
+        return (
+            <InsightCard hover={false}>
+                <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
+                    Quality data not available yet.
+                </p>
+            </InsightCard>
+        )
+    }
+
+    return (
+        <div className="grid gap-4 lg:grid-cols-2">
+            {/* Quality Breakdown */}
+            {hasBreakdown && (
+                <InsightCard className="lg:col-span-1">
+                    <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
+                        Quality Breakdown
+                    </h3>
+                    <div className="space-y-3">
+                        {breakdownEntries.map(([key, value]) => (
+                            <StatBar
+                                key={key}
+                                label={key.replace(/_/g, ' ')}
+                                value={Number(value) || 0}
+                                max={30}
+                                gradient="primary"
+                            />
+                        ))}
+                    </div>
+                </InsightCard>
+            )}
+
+            {/* Detected Features */}
+            {hasFeatures && (
+                <InsightCard className="lg:col-span-1">
+                    <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
+                        Detected Features
+                    </h3>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-2 max-h-[240px] overflow-y-auto custom-scrollbar pr-1">
+                        {featureEntries.map(([key, value]) => (
+                            <div
+                                key={key}
+                                className={`flex items-center gap-2 text-sm ${value ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}
+                            >
+                                {value ? (
+                                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                                ) : (
+                                    <AlertCircle className="w-4 h-4 shrink-0" />
+                                )}
+                                <span className="truncate">
+                                    {key.replace('has', '').replace(/([A-Z])/g, ' $1').trim()}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </InsightCard>
+            )}
+
+            {/* Recommendations */}
+            {hasImprovements && (
+                <InsightCard tone="warning" className="lg:col-span-2">
+                    <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+                        Recommendations
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-2">
+                        {improvements.map((imp, i) => (
+                            <div
+                                key={i}
+                                className="flex items-start gap-3 p-3 bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 rounded-lg"
+                            >
+                                <Lightbulb className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
+                                <p className="text-slate-700 dark:text-slate-200 text-sm break-words">{imp}</p>
+                            </div>
+                        ))}
+                    </div>
+                </InsightCard>
+            )}
+        </div>
+    )
+}
+
+// ============================================================================
+// ReadmeGrid — README enhancement suggestions
+// ============================================================================
+function ReadmeGrid({ data }) {
+    const suggestions = data.readme_suggestions || []
+
+    if (suggestions.length === 0) {
+        return (
+            <InsightCard tone="success" hover={false} className="text-center py-8">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+                <p className="text-emerald-600 dark:text-emerald-400 font-medium">README looks complete!</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    All recommended sections are present.
+                </p>
+            </InsightCard>
+        )
+    }
+
+    return (
+        <div className="grid gap-4">
+            <InsightCard tone="info">
+                <h3 className="text-blue-600 dark:text-blue-400 font-medium mb-1">
+                    README Enhancement Suggestions
+                </h3>
+                <p className="text-slate-500 dark:text-slate-400 text-sm">
+                    These sections could improve your documentation:
+                </p>
+            </InsightCard>
+            <InsightCard>
+                <div className="grid sm:grid-cols-2 gap-2">
+                    {suggestions.map((section, i) => (
+                        <div
+                            key={i}
+                            className="flex items-center gap-3 p-3 bg-slate-100/60 dark:bg-white/5 border border-slate-200/50 dark:border-slate-800/40 rounded-lg"
+                        >
+                            <FileText className="w-5 h-5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                            <span className="text-slate-700 dark:text-slate-200 text-sm break-words">{section}</span>
+                        </div>
+                    ))}
+                </div>
+            </InsightCard>
+        </div>
+    )
+}
+
+// ============================================================================
+// Loading / Error states
+// ============================================================================
+function InsightsSkeletonGrid() {
+    return (
+        <div className="grid gap-4 lg:grid-cols-3">
+            <div className="ds-skeleton h-[200px] lg:col-span-1 rounded-xl" />
+            <div className="ds-skeleton h-[200px] lg:col-span-2 rounded-xl" />
+            <div className="ds-skeleton h-[120px] lg:col-span-3 rounded-xl" />
+            <div className="ds-skeleton h-[60px]  lg:col-span-3 rounded-xl" />
+        </div>
+    )
+}
+
+function InsightsErrorCard({ message, onRetry }) {
+    return (
+        <InsightCard tone="danger" hover={false}>
+            <p className="text-red-600 dark:text-red-400 mb-4">{message}</p>
+            <button
+                onClick={onRetry}
+                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 rounded-lg transition-colors"
+            >
+                Retry
+            </button>
+        </InsightCard>
+    )
+}
