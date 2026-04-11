@@ -1,6 +1,6 @@
 import { useEffect, useId } from 'react'
 import { X } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { TabBar } from './TabBar'
@@ -40,6 +40,16 @@ const SHEET_SIZE_CLASSES = {
     full:  'md:max-w-7xl',
 }
 
+// Variant styles for the header gradient — hoisted to module scope to avoid
+// per-render allocation.
+const VARIANT_STYLES = {
+    default: { headerBg: 'bg-gradient-to-r from-indigo-500 to-purple-600', iconBg: 'bg-white/20', textColor: 'text-white' },
+    danger:  { headerBg: 'bg-gradient-to-r from-red-500 to-rose-600',       iconBg: 'bg-white/20', textColor: 'text-white' },
+    warning: { headerBg: 'bg-gradient-to-r from-amber-500 to-orange-600',   iconBg: 'bg-white/20', textColor: 'text-white' },
+    info:    { headerBg: 'bg-gradient-to-r from-blue-500 to-cyan-600',      iconBg: 'bg-white/20', textColor: 'text-white' },
+    success: { headerBg: 'bg-gradient-to-r from-emerald-500 to-teal-600',   iconBg: 'bg-white/20', textColor: 'text-white' },
+}
+
 /**
  * Modal - Premium base modal component with consistent styling
  * Provides a standardized modal experience across the app with glassmorphism and animations
@@ -65,42 +75,21 @@ export function Modal({
     iconGradient = 'none',
     bodyClassName = '',
     mobileVariant = 'sheet',
+    // Disable Escape-to-close. Defaults to true whenever backdrop click is
+    // also disabled (e.g. mid-running TransferModal) so both dismissal
+    // vectors are protected together. Callers can override explicitly.
+    disableEscape = !closeOnBackdrop,
+    // Signal that async content is loading — forwarded to the body's aria-busy
+    // so screen readers hear a "busy" state while skeletons show.
+    isBusy = false,
 }) {
     // Use module-level lookup tables so Tailwind's JIT discovers every class.
     const sizeClass = (mobileVariant === 'sheet' ? SHEET_SIZE_CLASSES[size] : SIZE_CLASSES[size]) || SIZE_CLASSES.md
+    const styles = VARIANT_STYLES[variant] || VARIANT_STYLES.default
 
-    const variantStyles = {
-        default: {
-            headerBg: 'bg-gradient-to-r from-indigo-500 to-purple-600',
-            iconBg: 'bg-white/20',
-            textColor: 'text-white'
-        },
-        danger: {
-            headerBg: 'bg-gradient-to-r from-red-500 to-rose-600',
-            iconBg: 'bg-white/20',
-            textColor: 'text-white'
-        },
-        warning: {
-            headerBg: 'bg-gradient-to-r from-amber-500 to-orange-600',
-            iconBg: 'bg-white/20',
-            textColor: 'text-white'
-        },
-        info: {
-            headerBg: 'bg-gradient-to-r from-blue-500 to-cyan-600',
-            iconBg: 'bg-white/20',
-            textColor: 'text-white'
-        },
-        success: {
-            headerBg: 'bg-gradient-to-r from-emerald-500 to-teal-600',
-            iconBg: 'bg-white/20',
-            textColor: 'text-white'
-        }
-    }
-
-    const styles = variantStyles[variant] || variantStyles.default
-
-    const modalRef = useFocusTrap(isOpen, onClose)
+    const modalRef = useFocusTrap(isOpen, onClose, { disableEscape })
     useBodyScrollLock(isOpen)
+    const reducedMotion = useReducedMotion()
 
     const reactId = useId()
     const titleId = `modal-title-${reactId}`
@@ -147,7 +136,7 @@ export function Modal({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         onClick={handleBackdropClick}
-                        className={`fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-md z-[60] flex justify-center md:items-center md:p-4 ${mobileVariant === 'sheet' ? 'items-end p-0 md:p-4 max-[500px]:items-center max-[500px]:p-4' : 'items-center p-4'}`}
+                        className={`fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-md z-[60] flex justify-center md:items-center md:p-4 ${mobileVariant === 'sheet' ? 'items-end p-0 short:items-center short:p-4' : 'items-center max-md:p-4'}`}
                     >
                         {/* Modal Container */}
                         <motion.div
@@ -155,23 +144,26 @@ export function Modal({
                             role="dialog"
                             aria-modal="true"
                             aria-labelledby={titleId}
-                            aria-describedby={bodyId}
-                            initial={mobileVariant === 'sheet' ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={mobileVariant === 'sheet' ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 }}
-                            transition={{ type: 'spring', duration: 0.4, bounce: 0.12 }}
+                            // Only set aria-describedby when the body still has bodyId.
+                            // When tabs are active, the body div takes a tabpanel id
+                            // instead (see below), so pointing at bodyId would orphan.
+                            aria-describedby={tabs && tabs.length > 0 ? undefined : bodyId}
+                            initial={reducedMotion ? { opacity: 0 } : (mobileVariant === 'sheet' ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 })}
+                            animate={reducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
+                            exit={reducedMotion ? { opacity: 0 } : (mobileVariant === 'sheet' ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 })}
+                            transition={reducedMotion ? { duration: 0.15 } : { type: 'spring', duration: 0.4, bounce: 0.12 }}
                             onClick={(e) => e.stopPropagation()}
                             className={`
                                 ${sizeClass}
                                 w-full min-w-[320px]
                                 bg-white dark:bg-slate-950
                                 rounded-2xl
-                                ${mobileVariant === 'sheet' ? 'max-md:rounded-t-3xl max-md:rounded-b-none max-md:max-w-none max-[500px]:rounded-2xl max-[500px]:max-w-[calc(100%-2rem)]' : ''}
+                                ${mobileVariant === 'sheet' ? 'max-md:rounded-t-3xl max-md:rounded-b-none max-md:max-w-none short:rounded-2xl short:max-w-[calc(100%-2rem)]' : ''}
                                 shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)]
                                 ring-1 ring-slate-200/50 dark:ring-slate-700/50
                                 overflow-hidden
                                 flex flex-col
-                                max-h-[92vh] md:max-h-[88vh] max-[500px]:max-h-[90vh]
+                                max-h-[92vh] md:max-h-[88vh] short:max-h-[90vh]
                                 ${className}
                             `}
                         >
@@ -227,12 +219,13 @@ export function Modal({
                                 id={tabs && tabs.length > 0 && activeTab ? `tabpanel-${effectiveTabsLayoutId}-${activeTab}` : bodyId}
                                 role={tabs && tabs.length > 0 ? 'tabpanel' : undefined}
                                 aria-labelledby={tabs && tabs.length > 0 && activeTab ? `tab-${effectiveTabsLayoutId}-${activeTab}` : undefined}
+                                aria-busy={isBusy || undefined}
                                 className={`flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-50/30 dark:bg-slate-950 ${bodyClassName}`}
                             >
                                 {staggerChildren ? (
                                     <motion.div
                                         data-stagger-root="true"
-                                        variants={STAGGER_VARIANTS}
+                                        variants={reducedMotion ? { hidden: {}, visible: {} } : STAGGER_VARIANTS}
                                         initial="hidden"
                                         animate="visible"
                                         key={activeTab || 'default'}

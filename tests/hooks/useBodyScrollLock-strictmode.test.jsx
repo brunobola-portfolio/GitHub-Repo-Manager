@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, cleanup } from '@testing-library/react'
-import { StrictMode, useState } from 'react'
+import { StrictMode } from 'react'
 import { useBodyScrollLock, __resetBodyScrollLockForTests } from '@/hooks/useBodyScrollLock'
 
 function Modal({ isOpen }) {

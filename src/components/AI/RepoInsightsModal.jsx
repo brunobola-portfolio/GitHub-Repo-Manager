@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import {
     Sparkles,
     Brain,
@@ -43,6 +43,8 @@ export default function RepoInsightsModal({ repo, isOpen, onClose }) {
             return
         }
 
+        // Abort any previous in-flight controller (rapid open/close/re-open).
+        abortRef.current?.abort()
         const ctrl = new AbortController()
         abortRef.current = ctrl
         setActiveTab('overview')
@@ -51,6 +53,16 @@ export default function RepoInsightsModal({ repo, isOpen, onClose }) {
         return () => ctrl.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, repo?.id])
+
+    // Kick off a new fetch with a fresh AbortController. Used by the error-card
+    // retry button and by the mount effect. Always aborts any previous inflight
+    // controller before starting so closed modals never set state on unmount.
+    const startFetch = () => {
+        abortRef.current?.abort()
+        const ctrl = new AbortController()
+        abortRef.current = ctrl
+        fetchAnalysis(ctrl.signal)
+    }
 
     const fetchAnalysis = async (signal) => {
         setLoading(true)
@@ -75,9 +87,12 @@ export default function RepoInsightsModal({ repo, isOpen, onClose }) {
     }
 
     const reanalyze = async () => {
+        // Abort any pending initial fetch or previous reanalyze before starting.
+        abortRef.current?.abort()
         const ctrl = new AbortController()
         abortRef.current = ctrl
         setLoading(true)
+        setError(null)
         try {
             const indexResult = await aiApi.indexRepo(repo)
             if (!ctrl.signal.aborted) setAnalysis(indexResult.analysis)
@@ -105,6 +120,7 @@ export default function RepoInsightsModal({ repo, isOpen, onClose }) {
             tabsLayoutId="repo-insights-tabs"
             staggerChildren={showTabs}
             mobileVariant="sheet"
+            isBusy={loading}
             footer={
                 <ModalFooter align="right">
                     <button
@@ -125,7 +141,7 @@ export default function RepoInsightsModal({ repo, isOpen, onClose }) {
             }
         >
             {loading && !analysis && <InsightsSkeletonGrid />}
-            {error && <InsightsErrorCard message={error} onRetry={() => fetchAnalysis()} />}
+            {error && <InsightsErrorCard message={error} onRetry={startFetch} />}
             {analysis && !loading && activeTab === 'overview' && <OverviewGrid data={analysis} />}
             {analysis && !loading && activeTab === 'quality'  && <QualityGrid  data={analysis} />}
             {analysis && !loading && activeTab === 'readme'   && <ReadmeGrid   data={analysis} />}
@@ -137,6 +153,7 @@ export default function RepoInsightsModal({ repo, isOpen, onClose }) {
 // CircularScore — SVG health score ring
 // ============================================================================
 function CircularScore({ value, max = 100 }) {
+    const reducedMotion = useReducedMotion()
     const size = 120
     const stroke = 10
     const radius = (size - stroke) / 2
@@ -150,8 +167,8 @@ function CircularScore({ value, max = 100 }) {
                         'stroke-red-500'
 
     return (
-        <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-            <svg width={size} height={size} className="-rotate-90">
+        <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }} aria-label={`Health score ${clamped} out of ${max}`} role="img">
+            <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
                 <circle
                     cx={size / 2} cy={size / 2} r={radius}
                     strokeWidth={stroke}
@@ -165,12 +182,12 @@ function CircularScore({ value, max = 100 }) {
                     strokeLinecap="round"
                     className={colorClass}
                     strokeDasharray={circumference}
-                    initial={{ strokeDashoffset: circumference }}
+                    initial={{ strokeDashoffset: reducedMotion ? offset : circumference }}
                     animate={{ strokeDashoffset: offset }}
-                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+                    transition={reducedMotion ? { duration: 0 } : { duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
                 />
             </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden="true">
                 <span className="text-3xl font-bold text-slate-900 dark:text-white tabular-nums">
                     {clamped}
                 </span>
@@ -429,7 +446,7 @@ function ReadmeGrid({ data }) {
 // ============================================================================
 function InsightsSkeletonGrid() {
     return (
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-3" aria-hidden="true" role="presentation">
             <div className="ds-skeleton h-[200px] lg:col-span-1 rounded-xl" />
             <div className="ds-skeleton h-[200px] lg:col-span-2 rounded-xl" />
             <div className="ds-skeleton h-[120px] lg:col-span-3 rounded-xl" />
@@ -440,14 +457,16 @@ function InsightsSkeletonGrid() {
 
 function InsightsErrorCard({ message, onRetry }) {
     return (
-        <InsightCard tone="danger" hover={false}>
-            <p className="text-red-600 dark:text-red-400 mb-4">{message}</p>
-            <button
-                onClick={onRetry}
-                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 rounded-lg transition-colors"
-            >
-                Retry
-            </button>
-        </InsightCard>
+        <div role="alert">
+            <InsightCard tone="danger" hover={false}>
+                <p className="text-red-600 dark:text-red-400 mb-4">{message}</p>
+                <button
+                    onClick={onRetry}
+                    className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 rounded-lg transition-colors"
+                >
+                    Retry
+                </button>
+            </InsightCard>
+        </div>
     )
 }

@@ -29,23 +29,26 @@ export function OrgManagerModal({
     const [error, setError] = useState(null)
 
     useEffect(() => {
-        if (isOpen && org) {
-            fetchOrgDetails()
-        }
+        if (!isOpen || !org) return
+        const ctrl = new AbortController()
+        fetchOrgDetails(ctrl.signal)
+        return () => ctrl.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, org])
+    }, [isOpen, org?.login])
 
-    const fetchOrgDetails = async () => {
+    const fetchOrgDetails = async (signal) => {
         setLoading(true)
         setError(null)
         try {
             const [orgRes, membersRes] = await Promise.all([
-                fetch(`/api/orgs/${org.login}`, { credentials: 'include' }),
-                fetch(`/api/orgs/${org.login}/members`, { credentials: 'include' })
+                fetch(`/api/orgs/${org.login}`, { credentials: 'include', signal }),
+                fetch(`/api/orgs/${org.login}/members`, { credentials: 'include', signal })
             ])
+            if (signal?.aborted) return
 
             if (orgRes.ok) {
                 const data = await orgRes.json()
+                if (signal?.aborted) return
                 setOrgDetails(data)
                 setEditForm({
                     name: data.name || '',
@@ -58,12 +61,14 @@ export function OrgManagerModal({
 
             if (membersRes.ok) {
                 const data = await membersRes.json()
+                if (signal?.aborted) return
                 setMembers(Array.isArray(data) ? data : [])
             }
         } catch (e) {
+            if (e?.name === 'AbortError' || signal?.aborted) return
             setError(e?.message || 'Failed to load organization details')
         } finally {
-            setLoading(false)
+            if (!signal?.aborted) setLoading(false)
         }
     }
 
@@ -140,7 +145,7 @@ export function OrgManagerModal({
                     onSave={handleSave}
                     onCancel={() => setEditing(false)}
                     loading={loading}
-                    onRefresh={fetchOrgDetails}
+                    onRefresh={() => fetchOrgDetails()}
                 />
             ) : activeTab === 'members' ? (
                 <MembersTab members={members} orgLogin={displayOrg.login} />
@@ -180,7 +185,7 @@ function OverviewTab({ org, editing, editForm, setEditForm, onEdit, onSave, onCa
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard icon={Globe} label="Public Repos" value={org.public_repos || 0} color="blue" />
                 <StatCard icon={Lock} label="Private Repos" value={org.total_private_repos || 0} color="purple" />
                 <StatCard icon={GitFork} label="Forks" value={org.public_repos_forks || org.public_gists || 0} color="green" />
