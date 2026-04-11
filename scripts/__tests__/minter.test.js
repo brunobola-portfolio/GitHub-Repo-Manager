@@ -4,8 +4,8 @@ import {
   MintError,
   DeliveryError,
   AuditWriteError,
+  validateInput,
 } from '../lib/minter.js'
-import { validateInput } from '../lib/minter.js'
 
 describe('minter error classes', () => {
   it('InputValidationError carries the "validate" step', () => {
