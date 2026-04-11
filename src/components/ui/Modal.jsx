@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useId } from 'react'
 import { X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
@@ -86,6 +86,10 @@ export function Modal({
     const modalRef = useFocusTrap(isOpen, onClose)
     useBodyScrollLock(isOpen)
 
+    const reactId = useId()
+    const titleId = `modal-title-${reactId}`
+    const bodyId = `modal-body-${reactId}`
+
     const handleBackdropClick = (e) => {
         if (closeOnBackdrop && e.target === e.currentTarget) {
             onClose()
@@ -131,19 +135,19 @@ export function Modal({
                             ref={modalRef}
                             role="dialog"
                             aria-modal="true"
-                            aria-labelledby="modal-title"
-                            aria-describedby="modal-body"
+                            aria-labelledby={titleId}
+                            aria-describedby={bodyId}
                             initial={mobileVariant === 'sheet' ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={mobileVariant === 'sheet' ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 }}
                             transition={{ type: 'spring', duration: 0.4, bounce: 0.12 }}
                             onClick={(e) => e.stopPropagation()}
                             className={`
-                                ${sizeClasses[size]}
+                                ${mobileVariant === 'sheet' ? `md:${sizeClasses[size]} max-md:w-full` : sizeClasses[size]}
                                 w-full min-w-[320px]
                                 bg-white dark:bg-slate-950
                                 rounded-2xl
-                                ${mobileVariant === 'sheet' ? 'max-md:rounded-t-3xl max-md:rounded-b-none max-md:max-w-full' : ''}
+                                ${mobileVariant === 'sheet' ? 'max-md:rounded-t-3xl max-md:rounded-b-none' : ''}
                                 shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)]
                                 ring-1 ring-slate-200/50 dark:ring-slate-700/50
                                 overflow-hidden
@@ -164,7 +168,7 @@ export function Modal({
                                 )}
                                 <div className="flex-1 min-w-0">
                                     {typeof title === 'string' ? (
-                                        <h2 id="modal-title" className="text-sm font-semibold tracking-tight truncate">
+                                        <h2 id={titleId} className="text-sm font-semibold tracking-tight truncate">
                                             {title}
                                         </h2>
                                     ) : (
@@ -200,7 +204,12 @@ export function Modal({
                             )}
 
                             {/* Body */}
-                            <div id="modal-body" className={`flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-50/30 dark:bg-slate-950 ${bodyClassName}`}>
+                            <div
+                                id={tabs && tabs.length > 0 && activeTab ? `tabpanel-${tabsLayoutId || 'modal-tabs'}-${activeTab}` : bodyId}
+                                role={tabs && tabs.length > 0 ? 'tabpanel' : undefined}
+                                aria-labelledby={tabs && tabs.length > 0 && activeTab ? `tab-${tabsLayoutId || 'modal-tabs'}-${activeTab}` : undefined}
+                                className={`flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-50/30 dark:bg-slate-950 ${bodyClassName}`}
+                            >
                                 {staggerChildren ? (
                                     <motion.div
                                         data-stagger-root="true"
