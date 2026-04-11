@@ -18,6 +18,7 @@ Design specifications and feature requirements.
 - [Configure Step Redesign](specs/2026-03-26-configure-step-redesign.md) — Dashboard + compact card-rows layout for Configure Repositories step
 - [Smart Organization Field](specs/2026-03-26-smart-organization-field-design.md) — Adaptive organization field based on authentication method
 - [Context Menu + Pricing Polish](specs/2026-04-08-context-menu-and-pricing-polish.md) — Scroll-free native context menu + hybrid dazzle hover on pricing cards
+- [Modal System Redesign](specs/2026-04-11-modal-system-redesign.md) — AI Insights scrollbar fix + shared Modal primitive consolidation + InsightCard/StatBar shared components
 
 ## Plans (How to build it)
 
@@ -43,6 +44,7 @@ Step-by-step implementation plans generated from approved specs.
 - [Wizard Fullscreen Panel](plans/2026-03-25-wizard-fullscreen-panel.md) — Fullscreen panel container with sidebar stepper and dirty-state safety
 - [Configure Step Redesign](plans/2026-03-26-configure-step-redesign.md) — Dashboard header + compact card-rows for Configure Repositories step
 - [Context Menu + Pricing Polish](plans/2026-04-08-context-menu-and-pricing-polish.md) — Scroll-free context menu fix + dazzle hover system for pricing cards
+- [Modal System Redesign](plans/2026-04-11-modal-system-redesign.md) — 24-task plan: useBodyScrollLock + InsightCard + StatBar + Modal enhancement + migration of 3 hand-rolled modals + WizardPanel alignment
 
 ## Architecture
 
