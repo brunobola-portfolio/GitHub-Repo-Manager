@@ -17,8 +17,15 @@ Design specifications and feature requirements.
 - [Wizard Fullscreen Panel Design](specs/2026-03-25-wizard-fullscreen-panel-design.md) — Fullscreen takeover panel with sidebar navigation and state safety
 - [Configure Step Redesign](specs/2026-03-26-configure-step-redesign.md) — Dashboard + compact card-rows layout for Configure Repositories step
 - [Smart Organization Field](specs/2026-03-26-smart-organization-field-design.md) — Adaptive organization field based on authentication method
+- [AGPL Open-Core License Key System](specs/2026-04-03-agpl-open-core-license-key-system.md) — Ed25519-signed JWT license keys for self-hosted Pro/Enterprise tiers (Implemented)
 - [Context Menu + Pricing Polish](specs/2026-04-08-context-menu-and-pricing-polish.md) — Scroll-free native context menu + hybrid dazzle hover on pricing cards
+- [PR Review Experience](specs/2026-04-09-pr-review-experience-design.md) — Premium PR review UI with file tree, diff viewer, AI insights, conversation threads
+- [Rate Limit UX + Dev Fix](specs/2026-04-09-rate-limit-ux-and-dev-fix.md) — User-friendly rate limit notices and dev-mode rate limit exemption
+- [Community Health Tabs](specs/2026-04-10-community-health-tabs-design.md) — Tabbed organization of community health dashboard sections
+- [Health Dashboard Premium](specs/2026-04-10-health-dashboard-premium-design.md) — Premium visual redesign of the community health dashboard
+- [Reusable TabBar](specs/2026-04-10-reusable-tabbar-design.md) — Shared TabBar primitive extracted from Modal, used across 4+ call sites
 - [Modal System Redesign](specs/2026-04-11-modal-system-redesign.md) — AI Insights scrollbar fix + shared Modal primitive consolidation + InsightCard/StatBar shared components
+- [License Mint Automation](specs/2026-04-11-license-mint-automation-design.md) — GitHub Actions-based Ed25519 license minting with Resend delivery, separate private audit repo, two-phase audit pattern, Phase 2 migration path (Implemented)
 
 ## Plans (How to build it)
 
@@ -43,8 +50,15 @@ Step-by-step implementation plans generated from approved specs.
 - [Migration Wizard Redesign](plans/2026-03-25-migration-wizard-redesign.md) — Smart URL paste, credentials panel, auto-validation, visual refresh
 - [Wizard Fullscreen Panel](plans/2026-03-25-wizard-fullscreen-panel.md) — Fullscreen panel container with sidebar stepper and dirty-state safety
 - [Configure Step Redesign](plans/2026-03-26-configure-step-redesign.md) — Dashboard header + compact card-rows for Configure Repositories step
+- [AGPL Open-Core License Key System](plans/2026-04-03-agpl-open-core-license-key-system.md) — 13-task plan: Ed25519 keypair, JWT sign/verify, middleware integration, tests (Complete)
 - [Context Menu + Pricing Polish](plans/2026-04-08-context-menu-and-pricing-polish.md) — Scroll-free context menu fix + dazzle hover system for pricing cards
+- [PR Review Experience](plans/2026-04-09-pr-review-experience-plan.md) — Multi-phase plan for file tree, diff viewer, AI insights, conversation threads
+- [Rate Limit UX + Dev Fix](plans/2026-04-09-rate-limit-ux-and-dev-fix.md) — Toast notifications and dev-mode rate limit exemption
+- [Community Health Tabs](plans/2026-04-10-community-health-tabs.md) — Tabbed reorganization of health dashboard
+- [Health Dashboard Premium](plans/2026-04-10-health-dashboard-premium.md) — Premium visual overhaul implementation
+- [Reusable TabBar](plans/2026-04-10-reusable-tabbar.md) — Extraction of shared TabBar primitive + migration of call sites
 - [Modal System Redesign](plans/2026-04-11-modal-system-redesign.md) — 24-task plan: useBodyScrollLock + InsightCard + StatBar + Modal enhancement + migration of 3 hand-rolled modals + WizardPanel alignment
+- [License Mint Automation](plans/2026-04-11-license-mint-automation.md) — 10-task TDD plan: `scripts/lib/minter.js` primitives, CLI composition wrapper, mint-license.yml workflow, dependabot config, server/lib/license.js kid/resolver additions (Complete)
 
 ## Architecture
 
