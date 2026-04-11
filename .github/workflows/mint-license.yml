@@ -63,7 +63,7 @@ jobs:
           echo "::add-mask::$LICENSE_PRIVATE_PEM"
           echo "::add-mask::${{ inputs.email || github.event.client_payload.email }}"
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a  # v4.2.0
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6.3.0
         with:
           node-version: '20'
           cache: 'npm'
