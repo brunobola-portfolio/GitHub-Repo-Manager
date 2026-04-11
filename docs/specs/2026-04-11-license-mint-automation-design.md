@@ -580,11 +580,14 @@ Described in "Setup checklist" below. The first `dry_run` workflow run *is* the 
    - Expiration: 1 year (set a calendar reminder to rotate)
    - Save the token for step 5
 
-5. **Add four secrets** to `brunobola-portfolio/GitHub-Repo-Manager` repo settings:
+5. **Add three Secrets** to `brunobola-portfolio/GitHub-Repo-Manager` repo settings (Settings → Secrets and variables → Actions → Secrets):
    - `LICENSE_PRIVATE_PEM` → paste contents of `keys/private.pem`
    - `RESEND_API_KEY` → from step 2
    - `LICENSE_LOG_PAT` → from step 4
-   - `AUDIT_REPO` → `brunobola-portfolio/license-log` (plaintext is fine — this is not actually secret, but storing as a secret makes renaming the audit repo a one-step change without editing the workflow YAML)
+
+   Then add **two repository Variables** (Settings → Secrets and variables → Actions → Variables):
+   - `AUDIT_REPO` → `brunobola-portfolio/license-log` (plaintext is fine — audit repo name is not sensitive, and storing as a variable makes it visible in the Actions UI for sanity-checking)
+   - `LICENSE_KID` → `k-2026-04-11` (or any date-stamped identifier for the currently-active signing key — the workflow reads this via `${{ vars.LICENSE_KID || 'k-default' }}`, so omitting it falls back to `k-default` but loses the date-based traceability intended by the design)
 
 6. **Merge the implementation PR** (the plan that follows this spec will produce one PR adding `scripts/lib/minter.js`, `scripts/mint-license-action.js`, `scripts/mint-failure-notify.js`, `.github/workflows/mint-license.yml`, `.github/dependabot.yml`, tests, and the small additive changes to `server/lib/license.js` + `server/middleware/require-tier.js` for `kid` support).
 
@@ -594,7 +597,7 @@ Described in "Setup checklist" below. The first `dry_run` workflow run *is* the 
    - Verify: action succeeds, log shows masked key, **no** email received, **no** audit commit created
 
 8. **Run the first real mint** — a self-license for development:
-   - tier: `enterprise`, org: `Bola Labs Dev`, email: `bruno@bolalabs.pt`, seats: `100`, months: `120`, `dry_run: false`
+   - tier: `enterprise`, org: `Bola Labs Dev`, email: `bruno@bolalabs.pt`, seats: `100`, months: `24`, `dry_run: false` (the 24-month cap is enforced by `validateInput` — see "Key rotation" under Future work for the rationale)
    - Verify: email arrives in inbox, audit commit appears in `brunobola-portfolio/license-log/licenses.jsonl`
    - Copy the `LICENSE_KEY` from the email into the local `.env` file
    - Set `VITE_MOCK_MODE=false`
