@@ -40,6 +40,17 @@ export async function generateLicenseKey(opts, privateKeyPem) {
   return LICENSE_PREFIX + jwt
 }
 
+/**
+ * Validate a license key and return the parsed payload, or null on failure.
+ *
+ * @param {string} licenseKey - The full license key (with grm_lic_ prefix)
+ * @param {string | ((kid: string | undefined) => string | null | Promise<string | null>)} publicKeyOrResolver -
+ *   Either a static public key PEM string (legacy single-key callers) or a
+ *   lookup function that receives the JWT's `kid` header and returns the
+ *   matching public key PEM (or null if unknown). Resolvers may be sync
+ *   or async — the result is awaited.
+ * @returns {Promise<object | null>}
+ */
 export async function validateLicenseKey(licenseKey, publicKeyOrResolver) {
   try {
     if (!licenseKey || !licenseKey.startsWith(LICENSE_PREFIX)) return null
@@ -51,7 +62,7 @@ export async function validateLicenseKey(licenseKey, publicKeyOrResolver) {
     if (typeof publicKeyOrResolver === 'function') {
       const headerB64 = jwt.split('.')[0]
       const header = JSON.parse(Buffer.from(headerB64, 'base64url').toString())
-      publicKeyPem = publicKeyOrResolver(header.kid)
+      publicKeyPem = await publicKeyOrResolver(header.kid)
       if (!publicKeyPem) return null
     } else {
       publicKeyPem = publicKeyOrResolver

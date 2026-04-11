@@ -18,6 +18,10 @@ const PUBLIC_KEY = existsSync(publicKeyPath)
   ? readFileSync(publicKeyPath, 'utf-8')
   : null
 
+// A Phase 1 stub resolver that ignores kid and returns the single configured
+// public key. Phase 2+ replaces this with a real multi-key lookup.
+const singleKeyResolver = (pem) => () => pem
+
 // Cache validated license to avoid re-parsing on every request
 let cachedLicenseTier = null
 let cachedLicenseKey = null
@@ -35,9 +39,7 @@ export async function resolveEffectiveTier(stripeTier, licenseKey, publicKey) {
   if (licenseKey && publicKey) {
     // Wrap a static key as a resolver that ignores kid (Phase 1 stub).
     // When Phase 2 ships multi-key support, callers pass a real lookup fn.
-    const resolver = typeof publicKey === 'function'
-      ? publicKey
-      : () => publicKey
+    const resolver = typeof publicKey === 'function' ? publicKey : singleKeyResolver(publicKey)
     const payload = await validateLicenseKey(licenseKey, resolver)
     if (payload && payload.tier) return payload.tier
   }
@@ -101,7 +103,7 @@ export function attachTier(req, res, next) {
 async function initLicenseCache() {
   const envKey = config.licenseKey || null
   if (envKey && PUBLIC_KEY) {
-    const payload = await validateLicenseKey(envKey, PUBLIC_KEY)
+    const payload = await validateLicenseKey(envKey, singleKeyResolver(PUBLIC_KEY))
     if (payload && payload.tier) {
       cachedLicenseKey = envKey
       cachedLicenseTier = payload.tier

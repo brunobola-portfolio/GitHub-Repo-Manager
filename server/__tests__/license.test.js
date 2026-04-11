@@ -112,4 +112,22 @@ describe('license key generation and validation', () => {
     const payload = await validateLicenseKey(key, () => null)
     expect(payload).toBeNull()
   })
+
+  it('should pass undefined kid to resolver when validating a kid-less license', async () => {
+    // License signed without kid (no `kid` in opts)
+    const key = await generateLicenseKey({
+      org: 'Legacy Corp', email: 'legacy@example.com', tier: 'pro', seats: 1, months: 12,
+    }, privateKey)
+
+    const received = []
+    const resolver = (kid) => {
+      received.push(kid)
+      return publicKey
+    }
+
+    const payload = await validateLicenseKey(key, resolver)
+    expect(payload).not.toBeNull()
+    expect(payload.tier).toBe('pro')
+    expect(received).toEqual([undefined])
+  })
 })
