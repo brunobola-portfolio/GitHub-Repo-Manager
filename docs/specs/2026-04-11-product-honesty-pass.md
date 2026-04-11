@@ -13,10 +13,10 @@ Three months of feature shipping have left the product with a credibility debt:
 
 1. **Vaporware in the primary interaction surface.** The repository context menu exposes 6 items that do not work — three are `disabled: true` with "Coming soon" tooltips ([RepoContextMenu.jsx:68-85](../../src/components/RepoContextMenu.jsx#L68-L85)), one (`Sync Repository`) is disabled without a fix path, and two (`Dry-Run`, `Export Metadata`) are enabled but fall into the `default` handler fallback in [RepoList.jsx:524](../../src/components/RepoList.jsx#L524) and silently do nothing. Every user who right-clicks a repository can see the gaps.
 
-2. **Orphan AI endpoints in the backend.** Three complete AI features exist server-side but have no UI entry point:
-   - `POST /api/ai/readme/enhance` ([ai.js:376](../../server/routes/ai.js#L376)) — `aiApi.enhanceReadme()` exists in [api/ai.js:169](../../src/api/ai.js#L169) but no component calls it.
-   - `POST /api/ai/batch-index` ([ai.js:484](../../server/routes/ai.js#L484)) — `aiApi.batchIndex()` exists but no UI triggers it.
-   - `CommitGeneratorModal` ([CommitGeneratorModal.jsx](../../src/components/CommitGeneratorModal.jsx)) is rendered by App.jsx via `ModalContext`, but `openModal('showCommitGenerator')` is called nowhere — the modal is unreachable.
+2. **Orphan AI endpoints and shallow entry points in the frontend.** Three complete AI features exist server-side but are either fully orphan or only reachable from a non-contextual global surface:
+   - `POST /api/ai/readme/enhance` ([ai.js:376](../../server/routes/ai.js#L376)) — `aiApi.enhanceReadme()` exists in [api/ai.js:169](../../src/api/ai.js#L169) but no component calls it. Fully orphan.
+   - `POST /api/ai/batch-index` ([ai.js:484](../../server/routes/ai.js#L484)) — `aiApi.batchIndex()` exists but no UI triggers it. Fully orphan.
+   - `CommitGeneratorModal` ([CommitGeneratorModal.jsx](../../src/components/CommitGeneratorModal.jsx)) is rendered by App.jsx and reachable **only** via a small Wand2 icon in [Header.jsx:132](../../src/components/Header.jsx#L132) (`onOpenCommitGen` → `openModal('showCommitGen')`). The feature is technically alive but has zero contextual discoverability — users inside a repo have no way to trigger it and the icon itself is unlabeled in the corner of the top bar.
 
    Additionally, the hooks `suggestAI()` and `generateReadmeAI()` are exported from [useAI.js:66,98](../../src/hooks/useAI.js#L66) but destructured by no caller.
 
@@ -147,32 +147,42 @@ One spec, one plan, three implementation waves. Each wave is independently shipp
 
 **Solution:** New endpoint `GET /api/v1/repos/:owner/:repo/export`, returns a structured JSON payload, frontend triggers a browser download.
 
-**New endpoint:** `server/routes/v1/repos-export.js` (new file)
+**New endpoint:** `server/routes/v1/repos-export.js` (new file). All GitHub calls go through the existing [githubApi()](../../server/lib/github-api.js) helper, which handles auth headers, ETag caching, and rate-limit tracking. There is no Octokit package in this codebase — all routes use `githubApi(path, req.session.accessToken, options)`.
 
 ```js
+import { githubApi } from '../../lib/github-api.js'
+import { auditLog } from '../../lib/audit.js'
+
 router.get('/repos/:owner/:repo/export', requireAuth, async (req, res) => {
   const { owner, repo } = req.params
-  // Fetch repo metadata + topics + languages + contributors + open issues count
-  // + open PRs count + release count + branch count from GitHub API via octokit.
-  // Aggregate into a single JSON object.
-  const payload = {
-    exportedAt: new Date().toISOString(),
-    exportedBy: req.session.user.login,
-    schemaVersion: 1,
-    repository: { /* name, owner, visibility, description, stars, forks, ... */ },
-    topics: [...],
-    languages: { /* name: bytes */ },
-    contributors: [...],
-    branches: { count, default },
-    issues: { open, closed },
-    pullRequests: { open, closed, merged },
-    releases: [...],
-    community: { health: {...}, files: {...} }
+  const token = req.session.accessToken
+  try {
+    // Parallel fetches through the shared helper.
+    const [repoRes, topicsRes, languagesRes, branchesRes, releasesRes] = await Promise.all([
+      githubApi(`/repos/${owner}/${repo}`, token),
+      githubApi(`/repos/${owner}/${repo}/topics`, token, { headers: { Accept: 'application/vnd.github.mercy-preview+json' } }),
+      githubApi(`/repos/${owner}/${repo}/languages`, token),
+      githubApi(`/repos/${owner}/${repo}/branches?per_page=100`, token),
+      githubApi(`/repos/${owner}/${repo}/releases?per_page=30`, token)
+    ])
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      exportedBy: req.session.user?.login,
+      schemaVersion: 1,
+      repository: repoRes.data,
+      topics: topicsRes.data?.names || [],
+      languages: languagesRes.data,
+      branches: { count: branchesRes.data.length, default: repoRes.data.default_branch },
+      releases: releasesRes.data
+    }
+    await auditLog(req, 'repo.export', 'repo', `${owner}/${repo}`, { size: JSON.stringify(payload).length })
+    res.setHeader('Content-Disposition', `attachment; filename="${repo}-export-${Date.now()}.json"`)
+    res.setHeader('Content-Type', 'application/json')
+    res.send(JSON.stringify(payload, null, 2))
+  } catch (err) {
+    req.log.error({ err }, 'repo export failed')
+    res.status(err.status || 500).json({ error: err.message || 'Export failed' })
   }
-  await auditLog(req, 'repo.export', 'repo', `${owner}/${repo}`, { size: JSON.stringify(payload).length })
-  res.setHeader('Content-Disposition', `attachment; filename="${repo}-export-${Date.now()}.json"`)
-  res.setHeader('Content-Type', 'application/json')
-  res.send(JSON.stringify(payload, null, 2))
 })
 ```
 
@@ -191,24 +201,41 @@ Mounted in [server/routes/v1/index.js](../../server/routes/v1/index.js) with the
 
 **Solution:** Detect mirrored repos via a new metadata flag, enable the menu item conditionally, and implement the sync backend using `simple-git` (already used for imports in [server/import-service.js](../../server/import-service.js)).
 
-**New endpoint:** `POST /api/v1/repos/:owner/:repo/sync` in `server/routes/v1/repos-sync.js`
+**New endpoint:** `POST /api/v1/repos/:owner/:repo/sync` in `server/routes/v1/repos-sync.js`. Uses `simple-git` (already a dependency, used by [server/import-service.js](../../server/import-service.js)).
 
 ```js
+import simpleGit from 'simple-git'
+import { tmpdir } from 'os'
+import { join } from 'path'
+import { rm, mkdtemp } from 'fs/promises'
+
 router.post('/repos/:owner/:repo/sync', requireAuth, requireTier('pro'), async (req, res) => {
-  // Look up the mirror source from migration_jobs table
-  // (field already tracks imported-from URL for mirrored repos).
+  const { owner, repo } = req.params
   const job = db.prepare(
     `SELECT source_url FROM migration_jobs WHERE target_owner=? AND target_repo=? AND is_mirror=1 ORDER BY id DESC LIMIT 1`
-  ).get(req.params.owner, req.params.repo)
+  ).get(owner, repo)
   if (!job) return res.status(404).json({ error: 'Not a tracked mirror' })
-  // git clone --mirror source into temp dir
-  // git push --mirror target
-  // Return { syncedAt, commits: { behind, ahead }, duration }
-  await auditLog(req, 'repo.sync', 'repo', `${owner}/${repo}`, { sourceUrl: job.source_url })
+
+  const workDir = await mkdtemp(join(tmpdir(), 'grm-sync-'))
+  const startedAt = Date.now()
+  try {
+    const git = simpleGit(workDir)
+    await git.clone(job.source_url, '.', ['--mirror'])
+    const targetUrl = `https://${req.session.accessToken}@github.com/${owner}/${repo}.git`
+    await git.push(targetUrl, '--mirror')
+    const duration = Date.now() - startedAt
+    await auditLog(req, 'repo.sync', 'repo', `${owner}/${repo}`, { sourceUrl: job.source_url, duration })
+    res.json({ syncedAt: new Date().toISOString(), duration, sourceUrl: job.source_url })
+  } catch (err) {
+    req.log.error({ err, owner, repo }, 'mirror sync failed')
+    res.status(500).json({ error: err.message || 'Sync failed' })
+  } finally {
+    await rm(workDir, { recursive: true, force: true }).catch(() => {})
+  }
 })
 ```
 
-**Schema change:** `migration_jobs` table gets a new column `is_mirror INTEGER DEFAULT 0`. Migration adds it via `ALTER TABLE`. A repo is marked as mirror if it was created via the existing Mirror/Fork flow ([TransferModal.jsx](../../src/components/TransferModal.jsx) mirror mode → [bulk.js:204](../../server/routes/bulk.js#L204)). Backfill: mark any repos in `migration_jobs` where the import was a `--mirror` clone.
+**Schema change:** `migration_jobs` table ([server/migrations/001-initial-schema.sql:164](../../server/migrations/001-initial-schema.sql#L164)) gets a new column `is_mirror INTEGER DEFAULT 0`. Add via a new migration file `server/migrations/002-migration-jobs-is-mirror.sql` with `ALTER TABLE migration_jobs ADD COLUMN is_mirror INTEGER DEFAULT 0;` plus an index `CREATE INDEX idx_migration_jobs_mirror ON migration_jobs(target_owner, target_repo, is_mirror);`. A repo is marked as mirror if it was created via the existing Mirror/Fork flow ([TransferModal.jsx](../../src/components/TransferModal.jsx) mirror mode → [bulk.js:204](../../server/routes/bulk.js#L204)). Backfill: an one-shot script `server/migrations/scripts/backfill-is-mirror.js` reads `metadata` JSON column and marks rows where the import was a `--mirror` clone.
 
 **Frontend:**
 - [RepoContextMenu.jsx:94](../../src/components/RepoContextMenu.jsx#L94): remove `disabled: true`, replace with conditional `disabled: !repo.isMirror` and tooltip "Only available for mirrored repos".
@@ -256,15 +283,15 @@ Deletion is done only after a `grep -r` confirms zero usages, and the imports in
 
 ### 2.1 Wire `CommitGeneratorModal` to a real entry point
 
-**Current state:** [CommitGeneratorModal.jsx](../../src/components/CommitGeneratorModal.jsx) is registered in ModalContext and rendered in App.jsx, but `openModal('showCommitGenerator')` is called nowhere.
+**Current state:** [CommitGeneratorModal.jsx](../../src/components/CommitGeneratorModal.jsx) is registered in ModalContext under the key `showCommitGen` and rendered in App.jsx. It is currently reachable **only** via the Wand2 icon in [Header.jsx:132](../../src/components/Header.jsx#L132), which is a small unlabeled icon in the top bar action cluster. Users inside a specific repository have no contextual way to invoke it, and it does not accept a repo or branch context today.
 
-**Solution:** Add "Generate Commit Message" as an AI submenu item in the repository context menu, accessible only when the repo detail view has a selected branch (for staging context). In absence of branch context, the action is also available from [BranchesTab.jsx](../../src/components/RepoDetail/BranchesTab.jsx) as a per-branch button.
+**Solution:** Add contextual entry points inside repository scopes and extend the modal to receive `repo` and `branch` from modal data. The existing Header icon stays.
 
 **Changes:**
 - [RepoContextMenu.jsx:63](../../src/components/RepoContextMenu.jsx#L63): add new AI submenu entry "Generate Commit Message" that calls `onAction('aiCommit', repo)`.
 - [BranchesTab.jsx](../../src/components/RepoDetail/BranchesTab.jsx): per-branch "✨ AI Commit" button that opens the modal pre-populated with branch context.
-- [RepoList.jsx](../../src/components/RepoList.jsx): `aiCommit` handler → `openModalWithData('showCommitGenerator', { repo, branch })`.
-- [CommitGeneratorModal.jsx](../../src/components/CommitGeneratorModal.jsx): extend to accept `repo` + `branch` from modal data and pre-fill context.
+- [RepoList.jsx](../../src/components/RepoList.jsx): `aiCommit` handler → `openModalWithData('showCommitGen', { repo, branch })`.
+- [CommitGeneratorModal.jsx](../../src/components/CommitGeneratorModal.jsx): extend signature to accept `repo` + `branch` from modal data and pre-fill context; render a subtitle "For {repo.full_name} → {branch}" in the modal header when context is provided, otherwise keep the current no-context behaviour intact for the Header icon flow.
 
 **Tier gate:** Free, with 20 generations / month limit per the new Tier Matrix.
 
@@ -276,7 +303,7 @@ Deletion is done only after a `grep -r` confirms zero usages, and the imports in
 
 **Changes:**
 - [src/components/AI/RepoInsightsModal.jsx](../../src/components/AI/RepoInsightsModal.jsx): new button "Enhance README" in the README tab.
-- New component `src/components/AI/ReadmeEnhanceDiffPanel.jsx` — renders diff using a lightweight inline diff library already available (`diff` package if installed, otherwise hand-rolled word-level diff — inspect package.json first).
+- New component `src/components/AI/ReadmeEnhanceDiffPanel.jsx` — renders a side-by-side diff using `@git-diff-view/react` + `@git-diff-view/shiki` (both **already in `package.json`** as v0.1.3 — the same library used by the PR Review Experience). No new dependency needed.
 - No backend changes.
 
 **Tier gate:** Pro.
@@ -327,18 +354,30 @@ This avoids silent empty states and gives the user a clear one-click path to the
 
 **Solution:** GitHub already exposes native security scanning alerts via three APIs. Aggregate them into one view.
 
-**New endpoint:** `GET /api/v1/repos/:owner/:repo/security` in `server/routes/v1/repos-security.js`
+**New endpoint:** `GET /api/v1/repos/:owner/:repo/security` in `server/routes/v1/repos-security.js`. Uses the shared `githubApi()` helper (no Octokit) and `Promise.allSettled` so partial failures on any of the three sources do not fail the whole request.
 
 ```js
+import { githubApi } from '../../lib/github-api.js'
+import { auditLog } from '../../lib/audit.js'
+
+function parseSettled(settled) {
+  if (settled.status === 'fulfilled') {
+    return { available: true, alerts: settled.value.data }
+  }
+  const status = settled.reason?.status
+  if (status === 403 || status === 404) {
+    return { available: false, reason: 'Unavailable or insufficient token scope (security_events)' }
+  }
+  return { available: false, reason: settled.reason?.message || 'Unknown error' }
+}
+
 router.get('/repos/:owner/:repo/security', requireAuth, requireTier('pro'), async (req, res) => {
   const { owner, repo } = req.params
-  const octokit = getUserOctokit(req)
-  // Fire all three requests in parallel, each wrapped in a try/catch that converts
-  // 403 (insufficient token scope) into { available: false } instead of failing the whole request.
+  const token = req.session.accessToken
   const [secretScanning, codeScanning, dependabot] = await Promise.allSettled([
-    octokit.rest.secretScanning.listAlertsForRepo({ owner, repo, state: 'open' }),
-    octokit.rest.codeScanning.listAlertsForRepo({ owner, repo, state: 'open' }),
-    octokit.rest.dependabot.listAlertsForRepo({ owner, repo, state: 'open' })
+    githubApi(`/repos/${owner}/${repo}/secret-scanning/alerts?state=open&per_page=100`, token),
+    githubApi(`/repos/${owner}/${repo}/code-scanning/alerts?state=open&per_page=100`, token),
+    githubApi(`/repos/${owner}/${repo}/dependabot/alerts?state=open&per_page=100`, token)
   ])
   const result = {
     secretScanning: parseSettled(secretScanning),
@@ -347,12 +386,17 @@ router.get('/repos/:owner/:repo/security', requireAuth, requireTier('pro'), asyn
     summary: { critical: 0, high: 0, medium: 0, low: 0, total: 0 }
   }
   // Sum severities across all three sources into result.summary
+  // Secret scanning alerts have no severity → treat all as 'high'
+  // Code scanning alerts: rule.severity ∈ {error, warning, note} → map to high/medium/low
+  // Dependabot alerts: security_advisory.severity ∈ {critical, high, medium, low}
+  //   (computeSummary helper implemented in same file)
+  computeSummary(result)
   await auditLog(req, 'repo.security-scan', 'repo', `${owner}/${repo}`, { total: result.summary.total })
   res.json(result)
 })
 ```
 
-Each of the three APIs can return 403 if the authenticated user's token lacks `security_events` scope or if the feature is disabled on the repo. The helper `parseSettled` converts those into `{ available: false, reason: '...' }` so the overall request still succeeds with partial data.
+Each of the three GitHub endpoints can return 403 if the authenticated user's token lacks `security_events` scope, or 404 if the feature is disabled on the repo. `parseSettled` converts those into `{ available: false, reason: '...' }` so partial data still renders. The existing `githubApi()` helper throws an error object with `.status` set from the HTTP response, which `parseSettled` inspects.
 
 **Frontend:**
 - [RepoContextMenu.jsx:81-85](../../src/components/RepoContextMenu.jsx#L81-L85): remove `disabled`. Wire `onAction('aiSecurity', repo)`.
@@ -470,13 +514,25 @@ Sweep the codebase for hardcoded `transition-all duration-150`, `duration-200`, 
 
 ### 3.6 RepoDetail ActionsTab
 
-Copy the actions tab logic from [TeamDetails.jsx:245-300](../../src/components/Teams/TeamDetails.jsx#L245-L300) (workflow listing + run trigger + run history) into a new tab component `src/components/RepoDetail/ActionsTab.jsx`. Adapt it from team-scoped to repo-scoped.
+The backend already has the full repo-scoped Actions surface. Only frontend work is needed.
+
+**Existing endpoints (already implemented in [server/routes/repos.js:1126-1206](../../server/routes/repos.js#L1126-L1206)):**
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /:owner/:repo/actions/workflows` | List all workflow definitions |
+| `GET /:owner/:repo/actions/runs` | List recent workflow runs |
+| `POST /:owner/:repo/actions/workflows/:id/dispatches` | Trigger a workflow manually |
+| `POST /:owner/:repo/actions/sync` | Refresh cached runs from GitHub |
+| `GET /:owner/:repo/actions/stats` | Aggregate success/failure stats |
+| `GET /:owner/:repo/workflows/:workflowId/stats` | Per-workflow stats |
 
 **Changes:**
-- New file: `src/components/RepoDetail/ActionsTab.jsx`
+
+- New file: `src/components/RepoDetail/ActionsTab.jsx` — consumes the existing endpoints via a new `repoActionsApi` module in `src/api/repo-actions.js` (or extends the existing repos api module). Displays: workflow list on the left, selected workflow's recent runs on the right, per-run status pills (success/failure/in-progress/cancelled), trigger button per workflow (only visible when workflow supports `workflow_dispatch`), refresh button that calls the `sync` endpoint.
 - [RepoDetail.jsx:17-24](../../src/components/RepoDetail/RepoDetail.jsx#L17-L24): add `{ id: 'actions', label: 'Actions', icon: Zap }` between `releases` and `issues`.
-- Backend reuse: the existing team workflow endpoint generalizes to per-repo or a thin wrapper reuses `octokit.rest.actions.listRepoWorkflows()`.
-- Permissions: ActionsTab gracefully handles repos without Actions enabled (shows EmptyState with "Actions not enabled" message).
+- **Permissions:** ActionsTab gracefully handles repos without Actions enabled — if the `workflows` endpoint returns empty or the sync endpoint reports "Actions not enabled", render an `<EmptyState icon={Zap} title="GitHub Actions not enabled" description="This repository does not have any workflows configured yet." action={{ label: 'Learn how to get started', href: 'https://docs.github.com/en/actions/quickstart' }} />`.
+- **No backend changes.** This tab is pure frontend integration of pre-existing endpoints.
 
 ### 3.7 RepoDetail Insights entry point
 
@@ -568,7 +624,7 @@ Sweeping update to [README.md](../../README.md):
 
 All new modals in this spec (`ReadmeEnhanceDiffPanel` as sub-panel, `BatchIndexProgressModal`, `CompareSimilarDrawer`, `SecurityScanModal`) use the existing `<Modal />` primitive from [src/components/ui/Modal.jsx](../../src/components/ui/Modal.jsx). None are hand-rolled.
 
-`CompareSimilarDrawer` is a drawer, not a modal — it uses [MobileDrawer.jsx](../../src/components/MobileDrawer.jsx) or a similar side-drawer primitive if one exists, else introduces a new thin `<Drawer />` variant.
+`CompareSimilarDrawer` is a drawer, not a modal. The existing [MobileDrawer.jsx](../../src/components/MobileDrawer.jsx) is constrained to `xl:hidden` (mobile-only) — it cannot be reused for a desktop side panel. This spec introduces a new thin `<SidePanel />` primitive in `src/components/ui/SidePanel.jsx` that wraps the shared `<Modal />` animation patterns but positions on the right edge at desktop widths (≥1280px) and falls back to a full-width bottom sheet on mobile. The primitive accepts the same `isOpen`, `onClose`, `title`, `children` props as `<Modal />` plus `width` (default `480px`) and `side` (`'right'` default, `'left'` for future use). `useFocusTrap` and `useBodyScrollLock` hooks are reused as-is.
 
 ### ModalContext registration
 
