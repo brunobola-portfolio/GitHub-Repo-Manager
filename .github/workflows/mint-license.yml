@@ -48,16 +48,17 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.actor == github.repository_owner
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      # Only the private key is in secrets. The matching public key is
-      # committed at keys/public.pem and read from disk by the mint script.
-      LICENSE_PRIVATE_PEM: ${{ secrets.LICENSE_PRIVATE_PEM }}
+    # LICENSE_PRIVATE_PEM is NOT at job level — it is injected only into the
+    # two steps that actually need it (pre-emptive masking + mint), so the
+    # checkout/setup-node/npm ci steps cannot read it even if compromised.
     steps:
       - name: Pre-emptive secret masking
         # Runs BEFORE checkout/Node. Any later step that accidentally prints
         # LICENSE_PRIVATE_PEM via a stack trace is redacted by the GH log
         # processor. Masking must happen at the workflow level — crashes
         # during Node module load would otherwise precede in-process masking.
+        env:
+          LICENSE_PRIVATE_PEM: ${{ secrets.LICENSE_PRIVATE_PEM }}
         run: |
           echo "::add-mask::$LICENSE_PRIVATE_PEM"
           echo "::add-mask::${{ inputs.email || github.event.client_payload.email }}"
@@ -69,12 +70,16 @@ jobs:
       - name: Install dependencies
         # --ignore-scripts: dependency postinstall hooks are disabled so a
         #   compromised transitive dep can't run with LICENSE_PRIVATE_PEM
-        #   in the environment.
+        #   in the environment. Combined with step-level secret scoping
+        #   above, this step does not have LICENSE_PRIVATE_PEM in its env at all.
         # --omit=dev: trims the install footprint — the mint script only
         #   depends on `jose` at runtime, which is a production dep already.
         run: npm ci --ignore-scripts --omit=dev
       - name: Mint license
         env:
+          # Only the private key is in secrets. The matching public key is
+          # committed at keys/public.pem and read from disk by the mint script.
+          LICENSE_PRIVATE_PEM: ${{ secrets.LICENSE_PRIVATE_PEM }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           LICENSE_LOG_PAT: ${{ secrets.LICENSE_LOG_PAT }}
           AUDIT_REPO: ${{ vars.AUDIT_REPO }}

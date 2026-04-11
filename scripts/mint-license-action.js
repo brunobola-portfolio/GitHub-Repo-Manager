@@ -168,8 +168,9 @@ export async function runMintAction({ env }) {
   }
 
   // ---- Step 5: logMint(delivered) — supersede the pending entry
+  let deliveredAudit
   try {
-    await logMint({
+    deliveredAudit = await logMint({
       status: 'delivered',
       payload: license.payload,
       fingerprint: license.fingerprint,
@@ -209,6 +210,7 @@ export async function runMintAction({ env }) {
     `| fingerprint | ${license.fingerprint} |`,
     `| expiresAt | ${new Date(license.payload.exp * 1000).toISOString().slice(0, 10)} |`,
     `| messageId | ${delivery.messageId} |`,
+    `| auditCommit | ${deliveredAudit.commitSha} |`,
   ])
   return 0
 }
