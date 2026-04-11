@@ -1,0 +1,25 @@
+# Normalize JavaScript line endings to LF.
+#
+# Windows clients with core.autocrlf=true otherwise materialize .js files as
+# CRLF on checkout, which breaks Vitest's ESM transformer when the file starts
+# with a shebang (#!) — esbuild's transform mangles the shebang + CRLF
+# combination and produces a "SyntaxError: Invalid or unexpected token" with
+# no stack trace. Forcing LF on all JS/TS/JSON files eliminates the class
+# of issue entirely.
+*.js   text eol=lf
+*.jsx  text eol=lf
+*.mjs  text eol=lf
+*.cjs  text eol=lf
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.json text eol=lf
+
+# YAML workflow files also rely on LF in GitHub Actions runners.
+*.yml  text eol=lf
+*.yaml text eol=lf
+
+# Cryptographic keys (public) must not be mangled.
+*.pem  text eol=lf
+
+# Shell scripts are always LF.
+*.sh   text eol=lf
