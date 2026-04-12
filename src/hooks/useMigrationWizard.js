@@ -156,15 +156,18 @@ const validators = {
  * State machine hook that powers the unified Migration/Import Wizard.
  * Manages step navigation, validation, and all wizard state.
  * Steps are computed dynamically based on source type.
+ *
+ * @param {object} [options]
+ * @param {boolean} [options.initialDryRun=false] - Seed schedule.isDryRun on mount
  */
-export function useMigrationWizard() {
+export function useMigrationWizard({ initialDryRun = false } = {}) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [source, setSource] = useState(INITIAL_SOURCE)
   const [repos, setRepos] = useState([])
   const [workItems, setWorkItems] = useState(INITIAL_WORK_ITEMS)
   const [wiki, setWiki] = useState(INITIAL_WIKI)
   const [aiPlan, setAiPlan] = useState(INITIAL_AI_PLAN)
-  const [schedule, setSchedule] = useState(INITIAL_SCHEDULE)
+  const [schedule, setSchedule] = useState(() => ({ ...INITIAL_SCHEDULE, isDryRun: initialDryRun }))
   const [planId, setPlanId] = useState(null)
   const [importJobs, setImportJobs] = useState(INITIAL_IMPORT_JOBS)
   const [error, setError] = useState(null)

@@ -1,12 +1,11 @@
 import { useState, useMemo } from 'react'
 import {
     BarChart3, TrendingUp, Activity, GitPullRequest, GitMerge,
-    Zap, PlayCircle, Heart, Users, Building2,
+    Zap, Heart, Users, Building2,
     Code2, Folder, Archive, Star, GitFork, CheckCircle2, XCircle,
     Download
 } from 'lucide-react'
 import { CategorySection } from './CategorySection'
-import { EmptyState } from '../ui/EmptyState'
 import { StatCard } from './StatCard'
 import { ActivityChart } from './ActivityChart'
 import { LanguageChart } from './LanguageChart'
@@ -188,22 +187,6 @@ export function DashboardPremium({
                 </div>
             </CategorySection>
 
-            {/* CATEGORY 2: Code & Collaboration (Conditional) */}
-            {categories.pullRequests && (
-                <CategorySection
-                    title="Code & Collaboration"
-                    icon={GitMerge}
-                    defaultExpanded={true}
-                >
-                    <EmptyState
-                        icon={GitPullRequest}
-                        title="Pull Request Analytics Coming Soon"
-                        description="Track PR velocity, review status, and top contributors across all your repositories."
-                        gradient="from-pink-500 to-rose-600"
-                    />
-                </CategorySection>
-            )}
-
             {/* CATEGORY: Migration Activity (Always visible) */}
             <CategorySection
                 title="Migration Activity"
@@ -212,22 +195,6 @@ export function DashboardPremium({
             >
                 <MigrationActivity loading={loading} />
             </CategorySection>
-
-            {/* CATEGORY 3: CI/CD & Automation (Conditional) */}
-            {categories.actions && (
-                <CategorySection
-                    title="CI/CD & Automation"
-                    icon={Zap}
-                    defaultExpanded={true}
-                >
-                    <EmptyState
-                        icon={PlayCircle}
-                        title="GitHub Actions Dashboard Coming Soon"
-                        description="Monitor workflow success rates, execution times, and build trends across your projects."
-                        gradient="from-indigo-500 to-blue-600"
-                    />
-                </CategorySection>
-            )}
 
             {/* CATEGORY 4: Health & Quality (Conditional) */}
             {categories.health && repos.length > 0 && (

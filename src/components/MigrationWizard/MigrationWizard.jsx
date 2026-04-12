@@ -25,7 +25,7 @@ import BreadcrumbNav from './BreadcrumbNav'
 import {
   ArrowLeft, ArrowRight, Rocket, Download, AlertCircle,
   Check, Radio, Link2, GitFork, Settings2, Sparkles,
-  CalendarClock, Activity, Flag, Cloud, ChevronRight,
+  CalendarClock, Activity, Flag, Cloud, ChevronRight, Zap,
 } from 'lucide-react'
 
 const STEP_LABELS = {
@@ -359,8 +359,8 @@ function MobileProgressBar({ steps, currentStepIndex }) {
 /* ------------------------------------------------------------------ */
 /*  Main Wizard Component                                              */
 /* ------------------------------------------------------------------ */
-export default function MigrationWizard({ onClose, orgs = [] }) {
-  const wizard = useMigrationWizard()
+export default function MigrationWizard({ onClose, orgs = [], initialDryRun = false }) {
+  const wizard = useMigrationWizard({ initialDryRun })
 
   const {
     steps,
@@ -399,7 +399,6 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
   const [showConfirm, setShowConfirm] = useState(false)
   const isMobile = useMobileBreakpoint()
   const [isMaximized, setIsMaximized] = useState(true)
-
   const handleToggleMaximize = useCallback(() => setIsMaximized((v) => !v), [])
 
   const handleNext = useCallback(() => { setDirection(1); nextStep() }, [nextStep])
@@ -678,7 +677,7 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
         isMobile={isMobile}
         onToggleMaximize={handleToggleMaximize}
       >
-        <div role="form" aria-label={wizardTitle} className="p-4 md:p-6 lg:p-8">
+        <div data-testid="migration-wizard" role="form" aria-label={wizardTitle} className="p-4 md:p-6 lg:p-8">
           <div className={!isMobile ? 'max-w-3xl mx-auto' : ''}>
             {/* Horizontal stepper — desktop restored mode only */}
             {showSidebar && !effectiveMaximized && (
@@ -697,9 +696,22 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
             {/* Step title/subtitle */}
             {STEP_META[currentStep] && (
               <div className="mb-6">
-                <h3 className={`font-bold tracking-tight text-slate-900 dark:text-slate-50 ${!isMobile ? 'text-xl' : 'text-lg'}`}>
-                  {STEP_META[currentStep].title}
-                </h3>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h3 className={`font-bold tracking-tight text-slate-900 dark:text-slate-50 ${!isMobile ? 'text-xl' : 'text-lg'}`}>
+                    {STEP_META[currentStep].title}
+                  </h3>
+                  {schedule.isDryRun && (
+                    <span
+                      data-testid="dry-run-pill"
+                      role="status"
+                      aria-live="polite"
+                      className="ds-animate-scale-in inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-900"
+                    >
+                      <Zap className="w-3 h-3" aria-hidden="true" />
+                      Dry-Run Mode
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                   {STEP_META[currentStep].subtitle}
                 </p>
@@ -729,6 +741,7 @@ export default function MigrationWizard({ onClose, orgs = [] }) {
               <AnimatePresence mode="wait" custom={direction}>
                 <motion.div
                   key={currentStep}
+                  data-testid={`wizard-step-${currentStep}`}
                   custom={direction}
                   variants={slideVariants}
                   initial="enter"

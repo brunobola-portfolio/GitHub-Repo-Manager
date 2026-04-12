@@ -15,6 +15,7 @@ import './design-system.css'
 import App from './App.jsx'
 import { ThemeProvider } from './hooks/useTheme.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
+import { ToastProvider } from './contexts/ToastProvider.jsx'
 
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
@@ -28,9 +29,11 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <MotionConfig reducedMotion="user">
       <ThemeProvider>
-        <ErrorBoundary>
-          <App />
-        </ErrorBoundary>
+        <ToastProvider>
+          <ErrorBoundary>
+            <App />
+          </ErrorBoundary>
+        </ToastProvider>
       </ThemeProvider>
     </MotionConfig>
   </StrictMode>,

@@ -11,6 +11,8 @@ import {
 } from 'lucide-react'
 import { PAGINATION } from '../config'
 import { aiApi } from '../api/ai'
+import { reposApi } from '../api/repos'
+import { useToast } from '../hooks/useToast'
 import { formatCompact } from '../utils/format'
 import { motion } from 'framer-motion'
 import { useSelection } from '../hooks/useSelection'
@@ -31,7 +33,8 @@ export function RepoList({
 	onRepoClick
 }) {
 	const { selectedIds, toggleSelect, selectRepos, deselectRepos, invertSelection, clearSelection } = useSelection()
-	const { openModal, openModalWithData } = useModal()
+	const { openModal, openModalWithData, closeModal } = useModal()
+	const { toast } = useToast()
 	const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
 	const [searchQuery, setSearchQuery] = useState('')
 	const [isAISearch, setIsAISearch] = useState(false)
@@ -478,7 +481,7 @@ export function RepoList({
 					x={repoMenu.x}
 					y={repoMenu.y}
 					onClose={() => setRepoMenu(null)}
-					onAction={(action, data) => {
+					onAction={async (action, data) => {
 						setRepoMenu(null)
 						switch (action) {
 							case 'visibility':
@@ -505,19 +508,63 @@ export function RepoList({
 							case 'migrate_selected':
 								openModal('showMigrationWizard')
 								break
+							case 'dryRun':
+								openModalWithData('showMigrationWizard', { initialDryRun: true })
+								break
+							case 'dryRun_selected':
+								openModalWithData('showMigrationWizard', { initialDryRun: true })
+								break
 							case 'migrationHistory':
 								openModal('showMigrationHistory')
 								break
 							// AI context-menu actions route to the right tab in
 							// RepoInsightsModal so each menu item feels distinct.
-							// `aiRisk`, `aiCompare`, `aiSecurity` are currently
-							// disabled in the context menu (no backend), so this
-							// switch only handles the two wired features.
+							// `aiCompare`, `aiSecurity` are currently disabled in
+							// the context menu (no backend), so this switch only
+							// handles the two wired features.
 							case 'aiQuality':
 								openModalWithData('showRepoInsights', { repo: data, initialTab: 'quality' })
 								break
 							case 'aiSuggest':
 								openModalWithData('showRepoInsights', { repo: data, initialTab: 'suggestions' })
+								break
+							case 'exportMeta':
+								try {
+									const result = await reposApi.exportMetadata(data.owner.login, data.name)
+									toast.success(`Exported ${result.filename}`)
+								} catch (err) {
+									toast.error(`Export failed: ${err.message}`)
+								}
+								break
+							case 'exportMeta_selected': {
+								let ok = 0
+								try {
+									for (const repo of data) {
+										await reposApi.exportMetadata(repo.owner.login, repo.name)
+										ok++
+									}
+									toast.success(`Exported ${ok} repositories`)
+								} catch (err) {
+									toast.error(`Exported ${ok} of ${data.length}; stopped at ${err.message}`)
+								}
+								break
+							}
+							case 'sync':
+								openModalWithData('showConfirm', {
+									title: 'Sync Mirror',
+									message: `Fetch latest changes from ${data.full_name}'s mirror source and force-push to the target?`,
+									confirmText: 'Sync',
+									variant: 'info',
+									onConfirm: async () => {
+										try {
+											const result = await reposApi.syncMirror(data.owner.login, data.name)
+											toast.success(`Synced in ${Math.round(result.duration / 1000)}s`)
+											closeModal('showConfirm')
+										} catch (err) {
+											toast.error(`Sync failed: ${err.message}`)
+										}
+									}
+								})
 								break
 							default:
 								// For actions not yet wired, pass through to onQuickAction

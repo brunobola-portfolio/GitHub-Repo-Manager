@@ -99,7 +99,23 @@ router.get('/', requireAuth, async (req, res) => {
             if (lastMatch) totalPages = parseInt(lastMatch[1]);
         }
 
-        res.json({ repos: data, page: parseInt(page), totalPages });
+        // Build mirror map from migration_jobs for this user
+        const mirrorMap = new Map();
+        const mirrorRows = db.prepare(`
+            SELECT target_owner, target_repo FROM migration_jobs
+            WHERE user_id=? AND is_mirror=1
+        `).all(req.session.userId);
+        for (const row of mirrorRows) {
+            mirrorMap.set(`${row.target_owner}/${row.target_repo}`, true);
+        }
+
+        // Annotate each repo with isMirror flag
+        const repos = data.map((repo) => ({
+            ...repo,
+            isMirror: mirrorMap.has(repo.full_name) || false
+        }));
+
+        res.json({ repos, page: parseInt(page), totalPages });
     } catch (error) {
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }

@@ -301,6 +301,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 							aria-haspopup={hasChildren ? 'true' : undefined}
 							tabIndex={-1}
 							title={item.disabled ? item.tooltip : undefined}
+							data-testid={item.id ? `menu-item-${item.id}` : undefined}
 							className={`
 								px-2.5 py-1.5 rounded-lg flex items-center gap-2.5 text-sm select-none transition-colors duration-75
 								${item.disabled
