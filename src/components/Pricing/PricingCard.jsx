@@ -95,7 +95,7 @@ export function PricingCard({
       <div
         className={`relative flex flex-col h-full rounded-2xl p-7 ds-card-shimmer overflow-hidden transition-shadow duration-300
           ${highlighted
-            ? 'bg-slate-900 dark:bg-slate-900 border border-transparent shadow-2xl shadow-indigo-500/25 hover:shadow-violet-500/40'
+            ? 'bg-slate-900 dark:bg-slate-900 border border-transparent shadow-2xl shadow-indigo-500/25 hover:shadow-violet-500/40 ds-border-glow'
             : enterprise
               ? 'bg-white dark:bg-slate-950 border border-transparent shadow-xl shadow-amber-500/10 hover:shadow-amber-500/30'
               : 'bg-white/60 dark:bg-white/[0.04] backdrop-blur-xl border border-slate-200/60 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.15] hover:shadow-indigo-500/20 hover:shadow-xl'

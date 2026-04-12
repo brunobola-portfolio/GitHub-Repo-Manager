@@ -634,7 +634,7 @@ const RepoCard = memo(function RepoCard({ repo, viewMode, isSelected, isContextT
                 group relative transition-all duration-300 cursor-pointer
                 backdrop-blur-xl border
                 shadow-lg shadow-slate-200/40 dark:shadow-black/40
-                ds-card-shimmer
+                ds-card-shimmer ds-hover-lift
                 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 outline-none
                 ${isContextTarget
 					? isSelected
