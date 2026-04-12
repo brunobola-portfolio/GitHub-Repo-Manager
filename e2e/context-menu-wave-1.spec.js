@@ -32,4 +32,12 @@ test.describe('Wave 1 — Context menu items', () => {
     const download = await downloadPromise
     expect(download.suggestedFilename()).toMatch(/-export-\d+\.json$/)
   })
+
+  test('Sync Repository is disabled for non-mirror repos', async ({ page }) => {
+    const firstCard = page.locator('[data-testid="repo-card"]').first()
+    await firstCard.click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Management', exact: true }).hover()
+    const syncItem = page.locator('[data-testid="menu-item-sync"]')
+    await expect(syncItem).toHaveAttribute('aria-disabled', 'true')
+  })
 })

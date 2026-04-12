@@ -1,4 +1,18 @@
 export const reposApi = {
+  syncMirror: async (owner, repo) => {
+    const res = await fetch(`/api/v1/repos/${owner}/${repo}/sync`, {
+      method: 'POST',
+      credentials: 'include'
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      const error = new Error(body.error || `HTTP ${res.status}`)
+      error.status = res.status
+      throw error
+    }
+    return res.json()
+  },
+
   exportMetadata: async (owner, repo) => {
     const res = await fetch(`/api/v1/repos/${owner}/${repo}/export`, {
       method: 'GET',

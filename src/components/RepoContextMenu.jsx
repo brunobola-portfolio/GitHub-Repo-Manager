@@ -2,7 +2,7 @@ import { memo } from 'react'
 import ContextMenu from './ui/ContextMenu'
 import {
 	ExternalLink, Copy, Settings, Rocket, Sparkles, Package,
-	Lock, Unlock, Archive, Trash2
+	Lock, Unlock, Archive, Trash2, RefreshCw
 } from 'lucide-react'
 
 /**
@@ -85,7 +85,14 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 			children: [
 				{ label: 'Transfer to Org', onClick: () => onAction('transfer', repo) },
 				{ label: 'Mirror / Fork', onClick: () => onAction('mirror', repo) },
-				{ label: 'Sync Repository', disabled: true, tooltip: 'Only available for mirrored repos', onClick: () => onAction('sync', repo) },
+				{
+					id: 'sync',
+					label: 'Sync Repository',
+					icon: RefreshCw,
+					disabled: !repo.isMirror,
+					tooltip: repo.isMirror ? null : 'Only available for mirrored repos',
+					onClick: () => onAction('sync', repo)
+				},
 				{ label: 'Export Metadata (JSON)', onClick: () => onAction('exportMeta', repo) }
 			]
 		},

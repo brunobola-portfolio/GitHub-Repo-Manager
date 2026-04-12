@@ -33,7 +33,7 @@ export function RepoList({
 	onRepoClick
 }) {
 	const { selectedIds, toggleSelect, selectRepos, deselectRepos, invertSelection, clearSelection } = useSelection()
-	const { openModal, openModalWithData } = useModal()
+	const { openModal, openModalWithData, closeModal } = useModal()
 	const { toast } = useToast()
 	const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
 	const [searchQuery, setSearchQuery] = useState('')
@@ -549,6 +549,23 @@ export function RepoList({
 								}
 								break
 							}
+							case 'sync':
+								openModalWithData('showConfirm', {
+									title: 'Sync Mirror',
+									message: `Fetch latest changes from ${data.full_name}'s mirror source and force-push to the target?`,
+									confirmText: 'Sync',
+									variant: 'info',
+									onConfirm: async () => {
+										try {
+											const result = await reposApi.syncMirror(data.owner.login, data.name)
+											toast.success(`Synced in ${Math.round(result.duration / 1000)}s`)
+											closeModal('showConfirm')
+										} catch (err) {
+											toast.error(`Sync failed: ${err.message}`)
+										}
+									}
+								})
+								break
 							default:
 								// For actions not yet wired, pass through to onQuickAction
 								onQuickAction(action, data)
