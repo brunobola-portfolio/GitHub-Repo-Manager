@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo, useContext } from 'react'
 import { ToastContext } from './contexts'
 
+const MAX_TOASTS = 5
+
 /**
  * ToastProvider — owns the single shared toasts array.
  * Wrap the entire app so every component can fire toasts that reach
@@ -30,7 +32,20 @@ export function ToastProvider({ children }) {
 
     const addToastRecord = useCallback((record) => {
         const id = Date.now() + Math.random()
-        setToasts(prev => [...prev, { id, ...record }])
+        setToasts(prev => {
+            const next = [...prev, { id, ...record }]
+            if (next.length > MAX_TOASTS) {
+                const removed = next.splice(0, next.length - MAX_TOASTS)
+                removed.forEach(t => {
+                    const timer = timersRef.current.get(t.id)
+                    if (timer) {
+                        clearTimeout(timer)
+                        timersRef.current.delete(t.id)
+                    }
+                })
+            }
+            return next
+        })
         if (record.duration > 0) {
             const timer = setTimeout(() => dismissToast(id), record.duration)
             timersRef.current.set(id, timer)

@@ -14,7 +14,7 @@ import {
     isSessionExpired
 } from '../utils/api'
 import { getErrorInfo } from '../utils/errors'
-import { MOCK_MODE, API_ENDPOINTS, PAGINATION } from '../config'
+import { MOCK_MODE, API_BASE, API_ENDPOINTS, PAGINATION } from '../config'
 
 /**
  * Generate mock repository data for development
@@ -84,9 +84,6 @@ export function useRepos(user) {
     const [error, setError] = useState(null)
     const [errorInfo, setErrorInfo] = useState(null)
     const [message, setMessage] = useState('')
-    // NOTE: Selection state is managed by SelectionContext (not here)
-    // This local state is kept only for performAction's fallback resolution
-    const [selectedIds] = useState(new Set())
     const [page, setPage] = useState(1)
     const [perPage, setPerPage] = useState(PAGINATION.defaultPerPage)
     const [totalPages, setTotalPages] = useState(null)
@@ -170,11 +167,6 @@ export function useRepos(user) {
         return () => controller.abort()
     }, [page, perPage, user, fetchRepos])
 
-    // Selection is managed by SelectionContext - these are kept as no-ops for backward compat
-    const toggleSelect = useCallback(() => {}, [])
-    const selectRepos = useCallback(() => {}, [])
-    const deselectRepos = useCallback(() => {}, [])
-    const invertSelection = useCallback(() => {}, [])
 
     /**
      * Perform bulk action on repositories
@@ -184,11 +176,7 @@ export function useRepos(user) {
      * @param {object} options - Additional options like { makePublic: true }
      */
     async function performAction(action, items = null, org = '', options = {}) {
-        // Get target repos
-        const repoNames = items || Array.from(selectedIds).map(id => {
-            const r = repos.find(x => x.id === id)
-            return r ? r.full_name : null
-        }).filter(Boolean)
+        const repoNames = items || []
 
         if (repoNames.length === 0) {
             const msg = 'Select at least 1 repository'
@@ -242,7 +230,7 @@ export function useRepos(user) {
 
             const destructiveActions = ['transfer', 'mirror', 'delete']
             const maxRetries = destructiveActions.includes(action) ? 0 : 2
-            const endpoint = API_ENDPOINTS[action] || `${API_ENDPOINTS.repos.replace('/repos', '')}/${action}`
+            const endpoint = API_ENDPOINTS[action] || `${API_BASE}/${action}`
             const resp = await fetchWithRetry(endpoint, {
                 method: 'POST',
                 credentials: 'include',
@@ -447,12 +435,12 @@ export function useRepos(user) {
         if (isSessionExpired()) return { success: false, error: 'Session expired', message: 'Your session has expired. Please login again.' }
         setIsPerforming(true)
         try {
-            const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/repos`, {
+            const r = await fetchWithRetry(`${API_BASE}/repos`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, ...options })
-            })
+            }, { maxRetries: 0 })
             if (r.status === 401) {
                 return { success: false, error: 'Session expired', message: 'Your session has expired. Please login again.' }
             }
@@ -496,7 +484,7 @@ export function useRepos(user) {
         setIsPerforming(true)
         setMessage('Starting Azure DevOps import...')
         try {
-            const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/import/azure`, {
+            const r = await fetchWithRetry(`${API_BASE}/import/azure`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
@@ -507,7 +495,7 @@ export function useRepos(user) {
                     azurePat,
                     ...options
                 })
-            })
+            }, { maxRetries: 0 })
             if (r.status === 401) {
                 return { success: false, error: 'Session expired', message: 'Your session has expired. Please login again.' }
             }
@@ -541,7 +529,7 @@ export function useRepos(user) {
             return { status: 'complete' }
         }
         try {
-            const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/import/status/${jobId}`, { credentials: 'include' })
+            const r = await fetch(`${API_BASE}/import/status/${jobId}`, { credentials: 'include' })
             return await safeParseJson(r)
         } catch (e) {
             return { status: 'error', message: e.message }
@@ -555,7 +543,6 @@ export function useRepos(user) {
         errorInfo,
         message,
         setMessage,
-        selectedIds,
         page,
         perPage,
         totalPages,
@@ -563,10 +550,6 @@ export function useRepos(user) {
         results,
         setPage,
         setPerPage,
-        toggleSelect,
-        selectRepos,
-        deselectRepos,
-        invertSelection,
         refresh,
         performAction,
         fetchRepos,

@@ -51,20 +51,30 @@ router.get('/', requireAuth, async (req, res) => {
         // 4. Fetch organizations
         const { data: orgs } = await githubApi('/user/orgs', req.session.accessToken);
 
-        // 5. Enrich organization data with repo counts
-        const orgsWithCounts = await Promise.all(orgs.map(async (org) => {
-            try {
-                const { data: orgDetails } = await githubApi(`/orgs/${org.login}`, req.session.accessToken);
-                return {
-                    ...org,
-                    public_repos: orgDetails.public_repos || 0,
-                    total_private_repos: orgDetails.total_private_repos || 0,
-                    isPersonal: false
-                };
-            } catch {
-                return { ...org, isPersonal: false };
+        // 5. Enrich organization data with repo counts (batched to limit concurrency)
+        const orgsWithCounts = [];
+        const batchSize = 5;
+        for (let i = 0; i < orgs.length; i += batchSize) {
+            const batch = orgs.slice(i, i + batchSize);
+            const results = await Promise.allSettled(
+                batch.map(async (org) => {
+                    const { data: orgDetails } = await githubApi(`/orgs/${org.login}`, req.session.accessToken);
+                    return {
+                        ...org,
+                        public_repos: orgDetails.public_repos || 0,
+                        total_private_repos: orgDetails.total_private_repos || 0,
+                        isPersonal: false
+                    };
+                })
+            );
+            for (let j = 0; j < results.length; j++) {
+                if (results[j].status === 'fulfilled') {
+                    orgsWithCounts.push(results[j].value);
+                } else {
+                    orgsWithCounts.push({ ...batch[j], isPersonal: false });
+                }
             }
-        }));
+        }
 
         // 6. Return personal account FIRST, then organizations
         res.json([personalAccount, ...orgsWithCounts]);

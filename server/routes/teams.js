@@ -42,7 +42,7 @@ router.post('/', requireAuth, validate(teamCreateSchema), (req, res) => {
         })();
 
         auditLog(req, 'team.create', 'team', result, { name });
-        res.json({ success: true, teamId: result });
+        res.status(201).json({ success: true, teamId: result });
     } catch (error) {
         errorResponse(res, 500, safeError(error, 'Operation failed'));
     }
@@ -90,15 +90,6 @@ router.delete('/:id', requireAuth, (req, res) => {
         if (result.changes === 0) return errorResponse(res, 404, 'Team not found', 'NOT_FOUND');
         auditLog(req, 'team.delete', 'team', id, { name: team?.name });
         res.json({ success: true });
-
-        // Audit log: record team deletion
-        try {
-            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
-                req.session.userId, 'TEAM_DELETE', id, JSON.stringify({ name: team?.name })
-            );
-        } catch (auditErr) {
-            req.log?.error?.({ err: auditErr }, 'Audit log write failed');
-        }
     } catch (error) {
         errorResponse(res, 500, safeError(error, 'Operation failed'));
     }
@@ -172,16 +163,7 @@ router.post('/:id/members', requireAuth, validate(teamMemberSchema), async (req,
         `).run(req.params.id, user.id);
 
         auditLog(req, 'team.member.add', 'team', req.params.id, { username, role: 'member' });
-        res.json({ success: true });
-
-        // Audit log: record member addition
-        try {
-            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
-                req.session.userId, 'TEAM_MEMBER_ADD', req.params.id, JSON.stringify({ username, role: 'member' })
-            );
-        } catch (auditErr) {
-            req.log?.error?.({ err: auditErr }, 'Audit log write failed');
-        }
+        res.status(201).json({ success: true });
     } catch (error) {
         if (error.message.includes('UNIQUE constraint failed')) {
             return errorResponse(res, 400, 'User is already a member', 'DUPLICATE_MEMBER');
@@ -238,15 +220,6 @@ router.delete('/:id/members/:userId', requireAuth, (req, res) => {
 
         auditLog(req, 'team.member.remove', 'team', req.params.id, { userId: req.params.userId });
         res.json({ success: true });
-
-        // Audit log: record member removal
-        try {
-            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
-                req.session.userId, 'TEAM_MEMBER_REMOVE', req.params.id, JSON.stringify({ userId: req.params.userId })
-            );
-        } catch (auditErr) {
-            req.log?.error?.({ err: auditErr }, 'Audit log write failed');
-        }
     } catch (error) {
         errorResponse(res, 500, safeError(error, 'Operation failed'));
     }

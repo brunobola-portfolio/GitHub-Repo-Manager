@@ -65,6 +65,63 @@ export class MigrationEngine extends EventEmitter {
   }
 
   /**
+   * Updates a draft migration plan's source, tasks, and/or target org.
+   * @param {number} planId
+   * @param {{ source?: object, tasks?: Array, targetOrg?: string, isDryRun?: boolean }} updates
+   */
+  updatePlan(planId, updates) {
+    const plan = this.db.prepare('SELECT * FROM migration_plans WHERE id = ?').get(planId)
+    if (!plan) throw new Error(`Plan ${planId} not found`)
+    if (plan.status !== 'draft') throw new Error('Can only update draft plans')
+
+    const updateTransaction = this.db.transaction(() => {
+      // Update plan-level fields if provided
+      if (updates.source || updates.targetOrg !== undefined || updates.isDryRun !== undefined) {
+        const source = updates.source || {}
+        this.db.prepare(`
+          UPDATE migration_plans SET
+            source_type = COALESCE(?, source_type),
+            source_org = COALESCE(?, source_org),
+            source_project = COALESCE(?, source_project),
+            target_org = COALESCE(?, target_org),
+            is_dry_run = COALESCE(?, is_dry_run),
+            updated_at = datetime('now')
+          WHERE id = ?
+        `).run(
+          source.type || null,
+          source.org || null,
+          source.project || null,
+          updates.targetOrg !== undefined ? (updates.targetOrg || null) : null,
+          updates.isDryRun !== undefined ? (updates.isDryRun ? 1 : 0) : null,
+          planId
+        )
+      }
+
+      // Replace tasks if provided
+      if (updates.tasks) {
+        this.db.prepare('DELETE FROM migration_tasks WHERE plan_id = ?').run(planId)
+        const insertTask = this.db.prepare(`
+          INSERT INTO migration_tasks (plan_id, type, execution_order, source_ref, target_ref, config)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `)
+        for (let i = 0; i < updates.tasks.length; i++) {
+          const task = updates.tasks[i]
+          insertTask.run(
+            planId,
+            task.type,
+            i,
+            task.sourceRef,
+            task.targetRef || null,
+            task.config ? JSON.stringify(task.config) : null
+          )
+        }
+      }
+    })
+
+    updateTransaction()
+  }
+
+  /**
    * Validates a migration plan.
    * @param {number} planId
    * @returns {{ valid: boolean, errors: string[], warnings: string[] }}

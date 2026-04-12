@@ -114,6 +114,7 @@ router.put('/plans/:id', requireAuth, async (req, res) => {
     if (plan.status !== 'draft') return res.status(400).json({ error: 'Can only update draft plans' });
     const parsed = updatePlanSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Validation failed', details: parsed.error.flatten() });
+    engine.updatePlan(parseInt(req.params.id), parsed.data);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: safeError(err, 'Operation failed') });

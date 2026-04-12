@@ -2,6 +2,7 @@ import express from 'express';
 import { randomUUID } from 'crypto';
 import db from '../db.js';
 import { auditLog } from '../lib/audit.js';
+import { config } from '../config.js';
 
 const router = express.Router();
 
@@ -138,14 +139,18 @@ router.get('/session', (req, res) => {
 router.post('/logout', (req, res) => {
     const userId = req.session?.userId;
     auditLog(req, 'auth.logout', 'user', userId);
-    req.session.destroy();
-    res.clearCookie('connect.sid');
-    res.json({ success: true });
+    req.session.destroy((err) => {
+        if (err) {
+            req.log?.error?.({ err }, 'Session destroy failed');
+        }
+        res.clearCookie('connect.sid');
+        res.json({ success: true });
+    });
 });
 
 // Mock Login for Dev Mode (disabled in production)
 router.post('/mock', (req, res) => {
-    if (process.env.NODE_ENV === 'production') {
+    if (config.nodeEnv === 'production') {
         return res.status(404).json({ error: 'Not found' });
     }
     // Upsert Mock User

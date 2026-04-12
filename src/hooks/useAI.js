@@ -8,7 +8,7 @@
 
 import { useCallback } from 'react'
 import { safeParseJson, isSessionExpired } from '../utils/api'
-import { MOCK_MODE, API_ENDPOINTS } from '../config'
+import { MOCK_MODE, API_BASE } from '../config'
 
 /**
  * Hook for AI-powered features: chat, suggestions, and README generation.
@@ -25,7 +25,7 @@ export function useAI() {
     const checkAIStatus = useCallback(async () => {
         if (MOCK_MODE) return { configured: true }
         try {
-            const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/config/ai-status`)
+            const r = await fetch(`${API_BASE}/config/ai-status`, { credentials: 'include' })
             return await safeParseJson(r)
         } catch (e) {
             return { configured: false }
@@ -44,7 +44,7 @@ export function useAI() {
             return { message: "Based on the analysis of your repository structure, I recommend adding a CONTRIBUTING.md file to guide new contributors. Additionally, your test coverage seems low in the `utils` directory. Would you like me to generate some test templates for you?" }
         }
         if (isSessionExpired()) throw new Error('Your session has expired. Please login again.')
-        const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/ai/chat`, {
+        const r = await fetch(`${API_BASE}/ai/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message, context }),

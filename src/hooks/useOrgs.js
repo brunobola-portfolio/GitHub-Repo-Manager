@@ -6,14 +6,14 @@
  * Licensed under the MIT License. See LICENSE in the project root.
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
     safeParseJson,
     ApiError,
     ErrorType,
     isSessionExpired
 } from '../utils/api'
-import { MOCK_MODE, API_ENDPOINTS } from '../config'
+import { MOCK_MODE, API_BASE } from '../config'
 
 /**
  * Generate mock activity data for development
@@ -57,6 +57,14 @@ export function useOrgs(user) {
     const [orgRepos, setOrgRepos] = useState([])
     const [stats, setStats] = useState(null)
     const [activity, setActivity] = useState([])
+    const [error, setError] = useState(null)
+    const errorTimerRef = useRef(null)
+
+    const setTimedError = useCallback((msg) => {
+        setError(msg)
+        clearTimeout(errorTimerRef.current)
+        errorTimerRef.current = setTimeout(() => setError(null), 10000)
+    }, [])
 
     /**
      * Fetch user's organizations
@@ -72,7 +80,7 @@ export function useOrgs(user) {
         }
         if (isSessionExpired()) return
         try {
-            const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/orgs`, { credentials: 'include' })
+            const r = await fetch(`${API_BASE}/orgs`, { credentials: 'include' })
             if (r.ok) {
                 const data = await safeParseJson(r)
                 setOrgs(Array.isArray(data) ? data : [])
@@ -108,7 +116,7 @@ export function useOrgs(user) {
         }
         if (isSessionExpired()) return
         try {
-            const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/orgs/${orgLogin}/repos?page=${pageNum}&per_page=100`, { credentials: 'include' })
+            const r = await fetch(`${API_BASE}/orgs/${orgLogin}/repos?page=${pageNum}&per_page=100`, { credentials: 'include' })
             if (r.ok) {
                 const data = await safeParseJson(r)
                 setOrgRepos(data.repos || [])
@@ -118,6 +126,8 @@ export function useOrgs(user) {
             }
         } catch (e) {
             if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return
+            console.error('fetchOrgRepos error:', e)
+            setTimedError('Failed to load organization repositories')
         }
     }
 
@@ -148,8 +158,8 @@ export function useOrgs(user) {
         if (isSessionExpired()) return
         try {
             const url = org
-                ? `${API_ENDPOINTS.repos.replace('/repos', '')}/stats?org=${org}`
-                : `${API_ENDPOINTS.repos.replace('/repos', '')}/stats`
+                ? `${API_BASE}/stats?org=${org}`
+                : `${API_BASE}/stats`
 
             // Get cache settings from localStorage (with safety for corrupted data)
             let cacheSettings = { enabled: true, ttl: 5 }
@@ -174,8 +184,10 @@ export function useOrgs(user) {
             }
         } catch (e) {
             if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return
+            console.error('fetchStats error:', e)
+            setTimedError('Failed to load dashboard statistics')
         }
-    }, [])
+    }, [setTimedError])
 
     // Auto-refresh stats when selectedOrg changes
     useEffect(() => {
@@ -209,17 +221,19 @@ export function useOrgs(user) {
 
         if (isSessionExpired()) return
         try {
-            const r = await fetch(`${API_ENDPOINTS.repos.replace('/repos', '')}/activity?username=${username}`, { credentials: 'include' })
+            const r = await fetch(`${API_BASE}/activity?username=${username}`, { credentials: 'include' })
             if (r.ok) {
                 const data = await safeParseJson(r)
                 setActivity(Array.isArray(data) ? data.slice(0, 20) : [])
             } else if (r.status === 401) {
                 return
             }
-        } catch (error) {
-            if (error instanceof ApiError && error.type === ErrorType.AUTHENTICATION) return
+        } catch (e) {
+            if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return
+            console.error('fetchActivity error:', e)
+            setTimedError('Failed to load activity feed')
         }
-    }, [])
+    }, [setTimedError])
 
     // Auto-fetch activity when user is loaded
     useEffect(() => {
@@ -235,6 +249,7 @@ export function useOrgs(user) {
         orgRepos,
         stats,
         activity,
+        error,
         fetchOrgs,
         fetchOrgRepos,
         fetchStats,

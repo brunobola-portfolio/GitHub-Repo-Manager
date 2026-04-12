@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
+import { API_BASE } from '../config'
 
 const TAB_STORAGE_KEY = 'devToolkit_activeTab'
 const PANEL_WIDTH_KEY = 'devToolkit_panelWidth'
@@ -41,7 +42,7 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
 
     const fetchBranches = useCallback(async (owner, repo) => {
         try {
-            const res = await fetch(`/api/repos/${owner}/${repo}/branches?per_page=100`)
+            const res = await fetch(`${API_BASE}/repos/${owner}/${repo}/branches?per_page=100`, { credentials: 'include' })
             if (!res.ok) return
             const data = await res.json()
             setBranches(data)
@@ -62,7 +63,7 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
         abortRef.current = ctrl
         setCompareLoading(true)
         try {
-            const res = await fetch(`/api/repos/${owner}/${repo}/compare/${encodeURIComponent(base)}...${encodeURIComponent(head)}`, { signal: ctrl.signal })
+            const res = await fetch(`${API_BASE}/repos/${owner}/${repo}/compare/${encodeURIComponent(base)}...${encodeURIComponent(head)}`, { signal: ctrl.signal, credentials: 'include' })
             if (!res.ok) throw new Error('Compare failed')
             const data = await res.json()
             setCompareData({
@@ -103,8 +104,9 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
     const fetchContextAnalysis = useCallback(async (owner, repo, diffSummary, commits, fileList) => {
         setContextAnalysisLoading(true)
         try {
-            const res = await fetch('/api/ai/analyze-context', {
+            const res = await fetch(`${API_BASE}/ai/analyze-context`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     repo: `${owner}/${repo}`,

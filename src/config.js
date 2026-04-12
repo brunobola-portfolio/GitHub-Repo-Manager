@@ -11,6 +11,9 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 // Default: true (Demo Mode) unless VITE_MOCK_MODE is explicitly 'false'.
 export const MOCK_MODE = import.meta.env.VITE_MOCK_MODE !== 'false';
 
+// API Base Path (used by hooks that build URLs manually)
+export const API_BASE = API_BASE_URL + '/api';
+
 // Authentication Endpoints
 export const AUTH_ENDPOINTS = {
     login: `${API_BASE_URL}/api/auth/login`,

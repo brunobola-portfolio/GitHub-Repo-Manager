@@ -188,15 +188,6 @@ router.patch('/:owner/:repo', requireAuth, validate(repoUpdateSchema), async (re
             : 'repo.update';
         auditLog(req, action, 'repo', `${owner}/${repo}`, req.body);
         res.json(data);
-
-        // Audit log: record repo settings update
-        try {
-            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
-                req.session.userId, 'REPO_UPDATE', `${owner}/${repo}`, JSON.stringify(req.body)
-            );
-        } catch (auditErr) {
-            req.log?.error?.({ err: auditErr }, 'Audit log write failed');
-        }
     } catch (error) {
         req.log.error({ err: error }, 'Update repo failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
@@ -214,16 +205,8 @@ router.put('/:owner/:repo/topics', requireAuth, validate(topicsSchema), async (r
             headers: { 'Accept': 'application/vnd.github.mercy-preview+json' },
             body: JSON.stringify({ names })
         });
+        auditLog(req, 'repo.topics.update', 'repo', `${owner}/${repo}`, { names });
         res.json(data);
-
-        // Audit log: record topics update
-        try {
-            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
-                req.session.userId, 'REPO_TOPICS_UPDATE', `${owner}/${repo}`, JSON.stringify({ names })
-            );
-        } catch (auditErr) {
-            req.log?.error?.({ err: auditErr }, 'Audit log write failed');
-        }
     } catch (error) {
         req.log.error({ err: error }, 'Update topics failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });

@@ -20,6 +20,7 @@ import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, createRequireAI, safeError } from '../middleware/auth.js';
 import { requireTier } from '../middleware/require-tier.js';
+import { validate, aiChatSchema, aiIndexSchema } from '../lib/validators.js';
 import { aiService, sanitizeForPrompt } from '../ai-service.js';
 import { safeJsonParse } from '../lib/utils.js';
 import { checkUsageLimit, incrementUsage } from '../lib/usage-meter.js';
@@ -30,6 +31,29 @@ const router = express.Router();
 
 // Create requireAI middleware from the factory
 const requireAI = createRequireAI(aiService);
+
+/** Shared AI error handler — maps common Gemini errors to user-friendly responses. */
+function handleAIError(res, error, fallbackMessage = 'Failed to generate AI response. Please try again later.') {
+    if (error.message?.includes('not found') || error.status === 404) {
+        return res.status(404).json({
+            error: `The AI model "${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}" is not available. Please verify your GEMINI_MODEL configuration in .env file. Try using: gemini-2.5-flash-lite, gemini-3-flash-preview, or gemini-2.5-pro`,
+            code: 'MODEL_NOT_FOUND'
+        });
+    }
+    if (error.message?.includes('API key') || error.status === 401) {
+        return res.status(401).json({
+            error: 'Invalid or expired Gemini API key. Please check your GEMINI_API_KEY in .env file.',
+            code: 'INVALID_API_KEY'
+        });
+    }
+    if (error.message?.includes('quota') || error.status === 429) {
+        return res.status(429).json({
+            error: 'API quota exceeded. Please try again later or check your Gemini API usage limits.',
+            code: 'QUOTA_EXCEEDED'
+        });
+    }
+    return res.status(500).json({ error: fallbackMessage, code: 'AI_REQUEST_FAILED' });
+}
 
 // ------------------------------------------------------------------
 // AI Configuration Status
@@ -46,7 +70,7 @@ router.get('/config/ai-status', (req, res) => {
 // AI Chat
 // ------------------------------------------------------------------
 
-router.post('/ai/chat', requireAuth, requireAI, async (req, res) => {
+router.post('/ai/chat', requireAuth, validate(aiChatSchema), requireAI, async (req, res) => {
     try {
         // Check usage limits
         const usage = checkUsageLimit(req.session.userId, 'ai_queries');
@@ -112,33 +136,7 @@ router.post('/ai/chat', requireAuth, requireAI, async (req, res) => {
         res.json({ message: text });
     } catch (error) {
         req.log.error({ err: error }, 'AI chat failed');
-
-        // User-friendly error handling
-        if (error.message?.includes('not found') || error.status === 404) {
-            return res.status(404).json({
-                error: `The AI model "${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}" is not available. Please verify your GEMINI_MODEL configuration in .env file. Try using: gemini-2.5-flash-lite, gemini-3-flash-preview, or gemini-2.5-pro`,
-                code: 'MODEL_NOT_FOUND'
-            });
-        }
-
-        if (error.message?.includes('API key') || error.status === 401) {
-            return res.status(401).json({
-                error: 'Invalid or expired Gemini API key. Please check your GEMINI_API_KEY in .env file.',
-                code: 'INVALID_API_KEY'
-            });
-        }
-
-        if (error.message?.includes('quota') || error.status === 429) {
-            return res.status(429).json({
-                error: 'API quota exceeded. Please try again later or check your Gemini API usage limits.',
-                code: 'QUOTA_EXCEEDED'
-            });
-        }
-
-        res.status(500).json({
-            error: 'Failed to generate AI response. Please try again later.',
-            code: 'AI_REQUEST_FAILED'
-        });
+        handleAIError(res, error);
     }
 });
 
@@ -208,33 +206,7 @@ router.post('/ai/suggest', requireAuth, requireAI, async (req, res) => {
         res.json(parsed);
     } catch (error) {
         req.log.error({ err: error }, 'AI suggest failed');
-
-        // User-friendly error handling
-        if (error.message?.includes('not found') || error.status === 404) {
-            return res.status(404).json({
-                error: `The AI model "${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}" is not available. Please verify your GEMINI_MODEL configuration in .env file. Try using: gemini-2.5-flash-lite, gemini-3-flash-preview, or gemini-2.5-pro`,
-                code: 'MODEL_NOT_FOUND'
-            });
-        }
-
-        if (error.message?.includes('API key') || error.status === 401) {
-            return res.status(401).json({
-                error: 'Invalid or expired Gemini API key. Please check your GEMINI_API_KEY in .env file.',
-                code: 'INVALID_API_KEY'
-            });
-        }
-
-        if (error.message?.includes('quota') || error.status === 429) {
-            return res.status(429).json({
-                error: 'API quota exceeded. Please try again later or check your Gemini API usage limits.',
-                code: 'QUOTA_EXCEEDED'
-            });
-        }
-
-        res.status(500).json({
-            error: 'Failed to generate suggestions. Please try again later.',
-            code: 'AI_REQUEST_FAILED'
-        });
+        handleAIError(res, error, 'Failed to generate suggestions. Please try again later.');
     }
 });
 
@@ -294,7 +266,7 @@ router.post('/ai/readme', requireAuth, requireAI, async (req, res) => {
 // ------------------------------------------------------------------
 
 // Trigger Indexing (Summarize + Embed)
-router.post('/ai/index', requireAuth, requireAI, async (req, res) => {
+router.post('/ai/index', requireAuth, validate(aiIndexSchema), requireAI, async (req, res) => {
     const { repo } = req.body; // Full repo object from GitHub
     if (!repo) return res.status(400).json({ error: 'Repo data required' });
 
@@ -338,7 +310,6 @@ router.post('/ai/index', requireAuth, requireAI, async (req, res) => {
         const embedding = await aiService.embedText(textToEmbed);
 
         // 5. Save to DB (scoped by user_id for multi-tenancy)
-        const userId = req.session.userId;
         const stmtMeta = db.prepare(`
             INSERT INTO repo_metadata (repo_id, user_id, summary, topics, health_score, last_indexed)
             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)

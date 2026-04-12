@@ -1,7 +1,16 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import logger from '../lib/logger.js';
 import db, { initDB } from '../db.js';
 import { requireAuth, safeError } from '../middleware/auth.js';
+
+const clientErrorLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many error reports, please try again later' }
+});
 
 const router = express.Router();
 
@@ -51,7 +60,7 @@ router.post('/setup', requireAuth, async (req, res) => {
 });
 
 // Client error reporting endpoint (no auth required - errors may occur before login)
-router.post('/client-error', (req, res) => {
+router.post('/client-error', clientErrorLimiter, (req, res) => {
     try {
         const { message, stack, url, timestamp } = req.body || {};
         logger.error({

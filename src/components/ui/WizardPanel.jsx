@@ -1,8 +1,8 @@
-import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Maximize2, Minimize2 } from 'lucide-react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import { useMobileKeyboardFix } from '../../hooks/useMobileKeyboardFix'
 
 const PANEL_SIZES = {
   sm: 'w-[min(92vw,520px)]',
@@ -30,23 +30,7 @@ export function WizardPanel({
   size = 'xl',
 }) {
   const panelRef = useFocusTrap(isOpen, onClose, { disableEscape })
-
-  // Mobile keyboard scroll fix
-  useEffect(() => {
-    if (!isOpen) return
-    const handleFocus = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-        setTimeout(() => {
-          e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        }, 300)
-      }
-    }
-    const el = panelRef.current
-    el?.addEventListener('focusin', handleFocus)
-    return () => el?.removeEventListener('focusin', handleFocus)
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- panelRef is a stable ref
-  }, [isOpen])
-
+  useMobileKeyboardFix(isOpen, panelRef)
   useBodyScrollLock(isOpen)
 
   const effectiveMaximized = isMobile || isMaximized

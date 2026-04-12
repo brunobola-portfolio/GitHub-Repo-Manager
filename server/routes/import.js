@@ -5,6 +5,7 @@ import db from '../db.js';
 import { requireAuth, safeError, errorResponse } from '../middleware/auth.js';
 import { githubApi } from '../lib/github-api.js';
 import { safeJsonParse } from '../lib/utils.js';
+import logger from '../lib/logger.js';
 
 const router = express.Router();
 
@@ -101,33 +102,41 @@ router.post('/import/azure', requireAuth, async (req, res) => {
                 updateJobProgress(status, message, pct, jobId);
             }
         }).then(result => {
-            if (result.success) {
-                db.prepare(`
-                    UPDATE migration_jobs SET status = 'complete', target_full_name = ?, progress_pct = 100,
-                    progress_message = 'Import completed successfully!', completed_at = datetime('now'),
-                    metadata = ?
-                    WHERE id = ?
-                `).run(
-                    result.targetFullName,
-                    JSON.stringify({ branchCount: result.branchCount, hasLFS: result.hasLFS, repoUrl: result.repoUrl }),
-                    jobId
-                );
-            } else {
+            try {
+                if (result.success) {
+                    db.prepare(`
+                        UPDATE migration_jobs SET status = 'complete', target_full_name = ?, progress_pct = 100,
+                        progress_message = 'Import completed successfully!', completed_at = datetime('now'),
+                        metadata = ?
+                        WHERE id = ?
+                    `).run(
+                        result.targetFullName,
+                        JSON.stringify({ branchCount: result.branchCount, hasLFS: result.hasLFS, repoUrl: result.repoUrl }),
+                        jobId
+                    );
+                } else {
+                    db.prepare(`
+                        UPDATE migration_jobs SET status = 'failed', error_message = ?,
+                        progress_message = ?, completed_at = datetime('now')
+                        WHERE id = ?
+                    `).run(result.error, result.error, jobId);
+                }
+            } catch (dbErr) {
+                logger.error({ err: dbErr, jobId }, 'Failed to update migration job status after import');
+            }
+        }).catch(err => {
+            try {
                 db.prepare(`
                     UPDATE migration_jobs SET status = 'failed', error_message = ?,
                     progress_message = ?, completed_at = datetime('now')
                     WHERE id = ?
-                `).run(result.error, result.error, jobId);
+                `).run(err.message || 'Unknown error', err.message || 'Import failed unexpectedly', jobId);
+            } catch (dbErr) {
+                logger.error({ err: dbErr, jobId }, 'Failed to update migration job status after import error');
             }
-        }).catch(err => {
-            db.prepare(`
-                UPDATE migration_jobs SET status = 'failed', error_message = ?,
-                progress_message = ?, completed_at = datetime('now')
-                WHERE id = ?
-            `).run(err.message || 'Unknown error', err.message || 'Import failed unexpectedly', jobId);
         });
 
-        res.json({ success: true, jobId, message: 'Import started' });
+        res.status(201).json({ success: true, jobId, message: 'Import started' });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Request failed'));
     }
@@ -182,33 +191,41 @@ router.post('/import/url', requireAuth, async (req, res) => {
                 updateJobProgress(status, message, pct, jobId);
             }
         }).then(result => {
-            if (result.success) {
-                db.prepare(`
-                    UPDATE migration_jobs SET status = 'complete', target_full_name = ?, progress_pct = 100,
-                    progress_message = 'Import completed successfully!', completed_at = datetime('now'),
-                    metadata = ?
-                    WHERE id = ?
-                `).run(
-                    result.targetFullName,
-                    JSON.stringify({ branchCount: result.branchCount, hasLFS: result.hasLFS, repoUrl: result.repoUrl }),
-                    jobId
-                );
-            } else {
+            try {
+                if (result.success) {
+                    db.prepare(`
+                        UPDATE migration_jobs SET status = 'complete', target_full_name = ?, progress_pct = 100,
+                        progress_message = 'Import completed successfully!', completed_at = datetime('now'),
+                        metadata = ?
+                        WHERE id = ?
+                    `).run(
+                        result.targetFullName,
+                        JSON.stringify({ branchCount: result.branchCount, hasLFS: result.hasLFS, repoUrl: result.repoUrl }),
+                        jobId
+                    );
+                } else {
+                    db.prepare(`
+                        UPDATE migration_jobs SET status = 'failed', error_message = ?,
+                        progress_message = ?, completed_at = datetime('now')
+                        WHERE id = ?
+                    `).run(result.error, result.error, jobId);
+                }
+            } catch (dbErr) {
+                logger.error({ err: dbErr, jobId }, 'Failed to update migration job status after URL import');
+            }
+        }).catch(err => {
+            try {
                 db.prepare(`
                     UPDATE migration_jobs SET status = 'failed', error_message = ?,
                     progress_message = ?, completed_at = datetime('now')
                     WHERE id = ?
-                `).run(result.error, result.error, jobId);
+                `).run(err.message || 'Unknown error', err.message || 'Import failed unexpectedly', jobId);
+            } catch (dbErr) {
+                logger.error({ err: dbErr, jobId }, 'Failed to update migration job status after URL import error');
             }
-        }).catch(err => {
-            db.prepare(`
-                UPDATE migration_jobs SET status = 'failed', error_message = ?,
-                progress_message = ?, completed_at = datetime('now')
-                WHERE id = ?
-            `).run(err.message || 'Unknown error', err.message || 'Import failed unexpectedly', jobId);
         });
 
-        res.json({ success: true, jobId, message: 'Import started' });
+        res.status(201).json({ success: true, jobId, message: 'Import started' });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Request failed'));
     }
@@ -525,7 +542,7 @@ router.post('/import/azure-tfvc', requireAuth, async (req, res) => {
             jobId
         });
 
-        res.json({ success: true, jobId, message: 'TFVC import started' });
+        res.status(201).json({ success: true, jobId, message: 'TFVC import started' });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'TFVC import request failed'));
     }

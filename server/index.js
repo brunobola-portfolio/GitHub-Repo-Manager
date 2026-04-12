@@ -20,6 +20,11 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json');
+
+import { closeAllQueues } from './lib/queue.js';
 import { config } from './config.js';
 import { initMonitoring, getSentryErrorHandler } from './lib/monitoring.js';
 import db, { initDB, seedMockData } from './db.js';
@@ -102,6 +107,10 @@ app.use(cors({
 // Stripe webhooks need raw body (must be before express.json())
 import { stripeWebhookHandler } from './routes/stripe-webhooks.js';
 app.post('/api/v1/webhooks/stripe', express.raw({ type: 'application/json' }), stripeWebhookHandler);
+// GitHub Actions webhooks need raw body for HMAC signature verification
+import { actionsWebhookHandler } from './routes/webhooks.js';
+app.post('/api/v1/webhooks/actions', express.raw({ type: 'application/json' }), actionsWebhookHandler);
+app.post('/api/webhooks/actions', express.raw({ type: 'application/json' }), actionsWebhookHandler);
 
 app.use(express.json({ limit: '10kb' }));
 app.use(requestLoggerMiddleware);
@@ -181,7 +190,7 @@ const startTime = Date.now();
 app.get('/api/health', (_req, res) => {
     const health = {
         status: 'ok',
-        version: '2.5.0',
+        version: pkg.version,
         uptime: Math.floor((Date.now() - startTime) / 1000),
         database: 'connected',
     };
@@ -261,7 +270,7 @@ server.on('error', (e) => {
 function gracefulShutdown(signal) {
     logger.info({ signal }, 'Shutting down gracefully...');
 
-    server.close(() => {
+    server.close(async () => {
         try {
             // Mark in-flight import jobs as interrupted
             db.prepare("UPDATE migration_jobs SET status = 'interrupted' WHERE status = 'in_progress'").run();
@@ -278,6 +287,12 @@ function gracefulShutdown(signal) {
                 WHERE status IN ('pending', 'running')`).run();
         } catch (e) {
             logger.warn({ err: e }, 'Could not update migration plans/tasks');
+        }
+
+        try {
+            await closeAllQueues();
+        } catch (e) {
+            logger.warn({ err: e }, 'Could not close queues');
         }
 
         try {

@@ -4,17 +4,28 @@
  * Auth: Basic auth with PAT (Personal Access Token)
  */
 
+import { decryptCredentials } from './lib/credential-encryption.js';
+
 const BASE_URL = 'https://dev.azure.com';
 const API_VERSION = '7.1';
 
 /**
- * Resolve PAT: use provided value, or fall back to AZURE_PAT env var, or session token.
+ * Resolve PAT: use provided value, or fall back to encrypted session token, or AZURE_PAT env var.
  * @param {string|undefined} pat - PAT from request body (may be undefined)
  * @param {object|undefined} session - Express session (may be undefined)
  * @returns {string|null}
  */
 function resolvePat(pat, session) {
-    return pat || session?.azureToken || process.env.AZURE_PAT || null;
+    if (pat) return pat;
+    if (session?.azureToken) {
+        try {
+            const { token } = decryptCredentials(session.azureToken);
+            return token;
+        } catch {
+            return null;
+        }
+    }
+    return process.env.AZURE_PAT || null;
 }
 
 function getHeaders(pat) {

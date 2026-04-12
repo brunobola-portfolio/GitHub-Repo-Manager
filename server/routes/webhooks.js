@@ -5,22 +5,26 @@ import { verifyWebhookSignature, errorResponse } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Webhook receiver for GitHub Actions events
-// NOTE: This route does NOT use requireAuth - it is authenticated via webhook signature
-router.post('/webhooks/actions', async (req, res) => {
+/**
+ * Webhook handler for GitHub Actions events.
+ * Expects raw body (Buffer) for correct HMAC signature verification.
+ * Mounted directly on the app BEFORE express.json() in index.js.
+ */
+export async function actionsWebhookHandler(req, res) {
     try {
-        // Validate Content-Type
-        if (!req.is('application/json') && !req.is('json')) {
-            return errorResponse(res, 415, 'Content-Type must be application/json');
-        }
-
-        // Verify webhook signature if secret is configured
+        // Verify webhook signature against raw body (before JSON parsing)
         const signature = req.headers['x-hub-signature-256'];
         if (!verifyWebhookSignature(req.body, signature)) {
             return errorResponse(res, 401, 'Invalid webhook signature');
         }
 
-        const payload = req.body;
+        // Parse raw body after signature verification
+        let payload;
+        try {
+            payload = JSON.parse(req.body);
+        } catch {
+            return errorResponse(res, 400, 'Invalid JSON payload');
+        }
 
         if (payload.action && payload.workflow_run) {
             if (!payload.repository?.id || !payload.workflow_run?.workflow_id) {
@@ -43,6 +47,6 @@ router.post('/webhooks/actions', async (req, res) => {
         logger.error({ err: error }, 'Webhook processing failed');
         errorResponse(res, 500, 'Webhook processing failed');
     }
-});
+}
 
 export default router;

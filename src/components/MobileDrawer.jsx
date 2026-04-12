@@ -1,8 +1,13 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 export function MobileDrawer({ isOpen, onClose, children, side = 'right' }) {
   const isLeft = side === 'left'
+  const drawerRef = useFocusTrap(isOpen, onClose)
+  useBodyScrollLock(isOpen)
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -19,6 +24,7 @@ export function MobileDrawer({ isOpen, onClose, children, side = 'right' }) {
 
           {/* Drawer */}
           <motion.div
+            ref={drawerRef}
             initial={{ x: isLeft ? '-100%' : '100%' }}
             animate={{ x: 0 }}
             exit={{ x: isLeft ? '-100%' : '100%' }}

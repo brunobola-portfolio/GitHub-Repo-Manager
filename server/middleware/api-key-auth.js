@@ -36,7 +36,11 @@ export function apiKeyAuth(req, res, next) {
     req.session.userId = row.user_id;
     req.tenantId = row.user_id;
     req.apiKeyId = row.id;
-    req.scopes = JSON.parse(row.scopes);
+    try {
+        req.scopes = JSON.parse(row.scopes);
+    } catch {
+        req.scopes = [];
+    }
 
     // Update last_used_at (fire-and-forget)
     db.prepare('UPDATE api_keys SET last_used_at = datetime(\'now\') WHERE id = ?').run(row.id);

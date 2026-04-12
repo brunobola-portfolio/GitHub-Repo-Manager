@@ -282,6 +282,7 @@ export function initDB() {
             )
         `);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at)`);
 
         // Enhanced audit log v2
         db.exec(`
@@ -378,7 +379,6 @@ export function initDB() {
         // Additional optimized indexes for frequent queries
         db.exec(`CREATE INDEX IF NOT EXISTS idx_workflow_runs_repo_created ON workflow_runs(repo_id, created_at DESC)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_team_members_team ON team_members(team_id)`);
-        db.exec(`CREATE INDEX IF NOT EXISTS idx_team_members_team_id ON team_members(team_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_team_members_user_team ON team_members(user_id, team_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_repo_assignments_repo ON repo_assignments(repo_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_repo_metadata_repo ON repo_metadata(repo_id)`);

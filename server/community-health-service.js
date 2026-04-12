@@ -32,14 +32,20 @@ class CommunityHealthService {
             'SECURITY.md', '.github/ISSUE_TEMPLATE', '.github/PULL_REQUEST_TEMPLATE.md'
         ];
 
-        const results = {};
-
-        for (const file of filesToCheck) {
-            try {
+        const settled = await Promise.allSettled(
+            filesToCheck.map(async (file) => {
                 const { data } = await githubApi(`/repos/${owner}/${repo}/contents/${file}`, token);
-                results[file] = { exists: true, size: data.size || 0 };
-            } catch {
-                results[file] = { exists: false, size: 0 };
+                return { file, exists: true, size: data.size || 0 };
+            })
+        );
+
+        const results = {};
+        for (let i = 0; i < filesToCheck.length; i++) {
+            const outcome = settled[i];
+            if (outcome.status === 'fulfilled') {
+                results[filesToCheck[i]] = { exists: true, size: outcome.value.size };
+            } else {
+                results[filesToCheck[i]] = { exists: false, size: 0 };
             }
         }
 

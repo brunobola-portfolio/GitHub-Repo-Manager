@@ -1,8 +1,9 @@
-import { useEffect, useId } from 'react'
+import { useId } from 'react'
 import { X } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import { useMobileKeyboardFix } from '../../hooks/useMobileKeyboardFix'
 import { TabBar } from './TabBar'
 
 const ICON_GRADIENT_CLASSES = {
@@ -90,6 +91,7 @@ export function Modal({
 
     const modalRef = useFocusTrap(isOpen, onClose, { disableEscape })
     useBodyScrollLock(isOpen)
+    useMobileKeyboardFix(isOpen, modalRef)
     const reducedMotion = useReducedMotion()
 
     const reactId = useId()
@@ -104,26 +106,6 @@ export function Modal({
             onClose()
         }
     }
-
-    // Scroll input into view when keyboard appears (mobile fix)
-    useEffect(() => {
-        if (!isOpen) return
-
-        const handleFocus = (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                setTimeout(() => {
-                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                }, 300) // Delay for keyboard animation
-            }
-        }
-
-        const modal = modalRef.current
-        modal?.addEventListener('focusin', handleFocus)
-
-        return () => {
-            modal?.removeEventListener('focusin', handleFocus)
-        }
-    }, [isOpen, modalRef])
 
     return (
         <AnimatePresence>

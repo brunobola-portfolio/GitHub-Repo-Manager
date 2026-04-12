@@ -3,6 +3,7 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import * as azureService from '../azure-service.js';
 import { requireAuth, safeError, errorResponse } from '../middleware/auth.js';
+import { encryptCredentials, decryptCredentials } from '../lib/credential-encryption.js';
 
 const orgListLimiter = rateLimit({
     windowMs: 60 * 1000,
@@ -243,10 +244,11 @@ router.post('/azure/tfvc/items', requireAuth, async (req, res) => {
 // GET /api/azure/organizations — list orgs for the authenticated user (OAuth only)
 router.get('/azure/organizations', requireAuth, orgListLimiter, async (req, res) => {
     try {
-        const token = req.session?.azureToken;
-        if (!token) {
+        const encryptedToken = req.session?.azureToken;
+        if (!encryptedToken) {
             return errorResponse(res, 401, 'OAuth session required — authenticate via OAuth first');
         }
+        const { token } = decryptCredentials(encryptedToken);
         const organizations = await azureService.listOrganizations(token);
         res.json({ organizations });
     } catch (error) {
@@ -325,7 +327,7 @@ router.get('/azure/oauth/callback', async (req, res) => {
         );
         const tokenData = await tokenRes.json();
         if (tokenData.access_token) {
-            req.session.azureToken = tokenData.access_token;
+            req.session.azureToken = encryptCredentials({ token: tokenData.access_token });
             req.session.azureTokenReady = true;
         }
     } catch {

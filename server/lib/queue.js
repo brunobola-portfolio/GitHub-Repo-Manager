@@ -9,6 +9,12 @@ class InMemoryQueue {
         // Execute immediately in-process
         const jobId = `${this.name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         logger.info({ queue: this.name, jobName, jobId }, 'Job queued (in-memory)');
+        const worker = _workers.get(this.name);
+        if (worker?.processor) {
+            worker.processor({ id: jobId, name: jobName, data }).catch(err => {
+                logger.error({ queue: this.name, jobId, err }, 'In-memory job failed');
+            });
+        }
         return { id: jobId, name: jobName, data };
     }
 }
