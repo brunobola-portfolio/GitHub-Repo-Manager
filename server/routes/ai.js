@@ -808,7 +808,7 @@ Rules:
                 const message = parsed.body ? `${parsed.subject}\n\n${parsed.body}` : parsed.subject;
 
                 await incrementUsage(userId, 'ai_queries');
-                auditLog(req, 'ai_generate_commit', 'ai', { format, diff_length: diff.length, streamed: true });
+                auditLog(req, 'ai_generate_commit', 'ai', null, { format, diff_length: diff.length, streamed: true });
 
                 sse.sendDone({ message, subject: parsed.subject, body: parsed.body || '', format_used: format });
             } catch (err) {
@@ -833,7 +833,7 @@ Rules:
             : parsed.subject;
 
         await incrementUsage(userId, 'ai_queries');
-        auditLog(req, 'ai_generate_commit', 'ai', { format, diff_length: diff.length });
+        auditLog(req, 'ai_generate_commit', 'ai', null, { format, diff_length: diff.length });
 
         res.json({
             message,
@@ -919,7 +919,7 @@ Rules:
                 }
 
                 await incrementUsage(userId, 'ai_queries');
-                auditLog(req, 'ai_generate_pr', 'ai', { commit_count: commits.length, streamed: true });
+                auditLog(req, 'ai_generate_pr', 'ai', null, { commit_count: commits.length, streamed: true });
 
                 sse.sendDone({
                     title: parsed.title || '', summary: parsed.summary || '', test_plan: parsed.test_plan || '',
@@ -954,7 +954,7 @@ Rules:
         }
 
         await incrementUsage(userId, 'ai_queries');
-        auditLog(req, 'ai_generate_pr', 'ai', { commit_count: commits.length });
+        auditLog(req, 'ai_generate_pr', 'ai', null, { commit_count: commits.length });
 
         res.json({
             title: parsed.title || '',
@@ -1030,7 +1030,7 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
                 const raw = await streamGeminiToSSE(streamResult, sse);
 
                 await incrementUsage(userId, 'ai_queries');
-                auditLog(req, 'ai_refine', 'ai', { instruction, content_type, streamed: true });
+                auditLog(req, 'ai_refine', 'ai', null, { instruction, content_type, streamed: true });
 
                 sse.sendDone({ refined_content: raw.trim() });
             } catch (err) {
@@ -1045,7 +1045,7 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
         const refined = result.response.text().trim();
 
         await incrementUsage(userId, 'ai_queries');
-        auditLog(req, 'ai_refine', 'ai', { instruction, content_type });
+        auditLog(req, 'ai_refine', 'ai', null, { instruction, content_type });
 
         res.json({ refined_content: refined });
     } catch (error) {
@@ -1184,7 +1184,7 @@ router.post('/ai/chat-refine', requireAuth, requireAI, async (req, res) => {
             const raw = await streamGeminiToSSE(streamResult, sse);
 
             await incrementUsage(userId, 'ai_queries');
-            auditLog(req, 'ai_chat_refine', 'ai', { content_type, message_length: message.length });
+            auditLog(req, 'ai_chat_refine', 'ai', null, { content_type, message_length: message.length });
 
             sse.sendDone({ refined_content: raw.trim() });
         } catch (err) {
