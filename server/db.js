@@ -1,4 +1,3 @@
-import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createDatabaseAdapter } from './lib/db-adapter.js';
@@ -389,16 +388,17 @@ export function initDB() {
 
     transactions();
 
-    // Run incremental migrations
+    // Migration 002: add is_mirror column + index to migration_jobs.
+    // Split into two separate exec() calls so a "duplicate column" error on re-run
+    // does not prevent the CREATE INDEX from executing.
     try {
-        const migrationsDir = join(__dirname, 'migrations');
-        const migration002 = readFileSync(join(migrationsDir, '002-migration-jobs-is-mirror.sql'), 'utf8');
-        db.exec(migration002);
+        db.exec(`ALTER TABLE migration_jobs ADD COLUMN is_mirror INTEGER DEFAULT 0`);
     } catch (err) {
-        // SQLite ALTER TABLE ADD COLUMN is idempotent only if we guard with a check.
-        // If column already exists, we get "duplicate column name" — safe to ignore.
+        // SQLite ALTER TABLE ADD COLUMN is not idempotent; guard against re-runs.
         if (!err.message?.includes('duplicate column')) throw err;
     }
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_migration_jobs_mirror
+             ON migration_jobs(target_owner, target_repo, is_mirror)`);
 
     console.log('SQLite Database initialized successfully');
 }
