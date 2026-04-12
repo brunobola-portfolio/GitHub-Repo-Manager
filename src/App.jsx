@@ -54,6 +54,7 @@ const PRReviewView = lazy(() => import('./components/PRReview/PRReviewView').the
 const BatchIndexProgressModal = lazy(() => import('./components/AI/BatchIndexProgressModal').then(m => ({ default: m.BatchIndexProgressModal })))
 const CompareSimilarDrawer = lazy(() => import('./components/AI/CompareSimilarDrawer').then(m => ({ default: m.CompareSimilarDrawer })))
 const SecurityScanModal = lazy(() => import('./components/security/SecurityScanModal').then(m => ({ default: m.SecurityScanModal })))
+const LicenseActivationModal = lazy(() => import('./components/Settings/LicenseActivationModal').then(m => ({ default: m.LicenseActivationModal })))
 
 // Loading fallback component
 function LoadingFallback() {
@@ -972,6 +973,13 @@ function AppContent() {
           isOpen={modalStates.showSecurityScan}
           onClose={() => closeModal('showSecurityScan')}
           repo={getModalData('showSecurityScan')?.repo}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <LicenseActivationModal
+          isOpen={modalStates.showLicenseActivation}
+          onClose={() => closeModal('showLicenseActivation')}
         />
       </Suspense>
 

@@ -15,6 +15,7 @@ const MODAL_NAMES = [
   'showBatchIndex',
   'showCompare',
   'showSecurityScan',
+  'showLicenseActivation',
 ]
 
 function createClosedState() {
