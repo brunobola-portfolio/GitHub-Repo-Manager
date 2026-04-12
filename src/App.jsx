@@ -52,6 +52,7 @@ const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ d
 const MigrationWizard = lazy(() => import('./components/MigrationWizard/MigrationWizard'))
 const PRReviewView = lazy(() => import('./components/PRReview/PRReviewView').then(m => ({ default: m.PRReviewView })))
 const BatchIndexProgressModal = lazy(() => import('./components/AI/BatchIndexProgressModal').then(m => ({ default: m.BatchIndexProgressModal })))
+const CompareSimilarDrawer = lazy(() => import('./components/AI/CompareSimilarDrawer').then(m => ({ default: m.CompareSimilarDrawer })))
 
 // Loading fallback component
 function LoadingFallback() {
@@ -954,6 +955,14 @@ function AppContent() {
           isOpen={modalStates.showBatchIndex}
           onClose={() => closeModal('showBatchIndex')}
           repos={getModalData('showBatchIndex')?.repos || []}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <CompareSimilarDrawer
+          isOpen={modalStates.showCompare}
+          onClose={() => closeModal('showCompare')}
+          repo={getModalData('showCompare')?.repo}
         />
       </Suspense>
 

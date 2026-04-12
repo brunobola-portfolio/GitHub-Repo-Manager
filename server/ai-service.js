@@ -189,6 +189,51 @@ class AIService {
     }
 
     /**
+     * Find repositories semantically similar to a given repo by its ID.
+     * Queries only repos belonging to the same user (multi-tenancy).
+     *
+     * @param {number|string} repoId - The numeric GitHub repo ID
+     * @param {object} opts
+     * @param {number} opts.topK - Number of results to return (default 5)
+     * @param {boolean} opts.excludeSelf - Exclude the target repo itself (default true)
+     * @param {number} [opts.userId] - Scope to a specific user ID
+     * @returns {Promise<Array|null>} Scored results, or null if repo is not indexed
+     */
+    async findSimilarById(repoId, { topK = 5, excludeSelf = true, userId } = {}) {
+        let row
+        if (userId !== undefined && userId !== null) {
+            row = db.prepare('SELECT embedding FROM repo_embeddings WHERE repo_id = ? AND user_id = ?').get(repoId, userId)
+        } else {
+            row = db.prepare('SELECT embedding FROM repo_embeddings WHERE repo_id = ?').get(repoId)
+        }
+        if (!row) return null
+
+        const targetVec = JSON.parse(row.embedding)
+
+        let others
+        if (userId !== undefined && userId !== null) {
+            others = excludeSelf
+                ? db.prepare('SELECT re.repo_id, re.embedding, rm.topics, rm.summary FROM repo_embeddings re LEFT JOIN repo_metadata rm ON re.repo_id = rm.repo_id AND re.user_id = rm.user_id WHERE re.user_id = ? AND re.repo_id != ?').all(userId, repoId)
+                : db.prepare('SELECT re.repo_id, re.embedding, rm.topics, rm.summary FROM repo_embeddings re LEFT JOIN repo_metadata rm ON re.repo_id = rm.repo_id AND re.user_id = rm.user_id WHERE re.user_id = ?').all(userId)
+        } else {
+            others = excludeSelf
+                ? db.prepare('SELECT re.repo_id, re.embedding, rm.topics, rm.summary FROM repo_embeddings re LEFT JOIN repo_metadata rm ON re.repo_id = rm.repo_id WHERE re.repo_id != ?').all(repoId)
+                : db.prepare('SELECT re.repo_id, re.embedding, rm.topics, rm.summary FROM repo_embeddings re LEFT JOIN repo_metadata rm ON re.repo_id = rm.repo_id').all()
+        }
+
+        const scored = others.map(o => {
+            const vec = JSON.parse(o.embedding)
+            return {
+                repoId: o.repo_id,
+                score: this.cosineSimilarity(targetVec, vec),
+                description: o.summary || ''
+            }
+        })
+
+        return scored.sort((a, b) => b.score - a.score).slice(0, topK)
+    }
+
+    /**
      * Search usage natural language
      * @param {string} query
      * @param {number} limit

@@ -330,6 +330,22 @@ router.post('/ai/index', requireAuth, requireAI, async (req, res) => {
 
 // Semantic Search Endpoint
 router.get('/ai/search', requireAuth, requireAI, async (req, res) => {
+    // --- mode=similar-by-id: cosine similarity lookup by repo ID ---
+    if (req.query.mode === 'similar-by-id') {
+        const repoId = req.query.repoId
+        if (!repoId) return res.status(400).json({ error: 'repoId required' })
+        try {
+            const userId = req.session.userId
+            const similar = await aiService.findSimilarById(repoId, { topK: 5, excludeSelf: true, userId })
+            if (!similar) return res.status(404).json({ error: 'Repository not indexed' })
+            auditLog(req, 'ai.compare', 'ai', repoId, { resultCount: similar.length })
+            return res.json({ mode: 'similar-by-id', similar })
+        } catch (err) {
+            req.log.error({ err }, 'similar-by-id lookup failed')
+            return res.status(500).json({ error: err.message })
+        }
+    }
+
     const { q } = req.query;
     if (!q) return res.json([]);
 

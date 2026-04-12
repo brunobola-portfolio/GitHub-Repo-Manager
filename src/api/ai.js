@@ -239,6 +239,16 @@ export const aiApi = {
         return res.json();
     },
 
+    // Find repos semantically similar to the given repo (by full_name)
+    findSimilar: async (repoId) => {
+        const res = await fetch(`/api/ai/search?mode=similar-by-id&repoId=${encodeURIComponent(repoId)}`, {
+            credentials: 'include'
+        })
+        if (res.status === 404) return { notIndexed: true }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+    },
+
     // Check AI configuration status
     checkStatus: async () => {
         if (MOCK_MODE) {
