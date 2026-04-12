@@ -70,7 +70,7 @@ export function AuditLogSection() {
             const res = await fetch(`${API_BASE_URL}/api/v1/audit?${params}`, { credentials: 'include' })
             if (!res.ok) throw new Error('Failed to load audit log')
             const data = await res.json()
-            setLogs(data.logs || data.items || data || [])
+            setLogs(data.entries || data.logs || data.items || [])
             setTotal(data.total || 0)
         } catch (err) {
             setError(err.message)
@@ -190,7 +190,7 @@ export function AuditLogSection() {
                                             className="border-b border-slate-100 dark:border-slate-700/40 last:border-0 hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors"
                                         >
                                             <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                                                {formatDateTime(log.createdAt || log.timestamp)}
+                                                {formatDateTime(log.created_at || log.createdAt || log.timestamp)}
                                             </td>
                                             <td className="px-4 py-3">
                                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium font-mono ${getActionColor(log.action)}`}>
@@ -198,13 +198,13 @@ export function AuditLogSection() {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300">
-                                                {log.resourceType || '—'}
+                                                {log.resource_type || log.resourceType || '—'}
                                             </td>
                                             <td className="px-4 py-3 text-xs font-mono text-slate-500 dark:text-slate-400 max-w-[160px] truncate">
-                                                {log.resourceId || '—'}
+                                                {log.resource_id || log.resourceId || '—'}
                                             </td>
                                             <td className="px-4 py-3 text-xs font-mono text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                                                {log.ipAddress || log.ip || '—'}
+                                                {log.ip_address || log.ipAddress || log.ip || '—'}
                                             </td>
                                         </motion.tr>
                                     ))
