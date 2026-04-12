@@ -534,6 +534,9 @@ export function RepoList({
 							case 'aiBatchIndex_selected':
 								openModalWithData('showBatchIndex', { repos: data })
 								break
+							case 'aiSecurity':
+								openModalWithData('showSecurityScan', { repo: data })
+								break
 							case 'exportMeta':
 								try {
 									const result = await reposApi.exportMetadata(data.owner.login, data.name)

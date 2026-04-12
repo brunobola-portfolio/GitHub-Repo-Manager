@@ -53,6 +53,7 @@ const MigrationWizard = lazy(() => import('./components/MigrationWizard/Migratio
 const PRReviewView = lazy(() => import('./components/PRReview/PRReviewView').then(m => ({ default: m.PRReviewView })))
 const BatchIndexProgressModal = lazy(() => import('./components/AI/BatchIndexProgressModal').then(m => ({ default: m.BatchIndexProgressModal })))
 const CompareSimilarDrawer = lazy(() => import('./components/AI/CompareSimilarDrawer').then(m => ({ default: m.CompareSimilarDrawer })))
+const SecurityScanModal = lazy(() => import('./components/security/SecurityScanModal').then(m => ({ default: m.SecurityScanModal })))
 
 // Loading fallback component
 function LoadingFallback() {
@@ -963,6 +964,14 @@ function AppContent() {
           isOpen={modalStates.showCompare}
           onClose={() => closeModal('showCompare')}
           repo={getModalData('showCompare')?.repo}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <SecurityScanModal
+          isOpen={modalStates.showSecurityScan}
+          onClose={() => closeModal('showSecurityScan')}
+          repo={getModalData('showSecurityScan')?.repo}
         />
       </Suspense>
 

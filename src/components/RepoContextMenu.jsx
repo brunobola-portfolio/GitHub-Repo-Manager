@@ -2,7 +2,7 @@ import { memo } from 'react'
 import ContextMenu from './ui/ContextMenu'
 import {
 	ExternalLink, Copy, Settings, Rocket, Sparkles, Package,
-	Lock, Unlock, Archive, Trash2, RefreshCw, Wand2, GitCompare
+	Lock, Unlock, Archive, Trash2, RefreshCw, Wand2, GitCompare, Shield
 } from 'lucide-react'
 
 /**
@@ -64,12 +64,7 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 				{ label: 'Quality Report', onClick: () => onAction('aiQuality', repo) },
 				{ label: 'Suggest Name & Description', onClick: () => onAction('aiSuggest', repo) },
 				{ label: 'Compare with Existing', icon: GitCompare, onClick: () => onAction('aiCompare', repo) },
-				{
-					label: 'Security / Secrets Scan',
-					disabled: true,
-					tooltip: 'Coming soon — credential & vulnerability scanning',
-					onClick: () => onAction('aiSecurity', repo)
-				}
+				{ label: 'Security / Secrets Scan', icon: Shield, onClick: () => onAction('aiSecurity', repo) }
 			]
 		},
 		{

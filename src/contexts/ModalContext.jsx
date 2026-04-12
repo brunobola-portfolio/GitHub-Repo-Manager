@@ -14,6 +14,7 @@ const MODAL_NAMES = [
   'showConfirm',
   'showBatchIndex',
   'showCompare',
+  'showSecurityScan',
 ]
 
 function createClosedState() {
