@@ -162,7 +162,7 @@ GitHub Repo Manager integrates **Google Gemini AI** to supercharge your workflow
 | **Project Classification** | Auto-detect project type (library, app, tool, etc.) |
 | **Semantic Search** | Find repos using natural language via vector embeddings |
 | **Commit Generator** | AI-powered conventional commit messages from diffs |
-| **Migration Risk Analysis** | Gemini-powered risk assessment before migrations |
+| **AI Review Step** | Gemini-powered risk assessment embedded in the migration wizard |
 | **Batch Indexing** | Index up to 10 repos at once for semantic search |
 
 > **Free to use**: Gemini AI has a generous free tier. Without an API key, the app works perfectly with mock AI responses.
@@ -394,7 +394,7 @@ Real examples of what the AI can do for your repositories:
 |------|-----|--------------|
 | **Find repos without CI** | Type "repos without CI/CD" in search | Filtered list with setup recommendations |
 | **Generate documentation** | Click "Generate README" on any repo | Professional README based on project structure |
-| **Assess migration risk** | AI Review step in migration wizard | Risk report with severity levels and mitigation plan |
+| **Assess migration risk** | AI Review step inside the migration wizard | Risk report with severity levels and mitigation plan |
 | **Check repo quality** | Click "Analyze" on any repository | Score 0-100 across docs, community, engineering, polish |
 | **Find similar projects** | Search "repos like my-api-service" | Embedding-based similarity results across all your repos |
 | **Write commit messages** | Open commit generator with a diff | Conventional commit message matching your changes |
@@ -530,7 +530,7 @@ A: No! Demo mode works without any accounts. Real mode requires GitHub OAuth.
 A: Yes. Encrypted session cookies, server-side token storage, parameterized SQL, and all data stays on your machine.
 
 **Q: Can I use this with GitHub Enterprise?**
-A: Not yet — it's on the roadmap. See [Roadmap](#roadmap) for details.
+A: Not yet — it's planned for a later release. See [ROADMAP.md](ROADMAP.md) for details.
 
 **Q: Does this work offline?**
 A: The UI works offline with cached data. Live features require internet.
@@ -567,46 +567,23 @@ A: No. Source repos are never modified. Use dry-run mode to test first.
 
 ---
 
+## Recently Shipped (March–April 2026)
+
+- **Context Menu Completeness** — Dry-Run simulation, Export Metadata (JSON), Sync Repository for mirrored repos
+- **Toast Context Provider** — unified notification system across all components
+- **License Mint Automation** — GitHub Actions workflow for distributing license keys
+- **License Badge** — active tier display with Ed25519-signed JWT keys
+- **PR Review Experience** — file tree, diff viewer, AI insights, conversation threads
+- **Modal System Redesign** — shared Modal primitive with body scroll lock
+- **Health Dashboard Premium** — tabbed organization with visual polish
+- **Landing Page** — hero, features, CTA sections
+- **Rate Limit UX** — friendly notices with dev-mode exemption
+- **RepoDetail Actions Tab** — GitHub Actions workflows + runs view
+- **Pricing + Roadmap pages** — honest tier matrix and public roadmap
+
 ## Roadmap
 
-### v2.0 (Q1 2026) — Completed
-
-- [x] CI/CD Integration (view and trigger GitHub Actions)
-- [x] Community Health Metrics (0-100 scoring)
-- [x] Security Hardening (Helmet, rate limiting, input validation, ETag caching)
-- [x] Accessibility (focus traps, keyboard nav, ARIA, touch-optimized)
-- [x] Mobile Responsiveness (adaptive layouts, touch-friendly actions)
-
-### v2.5 (Q1 2026) — Completed
-
-- [x] Azure DevOps Migration Suite (Git, TFVC, Work Items, Wikis)
-- [x] Migration Wizard (8-step guided flow)
-- [x] AI-Assisted Migration Planning (risk analysis, recommendations)
-- [x] Migration Scheduling (encrypted credentials, off-peak execution)
-- [x] Pause/Resume and Task Retry
-- [x] Smart URL Parser (6+ Azure DevOps URL formats)
-- [x] TFVC-to-Git Conversion (automatic, with fallback)
-
-### v3.0 — Platform Edition (In Progress)
-
-- [x] Docker & Docker Compose support (self-host in one command)
-- [x] Database abstraction (SQLite + PostgreSQL)
-- [x] Redis sessions & job queues for horizontal scaling
-- [x] Multi-tenancy with data isolation
-- [x] API versioning (`/api/v1/`)
-- [x] API key authentication with scoped permissions
-- [x] Audit logging with searchable API
-- [x] Self-hosted and cloud deployment options
-- [x] Error tracking and monitoring
-- [x] AGPL v3 open-core licensing with commercial option
-
-### Future (v3.x+)
-
-- [ ] Multi-platform migration: GitLab, Bitbucket source support
-- [ ] GitHub Enterprise Server support
-- [ ] Plugin/extension system for community contributions
-- [ ] Advanced analytics: commit heatmaps, contributor insights, dependency graphs
-- [ ] Custom AI model selection (OpenAI, Claude, local models)
+See [ROADMAP.md](ROADMAP.md) or the in-app `/roadmap` page for what's next. Every feature on the Pricing page works today; upcoming items are honestly scoped as **Shipping Now** / **Next** / **Later**.
 
 ---
 
