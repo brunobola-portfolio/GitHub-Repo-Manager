@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
+import { EmptyState } from '../ui/EmptyState'
 import { Tag, Plus, Trash2, Loader2, ExternalLink, CheckCircle2, XCircle, Package } from 'lucide-react'
 
 export function ReleasesTab({ owner, repo, api }) {
@@ -163,7 +164,11 @@ export function ReleasesTab({ owner, repo, api }) {
                     </Card>
                 ))}
                 {releases.length === 0 && (
-                    <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-8">No releases yet</p>
+                    <EmptyState
+                        icon={Tag}
+                        title="No releases yet"
+                        description="This repository hasn't published any releases."
+                    />
                 )}
             </div>
 

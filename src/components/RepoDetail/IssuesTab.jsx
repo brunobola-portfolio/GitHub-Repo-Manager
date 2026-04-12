@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
+import { EmptyState } from '../ui/EmptyState'
 import { CircleDot, Plus, Loader2, CheckCircle2, XCircle, MessageSquare, ExternalLink } from 'lucide-react'
 import { IssueDetailPanel } from './IssueDetailPanel'
 
@@ -193,7 +194,11 @@ export function IssuesTab({ owner, repo, api }) {
                         </Card>
                     ))}
                     {issues.length === 0 && (
-                        <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-8">No {filter !== 'all' ? filter : ''} issues</p>
+                        <EmptyState
+                            icon={CircleDot}
+                            title="No open issues"
+                            description="This repository has no open issues right now."
+                        />
                     )}
                 </div>
             )}

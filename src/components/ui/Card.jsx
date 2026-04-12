@@ -14,7 +14,7 @@ export function Card({ children, className, hover = false, glass = true, ref, ..
             // Smooth transitions
             'overflow-hidden transition-all duration-300',
             // Hover effects
-            hover && 'hover:shadow-xl hover:shadow-slate-300/50 dark:hover:shadow-black/60 hover:border-slate-300/80 dark:hover:border-slate-600/60 hover:-translate-y-1',
+            hover && 'ds-hover-lift cursor-pointer ds-card-shimmer',
             className
         )}>
             {children}

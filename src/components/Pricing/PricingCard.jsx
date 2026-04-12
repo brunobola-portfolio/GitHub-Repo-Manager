@@ -5,6 +5,7 @@ import { usePricingCardHover, PricingCardHoverLayers } from '@/hooks/usePricingC
 export function PricingCard({
   tier,
   price,
+  customPrice,
   originalPrice,
   period,
   features = [],
@@ -95,7 +96,7 @@ export function PricingCard({
       <div
         className={`relative flex flex-col h-full rounded-2xl p-7 ds-card-shimmer overflow-hidden transition-shadow duration-300
           ${highlighted
-            ? 'bg-slate-900 dark:bg-slate-900 border border-transparent shadow-2xl shadow-indigo-500/25 hover:shadow-violet-500/40'
+            ? 'bg-slate-900 dark:bg-slate-900 border border-transparent shadow-2xl shadow-indigo-500/25 hover:shadow-violet-500/40 ds-border-glow'
             : enterprise
               ? 'bg-white dark:bg-slate-950 border border-transparent shadow-xl shadow-amber-500/10 hover:shadow-amber-500/30'
               : 'bg-white/60 dark:bg-white/[0.04] backdrop-blur-xl border border-slate-200/60 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.15] hover:shadow-indigo-500/20 hover:shadow-xl'
@@ -147,7 +148,7 @@ export function PricingCard({
                 WebkitTextFillColor: 'transparent',
               } : undefined}
             >
-              {price === 0 ? 'Free' : `$${price}`}
+              {customPrice != null ? customPrice : price === 0 ? 'Free' : `$${price}`}
             </span>
             {price > 0 && (
               <span className={`text-sm font-medium mb-1 ${highlighted ? 'text-slate-400' : 'text-slate-400 dark:text-slate-500'}`}>
@@ -156,12 +157,17 @@ export function PricingCard({
             )}
           </div>
 
-          {price === 0 && (
+          {customPrice != null && (
+            <p className={`text-sm mb-6 ${highlighted ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
+              Volume pricing — contact us
+            </p>
+          )}
+          {customPrice == null && price === 0 && (
             <p className={`text-sm mb-6 ${highlighted ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
               No credit card required
             </p>
           )}
-          {price > 0 && (
+          {customPrice == null && price > 0 && (
             <p className={`text-sm mb-6 ${highlighted ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
               {period === 'year'
                 ? `$${price * 12}/year \u00b7 Save 20%`

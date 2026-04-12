@@ -9,16 +9,24 @@ const CATEGORIES = [
     name: 'Repository Management',
     rows: [
       {
-        feature: 'Repositories',
-        values: ['20', 'Unlimited', 'Unlimited'],
+        feature: 'Repositories managed',
+        values: ['50', 'Unlimited', 'Unlimited'],
       },
       {
         feature: 'API keys',
-        values: ['1', '5', '20'],
+        values: ['2', '10', '50'],
       },
       {
-        feature: 'Bulk operations',
+        feature: 'Basic bulk on own repos',
         values: [true, true, true],
+      },
+      {
+        feature: 'Advanced bulk (transfer, mirror, cross-org)',
+        values: [false, true, true],
+      },
+      {
+        feature: 'Sync Repository (mirror sync)',
+        values: [false, true, true],
       },
     ],
   },
@@ -27,15 +35,31 @@ const CATEGORIES = [
     rows: [
       {
         feature: 'AI queries / month',
-        values: ['50', '500', 'Unlimited'],
+        values: ['100', '2,000', 'Unlimited'],
       },
       {
-        feature: 'Semantic search',
+        feature: 'Semantic Search',
         values: [false, true, true],
       },
       {
-        feature: 'AI migration planner',
+        feature: 'AI Assistant (conversational)',
         values: [false, true, true],
+      },
+      {
+        feature: 'Migration Risk Analysis (AI)',
+        values: [false, true, true],
+      },
+      {
+        feature: 'Repo Insights / Quality Report',
+        values: ['5 / month', 'Unlimited', 'Unlimited'],
+      },
+      {
+        feature: 'README Generator (AI)',
+        values: ['3 / month', 'Unlimited', 'Unlimited'],
+      },
+      {
+        feature: 'Commit Generator (AI)',
+        values: ['20 / month', 'Unlimited', 'Unlimited'],
       },
     ],
   },
@@ -43,20 +67,33 @@ const CATEGORIES = [
     name: 'Migration',
     rows: [
       {
-        feature: 'Import from Git URLs',
+        feature: 'Dry-Run migration (simulate)',
         values: [true, true, true],
       },
       {
-        feature: 'Azure DevOps migration',
-        values: [false, 'Basic', 'Full'],
+        feature: 'Export Metadata (JSON)',
+        values: [true, true, true],
       },
       {
-        feature: 'GitLab migration',
-        values: [false, false, true],
+        feature: 'Azure DevOps Cloud migration',
+        values: [false, true, true],
+      },
+    ],
+  },
+  {
+    name: 'Community & Insights',
+    rows: [
+      {
+        feature: 'Community Health Dashboard',
+        values: [true, true, true],
       },
       {
-        feature: 'TFVC → Git conversion',
-        values: [false, false, true],
+        feature: 'Basic Search & Filters',
+        values: [true, true, true],
+      },
+      {
+        feature: 'PR Review Experience',
+        values: [false, true, true],
       },
     ],
   },
@@ -64,16 +101,8 @@ const CATEGORIES = [
     name: 'Teams',
     rows: [
       {
-        feature: 'Team management',
-        values: [false, '3 members', 'Unlimited'],
-      },
-      {
-        feature: 'Role-based access control',
-        values: [false, true, true],
-      },
-      {
-        feature: 'Org-level policies',
-        values: [false, false, true],
+        feature: 'Team collaboration',
+        values: [false, '15 members', 'Unlimited'],
       },
     ],
   },
@@ -81,20 +110,8 @@ const CATEGORIES = [
     name: 'Security & Compliance',
     rows: [
       {
-        feature: 'Audit log',
+        feature: 'Audit Logs',
         values: [false, false, true],
-      },
-      {
-        feature: 'Audit log export',
-        values: [false, false, true],
-      },
-      {
-        feature: 'SSO / SAML',
-        values: [false, false, true],
-      },
-      {
-        feature: 'Webhook signature verification',
-        values: [false, true, true],
       },
     ],
   },
@@ -103,11 +120,7 @@ const CATEGORIES = [
     rows: [
       {
         feature: 'Support level',
-        values: ['Community', 'Email', 'Priority'],
-      },
-      {
-        feature: 'SLA guarantee',
-        values: [false, false, true],
+        values: ['Community', 'Email', 'Priority + SLA'],
       },
     ],
   },

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
+import { EmptyState } from '../ui/EmptyState'
 import { GitBranch, Shield, Trash2, Plus, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 
 export function BranchesTab({ owner, repo, api }) {
@@ -140,7 +141,11 @@ export function BranchesTab({ owner, repo, api }) {
                     </Card>
                 ))}
                 {branches.length === 0 && (
-                    <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-8">No branches found</p>
+                    <EmptyState
+                        icon={GitBranch}
+                        title="No branches"
+                        description="This repository has no branches to display."
+                    />
                 )}
             </div>
 
