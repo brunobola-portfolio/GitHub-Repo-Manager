@@ -218,6 +218,18 @@ router.post('/mirror', requireAuth, validate(bulkMirrorSchema), async (req, res)
                 body: JSON.stringify({ organization: toOrg })
             });
             results.push({ repo: repoFullName, success: true, mirrorUrl: data.html_url });
+            db.prepare(`
+                INSERT INTO migration_jobs
+                  (user_id, source_type, source_url, source_name, target_owner, target_repo, target_full_name, status, is_mirror, completed_at)
+                VALUES (?, 'github-mirror', ?, ?, ?, ?, ?, 'completed', 1, CURRENT_TIMESTAMP)
+            `).run(
+                req.session.userId,
+                `https://github.com/${repoFullName}`,
+                repoFullName,
+                toOrg,
+                data.name,
+                data.full_name
+            );
         } catch (error) {
             results.push({ repo: repoFullName, success: false, error: safeError(error, 'Operation failed') });
         }

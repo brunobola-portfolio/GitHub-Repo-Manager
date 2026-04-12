@@ -1,4 +1,9 @@
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { createDatabaseAdapter } from './lib/db-adapter.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ---------------------------------------------------------------------------
 // Initialise the database adapter.
@@ -383,6 +388,18 @@ export function initDB() {
     });
 
     transactions();
+
+    // Run incremental migrations
+    try {
+        const migrationsDir = join(__dirname, 'migrations');
+        const migration002 = readFileSync(join(migrationsDir, '002-migration-jobs-is-mirror.sql'), 'utf8');
+        db.exec(migration002);
+    } catch (err) {
+        // SQLite ALTER TABLE ADD COLUMN is idempotent only if we guard with a check.
+        // If column already exists, we get "duplicate column name" — safe to ignore.
+        if (!err.message?.includes('duplicate column')) throw err;
+    }
+
     console.log('SQLite Database initialized successfully');
 }
 
