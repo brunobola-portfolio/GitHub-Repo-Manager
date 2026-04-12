@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
-import { Loader2, FileText, BookOpen } from 'lucide-react'
+import { Loader2, FileText, BookOpen, Sparkles } from 'lucide-react'
+import { useModal } from '../../hooks/useModal'
 
 export function OverviewTab({ owner, repo, api, repoData }) {
+    const { openModalWithData } = useModal()
     const [readme, setReadme] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -35,6 +37,17 @@ export function OverviewTab({ owner, repo, api, repoData }) {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* AI Insights entry point */}
+            <div className="lg:col-span-3">
+                <button
+                    onClick={() => openModalWithData('showRepoInsights', { repo: repoData, initialTab: 'quality' })}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 ds-btn-shimmer ds-focus-ring transition"
+                >
+                    <Sparkles className="w-4 h-4" />
+                    View AI Insights
+                </button>
+            </div>
+
             {/* README */}
             <div className="lg:col-span-2">
                 <Card className="p-6">
