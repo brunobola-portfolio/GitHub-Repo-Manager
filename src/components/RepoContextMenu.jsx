@@ -3,7 +3,8 @@ import ContextMenu from './ui/ContextMenu'
 import {
 	ExternalLink, Copy, Settings, Rocket, Sparkles, Package,
 	Lock, Unlock, Archive, Trash2, RefreshCw, Wand2, GitCompare, Shield,
-	BarChart3, Lightbulb, ArrowRightLeft, GitFork, Download, Upload, History, FlaskConical
+	BarChart3, Lightbulb, ArrowRightLeft, GitFork, Download, Upload, History, FlaskConical,
+	Globe, KeyRound, Terminal
 } from 'lucide-react'
 
 /**
@@ -34,9 +35,9 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 			label: 'Copy Clone URL',
 			icon: Copy,
 			children: [
-				{ label: 'HTTPS', onClick: () => copyToClipboard(repo.clone_url) },
-				{ label: 'SSH', onClick: () => copyToClipboard(repo.ssh_url) },
-				{ label: 'GitHub CLI', onClick: () => copyToClipboard(`gh repo clone ${repo.full_name}`) }
+				{ label: 'HTTPS', icon: Globe, onClick: () => copyToClipboard(repo.clone_url) },
+				{ label: 'SSH', icon: KeyRound, onClick: () => copyToClipboard(repo.ssh_url) },
+				{ label: 'GitHub CLI', icon: Terminal, onClick: () => copyToClipboard(`gh repo clone ${repo.full_name}`) }
 			]
 		},
 		{
