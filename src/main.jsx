@@ -15,7 +15,7 @@ import './design-system.css'
 import App from './App.jsx'
 import { ThemeProvider } from './hooks/useTheme.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
-import { ToastProvider } from './contexts/ToastContext.jsx'
+import { ToastProvider } from './contexts/ToastProvider.jsx'
 
 if (import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
