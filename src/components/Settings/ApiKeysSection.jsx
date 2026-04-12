@@ -304,7 +304,7 @@ export function ApiKeysSection() {
             const res = await fetch(`${API_BASE_URL}/api/v1/api-keys`, { credentials: 'include' })
             if (!res.ok) throw new Error('Failed to load API keys')
             const data = await res.json()
-            setKeys(data.keys || data || [])
+            setKeys(Array.isArray(data) ? data : Array.isArray(data?.keys) ? data.keys : [])
         } catch (err) {
             setError(err.message)
         } finally {
