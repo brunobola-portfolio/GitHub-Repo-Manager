@@ -8,7 +8,7 @@ import db from './db.js';
  * @param {number} maxLen
  * @returns {string}
  */
-function sanitizeForPrompt(text, maxLen = 5000) {
+export function sanitizeForPrompt(text, maxLen = 5000) {
     if (!text) return '';
     const cleaned = String(text).replace(/\0/g, '');
     return cleaned.slice(0, maxLen);

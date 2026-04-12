@@ -22,6 +22,10 @@ vi.mock('../middleware/auth.js', () => ({
   safeError: (err, fallback) => err?.message || fallback
 }))
 
+vi.mock('../middleware/require-tier.js', () => ({
+  requireTier: () => (req, res, next) => next(),
+}))
+
 vi.mock('../lib/usage-meter.js', () => ({
   checkUsageLimit: () => ({ allowed: true, current: 0, limit: 100, remaining: 100 }),
   incrementUsage: vi.fn()

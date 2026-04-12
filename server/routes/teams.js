@@ -4,6 +4,7 @@ import { githubApi } from '../lib/github-api.js';
 import { requireAuth, safeError, errorResponse } from '../middleware/auth.js';
 import { validate, teamCreateSchema, teamMemberSchema, teamRepoSchema } from '../lib/validators.js';
 import { auditLog } from '../lib/audit.js';
+import { getFeatures } from '../lib/feature-flags.js';
 
 const router = express.Router();
 
@@ -136,6 +137,15 @@ router.post('/:id/members', requireAuth, validate(teamMemberSchema), async (req,
         // Check Admin/Owner permission
         const membership = db.prepare('SELECT role FROM team_members WHERE team_id = ? AND user_id = ?').get(req.params.id, req.session.userId);
         if (!membership || membership.role === 'member') return errorResponse(res, 403, 'Admin access required', 'FORBIDDEN');
+
+        // Enforce tier teamMembersMax limit
+        const userTier = req.session.user?.tier || req.userTier || 'free';
+        const flags = getFeatures(userTier);
+        const max = flags.teamMembersMax;
+        const currentCount = db.prepare('SELECT COUNT(*) as n FROM team_members WHERE team_id = ?').get(req.params.id).n;
+        if (max !== undefined && max !== Infinity && currentCount >= max) {
+            return errorResponse(res, 403, `Team member limit reached (${max}). Upgrade to Enterprise for unlimited members.`, 'tier_limit_exceeded');
+        }
 
         // Check if user exists in our local DB
         // If not, we could search GitHub and add to cache, but for now strict local check or partial add
