@@ -16,6 +16,11 @@ function UsageBar({ label, current, limit }) {
       {!isInf && (
         <div className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
           <div
+            role="progressbar"
+            aria-valuenow={current}
+            aria-valuemin={0}
+            aria-valuemax={limit}
+            aria-label={`${label} usage`}
             className={`h-full rounded-full transition-all ${pct > 80 ? 'bg-red-500' : pct > 60 ? 'bg-amber-500' : 'bg-indigo-500'}`}
             style={{ width: `${pct}%` }}
           />

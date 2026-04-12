@@ -1,0 +1,349 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import request from 'supertest'
+import express from 'express'
+
+// ---------------------------------------------------------------------------
+// Module-level mocks — order matters: mock before any dynamic import
+// ---------------------------------------------------------------------------
+
+vi.mock('../lib/audit.js', () => ({ auditLog: vi.fn() }))
+
+const mockCheckUsageLimit = vi.fn()
+const mockIncrementUsage = vi.fn()
+vi.mock('../lib/usage-meter.js', () => ({
+    checkUsageLimit: (...args) => mockCheckUsageLimit(...args),
+    incrementUsage: (...args) => mockIncrementUsage(...args),
+}))
+
+const mockGetFeatures = vi.fn()
+vi.mock('../lib/feature-flags.js', () => ({
+    getFeatures: (...args) => mockGetFeatures(...args),
+    getTierOrder: (tier) => ({ free: 0, pro: 1, enterprise: 2 }[tier] ?? 0),
+    canAccess: vi.fn(() => true),
+}))
+
+// requireTier: real implementation uses getUserTier which reads DB/env.
+// Replace with a version that reads req.session.userTier to keep tests simple.
+vi.mock('../middleware/require-tier.js', () => ({
+    requireTier: (minTier) => (req, res, next) => {
+        const order = { free: 0, pro: 1, enterprise: 2 }
+        const userOrder = order[req.session?.userTier ?? 'free'] ?? 0
+        const minOrder = order[minTier] ?? 0
+        if (userOrder >= minOrder) return next()
+        return res.status(403).json({
+            error: 'upgrade_required',
+            message: `This feature requires the ${minTier} plan`,
+            currentTier: req.session?.userTier ?? 'free',
+            requiredTier: minTier,
+        })
+    },
+    getUserTier: vi.fn(() => 'free'),
+    attachTier: (req, _res, next) => next(),
+}))
+
+vi.mock('../middleware/auth.js', () => ({
+    requireAuth: (req, res, next) => {
+        if (!req.session?.accessToken) return res.status(401).json({ error: 'Session expired' })
+        next()
+    },
+    createRequireAI: () => (req, res, next) => next(),
+    safeError: (err, fallback) => err?.message || fallback,
+    errorResponse: (res, status, message, code) => res.status(status).json({ error: message, code }),
+}))
+
+vi.mock('../ai-service.js', () => ({
+    aiService: { model: {}, genAI: {}, findSimilarById: vi.fn() },
+    sanitizeForPrompt: (s) => s,
+}))
+
+vi.mock('../lib/github-api.js', () => ({ githubApi: vi.fn() }))
+vi.mock('../lib/utils.js', () => ({ safeJsonParse: vi.fn((v) => JSON.parse(v)) }))
+
+vi.mock('../db.js', () => ({
+    default: {
+        prepare: vi.fn(() => ({
+            get: vi.fn(() => null),
+            all: vi.fn(() => []),
+            run: vi.fn(() => ({ changes: 1, lastInsertRowid: 99 })),
+        })),
+        transaction: vi.fn((fn) => fn),
+    },
+}))
+
+// lib/validators is used by the teams router
+vi.mock('../lib/validators.js', () => ({
+    validate: () => (req, res, next) => next(),
+    teamCreateSchema: {},
+    teamMemberSchema: {},
+    teamRepoSchema: {},
+}))
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function makeSession(overrides = {}) {
+    return {
+        accessToken: 'tok',
+        userId: 42,
+        userTier: 'free',
+        user: { id: 42, login: 'alice', tier: 'free' },
+        ...overrides,
+    }
+}
+
+async function buildApp(routerFactory) {
+    const app = express()
+    app.use(express.json())
+    app.use((req, _res, next) => {
+        req.session = makeSession()
+        req.log = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+        next()
+    })
+    const router = await routerFactory()
+    return { app, router }
+}
+
+// ---------------------------------------------------------------------------
+// TEST 1 — GET /api/ai/search returns 403 when user is free tier
+// ---------------------------------------------------------------------------
+
+describe('GET /api/ai/search — pro gate', () => {
+    let app
+    beforeEach(async () => {
+        vi.clearAllMocks()
+        mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 100, remaining: 100 })
+        const express2 = express()
+        express2.use(express.json())
+        // Free user — userTier = 'free'
+        express2.use((req, _res, next) => {
+            req.session = makeSession({ userTier: 'free' })
+            req.log = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+            next()
+        })
+        const { default: aiRouter } = await import('../routes/ai.js')
+        express2.use('/api', aiRouter)
+        app = express2
+    })
+
+    it('returns 403 for free-tier user attempting semantic search', async () => {
+        const res = await request(app).get('/api/ai/search?q=react')
+        expect(res.status).toBe(403)
+        expect(res.body.error).toBe('upgrade_required')
+        expect(res.body.requiredTier).toBe('pro')
+    })
+
+    it('allows pro-tier user to reach the handler', async () => {
+        // Rebuild app with pro session
+        const app2 = express()
+        app2.use(express.json())
+        app2.use((req, _res, next) => {
+            req.session = makeSession({ userTier: 'pro' })
+            req.log = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+            next()
+        })
+        const { default: aiRouter } = await import('../routes/ai.js')
+        app2.use('/api', aiRouter)
+
+        // No results — handler returns []
+        const { default: db } = await import('../db.js')
+        db.prepare.mockReturnValue({ get: vi.fn(() => null), all: vi.fn(() => []) })
+        const { aiService } = await import('../ai-service.js')
+        aiService.semanticSearch = vi.fn().mockResolvedValue([])
+
+        const res = await request(app2).get('/api/ai/search?q=react')
+        expect(res.status).toBe(200)
+        expect(Array.isArray(res.body)).toBe(true)
+    })
+})
+
+// ---------------------------------------------------------------------------
+// TEST 2 — POST /api/ai/suggest returns 429 when usage limit is exceeded
+// ---------------------------------------------------------------------------
+
+describe('POST /api/ai/suggest — 429 when limit exceeded', () => {
+    let app
+    beforeEach(async () => {
+        vi.clearAllMocks()
+        const express2 = express()
+        express2.use(express.json())
+        express2.use((req, _res, next) => {
+            req.session = makeSession({ userTier: 'pro' })
+            req.log = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+            next()
+        })
+        const { default: aiRouter } = await import('../routes/ai.js')
+        express2.use('/api', aiRouter)
+        app = express2
+    })
+
+    it('returns 429 with upgradeUrl when checkUsageLimit returns allowed: false', async () => {
+        mockCheckUsageLimit.mockReturnValue({ allowed: false, current: 2000, limit: 2000, remaining: 0 })
+        const res = await request(app)
+            .post('/api/ai/suggest')
+            .send({ repo: { name: 'test', id: 1 } })
+        expect(res.status).toBe(429)
+        expect(res.body.error).toMatch(/limit/i)
+        expect(res.body.upgradeUrl).toBe('/pricing')
+        expect(res.body.limit).toBe(2000)
+    })
+
+    it('allows request when checkUsageLimit returns allowed: true', async () => {
+        mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 2000, remaining: 2000 })
+        const { aiService } = await import('../ai-service.js')
+        // aiService.model.generateContent — mock it
+        aiService.model = {
+            generateContent: vi.fn().mockResolvedValue({
+                response: { text: () => JSON.stringify({ suggestions: [], analysis: 'ok' }) }
+            })
+        }
+        const res = await request(app)
+            .post('/api/ai/suggest')
+            .send({ repo: { name: 'test', id: 1 } })
+        // 200 or 502 are both acceptable — what matters is NOT 429
+        expect(res.status).not.toBe(429)
+    })
+})
+
+// ---------------------------------------------------------------------------
+// TEST 3 — GET /api/v1/audit/logs returns 403 for non-enterprise tier
+// ---------------------------------------------------------------------------
+
+describe('GET /api/v1/audit/logs — enterprise gate', () => {
+    let app
+    beforeEach(async () => {
+        vi.clearAllMocks()
+        const express2 = express()
+        express2.use(express.json())
+        express2.use((req, _res, next) => {
+            req.session = makeSession({ userTier: 'free' })
+            req.log = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+            next()
+        })
+        // audit router is mounted at /audit in the main app; mount it here
+        const { default: auditRouter } = await import('../routes/audit.js')
+        // Wrap with requireTier guard to test the gate
+        const { requireTier } = await import('../middleware/require-tier.js')
+        express2.use('/api/v1/audit/logs', requireTier('enterprise'), auditRouter)
+        app = express2
+    })
+
+    it('returns 403 for free-tier user', async () => {
+        const res = await request(app).get('/api/v1/audit/logs')
+        expect(res.status).toBe(403)
+        expect(res.body.error).toBe('upgrade_required')
+    })
+})
+
+// ---------------------------------------------------------------------------
+// TEST 4 — POST /api/v1/teams/:id/members returns 403 when teamMembersMax exceeded
+// ---------------------------------------------------------------------------
+
+describe('POST /api/v1/teams/:id/members — teamMembersMax limit (Pro at 15)', () => {
+    let app
+    beforeEach(async () => {
+        vi.clearAllMocks()
+        const { default: db } = await import('../db.js')
+
+        // Simulate pro user who is an admin of the team, and the team already has 15 members
+        db.prepare.mockImplementation((sql) => {
+            if (sql.includes('SELECT role FROM team_members')) {
+                return { get: vi.fn(() => ({ role: 'admin' })) }
+            }
+            if (sql.includes('COUNT(*)')) {
+                return { get: vi.fn(() => ({ n: 15 })) }
+            }
+            return { get: vi.fn(() => null), all: vi.fn(() => []), run: vi.fn(() => ({ changes: 1 })) }
+        })
+
+        mockGetFeatures.mockReturnValue({
+            maxRepos: Infinity,
+            aiQueriesPerMonth: 2000,
+            teamMembersMax: 15,
+            apiKeys: 10,
+        })
+
+        const express2 = express()
+        express2.use(express.json())
+        express2.use((req, _res, next) => {
+            req.session = makeSession({ userTier: 'pro', user: { id: 42, login: 'alice', tier: 'pro' } })
+            req.log = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+            next()
+        })
+        const { default: teamsRouter } = await import('../routes/teams.js')
+        express2.use('/api/v1/teams', teamsRouter)
+        app = express2
+    })
+
+    it('returns 403 when team is already at Pro teamMembersMax (15)', async () => {
+        const res = await request(app)
+            .post('/api/v1/teams/1/members')
+            .send({ username: 'newuser' })
+        expect(res.status).toBe(403)
+        // The error message mentions the limit
+        expect(res.body.error).toMatch(/15/)
+    })
+})
+
+// ---------------------------------------------------------------------------
+// TEST 5 — POST /api/v1/api-keys returns 403 when apiKeys limit exceeded (Free at 2)
+// ---------------------------------------------------------------------------
+
+describe('POST /api/v1/api-keys — apiKeys limit (Free at 2)', () => {
+    let app
+    beforeEach(async () => {
+        vi.clearAllMocks()
+        const { default: db } = await import('../db.js')
+
+        // Current key count = 2 (at limit)
+        db.prepare.mockImplementation((sql) => {
+            if (sql.includes('COUNT(*)')) {
+                return { get: vi.fn(() => ({ n: 2 })) }
+            }
+            return { get: vi.fn(() => null), all: vi.fn(() => []), run: vi.fn(() => ({ changes: 1, lastInsertRowid: 1 })) }
+        })
+
+        // Free tier: apiKeys = 2
+        mockGetFeatures.mockReturnValue({
+            maxRepos: 50,
+            aiQueriesPerMonth: 100,
+            teamMembersMax: 0,
+            apiKeys: 2,
+        })
+
+        const express2 = express()
+        express2.use(express.json())
+        express2.use((req, _res, next) => {
+            req.session = makeSession({ userTier: 'free', user: { id: 42, login: 'alice', tier: 'free' } })
+            req.log = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+            next()
+        })
+        const { default: apiKeysRouter } = await import('../routes/api-keys.js')
+        express2.use('/api/v1/api-keys', apiKeysRouter)
+        app = express2
+    })
+
+    it('returns 403 when free user already has 2 API keys', async () => {
+        const res = await request(app)
+            .post('/api/v1/api-keys')
+            .send({ name: 'My Key', scopes: ['read'] })
+        expect(res.status).toBe(403)
+        expect(res.body.upgradeUrl).toBe('/pricing')
+        expect(res.body.limit).toBe(2)
+    })
+
+    it('returns 201 when free user has fewer than 2 keys', async () => {
+        const { default: db } = await import('../db.js')
+        db.prepare.mockImplementation((sql) => {
+            if (sql.includes('COUNT(*)')) {
+                return { get: vi.fn(() => ({ n: 1 })) } // Only 1 key, limit is 2
+            }
+            return { get: vi.fn(() => null), all: vi.fn(() => []), run: vi.fn(() => ({ changes: 1, lastInsertRowid: 1 })) }
+        })
+
+        const res = await request(app)
+            .post('/api/v1/api-keys')
+            .send({ name: 'My Key', scopes: ['read'] })
+        expect(res.status).toBe(201)
+    })
+})

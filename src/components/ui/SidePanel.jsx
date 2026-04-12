@@ -17,7 +17,7 @@ export function SidePanel({ isOpen, onClose, title, subtitle, children, width = 
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
             aria-hidden="true"
           />
           <motion.aside
@@ -26,7 +26,7 @@ export function SidePanel({ isOpen, onClose, title, subtitle, children, width = 
             animate={{ x: 0 }}
             exit={{ x: side === 'right' ? '100%' : '-100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className={`fixed ${side === 'right' ? 'right-0' : 'left-0'} top-0 bottom-0 bg-white dark:bg-slate-950 z-50 shadow-2xl flex flex-col`}
+            className={`fixed ${side === 'right' ? 'right-0' : 'left-0'} top-0 bottom-0 bg-white dark:bg-slate-950 z-[60] shadow-2xl flex flex-col`}
             style={{ width: `min(${width}px, 100vw)` }}
             role="dialog"
             aria-modal="true"

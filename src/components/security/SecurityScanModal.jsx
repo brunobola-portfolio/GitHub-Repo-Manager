@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Modal } from '../ui/Modal'
 import { reposApi } from '../../api/repos'
-import { Loader2, ShieldCheck } from 'lucide-react'
+import { Loader2, ShieldCheck, Lock } from 'lucide-react'
 import { EmptyState } from '../ui/EmptyState'
 
 function SeverityBadge({ level, count }) {
@@ -61,21 +61,32 @@ export function SecurityScanModal({ isOpen, onClose, repo }) {
     setError(null)
     reposApi.getSecurityScan(repo.owner.login, repo.name)
       .then(d => { if (!cancelled) { setData(d); setLoading(false) } })
-      .catch(err => { if (!cancelled) { setError(err.message); setLoading(false) } })
+      .catch(err => { if (!cancelled) { setError(err); setLoading(false) } })
     return () => { cancelled = true }
   }, [isOpen, repo])
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Security & Secrets Scan" subtitle={repo?.full_name} data-testid="security-scan-modal">
-      <div className="p-6">
+      <div>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3">
             <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
             <p className="text-sm">Scanning…</p>
           </div>
-        ) : error ? (
-          <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-300 text-sm">{error}</div>
-        ) : data && data.summary.total === 0 ? (
+        ) : error ? (() => {
+          const isTierError = error.tierError || error.status === 403 || error.status === 429
+          return isTierError ? (
+            <EmptyState
+              icon={Lock}
+              title="Pro feature"
+              description="Security & Secrets Scan is available on Pro plans. Upgrade to unlock it for this repository."
+              action={{ label: 'View pricing', onClick: () => window.location.assign(error.upgradeUrl || '/pricing') }}
+              gradient="from-indigo-500 to-purple-600"
+            />
+          ) : (
+            <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-300 text-sm">{error.message || error}</div>
+          )
+        })() : data && data.summary.total === 0 ? (
           <EmptyState
             icon={ShieldCheck}
             title="No open security alerts"

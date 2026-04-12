@@ -475,16 +475,15 @@ function ReadmeGrid({ data, repo }) {
     const suggestions = data.readme_suggestions || []
     const [showEnhance, setShowEnhance] = useState(false)
 
-    const enhanceButton = !showEnhance ? (
+    const enhanceButton = (
         <button
             onClick={() => setShowEnhance(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700 ds-btn-shimmer"
+            disabled={showEnhance}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700 disabled:opacity-50 ds-btn-shimmer"
         >
             <Sparkles className="w-4 h-4" />
             Enhance with AI
         </button>
-    ) : (
-        <ReadmeEnhanceDiffPanel repo={repo} currentReadme="" />
     )
 
     if (suggestions.length === 0) {
@@ -498,6 +497,7 @@ function ReadmeGrid({ data, repo }) {
                     </p>
                 </InsightCard>
                 <div className="flex justify-center">{enhanceButton}</div>
+                {showEnhance && <ReadmeEnhanceDiffPanel repo={repo} />}
             </div>
         )
     }
@@ -530,6 +530,7 @@ function ReadmeGrid({ data, repo }) {
                     ))}
                 </div>
             </InsightCard>
+            {showEnhance && <ReadmeEnhanceDiffPanel repo={repo} />}
         </div>
     )
 }

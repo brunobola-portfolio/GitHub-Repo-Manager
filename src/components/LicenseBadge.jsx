@@ -55,7 +55,7 @@ export default function LicenseBadge() {
   const isExpiringCritical = daysUntilExpiry !== null && daysUntilExpiry <= 7 && daysUntilExpiry > 0
 
   const warningClass = isExpiringCritical
-    ? 'ring-2 ring-red-500 animate-pulse'
+    ? 'ring-2 ring-red-500 motion-safe:animate-pulse'
     : isExpiringSoon
     ? 'ring-2 ring-amber-500'
     : ''
@@ -72,6 +72,8 @@ export default function LicenseBadge() {
       className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold ml-1.5 flex-shrink-0 uppercase tracking-wider ${spec.classes} ${warningClass}`}
       title={`${spec.tooltip}${expiryTooltip}`}
       aria-label={`${spec.ariaLabel}${expiryTooltip}`}
+      role="status"
+      aria-live={isExpiringSoon ? 'polite' : undefined}
     >
       {isExpiringSoon && <AlertTriangle className="w-2.5 h-2.5" />}
       {!isExpiringSoon && <Icon className="w-2.5 h-2.5" />}

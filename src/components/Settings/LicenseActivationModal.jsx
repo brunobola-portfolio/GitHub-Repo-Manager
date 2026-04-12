@@ -51,7 +51,7 @@ export function LicenseActivationModal({ isOpen, onClose }) {
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Activate License" data-testid="license-activation-modal">
-      <div className="p-6 space-y-4">
+      <div className="space-y-4">
         <p className="text-sm text-slate-600 dark:text-slate-400">
           Paste your license key below to validate it. After validation, add the key to your{' '}
           <code className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-900 text-xs">.env</code>{' '}

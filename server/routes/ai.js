@@ -297,6 +297,17 @@ router.post('/ai/index', requireAuth, requireAI, async (req, res) => {
     const { repo } = req.body; // Full repo object from GitHub
     if (!repo) return res.status(400).json({ error: 'Repo data required' });
 
+    const userId = req.session.userId;
+    const check = checkUsageLimit(userId, 'ai_queries');
+    if (!check.allowed) {
+        return res.status(429).json({
+            error: 'AI query limit exceeded',
+            limit: check.limit,
+            current: check.current,
+            upgradeUrl: '/pricing'
+        });
+    }
+
     try {
         req.log.info({ repo: repo.full_name }, 'AI indexing started');
 
@@ -350,6 +361,8 @@ router.post('/ai/index', requireAuth, requireAI, async (req, res) => {
             stmtEmbed.run(repo.id, userId, JSON.stringify(embedding));
         })();
 
+        incrementUsage(userId, 'ai_queries');
+        auditLog(req, 'ai.index', 'ai', repo.id, { repoName: repo.full_name });
         res.json({ success: true, analysis });
 
     } catch (error) {
@@ -510,19 +523,23 @@ router.post('/ai/quality-report', requireAuth, requireAI, async (req, res) => {
 // ------------------------------------------------------------------
 
 // Generate an AI-powered PR review summary
-router.post('/ai/review-summary', requireAuth, async (req, res) => {
+router.post('/ai/review-summary', requireAuth, requireAI, async (req, res) => {
+    const userId = req.session.userId;
+    const check = checkUsageLimit(userId, 'ai_queries');
+    if (!check.allowed) {
+        return res.status(429).json({
+            error: 'AI query limit exceeded',
+            limit: check.limit,
+            current: check.current,
+            upgradeUrl: '/pricing'
+        });
+    }
+
     try {
         if (process.env.DISABLE_AI_REVIEW === 'true') {
             return res.status(404).json({
                 error: 'AI review summaries are disabled on this server.',
                 code: 'AI_REVIEW_DISABLED'
-            });
-        }
-
-        if (!aiService.model) {
-            return res.status(503).json({
-                error: 'AI service is not available. Please check server configuration.',
-                code: 'AI_UNAVAILABLE'
             });
         }
 
@@ -544,6 +561,12 @@ router.post('/ai/review-summary', requireAuth, async (req, res) => {
             });
         }
 
+        incrementUsage(userId, 'ai_queries');
+        auditLog(req, 'ai.review_summary', 'ai', null, {
+            repo: prMetadata?.repo,
+            prNumber: prMetadata?.number,
+            fileCount: fileManifest?.length
+        });
         res.json({ success: true, summary });
     } catch (error) {
         req.log.error({ err: error }, 'AI PR review summary failed');

@@ -42,9 +42,14 @@ export function BatchIndexProgressModal({ isOpen, onClose, repos = [] }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Batch Index Progress" data-testid="batch-index-modal">
-      <div className="space-y-4 p-6">
+      <div className="space-y-4">
         <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2">
           <div
+            role="progressbar"
+            aria-valuenow={processed}
+            aria-valuemin={0}
+            aria-valuemax={repos.length || 1}
+            aria-label="Batch index progress"
             className="bg-indigo-500 h-2 rounded-full transition-all"
             style={{ width: `${repos.length ? (processed / repos.length) * 100 : 0}%` }}
           />

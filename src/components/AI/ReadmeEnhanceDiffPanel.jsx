@@ -4,9 +4,10 @@ import '@git-diff-view/react/styles/diff-view.css'
 import { aiApi } from '../../api/ai'
 import { Loader2, Sparkles, Copy, Check } from 'lucide-react'
 
-export function ReadmeEnhanceDiffPanel({ repo, currentReadme }) {
+export function ReadmeEnhanceDiffPanel({ repo }) {
   const [loading, setLoading] = useState(true)
   const [enhanced, setEnhanced] = useState(null)
+  const [currentReadme, setCurrentReadme] = useState('')
   const [error, setError] = useState(null)
   const [copied, setCopied] = useState(false)
 
@@ -15,9 +16,24 @@ export function ReadmeEnhanceDiffPanel({ repo, currentReadme }) {
     setLoading(true)
     setEnhanced(null)
     setError(null)
-    aiApi.enhanceReadme(repo)
-      .then(result => {
+    setCurrentReadme('')
+
+    // Fetch current README and enhanced version in parallel
+    const readmeFetch = fetch(`/api/repos/${encodeURIComponent(repo.full_name)}/readme`, {
+      credentials: 'include',
+      headers: { Accept: 'application/vnd.github.raw' }
+    })
+      .then(r => r.ok ? r.text() : '')
+      .catch(() => '')
+
+    const enhanceFetch = aiApi.enhanceReadme(repo)
+
+    Promise.all([readmeFetch, enhanceFetch])
+      .then(([readme, result]) => {
         if (!cancelled) {
+          // enhanceReadme backend returns currentReadme in the response body;
+          // prefer the server-fetched version, fall back to the parallel fetch.
+          setCurrentReadme(result.currentReadme || readme || '')
           setEnhanced(result.enhancement || result.readme || result.enhanced || '')
           setLoading(false)
         }

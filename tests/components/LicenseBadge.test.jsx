@@ -141,6 +141,64 @@ describe('LicenseBadge — no real license', () => {
   })
 })
 
+describe('LicenseBadge — expiry warnings', () => {
+  it('shows amber ring when expiresAt is 20 days from now', async () => {
+    const expiresAt = new Date(Date.now() + 20 * 86400000).toISOString()
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        active: true,
+        source: 'license_key',
+        tier: 'pro',
+        org: 'Acme Corp',
+        expiresAt,
+      }),
+    })
+    const LicenseBadge = await loadBadge({ mockMode: false })
+    render(<LicenseBadge />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('license-badge')).toHaveTextContent(/pro/i)
+    })
+    const badge = screen.getByTestId('license-badge')
+    // Amber ring should be present (isExpiringSoon = true, 20 days <= 30)
+    expect(badge.className).toContain('ring-amber-500')
+    // Should NOT have red ring or pulse
+    expect(badge.className).not.toContain('ring-red-500')
+  })
+
+  it('shows red pulse and AlertTriangle when expiresAt is 3 days from now', async () => {
+    const expiresAt = new Date(Date.now() + 3 * 86400000).toISOString()
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        active: true,
+        source: 'license_key',
+        tier: 'enterprise',
+        org: 'Bola Labs',
+        expiresAt,
+      }),
+    })
+    const LicenseBadge = await loadBadge({ mockMode: false })
+    render(<LicenseBadge />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('license-badge')).toHaveTextContent(/enterprise/i)
+    })
+    const badge = screen.getByTestId('license-badge')
+    // Critical expiry: red ring + motion-safe pulse
+    expect(badge.className).toContain('ring-red-500')
+    expect(badge.className).toContain('motion-safe:animate-pulse')
+    // aria-live should be polite when expiring soon
+    expect(badge.getAttribute('aria-live')).toBe('polite')
+    // AlertTriangle icon should be present (replaces tier icon when expiring soon)
+    // lucide renders an svg; check the aria-label contains the days remaining
+    expect(badge.getAttribute('aria-label')).toMatch(/3 day/)
+  })
+})
+
 describe('LicenseBadge — error fallbacks', () => {
   it('falls back to Demo pill in MOCK_MODE on fetch error', async () => {
     global.fetch.mockRejectedValueOnce(new Error('network down'))

@@ -8,6 +8,34 @@ const getHeaders = () => {
     };
 };
 
+/**
+ * Unified response handler for AI endpoints.
+ * Converts 429/403 into rich tier-error objects so callers can render
+ * an upgrade CTA instead of a generic error message.
+ */
+async function handleAIResponse(res, operation) {
+    if (res.status === 429) {
+        const body = await res.json().catch(() => ({}));
+        const error = new Error(body.error || 'AI query limit exceeded');
+        error.status = 429;
+        error.tierError = true;
+        error.upgradeUrl = body.upgradeUrl || '/pricing';
+        error.limit = body.limit;
+        error.current = body.current;
+        throw error;
+    }
+    if (res.status === 403) {
+        const body = await res.json().catch(() => ({}));
+        const error = new Error(body.error || 'Access denied');
+        error.status = 403;
+        error.tierError = true;
+        error.upgradeUrl = body.upgradeUrl || '/pricing';
+        throw error;
+    }
+    if (!res.ok) throw new Error(`${operation} failed: HTTP ${res.status}`);
+    return res.json();
+}
+
 // Mock data generators for AI features
 const mockAnalysis = (repo) => ({
     summary: `${repo.name} is a ${repo.language || 'multi-language'} project focused on ${repo.description || 'software development'}.`,
@@ -87,8 +115,7 @@ export const aiApi = {
         if (res.status === 503) {
             return { success: true, analysis: mockAnalysis(repo), mock: true };
         }
-        if (!res.ok) throw new Error('Failed to index repository');
-        return res.json();
+        return handleAIResponse(res, 'index');
     },
 
     // Semantic Search
@@ -109,8 +136,7 @@ export const aiApi = {
             results.mock = true
             return results
         }
-        if (!res.ok) throw new Error('Search failed');
-        return res.json();
+        return handleAIResponse(res, 'search');
     },
 
     // Get Metadata
@@ -161,8 +187,7 @@ export const aiApi = {
                 mock: true
             };
         }
-        if (!res.ok) throw new Error('Failed to fetch suggestions');
-        return res.json();
+        return handleAIResponse(res, 'suggest');
     },
 
     // Enhance existing README
@@ -182,8 +207,7 @@ export const aiApi = {
         if (res.status === 503) {
             return { success: true, ...mockReadmeEnhancement(repo), mock: true };
         }
-        if (!res.ok) throw new Error('Failed to enhance README');
-        return res.json();
+        return handleAIResponse(res, 'enhance README');
     },
 
     // Get comprehensive quality report
@@ -203,8 +227,7 @@ export const aiApi = {
         if (res.status === 503) {
             return { success: true, report: mockQualityReport(repo), repo: repo.full_name, mock: true };
         }
-        if (!res.ok) throw new Error('Failed to get quality report');
-        return res.json();
+        return handleAIResponse(res, 'quality report');
     },
 
     // Batch index multiple repos
@@ -235,8 +258,7 @@ export const aiApi = {
                 mock: true
             };
         }
-        if (!res.ok) throw new Error('Failed to batch index');
-        return res.json();
+        return handleAIResponse(res, 'batch index');
     },
 
     // Find repos semantically similar to the given repo (by full_name)
@@ -245,8 +267,7 @@ export const aiApi = {
             credentials: 'include'
         })
         if (res.status === 404) return { notIndexed: true }
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.json()
+        return handleAIResponse(res, 'findSimilar')
     },
 
     // Check AI configuration status
