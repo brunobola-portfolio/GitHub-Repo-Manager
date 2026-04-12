@@ -119,16 +119,16 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 			label: 'Migration',
 			icon: Rocket,
 			children: [
-				{ label: `Migrate ${selectedRepos.length} repos`, onClick: () => onAction('migrate_selected', selectedRepos) },
-				{ label: 'Dry-Run (Simulate)', onClick: () => onAction('dryRun_selected', selectedRepos) }
+				{ label: `Migrate ${selectedRepos.length} repos`, icon: Upload, onClick: () => onAction('migrate_selected', selectedRepos) },
+				{ label: 'Dry-Run (Simulate)', icon: FlaskConical, onClick: () => onAction('dryRun_selected', selectedRepos) }
 			]
 		},
 		{
 			label: 'Management',
 			icon: Package,
 			children: [
-				{ label: `Transfer ${selectedRepos.length} repos`, onClick: () => onAction('transfer_selected', selectedRepos) },
-				{ label: 'Export Metadata (JSON)', onClick: () => onAction('exportMeta_selected', selectedRepos) }
+				{ label: `Transfer ${selectedRepos.length} repos`, icon: ArrowRightLeft, onClick: () => onAction('transfer_selected', selectedRepos) },
+				{ label: 'Export Metadata (JSON)', icon: Download, onClick: () => onAction('exportMeta_selected', selectedRepos) }
 			]
 		},
 		{ type: 'separator' },

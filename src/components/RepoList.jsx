@@ -503,8 +503,6 @@ export function RepoList({
 								openModalWithData('showTransfer', data)
 								break
 							case 'migrate':
-							case 'migrateWorkItems':
-							case 'migrateWiki':
 							case 'migrate_selected':
 								openModal('showMigrationWizard')
 								break

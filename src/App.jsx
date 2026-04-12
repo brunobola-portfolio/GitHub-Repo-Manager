@@ -378,6 +378,47 @@ function AppContent() {
           }
         })
         break
+
+      case 'archive_selected':
+        openModalWithData('showConfirm', {
+          title: `Archive ${selectedRepos.length} repositories?`,
+          message: `This will archive ${selectedRepos.length} repositories, making them read-only. You can unarchive them later.`,
+          variant: 'warning',
+          onConfirm: async () => {
+            try {
+              await archiveRepos(selectedRepos.map(r => r.full_name), true)
+              toast.success(`${selectedRepos.length} repositories archived`)
+              closeModal('showConfirm')
+              refresh()
+            } catch (err) {
+              toast.error(`Failed to archive: ${err.message}`)
+            }
+          }
+        })
+        break
+
+      case 'delete_selected':
+        openModalWithData('showConfirm', {
+          title: `Delete ${selectedRepos.length} repositories?`,
+          message: `This will permanently delete ${selectedRepos.length} repositories and all their data. This action cannot be undone.`,
+          variant: 'danger',
+          confirmText: 'Delete All',
+          onConfirm: async () => {
+            try {
+              await deleteRepos(selectedRepos.map(r => r.full_name))
+              toast.success(`${selectedRepos.length} repositories deleted`)
+              closeModal('showConfirm')
+              refresh()
+            } catch (err) {
+              toast.error(`Failed to delete: ${err.message}`)
+            }
+          }
+        })
+        break
+
+      case 'transfer_selected':
+        openModalWithData('showTransfer', selectedRepos)
+        break
     }
   }
 
