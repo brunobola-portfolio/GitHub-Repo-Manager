@@ -3,6 +3,7 @@ import { AnimatePresence } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
+import { EmptyState } from '../ui/EmptyState'
 import { GitPullRequest, Plus, Loader2, CheckCircle2, XCircle, GitMerge, ExternalLink, ChevronDown } from 'lucide-react'
 import { PRDetailPanel } from './PRDetailPanel'
 
@@ -269,7 +270,11 @@ export function PullRequestsTab({ owner, repo, api, onStartReview }) {
                         </Card>
                     ))}
                     {pulls.length === 0 && (
-                        <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-8">No {filter !== 'all' ? filter : ''} pull requests</p>
+                        <EmptyState
+                            icon={GitPullRequest}
+                            title="No open pull requests"
+                            description="There are no open pull requests on this repository."
+                        />
                     )}
                 </div>
             )}

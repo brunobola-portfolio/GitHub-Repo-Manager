@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Card } from '../ui/Card'
+import { EmptyState } from '../ui/EmptyState'
 import { Loader2, FileText, BookOpen } from 'lucide-react'
 
 export function OverviewTab({ owner, repo, api, repoData }) {
@@ -55,7 +56,11 @@ export function OverviewTab({ owner, repo, api, repoData }) {
                             </pre>
                         </div>
                     ) : (
-                        <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-8">No README found</p>
+                        <EmptyState
+                            icon={BookOpen}
+                            title="No README"
+                            description="This repository doesn't have a README yet."
+                        />
                     )}
                 </Card>
             </div>
