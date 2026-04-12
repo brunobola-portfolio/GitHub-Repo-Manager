@@ -22,4 +22,14 @@ test.describe('Wave 1 — Context menu items', () => {
     await page.getByRole('menuitem', { name: 'AI', exact: true }).hover()
     await expect(page.getByRole('menuitem', { name: 'Migration Risk Analysis', exact: true })).toHaveCount(0)
   })
+
+  test('Export Metadata triggers a JSON file download', async ({ page }) => {
+    const firstCard = page.locator('[data-testid="repo-card"]').first()
+    await firstCard.click({ button: 'right' })
+    await page.getByRole('menuitem', { name: 'Management', exact: true }).hover()
+    const downloadPromise = page.waitForEvent('download')
+    await page.getByRole('menuitem', { name: 'Export Metadata (JSON)', exact: true }).click()
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toMatch(/-export-\d+\.json$/)
+  })
 })

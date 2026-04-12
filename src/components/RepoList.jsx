@@ -11,6 +11,8 @@ import {
 } from 'lucide-react'
 import { PAGINATION } from '../config'
 import { aiApi } from '../api/ai'
+import { reposApi } from '../api/repos'
+import { useToast } from '../hooks/useToast'
 import { formatCompact } from '../utils/format'
 import { motion } from 'framer-motion'
 import { useSelection } from '../hooks/useSelection'
@@ -32,6 +34,7 @@ export function RepoList({
 }) {
 	const { selectedIds, toggleSelect, selectRepos, deselectRepos, invertSelection, clearSelection } = useSelection()
 	const { openModal, openModalWithData } = useModal()
+	const { toast } = useToast()
 	const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
 	const [searchQuery, setSearchQuery] = useState('')
 	const [isAISearch, setIsAISearch] = useState(false)
@@ -478,7 +481,7 @@ export function RepoList({
 					x={repoMenu.x}
 					y={repoMenu.y}
 					onClose={() => setRepoMenu(null)}
-					onAction={(action, data) => {
+					onAction={async (action, data) => {
 						setRepoMenu(null)
 						switch (action) {
 							case 'visibility':
@@ -524,6 +527,24 @@ export function RepoList({
 								break
 							case 'aiSuggest':
 								openModalWithData('showRepoInsights', { repo: data, initialTab: 'suggestions' })
+								break
+							case 'exportMeta':
+								try {
+									const result = await reposApi.exportMetadata(data.owner.login, data.name)
+									toast.success(`Exported ${result.filename}`)
+								} catch (err) {
+									toast.error(`Export failed: ${err.message}`)
+								}
+								break
+							case 'exportMeta_selected':
+								try {
+									for (const repo of data) {
+										await reposApi.exportMetadata(repo.owner.login, repo.name)
+									}
+									toast.success(`Exported ${data.length} repositories`)
+								} catch (err) {
+									toast.error(`Export failed: ${err.message}`)
+								}
 								break
 							default:
 								// For actions not yet wired, pass through to onQuickAction
