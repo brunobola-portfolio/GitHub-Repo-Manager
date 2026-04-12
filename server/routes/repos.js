@@ -1135,6 +1135,87 @@ router.get('/:owner/:repo/compare/:basehead', requireAuth, async (req, res) => {
 });
 
 // ------------------------------------------------------------------
+// Dev Toolkit Endpoints
+// ------------------------------------------------------------------
+
+// Detect commit message style (heuristic, no AI)
+router.get('/:owner/:repo/commits/style', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { data } = await githubApi(
+            `/repos/${owner}/${repo}/commits?per_page=20`,
+            req.session.accessToken
+        );
+        const messages = data.map(c => c.commit?.message).filter(Boolean);
+
+        const { detectCommitStyle } = await import('../lib/commit-style-detector.js');
+        const result = detectCommitStyle(messages);
+        res.json(result);
+    } catch (error) {
+        req.log.error({ err: error }, 'Detect commit style failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Fetch PR template
+router.get('/:owner/:repo/pr-template', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { data } = await githubApi(
+            `/repos/${owner}/${repo}/contents/.github/PULL_REQUEST_TEMPLATE.md`,
+            req.session.accessToken
+        );
+        const template = Buffer.from(data.content, 'base64').toString('utf-8');
+        res.json({ found: true, template, path: data.path });
+    } catch (error) {
+        if (error.status === 404) {
+            return res.json({ found: false, template: null, path: null });
+        }
+        req.log.error({ err: error }, 'Fetch PR template failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Parse CODEOWNERS
+router.get('/:owner/:repo/codeowners', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        let data;
+        try {
+            ({ data } = await githubApi(
+                `/repos/${owner}/${repo}/contents/.github/CODEOWNERS`,
+                req.session.accessToken
+            ));
+        } catch (err) {
+            if (err.status === 404) {
+                ({ data } = await githubApi(
+                    `/repos/${owner}/${repo}/contents/CODEOWNERS`,
+                    req.session.accessToken
+                ));
+            } else {
+                throw err;
+            }
+        }
+        const raw = Buffer.from(data.content, 'base64').toString('utf-8');
+        const rules = raw
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line && !line.startsWith('#'))
+            .map(line => {
+                const parts = line.split(/\s+/);
+                return { pattern: parts[0], owners: parts.slice(1) };
+            });
+        res.json({ found: true, rules });
+    } catch (error) {
+        if (error.status === 404) {
+            return res.json({ found: false, rules: [] });
+        }
+        req.log.error({ err: error }, 'Parse CODEOWNERS failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Parse CODEOWNERS failed') });
+    }
+});
+
+// ------------------------------------------------------------------
 // GitHub Actions (per-repo)
 // ------------------------------------------------------------------
 
