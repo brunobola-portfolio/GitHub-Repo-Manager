@@ -8,9 +8,10 @@ import { ReleasesTab } from './ReleasesTab'
 import { IssuesTab } from './IssuesTab'
 import { PullRequestsTab } from './PullRequestsTab'
 import { SettingsTab } from './SettingsTab'
+import { ActionsTab } from './ActionsTab'
 import {
     ArrowLeft, GitBranch, Tag, CircleDot, GitPullRequest, Settings,
-    FileText, Star, Eye, GitFork, ExternalLink, Lock, Globe, Loader2
+    FileText, Star, Eye, GitFork, ExternalLink, Lock, Globe, Loader2, Zap
 } from 'lucide-react'
 import { TabBar } from '../ui/TabBar'
 
@@ -18,6 +19,7 @@ const TABS = [
     { id: 'overview', label: 'Overview', icon: FileText },
     { id: 'branches', label: 'Branches', icon: GitBranch },
     { id: 'releases', label: 'Releases', icon: Tag },
+    { id: 'actions', label: 'Actions', icon: Zap },
     { id: 'issues', label: 'Issues', icon: CircleDot },
     { id: 'pulls', label: 'Pull Requests', icon: GitPullRequest },
     { id: 'settings', label: 'Settings', icon: Settings }
@@ -143,6 +145,7 @@ export function RepoDetail({ repo, onBack, onStartReview }) {
                 {activeTab === 'overview' && <OverviewTab owner={owner} repo={repoName} api={api} repoData={r} />}
                 {activeTab === 'branches' && <BranchesTab owner={owner} repo={repoName} api={api} />}
                 {activeTab === 'releases' && <ReleasesTab owner={owner} repo={repoName} api={api} />}
+                {activeTab === 'actions' && <ActionsTab repo={r} />}
                 {activeTab === 'issues' && <IssuesTab owner={owner} repo={repoName} api={api} />}
                 {activeTab === 'pulls' && <PullRequestsTab owner={owner} repo={repoName} api={api} onStartReview={onStartReview} />}
                 {activeTab === 'settings' && <SettingsTab owner={owner} repo={repoName} api={api} repoData={r} onUpdate={setRepoData} />}
