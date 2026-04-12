@@ -1,0 +1,249 @@
+import { useState, useCallback } from 'react'
+import { RefreshCw, Wand2 } from 'lucide-react'
+import { RepoSelector } from '../shared/RepoSelector'
+import { BranchSelector } from '../shared/BranchSelector'
+import { DiffSummary } from '../shared/DiffSummary'
+import { OutputSection } from '../shared/OutputSection'
+import { RefinementChips } from '../shared/RefinementChips'
+import { FormatSelector } from './FormatSelector'
+import { SessionHistory } from './SessionHistory'
+import { MultiCommitSplit } from './MultiCommitSplit'
+
+const INPUT_MODES = [
+    { id: 'auto', label: 'Auto-fetch' },
+    { id: 'manual', label: 'Paste' },
+]
+
+const COMMIT_CHIPS = [
+    { id: 'shorter', label: 'Shorter' },
+    { id: 'more_detail', label: 'More detail' },
+    { id: 'add_body', label: '+ Body' },
+    { id: 'breaking_change', label: 'Breaking change' },
+]
+
+const MULTI_COMMIT_THRESHOLD = 300
+
+export function CommitTab({ toolkit }) {
+    const { repos, selectedRepo, selectRepo, headBranch, setHeadBranch, baseBranch, setBaseBranch, branches, compareData, compareLoading, fetchCompare, history, addToHistory } = toolkit
+
+    const [inputMode, setInputMode] = useState(selectedRepo ? 'auto' : 'manual')
+    const [manualDiff, setManualDiff] = useState('')
+    const [format, setFormat] = useState('conventional')
+    const [repoStyle, setRepoStyle] = useState(null)
+    const [repoStyleLoading, setRepoStyleLoading] = useState(false)
+    const [generated, setGenerated] = useState('')
+    const [loading, setLoading] = useState(false)
+    const [multiCommits, setMultiCommits] = useState(null)
+
+    const totalChanges = compareData
+        ? (compareData.diff_summary?.additions || 0) + (compareData.diff_summary?.deletions || 0)
+        : 0
+
+    const handleRepoSelect = useCallback((repo) => {
+        selectRepo(repo)
+        setInputMode('auto')
+        setGenerated('')
+        setMultiCommits(null)
+    }, [selectRepo])
+
+    const handleBranchChange = useCallback((branch, type) => {
+        if (type === 'head') {
+            setHeadBranch(branch)
+            if (baseBranch && selectedRepo) {
+                fetchCompare(selectedRepo.owner?.login, selectedRepo.name, baseBranch, branch)
+            }
+        } else {
+            setBaseBranch(branch)
+            if (headBranch && selectedRepo) {
+                fetchCompare(selectedRepo.owner?.login, selectedRepo.name, branch, headBranch)
+            }
+        }
+        setGenerated('')
+        setMultiCommits(null)
+    }, [baseBranch, headBranch, selectedRepo, setHeadBranch, setBaseBranch, fetchCompare])
+
+    const fetchRepoStyle = useCallback(async () => {
+        if (!selectedRepo) return null
+        setRepoStyleLoading(true)
+        try {
+            const res = await fetch(`/api/repos/${selectedRepo.owner?.login}/${selectedRepo.name}/commits/style`)
+            if (!res.ok) return null
+            const data = await res.json()
+            setRepoStyle(data)
+            return data
+        } catch { return null } finally { setRepoStyleLoading(false) }
+    }, [selectedRepo])
+
+    const handleGenerate = useCallback(async () => {
+        const diff = inputMode === 'auto'
+            ? compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n')
+            : manualDiff
+
+        if (!diff?.trim()) return
+        setLoading(true)
+        setGenerated('')
+        setMultiCommits(null)
+
+        try {
+            let style = repoStyle
+            if (format === 'repo-convention' && !style) {
+                style = await fetchRepoStyle()
+            }
+
+            const res = await fetch('/api/ai/generate-commit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    diff,
+                    format,
+                    repo_style: format === 'repo-convention' ? style : undefined,
+                    repo_context: selectedRepo ? { name: selectedRepo.full_name, description: selectedRepo.description } : undefined,
+                }),
+            })
+            if (!res.ok) throw new Error('Generation failed')
+            const data = await res.json()
+            setGenerated(data.message)
+            addToHistory(data.message)
+        } catch {
+            setGenerated('Error generating commit message. Please try again.')
+        } finally {
+            setLoading(false)
+        }
+    }, [inputMode, compareData, manualDiff, format, repoStyle, selectedRepo, fetchRepoStyle, addToHistory])
+
+    const handleRefine = useCallback(async (instruction) => {
+        if (!generated) return
+        setLoading(true)
+        try {
+            const diff = inputMode === 'auto'
+                ? compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n')
+                : manualDiff
+
+            const res = await fetch('/api/ai/refine', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    original_content: generated,
+                    original_diff: diff,
+                    instruction,
+                    content_type: 'commit',
+                }),
+            })
+            if (!res.ok) throw new Error('Refine failed')
+            const data = await res.json()
+            setGenerated(data.refined_content)
+            addToHistory(data.refined_content)
+        } catch {
+            // Keep current message on error
+        } finally {
+            setLoading(false)
+        }
+    }, [generated, inputMode, compareData, manualDiff, addToHistory])
+
+    const handleSplit = useCallback(async () => {
+        const diff = compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n')
+        if (!diff) return
+        setLoading(true)
+        try {
+            const res = await fetch('/api/ai/generate-commit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    diff,
+                    format,
+                    repo_context: selectedRepo ? { name: selectedRepo.full_name } : undefined,
+                }),
+            })
+            if (!res.ok) throw new Error('Split failed')
+            const data = await res.json()
+            const msgs = data.message.split('\n').filter(l => l.trim())
+            setMultiCommits(msgs.map(m => ({ message: m.replace(/^\d+\.\s*/, ''), files: [] })))
+        } catch { /* noop */ } finally { setLoading(false) }
+    }, [compareData, format, selectedRepo])
+
+    const canGenerate = inputMode === 'auto'
+        ? (compareData && compareData.files?.length > 0)
+        : manualDiff.trim().length > 0
+
+    return (
+        <div className="p-4 md:p-6 space-y-4">
+            {/* Input mode toggle */}
+            <div className="flex gap-1 p-0.5 rounded-lg bg-slate-100 dark:bg-slate-800/60 border border-slate-200/40 dark:border-slate-700/40 w-fit">
+                {INPUT_MODES.map(m => (
+                    <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setInputMode(m.id)}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                            inputMode === m.id
+                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                        }`}
+                    >
+                        {m.label}
+                    </button>
+                ))}
+            </div>
+
+            {inputMode === 'auto' && (
+                <div className="space-y-3">
+                    <RepoSelector repos={repos} selected={selectedRepo} onSelect={handleRepoSelect} />
+                    {selectedRepo && (
+                        <div className="flex gap-3">
+                            <BranchSelector branches={branches} selected={headBranch} onSelect={b => handleBranchChange(b, 'head')} label="Branch" />
+                            <BranchSelector branches={branches} selected={baseBranch} onSelect={b => handleBranchChange(b, 'base')} label="Compare against" defaultBranch={baseBranch} />
+                        </div>
+                    )}
+                    <DiffSummary files={compareData?.files || []} summary={compareData?.diff_summary} loading={compareLoading} />
+                </div>
+            )}
+
+            {inputMode === 'manual' && (
+                <div>
+                    <textarea
+                        value={manualDiff}
+                        onChange={(e) => setManualDiff(e.target.value)}
+                        placeholder="Paste a git diff, file changes, or describe what you changed in plain text..."
+                        className="w-full h-40 px-4 py-3 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 resize-none font-mono placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors leading-relaxed"
+                    />
+                </div>
+            )}
+
+            <FormatSelector selected={format} onSelect={setFormat} repoStyleLoading={repoStyleLoading} />
+
+            <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={!canGenerate || loading}
+                className="ds-btn-shimmer inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+                {loading ? (
+                    <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Generating...</>
+                ) : (
+                    <><Wand2 className="w-3.5 h-3.5" />Generate</>
+                )}
+            </button>
+
+            {inputMode === 'auto' && totalChanges > MULTI_COMMIT_THRESHOLD && !multiCommits && generated && (
+                <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 text-xs text-amber-700 dark:text-amber-300">
+                    <span>Large diff detected ({totalChanges} lines). Split into logical commits?</span>
+                    <button type="button" onClick={handleSplit} className="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-600 text-white font-medium">Split</button>
+                </div>
+            )}
+
+            {multiCommits && (
+                <MultiCommitSplit commits={multiCommits} onDismiss={() => setMultiCommits(null)} onUseAll={() => setMultiCommits(null)} />
+            )}
+
+            {!multiCommits && (
+                <OutputSection content={generated} loading={loading} label="Generated Commit Message" />
+            )}
+
+            {generated && !loading && !multiCommits && (
+                <RefinementChips chips={COMMIT_CHIPS} onSelect={handleRefine} disabled={loading} />
+            )}
+
+            <SessionHistory items={history} onRestore={setGenerated} />
+        </div>
+    )
+}
