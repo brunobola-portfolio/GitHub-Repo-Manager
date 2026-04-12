@@ -5,20 +5,27 @@ export const reposApi = {
       credentials: 'include'
     })
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Export failed' }))
-      throw new Error(err.error || 'Export failed')
+      const body = await res.json().catch(() => ({}))
+      const error = new Error(body.error || `HTTP ${res.status}`)
+      error.status = res.status
+      throw error
     }
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    const cd = res.headers.get('content-disposition') || ''
-    const match = cd.match(/filename="(.+?)"/)
-    a.download = match ? match[1] : `${repo}-export.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-    return { filename: a.download }
+    let filename = `${repo}-export.json`
+    try {
+      const a = document.createElement('a')
+      a.href = url
+      const cd = res.headers.get('content-disposition') || ''
+      const match = cd.match(/filename="(.+?)"/)
+      if (match) filename = match[1]
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    } finally {
+      URL.revokeObjectURL(url)
+    }
+    return { filename }
   }
 }

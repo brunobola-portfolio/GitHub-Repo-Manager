@@ -536,16 +536,19 @@ export function RepoList({
 									toast.error(`Export failed: ${err.message}`)
 								}
 								break
-							case 'exportMeta_selected':
+							case 'exportMeta_selected': {
+								let ok = 0
 								try {
 									for (const repo of data) {
 										await reposApi.exportMetadata(repo.owner.login, repo.name)
+										ok++
 									}
-									toast.success(`Exported ${data.length} repositories`)
+									toast.success(`Exported ${ok} repositories`)
 								} catch (err) {
-									toast.error(`Export failed: ${err.message}`)
+									toast.error(`Exported ${ok} of ${data.length}; stopped at ${err.message}`)
 								}
 								break
+							}
 							default:
 								// For actions not yet wired, pass through to onQuickAction
 								onQuickAction(action, data)
