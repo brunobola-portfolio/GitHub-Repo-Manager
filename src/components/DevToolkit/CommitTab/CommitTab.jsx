@@ -19,6 +19,7 @@ const COMMIT_CHIPS = [
     { id: 'more_detail', label: 'More detail' },
     { id: 'add_body', label: '+ Body' },
     { id: 'breaking_change', label: 'Breaking change' },
+    { id: 'regenerate', label: 'Regenerate' },
 ]
 
 const MULTI_COMMIT_THRESHOLD = 300
@@ -113,6 +114,10 @@ export function CommitTab({ toolkit }) {
 
     const handleRefine = useCallback(async (instruction) => {
         if (!generated) return
+        if (instruction === 'regenerate') {
+            handleGenerate()
+            return
+        }
         setLoading(true)
         try {
             const diff = inputMode === 'auto'
@@ -138,7 +143,7 @@ export function CommitTab({ toolkit }) {
         } finally {
             setLoading(false)
         }
-    }, [generated, inputMode, compareData, manualDiff, addToHistory])
+    }, [generated, inputMode, compareData, manualDiff, addToHistory, handleGenerate])
 
     const handleSplit = useCallback(async () => {
         const diff = compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n')

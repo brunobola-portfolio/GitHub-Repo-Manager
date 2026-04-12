@@ -892,13 +892,17 @@ router.post('/ai/refine', requireAuth, requireAI, async (req, res) => {
             edge_cases: 'Add edge case test scenarios (empty inputs, boundary values, error conditions).',
             e2e_focus: 'Rewrite the test plan focusing on end-to-end user workflows.',
             architecture_notes: 'Add a section about the architectural decisions and technical approach.',
+            more_context: 'Add more context about what changed and why. Include background information and motivation.',
         };
+
+        const ALLOWED_CONTENT_TYPES = ['commit', 'pr_summary', 'pr_test_plan'];
+        const safeContentType = ALLOWED_CONTENT_TYPES.includes(content_type) ? content_type : 'content';
 
         const instructionText = refinementInstructions[instruction] || instruction;
         const safeDiff = original_diff ? sanitizeForPrompt(original_diff, 8000) : '';
         const diffContext = safeDiff ? `\n\nOriginal diff for context:\n${safeDiff}` : '';
 
-        const systemPrompt = `You are refining ${content_type || 'content'}. Apply the requested change to the content below.
+        const systemPrompt = `You are refining ${safeContentType}. Apply the requested change to the content below.
 Return ONLY the refined content, no explanation, no markdown fences.`;
 
         const model = aiService.model;

@@ -8,7 +8,7 @@ import {
     GitPullRequest, GitMerge, X, MessageSquare, Clock,
     ExternalLink, Loader2, Send, CheckCircle2, XCircle,
     ArrowLeft, FileText, FilePlus, FileMinus, FileEdit,
-    Eye, ShieldCheck, ShieldAlert, MessageCircle, GitBranch
+    Eye, ShieldCheck, ShieldAlert, MessageCircle, GitBranch, Wand2
 } from 'lucide-react'
 
 const REVIEW_STATES = {
@@ -28,7 +28,7 @@ function getFileIcon(status) {
     }
 }
 
-export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview }) {
+export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGenerateDescription }) {
     const [detail, setDetail] = useState(null)
     const [reviews, setReviews] = useState([])
     const [files, setFiles] = useState([])
@@ -218,6 +218,15 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview }) {
                         </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
+                        {onGenerateDescription && (
+                            <button
+                                onClick={() => onGenerateDescription?.(pr)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition-colors"
+                            >
+                                <Wand2 className="w-3.5 h-3.5" />
+                                Generate Description
+                            </button>
+                        )}
                         {onStartReview && (
                             <Button
                                 size="sm"

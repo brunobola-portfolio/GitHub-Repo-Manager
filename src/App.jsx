@@ -803,6 +803,13 @@ function AppContent() {
                     setReviewingPR(pr)
                     setActiveView('pr-review')
                   }}
+                  onGenerateDescription={(pr) => {
+                    openModalWithData('showDevToolkit', {
+                      initialTab: 'pr',
+                      repo: selectedRepoDetail,
+                      pr: { number: pr.number, head: pr.head?.ref, base: pr.base?.ref },
+                    })
+                  }}
                 />
               </Suspense>
             </ErrorBoundary>
@@ -934,7 +941,6 @@ function AppContent() {
           onClose={() => closeModal('showDevToolkit')}
           modalData={getModalData('showDevToolkit')}
           repos={repos}
-          askAI={askAI}
           onStartReview={(pr) => {
             closeModal('showDevToolkit')
             setReviewingPR(pr)

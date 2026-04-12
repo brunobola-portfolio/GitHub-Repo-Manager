@@ -7,7 +7,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { GitPullRequest, Plus, Loader2, CheckCircle2, XCircle, GitMerge, ExternalLink, ChevronDown } from 'lucide-react'
 import { PRDetailPanel } from './PRDetailPanel'
 
-export function PullRequestsTab({ owner, repo, api, onStartReview }) {
+export function PullRequestsTab({ owner, repo, api, onStartReview, onGenerateDescription }) {
     const [pulls, setPulls] = useState([])
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState('open')
@@ -103,6 +103,7 @@ export function PullRequestsTab({ owner, repo, api, onStartReview }) {
                     onClose={() => setSelectedPR(null)}
                     onUpdate={() => { setSelectedPR(null); loadPulls() }}
                     onStartReview={onStartReview}
+                    onGenerateDescription={onGenerateDescription}
                 />
             </AnimatePresence>
         )

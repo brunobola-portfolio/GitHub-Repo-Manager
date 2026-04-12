@@ -1,10 +1,20 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Search, ChevronDown } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 
 export function RepoSelector({ repos = [], selected, onSelect }) {
     const [open, setOpen] = useState(false)
     const [query, setQuery] = useState('')
+    const containerRef = useRef(null)
+
+    useEffect(() => {
+        if (!open) return
+        const handler = (e) => {
+            if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false)
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
+    }, [open])
 
     const filtered = useMemo(() => {
         if (!query) return repos.slice(0, 30)
@@ -13,7 +23,7 @@ export function RepoSelector({ repos = [], selected, onSelect }) {
     }, [repos, query])
 
     return (
-        <div className="relative">
+        <div ref={containerRef} className="relative">
             <button
                 type="button"
                 onClick={() => setOpen(!open)}

@@ -1,10 +1,20 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { GitBranch, ChevronDown, Star } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 
 export function BranchSelector({ branches = [], selected, onSelect, label, defaultBranch }) {
     const [open, setOpen] = useState(false)
     const [query, setQuery] = useState('')
+    const containerRef = useRef(null)
+
+    useEffect(() => {
+        if (!open) return
+        const handler = (e) => {
+            if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false)
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
+    }, [open])
 
     const filtered = useMemo(() => {
         if (!query) return branches
@@ -16,7 +26,7 @@ export function BranchSelector({ branches = [], selected, onSelect, label, defau
     const isDefault = selected && (selected === defaultBranch || selected === 'main' || selected === 'master')
 
     return (
-        <div className="relative flex-1">
+        <div ref={containerRef} className="relative flex-1">
             {label && <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{label}</label>}
             <button
                 type="button"

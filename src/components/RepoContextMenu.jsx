@@ -4,7 +4,7 @@ import {
 	ExternalLink, Copy, Settings, Rocket, Sparkles, Package,
 	Lock, Unlock, Archive, Trash2, RefreshCw, Wand2, GitCompare, Shield,
 	BarChart3, Lightbulb, ArrowRightLeft, GitFork, Download, Upload, History, FlaskConical,
-	Globe, KeyRound, Terminal
+	Globe, KeyRound, Terminal, GitPullRequest
 } from 'lucide-react'
 
 /**
@@ -60,6 +60,7 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 			icon: Sparkles,
 			children: [
 				{ label: 'Generate Commit Message', icon: Wand2, onClick: () => onAction('aiCommit', repo) },
+				{ label: 'Generate PR Description', icon: GitPullRequest, onClick: () => onAction('generatePR', repo) },
 				{ label: 'Quality Report', icon: BarChart3, onClick: () => onAction('aiQuality', repo) },
 				{ label: 'Suggest Name & Description', icon: Lightbulb, onClick: () => onAction('aiSuggest', repo) },
 				{ label: 'Compare with Existing', icon: GitCompare, onClick: () => onAction('aiCompare', repo) },

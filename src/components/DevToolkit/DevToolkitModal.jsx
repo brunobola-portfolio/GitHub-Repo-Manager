@@ -12,7 +12,7 @@ const TABS = [
     { id: 'review', label: 'Review', icon: Eye },
 ]
 
-export function DevToolkitModal({ isOpen, onClose, modalData, repos, askAI, onStartReview }) {
+export function DevToolkitModal({ isOpen, onClose, modalData, repos, onStartReview }) {
     const toolkit = useDevToolkit({
         repos,
         initialTab: modalData?.initialTab,
@@ -24,7 +24,7 @@ export function DevToolkitModal({ isOpen, onClose, modalData, repos, askAI, onSt
     const content = useMemo(() => {
         switch (toolkit.activeTab) {
             case 'commits':
-                return <CommitTab toolkit={toolkit} askAI={askAI} />
+                return <CommitTab toolkit={toolkit} />
             case 'pr':
                 return <PRTab toolkit={toolkit} />
             case 'review':
@@ -32,7 +32,7 @@ export function DevToolkitModal({ isOpen, onClose, modalData, repos, askAI, onSt
             default:
                 return null
         }
-    }, [toolkit, askAI, onStartReview, onClose])
+    }, [toolkit, onStartReview, onClose])
 
     return (
         <Modal
