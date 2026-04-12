@@ -42,7 +42,7 @@ const SystemSetup = lazy(() => import('./components/Setup/SystemSetup').then(m =
 const CreateRepoModal = lazy(() => import('./components/CreateRepoModal').then(m => ({ default: m.CreateRepoModal })))
 const TransferModal = lazy(() => import('./components/TransferModal').then(m => ({ default: m.TransferModal })))
 const OrgManagerModal = lazy(() => import('./components/OrgManagerModal').then(m => ({ default: m.OrgManagerModal })))
-const CommitGeneratorModal = lazy(() => import('./components/CommitGeneratorModal').then(m => ({ default: m.CommitGeneratorModal })))
+const DevToolkitModal = lazy(() => import('./components/DevToolkit/DevToolkitModal').then(m => ({ default: m.DevToolkitModal })))
 const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })))
 // ImportWizard removed — unified into MigrationWizard
 const RepoDetail = lazy(() => import('./components/RepoDetail').then(m => ({ default: m.RepoDetail })))
@@ -134,6 +134,7 @@ function AppContent() {
     },
     onCreateRepo: () => openModal('showCreateRepo'),
     onMigrate: () => openModal('showMigrationWizard'),
+    onOpenDevToolkit: () => openModal('showDevToolkit'),
     onViewChange: setActiveView,
     enabled: !!user && !anyModalOpen
   })
@@ -618,7 +619,7 @@ function AppContent() {
         onReauthorize={handleReauthorize}
         onOpenOrgManager={handleOpenOrgManager}
         onCreateRepo={() => openModal('showCreateRepo')}
-        onOpenCommitGen={() => openModal('showCommitGen')}
+        onOpenDevToolkit={() => openModal('showDevToolkit')}
         onOpenSettings={() => openModal('showSettings')}
         onImport={() => openModal('showMigrationWizard')}
         onMigrationHistory={() => openModal('showMigrationHistory')}
@@ -928,12 +929,17 @@ function AppContent() {
       </Suspense>
 
       <Suspense fallback={null}>
-        <CommitGeneratorModal
-          isOpen={modalStates.showCommitGen}
-          onClose={() => closeModal('showCommitGen')}
+        <DevToolkitModal
+          isOpen={modalStates.showDevToolkit}
+          onClose={() => closeModal('showDevToolkit')}
+          modalData={getModalData('showDevToolkit')}
+          repos={repos}
           askAI={askAI}
-          repo={getModalData('showCommitGen')?.repo}
-          branch={getModalData('showCommitGen')?.branch}
+          onStartReview={(pr) => {
+            closeModal('showDevToolkit')
+            setReviewingPR(pr)
+            setActiveView('pr-review')
+          }}
         />
       </Suspense>
 

@@ -7,6 +7,7 @@ const SHORTCUTS = [
     { key: 'd', description: 'Go to Dashboard', scope: 'navigation' },
     { key: 'r', description: 'Go to Repositories', scope: 'navigation' },
     { key: 't', description: 'Go to Teams', scope: 'navigation' },
+    { key: 'g', description: 'Open Dev Toolkit', scope: 'global' },
     { key: '?', description: 'Show shortcuts help', scope: 'global' }
 ]
 
@@ -15,6 +16,7 @@ export function useKeyboardShortcuts({
     onCreateRepo,
     onMigrate,
     onViewChange,
+    onOpenDevToolkit,
     enabled = true
 }) {
     const [showHelp, setShowHelp] = useState(false)
@@ -50,6 +52,10 @@ export function useKeyboardShortcuts({
                 e.preventDefault()
                 onMigrate?.()
                 break
+            case 'g':
+                e.preventDefault()
+                onOpenDevToolkit?.()
+                break
             case 'd':
                 e.preventDefault()
                 onViewChange?.('dashboard')
@@ -73,7 +79,7 @@ export function useKeyboardShortcuts({
                 }
                 break
         }
-    }, [enabled, onSearch, onCreateRepo, onMigrate, onViewChange, showHelp])
+    }, [enabled, onSearch, onCreateRepo, onMigrate, onViewChange, onOpenDevToolkit, showHelp])
 
     useEffect(() => {
         document.addEventListener('keydown', handleKeyDown)

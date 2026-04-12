@@ -24,7 +24,7 @@ export function Header({
     syncStatus,
     onReauthorize,
     onOpenOrgManager,
-    onOpenCommitGen,
+    onOpenDevToolkit,
     onOpenSettings,
     onImport,
     onMigrationHistory,
@@ -129,7 +129,7 @@ export function Header({
                                 <HeaderIconButton onClick={onImport} label="Import Repository" title="Import">
                                     <Download className="w-[15px] h-[15px]" />
                                 </HeaderIconButton>
-                                <HeaderIconButton onClick={onOpenCommitGen} label="AI Commit Generator" title="AI Commit">
+                                <HeaderIconButton onClick={onOpenDevToolkit} label="Dev Toolkit" title="Dev Toolkit">
                                     <Wand2 className="w-[15px] h-[15px]" />
                                 </HeaderIconButton>
                             </div>

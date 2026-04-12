@@ -527,7 +527,10 @@ export function RepoList({
 								openModalWithData('showRepoInsights', { repo: data, initialTab: 'suggestions' })
 								break
 							case 'aiCommit':
-								openModalWithData('showCommitGen', { repo: data, branch: null })
+								openModalWithData('showDevToolkit', { initialTab: 'commits', repo: data })
+								break
+							case 'generatePR':
+								openModalWithData('showDevToolkit', { initialTab: 'pr', repo: data })
 								break
 							case 'aiBatchIndex_selected':
 								openModalWithData('showBatchIndex', { repos: data })
