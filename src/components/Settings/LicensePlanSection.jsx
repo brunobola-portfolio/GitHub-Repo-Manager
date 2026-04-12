@@ -225,7 +225,7 @@ function LicenseCard({ license }) {
     )
 }
 
-export function BillingSection() {
+export function LicensePlanSection() {
     const [subscription, setSubscription] = useState(null)
     const [license, setLicense] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -249,7 +249,7 @@ export function BillingSection() {
                     if (licData.active && licData.source === 'license_key') {
                         setLicense(licData)
                         setLoading(false)
-                        return // Skip Stripe billing fetch
+                        return
                     }
                 }
             } catch {
@@ -266,7 +266,6 @@ export function BillingSection() {
                 const data = await res.json()
                 setSubscription(data)
             } catch (err) {
-                // Check if this looks like a "not configured" error
                 if (err.message?.toLowerCase().includes('stripe') || err.message?.toLowerCase().includes('not configured')) {
                     setBillingUnavailable(true)
                 } else {
@@ -315,12 +314,12 @@ export function BillingSection() {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                    <CreditCard className="w-5 h-5 text-emerald-500" />
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-purple-500" />
                 </div>
                 <div>
-                    <h2 className="text-base font-semibold text-slate-900 dark:text-white">Billing & Subscription</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Manage your plan and payment details</p>
+                    <h2 className="text-base font-semibold text-slate-900 dark:text-white">License & Plan</h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Manage your license, plan and usage</p>
                 </div>
             </div>
 
@@ -364,7 +363,6 @@ export function BillingSection() {
                         </div>
                     )}
 
-                    {/* Show upgrade prompt if on free plan */}
                     {(subscription.tier === 'free' || subscription.plan === 'free' || !subscription.tier) && (
                         <div className="space-y-3">
                             <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Upgrade your plan</h3>
@@ -390,20 +388,16 @@ export function BillingSection() {
             )}
 
             {/* Activate License Key */}
-            <div className="pt-2">
-                <button
-                    onClick={() => openModal('showLicenseActivation')}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded-xl transition-colors"
-                >
-                    <Key className="w-4 h-4" />
-                    Activate License Key
-                </button>
-            </div>
+            <button
+                onClick={() => openModal('showLicenseActivation')}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded-xl transition-colors"
+            >
+                <Key className="w-4 h-4" />
+                Activate License Key
+            </button>
 
             {/* Usage Dashboard */}
-            <div className="mt-6">
-                <UsageDashboard />
-            </div>
+            <UsageDashboard />
         </div>
     )
 }

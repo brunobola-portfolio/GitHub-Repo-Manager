@@ -359,7 +359,7 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
                 <div className="px-2 py-1 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                     Organizations ({orgs.length})
                 </div>
-                <div className="max-h-48 overflow-y-auto">
+                <div className="max-h-64 overflow-y-auto custom-scrollbar">
                     {orgs.length === 0 ? (
                         <div className="px-2 py-2 text-sm text-slate-500 dark:text-slate-400">No organizations</div>
                     ) : (
