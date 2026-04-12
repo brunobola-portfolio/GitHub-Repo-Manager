@@ -419,6 +419,10 @@ function AppContent() {
       case 'transfer_selected':
         openModalWithData('showTransfer', selectedRepos)
         break
+
+      default:
+        console.warn(`handleQuickAction: unhandled action "${action}"`)
+        break
     }
   }
 

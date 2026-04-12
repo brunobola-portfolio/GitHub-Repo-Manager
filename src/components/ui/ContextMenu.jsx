@@ -294,7 +294,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 
 					return (
 						<div
-							key={item.label || index}
+							key={item.id || item.label || `item-${index}`}
 							ref={(el) => { itemRefs.current[index] = el }}
 							role="menuitem"
 							aria-disabled={item.disabled ? 'true' : undefined}
