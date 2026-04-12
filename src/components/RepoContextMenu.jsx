@@ -2,7 +2,8 @@ import { memo } from 'react'
 import ContextMenu from './ui/ContextMenu'
 import {
 	ExternalLink, Copy, Settings, Rocket, Sparkles, Package,
-	Lock, Unlock, Archive, Trash2, RefreshCw, Wand2, GitCompare, Shield
+	Lock, Unlock, Archive, Trash2, RefreshCw, Wand2, GitCompare, Shield,
+	BarChart3, Lightbulb, ArrowRightLeft, GitFork, Download, Upload, History, FlaskConical
 } from 'lucide-react'
 
 /**
@@ -48,11 +49,9 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 			label: 'Migration',
 			icon: Rocket,
 			children: [
-				{ label: 'Migrate to GitHub', onClick: () => onAction('migrate', repo) },
-				{ label: 'Migrate Work Items', onClick: () => onAction('migrateWorkItems', repo) },
-				{ label: 'Migrate Wiki', onClick: () => onAction('migrateWiki', repo) },
-				{ label: 'Migration History', onClick: () => onAction('migrationHistory', repo) },
-				{ label: 'Dry-Run (Simulate)', onClick: () => onAction('dryRun', repo) }
+				{ label: 'Migrate to GitHub', icon: Upload, onClick: () => onAction('migrate', repo) },
+				{ label: 'Migration History', icon: History, onClick: () => onAction('migrationHistory', repo) },
+				{ label: 'Dry-Run (Simulate)', icon: FlaskConical, onClick: () => onAction('dryRun', repo) }
 			]
 		},
 		{
@@ -60,9 +59,8 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 			icon: Sparkles,
 			children: [
 				{ label: 'Generate Commit Message', icon: Wand2, onClick: () => onAction('aiCommit', repo) },
-				// Wired features — open RepoInsightsModal on the matching tab.
-				{ label: 'Quality Report', onClick: () => onAction('aiQuality', repo) },
-				{ label: 'Suggest Name & Description', onClick: () => onAction('aiSuggest', repo) },
+				{ label: 'Quality Report', icon: BarChart3, onClick: () => onAction('aiQuality', repo) },
+				{ label: 'Suggest Name & Description', icon: Lightbulb, onClick: () => onAction('aiSuggest', repo) },
 				{ label: 'Compare with Existing', icon: GitCompare, onClick: () => onAction('aiCompare', repo) },
 				{ label: 'Security / Secrets Scan', icon: Shield, onClick: () => onAction('aiSecurity', repo) }
 			]
@@ -71,8 +69,8 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 			label: 'Management',
 			icon: Package,
 			children: [
-				{ label: 'Transfer to Org', onClick: () => onAction('transfer', repo) },
-				{ label: 'Mirror / Fork', onClick: () => onAction('mirror', repo) },
+				{ label: 'Transfer to Org', icon: ArrowRightLeft, onClick: () => onAction('transfer', repo) },
+				{ label: 'Mirror / Fork', icon: GitFork, onClick: () => onAction('mirror', repo) },
 				{
 					id: 'sync',
 					label: 'Sync Repository',
@@ -81,7 +79,7 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 					tooltip: repo.isMirror ? null : 'Only available for mirrored repos',
 					onClick: () => onAction('sync', repo)
 				},
-				{ label: 'Export Metadata (JSON)', onClick: () => onAction('exportMeta', repo) }
+				{ label: 'Export Metadata (JSON)', icon: Download, onClick: () => onAction('exportMeta', repo) }
 			]
 		},
 		{ type: 'separator' },
