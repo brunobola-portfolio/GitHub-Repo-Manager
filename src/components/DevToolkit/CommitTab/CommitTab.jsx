@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react'
 import { RefreshCw, Wand2 } from 'lucide-react'
-import { RepoSelector } from '../shared/RepoSelector'
 import { BranchSelector } from '../shared/BranchSelector'
 import { DiffSummary } from '../shared/DiffSummary'
-import { OutputSection } from '../shared/OutputSection'
-import { RefinementChips } from '../shared/RefinementChips'
+import { useStreaming } from '../../../hooks/useStreaming'
+import { StreamingOutput } from '../shared/StreamingOutput'
+import { RefinementZone } from '../shared/RefinementZone'
 import { FormatSelector } from './FormatSelector'
 import { SessionHistory } from './SessionHistory'
 import { MultiCommitSplit } from './MultiCommitSplit'
@@ -27,6 +27,8 @@ const MULTI_COMMIT_THRESHOLD = 300
 export function CommitTab({ toolkit }) {
     const { repos, selectedRepo, selectRepo, headBranch, setHeadBranch, baseBranch, setBaseBranch, branches, compareData, compareLoading, fetchCompare, history, addToHistory } = toolkit
 
+    const { streamingText, isStreaming, result: streamResult, startStream, cancelStream, reset: resetStream } = useStreaming()
+
     const [inputMode, setInputMode] = useState(selectedRepo ? 'auto' : 'manual')
     const [manualDiff, setManualDiff] = useState('')
     const [format, setFormat] = useState('conventional')
@@ -35,17 +37,11 @@ export function CommitTab({ toolkit }) {
     const [generated, setGenerated] = useState('')
     const [loading, setLoading] = useState(false)
     const [multiCommits, setMultiCommits] = useState(null)
+    const [versions, setVersions] = useState([])
 
     const totalChanges = compareData
         ? (compareData.diff_summary?.additions || 0) + (compareData.diff_summary?.deletions || 0)
         : 0
-
-    const handleRepoSelect = useCallback((repo) => {
-        selectRepo(repo)
-        setInputMode('auto')
-        setGenerated('')
-        setMultiCommits(null)
-    }, [selectRepo])
 
     const handleBranchChange = useCallback((branch, type) => {
         if (type === 'head') {
@@ -81,36 +77,28 @@ export function CommitTab({ toolkit }) {
             : manualDiff
 
         if (!diff?.trim()) return
-        setLoading(true)
         setGenerated('')
         setMultiCommits(null)
 
-        try {
-            let style = repoStyle
-            if (format === 'repo-convention' && !style) {
-                style = await fetchRepoStyle()
-            }
-
-            const res = await fetch('/api/ai/generate-commit', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    diff,
-                    format,
-                    repo_style: format === 'repo-convention' ? style : undefined,
-                    repo_context: selectedRepo ? { name: selectedRepo.full_name, description: selectedRepo.description } : undefined,
-                }),
-            })
-            if (!res.ok) throw new Error('Generation failed')
-            const data = await res.json()
-            setGenerated(data.message)
-            addToHistory(data.message)
-        } catch {
-            setGenerated('Error generating commit message. Please try again.')
-        } finally {
-            setLoading(false)
+        let style = repoStyle
+        if (format === 'repo-convention' && !style) {
+            style = await fetchRepoStyle()
         }
-    }, [inputMode, compareData, manualDiff, format, repoStyle, selectedRepo, fetchRepoStyle, addToHistory])
+
+        const result = await startStream('/api/ai/generate-commit', {
+            diff,
+            format,
+            repo_style: format === 'repo-convention' ? style : undefined,
+            repo_context: selectedRepo ? { name: selectedRepo.full_name, description: selectedRepo.description } : undefined,
+        })
+
+        if (result?.message) {
+            setGenerated(result.message)
+            addToHistory(result.message)
+            setVersions(prev => [{ content: result.message, instruction: 'Generated', time: new Date().toLocaleTimeString() }, ...prev].slice(0, 10))
+            toolkit.setGeneratedCommit?.({ message: result.message, format })
+        }
+    }, [inputMode, compareData, manualDiff, format, repoStyle, selectedRepo, fetchRepoStyle, addToHistory, startStream, toolkit])
 
     const handleRefine = useCallback(async (instruction) => {
         if (!generated) return
@@ -118,32 +106,44 @@ export function CommitTab({ toolkit }) {
             handleGenerate()
             return
         }
-        setLoading(true)
-        try {
-            const diff = inputMode === 'auto'
-                ? compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n')
-                : manualDiff
 
-            const res = await fetch('/api/ai/refine', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    original_content: generated,
-                    original_diff: diff,
-                    instruction,
-                    content_type: 'commit',
-                }),
-            })
-            if (!res.ok) throw new Error('Refine failed')
-            const data = await res.json()
-            setGenerated(data.refined_content)
-            addToHistory(data.refined_content)
-        } catch {
-            // Keep current message on error
-        } finally {
-            setLoading(false)
+        const diff = inputMode === 'auto'
+            ? compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n')
+            : manualDiff
+
+        const result = await startStream('/api/ai/refine', {
+            original_content: generated,
+            original_diff: diff,
+            instruction,
+            content_type: 'commit',
+        })
+
+        if (result?.refined_content) {
+            setGenerated(result.refined_content)
+            addToHistory(result.refined_content)
+            setVersions(prev => [{ content: result.refined_content, instruction, time: new Date().toLocaleTimeString() }, ...prev].slice(0, 10))
+            toolkit.setGeneratedCommit?.({ message: result.refined_content, format })
         }
-    }, [generated, inputMode, compareData, manualDiff, addToHistory, handleGenerate])
+    }, [generated, inputMode, compareData, manualDiff, addToHistory, handleGenerate, startStream, toolkit, format])
+
+    const handleChatRefine = useCallback(async (message) => {
+        const diff = inputMode === 'auto'
+            ? compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n')
+            : manualDiff
+        const result = await startStream('/api/ai/chat-refine', {
+            message,
+            current_output: generated,
+            original_diff: diff,
+            content_type: 'commit',
+            history: [],
+        })
+        if (result?.refined_content) {
+            setGenerated(result.refined_content)
+            addToHistory(result.refined_content)
+            setVersions(prev => [{ content: result.refined_content, instruction: message, time: new Date().toLocaleTimeString() }, ...prev].slice(0, 10))
+            toolkit.setGeneratedCommit?.({ message: result.refined_content, format })
+        }
+    }, [inputMode, compareData, manualDiff, generated, format, startStream, addToHistory, toolkit])
 
     const handleSplit = useCallback(async () => {
         const diff = compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n')
@@ -192,7 +192,6 @@ export function CommitTab({ toolkit }) {
 
             {inputMode === 'auto' && (
                 <div className="space-y-3">
-                    <RepoSelector repos={repos} selected={selectedRepo} onSelect={handleRepoSelect} />
                     {selectedRepo && (
                         <div className="flex gap-3">
                             <BranchSelector branches={branches} selected={headBranch} onSelect={b => handleBranchChange(b, 'head')} label="Branch" />
@@ -219,10 +218,10 @@ export function CommitTab({ toolkit }) {
             <button
                 type="button"
                 onClick={handleGenerate}
-                disabled={!canGenerate || loading}
+                disabled={!canGenerate || isStreaming}
                 className="ds-btn-shimmer inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-                {loading ? (
+                {isStreaming ? (
                     <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Generating...</>
                 ) : (
                     <><Wand2 className="w-3.5 h-3.5" />Generate</>
@@ -241,11 +240,25 @@ export function CommitTab({ toolkit }) {
             )}
 
             {!multiCommits && (
-                <OutputSection content={generated} loading={loading} label="Generated Commit Message" />
+                <StreamingOutput
+                    content={generated}
+                    streamingText={streamingText}
+                    isStreaming={isStreaming}
+                    onCancel={cancelStream}
+                    label="Generated Commit Message"
+                />
             )}
 
-            {generated && !loading && !multiCommits && (
-                <RefinementChips chips={COMMIT_CHIPS} onSelect={handleRefine} disabled={loading} />
+            {generated && !isStreaming && !multiCommits && (
+                <RefinementZone
+                    chips={COMMIT_CHIPS}
+                    onChipSelect={handleRefine}
+                    onChatSubmit={handleChatRefine}
+                    disabled={isStreaming}
+                    placeholder='Refine: e.g. "make it more technical"'
+                    versions={versions}
+                    onRestore={(content) => { setGenerated(content); toolkit.setGeneratedCommit?.({ message: content, format }) }}
+                />
             )}
 
             <SessionHistory items={history} onRestore={setGenerated} />

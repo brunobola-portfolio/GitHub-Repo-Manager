@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef } from 'react'
 
 const TAB_STORAGE_KEY = 'devToolkit_activeTab'
+const PANEL_WIDTH_KEY = 'devToolkit_panelWidth'
+const AUTO_DRAFT_KEY = 'devToolkit_autoDraft'
 const MAX_HISTORY = 5
 
 export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBranch, initialPR } = {}) {
@@ -16,6 +18,20 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
     const [compareLoading, setCompareLoading] = useState(false)
     const [prContext, setPrContext] = useState(initialPR || null)
     const [history, setHistory] = useState([])
+    const [generatedCommit, setGeneratedCommit] = useState(null)
+    const [generatedPR, setGeneratedPR] = useState(null)
+    const [contextAnalysis, setContextAnalysis] = useState(null)
+    const [contextAnalysisLoading, setContextAnalysisLoading] = useState(false)
+    const [isPinned, setIsPinned] = useState(!!initialRepo)
+    const [panelWidth, setPanelWidthState] = useState(() => {
+        try {
+            const stored = sessionStorage.getItem(PANEL_WIDTH_KEY)
+            return stored ? Number(stored) : 640
+        } catch { return 640 }
+    })
+    const [autoDraftEnabled, setAutoDraftEnabledState] = useState(() => {
+        try { return sessionStorage.getItem(AUTO_DRAFT_KEY) !== 'false' } catch { return true }
+    })
     const abortRef = useRef(null)
 
     const setActiveTab = useCallback((tab) => {
@@ -74,12 +90,48 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
         }
     }, [])
 
+    const setPanelWidth = useCallback((w) => {
+        setPanelWidthState(w)
+        try { sessionStorage.setItem(PANEL_WIDTH_KEY, String(w)) } catch { /* noop */ }
+    }, [])
+
+    const setAutoDraftEnabled = useCallback((v) => {
+        setAutoDraftEnabledState(v)
+        try { sessionStorage.setItem(AUTO_DRAFT_KEY, String(v)) } catch { /* noop */ }
+    }, [])
+
+    const fetchContextAnalysis = useCallback(async (owner, repo, diffSummary, commits, fileList) => {
+        setContextAnalysisLoading(true)
+        try {
+            const res = await fetch('/api/ai/analyze-context', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    repo: `${owner}/${repo}`,
+                    diff_summary: diffSummary,
+                    commits,
+                    file_list: fileList,
+                }),
+            })
+            if (!res.ok) throw new Error('Context analysis failed')
+            const data = await res.json()
+            setContextAnalysis(data)
+        } catch {
+            setContextAnalysis(null)
+        } finally {
+            setContextAnalysisLoading(false)
+        }
+    }, [])
+
     const selectRepo = useCallback((repo) => {
         setSelectedRepo(repo)
         setHeadBranch(null)
         setBaseBranch(null)
         setBranches([])
         setCompareData(null)
+        setGeneratedCommit(null)
+        setGeneratedPR(null)
+        setContextAnalysis(null)
         if (repo) {
             fetchBranches(repo.owner?.login || repo.full_name?.split('/')[0], repo.name)
         }
@@ -98,5 +150,11 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
         compareData, compareLoading, fetchCompare,
         prContext, setPrContext,
         history, addToHistory,
+        generatedCommit, setGeneratedCommit,
+        generatedPR, setGeneratedPR,
+        contextAnalysis, contextAnalysisLoading, fetchContextAnalysis,
+        isPinned, setIsPinned,
+        panelWidth, setPanelWidth,
+        autoDraftEnabled, setAutoDraftEnabled,
     }
 }

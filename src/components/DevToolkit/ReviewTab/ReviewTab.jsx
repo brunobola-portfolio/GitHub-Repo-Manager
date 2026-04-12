@@ -1,18 +1,24 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Eye } from 'lucide-react'
-import { RepoSelector } from '../shared/RepoSelector'
+import { useStreaming } from '../../../hooks/useStreaming'
+import { ChatInput } from '../shared/ChatInput'
 import { PRSelector } from './PRSelector'
 import { QuickSummary } from './QuickSummary'
 import { QuickActions } from './QuickActions'
 
 export function ReviewTab({ toolkit, onStartReview, onClose }) {
-    const { repos, selectedRepo, selectRepo, prContext } = toolkit
+    const { repos, selectedRepo, selectRepo, prContext, generatedPR } = toolkit
     const [pulls, setPulls] = useState([])
     const [pullsLoading, setPullsLoading] = useState(false)
     const [selectedPR, setSelectedPR] = useState(null)
     const [summary, setSummary] = useState(null)
     const [summaryLoading, setSummaryLoading] = useState(false)
     const [summaryError, setSummaryError] = useState(null)
+
+    const { streamingText, isStreaming, startStream, cancelStream } = useStreaming()
+
+    const [qaHistory, setQaHistory] = useState([])
+    const [qaResponses, setQaResponses] = useState([])
 
     useEffect(() => {
         if (!selectedRepo) return
@@ -31,6 +37,13 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
         }
     }, [prContext, pulls])
 
+    useEffect(() => {
+        if (generatedPR?.number && pulls.length) {
+            const pr = pulls.find(p => p.number === generatedPR.number)
+            if (pr) setSelectedPR(pr)
+        }
+    }, [generatedPR, pulls])
+
     const fetchSummary = useCallback(async (pr) => {
         if (!selectedRepo || !pr) return
         setSummaryLoading(true)
@@ -44,30 +57,57 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
             if (!filesRes.ok) throw new Error('Failed to fetch files')
             const files = await filesRes.json()
 
-            const res = await fetch('/api/ai/review-summary', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    fileManifest: files.map(f => ({ filename: f.filename, additions: f.additions, deletions: f.deletions, status: f.status })),
-                    topFilePatches: files.slice(0, 30).map(f => ({ filename: f.filename, patch: f.patch })),
-                    prMetadata: { title: pr.title, additions: files.reduce((s, f) => s + f.additions, 0), deletions: files.reduce((s, f) => s + f.deletions, 0), fileCount: files.length },
-                }),
+            const result = await startStream('/api/ai/review-summary', {
+                fileManifest: files.map(f => ({ filename: f.filename, additions: f.additions, deletions: f.deletions, status: f.status })),
+                topFilePatches: files.slice(0, 30).map(f => ({ filename: f.filename, patch: f.patch })),
+                prMetadata: { title: pr.title, additions: files.reduce((s, f) => s + f.additions, 0), deletions: files.reduce((s, f) => s + f.deletions, 0), fileCount: files.length },
             })
-            if (!res.ok) throw new Error('AI summary failed')
-            const data = await res.json()
-            setSummary(data)
+
+            if (result) {
+                // Streaming returns the normalized summary object directly
+                setSummary(result)
+            }
         } catch (err) {
             setSummaryError(err.message || 'Failed to generate summary')
         } finally {
             setSummaryLoading(false)
         }
-    }, [selectedRepo])
+    }, [selectedRepo, startStream])
 
     const handlePRSelect = useCallback((pr) => {
         setSelectedPR(pr)
         setSummary(null)
+        setQaHistory([])
+        setQaResponses([])
         fetchSummary(pr)
     }, [fetchSummary])
+
+    const handleQA = useCallback(async (question) => {
+        if (!selectedRepo || !selectedPR) return
+        const owner = selectedRepo.owner?.login
+        const repo = selectedRepo.name
+
+        const newHistory = [...qaHistory, { role: 'user', content: question }]
+        setQaHistory(newHistory)
+        setQaResponses(prev => [...prev, { role: 'user', content: question }])
+
+        const filesRes = await fetch(`/api/repos/${owner}/${repo}/pulls/${selectedPR.number}/files`)
+        const files = filesRes.ok ? await filesRes.json() : []
+        const patches = files.slice(0, 20).map(f => `${f.filename}:\n${f.patch || ''}`).join('\n---\n')
+
+        const result = await startStream('/api/ai/chat-refine', {
+            message: question,
+            current_output: summary?.summary?.overview || '',
+            original_diff: patches,
+            content_type: 'review_qa',
+            history: newHistory.slice(-10),
+        })
+
+        if (result?.refined_content) {
+            setQaHistory(prev => [...prev, { role: 'assistant', content: result.refined_content }])
+            setQaResponses(prev => [...prev, { role: 'assistant', content: result.refined_content }])
+        }
+    }, [selectedRepo, selectedPR, qaHistory, summary, startStream])
 
     const handleStartFullReview = useCallback(() => {
         if (selectedPR && onStartReview) {
@@ -78,8 +118,6 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
 
     return (
         <div className="p-4 md:p-6 space-y-4">
-            <RepoSelector repos={repos} selected={selectedRepo} onSelect={(r) => { selectRepo(r); setSelectedPR(null); setSummary(null) }} />
-
             {selectedRepo && !selectedPR && (
                 <PRSelector pulls={pulls} loading={pullsLoading} onSelect={handlePRSelect} />
             )}
@@ -91,10 +129,40 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
                             <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">{selectedPR.title}</h3>
                             <p className="text-xs text-slate-400">#{selectedPR.number} by {selectedPR.user?.login}</p>
                         </div>
-                        <button type="button" onClick={() => { setSelectedPR(null); setSummary(null) }} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Change PR</button>
+                        <button type="button" onClick={() => { setSelectedPR(null); setSummary(null); setQaHistory([]); setQaResponses([]) }} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Change PR</button>
                     </div>
 
                     <QuickSummary summary={summary} loading={summaryLoading} error={summaryError} onRetry={() => fetchSummary(selectedPR)} />
+
+                    {summary && (
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Ask about this PR</h4>
+                            {qaResponses.length > 0 && (
+                                <div className="max-h-48 overflow-y-auto custom-scrollbar space-y-2">
+                                    {qaResponses.map((msg, i) => (
+                                        <div key={i} className={`px-3 py-2 rounded-lg text-sm ${
+                                            msg.role === 'user'
+                                                ? 'bg-indigo-500/10 text-indigo-300 ml-8'
+                                                : 'bg-slate-800/60 text-slate-300 mr-8'
+                                        }`}>
+                                            {msg.content}
+                                        </div>
+                                    ))}
+                                    {isStreaming && (
+                                        <div className="bg-slate-800/60 text-slate-300 mr-8 px-3 py-2 rounded-lg text-sm">
+                                            {streamingText}
+                                            <span className="inline-block w-2 h-4 ml-0.5 bg-emerald-400 animate-pulse align-text-bottom" />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            <ChatInput
+                                placeholder='Ask: e.g. "is the error handling sufficient?"'
+                                onSubmit={handleQA}
+                                disabled={isStreaming}
+                            />
+                        </div>
+                    )}
 
                     {summary && (
                         <QuickActions owner={selectedRepo.owner?.login} repo={selectedRepo.name} pullNumber={selectedPR.number} onSubmitted={() => fetchSummary(selectedPR)} />

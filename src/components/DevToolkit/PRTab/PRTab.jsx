@@ -1,13 +1,15 @@
 import { useState, useCallback, useEffect } from 'react'
-import { RefreshCw, GitPullRequest, Copy, Check, Rocket } from 'lucide-react'
-import { RepoSelector } from '../shared/RepoSelector'
+import { RefreshCw, GitPullRequest, Copy, Check, Rocket, Info, CheckCircle2, FileText } from 'lucide-react'
+import { useStreaming } from '../../../hooks/useStreaming'
 import { BranchSelector } from '../shared/BranchSelector'
 import { DiffSummary } from '../shared/DiffSummary'
+import { RefinementZone } from '../shared/RefinementZone'
 import { PRSections } from './PRSections'
 import { CreatePRConfirm } from './CreatePRConfirm'
 
 export function PRTab({ toolkit }) {
-    const { repos, selectedRepo, selectRepo, headBranch, setHeadBranch, baseBranch, setBaseBranch, branches, compareData, compareLoading, fetchCompare, prContext } = toolkit
+    const { repos, selectedRepo, selectRepo, headBranch, setHeadBranch, baseBranch, setBaseBranch, branches, compareData, compareLoading, fetchCompare, prContext, generatedCommit } = toolkit
+    const { streamingText, isStreaming, startStream, cancelStream } = useStreaming()
 
     const [sections, setSections] = useState(null)
     const [labels, setLabels] = useState([])
@@ -69,49 +71,59 @@ export function PRTab({ toolkit }) {
                 .filter(Boolean)
                 .join('\n---\n')
 
-            const res = await fetch('/api/ai/generate-pr', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    commits: compareData.commits,
-                    diff_summary: { files: compareData.files, ...compareData.diff_summary },
-                    top_patches: topPatches,
-                    template,
-                    repo_context: selectedRepo ? { name: selectedRepo.full_name, description: selectedRepo.description } : undefined,
-                }),
-            })
-            if (!res.ok) throw new Error('Generation failed')
-            const data = await res.json()
-            setSections(data)
-            setLabels(data.suggested_labels || [])
-            setReviewers(data.suggested_reviewers || [])
+            const body = {
+                commits: compareData.commits,
+                diff_summary: { files: compareData.files, ...compareData.diff_summary },
+                top_patches: topPatches,
+                template,
+                repo_context: selectedRepo ? { name: selectedRepo.full_name, description: selectedRepo.description } : undefined,
+                commit_context: generatedCommit?.message || undefined,
+            }
+
+            const result = await startStream('/api/ai/generate-pr', body)
+            if (result) {
+                setSections(result)
+                setLabels(result.suggested_labels || [])
+                setReviewers(result.suggested_reviewers || [])
+            }
         } catch {
             setSections({ title: '', summary: 'Error generating PR description. Please try again.', test_plan: '', breaking_changes: null, related_issues: [] })
         } finally {
             setLoading(false)
         }
-    }, [compareData, selectedRepo])
+    }, [compareData, selectedRepo, generatedCommit, startStream])
 
     const handleRefine = useCallback(async (contentType, instruction) => {
         if (!sections) return
         setRefiningSection(contentType)
         const field = contentType === 'pr_summary' ? 'summary' : 'test_plan'
         try {
-            const res = await fetch('/api/ai/refine', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    original_content: sections[field],
-                    original_diff: compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n'),
-                    instruction,
-                    content_type: contentType,
-                }),
+            const result = await startStream('/api/ai/refine', {
+                original_content: sections[field],
+                original_diff: compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n'),
+                instruction,
+                content_type: contentType,
             })
-            if (!res.ok) throw new Error('Refine failed')
-            const data = await res.json()
-            setSections(prev => ({ ...prev, [field]: data.refined_content }))
+            if (result?.refined_content) {
+                setSections(prev => ({ ...prev, [field]: result.refined_content }))
+            }
         } catch { /* noop */ } finally { setRefiningSection(null) }
-    }, [sections, compareData])
+    }, [sections, compareData, startStream])
+
+    const handleChatRefine = useCallback(async (message) => {
+        if (!sections) return
+        const diff = compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n')
+        const result = await startStream('/api/ai/chat-refine', {
+            message,
+            current_output: sections.summary,
+            original_diff: diff,
+            content_type: 'pr_summary',
+            history: [],
+        })
+        if (result?.refined_content) {
+            setSections(prev => ({ ...prev, summary: result.refined_content }))
+        }
+    }, [sections, compareData, startStream])
 
     const buildBody = useCallback(() => {
         if (!sections) return ''
@@ -145,7 +157,9 @@ export function PRTab({ toolkit }) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title: sections.title, body }),
                 })
-                setPrUrl(`https://github.com/${owner}/${repo}/pull/${prContext.number}`)
+                const prUrlValue = `https://github.com/${owner}/${repo}/pull/${prContext.number}`
+                setPrUrl(prUrlValue)
+                toolkit.setGeneratedPR?.({ number: prContext.number, url: prUrlValue, title: sections.title })
             } else {
                 const res = await fetch(`/api/repos/${owner}/${repo}/pulls`, {
                     method: 'POST',
@@ -160,6 +174,7 @@ export function PRTab({ toolkit }) {
                 if (!res.ok) throw new Error('Create failed')
                 const data = await res.json()
                 setPrUrl(data.pull_request?.html_url || `https://github.com/${owner}/${repo}/pulls`)
+                toolkit.setGeneratedPR?.({ number: data.pull_request?.number, url: data.pull_request?.html_url, title: sections.title })
             }
         } catch { /* noop */ } finally {
             setActionLoading(false)
@@ -171,7 +186,6 @@ export function PRTab({ toolkit }) {
 
     return (
         <div className="p-4 md:p-6 space-y-4">
-            <RepoSelector repos={repos} selected={selectedRepo} onSelect={(r) => { selectRepo(r); setSections(null) }} />
             {selectedRepo && (
                 <div className="flex gap-3">
                     <BranchSelector branches={branches} selected={headBranch} onSelect={b => handleBranchChange(b, 'head')} label="Head (your branch)" />
@@ -181,17 +195,37 @@ export function PRTab({ toolkit }) {
 
             <DiffSummary files={compareData?.files || []} summary={compareData?.diff_summary} loading={compareLoading} />
 
-            {templateBadge && (
-                <div className="text-xs text-slate-500 dark:text-slate-400 italic">{templateBadge}</div>
+            {selectedRepo && (
+                <div className="space-y-1.5">
+                    {prContext?.number && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-400">
+                            <Info className="w-3.5 h-3.5 shrink-0" />
+                            PR #{prContext.number} exists on this branch
+                            <span className="ml-auto px-1.5 py-0.5 rounded bg-blue-500/20 text-[10px] font-medium">Update existing</span>
+                        </div>
+                    )}
+                    {generatedCommit && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400">
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                            Using commit context from Commits tab
+                        </div>
+                    )}
+                    {templateBadge && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-500/10 border border-slate-500/20 text-xs text-slate-400">
+                            <FileText className="w-3.5 h-3.5 shrink-0" />
+                            {templateBadge}
+                        </div>
+                    )}
+                </div>
             )}
 
             <button
                 type="button"
                 onClick={handleGenerate}
-                disabled={!canGenerate || loading}
+                disabled={!canGenerate || loading || isStreaming}
                 className="ds-btn-shimmer inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-                {loading ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Generating...</> : <><GitPullRequest className="w-3.5 h-3.5" />Generate PR Description</>}
+                {loading || isStreaming ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Generating...</> : <><GitPullRequest className="w-3.5 h-3.5" />Generate PR Description</>}
             </button>
 
             <PRSections
@@ -199,14 +233,28 @@ export function PRTab({ toolkit }) {
                 onSectionChange={(field, val) => setSections(prev => ({ ...prev, [field]: val }))}
                 onRefine={handleRefine}
                 refiningSection={refiningSection}
-                loading={loading}
+                loading={loading || isStreaming}
                 labels={labels}
                 onLabelsChange={setLabels}
                 reviewers={reviewers}
                 onReviewersChange={setReviewers}
             />
 
-            {sections && !loading && (
+            {sections && !isStreaming && (
+                <RefinementZone
+                    chips={[
+                        { id: 'shorter', label: 'Shorter' },
+                        { id: 'more_context', label: 'More context' },
+                        { id: 'architecture_notes', label: 'Architecture notes' },
+                    ]}
+                    onChipSelect={(instruction) => handleRefine('pr_summary', instruction)}
+                    onChatSubmit={handleChatRefine}
+                    disabled={!!refiningSection || isStreaming}
+                    placeholder='Refine: e.g. "add migration notes to summary"'
+                />
+            )}
+
+            {sections && !loading && !isStreaming && (
                 <div className="flex items-center gap-3 flex-wrap">
                     <button type="button" onClick={handleCopyAll} className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                         {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}

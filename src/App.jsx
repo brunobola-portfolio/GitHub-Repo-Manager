@@ -42,7 +42,7 @@ const SystemSetup = lazy(() => import('./components/Setup/SystemSetup').then(m =
 const CreateRepoModal = lazy(() => import('./components/CreateRepoModal').then(m => ({ default: m.CreateRepoModal })))
 const TransferModal = lazy(() => import('./components/TransferModal').then(m => ({ default: m.TransferModal })))
 const OrgManagerModal = lazy(() => import('./components/OrgManagerModal').then(m => ({ default: m.OrgManagerModal })))
-const DevToolkitModal = lazy(() => import('./components/DevToolkit/DevToolkitModal').then(m => ({ default: m.DevToolkitModal })))
+const DevToolkitPanel = lazy(() => import('./components/DevToolkit/DevToolkitPanel').then(m => ({ default: m.DevToolkitPanel })))
 const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })))
 // ImportWizard removed — unified into MigrationWizard
 const RepoDetail = lazy(() => import('./components/RepoDetail').then(m => ({ default: m.RepoDetail })))
@@ -936,7 +936,7 @@ function AppContent() {
       </Suspense>
 
       <Suspense fallback={null}>
-        <DevToolkitModal
+        <DevToolkitPanel
           isOpen={modalStates.showDevToolkit}
           onClose={() => closeModal('showDevToolkit')}
           modalData={getModalData('showDevToolkit')}

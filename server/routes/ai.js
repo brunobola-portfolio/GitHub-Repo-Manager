@@ -24,6 +24,7 @@ import { aiService, sanitizeForPrompt } from '../ai-service.js';
 import { safeJsonParse } from '../lib/utils.js';
 import { checkUsageLimit, incrementUsage } from '../lib/usage-meter.js';
 import { auditLog } from '../lib/audit.js';
+import { initSSE, streamGeminiToSSE } from './ai-streaming.js';
 
 const router = express.Router();
 
@@ -552,6 +553,61 @@ router.post('/ai/review-summary', requireAuth, requireAI, async (req, res) => {
             });
         }
 
+        if (req.query.stream === 'true') {
+            // Streaming branch: build prompt inline, stream raw text, parse on completion
+            const sse = initSSE(res);
+            try {
+                const systemPrompt = `You are an expert code reviewer analyzing a GitHub pull request.
+Provide a structured review summary. Respond with ONLY valid JSON:
+{"overview":"...","riskLevel":"low|medium|high|critical","keyChanges":["..."],"fileRisks":[{"file":"...","risk":"low|medium|high","reason":"..."}],"suggestedReviewOrder":["..."],"estimatedReviewTime":"..."}`;
+
+                const prContext = `PR: ${sanitizeForPrompt(prMetadata.title, 200)}
+Files: ${fileManifest?.length || 0}, +${prMetadata.additions || 0} -${prMetadata.deletions || 0}
+File manifest: ${sanitizeForPrompt(JSON.stringify((fileManifest || []).map(f => ({ filename: f.filename, status: f.status, additions: f.additions, deletions: f.deletions }))), 3000)}`;
+
+                const patchText = sanitizeForPrompt(
+                    (topFilePatches || []).map(f => `${f.filename}:\n${f.patch || ''}`).join('\n---\n'),
+                    80000
+                );
+
+                const model = aiService.model;
+                const streamResult = await model.generateContentStream({
+                    contents: [{ role: 'user', parts: [{ text: systemPrompt + '\n\n' + prContext + '\n\nDiff:\n' + patchText }] }],
+                });
+                const raw = await streamGeminiToSSE(streamResult, sse);
+
+                let parsed;
+                try {
+                    parsed = JSON.parse(raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, ''));
+                } catch {
+                    parsed = { overview: raw, riskLevel: 'medium', keyChanges: [], fileRisks: [], suggestedReviewOrder: [], estimatedReviewTime: 'unknown' };
+                }
+
+                // Normalize field names to match QuickSummary expectations
+                const normalized = {
+                    overallRisk: parsed.riskLevel || parsed.overallRisk || 'medium',
+                    overview: parsed.overview || '',
+                    keyChanges: parsed.keyChanges || [],
+                    fileRisks: (parsed.fileRisks || []).map(f => ({
+                        filename: f.file || f.filename || '',
+                        level: f.risk || f.level || 'low',
+                        reason: f.reason || '',
+                    })),
+                    suggestedReviewOrder: parsed.suggestedReviewOrder || [],
+                    estimatedReviewTime: parsed.estimatedReviewTime || '',
+                };
+
+                incrementUsage(userId, 'ai_queries');
+                auditLog(req, 'ai.review_summary', 'ai', null, { repo: prMetadata?.repo, fileCount: fileManifest?.length, streamed: true });
+
+                sse.sendDone(normalized);
+            } catch (err) {
+                sse.sendError('Failed to generate review summary');
+            }
+            return;
+        }
+
+        // Non-streaming (existing behavior)
         const summary = await aiService.reviewPullRequest(fileManifest, topFilePatches, prMetadata);
 
         if (summary === null) {
@@ -735,6 +791,32 @@ Rules:
 
         const model = aiService.model;
         const chat = model.startChat({ history: [{ role: 'user', parts: [{ text: systemPrompt }] }, { role: 'model', parts: [{ text: '{"subject": "", "body": ""}' }] }] });
+
+        if (req.query.stream === 'true') {
+            const sse = initSSE(res);
+            try {
+                const streamResult = await chat.sendMessageStream(`Generate a commit message for this diff:\n\n${safeDiff}`);
+                const raw = await streamGeminiToSSE(streamResult, sse);
+
+                let parsed;
+                try {
+                    const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+                    parsed = JSON.parse(cleaned);
+                } catch {
+                    parsed = { subject: raw.split('\n')[0], body: '' };
+                }
+                const message = parsed.body ? `${parsed.subject}\n\n${parsed.body}` : parsed.subject;
+
+                await incrementUsage(userId, 'ai_queries');
+                auditLog(req, 'ai_generate_commit', 'ai', { format, diff_length: diff.length, streamed: true });
+
+                sse.sendDone({ message, subject: parsed.subject, body: parsed.body || '', format_used: format });
+            } catch (err) {
+                sse.sendError('Failed to generate commit message');
+            }
+            return;
+        }
+
         const result = await chat.sendMessage(`Generate a commit message for this diff:\n\n${safeDiff}`);
         const raw = result.response.text().trim();
 
@@ -819,6 +901,37 @@ Rules:
 
         const model = aiService.model;
         const chat = model.startChat({ history: [{ role: 'user', parts: [{ text: systemPrompt }] }, { role: 'model', parts: [{ text: '{}' }] }] });
+
+        if (req.query.stream === 'true') {
+            const sse = initSSE(res);
+            try {
+                const streamResult = await chat.sendMessageStream(
+                    `Generate a PR description.\n\nCommits:\n${commitList}\n\nFiles changed:\n${filesInfo}\n\nPatches:\n${safePatches}`
+                );
+                const raw = await streamGeminiToSSE(streamResult, sse);
+
+                let parsed;
+                try {
+                    const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+                    parsed = JSON.parse(cleaned);
+                } catch {
+                    parsed = { title: commits[0]?.message?.split('\n')[0] || 'Update', summary: raw, test_plan: '', breaking_changes: null, related_issues: [], suggested_labels: [], suggested_reviewers: [] };
+                }
+
+                await incrementUsage(userId, 'ai_queries');
+                auditLog(req, 'ai_generate_pr', 'ai', { commit_count: commits.length, streamed: true });
+
+                sse.sendDone({
+                    title: parsed.title || '', summary: parsed.summary || '', test_plan: parsed.test_plan || '',
+                    breaking_changes: parsed.breaking_changes || null, related_issues: parsed.related_issues || [],
+                    suggested_labels: parsed.suggested_labels || [], suggested_reviewers: parsed.suggested_reviewers || [],
+                });
+            } catch (err) {
+                sse.sendError('Failed to generate PR description');
+            }
+            return;
+        }
+
         const result = await chat.sendMessage(
             `Generate a PR description.\n\nCommits:\n${commitList}\n\nFiles changed:\n${filesInfo}\n\nPatches:\n${safePatches}`
         );
@@ -907,6 +1020,25 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
 
         const model = aiService.model;
         const chat = model.startChat({ history: [{ role: 'user', parts: [{ text: systemPrompt }] }, { role: 'model', parts: [{ text: 'Ready.' }] }] });
+
+        if (req.query.stream === 'true') {
+            const sse = initSSE(res);
+            try {
+                const streamResult = await chat.sendMessageStream(
+                    `Refinement instruction: ${instructionText}\n\nOriginal content:\n${original_content}${diffContext}`
+                );
+                const raw = await streamGeminiToSSE(streamResult, sse);
+
+                await incrementUsage(userId, 'ai_queries');
+                auditLog(req, 'ai_refine', 'ai', { instruction, content_type, streamed: true });
+
+                sse.sendDone({ refined_content: raw.trim() });
+            } catch (err) {
+                sse.sendError('Failed to refine content');
+            }
+            return;
+        }
+
         const result = await chat.sendMessage(
             `Refinement instruction: ${instructionText}\n\nOriginal content:\n${original_content}${diffContext}`
         );
@@ -919,6 +1051,150 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
     } catch (error) {
         req.log.error({ err: error }, 'Refine content failed');
         res.status(500).json({ error: safeError(error, 'Failed to refine content') });
+    }
+});
+
+// ------------------------------------------------------------------
+// Dev Toolkit — Analyze Context (Smart Bar)
+// ------------------------------------------------------------------
+
+const contextCache = new Map();
+const CONTEXT_CACHE_TTL = 30000;
+
+router.post('/ai/analyze-context', requireAuth, requireAI, async (req, res) => {
+    try {
+        const { repo, diff_summary, commits, file_list } = req.body;
+
+        if (!repo || !diff_summary) {
+            return res.status(400).json({ error: 'repo and diff_summary are required' });
+        }
+
+        const cacheKey = `${repo}_${diff_summary.files}_${diff_summary.additions}_${diff_summary.deletions}`;
+        const cached = contextCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < CONTEXT_CACHE_TTL) {
+            return res.json(cached.data);
+        }
+
+        const userId = req.session.userId;
+        const limit = await checkUsageLimit(userId, 'ai_queries');
+        if (!limit.allowed) {
+            return res.status(429).json({ error: 'usage_limit_exceeded', message: 'AI query limit reached.' });
+        }
+
+        const commitMessages = (commits || []).map(c => c.message).join('\n');
+        const files = (file_list || []).join(', ');
+
+        const prompt = `Classify this code change. Respond with ONLY valid JSON:
+{"changeType": "feature|bugfix|refactor|breaking|chore", "complexity": "low|medium|high", "breakingChanges": true|false}
+
+Files: ${sanitizeForPrompt(files, 2000)}
+Commits: ${sanitizeForPrompt(commitMessages, 2000)}
+Stats: ${diff_summary.files} files, +${diff_summary.additions} -${diff_summary.deletions}`;
+
+        const model = aiService.model;
+        const result = await model.generateContent(prompt);
+        const raw = result.response.text().trim();
+
+        let parsed;
+        try {
+            parsed = JSON.parse(raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, ''));
+        } catch {
+            parsed = { changeType: 'chore', complexity: 'medium', breakingChanges: false };
+        }
+
+        const suggestions = [];
+        if (commits && commits.length > 0) {
+            suggestions.push({ type: 'generate_pr', message: `${commits.length} commit${commits.length > 1 ? 's' : ''} — generate PR description?`, tab: 'pr' });
+        }
+        if (parsed.breakingChanges) {
+            suggestions.push({ type: 'breaking', message: 'Breaking changes detected — mark in commit', tab: 'commits' });
+        }
+
+        const responseData = {
+            changeType: parsed.changeType || 'chore',
+            complexity: parsed.complexity || 'medium',
+            suggestions,
+            breakingChanges: parsed.breakingChanges || false,
+        };
+
+        await incrementUsage(userId, 'ai_queries');
+        contextCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
+
+        res.json(responseData);
+    } catch (error) {
+        req.log.error({ err: error }, 'Analyze context failed');
+        res.status(500).json({ error: safeError(error, 'Failed to analyze context') });
+    }
+});
+
+// ------------------------------------------------------------------
+// Dev Toolkit — Conversational Refine (always streaming)
+// ------------------------------------------------------------------
+
+router.post('/ai/chat-refine', requireAuth, requireAI, async (req, res) => {
+    try {
+        const { message, current_output, original_diff, content_type, history } = req.body;
+
+        if (!message || typeof message !== 'string') {
+            return res.status(400).json({ error: 'message is required' });
+        }
+
+        const userId = req.session.userId;
+        const limit = await checkUsageLimit(userId, 'ai_queries');
+        if (!limit.allowed) {
+            return res.status(429).json({ error: 'usage_limit_exceeded', message: 'AI query limit reached.' });
+        }
+
+        const CONTENT_TYPE_LABELS = {
+            commit: 'commit message',
+            pr_summary: 'PR summary',
+            pr_test_plan: 'PR test plan',
+            review_qa: 'code review Q&A',
+        };
+        const typeLabel = CONTENT_TYPE_LABELS[content_type] || 'content';
+
+        const safeDiff = original_diff ? sanitizeForPrompt(original_diff, 8000) : '';
+        const diffCtx = safeDiff ? `\n\nDiff context:\n${safeDiff}` : '';
+
+        const systemPrompt = `You are a helpful AI assistant refining ${typeLabel}. Apply the user's instruction to improve the content. Return ONLY the refined content, no explanation.${diffCtx}`;
+
+        const chatHistory = [
+            { role: 'user', parts: [{ text: systemPrompt }] },
+            { role: 'model', parts: [{ text: 'Ready to help refine.' }] },
+        ];
+
+        const safeHistory = Array.isArray(history) ? history.slice(-10) : [];
+        for (const entry of safeHistory) {
+            chatHistory.push({
+                role: entry.role === 'user' ? 'user' : 'model',
+                parts: [{ text: sanitizeForPrompt(entry.content, 4000) }],
+            });
+        }
+
+        const model = aiService.model;
+        const chat = model.startChat({ history: chatHistory });
+
+        const userMessage = current_output
+            ? `Current content:\n${sanitizeForPrompt(current_output, 6000)}\n\nInstruction: ${message}`
+            : message;
+
+        const sse = initSSE(res);
+        try {
+            const streamResult = await chat.sendMessageStream(userMessage);
+            const raw = await streamGeminiToSSE(streamResult, sse);
+
+            await incrementUsage(userId, 'ai_queries');
+            auditLog(req, 'ai_chat_refine', 'ai', { content_type, message_length: message.length });
+
+            sse.sendDone({ refined_content: raw.trim() });
+        } catch (err) {
+            sse.sendError('Failed to refine content');
+        }
+    } catch (error) {
+        req.log.error({ err: error }, 'Chat refine failed');
+        if (!res.headersSent) {
+            res.status(500).json({ error: safeError(error, 'Failed to chat refine') });
+        }
     }
 });
 
