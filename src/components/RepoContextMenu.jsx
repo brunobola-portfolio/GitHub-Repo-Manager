@@ -2,7 +2,7 @@ import { memo } from 'react'
 import ContextMenu from './ui/ContextMenu'
 import {
 	ExternalLink, Copy, Settings, Rocket, Sparkles, Package,
-	Lock, Unlock, Archive, Trash2, RefreshCw
+	Lock, Unlock, Archive, Trash2, RefreshCw, Wand2
 } from 'lucide-react'
 
 /**
@@ -59,6 +59,7 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 			label: 'AI',
 			icon: Sparkles,
 			children: [
+				{ label: 'Generate Commit Message', icon: Wand2, onClick: () => onAction('aiCommit', repo) },
 				// Wired features — open RepoInsightsModal on the matching tab.
 				{ label: 'Quality Report', onClick: () => onAction('aiQuality', repo) },
 				{ label: 'Suggest Name & Description', onClick: () => onAction('aiSuggest', repo) },
@@ -122,6 +123,11 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 			label: `Archive ${selectedRepos.length} repos`,
 			icon: Archive,
 			onClick: () => onAction('archive_selected', selectedRepos)
+		},
+		{
+			label: 'Batch Index with AI',
+			icon: Sparkles,
+			onClick: () => onAction('aiBatchIndex_selected', selectedRepos)
 		},
 		{ type: 'separator' },
 		{

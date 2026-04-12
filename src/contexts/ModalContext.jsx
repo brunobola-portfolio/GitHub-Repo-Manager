@@ -12,6 +12,7 @@ const MODAL_NAMES = [
   'showMigrationWizard',
   'showMigrationHistory',
   'showConfirm',
+  'showBatchIndex',
 ]
 
 function createClosedState() {

@@ -51,6 +51,7 @@ const KeyboardShortcutsHelp = lazy(() => import('./components/KeyboardShortcutsH
 const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ default: m.AIAssistant })))
 const MigrationWizard = lazy(() => import('./components/MigrationWizard/MigrationWizard'))
 const PRReviewView = lazy(() => import('./components/PRReview/PRReviewView').then(m => ({ default: m.PRReviewView })))
+const BatchIndexProgressModal = lazy(() => import('./components/AI/BatchIndexProgressModal').then(m => ({ default: m.BatchIndexProgressModal })))
 
 // Loading fallback component
 function LoadingFallback() {
@@ -883,6 +884,8 @@ function AppContent() {
           isOpen={modalStates.showCommitGen}
           onClose={() => closeModal('showCommitGen')}
           askAI={askAI}
+          repo={getModalData('showCommitGen')?.repo}
+          branch={getModalData('showCommitGen')?.branch}
         />
       </Suspense>
 
@@ -943,6 +946,14 @@ function AppContent() {
           isOpen={showHelp}
           onClose={() => setShowHelp(false)}
           shortcuts={shortcuts}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <BatchIndexProgressModal
+          isOpen={modalStates.showBatchIndex}
+          onClose={() => closeModal('showBatchIndex')}
+          repos={getModalData('showBatchIndex')?.repos || []}
         />
       </Suspense>
 

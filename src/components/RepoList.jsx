@@ -528,6 +528,12 @@ export function RepoList({
 							case 'aiSuggest':
 								openModalWithData('showRepoInsights', { repo: data, initialTab: 'suggestions' })
 								break
+							case 'aiCommit':
+								openModalWithData('showCommitGen', { repo: data, branch: null })
+								break
+							case 'aiBatchIndex_selected':
+								openModalWithData('showBatchIndex', { repos: data })
+								break
 							case 'exportMeta':
 								try {
 									const result = await reposApi.exportMetadata(data.owner.login, data.name)
