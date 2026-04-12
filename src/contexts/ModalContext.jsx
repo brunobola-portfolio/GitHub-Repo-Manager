@@ -5,7 +5,7 @@ const MODAL_NAMES = [
   'showCreateRepo',
   'showTransfer',
   'showOrgManager',
-  'showCommitGen',
+  'showDevToolkit',
   'showRepoInsights',
   'showCommunityHealth',
   'showSettings',
