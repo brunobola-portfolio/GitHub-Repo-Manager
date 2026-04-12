@@ -9,7 +9,19 @@ vi.mock('../lib/github-api.js', () => ({
 
 // Mock audit log
 vi.mock('../lib/audit.js', () => ({
-  auditLog: vi.fn().mockResolvedValue(undefined)
+  auditLog: vi.fn()
+}))
+
+// Mock middlewares: requireAuth checks session, requireTier is passthrough
+vi.mock('../middleware/auth.js', () => ({
+  requireAuth: (req, res, next) => {
+    if (!req.session?.accessToken) return res.status(401).json({ error: 'Session expired. Please login again.' })
+    next()
+  }
+}))
+
+vi.mock('../middleware/require-tier.js', () => ({
+  requireTier: () => (req, _res, next) => next()
 }))
 
 import { githubApi } from '../lib/github-api.js'
@@ -58,5 +70,18 @@ describe('GET /api/v1/repos/:owner/:repo/export', () => {
     const res = await request(app).get('/api/v1/repos/alice/hello/export')
     expect(res.status).toBe(502)
     expect(res.body.error).toContain('github down')
+  })
+
+  it('returns 401 when session has no accessToken', async () => {
+    const bareApp = express()
+    bareApp.use((req, _res, next) => {
+      req.session = {}  // empty session, no accessToken
+      req.log = { error: vi.fn() }
+      next()
+    })
+    const { default: router } = await import('../routes/v1/repos-export.js')
+    bareApp.use('/api/v1', router)
+    const res = await request(bareApp).get('/api/v1/repos/alice/hello/export')
+    expect(res.status).toBe(401)
   })
 })

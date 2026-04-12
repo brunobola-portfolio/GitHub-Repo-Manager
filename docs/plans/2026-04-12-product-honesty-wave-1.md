@@ -293,19 +293,18 @@ Create `server/routes/v1/repos-export.js`:
 import { Router } from 'express'
 import { githubApi } from '../../lib/github-api.js'
 import { auditLog } from '../../lib/audit.js'
+import { requireAuth } from '../../middleware/auth.js'
+import { requireTier } from '../../middleware/require-tier.js'
 
 const router = Router()
 
-router.get('/repos/:owner/:repo/export', async (req, res) => {
+router.get('/repos/:owner/:repo/export', requireAuth, requireTier('free'), async (req, res) => {
   const { owner, repo } = req.params
-  const token = req.session?.accessToken
-  if (!token) return res.status(401).json({ error: 'Not authenticated' })
+  const token = req.session.accessToken  // requireAuth guarantees this exists
   try {
     const [repoRes, topicsRes, languagesRes, branchesRes, releasesRes] = await Promise.all([
       githubApi(`/repos/${owner}/${repo}`, token),
-      githubApi(`/repos/${owner}/${repo}/topics`, token, {
-        headers: { Accept: 'application/vnd.github.mercy-preview+json' }
-      }),
+      githubApi(`/repos/${owner}/${repo}/topics`, token),
       githubApi(`/repos/${owner}/${repo}/languages`, token),
       githubApi(`/repos/${owner}/${repo}/branches?per_page=100`, token),
       githubApi(`/repos/${owner}/${repo}/releases?per_page=30`, token)
@@ -323,12 +322,12 @@ router.get('/repos/:owner/:repo/export', async (req, res) => {
       },
       releases: releasesRes.data || []
     }
-    await auditLog(req, 'repo.export', 'repo', `${owner}/${repo}`, {
-      size: JSON.stringify(payload).length
-    })
-    res.setHeader('Content-Disposition', `attachment; filename="${repo}-export-${Date.now()}.json"`)
+    const body = JSON.stringify(payload, null, 2)
+    auditLog(req, 'repo.export', 'repo', `${owner}/${repo}`, { size: body.length })
+    const safeRepo = repo.replace(/[^\w.-]/g, '_').slice(0, 100)
+    res.setHeader('Content-Disposition', `attachment; filename="${safeRepo}-export-${Date.now()}.json"`)
     res.setHeader('Content-Type', 'application/json')
-    res.send(JSON.stringify(payload, null, 2))
+    res.send(body)
   } catch (err) {
     req.log.error({ err, owner, repo }, 'repo export failed')
     res.status(err.status || 500).json({ error: err.message || 'Export failed' })
@@ -586,7 +585,7 @@ vi.mock('simple-git', () => ({
 }))
 
 vi.mock('../lib/audit.js', () => ({
-  auditLog: vi.fn().mockResolvedValue(undefined)
+  auditLog: vi.fn()
 }))
 
 const mockDbGet = vi.fn()
@@ -596,7 +595,14 @@ vi.mock('../db.js', () => ({
   }
 }))
 
-// Mock tier gate as passthrough
+// Mock middlewares as passthrough (happy path; real auth tested separately)
+vi.mock('../middleware/auth.js', () => ({
+  requireAuth: (req, res, next) => {
+    if (!req.session?.accessToken) return res.status(401).json({ error: 'Session expired. Please login again.' })
+    next()
+  }
+}))
+
 vi.mock('../middleware/require-tier.js', () => ({
   requireTier: () => (req, _res, next) => next()
 }))
@@ -650,14 +656,14 @@ import { join } from 'path'
 import { rm, mkdtemp } from 'fs/promises'
 import db from '../../db.js'
 import { auditLog } from '../../lib/audit.js'
+import { requireAuth } from '../../middleware/auth.js'
 import { requireTier } from '../../middleware/require-tier.js'
 
 const router = Router()
 
-router.post('/repos/:owner/:repo/sync', requireTier('pro'), async (req, res) => {
+router.post('/repos/:owner/:repo/sync', requireAuth, requireTier('pro'), async (req, res) => {
   const { owner, repo } = req.params
-  const token = req.session?.accessToken
-  if (!token) return res.status(401).json({ error: 'Not authenticated' })
+  const token = req.session.accessToken  // requireAuth guarantees this exists
   const job = db.prepare(
     `SELECT source_url FROM migration_jobs
      WHERE target_owner=? AND target_repo=? AND is_mirror=1
@@ -673,7 +679,7 @@ router.post('/repos/:owner/:repo/sync', requireTier('pro'), async (req, res) => 
     const targetUrl = `https://${token}@github.com/${owner}/${repo}.git`
     await git.push(targetUrl, '--mirror')
     const duration = Date.now() - startedAt
-    await auditLog(req, 'repo.sync', 'repo', `${owner}/${repo}`, {
+    auditLog(req, 'repo.sync', 'repo', `${owner}/${repo}`, {
       sourceUrl: job.source_url,
       duration
     })

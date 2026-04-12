@@ -1,19 +1,18 @@
 import { Router } from 'express'
 import { githubApi } from '../../lib/github-api.js'
 import { auditLog } from '../../lib/audit.js'
+import { requireAuth } from '../../middleware/auth.js'
+import { requireTier } from '../../middleware/require-tier.js'
 
 const router = Router()
 
-router.get('/repos/:owner/:repo/export', async (req, res) => {
+router.get('/repos/:owner/:repo/export', requireAuth, requireTier('free'), async (req, res) => {
   const { owner, repo } = req.params
-  const token = req.session?.accessToken
-  if (!token) return res.status(401).json({ error: 'Not authenticated' })
+  const token = req.session.accessToken  // requireAuth guarantees this exists
   try {
     const [repoRes, topicsRes, languagesRes, branchesRes, releasesRes] = await Promise.all([
       githubApi(`/repos/${owner}/${repo}`, token),
-      githubApi(`/repos/${owner}/${repo}/topics`, token, {
-        headers: { Accept: 'application/vnd.github.mercy-preview+json' }
-      }),
+      githubApi(`/repos/${owner}/${repo}/topics`, token),
       githubApi(`/repos/${owner}/${repo}/languages`, token),
       githubApi(`/repos/${owner}/${repo}/branches?per_page=100`, token),
       githubApi(`/repos/${owner}/${repo}/releases?per_page=30`, token)
@@ -31,12 +30,12 @@ router.get('/repos/:owner/:repo/export', async (req, res) => {
       },
       releases: releasesRes.data || []
     }
-    await auditLog(req, 'repo.export', 'repo', `${owner}/${repo}`, {
-      size: JSON.stringify(payload).length
-    })
-    res.setHeader('Content-Disposition', `attachment; filename="${repo}-export-${Date.now()}.json"`)
+    const body = JSON.stringify(payload, null, 2)
+    auditLog(req, 'repo.export', 'repo', `${owner}/${repo}`, { size: body.length })
+    const safeRepo = repo.replace(/[^\w.-]/g, '_').slice(0, 100)
+    res.setHeader('Content-Disposition', `attachment; filename="${safeRepo}-export-${Date.now()}.json"`)
     res.setHeader('Content-Type', 'application/json')
-    res.send(JSON.stringify(payload, null, 2))
+    res.send(body)
   } catch (err) {
     req.log.error({ err, owner, repo }, 'repo export failed')
     res.status(err.status || 500).json({ error: err.message || 'Export failed' })
