@@ -57,6 +57,7 @@ export function SecurityScanModal({ isOpen, onClose, repo }) {
   useEffect(() => {
     if (!isOpen || !repo) return
     let cancelled = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset loading/error synchronously before the async fetch to avoid stale UI
     setLoading(true)
     setError(null)
     reposApi.getSecurityScan(repo.owner.login, repo.name)
