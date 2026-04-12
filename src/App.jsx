@@ -29,6 +29,9 @@ import { LandingPage } from './components/Landing/LandingPage'
 // Lazy load Pricing page
 const PricingPage = lazy(() => import('./components/Pricing/PricingPage').then(m => ({ default: m.PricingPage })))
 
+// Lazy load Roadmap page
+const RoadmapPage = lazy(() => import('./components/Roadmap/RoadmapPage').then(m => ({ default: m.RoadmapPage })))
+
 // Lazy load heavy route components for code splitting
 const DashboardPremium = lazy(() => import('./components/Dashboard/DashboardPremium').then(m => ({ default: m.DashboardPremium })))
 const TeamHub = lazy(() => import('./components/Teams/TeamHub').then(m => ({ default: m.TeamHub })))
@@ -598,7 +601,17 @@ function AppContent() {
           <div className="animate-in fade-in duration-500">
             <ErrorBoundary>
               <Suspense fallback={<LoadingFallback />}>
-                <PricingPage onGetStarted={() => setActiveView('dashboard')} />
+                <PricingPage onGetStarted={(dest) => setActiveView(dest === 'roadmap' ? 'roadmap' : 'dashboard')} />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        )}
+
+        {activeView === 'roadmap' && (
+          <div className="animate-in fade-in duration-500">
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingFallback />}>
+                <RoadmapPage onNavigatePricing={() => setActiveView('pricing')} />
               </Suspense>
             </ErrorBoundary>
           </div>

@@ -5,6 +5,7 @@ import { usePricingCardHover, PricingCardHoverLayers } from '@/hooks/usePricingC
 export function PricingCard({
   tier,
   price,
+  customPrice,
   originalPrice,
   period,
   features = [],
@@ -147,7 +148,7 @@ export function PricingCard({
                 WebkitTextFillColor: 'transparent',
               } : undefined}
             >
-              {price === 0 ? 'Free' : `$${price}`}
+              {customPrice != null ? customPrice : price === 0 ? 'Free' : `$${price}`}
             </span>
             {price > 0 && (
               <span className={`text-sm font-medium mb-1 ${highlighted ? 'text-slate-400' : 'text-slate-400 dark:text-slate-500'}`}>
@@ -156,12 +157,17 @@ export function PricingCard({
             )}
           </div>
 
-          {price === 0 && (
+          {customPrice != null && (
+            <p className={`text-sm mb-6 ${highlighted ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
+              Volume pricing — contact us
+            </p>
+          )}
+          {customPrice == null && price === 0 && (
             <p className={`text-sm mb-6 ${highlighted ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
               No credit card required
             </p>
           )}
-          {price > 0 && (
+          {customPrice == null && price > 0 && (
             <p className={`text-sm mb-6 ${highlighted ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
               {period === 'year'
                 ? `$${price * 12}/year \u00b7 Save 20%`

@@ -12,16 +12,19 @@ const TIERS_MONTHLY = [
     price: 0,
     highlighted: false,
     enterprise: false,
-    ctaText: 'Start for free',
+    ctaText: 'Get Started',
     features: [
-      { label: 'repositories', included: '20' },
-      { label: 'AI queries / month', included: '50' },
-      { label: 'Semantic search', included: false },
-      { label: 'Migration support', included: false },
-      { label: 'Team management', included: false },
-      { label: 'API keys', included: '1' },
-      { label: 'Audit log', included: false },
-      { label: 'SSO / SAML', included: false },
+      { label: 'repositories managed', included: '50' },
+      { label: 'AI queries / month', included: '100' },
+      { label: 'Dashboard, dark mode, shortcuts', included: true },
+      { label: 'Community Health Dashboard', included: true },
+      { label: 'Dry-Run migration (simulate)', included: true },
+      { label: 'Export Metadata (JSON)', included: true },
+      { label: 'Repo Insights', included: '5 / month' },
+      { label: 'README Generator (AI)', included: '3 / month' },
+      { label: 'Commit Generator (AI)', included: '20 / month' },
+      { label: 'Basic bulk on your own repos', included: true },
+      { label: 'API keys', included: '2' },
       { label: 'Community support', included: true },
     ],
   },
@@ -30,35 +33,36 @@ const TIERS_MONTHLY = [
     price: 19,
     highlighted: true,
     enterprise: false,
-    ctaText: 'Start 14-day free trial',
+    ctaText: 'Upgrade to Pro',
     features: [
-      { label: 'repositories', included: 'Unlimited' },
-      { label: 'AI queries / month', included: '500' },
-      { label: 'Semantic search', included: true },
-      { label: 'Basic migration', included: true },
-      { label: 'Team management', included: '3 members' },
-      { label: 'API keys', included: '5' },
-      { label: 'Audit log', included: false },
-      { label: 'SSO / SAML', included: false },
+      { label: 'Everything in Free, unlimited', included: true },
+      { label: 'AI queries / month', included: '2,000' },
+      { label: 'Semantic Search (AI)', included: true },
+      { label: 'AI Assistant (conversational)', included: true },
+      { label: 'Azure DevOps Cloud migration', included: true },
+      { label: 'Migration Risk Analysis', included: true },
+      { label: 'Advanced Bulk (transfer, mirror)', included: true },
+      { label: 'Teams — up to 15 members', included: true },
+      { label: 'PR Review Experience', included: true },
+      { label: 'Sync Repository (mirrors)', included: true },
+      { label: 'API keys', included: '10' },
       { label: 'Email support', included: true },
     ],
   },
   {
     tier: 'Enterprise',
-    price: 49,
+    price: 0,
+    customPrice: 'Custom',
     highlighted: false,
     enterprise: true,
-    ctaText: 'Contact sales',
+    ctaText: 'Contact Sales',
     features: [
-      { label: 'repositories', included: 'Unlimited' },
-      { label: 'AI queries / month', included: 'Unlimited' },
-      { label: 'Semantic search', included: true },
-      { label: 'Full migration (Azure + GitLab)', included: true },
-      { label: 'Team management', included: 'Unlimited members' },
-      { label: 'API keys', included: '20' },
-      { label: 'Audit log', included: true },
-      { label: 'SSO / SAML', included: true },
-      { label: 'Priority support + SLA', included: true },
+      { label: 'Everything in Pro, unlimited', included: true },
+      { label: 'Unlimited AI queries', included: true },
+      { label: 'Unlimited team members', included: true },
+      { label: 'Audit Logs', included: true },
+      { label: 'API keys', included: '50' },
+      { label: 'Priority Support + SLA', included: true },
     ],
   },
 ]
@@ -66,7 +70,7 @@ const TIERS_MONTHLY = [
 const YEARLY_DISCOUNT = 0.8 // 20% off
 
 function applyYearly(tier, isYearly) {
-  if (!isYearly || tier.price === 0) return tier
+  if (!isYearly || tier.price === 0 || tier.customPrice != null) return tier
   return {
     ...tier,
     originalPrice: tier.price,
@@ -86,7 +90,7 @@ const FAQS = [
   },
   {
     q: 'Is my data secure?',
-    a: 'All data is encrypted in transit (TLS 1.3) and at rest (AES-256). Enterprise plans include audit logs, SSO/SAML, and custom data-residency options. We never access your code without explicit permission.',
+    a: 'All data is encrypted in transit (TLS 1.3) and at rest (AES-256). Enterprise plans include audit logs and custom data-residency options. We never access your code without explicit permission.',
   },
   {
     q: 'Do you offer a free trial for Pro or Enterprise?',
@@ -190,7 +194,7 @@ export function PricingPage({ onGetStarted } = {}) {
   const tiers = TIERS_MONTHLY.map(t => applyYearly(t, isYearly))
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden">
+    <div data-testid="pricing-page" className="relative min-h-screen overflow-x-hidden">
 
       {/* Background orbs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -433,6 +437,23 @@ export function PricingPage({ onGetStarted } = {}) {
               </div>
             </div>
           </div>
+        </motion.div>
+
+        {/* ── Roadmap footer link ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-40px' }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-12 text-center"
+        >
+          <button
+            onClick={() => typeof onGetStarted === 'function' && onGetStarted('roadmap')}
+            className="inline-flex items-center gap-2 text-sm font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors duration-200"
+          >
+            See what&apos;s next on our Roadmap
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </motion.div>
 
       </div>
