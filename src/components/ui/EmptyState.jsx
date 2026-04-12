@@ -25,6 +25,8 @@ export function EmptyState({
   // Support both legacy (actionLabel/onAction) and new (action) prop shapes
   const resolvedLabel = action?.label || actionLabel
   const resolvedOnClick = action?.onClick || onAction
+  const resolvedDisabled = action?.disabled || false
+  const resolvedHref = action?.href
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -63,18 +65,35 @@ export function EmptyState({
       </motion.p>
 
       {/* Optional CTA Button */}
-      {resolvedLabel && resolvedOnClick && (
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={resolvedOnClick}
-          className={`px-6 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r ${gradient} hover:shadow-lg transition-all`}
-        >
-          {resolvedLabel}
-        </motion.button>
+      {resolvedLabel && (resolvedOnClick || resolvedHref) && (
+        resolvedHref ? (
+          <motion.a
+            href={resolvedHref}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            whileHover={resolvedDisabled ? undefined : { scale: 1.05 }}
+            whileTap={resolvedDisabled ? undefined : { scale: 0.95 }}
+            aria-disabled={resolvedDisabled || undefined}
+            className={`px-6 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r ${gradient} hover:shadow-lg transition-all ${resolvedDisabled ? 'opacity-50 pointer-events-none' : ''}`}
+          >
+            {resolvedLabel}
+          </motion.a>
+        ) : (
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            whileHover={resolvedDisabled ? undefined : { scale: 1.05 }}
+            whileTap={resolvedDisabled ? undefined : { scale: 0.95 }}
+            onClick={resolvedOnClick}
+            disabled={resolvedDisabled}
+            aria-disabled={resolvedDisabled || undefined}
+            className={`px-6 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r ${gradient} hover:shadow-lg transition-all disabled:opacity-50`}
+          >
+            {resolvedLabel}
+          </motion.button>
+        )
       )}
     </motion.div>
   )

@@ -4,6 +4,8 @@ import { CreditCard, Zap, Building2, Star, AlertTriangle, ExternalLink, RefreshC
 import { API_BASE_URL } from '../../config'
 import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
+import { useModal } from '../../hooks/useModal'
+import { UsageDashboard } from './UsageDashboard'
 
 const TIER_CONFIG = {
     free: {
@@ -231,6 +233,7 @@ export function BillingSection() {
     const [billingUnavailable, setBillingUnavailable] = useState(false)
     const [portalLoading, setPortalLoading] = useState(false)
     const [portalError, setPortalError] = useState(null)
+    const { openModal } = useModal()
 
     useEffect(() => {
         const fetchSubscription = async () => {
@@ -385,6 +388,22 @@ export function BillingSection() {
                     <UpgradePrompt onUpgradePro={handleUpgradePro} onUpgradeEnterprise={handleUpgradeEnterprise} />
                 </div>
             )}
+
+            {/* Activate License Key */}
+            <div className="pt-2">
+                <button
+                    onClick={() => openModal('showLicenseActivation')}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 rounded-xl transition-colors"
+                >
+                    <Key className="w-4 h-4" />
+                    Activate License Key
+                </button>
+            </div>
+
+            {/* Usage Dashboard */}
+            <div className="mt-6">
+                <UsageDashboard />
+            </div>
         </div>
     )
 }

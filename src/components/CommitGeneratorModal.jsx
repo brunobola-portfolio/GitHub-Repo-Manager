@@ -4,7 +4,7 @@ import { WizardPanel } from './ui/WizardPanel'
 import { useMobileBreakpoint } from '../hooks/useMobileBreakpoint'
 import { Copy, RefreshCw, Wand2, Check } from 'lucide-react'
 
-export function CommitGeneratorModal({ isOpen, onClose, askAI }) {
+export function CommitGeneratorModal({ isOpen, onClose, askAI, repo, branch }) {
     const [diff, setDiff] = useState('')
     const [generatedMessage, setGeneratedMessage] = useState('')
     const [loading, setLoading] = useState(false)
@@ -84,6 +84,16 @@ export function CommitGeneratorModal({ isOpen, onClose, askAI }) {
         >
             <div className="p-6 md:p-8 lg:p-10">
                 <div className="max-w-2xl mx-auto space-y-6">
+                    {/* Contextual repo label */}
+                    {repo && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 text-sm text-indigo-700 dark:text-indigo-300">
+                            <Wand2 className="w-4 h-4 shrink-0" />
+                            <span>
+                                For <span className="font-medium">{repo.full_name}</span>
+                                {branch && <> &rarr; <span className="font-medium">{branch}</span></>}
+                            </span>
+                        </div>
+                    )}
                     {/* Input */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">

@@ -19,22 +19,33 @@ router.get('/', requireAuth, (req, res) => {
     const tier = getUserTier(userId);
     const features = getFeatures(tier);
 
-    const usage = {
-        tier,
-        period_start: periodStart,
-        metrics: {
-            ai_queries: { current: 0, limit: features.aiQueriesPerMonth },
-            repos_managed: { current: 0, limit: features.maxRepos },
-        },
-    };
+    // Count active (non-revoked) API keys for this user
+    const apiKeyRow = db.prepare(
+        'SELECT COUNT(*) as n FROM api_keys WHERE user_id = ? AND revoked_at IS NULL'
+    ).get(userId);
+    const apiKeyCount = apiKeyRow ? apiKeyRow.n : 0;
 
+    let aiCurrent = 0;
+    let reposCurrent = 0;
     for (const m of metrics) {
-        if (usage.metrics[m.metric_type]) {
-            usage.metrics[m.metric_type].current = m.count;
-        }
+        if (m.metric_type === 'ai_queries') aiCurrent = m.count;
+        if (m.metric_type === 'repos_managed') reposCurrent = m.count;
     }
 
-    res.json(usage);
+    res.json({
+        tier,
+        period_start: periodStart,
+        // Flat shape consumed by UsageDashboard
+        aiQueries: { current: aiCurrent, limit: features.aiQueriesPerMonth },
+        apiKeys: { current: apiKeyCount, limit: features.apiKeys },
+        repos: { limit: features.maxRepos },
+        teams: { limit: features.teamMembersMax ?? null },
+        // Legacy nested shape kept for backwards compatibility
+        metrics: {
+            ai_queries: { current: aiCurrent, limit: features.aiQueriesPerMonth },
+            repos_managed: { current: reposCurrent, limit: features.maxRepos },
+        },
+    });
 });
 
 export default router;

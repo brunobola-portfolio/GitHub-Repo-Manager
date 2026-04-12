@@ -519,14 +519,23 @@ export function RepoList({
 								break
 							// AI context-menu actions route to the right tab in
 							// RepoInsightsModal so each menu item feels distinct.
-							// `aiCompare`, `aiSecurity` are currently disabled in
-							// the context menu (no backend), so this switch only
-							// handles the two wired features.
+							case 'aiCompare':
+								openModalWithData('showCompare', { repo: data })
+								break
 							case 'aiQuality':
 								openModalWithData('showRepoInsights', { repo: data, initialTab: 'quality' })
 								break
 							case 'aiSuggest':
 								openModalWithData('showRepoInsights', { repo: data, initialTab: 'suggestions' })
+								break
+							case 'aiCommit':
+								openModalWithData('showCommitGen', { repo: data, branch: null })
+								break
+							case 'aiBatchIndex_selected':
+								openModalWithData('showBatchIndex', { repos: data })
+								break
+							case 'aiSecurity':
+								openModalWithData('showSecurityScan', { repo: data })
 								break
 							case 'exportMeta':
 								try {

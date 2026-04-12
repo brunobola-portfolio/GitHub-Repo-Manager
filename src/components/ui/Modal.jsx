@@ -82,6 +82,7 @@ export function Modal({
     // Signal that async content is loading — forwarded to the body's aria-busy
     // so screen readers hear a "busy" state while skeletons show.
     isBusy = false,
+    ...rest
 }) {
     // Use module-level lookup tables so Tailwind's JIT discovers every class.
     const sizeClass = (mobileVariant === 'sheet' ? SHEET_SIZE_CLASSES[size] : SIZE_CLASSES[size]) || SIZE_CLASSES.md
@@ -148,6 +149,7 @@ export function Modal({
                             // When tabs are active, the body div takes a tabpanel id
                             // instead (see below), so pointing at bodyId would orphan.
                             aria-describedby={tabs && tabs.length > 0 ? undefined : bodyId}
+                            {...rest}
                             initial={reducedMotion ? { opacity: 0 } : (mobileVariant === 'sheet' ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 })}
                             animate={reducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
                             exit={reducedMotion ? { opacity: 0 } : (mobileVariant === 'sheet' ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 })}

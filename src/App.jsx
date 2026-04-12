@@ -51,6 +51,10 @@ const KeyboardShortcutsHelp = lazy(() => import('./components/KeyboardShortcutsH
 const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ default: m.AIAssistant })))
 const MigrationWizard = lazy(() => import('./components/MigrationWizard/MigrationWizard'))
 const PRReviewView = lazy(() => import('./components/PRReview/PRReviewView').then(m => ({ default: m.PRReviewView })))
+const BatchIndexProgressModal = lazy(() => import('./components/AI/BatchIndexProgressModal').then(m => ({ default: m.BatchIndexProgressModal })))
+const CompareSimilarDrawer = lazy(() => import('./components/AI/CompareSimilarDrawer').then(m => ({ default: m.CompareSimilarDrawer })))
+const SecurityScanModal = lazy(() => import('./components/security/SecurityScanModal').then(m => ({ default: m.SecurityScanModal })))
+const LicenseActivationModal = lazy(() => import('./components/Settings/LicenseActivationModal').then(m => ({ default: m.LicenseActivationModal })))
 
 // Loading fallback component
 function LoadingFallback() {
@@ -883,6 +887,8 @@ function AppContent() {
           isOpen={modalStates.showCommitGen}
           onClose={() => closeModal('showCommitGen')}
           askAI={askAI}
+          repo={getModalData('showCommitGen')?.repo}
+          branch={getModalData('showCommitGen')?.branch}
         />
       </Suspense>
 
@@ -943,6 +949,37 @@ function AppContent() {
           isOpen={showHelp}
           onClose={() => setShowHelp(false)}
           shortcuts={shortcuts}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <BatchIndexProgressModal
+          isOpen={modalStates.showBatchIndex}
+          onClose={() => closeModal('showBatchIndex')}
+          repos={getModalData('showBatchIndex')?.repos || []}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <CompareSimilarDrawer
+          isOpen={modalStates.showCompare}
+          onClose={() => closeModal('showCompare')}
+          repo={getModalData('showCompare')?.repo}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <SecurityScanModal
+          isOpen={modalStates.showSecurityScan}
+          onClose={() => closeModal('showSecurityScan')}
+          repo={getModalData('showSecurityScan')?.repo}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <LicenseActivationModal
+          isOpen={modalStates.showLicenseActivation}
+          onClose={() => closeModal('showLicenseActivation')}
         />
       </Suspense>
 

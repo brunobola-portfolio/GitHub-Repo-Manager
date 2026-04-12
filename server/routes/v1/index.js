@@ -25,6 +25,7 @@ import usageRoutes from '../usage.js';
 import licenseRoutes from '../license.js';
 import reposExportRouter from './repos-export.js';
 import reposSyncRouter from './repos-sync.js';
+import reposSecurityRouter from './repos-security.js';
 import { requireTier } from '../../middleware/require-tier.js';
 
 const router = Router();
@@ -43,13 +44,14 @@ router.use('/', aiRoutes);
 router.use('/stats', statsRoutes);
 router.use('/', userRoutes);
 router.use('/', bulkRoutes);
-router.use('/audit', auditRoutes);
+router.use('/audit', requireTier('enterprise'), auditRoutes);
 router.use('/api-keys', apiKeysRoutes);
 router.use('/billing', billingRoutes);
 router.use('/usage', usageRoutes);
 router.use('/license', licenseRoutes);
 router.use(reposExportRouter);
 router.use(reposSyncRouter);
+router.use(reposSecurityRouter);
 
 // ------------------------------------------------------------------
 // Team-specific inline routes

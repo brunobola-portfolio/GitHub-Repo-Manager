@@ -2,7 +2,7 @@ import { memo } from 'react'
 import ContextMenu from './ui/ContextMenu'
 import {
 	ExternalLink, Copy, Settings, Rocket, Sparkles, Package,
-	Lock, Unlock, Archive, Trash2, RefreshCw
+	Lock, Unlock, Archive, Trash2, RefreshCw, Wand2, GitCompare, Shield
 } from 'lucide-react'
 
 /**
@@ -59,24 +59,12 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 			label: 'AI',
 			icon: Sparkles,
 			children: [
+				{ label: 'Generate Commit Message', icon: Wand2, onClick: () => onAction('aiCommit', repo) },
 				// Wired features — open RepoInsightsModal on the matching tab.
 				{ label: 'Quality Report', onClick: () => onAction('aiQuality', repo) },
 				{ label: 'Suggest Name & Description', onClick: () => onAction('aiSuggest', repo) },
-				// Coming-soon features — no backend yet. Disabled so users can
-				// still discover the roadmap without being routed to an
-				// unrelated modal.
-				{
-					label: 'Compare with Existing',
-					disabled: true,
-					tooltip: 'Coming soon — will use semantic search to find similar repos',
-					onClick: () => onAction('aiCompare', repo)
-				},
-				{
-					label: 'Security / Secrets Scan',
-					disabled: true,
-					tooltip: 'Coming soon — credential & vulnerability scanning',
-					onClick: () => onAction('aiSecurity', repo)
-				}
+				{ label: 'Compare with Existing', icon: GitCompare, onClick: () => onAction('aiCompare', repo) },
+				{ label: 'Security / Secrets Scan', icon: Shield, onClick: () => onAction('aiSecurity', repo) }
 			]
 		},
 		{
@@ -122,6 +110,11 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 			label: `Archive ${selectedRepos.length} repos`,
 			icon: Archive,
 			onClick: () => onAction('archive_selected', selectedRepos)
+		},
+		{
+			label: 'Batch Index with AI',
+			icon: Sparkles,
+			onClick: () => onAction('aiBatchIndex_selected', selectedRepos)
 		},
 		{ type: 'separator' },
 		{

@@ -16,6 +16,7 @@ import { aiApi } from '../../api/ai'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { InsightCard } from '../ui/InsightCard'
 import { StatBar } from '../ui/StatBar'
+import { ReadmeEnhanceDiffPanel } from './ReadmeEnhanceDiffPanel'
 
 const TABS = [
     { id: 'overview',    label: 'Overview',    icon: Sparkles },
@@ -207,7 +208,7 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
             {error && <InsightsErrorCard message={error} onRetry={startFetch} />}
             {analysis && !loading && activeTab === 'overview'    && <OverviewGrid    data={analysis} />}
             {analysis && !loading && activeTab === 'quality'     && <QualityGrid     data={analysis} />}
-            {analysis && !loading && activeTab === 'readme'      && <ReadmeGrid      data={analysis} />}
+            {analysis && !loading && activeTab === 'readme'      && <ReadmeGrid      data={analysis} repo={repo} />}
             {analysis && !loading && activeTab === 'suggestions' && (
                 <SuggestionsGrid
                     data={suggestionsData}
@@ -470,30 +471,51 @@ function QualityGrid({ data }) {
 // ============================================================================
 // ReadmeGrid — README enhancement suggestions
 // ============================================================================
-function ReadmeGrid({ data }) {
+function ReadmeGrid({ data, repo }) {
     const suggestions = data.readme_suggestions || []
+    const [showEnhance, setShowEnhance] = useState(false)
+
+    const enhanceButton = (
+        <button
+            onClick={() => setShowEnhance(true)}
+            disabled={showEnhance}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700 disabled:opacity-50 ds-btn-shimmer"
+        >
+            <Sparkles className="w-4 h-4" />
+            Enhance with AI
+        </button>
+    )
 
     if (suggestions.length === 0) {
         return (
-            <InsightCard tone="success" hover={false} className="text-center py-8">
-                <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-                <p className="text-emerald-600 dark:text-emerald-400 font-medium">README looks complete!</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    All recommended sections are present.
-                </p>
-            </InsightCard>
+            <div className="grid gap-4">
+                <InsightCard tone="success" hover={false} className="text-center py-8">
+                    <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+                    <p className="text-emerald-600 dark:text-emerald-400 font-medium">README looks complete!</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        All recommended sections are present.
+                    </p>
+                </InsightCard>
+                <div className="flex justify-center">{enhanceButton}</div>
+                {showEnhance && <ReadmeEnhanceDiffPanel repo={repo} />}
+            </div>
         )
     }
 
     return (
         <div className="grid gap-4">
             <InsightCard tone="info">
-                <h3 className="text-blue-600 dark:text-blue-400 font-medium mb-1">
-                    README Enhancement Suggestions
-                </h3>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">
-                    These sections could improve your documentation:
-                </p>
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div>
+                        <h3 className="text-blue-600 dark:text-blue-400 font-medium mb-1">
+                            README Enhancement Suggestions
+                        </h3>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm">
+                            These sections could improve your documentation:
+                        </p>
+                    </div>
+                    {enhanceButton}
+                </div>
             </InsightCard>
             <InsightCard>
                 <div className="grid sm:grid-cols-2 gap-2">
@@ -508,6 +530,7 @@ function ReadmeGrid({ data }) {
                     ))}
                 </div>
             </InsightCard>
+            {showEnhance && <ReadmeEnhanceDiffPanel repo={repo} />}
         </div>
     )
 }

@@ -19,7 +19,8 @@ import express from 'express';
 import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, createRequireAI, safeError } from '../middleware/auth.js';
-import { aiService } from '../ai-service.js';
+import { requireTier } from '../middleware/require-tier.js';
+import { aiService, sanitizeForPrompt } from '../ai-service.js';
 import { safeJsonParse } from '../lib/utils.js';
 import { checkUsageLimit, incrementUsage } from '../lib/usage-meter.js';
 import { auditLog } from '../lib/audit.js';
@@ -145,6 +146,16 @@ router.post('/ai/chat', requireAuth, requireAI, async (req, res) => {
 // ------------------------------------------------------------------
 
 router.post('/ai/suggest', requireAuth, requireAI, async (req, res) => {
+    const userId = req.session.userId;
+    const check = checkUsageLimit(userId, 'ai_queries');
+    if (!check.allowed) {
+        return res.status(429).json({
+            error: 'AI query limit exceeded',
+            limit: check.limit,
+            current: check.current,
+            upgradeUrl: '/pricing'
+        });
+    }
     try {
         const { repo } = req.body;
 
@@ -191,6 +202,8 @@ router.post('/ai/suggest', requireAuth, requireAI, async (req, res) => {
         if (!parsed) {
             return res.status(502).json({ error: 'AI returned an invalid response. Please retry.', code: 'AI_PARSE_ERROR' });
         }
+        incrementUsage(userId, 'ai_queries');
+        auditLog(req, 'ai.suggest', 'ai', null, { repoName: repo?.name });
         res.json(parsed);
     } catch (error) {
         req.log.error({ err: error }, 'AI suggest failed');
@@ -229,14 +242,28 @@ router.post('/ai/suggest', requireAuth, requireAI, async (req, res) => {
 // ------------------------------------------------------------------
 
 router.post('/ai/readme', requireAuth, requireAI, async (req, res) => {
+    const userId = req.session.userId;
+    const check = checkUsageLimit(userId, 'ai_queries');
+    if (!check.allowed) {
+        return res.status(429).json({ error: 'AI query limit exceeded', upgradeUrl: '/pricing' });
+    }
     try {
-        const { name, description, language, topics } = req.body;
+        const repo = req.body.repo || req.body;
+        const repoName = repo?.name || req.body.name;
+        if (!repoName) return res.status(400).json({ error: 'repo required' });
+
+        const cleanName = sanitizeForPrompt(repoName, 200);
+        const cleanDescription = sanitizeForPrompt(repo?.description || req.body.description || '', 500);
+        const cleanLanguage = sanitizeForPrompt(repo?.language || req.body.language || '', 100);
+        const rawTopics = repo?.topics || req.body.topics;
+        const cleanTopics = sanitizeForPrompt(Array.isArray(rawTopics) ? rawTopics.join(', ') : (rawTopics || ''), 500);
+
         const prompt = `Generate a professional, high-quality README.md for a GitHub repository.
 
-    Project Name: ${name}
-    Description: ${description || 'No description provided.'}
-    Primary Language: ${language || 'Not specified'}
-    Topics: ${topics?.join(', ') || 'None'}
+    Project Name: ${cleanName}
+    Description: ${cleanDescription || 'No description provided.'}
+    Primary Language: ${cleanLanguage || 'Not specified'}
+    Topics: ${cleanTopics || 'None'}
 
     Structure:
     1. Title & Badges
@@ -248,13 +275,16 @@ router.post('/ai/readme', requireAuth, requireAI, async (req, res) => {
 
     Make it sound exciting and professional.`;
 
+        const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
         const result = await aiService.model.generateContent(prompt);
         const text = result.response.text();
 
-        res.json({ readme: text });
-    } catch (error) {
-        req.log.error({ err: error }, 'AI README generation failed');
-        res.status(500).json({ error: 'Failed to generate README' });
+        incrementUsage(userId, 'ai_queries');
+        auditLog(req, 'ai.readme', 'ai', null, { repoName: cleanName, model: modelName });
+        res.json({ success: true, readme: text, model: modelName });
+    } catch (err) {
+        req.log.error({ err }, 'AI README generation failed');
+        res.status(500).json({ error: err.message || 'Failed to generate README' });
     }
 });
 
@@ -266,6 +296,17 @@ router.post('/ai/readme', requireAuth, requireAI, async (req, res) => {
 router.post('/ai/index', requireAuth, requireAI, async (req, res) => {
     const { repo } = req.body; // Full repo object from GitHub
     if (!repo) return res.status(400).json({ error: 'Repo data required' });
+
+    const userId = req.session.userId;
+    const check = checkUsageLimit(userId, 'ai_queries');
+    if (!check.allowed) {
+        return res.status(429).json({
+            error: 'AI query limit exceeded',
+            limit: check.limit,
+            current: check.current,
+            upgradeUrl: '/pricing'
+        });
+    }
 
     try {
         req.log.info({ repo: repo.full_name }, 'AI indexing started');
@@ -320,6 +361,8 @@ router.post('/ai/index', requireAuth, requireAI, async (req, res) => {
             stmtEmbed.run(repo.id, userId, JSON.stringify(embedding));
         })();
 
+        incrementUsage(userId, 'ai_queries');
+        auditLog(req, 'ai.index', 'ai', repo.id, { repoName: repo.full_name });
         res.json({ success: true, analysis });
 
     } catch (error) {
@@ -328,13 +371,38 @@ router.post('/ai/index', requireAuth, requireAI, async (req, res) => {
     }
 });
 
-// Semantic Search Endpoint
-router.get('/ai/search', requireAuth, requireAI, async (req, res) => {
+// Semantic Search Endpoint (Pro+: Semantic Search is a Pro feature)
+router.get('/ai/search', requireAuth, requireTier('pro'), requireAI, async (req, res) => {
+    // --- mode=similar-by-id: cosine similarity lookup by repo ID ---
+    if (req.query.mode === 'similar-by-id') {
+        const repoId = req.query.repoId
+        if (!repoId) return res.status(400).json({ error: 'repoId required' })
+        try {
+            const userId = req.session.userId
+            const check = checkUsageLimit(userId, 'ai_queries');
+            if (!check.allowed) {
+                return res.status(429).json({ error: 'AI query limit exceeded', upgradeUrl: '/pricing' });
+            }
+            const similar = await aiService.findSimilarById(repoId, { topK: 5, excludeSelf: true, userId })
+            if (!similar) return res.status(404).json({ error: 'Repository not indexed' })
+            incrementUsage(userId, 'ai_queries');
+            auditLog(req, 'ai.compare', 'ai', repoId, { resultCount: similar.length })
+            return res.json({ mode: 'similar-by-id', similar })
+        } catch (err) {
+            req.log.error({ err }, 'similar-by-id lookup failed')
+            return res.status(500).json({ error: err.message })
+        }
+    }
+
     const { q } = req.query;
     if (!q) return res.json([]);
 
     try {
         const userId = req.session.userId;
+        const check = checkUsageLimit(userId, 'ai_queries');
+        if (!check.allowed) {
+            return res.status(429).json({ error: 'AI query limit exceeded', upgradeUrl: '/pricing' });
+        }
 
         // Get generic results (repo_ids and scores) scoped by user
         const results = await aiService.semanticSearch(q, 10, userId);
@@ -354,6 +422,8 @@ router.get('/ai/search', requireAuth, requireAI, async (req, res) => {
             return { ...r, ...meta };
         });
 
+        incrementUsage(userId, 'ai_queries');
+        auditLog(req, 'ai.search', 'ai', null, { query: q, resultCount: enriched.length });
         res.json(enriched);
 
     } catch (error) {
@@ -374,6 +444,11 @@ router.get('/ai/metadata/:repoId', requireAuth, (req, res) => {
 
 // Enhanced README endpoint - Improve existing README
 router.post('/ai/readme/enhance', requireAuth, requireAI, async (req, res) => {
+    const userId = req.session.userId;
+    const check = checkUsageLimit(userId, 'ai_queries');
+    if (!check.allowed) {
+        return res.status(429).json({ error: 'AI query limit exceeded', upgradeUrl: '/pricing' });
+    }
     try {
         const { repo } = req.body;
         if (!repo) return res.status(400).json({ error: 'Repo data required' });
@@ -397,6 +472,8 @@ router.post('/ai/readme/enhance', requireAuth, requireAI, async (req, res) => {
         }
 
         const result = await aiService.enhanceReadme(readmeContent, repo, fileStructure);
+        incrementUsage(userId, 'ai_queries');
+        auditLog(req, 'ai.readme.enhance', 'ai', null, { repoName: repo.full_name });
         res.json({ success: true, ...result, currentReadme: readmeContent });
 
     } catch (error) {
@@ -407,6 +484,11 @@ router.post('/ai/readme/enhance', requireAuth, requireAI, async (req, res) => {
 
 // Quality Report - Comprehensive repo health analysis
 router.post('/ai/quality-report', requireAuth, requireAI, async (req, res) => {
+    const userId = req.session.userId;
+    const check = checkUsageLimit(userId, 'ai_queries');
+    if (!check.allowed) {
+        return res.status(429).json({ error: 'AI query limit exceeded', upgradeUrl: '/pricing' });
+    }
     try {
         const { repo } = req.body;
         if (!repo) return res.status(400).json({ error: 'Repo data required' });
@@ -426,6 +508,8 @@ router.post('/ai/quality-report', requireAuth, requireAI, async (req, res) => {
         } catch (e) { /* No contents */ }
 
         const report = await aiService.generateQualityReport(repo, readmeContent, fileStructure);
+        incrementUsage(userId, 'ai_queries');
+        auditLog(req, 'ai.quality_report', 'ai', null, { repoName: repo.full_name });
         res.json({ success: true, report, repo: repo.full_name });
 
     } catch (error) {
@@ -439,19 +523,23 @@ router.post('/ai/quality-report', requireAuth, requireAI, async (req, res) => {
 // ------------------------------------------------------------------
 
 // Generate an AI-powered PR review summary
-router.post('/ai/review-summary', requireAuth, async (req, res) => {
+router.post('/ai/review-summary', requireAuth, requireAI, async (req, res) => {
+    const userId = req.session.userId;
+    const check = checkUsageLimit(userId, 'ai_queries');
+    if (!check.allowed) {
+        return res.status(429).json({
+            error: 'AI query limit exceeded',
+            limit: check.limit,
+            current: check.current,
+            upgradeUrl: '/pricing'
+        });
+    }
+
     try {
         if (process.env.DISABLE_AI_REVIEW === 'true') {
             return res.status(404).json({
                 error: 'AI review summaries are disabled on this server.',
                 code: 'AI_REVIEW_DISABLED'
-            });
-        }
-
-        if (!aiService.model) {
-            return res.status(503).json({
-                error: 'AI service is not available. Please check server configuration.',
-                code: 'AI_UNAVAILABLE'
             });
         }
 
@@ -473,6 +561,12 @@ router.post('/ai/review-summary', requireAuth, async (req, res) => {
             });
         }
 
+        incrementUsage(userId, 'ai_queries');
+        auditLog(req, 'ai.review_summary', 'ai', null, {
+            repo: prMetadata?.repo,
+            prNumber: prMetadata?.number,
+            fileCount: fileManifest?.length
+        });
         res.json({ success: true, summary });
     } catch (error) {
         req.log.error({ err: error }, 'AI PR review summary failed');
@@ -487,10 +581,15 @@ router.post('/ai/batch-index', requireAuth, requireAI, async (req, res) => {
         return res.status(400).json({ error: 'Array of repos required' });
     }
 
-    const results = [];
-    const limit = Math.min(repos.length, 10); // Max 10 at a time
-
     const userId = req.session.userId;
+    const batchCount = Math.min(repos.length, 10);
+    const check = checkUsageLimit(userId, 'ai_queries');
+    if (!check.allowed) {
+        return res.status(429).json({ error: 'AI query limit exceeded', upgradeUrl: '/pricing' });
+    }
+
+    const results = [];
+    const limit = batchCount; // Max 10 at a time
 
     // Prepare statements outside the loop for better performance
     const insertMetadata = db.prepare(`
@@ -571,6 +670,14 @@ router.post('/ai/batch-index', requireAuth, requireAI, async (req, res) => {
         req.log.error({ err: error }, 'Batch insert failed');
         return res.status(500).json({ error: 'Failed to save indexed data' });
     }
+
+    // Increment usage by number of repos actually processed (not just requested)
+    if (analyzedRepos.length > 0) {
+        for (let i = 0; i < analyzedRepos.length; i++) {
+            incrementUsage(userId, 'ai_queries');
+        }
+    }
+    auditLog(req, 'ai.batch_index', 'ai', null, { repoCount: analyzedRepos.length });
 
     res.json({
         success: true,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FlaskConical, Crown, Gem } from 'lucide-react'
+import { FlaskConical, Crown, Gem, AlertTriangle } from 'lucide-react'
 import { MOCK_MODE } from '../config'
 
 /**
@@ -47,14 +47,36 @@ export default function LicenseBadge() {
   const spec = getTierSpec(info, error)
   const Icon = spec.icon
 
+  const daysUntilExpiry = info?.expiresAt
+    ? Math.ceil((new Date(info.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null
+
+  const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry > 0
+  const isExpiringCritical = daysUntilExpiry !== null && daysUntilExpiry <= 7 && daysUntilExpiry > 0
+
+  const warningClass = isExpiringCritical
+    ? 'ring-2 ring-red-500 motion-safe:animate-pulse'
+    : isExpiringSoon
+    ? 'ring-2 ring-amber-500'
+    : ''
+
+  const expiryTooltip = isExpiringCritical
+    ? ` — Expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}!`
+    : isExpiringSoon
+    ? ` — Expires in ${daysUntilExpiry} days`
+    : ''
+
   return (
     <span
       data-testid="license-badge"
-      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold ml-1.5 flex-shrink-0 uppercase tracking-wider ${spec.classes}`}
-      title={spec.tooltip}
-      aria-label={spec.ariaLabel}
+      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold ml-1.5 flex-shrink-0 uppercase tracking-wider ${spec.classes} ${warningClass}`}
+      title={`${spec.tooltip}${expiryTooltip}`}
+      aria-label={`${spec.ariaLabel}${expiryTooltip}`}
+      role="status"
+      aria-live={isExpiringSoon ? 'polite' : undefined}
     >
-      <Icon className="w-2.5 h-2.5" />
+      {isExpiringSoon && <AlertTriangle className="w-2.5 h-2.5" />}
+      {!isExpiringSoon && <Icon className="w-2.5 h-2.5" />}
       {spec.label}
     </span>
   )

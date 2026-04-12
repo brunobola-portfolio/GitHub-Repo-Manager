@@ -51,7 +51,7 @@ const plans = [
     features: [
       'Everything in Pro',
       'Unlimited AI queries',
-      'Full migration (Azure + GitLab)',
+      'Full Azure DevOps migration suite',
       'SSO / SAML + audit logs',
       'Unlimited team members',
       'Priority support + SLA',

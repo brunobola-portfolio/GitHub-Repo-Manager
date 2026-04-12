@@ -3,6 +3,7 @@ import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { generateApiKey } from '../middleware/api-key-auth.js';
 import { auditLog } from '../lib/audit.js';
+import { getFeatures } from '../lib/feature-flags.js';
 import { z } from 'zod';
 
 const router = Router();
@@ -26,12 +27,27 @@ router.post('/', requireAuth, (req, res) => {
     const parsed = createKeySchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
 
+    const userId = req.session.userId;
+    const userTier = req.session.user?.tier || req.userTier || 'free';
+    const flags = getFeatures(userTier);
+    const max = flags.apiKeys;
+
+    const currentCount = db.prepare('SELECT COUNT(*) as n FROM api_keys WHERE user_id = ? AND revoked_at IS NULL').get(userId).n;
+    if (max !== undefined && max !== Infinity && currentCount >= max) {
+        return res.status(403).json({
+            error: `API key limit reached (${max}). Upgrade for more keys.`,
+            code: 'tier_limit_exceeded',
+            limit: max,
+            upgradeUrl: '/pricing'
+        });
+    }
+
     const { name, scopes, expires_at } = parsed.data;
     const { id, key, prefix, keyHash } = generateApiKey();
 
     db.prepare(
         'INSERT INTO api_keys (id, user_id, name, key_hash, key_prefix, scopes, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).run(id, req.session.userId, name, keyHash, prefix, JSON.stringify(scopes), expires_at || null);
+    ).run(id, userId, name, keyHash, prefix, JSON.stringify(scopes), expires_at || null);
 
     auditLog(req, 'api_key.create', 'api_key', id, { name, scopes });
     res.status(201).json({ id, key, name, prefix, scopes, expires_at });
