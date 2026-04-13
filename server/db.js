@@ -317,6 +317,8 @@ export function initDB() {
                 key_prefix TEXT NOT NULL,
                 scopes TEXT NOT NULL DEFAULT '["read"]',
                 last_used_at TEXT,
+                last_used_ip TEXT,
+                last_used_ua TEXT,
                 expires_at TEXT,
                 created_at TEXT NOT NULL DEFAULT (datetime('now')),
                 revoked_at TEXT,
@@ -402,6 +404,18 @@ export function initDB() {
     }
     db.exec(`CREATE INDEX IF NOT EXISTS idx_migration_jobs_mirror
              ON migration_jobs(target_owner, target_repo, is_mirror)`);
+
+    // Migration 003: add last_used_ip and last_used_ua columns to api_keys.
+    try {
+        db.exec(`ALTER TABLE api_keys ADD COLUMN last_used_ip TEXT`);
+    } catch (err) {
+        if (!err.message?.includes('duplicate column')) throw err;
+    }
+    try {
+        db.exec(`ALTER TABLE api_keys ADD COLUMN last_used_ua TEXT`);
+    } catch (err) {
+        if (!err.message?.includes('duplicate column')) throw err;
+    }
 
     logger.info('SQLite Database initialized successfully');
 }

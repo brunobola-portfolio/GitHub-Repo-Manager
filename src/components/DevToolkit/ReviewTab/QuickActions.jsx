@@ -5,20 +5,25 @@ export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
     const [action, setAction] = useState(null)
     const [comment, setComment] = useState('')
     const [loading, setLoading] = useState(false)
+    const [error, setError] = useState(null)
 
     const handleSubmit = async (event) => {
         setLoading(true)
+        setError(null)
         try {
             const res = await fetch(`/api/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ event, body: comment || undefined, comments: [] }),
             })
-            if (!res.ok) throw new Error('Submit failed')
+            if (!res.ok) throw new Error('Failed to submit review')
             setAction(null)
             setComment('')
             onSubmitted?.()
-        } catch { /* noop */ } finally { setLoading(false) }
+        } catch (err) {
+            setError(err.message || 'Failed to submit review')
+        } finally { setLoading(false) }
     }
 
     if (action) {
@@ -30,8 +35,11 @@ export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
                     placeholder={action === 'APPROVE' ? 'Optional comment...' : 'Your comment...'}
                     className="w-full h-20 px-3 py-2 text-sm bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-lg resize-none outline-none"
                 />
+                {error && (
+                    <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
+                )}
                 <div className="flex gap-2">
-                    <button type="button" onClick={() => setAction(null)} className="px-3 py-1 text-xs text-slate-500">Cancel</button>
+                    <button type="button" onClick={() => { setAction(null); setError(null) }} className="px-3 py-1 text-xs text-slate-500">Cancel</button>
                     <button
                         type="button"
                         onClick={() => handleSubmit(action)}

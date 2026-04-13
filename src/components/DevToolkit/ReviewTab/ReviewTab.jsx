@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Eye } from 'lucide-react'
 import { useStreaming } from '../../../hooks/useStreaming'
 import { ChatInput } from '../shared/ChatInput'
@@ -7,7 +7,7 @@ import { QuickSummary } from './QuickSummary'
 import { QuickActions } from './QuickActions'
 
 export function ReviewTab({ toolkit, onStartReview, onClose }) {
-    const { repos, selectedRepo, selectRepo, prContext, generatedPR } = toolkit
+    const { selectedRepo, prContext, generatedPR, repoOwner } = toolkit
     const [pulls, setPulls] = useState([])
     const [pullsLoading, setPullsLoading] = useState(false)
     const [selectedPR, setSelectedPR] = useState(null)
@@ -15,20 +15,31 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
     const [summaryLoading, setSummaryLoading] = useState(false)
     const [summaryError, setSummaryError] = useState(null)
 
-    const { streamingText, isStreaming, startStream, cancelStream } = useStreaming()
+    const { streamingText, isStreaming, error: streamError, startStream } = useStreaming()
+    const pullsAbortRef = useRef(null)
 
     const [qaHistory, setQaHistory] = useState([])
     const [qaResponses, setQaResponses] = useState([])
 
+    // Fetch open PRs with proper cleanup
     useEffect(() => {
         if (!selectedRepo) return
+
+        pullsAbortRef.current?.abort()
+        const controller = new AbortController()
+        pullsAbortRef.current = controller
+
         setPullsLoading(true)
-        fetch(`/api/repos/${selectedRepo.owner?.login}/${selectedRepo.name}/pulls?state=open`)
+        fetch(`/api/repos/${repoOwner}/${selectedRepo.name}/pulls?state=open`, { signal: controller.signal, credentials: 'include' })
             .then(r => r.ok ? r.json() : [])
             .then(setPulls)
-            .catch(() => setPulls([]))
+            .catch((err) => {
+                if (err.name !== 'AbortError') setPulls([])
+            })
             .finally(() => setPullsLoading(false))
-    }, [selectedRepo])
+
+        return () => controller.abort()
+    }, [selectedRepo, repoOwner])
 
     useEffect(() => {
         if (prContext?.number && pulls.length) {
@@ -50,11 +61,11 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
         setSummaryError(null)
 
         try {
-            const owner = selectedRepo.owner?.login
+            const owner = repoOwner
             const repo = selectedRepo.name
 
-            const filesRes = await fetch(`/api/repos/${owner}/${repo}/pulls/${pr.number}/files`)
-            if (!filesRes.ok) throw new Error('Failed to fetch files')
+            const filesRes = await fetch(`/api/repos/${owner}/${repo}/pulls/${pr.number}/files`, { credentials: 'include' })
+            if (!filesRes.ok) throw new Error('Failed to fetch PR files')
             const files = await filesRes.json()
 
             const result = await startStream('/api/ai/review-summary', {
@@ -64,7 +75,6 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
             })
 
             if (result) {
-                // Streaming returns the normalized summary object directly
                 setSummary(result)
             }
         } catch (err) {
@@ -72,7 +82,7 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
         } finally {
             setSummaryLoading(false)
         }
-    }, [selectedRepo, startStream])
+    }, [selectedRepo, startStream, repoOwner])
 
     const handlePRSelect = useCallback((pr) => {
         setSelectedPR(pr)
@@ -84,30 +94,34 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
 
     const handleQA = useCallback(async (question) => {
         if (!selectedRepo || !selectedPR) return
-        const owner = selectedRepo.owner?.login
+        const owner = repoOwner
         const repo = selectedRepo.name
 
         const newHistory = [...qaHistory, { role: 'user', content: question }]
         setQaHistory(newHistory)
         setQaResponses(prev => [...prev, { role: 'user', content: question }])
 
-        const filesRes = await fetch(`/api/repos/${owner}/${repo}/pulls/${selectedPR.number}/files`)
-        const files = filesRes.ok ? await filesRes.json() : []
-        const patches = files.slice(0, 20).map(f => `${f.filename}:\n${f.patch || ''}`).join('\n---\n')
+        try {
+            const filesRes = await fetch(`/api/repos/${owner}/${repo}/pulls/${selectedPR.number}/files`, { credentials: 'include' })
+            const files = filesRes.ok ? await filesRes.json() : []
+            const patches = files.slice(0, 20).map(f => `${f.filename}:\n${f.patch || ''}`).join('\n---\n')
 
-        const result = await startStream('/api/ai/chat-refine', {
-            message: question,
-            current_output: summary?.summary?.overview || '',
-            original_diff: patches,
-            content_type: 'review_qa',
-            history: newHistory.slice(-10),
-        })
+            const result = await startStream('/api/ai/chat-refine', {
+                message: question,
+                current_output: summary?.summary?.overview || '',
+                original_diff: patches,
+                content_type: 'review_qa',
+                history: newHistory.slice(-10),
+            })
 
-        if (result?.refined_content) {
-            setQaHistory(prev => [...prev, { role: 'assistant', content: result.refined_content }])
-            setQaResponses(prev => [...prev, { role: 'assistant', content: result.refined_content }])
+            if (result?.refined_content) {
+                setQaHistory(prev => [...prev, { role: 'assistant', content: result.refined_content }])
+                setQaResponses(prev => [...prev, { role: 'assistant', content: result.refined_content }])
+            }
+        } catch {
+            setQaResponses(prev => [...prev, { role: 'assistant', content: 'Failed to get answer. Please try again.' }])
         }
-    }, [selectedRepo, selectedPR, qaHistory, summary, startStream])
+    }, [selectedRepo, selectedPR, qaHistory, summary, startStream, repoOwner])
 
     const handleStartFullReview = useCallback(() => {
         if (selectedPR && onStartReview) {
@@ -132,7 +146,7 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
                         <button type="button" onClick={() => { setSelectedPR(null); setSummary(null); setQaHistory([]); setQaResponses([]) }} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Change PR</button>
                     </div>
 
-                    <QuickSummary summary={summary} loading={summaryLoading} error={summaryError} onRetry={() => fetchSummary(selectedPR)} />
+                    <QuickSummary summary={summary} loading={summaryLoading} error={summaryError || streamError} onRetry={() => fetchSummary(selectedPR)} />
 
                     {summary && (
                         <div className="space-y-3">
@@ -165,7 +179,7 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
                     )}
 
                     {summary && (
-                        <QuickActions owner={selectedRepo.owner?.login} repo={selectedRepo.name} pullNumber={selectedPR.number} onSubmitted={() => fetchSummary(selectedPR)} />
+                        <QuickActions owner={repoOwner} repo={selectedRepo.name} pullNumber={selectedPR.number} onSubmitted={() => fetchSummary(selectedPR)} />
                     )}
 
                     <button

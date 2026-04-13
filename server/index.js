@@ -76,6 +76,15 @@ if (config.nodeEnv !== 'production' && WEAK_DEFAULTS.includes(config.sessionSecr
     logger.warn('SESSION_SECRET is shorter than 32 characters. Use a longer, random secret for better security.');
 }
 
+// Enforce API_KEY_SECRET in production
+if (config.nodeEnv === 'production' && !process.env.API_KEY_SECRET) {
+    logger.fatal('API_KEY_SECRET must be set in production. Exiting.');
+    process.exit(1);
+}
+if (config.nodeEnv !== 'production' && !process.env.API_KEY_SECRET) {
+    logger.warn('Using default API key secret. Set API_KEY_SECRET environment variable for deployment.');
+}
+
 if (!config.githubClientId || !config.githubClientSecret) {
     logger.warn('GitHub OAuth credentials missing. OAuth login will not work. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in .env to enable.');
 }

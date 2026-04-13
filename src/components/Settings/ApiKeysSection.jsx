@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Key, Plus, Copy, Check, Trash2, Eye, EyeOff, AlertTriangle, X } from 'lucide-react'
+import { Key, Plus, Copy, Check, Trash2, AlertTriangle, Shield } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
 import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
-import { Button } from '../ui/Button'
 
 const SCOPE_OPTIONS = [
     { id: 'read', label: 'Read', description: 'Read access to repositories and data' },
@@ -23,6 +22,39 @@ const SCOPE_VARIANT_MAP = {
 function formatDate(dateStr) {
     if (!dateStr) return 'Never'
     return new Date(dateStr).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+function UsageMeter({ current, max, tier }) {
+    if (max === undefined || max === null) return null
+    const isUnlimited = max === Infinity || max > 1000
+    const pct = isUnlimited ? 0 : Math.min((current / max) * 100, 100)
+    const isNearLimit = !isUnlimited && pct >= 80
+
+    return (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-700/40">
+            <Shield className="w-4 h-4 text-slate-400 shrink-0" />
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-slate-600 dark:text-slate-300 font-medium">
+                        {current} / {isUnlimited ? 'Unlimited' : max} active keys
+                    </span>
+                    <Badge variant={isNearLimit ? 'warning' : 'default'} className="text-[10px]">
+                        {tier}
+                    </Badge>
+                </div>
+                {!isUnlimited && (
+                    <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div
+                            className={`h-full rounded-full transition-all ${
+                                isNearLimit ? 'bg-amber-500' : 'bg-indigo-500'
+                            }`}
+                            style={{ width: `${pct}%` }}
+                        />
+                    </div>
+                )}
+            </div>
+        </div>
+    )
 }
 
 function NewKeyForm({ onCreated, onCancel }) {
@@ -45,7 +77,7 @@ function NewKeyForm({ onCreated, onCancel }) {
         setSubmitting(true)
         setError(null)
         try {
-            const body = { name: name.trim(), scopes, ...(expiry ? { expiresAt: expiry } : {}) }
+            const body = { name: name.trim(), scopes, ...(expiry ? { expires_at: new Date(expiry).toISOString() } : {}) }
             const res = await fetch(`${API_BASE_URL}/api/v1/api-keys`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -53,7 +85,7 @@ function NewKeyForm({ onCreated, onCancel }) {
                 body: JSON.stringify(body),
             })
             const data = await res.json()
-            if (!res.ok) throw new Error(data.message || 'Failed to create API key')
+            if (!res.ok) throw new Error(data.error || data.message || 'Failed to create API key')
             onCreated(data)
         } catch (err) {
             setError(err.message)
@@ -167,7 +199,7 @@ function NewKeyReveal({ keyData, onDismiss }) {
             setCopied(true)
             setTimeout(() => setCopied(false), 2000)
         } catch {
-            // fallback
+            // clipboard API not available
         }
     }, [keyData.key])
 
@@ -218,6 +250,13 @@ function KeyRow({ apiKey, onRevoke }) {
     const [confirming, setConfirming] = useState(false)
     const [revoking, setRevoking] = useState(false)
 
+    const scopes = typeof apiKey.scopes === 'string'
+        ? (() => { try { return JSON.parse(apiKey.scopes) } catch { return [] } })()
+        : Array.isArray(apiKey.scopes) ? apiKey.scopes : []
+
+    const isRevoked = !!apiKey.revoked_at
+    const status = isRevoked ? 'revoked' : 'active'
+
     const handleRevoke = useCallback(async () => {
         setRevoking(true)
         try {
@@ -239,21 +278,22 @@ function KeyRow({ apiKey, onRevoke }) {
             <div className="flex-1 min-w-0 space-y-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{apiKey.name}</span>
-                    <Badge variant={apiKey.status === 'active' ? 'success' : 'danger'}>
-                        {apiKey.status}
+                    <Badge variant={status === 'active' ? 'success' : 'danger'}>
+                        {status}
                     </Badge>
                 </div>
-                <code className="text-xs text-slate-500 dark:text-slate-400 font-mono">{apiKey.prefix}</code>
+                <code className="text-xs text-slate-500 dark:text-slate-400 font-mono">{apiKey.key_prefix || apiKey.prefix}</code>
                 <div className="flex flex-wrap gap-1 mt-1">
-                    {(apiKey.scopes || []).map((scope) => (
+                    {scopes.map((scope) => (
                         <Badge key={scope} variant={SCOPE_VARIANT_MAP[scope] || 'default'} className="text-xs">
                             {scope}
                         </Badge>
                     ))}
                 </div>
                 <div className="flex gap-4 text-xs text-slate-400 dark:text-slate-500">
-                    <span>Created {formatDate(apiKey.createdAt)}</span>
-                    <span>Last used {formatDate(apiKey.lastUsedAt)}</span>
+                    <span>Created {formatDate(apiKey.created_at || apiKey.createdAt)}</span>
+                    <span>Last used {formatDate(apiKey.last_used_at || apiKey.lastUsedAt)}</span>
+                    {apiKey.last_used_ip && <span>IP: {apiKey.last_used_ip}</span>}
                 </div>
             </div>
 
@@ -278,7 +318,7 @@ function KeyRow({ apiKey, onRevoke }) {
                 ) : (
                     <button
                         onClick={() => setConfirming(true)}
-                        disabled={apiKey.status === 'revoked'}
+                        disabled={isRevoked}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-colors"
                     >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -292,6 +332,7 @@ function KeyRow({ apiKey, onRevoke }) {
 
 export function ApiKeysSection() {
     const [keys, setKeys] = useState([])
+    const [limits, setLimits] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [showForm, setShowForm] = useState(false)
@@ -304,7 +345,14 @@ export function ApiKeysSection() {
             const res = await fetch(`${API_BASE_URL}/api/v1/api-keys`, { credentials: 'include' })
             if (!res.ok) throw new Error('Failed to load API keys')
             const data = await res.json()
-            setKeys(Array.isArray(data) ? data : Array.isArray(data?.keys) ? data.keys : [])
+
+            // Support both old (flat array) and new ({ keys, limits }) response shapes
+            if (Array.isArray(data)) {
+                setKeys(data)
+            } else {
+                setKeys(Array.isArray(data?.keys) ? data.keys : [])
+                if (data?.limits) setLimits(data.limits)
+            }
         } catch (err) {
             setError(err.message)
         } finally {
@@ -327,10 +375,12 @@ export function ApiKeysSection() {
         })
         if (!res.ok) {
             const data = await res.json().catch(() => ({}))
-            throw new Error(data.message || 'Failed to revoke key')
+            throw new Error(data.error || data.message || 'Failed to revoke key')
         }
-        setKeys((prev) => prev.map((k) => k.id === id ? { ...k, status: 'revoked' } : k))
-    }, [])
+        fetchKeys()
+    }, [fetchKeys])
+
+    const atLimit = limits && limits.max !== undefined && limits.max !== Infinity && limits.current >= limits.max
 
     return (
         <div className="space-y-6">
@@ -348,13 +398,20 @@ export function ApiKeysSection() {
                 {!showForm && !newKeyData && (
                     <button
                         onClick={() => setShowForm(true)}
-                        className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm shadow-indigo-500/20 transition-all"
+                        disabled={atLimit}
+                        className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm shadow-indigo-500/20 transition-all"
+                        title={atLimit ? `Limit reached (${limits.max}). Upgrade your plan.` : 'Create a new API key'}
                     >
                         <Plus className="w-4 h-4" />
                         Create New Key
                     </button>
                 )}
             </div>
+
+            {/* Usage meter */}
+            {limits && (
+                <UsageMeter current={limits.current} max={limits.max} tier={limits.tier} />
+            )}
 
             <AnimatePresence mode="wait">
                 {newKeyData && (

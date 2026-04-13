@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useMemo, useRef } from 'react'
 import { API_BASE } from '../config'
 
 const TAB_STORAGE_KEY = 'devToolkit_activeTab'
@@ -143,6 +143,32 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
         setHistory(prev => [message, ...prev.filter(m => m !== message)].slice(0, MAX_HISTORY))
     }, [])
 
+    // --- Shared utilities (Q1: deduplicated branch change logic) ---
+    const handleBranchChange = useCallback((branch, type) => {
+        if (type === 'head') {
+            setHeadBranch(branch)
+            if (baseBranch && selectedRepo) {
+                fetchCompare(selectedRepo.owner?.login, selectedRepo.name, baseBranch, branch)
+            }
+        } else {
+            setBaseBranch(branch)
+            if (headBranch && selectedRepo) {
+                fetchCompare(selectedRepo.owner?.login, selectedRepo.name, branch, headBranch)
+            }
+        }
+    }, [baseBranch, headBranch, selectedRepo, fetchCompare])
+
+    // --- Q2: Shared diff text extraction ---
+    const getDiffText = useCallback(() => {
+        if (!compareData?.files) return ''
+        return compareData.files.map(f => f.patch).filter(Boolean).join('\n---\n')
+    }, [compareData])
+
+    // --- Memoised repo owner helper ---
+    const repoOwner = useMemo(() => {
+        return selectedRepo?.owner?.login || selectedRepo?.full_name?.split('/')[0] || null
+    }, [selectedRepo])
+
     return {
         activeTab, setActiveTab,
         repos, selectedRepo, selectRepo,
@@ -158,5 +184,8 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
         isPinned, setIsPinned,
         panelWidth, setPanelWidth,
         autoDraftEnabled, setAutoDraftEnabled,
+        handleBranchChange,
+        getDiffText,
+        repoOwner,
     }
 }

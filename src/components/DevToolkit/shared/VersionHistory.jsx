@@ -29,16 +29,16 @@ export function VersionHistory({ versions = [], onRestore }) {
                         className="overflow-hidden"
                     >
                         <div className="mt-2 space-y-1 max-h-40 overflow-y-auto custom-scrollbar">
-                            {versions.map((v, i) => (
+                            {versions.map((v) => (
                                 <button
-                                    key={i}
+                                    key={v.id}
                                     type="button"
                                     onClick={() => onRestore(v.content)}
                                     className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
                                 >
                                     <Clock className="w-3 h-3 text-slate-400 shrink-0" />
                                     <span className="truncate text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200">
-                                        {v.instruction || `v${versions.length - i}`}
+                                        {v.instruction || `v${versions.length - versions.indexOf(v)}`}
                                     </span>
                                     <span className="ml-auto text-[10px] text-slate-400 shrink-0">{v.time}</span>
                                 </button>

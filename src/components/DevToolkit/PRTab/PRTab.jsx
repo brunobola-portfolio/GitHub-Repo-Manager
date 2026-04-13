@@ -8,8 +8,8 @@ import { PRSections } from './PRSections'
 import { CreatePRConfirm } from './CreatePRConfirm'
 
 export function PRTab({ toolkit }) {
-    const { repos, selectedRepo, selectRepo, headBranch, setHeadBranch, baseBranch, setBaseBranch, branches, compareData, compareLoading, fetchCompare, prContext, generatedCommit } = toolkit
-    const { streamingText, isStreaming, startStream, cancelStream } = useStreaming()
+    const { selectedRepo, headBranch, baseBranch, branches, compareData, compareLoading, handleBranchChange, getDiffText, repoOwner, prContext, generatedCommit, setHeadBranch, setBaseBranch, fetchCompare } = toolkit
+    const { isStreaming, error: streamError, startStream } = useStreaming()
 
     const [sections, setSections] = useState(null)
     const [labels, setLabels] = useState([])
@@ -21,38 +21,35 @@ export function PRTab({ toolkit }) {
     const [actionLoading, setActionLoading] = useState(false)
     const [copied, setCopied] = useState(false)
     const [prUrl, setPrUrl] = useState(null)
+    const [localError, setLocalError] = useState(null)
 
     useEffect(() => {
         if (prContext && selectedRepo) {
             if (prContext.base && prContext.head) {
                 setHeadBranch(prContext.head)
                 setBaseBranch(prContext.base)
-                fetchCompare(selectedRepo.owner?.login, selectedRepo.name, prContext.base, prContext.head)
+                fetchCompare(repoOwner, selectedRepo.name, prContext.base, prContext.head)
             }
         }
-    }, [prContext, selectedRepo, setHeadBranch, setBaseBranch, fetchCompare])
+    }, [prContext, selectedRepo, setHeadBranch, setBaseBranch, fetchCompare, repoOwner])
 
-    const handleBranchChange = useCallback((branch, type) => {
-        if (type === 'head') {
-            setHeadBranch(branch)
-            if (baseBranch && selectedRepo) fetchCompare(selectedRepo.owner?.login, selectedRepo.name, baseBranch, branch)
-        } else {
-            setBaseBranch(branch)
-            if (headBranch && selectedRepo) fetchCompare(selectedRepo.owner?.login, selectedRepo.name, branch, headBranch)
-        }
+    const onBranchChange = useCallback((branch, type) => {
+        handleBranchChange(branch, type)
         setSections(null)
-    }, [baseBranch, headBranch, selectedRepo, setHeadBranch, setBaseBranch, fetchCompare])
+        setLocalError(null)
+    }, [handleBranchChange])
 
     const handleGenerate = useCallback(async () => {
         if (!compareData) return
         setLoading(true)
         setSections(null)
+        setLocalError(null)
 
         try {
             let template = null
             if (selectedRepo) {
                 try {
-                    const tplRes = await fetch(`/api/repos/${selectedRepo.owner?.login}/${selectedRepo.name}/pr-template`)
+                    const tplRes = await fetch(`/api/repos/${repoOwner}/${selectedRepo.name}/pr-template`, { credentials: 'include' })
                     if (tplRes.ok) {
                         const tplData = await tplRes.json()
                         if (tplData.found) {
@@ -62,7 +59,9 @@ export function PRTab({ toolkit }) {
                             setTemplateBadge('Using default template')
                         }
                     }
-                } catch { /* noop */ }
+                } catch {
+                    setTemplateBadge('Using default template')
+                }
             }
 
             const topPatches = compareData.files
@@ -87,43 +86,47 @@ export function PRTab({ toolkit }) {
                 setReviewers(result.suggested_reviewers || [])
             }
         } catch {
+            setLocalError('Error generating PR description. Please try again.')
             setSections({ title: '', summary: 'Error generating PR description. Please try again.', test_plan: '', breaking_changes: null, related_issues: [] })
         } finally {
             setLoading(false)
         }
-    }, [compareData, selectedRepo, generatedCommit, startStream])
+    }, [compareData, selectedRepo, generatedCommit, startStream, repoOwner])
 
     const handleRefine = useCallback(async (contentType, instruction) => {
         if (!sections) return
         setRefiningSection(contentType)
+        setLocalError(null)
         const field = contentType === 'pr_summary' ? 'summary' : 'test_plan'
         try {
             const result = await startStream('/api/ai/refine', {
                 original_content: sections[field],
-                original_diff: compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n'),
+                original_diff: getDiffText(),
                 instruction,
                 content_type: contentType,
             })
             if (result?.refined_content) {
                 setSections(prev => ({ ...prev, [field]: result.refined_content }))
             }
-        } catch { /* noop */ } finally { setRefiningSection(null) }
-    }, [sections, compareData, startStream])
+        } catch {
+            setLocalError(`Failed to refine ${field}. Try again.`)
+        } finally { setRefiningSection(null) }
+    }, [sections, getDiffText, startStream])
 
     const handleChatRefine = useCallback(async (message) => {
         if (!sections) return
-        const diff = compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n')
+        setLocalError(null)
         const result = await startStream('/api/ai/chat-refine', {
             message,
             current_output: sections.summary,
-            original_diff: diff,
+            original_diff: getDiffText(),
             content_type: 'pr_summary',
             history: [],
         })
         if (result?.refined_content) {
             setSections(prev => ({ ...prev, summary: result.refined_content }))
         }
-    }, [sections, compareData, startStream])
+    }, [sections, getDiffText, startStream])
 
     const buildBody = useCallback(() => {
         if (!sections) return ''
@@ -146,17 +149,20 @@ export function PRTab({ toolkit }) {
     const handleCreateOrUpdate = useCallback(async () => {
         if (!sections || !selectedRepo) return
         setActionLoading(true)
+        setLocalError(null)
         try {
-            const owner = selectedRepo.owner?.login
+            const owner = repoOwner
             const repo = selectedRepo.name
             const body = buildBody()
 
             if (prContext?.number) {
-                await fetch(`/api/repos/${owner}/${repo}/pulls/${prContext.number}`, {
+                const patchRes = await fetch(`/api/repos/${owner}/${repo}/pulls/${prContext.number}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ title: sections.title, body }),
                 })
+                if (!patchRes.ok) throw new Error('Update failed')
                 const prUrlValue = `https://github.com/${owner}/${repo}/pull/${prContext.number}`
                 setPrUrl(prUrlValue)
                 toolkit.setGeneratedPR?.({ number: prContext.number, url: prUrlValue, title: sections.title })
@@ -164,6 +170,7 @@ export function PRTab({ toolkit }) {
                 const res = await fetch(`/api/repos/${owner}/${repo}/pulls`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({
                         title: sections.title,
                         body,
@@ -176,20 +183,23 @@ export function PRTab({ toolkit }) {
                 setPrUrl(data.pull_request?.html_url || `https://github.com/${owner}/${repo}/pulls`)
                 toolkit.setGeneratedPR?.({ number: data.pull_request?.number, url: data.pull_request?.html_url, title: sections.title })
             }
-        } catch { /* noop */ } finally {
+        } catch {
+            setLocalError('Failed to create/update PR. Check your permissions and try again.')
+        } finally {
             setActionLoading(false)
             setConfirmAction(null)
         }
-    }, [sections, selectedRepo, prContext, headBranch, baseBranch, buildBody])
+    }, [sections, selectedRepo, prContext, headBranch, baseBranch, buildBody, repoOwner, toolkit])
 
     const canGenerate = compareData && compareData.files?.length > 0
+    const displayError = localError || streamError
 
     return (
         <div className="p-4 md:p-6 space-y-4">
             {selectedRepo && (
                 <div className="flex gap-3">
-                    <BranchSelector branches={branches} selected={headBranch} onSelect={b => handleBranchChange(b, 'head')} label="Head (your branch)" />
-                    <BranchSelector branches={branches} selected={baseBranch} onSelect={b => handleBranchChange(b, 'base')} label="Base (merge into)" defaultBranch={baseBranch} />
+                    <BranchSelector branches={branches} selected={headBranch} onSelect={b => onBranchChange(b, 'head')} label="Head (your branch)" />
+                    <BranchSelector branches={branches} selected={baseBranch} onSelect={b => onBranchChange(b, 'base')} label="Base (merge into)" defaultBranch={baseBranch} />
                 </div>
             )}
 
@@ -216,6 +226,12 @@ export function PRTab({ toolkit }) {
                             {templateBadge}
                         </div>
                     )}
+                </div>
+            )}
+
+            {displayError && (
+                <div className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 text-xs text-red-600 dark:text-red-400">
+                    {displayError}
                 </div>
             )}
 

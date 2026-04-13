@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Copy, Check, Terminal, Square } from 'lucide-react'
 
-export function StreamingOutput({ content, streamingText, isStreaming, onCancel, label = 'Generated Output' }) {
+export function StreamingOutput({ content, streamingText, isStreaming, onCancel, label = 'Generated Output', retryCount = 0 }) {
     const [copiedId, setCopiedId] = useState(null)
     const displayText = isStreaming ? streamingText : content
 
@@ -23,11 +23,16 @@ export function StreamingOutput({ content, streamingText, isStreaming, onCancel,
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
                 <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
-                    {isStreaming && (
-                        <button type="button" onClick={onCancel} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-red-400 hover:text-red-300 rounded transition-colors">
-                            <Square className="w-3 h-3" /> Stop
-                        </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {retryCount > 0 && (
+                            <span className="text-[10px] text-amber-400 animate-pulse">Reconnecting ({retryCount}/3)...</span>
+                        )}
+                        {isStreaming && (
+                            <button type="button" onClick={onCancel} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-red-400 hover:text-red-300 rounded transition-colors">
+                                <Square className="w-3 h-3" /> Stop
+                            </button>
+                        )}
+                    </div>
                 </div>
                 <div className="relative group">
                     <div className="w-full px-4 py-4 bg-slate-950 text-emerald-400 rounded-xl font-mono text-sm leading-relaxed border border-slate-700/50 ring-1 ring-emerald-500/10 whitespace-pre-wrap min-h-[60px]" aria-live="polite">

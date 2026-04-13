@@ -25,9 +25,9 @@ const COMMIT_CHIPS = [
 const MULTI_COMMIT_THRESHOLD = 300
 
 export function CommitTab({ toolkit }) {
-    const { repos, selectedRepo, selectRepo, headBranch, setHeadBranch, baseBranch, setBaseBranch, branches, compareData, compareLoading, fetchCompare, history, addToHistory } = toolkit
+    const { selectedRepo, headBranch, baseBranch, branches, compareData, compareLoading, handleBranchChange, getDiffText, repoOwner, history, addToHistory, setGeneratedCommit } = toolkit
 
-    const { streamingText, isStreaming, result: streamResult, startStream, cancelStream, reset: resetStream } = useStreaming()
+    const { streamingText, isStreaming, error: streamError, retryCount, startStream, cancelStream } = useStreaming()
 
     const [inputMode, setInputMode] = useState(selectedRepo ? 'auto' : 'manual')
     const [manualDiff, setManualDiff] = useState('')
@@ -35,50 +35,44 @@ export function CommitTab({ toolkit }) {
     const [repoStyle, setRepoStyle] = useState(null)
     const [repoStyleLoading, setRepoStyleLoading] = useState(false)
     const [generated, setGenerated] = useState('')
-    const [loading, setLoading] = useState(false)
+    const [splitLoading, setSplitLoading] = useState(false)
     const [multiCommits, setMultiCommits] = useState(null)
     const [versions, setVersions] = useState([])
+    const [localError, setLocalError] = useState(null)
 
     const totalChanges = compareData
         ? (compareData.diff_summary?.additions || 0) + (compareData.diff_summary?.deletions || 0)
         : 0
 
-    const handleBranchChange = useCallback((branch, type) => {
-        if (type === 'head') {
-            setHeadBranch(branch)
-            if (baseBranch && selectedRepo) {
-                fetchCompare(selectedRepo.owner?.login, selectedRepo.name, baseBranch, branch)
-            }
-        } else {
-            setBaseBranch(branch)
-            if (headBranch && selectedRepo) {
-                fetchCompare(selectedRepo.owner?.login, selectedRepo.name, branch, headBranch)
-            }
-        }
+    const onBranchChange = useCallback((branch, type) => {
+        handleBranchChange(branch, type)
         setGenerated('')
         setMultiCommits(null)
-    }, [baseBranch, headBranch, selectedRepo, setHeadBranch, setBaseBranch, fetchCompare])
+        setLocalError(null)
+    }, [handleBranchChange])
 
     const fetchRepoStyle = useCallback(async () => {
         if (!selectedRepo) return null
         setRepoStyleLoading(true)
         try {
-            const res = await fetch(`/api/repos/${selectedRepo.owner?.login}/${selectedRepo.name}/commits/style`)
+            const res = await fetch(`/api/repos/${repoOwner}/${selectedRepo.name}/commits/style`, { credentials: 'include' })
             if (!res.ok) return null
             const data = await res.json()
             setRepoStyle(data)
             return data
-        } catch { return null } finally { setRepoStyleLoading(false) }
-    }, [selectedRepo])
+        } catch (err) {
+            setLocalError('Failed to fetch repo commit style')
+            return null
+        } finally { setRepoStyleLoading(false) }
+    }, [selectedRepo, repoOwner])
 
     const handleGenerate = useCallback(async () => {
-        const diff = inputMode === 'auto'
-            ? compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n')
-            : manualDiff
+        const diff = inputMode === 'auto' ? getDiffText() : manualDiff
 
         if (!diff?.trim()) return
         setGenerated('')
         setMultiCommits(null)
+        setLocalError(null)
 
         let style = repoStyle
         if (format === 'repo-convention' && !style) {
@@ -95,10 +89,10 @@ export function CommitTab({ toolkit }) {
         if (result?.message) {
             setGenerated(result.message)
             addToHistory(result.message)
-            setVersions(prev => [{ content: result.message, instruction: 'Generated', time: new Date().toLocaleTimeString() }, ...prev].slice(0, 10))
-            toolkit.setGeneratedCommit?.({ message: result.message, format })
+            setVersions(prev => [{ id: Date.now(), content: result.message, instruction: 'Generated', time: new Date().toLocaleTimeString() }, ...prev].slice(0, 10))
+            setGeneratedCommit?.({ message: result.message, format })
         }
-    }, [inputMode, compareData, manualDiff, format, repoStyle, selectedRepo, fetchRepoStyle, addToHistory, startStream, toolkit])
+    }, [inputMode, manualDiff, format, repoStyle, selectedRepo, fetchRepoStyle, addToHistory, startStream, setGeneratedCommit, getDiffText])
 
     const handleRefine = useCallback(async (instruction) => {
         if (!generated) return
@@ -107,9 +101,8 @@ export function CommitTab({ toolkit }) {
             return
         }
 
-        const diff = inputMode === 'auto'
-            ? compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n')
-            : manualDiff
+        setLocalError(null)
+        const diff = inputMode === 'auto' ? getDiffText() : manualDiff
 
         const result = await startStream('/api/ai/refine', {
             original_content: generated,
@@ -121,15 +114,14 @@ export function CommitTab({ toolkit }) {
         if (result?.refined_content) {
             setGenerated(result.refined_content)
             addToHistory(result.refined_content)
-            setVersions(prev => [{ content: result.refined_content, instruction, time: new Date().toLocaleTimeString() }, ...prev].slice(0, 10))
-            toolkit.setGeneratedCommit?.({ message: result.refined_content, format })
+            setVersions(prev => [{ id: Date.now(), content: result.refined_content, instruction, time: new Date().toLocaleTimeString() }, ...prev].slice(0, 10))
+            setGeneratedCommit?.({ message: result.refined_content, format })
         }
-    }, [generated, inputMode, compareData, manualDiff, addToHistory, handleGenerate, startStream, toolkit, format])
+    }, [generated, inputMode, manualDiff, addToHistory, handleGenerate, startStream, setGeneratedCommit, format, getDiffText])
 
     const handleChatRefine = useCallback(async (message) => {
-        const diff = inputMode === 'auto'
-            ? compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n')
-            : manualDiff
+        setLocalError(null)
+        const diff = inputMode === 'auto' ? getDiffText() : manualDiff
         const result = await startStream('/api/ai/chat-refine', {
             message,
             current_output: generated,
@@ -140,19 +132,21 @@ export function CommitTab({ toolkit }) {
         if (result?.refined_content) {
             setGenerated(result.refined_content)
             addToHistory(result.refined_content)
-            setVersions(prev => [{ content: result.refined_content, instruction: message, time: new Date().toLocaleTimeString() }, ...prev].slice(0, 10))
-            toolkit.setGeneratedCommit?.({ message: result.refined_content, format })
+            setVersions(prev => [{ id: Date.now(), content: result.refined_content, instruction: message, time: new Date().toLocaleTimeString() }, ...prev].slice(0, 10))
+            setGeneratedCommit?.({ message: result.refined_content, format })
         }
-    }, [inputMode, compareData, manualDiff, generated, format, startStream, addToHistory, toolkit])
+    }, [inputMode, manualDiff, generated, format, startStream, addToHistory, setGeneratedCommit, getDiffText])
 
     const handleSplit = useCallback(async () => {
-        const diff = compareData?.files?.map(f => f.patch).filter(Boolean).join('\n---\n')
+        const diff = getDiffText()
         if (!diff) return
-        setLoading(true)
+        setSplitLoading(true)
+        setLocalError(null)
         try {
             const res = await fetch('/api/ai/generate-commit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({
                     diff,
                     format,
@@ -163,12 +157,16 @@ export function CommitTab({ toolkit }) {
             const data = await res.json()
             const msgs = data.message.split('\n').filter(l => l.trim())
             setMultiCommits(msgs.map(m => ({ message: m.replace(/^\d+\.\s*/, ''), files: [] })))
-        } catch { /* noop */ } finally { setLoading(false) }
-    }, [compareData, format, selectedRepo])
+        } catch {
+            setLocalError('Failed to split commits. Try again.')
+        } finally { setSplitLoading(false) }
+    }, [format, selectedRepo, getDiffText])
 
     const canGenerate = inputMode === 'auto'
         ? (compareData && compareData.files?.length > 0)
         : manualDiff.trim().length > 0
+
+    const displayError = localError || streamError
 
     return (
         <div className="p-4 md:p-6 space-y-4">
@@ -194,8 +192,8 @@ export function CommitTab({ toolkit }) {
                 <div className="space-y-3">
                     {selectedRepo && (
                         <div className="flex gap-3">
-                            <BranchSelector branches={branches} selected={headBranch} onSelect={b => handleBranchChange(b, 'head')} label="Branch" />
-                            <BranchSelector branches={branches} selected={baseBranch} onSelect={b => handleBranchChange(b, 'base')} label="Compare against" defaultBranch={baseBranch} />
+                            <BranchSelector branches={branches} selected={headBranch} onSelect={b => onBranchChange(b, 'head')} label="Branch" />
+                            <BranchSelector branches={branches} selected={baseBranch} onSelect={b => onBranchChange(b, 'base')} label="Compare against" defaultBranch={baseBranch} />
                         </div>
                     )}
                     <DiffSummary files={compareData?.files || []} summary={compareData?.diff_summary} loading={compareLoading} />
@@ -215,6 +213,13 @@ export function CommitTab({ toolkit }) {
 
             <FormatSelector selected={format} onSelect={setFormat} repoStyleLoading={repoStyleLoading} />
 
+            {displayError && (
+                <div className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 text-xs text-red-600 dark:text-red-400 flex items-center justify-between">
+                    <span>{displayError}</span>
+                    {retryCount > 0 && <span className="text-red-400 text-[10px]">Retry {retryCount}/3</span>}
+                </div>
+            )}
+
             <button
                 type="button"
                 onClick={handleGenerate}
@@ -231,7 +236,7 @@ export function CommitTab({ toolkit }) {
             {inputMode === 'auto' && totalChanges > MULTI_COMMIT_THRESHOLD && !multiCommits && generated && (
                 <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 text-xs text-amber-700 dark:text-amber-300">
                     <span>Large diff detected ({totalChanges} lines). Split into logical commits?</span>
-                    <button type="button" onClick={handleSplit} className="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-600 text-white font-medium">Split</button>
+                    <button type="button" onClick={handleSplit} disabled={splitLoading} className="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-600 text-white font-medium disabled:opacity-50">{splitLoading ? 'Splitting...' : 'Split'}</button>
                 </div>
             )}
 
@@ -246,6 +251,7 @@ export function CommitTab({ toolkit }) {
                     isStreaming={isStreaming}
                     onCancel={cancelStream}
                     label="Generated Commit Message"
+                    retryCount={retryCount}
                 />
             )}
 
@@ -257,11 +263,11 @@ export function CommitTab({ toolkit }) {
                     disabled={isStreaming}
                     placeholder='Refine: e.g. "make it more technical"'
                     versions={versions}
-                    onRestore={(content) => { setGenerated(content); toolkit.setGeneratedCommit?.({ message: content, format }) }}
+                    onRestore={(content) => { setGenerated(content); setGeneratedCommit?.({ message: content, format }) }}
                 />
             )}
 
-            <SessionHistory items={history} onRestore={setGenerated} />
+            <SessionHistory items={history} onRestore={(content) => { setGenerated(content); setGeneratedCommit?.({ message: content, format }) }} />
         </div>
     )
 }

@@ -11,9 +11,9 @@ import { PRTab } from './PRTab/PRTab'
 import { ReviewTab } from './ReviewTab/ReviewTab'
 
 const TABS = [
-    { id: 'commits', label: 'Commits', icon: GitCommitHorizontal },
-    { id: 'pr', label: 'Pull Request', icon: GitPullRequest },
-    { id: 'review', label: 'Review', icon: Eye },
+    { id: 'commits', label: 'Commits', icon: GitCommitHorizontal, shortcut: '1' },
+    { id: 'pr', label: 'Pull Request', icon: GitPullRequest, shortcut: '2' },
+    { id: 'review', label: 'Review', icon: Eye, shortcut: '3' },
 ]
 
 const MIN_WIDTH = 480
@@ -31,10 +31,11 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
     const panelRef = useFocusTrap(isOpen, onClose)
     useBodyScrollLock(isOpen)
 
-    // --- Drag resize ---
+    // --- Drag resize (Q3: only depend on setPanelWidth, not entire toolkit) ---
     const [dragging, setDragging] = useState(false)
     const dragStartX = useRef(0)
     const dragStartWidth = useRef(0)
+    const { setPanelWidth } = toolkit
 
     const onDragStart = useCallback((e) => {
         e.preventDefault()
@@ -49,7 +50,7 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
         const onMouseMove = (e) => {
             const delta = dragStartX.current - e.clientX
             const next = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, dragStartWidth.current + delta))
-            toolkit.setPanelWidth(next)
+            setPanelWidth(next)
         }
 
         const onMouseUp = () => {
@@ -62,7 +63,30 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
             window.removeEventListener('mousemove', onMouseMove)
             window.removeEventListener('mouseup', onMouseUp)
         }
-    }, [dragging, toolkit])
+    }, [dragging, setPanelWidth])
+
+    // --- Keyboard shortcuts (U1) ---
+    const { setActiveTab } = toolkit
+    useEffect(() => {
+        if (!isOpen) return
+
+        const handleKeyDown = (e) => {
+            // Don't capture when typing in inputs
+            const tag = e.target.tagName
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
+            // Tab switching: 1, 2, 3
+            if (e.key === '1') { setActiveTab('commits'); return }
+            if (e.key === '2') { setActiveTab('pr'); return }
+            if (e.key === '3') { setActiveTab('review'); return }
+
+            // Escape to close
+            if (e.key === 'Escape') { onClose(); return }
+        }
+
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [isOpen, setActiveTab, onClose])
 
     // --- Dismissed suggestions (local) ---
     const [dismissedSuggestions, setDismissedSuggestions] = useState([])
@@ -209,9 +233,11 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                                                 ? 'text-indigo-600 dark:text-indigo-400'
                                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                                         }`}
+                                        title={`${tab.label} (${tab.shortcut})`}
                                     >
                                         <Icon className="w-4 h-4" />
                                         {tab.label}
+                                        <kbd className="hidden sm:inline ml-1 text-[9px] text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded font-mono">{tab.shortcut}</kbd>
                                         {isActive && (
                                             <motion.div
                                                 layoutId="dev-toolkit-panel-tabs"

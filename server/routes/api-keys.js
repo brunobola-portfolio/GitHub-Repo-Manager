@@ -14,12 +14,22 @@ const createKeySchema = z.object({
     expires_at: z.string().datetime().optional(),
 });
 
-// List user's API keys
+// List user's API keys (includes usage limits for frontend)
 router.get('/', requireAuth, (req, res) => {
+    const userId = req.session.userId;
+    const userTier = req.session.user?.tier || req.userTier || 'free';
+    const flags = getFeatures(userTier);
+
     const keys = db.prepare(
-        'SELECT id, name, key_prefix, scopes, last_used_at, expires_at, created_at, revoked_at FROM api_keys WHERE user_id = ? ORDER BY created_at DESC'
-    ).all(req.session.userId);
-    res.json(keys);
+        'SELECT id, name, key_prefix, scopes, last_used_at, last_used_ip, expires_at, created_at, revoked_at FROM api_keys WHERE user_id = ? ORDER BY created_at DESC'
+    ).all(userId);
+
+    const activeCount = keys.filter(k => !k.revoked_at).length;
+
+    res.json({
+        keys,
+        limits: { current: activeCount, max: flags.apiKeys, tier: userTier },
+    });
 });
 
 // Generate new API key

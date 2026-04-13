@@ -1,8 +1,19 @@
-import { createHash, randomBytes, randomUUID } from 'crypto';
+import { createHmac, randomBytes, randomUUID } from 'crypto';
 import db from '../db.js';
+import logger from '../lib/logger.js';
+
+/**
+ * HMAC-SHA-256 with a server-side secret for defense-in-depth.
+ * Even if the DB is leaked, an attacker still needs the secret to forge hashes.
+ * The raw key has 256 bits of entropy (randomBytes(32)), making brute-force
+ * infeasible regardless of hash speed — HMAC adds protection against DB-only leaks.
+ */
+function getHmacSecret() {
+    return process.env.API_KEY_SECRET || 'grm-default-dev-secret-change-in-production';
+}
 
 export function hashKey(key) {
-    return createHash('sha256').update(key).digest('hex');
+    return createHmac('sha256', getHmacSecret()).update(key).digest('hex');
 }
 
 export function generateApiKey() {
@@ -12,6 +23,12 @@ export function generateApiKey() {
     const prefix = key.slice(0, 16);
     const keyHash = hashKey(key);
     return { id, key, prefix, keyHash };
+}
+
+function getClientIp(req) {
+    // Use req.ip which respects Express's 'trust proxy' setting.
+    // In production, Express strips spoofed x-forwarded-for headers.
+    return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
 // Note: API key authentication does not set req.session.accessToken.
@@ -28,9 +45,16 @@ export function apiKeyAuth(req, res, next) {
         'SELECT id, user_id, scopes, expires_at, revoked_at FROM api_keys WHERE key_hash = ?'
     ).get(keyHash);
 
-    if (!row) return res.status(401).json({ error: 'Invalid API key' });
-    if (row.revoked_at) return res.status(401).json({ error: 'API key has been revoked' });
+    if (!row) {
+        logger.warn({ ip: getClientIp(req), prefix: key.slice(0, 16) }, 'API key auth failed: invalid key');
+        return res.status(401).json({ error: 'Invalid API key' });
+    }
+    if (row.revoked_at) {
+        logger.warn({ ip: getClientIp(req), keyId: row.id }, 'API key auth failed: revoked key');
+        return res.status(401).json({ error: 'API key has been revoked' });
+    }
     if (row.expires_at && new Date(row.expires_at) < new Date()) {
+        logger.warn({ ip: getClientIp(req), keyId: row.id }, 'API key auth failed: expired key');
         return res.status(401).json({ error: 'API key has expired' });
     }
 
@@ -45,8 +69,12 @@ export function apiKeyAuth(req, res, next) {
         req.scopes = [];
     }
 
-    // Update last_used_at (fire-and-forget)
-    db.prepare('UPDATE api_keys SET last_used_at = datetime(\'now\') WHERE id = ?').run(row.id);
+    // Update last_used_at with IP and User-Agent (synchronous — better-sqlite3 blocks)
+    const ip = getClientIp(req);
+    const ua = (req.headers['user-agent'] || '').slice(0, 255);
+    db.prepare(
+        'UPDATE api_keys SET last_used_at = datetime(\'now\'), last_used_ip = ?, last_used_ua = ? WHERE id = ?'
+    ).run(ip, ua, row.id);
 
     next();
 }
