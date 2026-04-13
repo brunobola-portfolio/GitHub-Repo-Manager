@@ -324,8 +324,8 @@ export class MigrationEngine extends EventEmitter {
       }
 
       if (inFlight.size > 0) {
-        // Wait a tick to let in-flight promises settle
-        await new Promise(resolve => setTimeout(resolve, 100))
+        // Wait for at least one in-flight promise to settle before re-checking
+        await new Promise(resolve => setTimeout(resolve, 500))
       } else {
         // No tasks can be started and none in flight — break to avoid infinite loop
         break
@@ -334,7 +334,7 @@ export class MigrationEngine extends EventEmitter {
 
     // Wait for remaining in-flight tasks to finish
     while (inFlight.size > 0) {
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
 
     // If cancelled or paused, don't finalize

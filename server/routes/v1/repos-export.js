@@ -2,11 +2,11 @@ import { Router } from 'express'
 import { githubApi } from '../../lib/github-api.js'
 import { auditLog } from '../../lib/audit.js'
 import { requireAuth } from '../../middleware/auth.js'
-import { requireTier } from '../../middleware/require-tier.js'
+
 
 const router = Router()
 
-router.get('/repos/:owner/:repo/export', requireAuth, requireTier('free'), async (req, res) => {
+router.get('/repos/:owner/:repo/export', requireAuth, async (req, res) => {
   const { owner, repo } = req.params
   const token = req.session.accessToken  // requireAuth guarantees this exists
   try {

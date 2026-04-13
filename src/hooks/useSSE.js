@@ -2,10 +2,12 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react
 
 const MAX_RECONNECT_DELAY = 30000
 const BASE_RECONNECT_DELAY = 1000
+const MAX_RECONNECT_ATTEMPTS = 5
 
 export function useSSE(url) {
   const [events, setEvents] = useState([])
   const [connected, setConnected] = useState(false)
+  const [reconnectExhausted, setReconnectExhausted] = useState(false)
   const [lastPlanState, setLastPlanState] = useState(null)
 
   const urlRef = useRef(url)
@@ -35,6 +37,7 @@ export function useSSE(url) {
     es.onopen = () => {
       setConnected(true)
       reconnectAttemptRef.current = 0
+      setReconnectExhausted(false)
     }
 
     es.onerror = () => {
@@ -42,12 +45,17 @@ export function useSSE(url) {
       es.close()
       eventSourceRef.current = null
 
+      reconnectAttemptRef.current += 1
+      if (reconnectAttemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
+        setReconnectExhausted(true)
+        return
+      }
+
       // Exponential backoff reconnect
       const delay = Math.min(
         BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttemptRef.current),
         MAX_RECONNECT_DELAY
       )
-      reconnectAttemptRef.current += 1
       reconnectTimerRef.current = setTimeout(() => connectRef.current?.(), delay)
     }
 
@@ -95,5 +103,5 @@ export function useSSE(url) {
 
   const clearEvents = useCallback(() => setEvents([]), [])
 
-  return { events, connected, lastPlanState, clearEvents }
+  return { events, connected, reconnectExhausted, lastPlanState, clearEvents }
 }

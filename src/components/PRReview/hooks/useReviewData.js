@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
+import { apiCall } from '../../../utils/api'
 
 /**
  * Group an array of comments by filename into a plain object.
@@ -76,17 +77,11 @@ export function useReviewData(owner, repo, pullNumber, api) {
      * @param {{ event: string, body: string, comments: Array, commitId: string }} review
      */
     const submitReview = useCallback(async ({ event, body, comments, commitId }) => {
-        const res = await fetch(`/api/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`, {
+        return apiCall(`/api/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`, {
             method: 'POST',
-            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ event, body, comments, commit_id: commitId }),
         })
-        if (!res.ok) {
-            const err = await res.json().catch(() => null)
-            throw new Error(err?.error ?? `Submit review failed: ${res.status}`)
-        }
-        return res.json()
     }, [owner, repo, pullNumber])
 
     /**
@@ -95,20 +90,14 @@ export function useReviewData(owner, repo, pullNumber, api) {
      * @param {string} body
      */
     const replyToComment = useCallback(async (commentId, body) => {
-        const res = await fetch(
+        return apiCall(
             `/api/repos/${owner}/${repo}/pulls/${pullNumber}/comments/${commentId}/replies`,
             {
                 method: 'POST',
-                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ body }),
             }
         )
-        if (!res.ok) {
-            const err = await res.json().catch(() => null)
-            throw new Error(err?.error ?? `Reply failed: ${res.status}`)
-        }
-        return res.json()
     }, [owner, repo, pullNumber])
 
     return {

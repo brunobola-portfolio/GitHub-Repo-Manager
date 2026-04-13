@@ -1,40 +1,22 @@
+import { apiCall } from '../utils/api';
+
 export const reposApi = {
   syncMirror: async (owner, repo) => {
-    const res = await fetch(`/api/v1/repos/${owner}/${repo}/sync`, {
+    return apiCall(`/api/v1/repos/${owner}/${repo}/sync`, {
       method: 'POST',
-      credentials: 'include'
     })
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      const error = new Error(body.error || `HTTP ${res.status}`)
-      error.status = res.status
-      throw error
-    }
-    return res.json()
   },
 
   getSecurityScan: async (owner, repo) => {
-    const res = await fetch(`/api/v1/repos/${owner}/${repo}/security`, { credentials: 'include' })
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      const error = new Error(body.error || `HTTP ${res.status}`)
-      error.status = res.status
-      throw error
-    }
-    return res.json()
+    return apiCall(`/api/v1/repos/${owner}/${repo}/security`)
   },
 
   exportMetadata: async (owner, repo) => {
-    const res = await fetch(`/api/v1/repos/${owner}/${repo}/export`, {
+    const { fetchWithRetry } = await import('../utils/api')
+    const res = await fetchWithRetry(`/api/v1/repos/${owner}/${repo}/export`, {
       method: 'GET',
-      credentials: 'include'
+      credentials: 'include',
     })
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      const error = new Error(body.error || `HTTP ${res.status}`)
-      error.status = res.status
-      throw error
-    }
     const blob = await res.blob()
     const url = URL.createObjectURL(blob)
     let filename = `${repo}-export.json`

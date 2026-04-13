@@ -66,6 +66,11 @@ export function useOrgs(user) {
         errorTimerRef.current = setTimeout(() => setError(null), 10000)
     }, [])
 
+    // Clean up error timer on unmount
+    useEffect(() => {
+        return () => clearTimeout(errorTimerRef.current)
+    }, [])
+
     /**
      * Fetch user's organizations
      */

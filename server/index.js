@@ -25,6 +25,7 @@ const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
 
 import { closeAllQueues } from './lib/queue.js';
+import { engine as migrationEngine } from './routes/migration.js';
 import { config } from './config.js';
 import { initMonitoring, getSentryErrorHandler } from './lib/monitoring.js';
 import db, { initDB, seedMockData } from './db.js';
@@ -63,12 +64,13 @@ if (config.geminiApiKey) {
 }
 
 // Enforce SESSION_SECRET in production
-if (config.nodeEnv === 'production' && config.sessionSecret === 'CHANGE_THIS_SECRET') {
+const WEAK_DEFAULTS = ['CHANGE_THIS_SECRET', 'change-this-to-a-random-string'];
+if (config.nodeEnv === 'production' && WEAK_DEFAULTS.includes(config.sessionSecret)) {
     logger.fatal('SESSION_SECRET must be set in production. Exiting.');
     process.exit(1);
 }
 
-if (config.nodeEnv !== 'production' && config.sessionSecret === 'CHANGE_THIS_SECRET') {
+if (config.nodeEnv !== 'production' && WEAK_DEFAULTS.includes(config.sessionSecret)) {
     logger.warn('Using default session secret. Set SESSION_SECRET environment variable for deployment.');
 } else if (config.sessionSecret.length < 32) {
     logger.warn('SESSION_SECRET is shorter than 32 characters. Use a longer, random secret for better security.');
@@ -293,6 +295,12 @@ function gracefulShutdown(signal) {
             await closeAllQueues();
         } catch (e) {
             logger.warn({ err: e }, 'Could not close queues');
+        }
+
+        try {
+            migrationEngine.destroy();
+        } catch (e) {
+            logger.warn({ err: e }, 'Could not destroy migration engine');
         }
 
         try {

@@ -3,7 +3,7 @@ import db from '../../db.js';
 import { actionsService } from '../../actions-service.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError } from '../../middleware/auth.js';
-import logger from '../../lib/logger.js';
+
 
 import authRoutes from '../auth.js';
 import teamsRoutes from '../teams.js';
@@ -78,7 +78,7 @@ router.get(['/teams/:id/activity', '/team/:id/activity'], requireAuth, async (re
         }
 
         // Check cache first
-        const cacheKey = `team-${teamId}`;
+        const cacheKey = `team-${teamId}-${req.session.userId}`;
         const cached = activityCache.get(cacheKey);
         if (cached && Date.now() - cached.timestamp < ACTIVITY_CACHE_TTL) {
             return res.json(cached.data);
@@ -106,7 +106,7 @@ router.get(['/teams/:id/activity', '/team/:id/activity'], requireAuth, async (re
                         const { data } = await githubApi(`/repos/${r.repo_full_name}/events?per_page=10`, req.session.accessToken);
                         return data.map(event => ({ ...event, repo_name: r.repo_full_name }));
                     } catch (e) {
-                        logger.error({ err: e, repo: r.repo_full_name }, 'Failed to fetch repo events');
+                        req.log.error({ err: e, repo: r.repo_full_name }, 'Failed to fetch repo events');
                         return [];
                     }
                 })
@@ -139,7 +139,7 @@ router.get(['/teams/:id/activity', '/team/:id/activity'], requireAuth, async (re
         res.json(activityData);
 
     } catch (error) {
-        logger.error({ err: error }, 'Team activity fetch failed');
+        req.log.error({ err: error }, 'Team activity fetch failed');
         res.status(500).json({ error: 'Failed to fetch team activity' });
     }
 });
@@ -189,7 +189,7 @@ router.post('/teams/:id/actions/stats', requireAuth, async (req, res) => {
 
         res.json({ repos: enrichedStats, teamAverages });
     } catch (error) {
-        logger.error({ err: error }, 'Team actions stats fetch failed');
+        req.log.error({ err: error }, 'Team actions stats fetch failed');
         res.status(500).json({ error: safeError(error, 'Failed to fetch team stats') });
     }
 });

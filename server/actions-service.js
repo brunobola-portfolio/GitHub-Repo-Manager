@@ -1,4 +1,5 @@
 import db from './db.js';
+import logger from './lib/logger.js';
 
 class ActionsService {
     /**
@@ -360,7 +361,7 @@ class ActionsService {
 
             return { success: true, synced: runs.length };
         } catch (error) {
-            console.error('Sync failed:', error);
+            logger.error({ err: error }, 'Workflow sync failed');
             return { success: false, error: error.message };
         }
     }

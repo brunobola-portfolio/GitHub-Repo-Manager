@@ -122,8 +122,8 @@ router.patch('/:org', requireAuth, async (req, res) => {
 // List organization repos
 router.get('/:org/repos', requireAuth, async (req, res) => {
     try {
-        const page = req.query.page || 1;
-        const perPage = req.query.per_page || 30;
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const perPage = Math.min(Math.max(parseInt(req.query.per_page) || 30, 1), 100);
         const orgLogin = req.params.org;
 
         // Get current user to check if this is their personal account
@@ -156,8 +156,8 @@ router.get('/:org/repos', requireAuth, async (req, res) => {
 // List organization members
 router.get('/:org/members', requireAuth, async (req, res) => {
     try {
-        const page = req.query.page || 1;
-        const perPage = req.query.per_page || 30;
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const perPage = Math.min(Math.max(parseInt(req.query.per_page) || 30, 1), 100);
         const { data } = await githubApi(
             `/orgs/${req.params.org}/members?page=${page}&per_page=${perPage}`,
             req.session.accessToken

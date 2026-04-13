@@ -13,6 +13,7 @@
 
 import { createClient } from 'redis';
 import { RedisStore } from 'connect-redis';
+import logger from './logger.js';
 
 /**
  * Create a Redis-backed session store.
@@ -27,7 +28,7 @@ export function createRedisStore() {
         socket: {
             reconnectStrategy: (retries) => {
                 if (retries > 10) {
-                    console.error('[redis-session] Too many reconnect attempts, giving up');
+                    logger.error('Redis session: too many reconnect attempts, giving up');
                     return new Error('Redis reconnect limit reached');
                 }
                 return Math.min(retries * 100, 3000);
@@ -36,20 +37,20 @@ export function createRedisStore() {
     });
 
     redisClient.on('error', (err) => {
-        console.error('[redis-session] Connection error:', err.message);
+        logger.error({ err }, 'Redis session connection error');
     });
 
     redisClient.on('connect', () => {
-        console.log('[redis-session] Connected to Redis');
+        logger.info('Connected to Redis for sessions');
     });
 
     redisClient.on('reconnecting', () => {
-        console.warn('[redis-session] Reconnecting to Redis...');
+        logger.warn('Reconnecting to Redis for sessions...');
     });
 
     // Connect asynchronously — connect-redis handles the pending state gracefully
     redisClient.connect().catch((err) => {
-        console.error('[redis-session] Initial connection failed:', err.message);
+        logger.error({ err }, 'Redis session initial connection failed');
     });
 
     const store = new RedisStore({

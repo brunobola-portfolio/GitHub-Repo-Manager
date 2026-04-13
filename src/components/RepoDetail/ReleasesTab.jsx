@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
@@ -14,7 +14,7 @@ export function ReleasesTab({ owner, repo, api }) {
     const [form, setForm] = useState({ tag_name: '', name: '', body: '', draft: false, prerelease: false })
     const [confirmAction, setConfirmAction] = useState(null)
 
-    const loadReleases = async () => {
+    const loadReleases = useCallback(async () => {
         setLoading(true)
         try {
             const data = await api.fetchReleases()
@@ -22,9 +22,9 @@ export function ReleasesTab({ owner, repo, api }) {
         } catch { /* ignore */ } finally {
             setLoading(false)
         }
-    }
+    }, [api])
 
-    useEffect(() => { loadReleases() }, [owner, repo]) // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => { loadReleases() }, [loadReleases])
 
     const handleCreate = async () => {
         if (!form.tag_name) return

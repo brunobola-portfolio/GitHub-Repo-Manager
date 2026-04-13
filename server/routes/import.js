@@ -6,6 +6,7 @@ import { requireAuth, safeError, errorResponse } from '../middleware/auth.js';
 import { githubApi } from '../lib/github-api.js';
 import { safeJsonParse } from '../lib/utils.js';
 import logger from '../lib/logger.js';
+import { validate, importSchema } from '../lib/validators.js';
 
 const router = express.Router();
 
@@ -46,7 +47,7 @@ router.post('/import/validate-url', requireAuth, async (req, res) => {
 router.post('/import/azure', requireAuth, async (req, res) => {
     try {
         const { azureOrg, azureProject, azureRepo, azurePat: bodyPat, targetOrg, targetName, makePrivate, description } = req.body;
-        const azurePat = azureService.resolvePat(bodyPat);
+        const azurePat = azureService.resolvePat(bodyPat, req.session);
 
         if (!azureOrg || !azureProject || !azureRepo) {
             return errorResponse(res, 400, 'Azure organization, project, and repository are required', 'MISSING_PARAMS');
@@ -142,7 +143,7 @@ router.post('/import/azure', requireAuth, async (req, res) => {
     }
 });
 
-router.post('/import/url', requireAuth, async (req, res) => {
+router.post('/import/url', requireAuth, validate(importSchema), async (req, res) => {
     try {
         const { sourceUrl, credentials, targetOrg, targetName, makePrivate, description } = req.body;
 
@@ -346,7 +347,7 @@ router.get('/migrations/stats', requireAuth, async (req, res) => {
 router.post('/import/azure/batch', requireAuth, async (req, res) => {
     try {
         const { azureOrg, azureProject, azurePat: bodyPat, targetOrg, makePrivate, repos } = req.body;
-        const azurePat = azureService.resolvePat(bodyPat);
+        const azurePat = azureService.resolvePat(bodyPat, req.session);
 
         if (!azureOrg || !azureProject || !Array.isArray(repos) || repos.length === 0) {
             return errorResponse(res, 400, 'Azure org, project, and repos array are required', 'MISSING_PARAMS');
@@ -491,7 +492,7 @@ router.post('/import/azure/batch', requireAuth, async (req, res) => {
 router.post('/import/azure-tfvc', requireAuth, async (req, res) => {
     try {
         const { azureOrg, azureProject, tfvcPath, azurePat: bodyPat, targetOrg, targetName, makePrivate, description, importHistory } = req.body;
-        const azurePat = azureService.resolvePat(bodyPat);
+        const azurePat = azureService.resolvePat(bodyPat, req.session);
 
         if (!azureOrg || !azureProject || !tfvcPath) {
             return errorResponse(res, 400, 'Azure organization, project, and TFVC path are required', 'MISSING_PARAMS');
@@ -554,7 +555,7 @@ router.post('/import/azure-tfvc', requireAuth, async (req, res) => {
 router.post('/import/azure-tfvc/batch', requireAuth, async (req, res) => {
     try {
         const { azureOrg, azureProject, azurePat: bodyPat, targetOrg, makePrivate, items, importHistory } = req.body;
-        const azurePat = azureService.resolvePat(bodyPat);
+        const azurePat = azureService.resolvePat(bodyPat, req.session);
 
         if (!azureOrg || !azureProject || !Array.isArray(items) || items.length === 0) {
             return errorResponse(res, 400, 'Azure org, project, and items array are required', 'MISSING_PARAMS');
@@ -741,7 +742,7 @@ async function runTfvcImport(params) {
         try {
             await azureService.deleteGitRepo(azureOrg, azureProject, tempRepoId, azurePat);
         } catch (e) {
-            console.warn(`[tfvc-import] Cleanup warning: ${e.message}`);
+            logger.warn({ err: e }, 'tfvc-import: Cleanup warning');
         }
 
         // Done
@@ -764,14 +765,14 @@ async function runTfvcImport(params) {
         );
 
     } catch (error) {
-        console.error(`[tfvc-import] Error for job ${jobId}:`, error.message);
+        logger.error({ err: error, jobId }, 'tfvc-import: Error');
 
         // Cleanup temp repo on failure
         if (tempRepoId) {
             try {
                 await azureService.deleteGitRepo(azureOrg, azureProject, tempRepoId, azurePat);
             } catch (e) {
-                console.warn(`[tfvc-import] Cleanup on failure: ${e.message}`);
+                logger.warn({ err: e }, 'tfvc-import: Cleanup on failure');
             }
         }
 
@@ -911,7 +912,7 @@ async function runTfvcSnapshotFallback(params) {
         try {
             if (existsSync(tmpDir)) rmSync(tmpDir, { recursive: true, force: true });
         } catch (e) {
-            console.warn(`[tfvc-snapshot] Cleanup warning: ${e.message}`);
+            logger.warn({ err: e }, 'tfvc-snapshot: Cleanup warning');
         }
     }
 }

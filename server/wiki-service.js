@@ -12,6 +12,7 @@ import { fileURLToPath } from 'url';
 import { dirname as pathDirname } from 'path';
 import { getWikiCloneUrl, buildAuthenticatedCloneUrl } from './azure-service.js';
 import { isInternalUrl, resolveAndValidateHost } from './lib/url-validator.js';
+import logger from './lib/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = pathDirname(__filename);
@@ -283,7 +284,7 @@ async function migrateWiki(config, azureCreds, githubToken, targetOwner, targetR
                         rmSync(repoDir, { recursive: true, force: true });
                     }
                 } catch (e) {
-                    console.warn(`[wiki-service] Repo cleanup warning: ${e.message}`);
+                    logger.warn({ err: e }, 'wiki-service: Repo cleanup warning');
                 }
             }
         }
@@ -306,7 +307,7 @@ async function migrateWiki(config, azureCreds, githubToken, targetOwner, targetR
                     rmSync(dir, { recursive: true, force: true });
                 }
             } catch (e) {
-                console.warn(`[wiki-service] Cleanup warning: ${e.message}`);
+                logger.warn({ err: e }, 'wiki-service: Cleanup warning');
             }
         }
     }

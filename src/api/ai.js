@@ -1,6 +1,4 @@
-import { API_BASE_URL, MOCK_MODE } from '../config';
-
-const REPO_MANAGER_API = `${API_BASE_URL}/api`;
+import { API_BASE, MOCK_MODE } from '../config';
 
 const getHeaders = () => {
     return {
@@ -104,7 +102,7 @@ export const aiApi = {
             return { success: true, analysis: mockAnalysis(repo) };
         }
 
-        const res = await fetch(`${REPO_MANAGER_API}/ai/index`, {
+        const res = await fetch(`${API_BASE}/ai/index`, {
             method: 'POST',
             headers: getHeaders(),
             credentials: 'include',
@@ -125,7 +123,7 @@ export const aiApi = {
             return mockSearchResults(query);
         }
 
-        const res = await fetch(`${REPO_MANAGER_API}/ai/search?q=${encodeURIComponent(query)}`, {
+        const res = await fetch(`${API_BASE}/ai/search?q=${encodeURIComponent(query)}`, {
             headers: getHeaders(),
             credentials: 'include'
         });
@@ -148,7 +146,7 @@ export const aiApi = {
             return mockAnalysis(mockRepo);
         }
 
-        const res = await fetch(`${REPO_MANAGER_API}/ai/metadata/${repoId}`, {
+        const res = await fetch(`${API_BASE}/ai/metadata/${repoId}`, {
             headers: getHeaders(),
             credentials: 'include'
         });
@@ -170,7 +168,7 @@ export const aiApi = {
             };
         }
 
-        const res = await fetch(`${REPO_MANAGER_API}/ai/suggest`, {
+        const res = await fetch(`${API_BASE}/ai/suggest`, {
             method: 'POST',
             headers: getHeaders(),
             credentials: 'include',
@@ -197,7 +195,7 @@ export const aiApi = {
             return { success: true, ...mockReadmeEnhancement(repo) };
         }
 
-        const res = await fetch(`${REPO_MANAGER_API}/ai/readme/enhance`, {
+        const res = await fetch(`${API_BASE}/ai/readme/enhance`, {
             method: 'POST',
             headers: getHeaders(),
             credentials: 'include',
@@ -217,7 +215,7 @@ export const aiApi = {
             return { success: true, report: mockQualityReport(repo), repo: repo.full_name };
         }
 
-        const res = await fetch(`${REPO_MANAGER_API}/ai/quality-report`, {
+        const res = await fetch(`${API_BASE}/ai/quality-report`, {
             method: 'POST',
             headers: getHeaders(),
             credentials: 'include',
@@ -242,7 +240,7 @@ export const aiApi = {
             };
         }
 
-        const res = await fetch(`${REPO_MANAGER_API}/ai/batch-index`, {
+        const res = await fetch(`${API_BASE}/ai/batch-index`, {
             method: 'POST',
             headers: getHeaders(),
             credentials: 'include',
@@ -277,7 +275,7 @@ export const aiApi = {
         }
 
         try {
-            const res = await fetch(`${REPO_MANAGER_API}/config/ai-status`, {
+            const res = await fetch(`${API_BASE}/config/ai-status`, {
                 credentials: 'include'
             });
             if (!res.ok) return { configured: false };

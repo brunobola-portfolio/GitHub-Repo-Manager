@@ -8,9 +8,11 @@ const ITERATIONS = 100000
 const KEY_LENGTH = 32
 
 function deriveKey(salt) {
-  const secret = process.env.SESSION_SECRET
-  if (!secret) throw new Error('SESSION_SECRET not configured')
-  return crypto.pbkdf2Sync(secret, salt, ITERATIONS, KEY_LENGTH, 'sha256')
+  const secret = process.env.CREDENTIAL_ENCRYPTION_KEY || process.env.SESSION_SECRET
+  if (!secret) throw new Error('SESSION_SECRET or CREDENTIAL_ENCRYPTION_KEY not configured')
+  const context = Buffer.from('grm-credential-v1')
+  const material = Buffer.concat([context, Buffer.from(secret)])
+  return crypto.pbkdf2Sync(material, salt, ITERATIONS, KEY_LENGTH, 'sha256')
 }
 
 export function encryptCredentials(credentials) {

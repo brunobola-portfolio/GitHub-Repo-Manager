@@ -7,8 +7,9 @@ import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import db from '../db.js'
 import { getTierOrder } from '../lib/feature-flags.js'
-import { validateLicenseKey, parseLicenseKey, isLicenseExpired } from '../lib/license.js'
+import { validateLicenseKey } from '../lib/license.js'
 import { config } from '../config.js'
+import logger from '../lib/logger.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -64,12 +65,9 @@ export function getUserTier(userId) {
     if (cachedLicenseTier && envKey === cachedLicenseKey) {
       return cachedLicenseTier
     }
-    // Fallback: parse JWT without crypto verification (sync, safe for cold start)
-    // The cache will be populated by initLicenseCache() shortly after
-    const parsed = parseLicenseKey(envKey)
-    if (parsed && parsed.tier && !isLicenseExpired(parsed)) {
-      return parsed.tier
-    }
+    // Cold start: return free until initLicenseCache() populates the cache
+    // Avoids using unverified JWT parsing as a fallback
+    return 'free'
   }
 
   return 'free'
@@ -108,9 +106,9 @@ async function initLicenseCache() {
       cachedLicenseKey = envKey
       cachedLicenseTier = payload.tier
       cachedLicensePayload = payload
-      console.log(`License validated: ${payload.tier} tier (org: ${payload.org || 'N/A'}, expires: ${new Date(payload.exp * 1000).toISOString().split('T')[0]})`)
+      logger.info({ tier: payload.tier, org: payload.org || 'N/A', expires: new Date(payload.exp * 1000).toISOString().split('T')[0] }, 'License validated')
     } else {
-      console.warn('LICENSE_KEY is set but invalid or expired.')
+      logger.warn('LICENSE_KEY is set but invalid or expired.')
     }
   }
 }

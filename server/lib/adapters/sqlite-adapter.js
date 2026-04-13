@@ -13,6 +13,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import logger from '../logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -58,24 +59,18 @@ export class SQLiteAdapter {
                 const compiledFor = match ? match[1] : 'unknown';
                 const required = match ? match[2] : process.versions.modules;
 
-                console.error('\n' + '='.repeat(70));
-                console.error('NATIVE MODULE VERSION MISMATCH');
-                console.error('='.repeat(70));
-                console.error(`\nThe better-sqlite3 module was compiled for a different Node.js version.`);
-                console.error(`  Compiled for: NODE_MODULE_VERSION ${compiledFor}`);
-                console.error(`  Required:     NODE_MODULE_VERSION ${required} (Node.js ${process.version})`);
-                console.error(`\nHow to fix:`);
-                console.error(`   1. Run: npm rebuild better-sqlite3`);
-                console.error(`   2. Or run: node server/check-native-modules.js --fix`);
-                console.error(`   3. Or clean reinstall: rm -rf node_modules && npm install`);
-                console.error('\n' + '='.repeat(70) + '\n');
+                logger.error({
+                    compiledFor,
+                    required,
+                    nodeVersion: process.version
+                }, 'NATIVE MODULE VERSION MISMATCH: better-sqlite3 was compiled for a different Node.js version. Fix: run "npm rebuild better-sqlite3", or "node server/check-native-modules.js --fix", or clean reinstall "rm -rf node_modules && npm install"');
                 process.exit(1);
             }
             throw error;
         }
 
         this._db = new Database(this.dbPath, {
-            verbose: process.env.SQLITE_VERBOSE === 'true' ? console.log : undefined,
+            verbose: process.env.SQLITE_VERBOSE === 'true' ? (msg) => logger.debug(msg) : undefined,
         });
 
         // Apply performance pragmas

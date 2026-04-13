@@ -12,7 +12,7 @@ export function auditLog(req, action, resourceType, resourceId, details = {}) {
             resourceType,
             String(resourceId || ''),
             JSON.stringify(details),
-            req.ip || req.headers?.['x-forwarded-for'] || '',
+            req.ip || '',
             req.headers?.['user-agent'] || '',
             req.apiKeyId || null
         );

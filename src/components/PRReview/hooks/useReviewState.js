@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useCallback } from 'react'
+import { useReducer, useEffect, useCallback, useRef } from 'react'
 
 const PERSIST_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
 
@@ -161,6 +161,10 @@ export function useReviewState(owner, repo, pullNumber) {
         ({ owner, repo, pullNumber }) => buildInitialState(owner, repo, pullNumber)
     )
 
+    // Track mount status to avoid post-unmount localStorage writes
+    const mountedRef = useRef(true)
+    useEffect(() => () => { mountedRef.current = false }, [])
+
     // Clean old localStorage entries on mount
     useEffect(() => {
         cleanOldEntries()
@@ -168,6 +172,7 @@ export function useReviewState(owner, repo, pullNumber) {
 
     // Persist selected fields to localStorage whenever they change
     useEffect(() => {
+        if (!mountedRef.current) return
         if (!owner || !repo || !pullNumber) return
         const key = getStorageKey(owner, repo, pullNumber)
         try {

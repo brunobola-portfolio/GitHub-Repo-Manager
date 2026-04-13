@@ -36,7 +36,7 @@ const requireAI = createRequireAI(aiService);
 function handleAIError(res, error, fallbackMessage = 'Failed to generate AI response. Please try again later.') {
     if (error.message?.includes('not found') || error.status === 404) {
         return res.status(404).json({
-            error: `The AI model "${process.env.GEMINI_MODEL || 'gemini-2.5-flash'}" is not available. Please verify your GEMINI_MODEL configuration in .env file. Try using: gemini-2.5-flash-lite, gemini-3-flash-preview, or gemini-2.5-pro`,
+            error: 'The configured AI model is not available. Please verify the GEMINI_MODEL setting.',
             code: 'MODEL_NOT_FOUND'
         });
     }
@@ -249,7 +249,8 @@ router.post('/ai/readme', requireAuth, requireAI, async (req, res) => {
     Make it sound exciting and professional.`;
 
         const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-        const result = await aiService.model.generateContent(prompt);
+        const model = req.genAI.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent(prompt);
         const text = result.response.text();
 
         incrementUsage(userId, 'ai_queries');
@@ -257,7 +258,7 @@ router.post('/ai/readme', requireAuth, requireAI, async (req, res) => {
         res.json({ success: true, readme: text, model: modelName });
     } catch (err) {
         req.log.error({ err }, 'AI README generation failed');
-        res.status(500).json({ error: err.message || 'Failed to generate README' });
+        res.status(500).json({ error: safeError(err, 'Failed to generate README') });
     }
 });
 
@@ -362,7 +363,7 @@ router.get('/ai/search', requireAuth, requireTier('pro'), requireAI, async (req,
             return res.json({ mode: 'similar-by-id', similar })
         } catch (err) {
             req.log.error({ err }, 'similar-by-id lookup failed')
-            return res.status(500).json({ error: err.message })
+            return res.status(500).json({ error: safeError(err, 'Similarity search failed') })
         }
     }
 

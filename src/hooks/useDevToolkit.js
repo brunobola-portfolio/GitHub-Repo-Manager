@@ -47,11 +47,11 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
             const data = await res.json()
             setBranches(data)
             const defaultBranch = data.find(b => b.name === 'main') || data.find(b => b.name === 'master') || data[0]
-            if (defaultBranch && !baseBranch) {
-                setBaseBranch(defaultBranch.name)
+            if (defaultBranch) {
+                setBaseBranch(prev => prev ?? defaultBranch.name)
             }
         } catch { /* noop */ }
-    }, [baseBranch])
+    }, [])
 
     const fetchCompare = useCallback(async (owner, repo, base, head) => {
         if (!base || !head || base === head) {

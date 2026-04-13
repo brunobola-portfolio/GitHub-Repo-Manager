@@ -549,7 +549,6 @@ export function useRepos(user) {
         isPerforming,
         results,
         setPage,
-        setPerPage,
         refresh,
         performAction,
         fetchRepos,

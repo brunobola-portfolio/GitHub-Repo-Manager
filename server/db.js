@@ -1,6 +1,7 @@
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createDatabaseAdapter } from './lib/db-adapter.js';
+import logger from './lib/logger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -22,8 +23,10 @@ export function initDB() {
     const transactions = db.transaction(() => {
         // Multi-tenancy migration: add user_id to tables that need it
         // If tables exist without user_id, drop and recreate them
+        const ALLOWED_MIGRATION_TABLES = new Set(['repo_metadata', 'repo_embeddings', 'community_health_cache', 'workflow_runs', 'workflows_meta']);
         const tablesNeedingUserId = ['repo_metadata', 'repo_embeddings', 'community_health_cache', 'workflow_runs', 'workflows_meta'];
         for (const table of tablesNeedingUserId) {
+            if (!ALLOWED_MIGRATION_TABLES.has(table)) throw new Error(`Unexpected table in migration: ${table}`);
             const cols = db.prepare(`PRAGMA table_info(${table})`).all();
             const hasUserId = cols.some(c => c.name === 'user_id');
             if (!hasUserId && cols.length > 0) {
@@ -400,7 +403,7 @@ export function initDB() {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_migration_jobs_mirror
              ON migration_jobs(target_owner, target_repo, is_mirror)`);
 
-    console.log('SQLite Database initialized successfully');
+    logger.info('SQLite Database initialized successfully');
 }
 
 /**
@@ -421,11 +424,11 @@ export function seedMockData() {
     // Check if mock teams already exist
     const existingTeams = db.prepare('SELECT COUNT(*) as count FROM teams WHERE owner_id = ?').get(MOCK_USER_ID);
     if (existingTeams.count > 0) {
-        console.log('Mock data already exists, skipping seed');
+        logger.info('Mock data already exists, skipping seed');
         return;
     }
 
-    console.log('Seeding mock data for demo mode...');
+    logger.info('Seeding mock data for demo mode...');
 
     const seedTransaction = db.transaction(() => {
         // Create mock teams
@@ -474,7 +477,7 @@ export function seedMockData() {
     });
 
     seedTransaction();
-    console.log('Mock data seeded successfully');
+    logger.info('Mock data seeded successfully');
 }
 
 export default db;

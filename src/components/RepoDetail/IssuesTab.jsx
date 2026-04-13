@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
@@ -16,7 +16,7 @@ export function IssuesTab({ owner, repo, api }) {
     const [form, setForm] = useState({ title: '', body: '' })
     const [selectedIssue, setSelectedIssue] = useState(null)
 
-    const loadIssues = async () => {
+    const loadIssues = useCallback(async () => {
         setLoading(true)
         try {
             const data = await api.fetchIssues({ state: filter })
@@ -26,9 +26,9 @@ export function IssuesTab({ owner, repo, api }) {
         } catch { /* ignore */ } finally {
             setLoading(false)
         }
-    }
+    }, [api, filter])
 
-    useEffect(() => { loadIssues() }, [owner, repo, filter]) // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => { loadIssues() }, [loadIssues])
 
     const handleCreate = async () => {
         if (!form.title) return

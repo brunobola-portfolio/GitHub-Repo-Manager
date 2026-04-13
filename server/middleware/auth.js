@@ -11,6 +11,7 @@
  */
 
 import { createHmac, timingSafeEqual } from 'crypto';
+import { config } from '../config.js';
 import { apiKeyAuth } from './api-key-auth.js';
 
 /**
@@ -58,7 +59,7 @@ export function verifyWebhookSignature(payload, signature) {
  * @returns {string}
  */
 export function safeError(error, fallbackMessage = 'An internal error occurred') {
-    if (process.env.NODE_ENV === 'production') {
+    if (config.nodeEnv === 'production') {
         return fallbackMessage;
     }
     return error?.message || fallbackMessage;

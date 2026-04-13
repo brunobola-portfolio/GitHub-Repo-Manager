@@ -1,3 +1,5 @@
+import logger from './logger.js';
+
 const TIER_FEATURES = {
     free: {
         maxRepos: 50,
@@ -34,6 +36,9 @@ const TIER_FEATURES = {
 };
 
 export function getFeatures(tier) {
+    if (!TIER_FEATURES[tier]) {
+        logger.warn({ tier }, 'Unknown tier requested, falling back to free');
+    }
     return TIER_FEATURES[tier] || TIER_FEATURES.free;
 }
 

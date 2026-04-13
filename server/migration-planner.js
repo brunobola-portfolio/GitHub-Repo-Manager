@@ -1,4 +1,5 @@
 import { aiService } from './ai-service.js';
+import logger from './lib/logger.js';
 
 /**
  * Fallback (non-AI) analysis for migration plans.
@@ -189,11 +190,11 @@ Consider: repo sizes, LFS usage, name conflicts, work item volume, optimal execu
       };
     } catch {
       // If AI returns unparseable response, fall back
-      console.warn('Migration planner: AI response was not valid JSON, using fallback');
+      logger.warn('Migration planner: AI response was not valid JSON, using fallback');
       return fallbackAnalysis(context);
     }
   } catch (err) {
-    console.error('Migration planner: AI analysis failed, using fallback:', err.message);
+    logger.error({ err }, 'Migration planner: AI analysis failed, using fallback');
     return fallbackAnalysis(context);
   }
 }

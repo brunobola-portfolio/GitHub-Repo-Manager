@@ -49,7 +49,10 @@ export function RepoList({
 	const [showSelectionMenu, setShowSelectionMenu] = useState(false)
 
 	// Derive available languages
-	const availableLanguages = [...new Set(repos.map(r => r.language).filter(Boolean))].sort()
+	const availableLanguages = useMemo(
+		() => [...new Set(repos.map(r => r.language).filter(Boolean))].sort(),
+		[repos]
+	)
 
 	// Filter repositories with optimized O(n) lookup using Map
 	const filteredRepos = useMemo(() => {

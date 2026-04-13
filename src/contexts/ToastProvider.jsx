@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, useContext } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { ToastContext } from './contexts'
 
 const MAX_TOASTS = 5
@@ -11,6 +11,7 @@ const MAX_TOASTS = 5
 export function ToastProvider({ children }) {
     const [toasts, setToasts] = useState([])
     const timersRef = useRef(new Map())
+    const idCounter = useRef(0)
 
     // Clean up all timers on unmount
     useEffect(() => {
@@ -31,7 +32,7 @@ export function ToastProvider({ children }) {
     }, [])
 
     const addToastRecord = useCallback((record) => {
-        const id = Date.now() + Math.random()
+        const id = ++idCounter.current
         setToasts(prev => {
             const next = [...prev, { id, ...record }]
             if (next.length > MAX_TOASTS) {
@@ -76,14 +77,3 @@ export function ToastProvider({ children }) {
     return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>
 }
 
-/**
- * useToast — read the shared toast context.
- * Returns the same shape as the old plain hook: { toast, toasts, dismissToast }
- */
-export function useToast() {
-    const ctx = useContext(ToastContext)
-    if (!ctx) {
-        throw new Error('useToast must be used within a <ToastProvider>')
-    }
-    return ctx
-}

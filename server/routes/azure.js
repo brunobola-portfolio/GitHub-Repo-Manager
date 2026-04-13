@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import * as azureService from '../azure-service.js';
-import { requireAuth, safeError, errorResponse } from '../middleware/auth.js';
+import { requireAuth, safeError, errorResponse, isValidGitHubUsername } from '../middleware/auth.js';
 import { encryptCredentials, decryptCredentials } from '../lib/credential-encryption.js';
 
 const orgListLimiter = rateLimit({
@@ -15,10 +15,7 @@ const orgListLimiter = rateLimit({
 
 const router = express.Router();
 
-const ORG_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9-]*$/;
-function validateOrgName(org) {
-    return org && ORG_PATTERN.test(org);
-}
+// Org name validation uses isValidGitHubUsername from auth.js
 
 // Check if server has AZURE_PAT configured (never returns the PAT itself)
 router.get('/azure/env-auth', requireAuth, (req, res) => {
@@ -32,7 +29,7 @@ router.post('/azure/validate', requireAuth, async (req, res) => {
         if (!org) {
             return errorResponse(res, 400, 'Organization is required');
         }
-        if (!validateOrgName(org)) {
+        if (!isValidGitHubUsername(org)) {
             return errorResponse(res, 400, 'Invalid organization name');
         }
         if (!pat) {
@@ -52,7 +49,7 @@ router.post('/azure/projects', requireAuth, async (req, res) => {
         if (!org) {
             return errorResponse(res, 400, 'Organization is required');
         }
-        if (!validateOrgName(org)) {
+        if (!isValidGitHubUsername(org)) {
             return errorResponse(res, 400, 'Invalid organization name');
         }
         if (!pat) {
@@ -72,7 +69,7 @@ router.post('/azure/repos', requireAuth, async (req, res) => {
         if (!org || !project) {
             return errorResponse(res, 400, 'Organization and project are required');
         }
-        if (!validateOrgName(org)) {
+        if (!isValidGitHubUsername(org)) {
             return errorResponse(res, 400, 'Invalid organization name');
         }
         if (!pat) {
@@ -306,7 +303,12 @@ router.get('/azure/oauth/callback', async (req, res) => {
         return res.status(400).send('<html><body><p>OAuth error: no code received.</p></body></html>');
     }
 
-    if (!state || state !== req.session.oauthState) {
+    const stateA = state ? Buffer.from(state) : null;
+    const stateB = req.session.oauthState ? Buffer.from(req.session.oauthState) : null;
+    const stateValid = stateA && stateB &&
+        stateA.length === stateB.length &&
+        crypto.timingSafeEqual(stateA, stateB);
+    if (!stateValid) {
         return res.status(400).send('<html><body><p>OAuth error: invalid state parameter.</p></body></html>');
     }
     delete req.session.oauthState;
@@ -327,8 +329,23 @@ router.get('/azure/oauth/callback', async (req, res) => {
         );
         const tokenData = await tokenRes.json();
         if (tokenData.access_token) {
-            req.session.azureToken = encryptCredentials({ token: tokenData.access_token });
-            req.session.azureTokenReady = true;
+            const encryptedToken = encryptCredentials({ token: tokenData.access_token });
+            // Regenerate session to prevent session fixation (matching GitHub OAuth flow)
+            req.session.regenerate((regenErr) => {
+                if (regenErr) {
+                    req.log?.error?.({ err: regenErr }, 'Failed to regenerate session after Azure OAuth');
+                    // Fall back to saving on the existing session
+                    req.session.azureToken = encryptedToken;
+                    req.session.azureTokenReady = true;
+                    req.session.save(() => {});
+                    return;
+                }
+                req.session.azureToken = encryptedToken;
+                req.session.azureTokenReady = true;
+                req.session.save((saveErr) => {
+                    if (saveErr) req.log?.error?.({ err: saveErr }, 'Failed to save Azure session');
+                });
+            });
         }
     } catch {
         req.session.azureTokenError = true;

@@ -97,7 +97,8 @@ export class PostgresAdapter {
     async run(sql, params = []) {
         const pgSql = ensureReturningId(convertPlaceholders(sql));
         const values = Array.isArray(params) ? params : [params];
-        const result = await this._pool.query(pgSql, values);
+        const queryTarget = this._txClient || this._pool;
+        const result = await queryTarget.query(pgSql, values);
 
         let lastInsertRowid = null;
         if (result.rows && result.rows.length > 0 && result.rows[0].id !== undefined) {
@@ -117,7 +118,8 @@ export class PostgresAdapter {
     async get(sql, params = []) {
         const pgSql = convertPlaceholders(sql);
         const values = Array.isArray(params) ? params : [params];
-        const result = await this._pool.query(pgSql, values);
+        const queryTarget = this._txClient || this._pool;
+        const result = await queryTarget.query(pgSql, values);
         return result.rows[0] || undefined;
     }
 
@@ -128,7 +130,8 @@ export class PostgresAdapter {
     async all(sql, params = []) {
         const pgSql = convertPlaceholders(sql);
         const values = Array.isArray(params) ? params : [params];
-        const result = await this._pool.query(pgSql, values);
+        const queryTarget = this._txClient || this._pool;
+        const result = await queryTarget.query(pgSql, values);
         return result.rows;
     }
 
@@ -136,7 +139,8 @@ export class PostgresAdapter {
      * Execute raw SQL (for schema DDL, multi-statement scripts, etc.).
      */
     async exec(sql) {
-        await this._pool.query(sql);
+        const queryTarget = this._txClient || this._pool;
+        await queryTarget.query(sql);
     }
 
     /**
@@ -149,7 +153,6 @@ export class PostgresAdapter {
      */
     prepare(sql) {
         const adapter = this;
-        const _pgSql = convertPlaceholders(sql);
 
         return {
             get(...args) {
@@ -169,14 +172,17 @@ export class PostgresAdapter {
      *
      * Unlike better-sqlite3's synchronous `db.transaction(fn)` that returns a
      * reusable callable, this returns an async callable.  The function `fn`
-     * receives a transaction-scoped client so queries within the transaction
-     * can share the same connection.
+     * uses the same calling convention as SQLite's `db.transaction(fn)` — callers
+     * do NOT receive a client parameter. Internally, a transaction-scoped client
+     * is stored in `this._txClient` so that `get/all/run` route through it.
      */
     transaction(fn) {
-        const pool = this._pool;
+        const adapter = this;
 
         return async (...args) => {
-            const client = await pool.connect();
+            const client = await adapter._pool.connect();
+            const prevClient = adapter._txClient;
+            adapter._txClient = client;
             try {
                 await client.query('BEGIN');
                 const result = await fn(...args);
@@ -186,6 +192,7 @@ export class PostgresAdapter {
                 await client.query('ROLLBACK');
                 throw err;
             } finally {
+                adapter._txClient = prevClient;
                 client.release();
             }
         };

@@ -2,7 +2,7 @@ import { Router } from 'express'
 import simpleGit from 'simple-git'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { rm, mkdtemp, writeFile, chmod } from 'fs/promises'
+import { rm, mkdtemp } from 'fs/promises'
 import db from '../../db.js'
 import { auditLog } from '../../lib/audit.js'
 import { requireAuth } from '../../middleware/auth.js'
@@ -26,16 +26,9 @@ router.post('/repos/:owner/:repo/sync', requireAuth, requireTier('pro'), async (
     const git = simpleGit(workDir)
     await git.clone(job.source_url, '.', ['--mirror'])
 
-    // Use GIT_ASKPASS to pass token without embedding it in the URL
-    const askpassScript = join(workDir, 'askpass.sh')
-    await writeFile(askpassScript, `#!/bin/sh\necho "${token}"`)
-    await chmod(askpassScript, 0o700)
-
-    const targetUrl = `https://x-access-token@github.com/${owner}/${repo}.git`
-    const pushGit = simpleGit(workDir, {
-      config: [`credential.helper=`],
-    })
-    await pushGit.env('GIT_ASKPASS', askpassScript).push(targetUrl, '--mirror')
+    const targetUrl = `https://x-access-token:${encodeURIComponent(token)}@github.com/${owner}/${repo}.git`
+    const pushGit = simpleGit(workDir)
+    await pushGit.push(targetUrl, '--mirror')
 
     const duration = Date.now() - startedAt
     auditLog(req, 'repo.sync', 'repo', `${owner}/${repo}`, {

@@ -9,6 +9,7 @@
  * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
  */
 
+import crypto from 'crypto';
 import logger from './logger.js';
 
 const MAX_STATS_CACHE = 200;
@@ -54,6 +55,8 @@ let rateLimitInfo = { remaining: null, reset: null };
  */
 export async function githubApi(path, token, options = {}) {
     const url = path.startsWith('http') ? path : `https://api.github.com${path}`;
+    const userHash = crypto.createHash('sha256').update(token).digest('hex').slice(0, 8);
+    const cacheKey = `${userHash}:${url}`;
 
     // Rate limit pre-check: if we know we're exhausted, wait or throw
     if (rateLimitInfo.remaining !== null && rateLimitInfo.remaining <= 0 && rateLimitInfo.reset !== null) {
@@ -87,7 +90,7 @@ export async function githubApi(path, token, options = {}) {
 
     // ETag conditional request: only for GET requests (or requests with no method specified)
     const method = (options.method || 'GET').toUpperCase();
-    const cached = etagCache.get(url);
+    const cached = etagCache.get(cacheKey);
     if (method === 'GET' && cached?.etag) {
         requestHeaders['If-None-Match'] = cached.etag;
     }
@@ -144,7 +147,7 @@ export async function githubApi(path, token, options = {}) {
     // Cache the ETag and response data for future conditional requests
     const responseEtag = res.headers.get('ETag');
     if (method === 'GET' && responseEtag) {
-        etagCache.set(url, { etag: responseEtag, data });
+        etagCache.set(cacheKey, { etag: responseEtag, data });
         evictOldest(etagCache, MAX_ETAG_CACHE);
     }
 

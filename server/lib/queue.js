@@ -1,5 +1,21 @@
 import logger from './logger.js';
 
+const MAX_RETRIES = 3;
+
+async function executeWithRetry(processor, job, queueName, attempt = 1) {
+    try {
+        await processor(job);
+    } catch (err) {
+        if (attempt < MAX_RETRIES) {
+            const delay = Math.pow(2, attempt) * 1000;
+            logger.warn({ queue: queueName, jobId: job.id, attempt, delay }, 'In-memory job failed, retrying');
+            await new Promise(r => setTimeout(r, delay));
+            return executeWithRetry(processor, job, queueName, attempt + 1);
+        }
+        logger.error({ queue: queueName, jobId: job.id, err }, 'In-memory job failed after all retries');
+    }
+}
+
 class InMemoryQueue {
     constructor(name) {
         this.name = name;
@@ -11,9 +27,8 @@ class InMemoryQueue {
         logger.info({ queue: this.name, jobName, jobId }, 'Job queued (in-memory)');
         const worker = _workers.get(this.name);
         if (worker?.processor) {
-            worker.processor({ id: jobId, name: jobName, data }).catch(err => {
-                logger.error({ queue: this.name, jobId, err }, 'In-memory job failed');
-            });
+            const queueName = this.name;
+            executeWithRetry(worker.processor, { id: jobId, name: jobName, data }, queueName);
         }
         return { id: jobId, name: jobName, data };
     }

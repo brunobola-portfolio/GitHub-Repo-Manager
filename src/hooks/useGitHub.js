@@ -52,7 +52,6 @@ export function useGitHub() {
         isPerforming,
         results,
         setPage,
-        setPerPage,
         refresh,
         performAction,
         archiveRepos,
@@ -103,7 +102,6 @@ export function useGitHub() {
         results,
         isMockMode: MOCK_MODE,
         setPage,
-        setPerPage,
         refresh,
         performAction,
         fetchUser,
@@ -122,7 +120,6 @@ export function useGitHub() {
         setSelectedOrg,
         archiveRepos,
         deleteRepos,
-        checkAIStatus,
-        MOCK_MODE
+        checkAIStatus
     }
 }

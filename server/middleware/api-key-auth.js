@@ -14,6 +14,9 @@ export function generateApiKey() {
     return { id, key, prefix, keyHash };
 }
 
+// Note: API key authentication does not set req.session.accessToken.
+// GitHub proxy endpoints (repos, orgs, etc.) require OAuth session auth.
+// API keys are only valid for local-DB endpoints (audit, usage, teams, etc.)
 export function apiKeyAuth(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer grm_live_')) return next();

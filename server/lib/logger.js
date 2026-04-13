@@ -11,8 +11,8 @@ const isProduction = process.env.NODE_ENV === 'production';
 const logger = pino({
     level: process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug'),
     transport: isProduction ? undefined : {
-        target: 'pino/file',
-        options: { destination: 1 } // stdout
+        target: 'pino-pretty',
+        options: { colorize: true }
     },
     formatters: {
         level(label) {

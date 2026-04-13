@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import db from './db.js';
+import logger from './lib/logger.js';
 
 /**
  * Sanitize user-controlled text before interpolation into AI prompts.
@@ -23,7 +24,7 @@ class AIService {
 
     initialize(apiKey, modelName = null) {
         if (!apiKey) {
-            console.warn('AI Service: No API key provided.');
+            logger.warn('AI Service: No API key provided');
             return;
         }
         
@@ -36,10 +37,10 @@ class AIService {
             // Initialize models with error handling
             try {
                 this.model = this.genAI.getGenerativeModel({ model });
-                console.log(`✓ AI Service: Initialized with model: ${model}`);
+                logger.info({ model }, 'AI Service: Initialized with model');
             } catch (modelError) {
-                console.error(`✗ AI Service: Failed to initialize model "${model}":`, modelError.message);
-                console.warn(`  Suggestion: Verify GEMINI_MODEL in .env or try: gemini-2.5-flash-lite, gemini-3-flash-preview`);
+                logger.error({ err: modelError, model }, 'AI Service: Failed to initialize model');
+                logger.warn('Suggestion: Verify GEMINI_MODEL in .env or try: gemini-2.5-flash-lite, gemini-3-flash-preview');
                 this.model = null;
             }
             
@@ -47,14 +48,14 @@ class AIService {
             try {
                 const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-001";
                 this.embeddingModel = this.genAI.getGenerativeModel({ model: embeddingModel });
-                console.log(`✓ AI Service: Embedding model initialized (${embeddingModel})`);
+                logger.info({ embeddingModel }, 'AI Service: Embedding model initialized');
             } catch (embedError) {
-                console.error(`✗ AI Service: Failed to initialize embedding model:`, embedError.message);
-                console.warn(`  Suggestion: Verify GEMINI_EMBEDDING_MODEL in .env or try: gemini-embedding-001, gemini-embedding-2-preview`);
+                logger.error({ err: embedError }, 'AI Service: Failed to initialize embedding model');
+                logger.warn('Suggestion: Verify GEMINI_EMBEDDING_MODEL in .env or try: gemini-embedding-001, gemini-embedding-2-preview');
                 this.embeddingModel = null;
             }
         } catch (error) {
-            console.error('✗ AI Service: Initialization failed:', error.message);
+            logger.error({ err: error }, 'AI Service: Initialization failed');
             this.genAI = null;
             this.model = null;
             this.embeddingModel = null;
@@ -161,7 +162,7 @@ class AIService {
             const result = await this.embeddingModel.embedContent(text);
             return result.embedding.values;
         } catch (error) {
-            console.error('Embedding generation failed:', error);
+            logger.error({ err: error }, 'Embedding generation failed');
             if (error.message?.includes('not found') || error.status === 404) {
                 const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-001";
                 throw new Error(`Embedding model "${embeddingModel}" is not available. Please verify your API access and GEMINI_EMBEDDING_MODEL configuration.`);
@@ -330,7 +331,7 @@ class AIService {
                 patterns: quality.patterns
             };
         } catch (error) {
-            console.error('Repository analysis failed:', error);
+            logger.error({ err: error }, 'Repository analysis failed');
             if (error.message?.includes('not found') || error.status === 404) {
                 throw new Error(`AI model not available. Please verify GEMINI_MODEL configuration in .env file.`);
             }
@@ -387,7 +388,7 @@ class AIService {
                 patterns
             };
         } catch (error) {
-            console.error('README enhancement failed:', error);
+            logger.error({ err: error }, 'README enhancement failed');
             if (error.message?.includes('not found') || error.status === 404) {
                 throw new Error(`AI model not available. Please verify GEMINI_MODEL configuration in .env file.`);
             }

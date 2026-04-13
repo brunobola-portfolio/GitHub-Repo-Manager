@@ -1,6 +1,9 @@
 import { useMemo } from 'react'
 import { DiffView, DiffModeEnum } from '@git-diff-view/react'
+// NOTE: This imports global CSS from the diff library. If upgrading @git-diff-view,
+// check for class name conflicts with Tailwind or the design system.
 import '@git-diff-view/react/styles/diff-view-pure.css'
+import { useTheme } from '../../../hooks/useTheme'
 
 /**
  * Language map: file extension → highlight.js language id
@@ -75,7 +78,7 @@ function parsePatchToHunks(patch) {
  * @param {string}   [props.highlightLanguage] - Override language for syntax highlighting
  */
 export function DiffRenderer({ filename, patch, viewMode, onAddComment, highlightLanguage }) {
-  const isDark = document.documentElement.classList.contains('dark')
+  const { isDark } = useTheme()
 
   const lang = useMemo(() => {
     if (highlightLanguage) return highlightLanguage

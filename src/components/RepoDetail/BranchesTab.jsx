@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
@@ -15,7 +15,7 @@ export function BranchesTab({ owner, repo, api }) {
     const [message, setMessage] = useState(null)
     const [confirmAction, setConfirmAction] = useState(null)
 
-    const loadBranches = async () => {
+    const loadBranches = useCallback(async () => {
         setLoading(true)
         try {
             const data = await api.fetchBranches()
@@ -23,9 +23,9 @@ export function BranchesTab({ owner, repo, api }) {
         } catch { /* ignore */ } finally {
             setLoading(false)
         }
-    }
+    }, [api])
 
-    useEffect(() => { loadBranches() }, [owner, repo]) // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => { loadBranches() }, [loadBranches])
 
     const handleCreate = async () => {
         if (!newBranch) return

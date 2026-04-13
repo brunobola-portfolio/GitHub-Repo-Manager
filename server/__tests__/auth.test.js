@@ -1,5 +1,13 @@
 // @vitest-environment node
 import { describe, it, expect, vi, afterEach } from 'vitest'
+
+// Mock config so we can control nodeEnv per test
+vi.mock('../config.js', () => {
+    const cfg = { nodeEnv: 'development' }
+    return { config: cfg, default: cfg, __mockConfig: cfg }
+})
+
+import { __mockConfig as mockConfig } from '../config.js'
 import {
     isValidGitHubUsername,
     verifyWebhookSignature,
@@ -85,22 +93,22 @@ describe('safeError', () => {
     })
 
     it('returns error message in development', () => {
-        process.env.NODE_ENV = 'development'
+        mockConfig.nodeEnv = 'development'
         expect(safeError(new Error('db crashed'))).toBe('db crashed')
     })
 
     it('returns fallback in production', () => {
-        process.env.NODE_ENV = 'production'
+        mockConfig.nodeEnv = 'production'
         expect(safeError(new Error('db crashed'))).toBe('An internal error occurred')
     })
 
     it('returns custom fallback', () => {
-        process.env.NODE_ENV = 'production'
+        mockConfig.nodeEnv = 'production'
         expect(safeError(new Error('x'), 'Something went wrong')).toBe('Something went wrong')
     })
 
     it('handles null/undefined error', () => {
-        process.env.NODE_ENV = 'development'
+        mockConfig.nodeEnv = 'development'
         expect(safeError(null)).toBe('An internal error occurred')
         expect(safeError(undefined)).toBe('An internal error occurred')
     })

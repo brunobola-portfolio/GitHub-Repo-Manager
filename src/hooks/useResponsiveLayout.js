@@ -13,6 +13,7 @@ function getDefaultMode(width) {
 }
 
 function loadPrefs() {
+  if (typeof window === 'undefined' || !window.localStorage) return {}
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     return stored ? JSON.parse(stored) : {}

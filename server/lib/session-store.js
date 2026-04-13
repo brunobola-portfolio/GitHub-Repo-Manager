@@ -10,6 +10,8 @@
  *   app.use(session({ store: new SQLiteStore(db), ... }));
  */
 
+import logger from './logger.js';
+
 /** Default interval (ms) for purging expired sessions */
 const CLEANUP_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -184,10 +186,10 @@ export function createSQLiteStore(session) {
             try {
                 const info = this._stmtCleanup.run(Date.now());
                 if (info.changes > 0) {
-                    console.log(`[session-store] Purged ${info.changes} expired session(s)`);
+                    logger.info({ changes: info.changes }, 'Purged expired sessions');
                 }
             } catch (err) {
-                console.error('[session-store] Cleanup error:', err.message);
+                logger.error({ err }, 'Session store cleanup error');
             }
         }
 

@@ -16,6 +16,7 @@ import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, isValidGitHubUsername, safeError, errorResponse } from '../middleware/auth.js';
 import { validate, bulkVisibilitySchema, bulkArchiveSchema, bulkDeleteSchema, bulkTransferSchema, bulkMirrorSchema, checkConflictsSchema } from '../lib/validators.js';
+import { auditLog } from '../lib/audit.js';
 
 const router = express.Router();
 
@@ -50,13 +51,7 @@ router.post('/visibility', requireAuth, validate(bulkVisibilitySchema), async (r
     const failureCount = results.length - successCount;
 
     if (successCount > 0) {
-        try {
-            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
-                req.session.userId, 'BULK_VISIBILITY', JSON.stringify(repos), JSON.stringify({ repos, makePublic, successCount })
-            );
-        } catch (auditErr) {
-            req.log?.error?.({ err: auditErr }, 'Audit log write failed');
-        }
+        auditLog(req, 'bulk.visibility', 'bulk', JSON.stringify(repos), { makePublic, successCount });
     }
 
     const statusCode = failureCount === 0 ? 200 : successCount === 0 ? 500 : 207;
@@ -184,13 +179,7 @@ router.post('/transfer', requireAuth, validate(bulkTransferSchema), async (req, 
     const failureCount = results.length - successCount;
 
     if (successCount > 0) {
-        try {
-            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
-                req.session.userId, 'BULK_TRANSFER', JSON.stringify(repos), JSON.stringify({ repos, newOwner: toOrg, successCount })
-            );
-        } catch (auditErr) {
-            req.log?.error?.({ err: auditErr }, 'Audit log write failed');
-        }
+        auditLog(req, 'bulk.transfer', 'bulk', JSON.stringify(repos), { newOwner: toOrg, successCount });
     }
 
     const statusCode = failureCount === 0 ? 200 : successCount === 0 ? 500 : 207;
@@ -274,13 +263,7 @@ router.post('/archive', requireAuth, validate(bulkArchiveSchema), async (req, re
     const failureCount = results.length - successCount;
 
     if (successCount > 0) {
-        try {
-            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
-                req.session.userId, 'BULK_ARCHIVE', JSON.stringify(repos), JSON.stringify({ archive })
-            );
-        } catch (auditErr) {
-            req.log?.error?.({ err: auditErr }, 'Failed to write audit log for BULK_ARCHIVE');
-        }
+        auditLog(req, 'bulk.archive', 'bulk', JSON.stringify(repos), { archive, successCount });
     }
 
     const statusCode = failureCount === 0 ? 200 : successCount === 0 ? 500 : 207;
@@ -315,13 +298,7 @@ router.post('/delete', requireAuth, validate(bulkDeleteSchema), async (req, res)
     const failureCount = results.length - successCount;
 
     if (successCount > 0) {
-        try {
-            db.prepare('INSERT INTO audit_log (user_id, action, target, details) VALUES (?, ?, ?, ?)').run(
-                req.session.userId, 'BULK_DELETE', JSON.stringify(repos), null
-            );
-        } catch (auditErr) {
-            req.log?.error?.({ err: auditErr }, 'Failed to write audit log for BULK_DELETE');
-        }
+        auditLog(req, 'bulk.delete', 'bulk', JSON.stringify(repos), { successCount });
     }
 
     const statusCode = failureCount === 0 ? 200 : successCount === 0 ? 500 : 207;

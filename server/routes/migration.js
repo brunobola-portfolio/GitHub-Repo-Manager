@@ -97,11 +97,12 @@ router.get('/plans', requireAuth, async (req, res) => {
 // GET /api/migration/plans/:id — Get plan with all tasks
 router.get('/plans/:id', requireAuth, async (req, res) => {
   try {
-    const plan = engine.getPlanStatus(parseInt(req.params.id));
-    if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
-    res.json(plan);
+    const id = parseInt(req.params.id);
+    const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
+    const fullPlan = engine.getPlanStatus(id);
+    res.json(fullPlan);
   } catch (err) {
-    if (err.message?.includes('not found')) return res.status(404).json({ error: 'Plan not found' });
     res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
@@ -109,12 +110,13 @@ router.get('/plans/:id', requireAuth, async (req, res) => {
 // PUT /api/migration/plans/:id — Update plan (before execution)
 router.put('/plans/:id', requireAuth, async (req, res) => {
   try {
-    const plan = engine.getPlanStatus(parseInt(req.params.id));
-    if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
+    const id = parseInt(req.params.id);
+    const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
     if (plan.status !== 'draft') return res.status(400).json({ error: 'Can only update draft plans' });
     const parsed = updatePlanSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Validation failed', details: parsed.error.flatten() });
-    engine.updatePlan(parseInt(req.params.id), parsed.data);
+    engine.updatePlan(id, parsed.data);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: safeError(err, 'Operation failed') });
@@ -124,9 +126,10 @@ router.put('/plans/:id', requireAuth, async (req, res) => {
 // DELETE /api/migration/plans/:id
 router.delete('/plans/:id', requireAuth, async (req, res) => {
   try {
-    const plan = engine.getPlanStatus(parseInt(req.params.id));
-    if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
-    engine.deletePlan(parseInt(req.params.id));
+    const id = parseInt(req.params.id);
+    const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
+    engine.deletePlan(id);
     res.json({ success: true });
   } catch (err) {
     if (err.message?.includes('Cannot delete')) return res.status(400).json({ error: 'Cannot delete an active plan' });
@@ -137,9 +140,10 @@ router.delete('/plans/:id', requireAuth, async (req, res) => {
 // POST /api/migration/plans/:id/validate — Pre-flight validation
 router.post('/plans/:id/validate', requireAuth, async (req, res) => {
   try {
-    const plan = engine.getPlanStatus(parseInt(req.params.id));
-    if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
-    const result = engine.validatePlan(parseInt(req.params.id));
+    const id = parseInt(req.params.id);
+    const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
+    const result = engine.validatePlan(id);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: safeError(err, 'Operation failed') });
@@ -149,8 +153,15 @@ router.post('/plans/:id/validate', requireAuth, async (req, res) => {
 // POST /api/migration/plans/:id/execute — Start execution
 router.post('/plans/:id/execute', requireAuth, async (req, res) => {
   try {
-    const plan = engine.getPlanStatus(parseInt(req.params.id));
-    if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
+    const id = parseInt(req.params.id);
+    const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
+
+    // Atomic status transition to prevent double-execute race condition
+    const updated = db.prepare('UPDATE migration_plans SET status = ? WHERE id = ? AND status IN (?, ?)').run('running', id, 'draft', 'paused');
+    if (updated.changes === 0) {
+      return res.status(409).json({ error: 'Plan is already running or cannot be executed' });
+    }
 
     // Extract credentials from session for immediate execution
     const body = req.body || {};
@@ -163,7 +174,7 @@ router.post('/plans/:id/execute', requireAuth, async (req, res) => {
     };
 
     // Start execution asynchronously
-    engine.executePlan(parseInt(req.params.id), credentials).catch(err => {
+    engine.executePlan(id, credentials).catch(err => {
       logger.error({ err, planId: req.params.id }, 'Plan execution error');
     });
     res.json({ success: true, message: 'Execution started' });
@@ -175,9 +186,10 @@ router.post('/plans/:id/execute', requireAuth, async (req, res) => {
 // POST /api/migration/plans/:id/cancel
 router.post('/plans/:id/cancel', requireAuth, async (req, res) => {
   try {
-    const plan = engine.getPlanStatus(parseInt(req.params.id));
-    if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
-    engine.cancelPlan(parseInt(req.params.id));
+    const id = parseInt(req.params.id);
+    const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
+    engine.cancelPlan(id);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: safeError(err, 'Operation failed') });
@@ -187,9 +199,10 @@ router.post('/plans/:id/cancel', requireAuth, async (req, res) => {
 // POST /api/migration/plans/:id/pause
 router.post('/plans/:id/pause', requireAuth, async (req, res) => {
   try {
-    const plan = engine.getPlanStatus(parseInt(req.params.id));
-    if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
-    engine.pausePlan(parseInt(req.params.id));
+    const id = parseInt(req.params.id);
+    const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
+    engine.pausePlan(id);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: safeError(err, 'Operation failed') });
@@ -199,8 +212,9 @@ router.post('/plans/:id/pause', requireAuth, async (req, res) => {
 // POST /api/migration/plans/:id/resume
 router.post('/plans/:id/resume', requireAuth, async (req, res) => {
   try {
-    const plan = engine.getPlanStatus(parseInt(req.params.id));
-    if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
+    const id = parseInt(req.params.id);
+    const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
     const resumeBody = req.body || {};
     const resumeCredentials = {
       githubToken: req.session.accessToken,
@@ -208,7 +222,7 @@ router.post('/plans/:id/resume', requireAuth, async (req, res) => {
       azureOrg: plan.source_org,
       azureProject: plan.source_project
     };
-    engine.resumePlan(parseInt(req.params.id), resumeCredentials).catch(err => {
+    engine.resumePlan(id, resumeCredentials).catch(err => {
       logger.error({ err, planId: req.params.id }, 'Plan resume error');
     });
     res.json({ success: true });
@@ -220,8 +234,9 @@ router.post('/plans/:id/resume', requireAuth, async (req, res) => {
 // POST /api/migration/plans/:id/tasks/:taskId/retry
 router.post('/plans/:id/tasks/:taskId/retry', requireAuth, async (req, res) => {
   try {
-    const plan = engine.getPlanStatus(parseInt(req.params.id));
-    if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
+    const id = parseInt(req.params.id);
+    const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
     const retryBody = req.body || {};
     const retryCredentials = {
       githubToken: req.session.accessToken,
@@ -229,7 +244,7 @@ router.post('/plans/:id/tasks/:taskId/retry', requireAuth, async (req, res) => {
       azureOrg: plan.source_org,
       azureProject: plan.source_project
     };
-    engine.retryTask(parseInt(req.params.id), parseInt(req.params.taskId), retryCredentials).catch(err => {
+    engine.retryTask(id, parseInt(req.params.taskId), retryCredentials).catch(err => {
       logger.error({ err, planId: req.params.id, taskId: req.params.taskId }, 'Task retry error');
     });
     res.json({ success: true });
@@ -260,8 +275,10 @@ router.post('/analyze', requireAuth, async (req, res) => {
 // GET /api/migration/plans/:id/report — Export report
 router.get('/plans/:id/report', requireAuth, async (req, res) => {
   try {
-    const plan = engine.getPlanStatus(parseInt(req.params.id));
-    if (plan.user_id !== req.session.userId) return res.status(403).json({ error: 'Forbidden' });
+    const id = parseInt(req.params.id);
+    const ownership = db.prepare('SELECT id FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
+    if (!ownership) return res.status(404).json({ error: 'Plan not found' });
+    const plan = engine.getPlanStatus(id);
     const startedAt = plan.started_at;
     const completedAt = plan.completed_at;
     const durationSeconds = startedAt && completedAt
@@ -287,4 +304,5 @@ router.get('/plans/:id/report', requireAuth, async (req, res) => {
   }
 });
 
+export { engine };
 export default router;

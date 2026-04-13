@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Zap, Play, RefreshCw, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import { repoActionsApi } from '../../api/repo-actions'
 import { EmptyState } from '../ui/EmptyState'
@@ -21,7 +21,7 @@ export function ActionsTab({ repo }) {
   const owner = repo.owner?.login || repo.full_name?.split('/')[0]
   const repoName = repo.name
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -37,9 +37,9 @@ export function ActionsTab({ repo }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [owner, repoName])
 
-  useEffect(() => { load() }, [repo?.full_name]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load() }, [load])
 
   const handleSync = async () => {
     setLoading(true)

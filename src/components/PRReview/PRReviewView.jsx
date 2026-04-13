@@ -4,6 +4,7 @@ import { useReviewState } from './hooks/useReviewState'
 import { useReviewData } from './hooks/useReviewData'
 import { useReviewAI, heuristicRisk, sortFilesByRisk } from './hooks/useReviewAI'
 import { useReviewKeyboard } from './hooks/useReviewKeyboard'
+import { useToast } from '../../hooks/useToast'
 
 import { FileTree } from './FileTree/FileTree'
 import { DiffPanel } from './DiffPanel/DiffPanel'
@@ -38,6 +39,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     state.files
   )
 
+  const { toast } = useToast()
   const [submitting, setSubmitting] = useState(false)
   const [sortMode, setSortMode] = useState('risk')
 
@@ -128,6 +130,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     try {
       const { isStale } = await checkStaleness()
       if (isStale) {
+        // TODO: Replace window.confirm with a state-based ConfirmModal for a non-blocking UX
         const ok = window.confirm(
           'This PR has been updated since you started reviewing. Do you still want to submit your review?'
         )
@@ -141,11 +144,11 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
       })
       dispatch({ type: 'CLEAR_PENDING_COMMENTS' })
     } catch (e) {
-      window.alert(`Failed to submit review: ${e.message}`)
+      toast.error(`Failed to submit review: ${e.message}`)
     } finally {
       setSubmitting(false)
     }
-  }, [checkStaleness, submitReview, state.pendingComments, state.headSha, dispatch])
+  }, [checkStaleness, submitReview, state.pendingComments, state.headSha, dispatch, toast])
 
   // Keyboard shortcuts
   useReviewKeyboard({
@@ -167,7 +170,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   // Loading state
   if (loading && !state.pr) {
     return (
-      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-950">
+      <div className="flex items-center justify-center h-full min-h-0 flex-1 bg-white dark:bg-gray-950">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-slate-500 dark:text-slate-400 text-sm">Loading pull request...</p>
@@ -179,7 +182,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   // Error state
   if (error && !state.pr) {
     return (
-      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-950">
+      <div className="flex items-center justify-center h-full min-h-0 flex-1 bg-white dark:bg-gray-950">
         <div className="text-center space-y-3">
           <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
           <button

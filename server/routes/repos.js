@@ -54,14 +54,14 @@ router.param('repo', (req, res, next, val) => {
 
 router.param('pull_number', (req, res, next, val) => {
     if (!/^\d+$/.test(val) || val.length > 10) {
-        return res.status(400).json({ error: 'Invalid pull request number' });
+        return errorResponse(res, 400, 'Invalid pull request number', 'INVALID_PARAM');
     }
     next();
 });
 
 router.param('comment_id', (req, res, next, val) => {
     if (!/^\d+$/.test(val) || val.length > 15) {
-        return res.status(400).json({ error: 'Invalid comment ID' });
+        return errorResponse(res, 400, 'Invalid comment ID', 'INVALID_PARAM');
     }
     next();
 });
@@ -73,8 +73,8 @@ router.param('comment_id', (req, res, next, val) => {
 // List repos (personal or org)
 router.get('/', requireAuth, async (req, res) => {
     try {
-        const page = req.query.page || 1;
-        const perPage = req.query.per_page || 30;
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const perPage = clampPerPage(req.query.per_page, 30);
         const org = req.query.org || '';
 
         let endpoint;

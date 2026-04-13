@@ -303,16 +303,16 @@ function AppContent() {
     openModalWithData('showOrgManager', org)
   }, [openModalWithData])
 
-  const handleAction = async (action, options = {}) => {
+  const handleAction = useCallback(async (action, options = {}) => {
     try {
       await performAction(action, null, org, options)
       toast.success(`${action} completed successfully`)
     } catch (err) {
       toast.error(`${action} failed: ${err.message}`)
     }
-  }
+  }, [performAction, org, toast])
 
-  const handleQuickAction = async (action, repo, value) => {
+  const handleQuickAction = useCallback(async (action, repo, value) => {
     switch (action) {
       case 'visibility':
         openModalWithData('showConfirm', {
@@ -425,7 +425,7 @@ function AppContent() {
         console.warn(`handleQuickAction: unhandled action "${action}"`)
         break
     }
-  }
+  }, [openModalWithData, closeModal, performAction, toast, refresh, archiveRepos, deleteRepos, selectedRepos])
 
   const handleLogin = () => {
     resetSessionExpired()

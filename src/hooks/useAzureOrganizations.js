@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 
 const MAX_CONCURRENT = 5
 
@@ -16,6 +16,9 @@ export function useAzureOrganizations() {
   const [orgProjectCounts, setOrgProjectCounts] = useState({})
   const cacheRef = useRef({ orgs: null, counts: {} })
   const abortRef = useRef(null)
+  const mountedRef = useRef(true)
+
+  useEffect(() => () => { mountedRef.current = false }, [])
 
   const fetchOrganizations = useCallback(async (retryCount = 0) => {
     // Return cached if available
@@ -60,24 +63,26 @@ export function useAzureOrganizations() {
       return orgs
     } catch (e) {
       clearTimeout(timeoutId)
+      if (!mountedRef.current) return []
       if (e.name === 'AbortError') {
         // Auto-retry once on timeout
-        if (retryCount < 1) {
+        if (retryCount < 1 && mountedRef.current) {
           return fetchOrganizations(retryCount + 1)
         }
-        setOrgsError('Timeout — não foi possível listar organizações')
+        setOrgsError('Timeout — could not list organizations')
         setOrganizations([])
         return []
       }
       // Auto-retry once on 401 (token expired)
-      if (e.message === 'TOKEN_EXPIRED' && retryCount < 1) {
+      if (e.message === 'TOKEN_EXPIRED' && retryCount < 1 && mountedRef.current) {
         return fetchOrganizations(retryCount + 1)
       }
+      if (!mountedRef.current) return []
       setOrgsError(e.message)
       setOrganizations([])
       return []
     } finally {
-      setOrgsLoading(false)
+      if (mountedRef.current) setOrgsLoading(false)
     }
   }, [])
 

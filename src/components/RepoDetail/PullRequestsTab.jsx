@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
@@ -19,7 +19,7 @@ export function PullRequestsTab({ owner, repo, api, onStartReview, onGenerateDes
     const [branches, setBranches] = useState([])
     const [confirmAction, setConfirmAction] = useState(null)
 
-    const loadPulls = async () => {
+    const loadPulls = useCallback(async () => {
         setLoading(true)
         try {
             const data = await api.fetchPulls({ state: filter })
@@ -27,9 +27,9 @@ export function PullRequestsTab({ owner, repo, api, onStartReview, onGenerateDes
         } catch { /* ignore */ } finally {
             setLoading(false)
         }
-    }
+    }, [api, filter])
 
-    useEffect(() => { loadPulls() }, [owner, repo, filter]) // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => { loadPulls() }, [loadPulls])
 
     // Load branches when create form opens
     useEffect(() => {

@@ -11,7 +11,11 @@ export function createAIProcessor(aiService) {
                 break;
             case 'batch-index':
                 for (const repo of data.repos) {
-                    await aiService.indexRepository(repo.id, repo);
+                    try {
+                        await aiService.indexRepository(repo.id, repo);
+                    } catch (repoErr) {
+                        logger.error({ err: repoErr, repoId: repo.id }, 'Failed to index repo in batch, continuing');
+                    }
                     if (job.updateProgress) {
                         await job.updateProgress(repo.progress || 0);
                     }

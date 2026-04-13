@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRepoDetail } from '../../hooks/useRepoDetail'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
@@ -36,22 +36,23 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription 
     const api = useRepoDetail(owner, repoName)
 
     // Fetch fresh repo data on mount
-    useEffect(() => {
-        const load = async () => {
-            setLoadingRepo(true)
-            setIsStaleData(false)
-            try {
-                const data = await api.fetchRepo()
-                setRepoData(data.data || data)
-            } catch {
-                // Fallback to prop data, but indicate it may be stale
-                setIsStaleData(true)
-            } finally {
-                setLoadingRepo(false)
-            }
+    const loadRepo = useCallback(async () => {
+        setLoadingRepo(true)
+        setIsStaleData(false)
+        try {
+            const data = await api.fetchRepo()
+            setRepoData(data.data || data)
+        } catch {
+            // Fallback to prop data, but indicate it may be stale
+            setIsStaleData(true)
+        } finally {
+            setLoadingRepo(false)
         }
-        load()
-    }, [owner, repoName]) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [api])
+
+    useEffect(() => {
+        loadRepo()
+    }, [loadRepo])
 
     const r = repoData
 

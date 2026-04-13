@@ -22,9 +22,7 @@
  *    so callers can destructure predictably regardless of outcome. The
  *    `teams` array is guaranteed to exist.
  */
-import { API_BASE_URL, MOCK_MODE } from '../config'
-
-const REPO_MANAGER_API = `${API_BASE_URL}/api`
+import { API_BASE, MOCK_MODE } from '../config'
 
 // Seeded mock teams for demo mode. Matches the shape returned by
 // `server/routes/teams.js` — id, name, description, role, member_count,
@@ -72,7 +70,7 @@ export async function listTeams() {
     }
 
     try {
-        const res = await fetch(`${REPO_MANAGER_API}/teams`, {
+        const res = await fetch(`${API_BASE}/teams`, {
             credentials: 'include',
         })
 

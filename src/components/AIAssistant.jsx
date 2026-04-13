@@ -1,15 +1,19 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { X, Send, Sparkles, Loader2, Settings, Key, Minus } from 'lucide-react'
 import { Card } from './ui/Card'
 import ReactMarkdown from 'react-markdown'
 import { useModal } from '../hooks/useModal'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { motion, AnimatePresence } from 'framer-motion'
+
+let msgIdCounter = 0
+const nextMsgId = () => `msg-${Date.now()}-${++msgIdCounter}`
 
 export function AIAssistant({ askAI, user, checkAIStatus }) {
     const [isOpen, setIsOpen] = useState(false)
     const [isMinimized, setIsMinimized] = useState(false)
     const [messages, setMessages] = useState([
-        { role: 'assistant', text: 'Hi! I\'m your AI assistant. How can I help you manage your repositories today?' }
+        { id: nextMsgId(), role: 'assistant', text: 'Hi! I\'m your AI assistant. How can I help you manage your repositories today?' }
     ])
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
@@ -18,6 +22,8 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
     const { openModal } = useModal()
     const [isIdle, setIsIdle] = useState(false)
     const idleTimerRef = useRef(null)
+    const handleCloseChat = useCallback(() => setIsOpen(false), [])
+    const chatRef = useFocusTrap(isOpen, handleCloseChat)
 
     useEffect(() => {
         if (isOpen) {
@@ -73,7 +79,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
 
         const userMessage = input
         setInput('')
-        setMessages(prev => [...prev, { role: 'user', text: userMessage }])
+        setMessages(prev => [...prev, { id: nextMsgId(), role: 'user', text: userMessage }])
         setIsLoading(true)
 
         try {
@@ -82,10 +88,10 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
             if (response.error === 'AI_NOT_CONFIGURED') {
                 setIsConfigured(false)
             } else {
-                setMessages(prev => [...prev, { role: 'assistant', text: response.message }])
+                setMessages(prev => [...prev, { id: nextMsgId(), role: 'assistant', text: response.message }])
             }
         } catch {
-            setMessages(prev => [...prev, { role: 'assistant', text: 'Sorry, I encountered an error. Please try again.' }])
+            setMessages(prev => [...prev, { id: nextMsgId(), role: 'assistant', text: 'Sorry, I encountered an error. Please try again.' }])
         } finally {
             setIsLoading(false)
         }
@@ -134,6 +140,10 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
+                        ref={chatRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="AI Assistant"
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -209,9 +219,9 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                         <>
                                             {/* Messages */}
                                             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-slate-50 to-white dark:from-slate-950/50 dark:to-slate-900/50">
-                                                {messages.map((msg, idx) => (
+                                                {messages.map((msg) => (
                                                     <div
-                                                        key={idx}
+                                                        key={msg.id}
                                                         className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                                     >
                                                         {msg.role === 'assistant' && (

@@ -24,6 +24,7 @@ export function useStreaming() {
             const res = await fetch(streamUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify(body),
                 signal: controller.signal,
             })

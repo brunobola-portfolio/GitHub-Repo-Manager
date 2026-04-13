@@ -47,7 +47,6 @@ describe('useGitHub', () => {
       expect(result.current).toHaveProperty('perPage')
       expect(result.current).toHaveProperty('totalPages')
       expect(result.current).toHaveProperty('setPage')
-      expect(result.current).toHaveProperty('setPerPage')
 
       // Actions
       expect(result.current).toHaveProperty('performAction')
@@ -73,11 +72,6 @@ describe('useGitHub', () => {
       // AI
       expect(result.current).toHaveProperty('askAI')
       expect(result.current).toHaveProperty('checkAIStatus')
-
-      // Selection (no-op stubs since SelectionContext is canonical)
-      expect(result.current).toHaveProperty('selectedIds')
-      expect(result.current).toHaveProperty('toggleSelect')
-      expect(result.current).toHaveProperty('selectRepos')
 
       // Status flags
       expect(result.current).toHaveProperty('isPerforming')
@@ -139,11 +133,6 @@ describe('useGitHub', () => {
       expect(result.current.errorInfo).toBeNull()
     })
 
-    it('initializes selection as empty Set', () => {
-      const { result } = renderHook(() => useGitHub())
-      expect(result.current.selectedIds).toBeInstanceOf(Set)
-      expect(result.current.selectedIds.size).toBe(0)
-    })
   })
 
   describe('Pagination (Mock Mode)', () => {
@@ -159,41 +148,6 @@ describe('useGitHub', () => {
       })
     })
 
-    it('changes perPage via setPerPage', async () => {
-      const { result } = renderHook(() => useGitHub())
-
-      act(() => {
-        result.current.setPerPage(10)
-      })
-
-      await waitFor(() => {
-        expect(result.current.perPage).toBe(10)
-      })
-    })
-  })
-
-  describe('Selection Stubs', () => {
-    it('toggleSelect is a no-op function', () => {
-      const { result } = renderHook(() => useGitHub())
-
-      act(() => {
-        result.current.toggleSelect(1)
-      })
-
-      expect(result.current.selectedIds.size).toBe(0)
-    })
-
-    it('selectRepos is a no-op function', () => {
-      const { result } = renderHook(() => useGitHub())
-
-      act(() => {
-        result.current.selectRepos([1, 2, 3])
-      })
-
-      expect(result.current.selectedIds.size).toBe(0)
-    })
-
-    // clearSelection removed - now managed by SelectionContext directly
   })
 
   describe('Error Handling', () => {

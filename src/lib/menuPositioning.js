@@ -55,7 +55,9 @@ export function calculateMenuPosition({
 				left = clickX
 				submenuDirection = 'right'
 			} else {
-				// Flip left: place submenu to the left of the parent menu
+				// When flipping submenu to the left: position it to the left of the parent menu.
+				// clickX represents the left edge of the parent menu item.
+				// parentWidth is the full parent menu width, menuWidth is the submenu width.
 				left = clickX - menuWidth - parentWidth
 				submenuDirection = 'left'
 			}

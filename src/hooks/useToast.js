@@ -1,4 +1,14 @@
-// Re-export from the canonical context location.
-// The old plain-hook implementation has been replaced by ToastContext so that
-// all components share a single toasts array and reach the one <ToastContainer>.
-export { useToast } from '../contexts/ToastProvider'
+import { useContext } from 'react'
+import { ToastContext } from '../contexts/contexts'
+
+/**
+ * useToast — read the shared toast context.
+ * Returns: { toast, toasts, dismissToast }
+ */
+export function useToast() {
+    const ctx = useContext(ToastContext)
+    if (!ctx) {
+        throw new Error('useToast must be used within a <ToastProvider>')
+    }
+    return ctx
+}

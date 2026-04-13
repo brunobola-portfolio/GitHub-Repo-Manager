@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
 import { Loader2, FileText, BookOpen, Sparkles } from 'lucide-react'
@@ -10,30 +10,31 @@ export function OverviewTab({ owner, repo, api, repoData }) {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
-    useEffect(() => {
-        const controller = new AbortController()
-        const load = async () => {
-            setLoading(true)
-            setError(null)
-            try {
-                const data = await api.fetchReadme()
-                if (!controller.signal.aborted) {
-                    setReadme(data.data || data)
-                }
-            } catch (e) {
-                if (!controller.signal.aborted) {
-                    setReadme(null)
-                    setError(e?.message || 'Failed to load README')
-                }
-            } finally {
-                if (!controller.signal.aborted) {
-                    setLoading(false)
-                }
+    const loadReadme = useCallback(async (signal) => {
+        setLoading(true)
+        setError(null)
+        try {
+            const data = await api.fetchReadme()
+            if (!signal.aborted) {
+                setReadme(data.data || data)
+            }
+        } catch (e) {
+            if (!signal.aborted) {
+                setReadme(null)
+                setError(e?.message || 'Failed to load README')
+            }
+        } finally {
+            if (!signal.aborted) {
+                setLoading(false)
             }
         }
-        load()
+    }, [api])
+
+    useEffect(() => {
+        const controller = new AbortController()
+        loadReadme(controller.signal)
         return () => controller.abort()
-    }, [owner, repo]) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [loadReadme])
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

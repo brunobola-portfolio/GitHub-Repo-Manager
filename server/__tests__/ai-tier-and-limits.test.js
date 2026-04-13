@@ -76,6 +76,9 @@ vi.mock('../lib/validators.js', () => ({
     teamCreateSchema: {},
     teamMemberSchema: {},
     teamRepoSchema: {},
+    aiChatSchema: {},
+    aiSuggestSchema: {},
+    aiIndexSchema: {},
 }))
 
 // ---------------------------------------------------------------------------

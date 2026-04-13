@@ -1,5 +1,5 @@
 import express from 'express';
-import { randomUUID } from 'crypto';
+import crypto, { randomUUID } from 'crypto';
 import db from '../db.js';
 import { auditLog } from '../lib/audit.js';
 import { config } from '../config.js';
@@ -32,8 +32,13 @@ router.get('/callback', async (req, res) => {
         return res.redirect(`${FRONTEND_URL}?error=no_code`);
     }
 
-    // Validate OAuth state parameter to prevent CSRF
-    if (!state || state !== req.session.oauthState) {
+    // Validate OAuth state parameter to prevent CSRF (timing-safe comparison)
+    const stateA = state ? Buffer.from(state) : null;
+    const stateB = req.session.oauthState ? Buffer.from(req.session.oauthState) : null;
+    const stateValid = stateA && stateB &&
+        stateA.length === stateB.length &&
+        crypto.timingSafeEqual(stateA, stateB);
+    if (!stateValid) {
         return res.redirect(`${FRONTEND_URL}?error=invalid_state`);
     }
     delete req.session.oauthState;
@@ -143,7 +148,12 @@ router.post('/logout', (req, res) => {
         if (err) {
             req.log?.error?.({ err }, 'Session destroy failed');
         }
-        res.clearCookie('connect.sid');
+        res.clearCookie('connect.sid', {
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: config.nodeEnv === 'production',
+            path: '/',
+        });
         res.json({ success: true });
     });
 });

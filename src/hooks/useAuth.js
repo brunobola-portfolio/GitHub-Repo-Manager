@@ -21,7 +21,7 @@ import { MOCK_MODE, API_ENDPOINTS } from '../config'
  * Manages the current user state and provides fetchUser to retrieve
  * the authenticated GitHub user from the backend API.
  *
- * @returns {{ user, setUser, fetchUser, authLoading, authError, authErrorInfo }}
+ * @returns {{ user, fetchUser, authLoading, authError, authErrorInfo, authMessage }}
  */
 export function useAuth() {
     const [user, setUser] = useState(null)
@@ -86,12 +86,10 @@ export function useAuth() {
 
     return {
         user,
-        setUser,
         fetchUser,
         authLoading,
         authError,
         authErrorInfo,
-        authMessage,
-        setAuthMessage
+        authMessage
     }
 }

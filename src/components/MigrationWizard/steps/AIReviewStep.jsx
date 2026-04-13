@@ -730,7 +730,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
     if (!aiPlan?.analyzed && !analyzing) {
       analyze()
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [analyze, aiPlan?.analyzed, analyzing])
 
   const handleAcceptSuggestion = (id) => {
     const updated = (aiPlan.suggestions || []).map(s =>

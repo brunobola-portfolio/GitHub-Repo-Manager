@@ -6,33 +6,44 @@ const router = Router();
 
 // List audit log entries (paginated)
 router.get('/', requireAuth, (req, res) => {
-    const { page = 1, limit = 50, action, resource_type, from, to } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 50));
+        const offset = (page - 1) * limit;
+        const { action, resource_type, from, to } = req.query;
 
-    let sql = 'SELECT * FROM audit_log_v2 WHERE user_id = ?';
-    const params = [req.session.userId];
+        // Validate date parameters
+        if (from && isNaN(Date.parse(from))) return res.status(400).json({ error: 'Invalid "from" date format' });
+        if (to && isNaN(Date.parse(to))) return res.status(400).json({ error: 'Invalid "to" date format' });
 
-    if (action) { sql += ' AND action = ?'; params.push(action); }
-    if (resource_type) { sql += ' AND resource_type = ?'; params.push(resource_type); }
-    if (from) { sql += ' AND created_at >= ?'; params.push(from); }
-    if (to) { sql += ' AND created_at <= ?'; params.push(to); }
+        let sql = 'SELECT * FROM audit_log_v2 WHERE user_id = ?';
+        const params = [req.session.userId];
 
-    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), offset);
+        if (action) { sql += ' AND action = ?'; params.push(action); }
+        if (resource_type) { sql += ' AND resource_type = ?'; params.push(resource_type); }
+        if (from) { sql += ' AND created_at >= ?'; params.push(from); }
+        if (to) { sql += ' AND created_at <= ?'; params.push(to); }
 
-    const entries = db.prepare(sql).all(...params);
+        sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+        params.push(limit, offset);
 
-    // Get total count
-    let countSql = 'SELECT COUNT(*) as total FROM audit_log_v2 WHERE user_id = ?';
-    const countParams = [req.session.userId];
-    if (action) { countSql += ' AND action = ?'; countParams.push(action); }
-    if (resource_type) { countSql += ' AND resource_type = ?'; countParams.push(resource_type); }
-    if (from) { countSql += ' AND created_at >= ?'; countParams.push(from); }
-    if (to) { countSql += ' AND created_at <= ?'; countParams.push(to); }
+        const entries = db.prepare(sql).all(...params);
 
-    const { total } = db.prepare(countSql).get(...countParams);
+        // Get total count
+        let countSql = 'SELECT COUNT(*) as total FROM audit_log_v2 WHERE user_id = ?';
+        const countParams = [req.session.userId];
+        if (action) { countSql += ' AND action = ?'; countParams.push(action); }
+        if (resource_type) { countSql += ' AND resource_type = ?'; countParams.push(resource_type); }
+        if (from) { countSql += ' AND created_at >= ?'; countParams.push(from); }
+        if (to) { countSql += ' AND created_at <= ?'; countParams.push(to); }
 
-    res.json({ entries, total, page: parseInt(page), limit: parseInt(limit) });
+        const { total } = db.prepare(countSql).get(...countParams);
+
+        res.json({ entries, total, page, limit });
+    } catch (err) {
+        req.log?.error?.({ err }, 'Failed to fetch audit log');
+        res.status(500).json({ error: 'Failed to fetch audit log' });
+    }
 });
 
 export default router;

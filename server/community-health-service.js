@@ -1,5 +1,6 @@
 import db from './db.js';
 import { githubApi } from './lib/github-api.js';
+import logger from './lib/logger.js';
 
 class CommunityHealthService {
     /**
@@ -57,7 +58,9 @@ class CommunityHealthService {
         try {
             const result = await githubApi(`/repos/${owner}/${repo}/contributors?per_page=100`, token);
             contributors = result.data;
-        } catch { /* empty */ }
+        } catch (err) {
+            logger.warn({ err, owner, repo }, 'Failed to fetch contributor metrics');
+        }
 
         let commits = [];
         try {
@@ -65,13 +68,17 @@ class CommunityHealthService {
             since.setDate(since.getDate() - 30);
             const result = await githubApi(`/repos/${owner}/${repo}/commits?since=${since.toISOString()}&per_page=100`, token);
             commits = result.data;
-        } catch { /* empty */ }
+        } catch (err) {
+            logger.warn({ err, owner, repo }, 'Failed to fetch commit metrics');
+        }
 
         let issues = [];
         try {
             const result = await githubApi(`/repos/${owner}/${repo}/issues?state=all&per_page=100`, token);
             issues = result.data;
-        } catch { /* empty */ }
+        } catch (err) {
+            logger.warn({ err, owner, repo }, 'Failed to fetch issue metrics');
+        }
 
         return {
             contributorCount: Array.isArray(contributors) ? contributors.length : 0,
