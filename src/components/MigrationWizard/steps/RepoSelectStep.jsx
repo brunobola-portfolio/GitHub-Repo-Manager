@@ -7,13 +7,15 @@ import {
   CheckCircle2, XCircle, ExternalLink, KeyRound,
 } from 'lucide-react'
 
+import { formatFileSize } from '../../../utils/format'
+
 /**
- * Format size in KB to human-readable string (KB / MB / GB).
+ * Format size in KB to human-readable string (KB / MB / GB). Delegates to the
+ * shared byte-based formatter (the source value is in KB, so multiply by 1024).
  */
 function formatSize(kb) {
-  if (kb >= 1048576) return `${(kb / 1048576).toFixed(1)} GB`
-  if (kb >= 1024) return `${(kb / 1024).toFixed(1)} MB`
-  return `${kb} KB`
+  if (kb == null) return '0 KB'
+  return formatFileSize(kb * 1024, 1)
 }
 
 /**

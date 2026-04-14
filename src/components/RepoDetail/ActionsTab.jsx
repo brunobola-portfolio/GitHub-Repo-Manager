@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useState } from 'react'
 import { Zap, Play, RefreshCw, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import { repoActionsApi } from '../../api/repo-actions'
 import { EmptyState } from '../ui/EmptyState'
 import { Skeleton } from '../ui/Skeleton'
+import { useTabData } from '../../hooks/useTabData'
 
 const STATUS_ICONS = {
   success: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
@@ -12,43 +13,33 @@ const STATUS_ICONS = {
 }
 
 export function ActionsTab({ repo }) {
-  const [workflows, setWorkflows] = useState([])
-  const [runs, setRuns] = useState([])
-  const [selected, setSelected] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
   const owner = repo.owner?.login || repo.full_name?.split('/')[0]
   const repoName = repo.name
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
+  const { data, loading, error, reload: load } = useTabData(
+    async () => {
       const [wfs, rs] = await Promise.all([
         repoActionsApi.listWorkflows(owner, repoName),
-        repoActionsApi.listRuns(owner, repoName)
+        repoActionsApi.listRuns(owner, repoName),
       ])
-      // Backend returns arrays directly (workflows endpoint: array, runs endpoint: array)
-      setWorkflows(Array.isArray(wfs) ? wfs : (wfs.workflows || wfs.data || []))
-      setRuns(Array.isArray(rs) ? rs : (rs.workflow_runs || rs.runs || rs.data || []))
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [owner, repoName])
-
-  useEffect(() => { load() }, [load])
+      return {
+        workflows: Array.isArray(wfs) ? wfs : (wfs.workflows || wfs.data || []),
+        runs: Array.isArray(rs) ? rs : (rs.workflow_runs || rs.runs || rs.data || []),
+      }
+    },
+    [owner, repoName],
+  )
+  const workflows = data?.workflows || []
+  const runs = data?.runs || []
+  const [selected, setSelected] = useState(null)
 
   const handleSync = async () => {
-    setLoading(true)
     try {
       await repoActionsApi.syncRuns(owner, repoName)
       await load()
-    } catch (err) {
-      setError(err.message)
-      setLoading(false)
+    } catch {
+      // load() will surface the error through useTabData's error state
+      await load()
     }
   }
 
@@ -65,7 +56,7 @@ export function ActionsTab({ repo }) {
   if (error) {
     return (
       <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 text-red-900 dark:text-red-300 text-sm">
-        {error}
+        {error?.message || String(error)}
       </div>
     )
   }

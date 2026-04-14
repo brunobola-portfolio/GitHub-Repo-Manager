@@ -72,10 +72,7 @@ test.describe('Bulk Actions', () => {
     const searchInput = page.getByPlaceholder(/search repositories/i)
     await searchInput.fill('fintech')
 
-    // Wait for filter to apply
-    await page.waitForTimeout(300)
-
-    // Matching repo should be visible
+    // expect().toBeVisible() polls, so no manual setTimeout needed
     await expect(page.getByText('fintech-dashboard').first()).toBeVisible()
   })
 

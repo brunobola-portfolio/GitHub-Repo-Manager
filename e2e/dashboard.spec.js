@@ -89,7 +89,7 @@ test.describe('Dashboard & Navigation', () => {
     const searchInput = page.getByPlaceholder(/search repositories/i)
     await searchInput.fill('blockchain')
 
-    await page.waitForTimeout(300)
+    // expect().toBeVisible() polls — no manual setTimeout
     await expect(page.getByText('blockchain-wallet-core').first()).toBeVisible()
   })
 })

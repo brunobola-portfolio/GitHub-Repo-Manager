@@ -1,0 +1,125 @@
+// @vitest-environment node
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { EventEmitter } from 'events'
+import { initSSE, streamGeminiToSSE } from '../routes/ai-streaming.js'
+
+function makeRes() {
+    const writes = []
+    return {
+        writes,
+        ended: false,
+        writeHead: vi.fn(),
+        write: vi.fn((data) => { writes.push(data); return true }),
+        end: vi.fn(function () { this.ended = true }),
+    }
+}
+
+function makeReq() {
+    const ee = new EventEmitter()
+    return Object.assign(ee, { url: '/sse' })
+}
+
+describe('initSSE', () => {
+    it('writes SSE headers on init', () => {
+        const res = makeRes()
+        initSSE(res)
+        expect(res.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+        }))
+    })
+
+    it('sendChunk emits a data event with the text payload', () => {
+        const res = makeRes()
+        const sse = initSSE(res)
+        sse.sendChunk('hello')
+        expect(res.writes[0]).toBe(`data: ${JSON.stringify({ text: 'hello' })}\n\n`)
+    })
+
+    it('sendDone writes the done envelope and ends the response', () => {
+        const res = makeRes()
+        const sse = initSSE(res)
+        sse.sendDone('full text')
+        expect(res.writes[0]).toBe(`data: ${JSON.stringify({ done: true, full: 'full text' })}\n\n`)
+        expect(res.end).toHaveBeenCalled()
+    })
+
+    it('sendError writes the error envelope and ends the response', () => {
+        const res = makeRes()
+        const sse = initSSE(res)
+        sse.sendError('boom')
+        expect(res.writes[0]).toBe(`data: ${JSON.stringify({ error: true, message: 'boom' })}\n\n`)
+        expect(res.end).toHaveBeenCalled()
+    })
+
+    it('client disconnect flips isAborted and aborts the signal', () => {
+        const res = makeRes()
+        const req = makeReq()
+        const sse = initSSE(res, req)
+        expect(sse.isAborted).toBe(false)
+        expect(sse.signal.aborted).toBe(false)
+        req.emit('close')
+        expect(sse.isAborted).toBe(true)
+        expect(sse.signal.aborted).toBe(true)
+    })
+
+    it('after disconnect, sendChunk is a no-op (no further writes)', () => {
+        const res = makeRes()
+        const req = makeReq()
+        const sse = initSSE(res, req)
+        sse.sendChunk('first')
+        req.emit('close')
+        sse.sendChunk('second')
+        expect(res.writes.length).toBe(1)
+    })
+
+    it('socket-write failure also aborts the signal', () => {
+        const res = makeRes()
+        res.write = vi.fn(() => { throw new Error('socket gone') })
+        const sse = initSSE(res)
+        sse.sendChunk('x')
+        expect(sse.isAborted).toBe(true)
+        expect(sse.signal.aborted).toBe(true)
+    })
+})
+
+describe('streamGeminiToSSE', () => {
+    function makeGeminiStream(chunks) {
+        // Mimics @google/generative-ai's `stream` property: an async iterable
+        // of objects exposing a synchronous `.text()` getter.
+        return {
+            async *stream() {
+                for (const c of chunks) yield { text: () => c }
+            },
+        }
+    }
+
+    it('accumulates text and writes one SSE chunk per Gemini chunk', async () => {
+        const res = makeRes()
+        const sse = initSSE(res)
+        const gemini = { stream: (async function* () { yield { text: () => 'a' }; yield { text: () => 'b' } })() }
+        const full = await streamGeminiToSSE(gemini, sse)
+        expect(full).toBe('ab')
+        expect(res.writes.length).toBe(2)
+    })
+
+    it('stops iterating when the client disconnects mid-stream', async () => {
+        const res = makeRes()
+        const req = makeReq()
+        const sse = initSSE(res, req)
+
+        const gemini = {
+            stream: (async function* () {
+                yield { text: () => 'first' }
+                req.emit('close') // simulate disconnect mid-stream
+                yield { text: () => 'second' }
+            })(),
+        }
+
+        const full = await streamGeminiToSSE(gemini, sse)
+        // first chunk got through; second was dropped because the loop bailed on isAborted
+        expect(full).toBe('first')
+        expect(res.writes.length).toBe(1)
+        expect(sse.isAborted).toBe(true)
+    })
+})

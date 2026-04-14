@@ -117,6 +117,43 @@ export function formatFileSize(bytes, decimals = 2) {
 }
 
 /**
+ * Format a date using the user's locale (date only, no time).
+ * Returns empty string for nullish / unparseable input so it's safe to drop
+ * straight into JSX without ternary guards.
+ *
+ * @param {Date|string|number|null|undefined} value
+ * @param {object} [options] - Intl.DateTimeFormat options
+ * @returns {string}
+ */
+export function formatDate(value, options = {}) {
+	if (value == null) return ''
+	const d = value instanceof Date ? value : new Date(value)
+	if (isNaN(d.getTime())) return ''
+	try {
+		return d.toLocaleDateString(undefined, options)
+	} catch {
+		return d.toISOString().split('T')[0]
+	}
+}
+
+/**
+ * Format a date+time using the user's locale (medium time precision).
+ *
+ * @param {Date|string|number|null|undefined} value
+ * @returns {string}
+ */
+export function formatDateTime(value) {
+	if (value == null) return ''
+	const d = value instanceof Date ? value : new Date(value)
+	if (isNaN(d.getTime())) return ''
+	try {
+		return d.toLocaleString()
+	} catch {
+		return d.toISOString()
+	}
+}
+
+/**
  * Formats a relative time (e.g., "2 hours ago", "3 days ago")
  * @param {Date|string|number} date - The date to format
  * @returns {string} Formatted relative time string

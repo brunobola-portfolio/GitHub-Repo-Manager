@@ -1,5 +1,5 @@
 import {
-	useState, useEffect, useMemo, useRef
+	memo, useState, useEffect, useMemo, useRef
 } from 'react'
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
@@ -51,6 +51,9 @@ function SlimPopover({ isOpen, onClose, children, triggerRef }) {
     <div
       ref={popoverRef}
       tabIndex={-1}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Quick actions"
       className="absolute right-full mr-2 top-0 w-72 max-h-80 overflow-y-auto rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-xl z-40 p-3 outline-none"
     >
       {children}
@@ -82,7 +85,7 @@ function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRe
   )
 }
 
-export function SlimSidebar({ selectedRepos, onOpenImport }) {
+function SlimSidebarBase({ selectedRepos, onOpenImport }) {
   const [openPopover, setOpenPopover] = useState(null)
   
   // Define hooks at top level individually
@@ -178,7 +181,7 @@ const ACTION_LABELS = {
     'import-azure': 'Azure Import'
 }
 
-export function Sidebar({
+function SidebarBase({
     isPerforming,
     performAction,
     message,
@@ -570,3 +573,10 @@ function getTimeAgo(date, now = new Date()) {
     if (interval > 1) return Math.floor(interval) + "m ago"
     return Math.floor(seconds) + "s ago"
 }
+
+// React.memo so identical sidebarProps (already memoised in App.jsx) skip
+// re-render when the parent updates for an unrelated reason. Default shallow
+// equality is the right fit: every prop is either a primitive or a stable
+// reference from the parent's useMemo/useCallback.
+export const Sidebar = memo(SidebarBase)
+export const SlimSidebar = memo(SlimSidebarBase)

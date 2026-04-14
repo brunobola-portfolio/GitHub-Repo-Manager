@@ -5,6 +5,34 @@ import logger from '../lib/logger.js';
 
 const VALID_TIERS = new Set(['free', 'pro', 'enterprise']);
 
+/**
+ * Cross-check the tier from session/subscription metadata against the actual
+ * price object's metadata. If they disagree, log a warning and prefer the
+ * price's tier (it's the source of truth — session metadata can be stale or
+ * tampered if the Stripe account is compromised). Falls back to the supplied
+ * `metadataTier` if we can't fetch the price (e.g. line items missing).
+ */
+async function reconcileTierFromPrice(stripe, sessionOrSub, metadataTier, sessionId) {
+    try {
+        let priceTier = null;
+        if (sessionId) {
+            const items = await stripe.checkout.sessions.listLineItems(sessionId, { expand: ['data.price'], limit: 5 });
+            priceTier = items.data?.[0]?.price?.metadata?.tier || null;
+        } else if (sessionOrSub?.items?.data?.[0]?.price?.metadata?.tier) {
+            priceTier = sessionOrSub.items.data[0].price.metadata.tier;
+        }
+        if (priceTier && VALID_TIERS.has(priceTier)) {
+            if (metadataTier && metadataTier !== priceTier) {
+                logger.warn({ priceTier, metadataTier }, 'Stripe webhook: tier mismatch between session metadata and price metadata; using price metadata');
+            }
+            return priceTier;
+        }
+    } catch (err) {
+        logger.warn({ err }, 'Stripe webhook: failed to reconcile tier from price; using metadata fallback');
+    }
+    return VALID_TIERS.has(metadataTier) ? metadataTier : 'pro';
+}
+
 export async function stripeWebhookHandler(req, res) {
     if (!isStripeEnabled() || !config.stripeWebhookSecret) {
         return res.status(503).json({ error: 'Stripe webhooks not configured' });
@@ -21,13 +49,29 @@ export async function stripeWebhookHandler(req, res) {
         return res.status(400).json({ error: 'Invalid signature' });
     }
 
+    // Idempotency: Stripe retries up to 5 times. Use INSERT OR IGNORE so the
+    // check-then-insert is one atomic statement (no race window between two
+    // concurrent retries). `changes` reports 0 when the event id was already
+    // present, in which case we reply 200 and skip further processing.
+    try {
+        const result = db.prepare(
+            'INSERT OR IGNORE INTO webhook_events (id, source, type, processed_at) VALUES (?, ?, ?, ?)'
+        ).run(event.id, 'stripe', event.type, Date.now());
+        if (result.changes === 0) {
+            return res.json({ received: true, deduped: true });
+        }
+    } catch (err) {
+        logger.error({ err, eventId: event.id }, 'Stripe webhook: idempotency check failed');
+        return res.status(500).json({ error: 'Webhook ledger failure' });
+    }
+
     try {
         switch (event.type) {
             case 'checkout.session.completed': {
                 const session = event.data.object;
                 const userId = parseInt(session.metadata?.userId);
                 const rawTier = session.metadata?.tier || 'pro';
-                const tier = VALID_TIERS.has(rawTier) ? rawTier : 'pro';
+                const tier = await reconcileTierFromPrice(stripe, session, rawTier, session.id);
                 if (userId) {
                     db.prepare(`
                         INSERT INTO user_subscriptions (user_id, tier, stripe_customer_id, stripe_subscription_id, status)
@@ -42,7 +86,7 @@ export async function stripeWebhookHandler(req, res) {
             case 'customer.subscription.updated': {
                 const sub = event.data.object;
                 const rawSubTier = sub.metadata?.tier || (sub.items?.data?.[0]?.price?.metadata?.tier) || 'pro';
-                const tier = VALID_TIERS.has(rawSubTier) ? rawSubTier : 'pro';
+                const tier = await reconcileTierFromPrice(stripe, sub, rawSubTier, null);
                 db.prepare(`
                     UPDATE user_subscriptions SET
                         tier = ?, status = ?, current_period_start = ?, current_period_end = ?, updated_at = datetime('now')

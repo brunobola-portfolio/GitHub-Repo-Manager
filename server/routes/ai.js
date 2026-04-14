@@ -285,21 +285,30 @@ router.post('/ai/index', requireAuth, validate(aiIndexSchema), requireAI, async 
     try {
         req.log.info({ repo: repo.full_name }, 'AI indexing started');
 
-        // 1. Fetch README
+        // 1+2. Fetch README and file structure in parallel — both are
+        // independent GitHub API calls, no reason to serialise. Each leg
+        // soft-fails so a missing README or contents doesn't tank the
+        // indexing run.
+        const [readmeResult, contentsResult] = await Promise.allSettled([
+            githubApi(`/repos/${repo.full_name}/readme`, req.session.accessToken),
+            githubApi(`/repos/${repo.full_name}/contents`, req.session.accessToken),
+        ]);
+
         let readmeContent = '';
-        try {
-            const { data } = await githubApi(`/repos/${repo.full_name}/readme`, req.session.accessToken);
-            readmeContent = Buffer.from(data.content, 'base64').toString('utf-8');
-        } catch (e) {
+        if (readmeResult.status === 'fulfilled') {
+            try {
+                readmeContent = Buffer.from(readmeResult.value.data.content, 'base64').toString('utf-8');
+            } catch (e) {
+                req.log.warn({ repo: repo.full_name, err: e }, 'README content decode failed');
+            }
+        } else {
             req.log.warn({ repo: repo.full_name }, 'No README found');
         }
 
-        // 2. Fetch File Structure (Tree) -> getting top 20 items to save tokens
         let fileStructure = [];
-        try {
-            const { data } = await githubApi(`/repos/${repo.full_name}/contents`, req.session.accessToken);
-            fileStructure = data.map(f => ({ name: f.name, type: f.type }));
-        } catch (e) {
+        if (contentsResult.status === 'fulfilled') {
+            fileStructure = contentsResult.value.data.map(f => ({ name: f.name, type: f.type }));
+        } else {
             req.log.warn({ repo: repo.full_name }, 'Could not fetch contents');
         }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
@@ -6,11 +6,19 @@ import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
 import { GitPullRequest, Plus, Loader2, CheckCircle2, XCircle, GitMerge, ExternalLink, ChevronDown } from 'lucide-react'
 import { PRDetailPanel } from './PRDetailPanel'
+import { useTabData } from '../../hooks/useTabData'
 
-export function PullRequestsTab({ owner, repo, api, onStartReview, onGenerateDescription }) {
-    const [pulls, setPulls] = useState([])
-    const [loading, setLoading] = useState(true)
+export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
     const [filter, setFilter] = useState('open')
+    const { data, loading, reload: loadPulls } = useTabData(
+        async () => {
+            const result = await api.fetchPulls({ state: filter })
+            return result.data || result || []
+        },
+        [api, filter],
+    )
+    const pulls = data || []
+
     const [showCreate, setShowCreate] = useState(false)
     const [creating, setCreating] = useState(false)
     const [message, setMessage] = useState(null)
@@ -18,18 +26,6 @@ export function PullRequestsTab({ owner, repo, api, onStartReview, onGenerateDes
     const [selectedPR, setSelectedPR] = useState(null)
     const [branches, setBranches] = useState([])
     const [confirmAction, setConfirmAction] = useState(null)
-
-    const loadPulls = useCallback(async () => {
-        setLoading(true)
-        try {
-            const data = await api.fetchPulls({ state: filter })
-            setPulls(data.data || data || [])
-        } catch { /* ignore */ } finally {
-            setLoading(false)
-        }
-    }, [api, filter])
-
-    useEffect(() => { loadPulls() }, [loadPulls])
 
     // Load branches when create form opens
     useEffect(() => {

@@ -4,6 +4,7 @@ import { Key, Plus, Copy, Check, Trash2, AlertTriangle, Shield } from 'lucide-re
 import { API_BASE_URL } from '../../config'
 import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
+import { formatDate as formatDateBase } from '../../utils/format'
 
 const SCOPE_OPTIONS = [
     { id: 'read', label: 'Read', description: 'Read access to repositories and data' },
@@ -21,7 +22,7 @@ const SCOPE_VARIANT_MAP = {
 
 function formatDate(dateStr) {
     if (!dateStr) return 'Never'
-    return new Date(dateStr).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+    return formatDateBase(dateStr, { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 function UsageMeter({ current, max, tier }) {

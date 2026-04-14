@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { generateKeyPair, generateLicenseKey, validateLicenseKey, parseLicenseKey } from '../lib/license.js'
+import { generateKeyPair, generateLicenseKey, validateLicenseKey, parseLicenseKey, isLicenseExpired } from '../lib/license.js'
 
 let privateKey, publicKey
 
@@ -129,5 +129,30 @@ describe('license key generation and validation', () => {
     expect(payload).not.toBeNull()
     expect(payload.tier).toBe('pro')
     expect(received).toEqual([undefined])
+  })
+})
+
+describe('isLicenseExpired (defence in depth)', () => {
+  it('treats missing payload or exp as expired', () => {
+    expect(isLicenseExpired(null)).toBe(true)
+    expect(isLicenseExpired({})).toBe(true)
+    expect(isLicenseExpired({ exp: undefined })).toBe(true)
+  })
+
+  it('treats payloads expiring more than 10 years out as expired (forgery guard)', () => {
+    const tenYearsTwoSeconds = Math.floor(Date.now() / 1000) + (10 * 365 * 24 * 60 * 60) + 2
+    expect(isLicenseExpired({ exp: tenYearsTwoSeconds })).toBe(true)
+    // Year 2286 sentinel — must be rejected
+    expect(isLicenseExpired({ exp: 9999999999 })).toBe(true)
+  })
+
+  it('accepts a license expiring in the next year', () => {
+    const oneYear = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60)
+    expect(isLicenseExpired({ exp: oneYear })).toBe(false)
+  })
+
+  it('treats already-past exp as expired', () => {
+    const yesterday = Math.floor(Date.now() / 1000) - (24 * 60 * 60)
+    expect(isLicenseExpired({ exp: yesterday })).toBe(true)
   })
 })

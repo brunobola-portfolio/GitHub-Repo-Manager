@@ -152,8 +152,8 @@ app.use('/api/', devSafetyNet);
 // Session configuration for secure auth persistence
 // Store selection priority:
 //   1. Redis (REDIS_URL set)  → distributed sessions for multi-instance deployments
-//   2. SQLite (production)    → single-instance persistent sessions
-//   3. MemoryStore (default)  → development only (non-persistent, acceptable)
+//   2. SQLite                 → default for development AND production (persistent)
+//   3. MemoryStore            → only for NODE_ENV=test (non-persistent, intentional)
 const sessionConfig = {
     secret: config.sessionSecret,
     resave: false,
@@ -171,7 +171,10 @@ if (config.redisUrl) {
     const { store } = createRedisStore();
     sessionConfig.store = store;
     logger.info('[sessions] Using Redis session store');
-} else if (config.nodeEnv === 'production') {
+} else if (config.nodeEnv !== 'test') {
+    // Development AND production both use the SQLite-backed store so dev
+    // restarts don't drop user sessions. Tests fall through to the in-memory
+    // default (intentional — each test should start with a clean slate).
     const SQLiteStore = createSQLiteStore(session);
     sessionConfig.store = new SQLiteStore(db);
     logger.info('[sessions] Using SQLite session store');

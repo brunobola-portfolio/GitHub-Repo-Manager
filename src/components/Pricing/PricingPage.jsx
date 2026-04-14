@@ -113,7 +113,9 @@ function FaqItem({ q, a, index }) {
     >
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-6 py-5 text-left group"
+        onKeyDown={(e) => { if (e.key === 'Escape' && open) setOpen(false) }}
+        aria-expanded={open}
+        className="w-full flex items-center justify-between px-6 py-5 text-left group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950 rounded-xl"
       >
         <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-200">
           {q}

@@ -59,6 +59,18 @@ router.post('/setup', requireAuth, async (req, res) => {
     }
 });
 
+// AGPL §13 source-disclosure endpoint (machine-readable). Forks should update
+// `sourceUrl` to point at their own modified source so downstream consumers
+// can find it programmatically.
+router.get('/source', (req, res) => {
+    res.json({
+        license: 'AGPL-3.0-only',
+        sourceUrl: 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager',
+        commercialLicenseUrl: 'https://bolalabs.pt/license',
+        notice: 'Modified versions running as a network service must offer their corresponding source under AGPL §13.'
+    });
+});
+
 // Client error reporting endpoint (no auth required - errors may occur before login)
 router.post('/client-error', clientErrorLimiter, (req, res) => {
     try {

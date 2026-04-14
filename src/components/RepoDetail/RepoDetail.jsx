@@ -143,12 +143,12 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription 
 
             {/* Tab Content */}
             <div role="tabpanel" id={`tabpanel-repo-detail-tabs-${activeTab}`} aria-labelledby={`tab-repo-detail-tabs-${activeTab}`}>
-                {activeTab === 'overview' && <OverviewTab owner={owner} repo={repoName} api={api} repoData={r} />}
-                {activeTab === 'branches' && <BranchesTab owner={owner} repo={repoName} api={api} />}
-                {activeTab === 'releases' && <ReleasesTab owner={owner} repo={repoName} api={api} />}
+                {activeTab === 'overview' && <OverviewTab api={api} repoData={r} />}
+                {activeTab === 'branches' && <BranchesTab api={api} />}
+                {activeTab === 'releases' && <ReleasesTab api={api} />}
                 {activeTab === 'actions' && <ActionsTab repo={r} />}
-                {activeTab === 'issues' && <IssuesTab owner={owner} repo={repoName} api={api} />}
-                {activeTab === 'pulls' && <PullRequestsTab owner={owner} repo={repoName} api={api} onStartReview={onStartReview} onGenerateDescription={onGenerateDescription} />}
+                {activeTab === 'issues' && <IssuesTab api={api} />}
+                {activeTab === 'pulls' && <PullRequestsTab api={api} onStartReview={onStartReview} onGenerateDescription={onGenerateDescription} />}
                 {activeTab === 'settings' && <SettingsTab owner={owner} repo={repoName} api={api} repoData={r} onUpdate={setRepoData} />}
             </div>
         </div>

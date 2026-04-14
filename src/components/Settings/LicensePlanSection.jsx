@@ -6,6 +6,7 @@ import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
 import { useModal } from '../../hooks/useModal'
 import { UsageDashboard } from './UsageDashboard'
+import { formatDate as formatDateBase } from '../../utils/format'
 
 const TIER_CONFIG = {
     free: {
@@ -43,7 +44,7 @@ const STATUS_VARIANT = {
 
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A'
-    return new Date(dateStr).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+    return formatDateBase(dateStr, { year: 'numeric', month: 'long', day: 'numeric' }) || 'N/A'
 }
 
 function PlanCard({ tier, status, renewalDate, onManage, onChangePlan, portalLoading }) {

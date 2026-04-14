@@ -1,17 +1,51 @@
 node_modules
 .git
+.github
+.gitattributes
+.gitignore
+
+# Local workspaces / personal tooling
 .dev
 .claude
+.superpowers
+.playwright-mcp
+.worktrees
+.agent
+.roo
+.augment
+
+# Secrets — NEVER copy local env files into image
 .env
 .env.local
+.env.*.local
+.env.production
+.env.development
+
+# Local DB files
 server/data/*.db
 server/data/tmp/
+*.db
+*.sqlite
+*.sqlite3
+
+# Build outputs / test artefacts
 dist
+dist-ssr
 coverage
-*.log
-tests/
-e2e/
-docs/
-.github/
+test-results
+playwright-report
+
+# Source code that isn't shipped at runtime
+tests
+e2e
+docs
 *.md
 !README.md
+
+# Editor
+.vscode
+.idea
+.DS_Store
+
+# Logs
+*.log

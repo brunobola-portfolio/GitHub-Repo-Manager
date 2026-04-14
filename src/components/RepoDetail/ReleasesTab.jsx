@@ -1,30 +1,26 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
 import { Tag, Plus, Trash2, Loader2, ExternalLink, CheckCircle2, XCircle, Package } from 'lucide-react'
+import { useTabData } from '../../hooks/useTabData'
 
-export function ReleasesTab({ owner, repo, api }) {
-    const [releases, setReleases] = useState([])
-    const [loading, setLoading] = useState(true)
+export function ReleasesTab({ api }) {
+    const { data, loading, reload: loadReleases } = useTabData(
+        async () => {
+            const result = await api.fetchReleases()
+            return result.data || result || []
+        },
+        [api],
+    )
+    const releases = data || []
+
     const [showCreate, setShowCreate] = useState(false)
     const [creating, setCreating] = useState(false)
     const [message, setMessage] = useState(null)
     const [form, setForm] = useState({ tag_name: '', name: '', body: '', draft: false, prerelease: false })
     const [confirmAction, setConfirmAction] = useState(null)
-
-    const loadReleases = useCallback(async () => {
-        setLoading(true)
-        try {
-            const data = await api.fetchReleases()
-            setReleases(data.data || data || [])
-        } catch { /* ignore */ } finally {
-            setLoading(false)
-        }
-    }, [api])
-
-    useEffect(() => { loadReleases() }, [loadReleases])
 
     const handleCreate = async () => {
         if (!form.tag_name) return

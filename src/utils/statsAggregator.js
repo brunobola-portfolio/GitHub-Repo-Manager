@@ -79,19 +79,6 @@ export function aggregateLanguages(repos = []) {
 }
 
 /**
- * Calculate trend indicator (up, down, stable)
- */
-export function calculateTrend(current, previous) {
-  if (current == null || !previous || previous === 0) return { direction: 'stable', percentage: 0 }
-
-  const percentage = ((current - previous) / previous) * 100
-
-  if (percentage > 5) return { direction: 'up', percentage: Math.round(percentage) }
-  if (percentage < -5) return { direction: 'down', percentage: Math.round(Math.abs(percentage)) }
-  return { direction: 'stable', percentage: 0 }
-}
-
-/**
  * Group repositories by update time buckets
  */
 export function groupByUpdateTime(repos = []) {
@@ -119,24 +106,6 @@ export function groupByUpdateTime(repos = []) {
   })
 
   return buckets
-}
-
-/**
- * Get top repositories by criteria
- */
-export function getTopRepos(repos = [], criteria = 'stars', limit = 5) {
-  if (!Array.isArray(repos) || repos.length === 0) return []
-
-  const sortFunctions = {
-    stars: (a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0),
-    forks: (a, b) => (b.forks_count || 0) - (a.forks_count || 0),
-    updated: (a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0),
-    watchers: (a, b) => (b.watchers_count || 0) - (a.watchers_count || 0)
-  }
-
-  return [...repos]
-    .sort(sortFunctions[criteria] || sortFunctions.stars)
-    .slice(0, limit)
 }
 
 /**

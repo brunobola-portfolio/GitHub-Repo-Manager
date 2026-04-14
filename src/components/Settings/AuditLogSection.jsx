@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, ChevronLeft, ChevronRight, AlertTriangle, Filter, RefreshCw } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
+import { formatDateTime as formatDateTimeBase } from '../../utils/format'
 
 const ACTION_OPTIONS = [
     { value: '', label: 'All Actions' },
@@ -33,11 +34,7 @@ function getActionColor(action) {
 
 function formatDateTime(dateStr) {
     if (!dateStr) return '—'
-    const d = new Date(dateStr)
-    return d.toLocaleString(undefined, {
-        month: 'short', day: 'numeric', year: 'numeric',
-        hour: '2-digit', minute: '2-digit'
-    })
+    return formatDateTimeBase(dateStr) || '—'
 }
 
 const rowVariants = {

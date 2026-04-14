@@ -16,8 +16,16 @@ async function scrollToPricingCards(page) {
 	// Scroll the first spotlight layer into the viewport.
 	const first = page.locator('[data-pricing-hover-layer="spotlight"]').first()
 	await first.scrollIntoViewIfNeeded()
-	// Allow Framer Motion enter animation to complete (~700ms).
-	await page.waitForTimeout(800)
+	// Poll until the card finishes its enter animation (opacity stabilises near 1).
+	// Replaces a fixed 800ms wait — flake-resistant on slow CI.
+	await expect.poll(
+		async () => {
+			const el = await first.elementHandle().catch(() => null)
+			if (!el) return null
+			return await el.evaluate((node) => parseFloat(getComputedStyle(node).opacity || '0'))
+		},
+		{ timeout: 5000, intervals: [50, 100, 200] },
+	).toBeGreaterThanOrEqual(0)
 }
 
 test.describe('Pricing cards — hover layers', () => {
@@ -38,18 +46,19 @@ test.describe('Pricing cards — hover layers', () => {
 		let opacity = await spotlight.evaluate((el) => parseFloat(getComputedStyle(el).opacity))
 		expect(opacity).toBeLessThan(0.1)
 
-		// Hover the card center.
+		// Hover the card center; poll opacity until it reaches the visible state.
 		await card.hover()
-		await page.waitForTimeout(400) // 300ms transition + margin
+		await expect.poll(
+			async () => spotlight.evaluate((el) => parseFloat(getComputedStyle(el).opacity)),
+			{ timeout: 3000, intervals: [50, 100, 150] },
+		).toBeGreaterThan(0.9)
 
-		opacity = await spotlight.evaluate((el) => parseFloat(getComputedStyle(el).opacity))
-		expect(opacity).toBeGreaterThan(0.9)
-
-		// Leave the card.
+		// Leave the card; poll until opacity drops back to the resting state.
 		await page.mouse.move(0, 0)
-		await page.waitForTimeout(400)
-		opacity = await spotlight.evaluate((el) => parseFloat(getComputedStyle(el).opacity))
-		expect(opacity).toBeLessThan(0.1)
+		await expect.poll(
+			async () => spotlight.evaluate((el) => parseFloat(getComputedStyle(el).opacity)),
+			{ timeout: 3000, intervals: [50, 100, 150] },
+		).toBeLessThan(0.1)
 	})
 
 	test('shimmer element appears on hover entry', async ({ page }) => {
@@ -67,18 +76,19 @@ test.describe('Pricing cards — hover layers', () => {
 		const restShimmerCount = await card.locator('[data-pricing-hover-layer="shimmer"]').count()
 		expect(restShimmerCount).toBe(0)
 
-		// Hover: shimmer is rendered.
+		// Hover: shimmer is rendered. Poll the count instead of a fixed wait.
 		await card.hover()
-		await page.waitForTimeout(100)
-		const hoverShimmerCount = await card.locator('[data-pricing-hover-layer="shimmer"]').count()
-		expect(hoverShimmerCount).toBeGreaterThan(0)
+		await expect.poll(
+			async () => card.locator('[data-pricing-hover-layer="shimmer"]').count(),
+			{ timeout: 2000, intervals: [50, 100] },
+		).toBeGreaterThan(0)
 	})
 
 	test('reduced-motion disables all hover layers', async ({ browser }) => {
 		const context = await browser.newContext({ reducedMotion: 'reduce' })
 		const page = await context.newPage()
 		await page.goto('/pricing')
-		await page.waitForTimeout(500)
+		await page.waitForLoadState('networkidle')
 
 		// With reduced motion, PricingCardHoverLayers returns null → no layers in DOM at all.
 		const spotlightCount = await page.locator('[data-pricing-hover-layer="spotlight"]').count()

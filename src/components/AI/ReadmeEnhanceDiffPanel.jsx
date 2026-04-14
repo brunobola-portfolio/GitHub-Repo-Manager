@@ -10,18 +10,27 @@ export function ReadmeEnhanceDiffPanel({ repo }) {
   const [currentReadme, setCurrentReadme] = useState('')
   const [error, setError] = useState(null)
   const [copied, setCopied] = useState(false)
+  const [lastRepoId, setLastRepoId] = useState(repo?.id)
 
-  useEffect(() => {
-    let cancelled = false
+  // Reset state on repo change using the React-recommended "set state during
+  // render of a different value" pattern. This avoids `setState` calls inside
+  // the effect body (which the lint rule flags as cascading-render risk).
+  if (repo?.id !== lastRepoId) {
+    setLastRepoId(repo?.id)
     setLoading(true)
     setEnhanced(null)
     setError(null)
     setCurrentReadme('')
+  }
+
+  useEffect(() => {
+    const controller = new AbortController()
 
     // Fetch current README and enhanced version in parallel
     const readmeFetch = fetch(`/api/repos/${encodeURIComponent(repo.full_name)}/readme`, {
       credentials: 'include',
-      headers: { Accept: 'application/vnd.github.raw' }
+      headers: { Accept: 'application/vnd.github.raw' },
+      signal: controller.signal,
     })
       .then(r => r.ok ? r.text() : '')
       .catch(() => '')
@@ -30,21 +39,19 @@ export function ReadmeEnhanceDiffPanel({ repo }) {
 
     Promise.all([readmeFetch, enhanceFetch])
       .then(([readme, result]) => {
-        if (!cancelled) {
-          // enhanceReadme backend returns currentReadme in the response body;
-          // prefer the server-fetched version, fall back to the parallel fetch.
-          setCurrentReadme(result.currentReadme || readme || '')
-          setEnhanced(result.enhancement || result.readme || result.enhanced || '')
-          setLoading(false)
-        }
+        if (controller.signal.aborted) return
+        // enhanceReadme backend returns currentReadme in the response body;
+        // prefer the server-fetched version, fall back to the parallel fetch.
+        setCurrentReadme(result.currentReadme || readme || '')
+        setEnhanced(result.enhancement || result.readme || result.enhanced || '')
+        setLoading(false)
       })
       .catch(err => {
-        if (!cancelled) {
-          setError(err.message)
-          setLoading(false)
-        }
+        if (controller.signal.aborted || err?.name === 'AbortError') return
+        setError(err.message)
+        setLoading(false)
       })
-    return () => { cancelled = true }
+    return () => controller.abort()
   }, [repo])
 
   const handleCopy = () => {

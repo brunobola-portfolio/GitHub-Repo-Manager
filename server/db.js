@@ -343,6 +343,19 @@ export function initDB() {
             )
         `);
 
+        // Webhook event ledger — used for idempotency. Stripe retries up to 5
+        // times; recording the event id before processing prevents duplicate
+        // subscription writes / proration drift.
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS webhook_events (
+                id TEXT PRIMARY KEY,
+                source TEXT NOT NULL,
+                type TEXT,
+                processed_at INTEGER NOT NULL
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_webhook_events_source ON webhook_events(source, processed_at)`);
+
         // Usage Metrics Table (billing metering)
         db.exec(`
             CREATE TABLE IF NOT EXISTS usage_metrics (
@@ -389,6 +402,12 @@ export function initDB() {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_repo_metadata_repo ON repo_metadata(repo_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_repo_embeddings_repo ON repo_embeddings(repo_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_community_health_repo ON community_health_cache(repo_id)`);
+        // Composite indexes for the hot AI/search paths that filter by both
+        // user_id AND repo_id (e.g. `WHERE user_id = ? AND repo_id IN (...)`).
+        // Single-column indexes still work but the composite is dramatically
+        // cheaper for these IN-list lookups in routes/ai.js.
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_repo_metadata_user_repo ON repo_metadata(user_id, repo_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_repo_embeddings_user_repo ON repo_embeddings(user_id, repo_id)`);
     });
 
     transactions();

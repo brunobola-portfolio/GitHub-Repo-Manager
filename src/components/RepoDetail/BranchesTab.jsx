@@ -1,31 +1,27 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
 import { GitBranch, Shield, Trash2, Plus, Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { useTabData } from '../../hooks/useTabData'
 
-export function BranchesTab({ owner, repo, api }) {
-    const [branches, setBranches] = useState([])
-    const [loading, setLoading] = useState(true)
+export function BranchesTab({ api }) {
+    const { data, loading, reload: loadBranches } = useTabData(
+        async () => {
+            const result = await api.fetchBranches()
+            return result.data || result || []
+        },
+        [api],
+    )
+    const branches = data || []
+
     const [showCreate, setShowCreate] = useState(false)
     const [newBranch, setNewBranch] = useState('')
     const [baseSha, setBaseSha] = useState('')
     const [creating, setCreating] = useState(false)
     const [message, setMessage] = useState(null)
     const [confirmAction, setConfirmAction] = useState(null)
-
-    const loadBranches = useCallback(async () => {
-        setLoading(true)
-        try {
-            const data = await api.fetchBranches()
-            setBranches(data.data || data || [])
-        } catch { /* ignore */ } finally {
-            setLoading(false)
-        }
-    }, [api])
-
-    useEffect(() => { loadBranches() }, [loadBranches])
 
     const handleCreate = async () => {
         if (!newBranch) return

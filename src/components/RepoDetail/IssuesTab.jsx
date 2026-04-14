@@ -1,34 +1,30 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
 import { CircleDot, Plus, Loader2, CheckCircle2, XCircle, MessageSquare, ExternalLink } from 'lucide-react'
 import { IssueDetailPanel } from './IssueDetailPanel'
+import { useTabData } from '../../hooks/useTabData'
 
-export function IssuesTab({ owner, repo, api }) {
-    const [issues, setIssues] = useState([])
-    const [loading, setLoading] = useState(true)
+export function IssuesTab({ api }) {
     const [filter, setFilter] = useState('open')
+    const { data, loading, reload: loadIssues } = useTabData(
+        async () => {
+            const result = await api.fetchIssues({ state: filter })
+            const items = result.data || result || []
+            // Filter out pull requests (GitHub API returns PRs as issues too)
+            return items.filter(i => !i.pull_request)
+        },
+        [api, filter],
+    )
+    const issues = data || []
+
     const [showCreate, setShowCreate] = useState(false)
     const [creating, setCreating] = useState(false)
     const [message, setMessage] = useState(null)
     const [form, setForm] = useState({ title: '', body: '' })
     const [selectedIssue, setSelectedIssue] = useState(null)
-
-    const loadIssues = useCallback(async () => {
-        setLoading(true)
-        try {
-            const data = await api.fetchIssues({ state: filter })
-            const items = data.data || data || []
-            // Filter out pull requests (GitHub API returns PRs as issues too)
-            setIssues(items.filter(i => !i.pull_request))
-        } catch { /* ignore */ } finally {
-            setLoading(false)
-        }
-    }, [api, filter])
-
-    useEffect(() => { loadIssues() }, [loadIssues])
 
     const handleCreate = async () => {
         if (!form.title) return

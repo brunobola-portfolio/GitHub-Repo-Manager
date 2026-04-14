@@ -76,9 +76,18 @@ export async function validateLicenseKey(licenseKey, publicKeyOrResolver) {
   }
 }
 
+// Reject license payloads whose `exp` is more than 10 years in the future.
+// A malformed or forged token with `exp: 9999999999` (year 2286) should be
+// treated as expired (defence in depth — `jwtVerify` would normally catch
+// signature tampering, but a leaked signing key would let an attacker mint
+// effectively-perpetual licenses).
+const MAX_EXP_OFFSET_SECONDS = 10 * 365 * 24 * 60 * 60
+
 export function isLicenseExpired(payload) {
   if (!payload || !payload.exp) return true
-  return Math.floor(Date.now() / 1000) > payload.exp
+  const now = Math.floor(Date.now() / 1000)
+  if (payload.exp > now + MAX_EXP_OFFSET_SECONDS) return true
+  return now > payload.exp
 }
 
 export function parseLicenseKey(licenseKey) {

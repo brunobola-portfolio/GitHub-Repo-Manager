@@ -46,23 +46,36 @@ describe('hashKey', () => {
         expect(result).toMatch(/^[0-9a-f]{64}$/)
     })
 
-    it('matches manual HMAC-SHA-256 computation with default secret', () => {
+    it('generates an ephemeral dev secret when API_KEY_SECRET is unset (non-prod)', () => {
         delete process.env.API_KEY_SECRET
         const key = 'grm_live_test123'
-        const expected = createHmac('sha256', 'grm-default-dev-secret-change-in-production')
-            .update(key)
-            .digest('hex')
-        expect(hashKey(key)).toBe(expected)
+        const hash = hashKey(key)
+        // Should produce a valid hex hash without throwing
+        expect(hash).toMatch(/^[0-9a-f]{64}$/)
+        // Ephemeral secret is now persisted on env for the rest of the process
+        expect(process.env.API_KEY_SECRET).toBeTruthy()
+        expect(process.env.API_KEY_SECRET).toHaveLength(64) // 32 bytes hex
+    })
+
+    it('throws in production when API_KEY_SECRET is missing (no insecure default)', () => {
+        const originalNodeEnv = process.env.NODE_ENV
+        delete process.env.API_KEY_SECRET
+        process.env.NODE_ENV = 'production'
+        try {
+            expect(() => hashKey('grm_live_test')).toThrow(/API_KEY_SECRET must be set in production/)
+        } finally {
+            process.env.NODE_ENV = originalNodeEnv
+        }
     })
 
     it('output changes when API_KEY_SECRET env changes', () => {
-        delete process.env.API_KEY_SECRET
-        const hashWithDefault = hashKey('same-key')
+        process.env.API_KEY_SECRET = 'first-secret-value'
+        const hashFirst = hashKey('same-key')
 
         process.env.API_KEY_SECRET = 'custom-secret-value'
         const hashWithCustom = hashKey('same-key')
 
-        expect(hashWithDefault).not.toBe(hashWithCustom)
+        expect(hashFirst).not.toBe(hashWithCustom)
     })
 
     it('uses custom API_KEY_SECRET when set', () => {

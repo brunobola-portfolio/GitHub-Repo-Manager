@@ -27,6 +27,7 @@ import reposExportRouter from './repos-export.js';
 import reposSyncRouter from './repos-sync.js';
 import reposSecurityRouter from './repos-security.js';
 import { requireTier } from '../../middleware/require-tier.js';
+import { createCache } from '../../lib/memory-cache.js';
 
 const router = Router();
 
@@ -59,9 +60,10 @@ router.use(reposSecurityRouter);
 //  existing teams module; included here so they work under /api/v1)
 // ------------------------------------------------------------------
 
-// In-memory TTL cache for team activity
-const activityCache = new Map();
-const ACTIVITY_CACHE_TTL = 60000; // 60 seconds
+// In-memory TTL+LRU cache for team activity. The shared `createCache` helper
+// gives us per-entry expiry, bounded memory growth, and active sweep so we
+// don't keep stale entries alive forever.
+const activityCache = createCache({ ttlMs: 60_000, maxSize: 100 });
 
 // Team Activity Stream
 // Aggregates events from all repos assigned to the team
@@ -80,8 +82,8 @@ router.get(['/teams/:id/activity', '/team/:id/activity'], requireAuth, async (re
         // Check cache first
         const cacheKey = `team-${teamId}-${req.session.userId}`;
         const cached = activityCache.get(cacheKey);
-        if (cached && Date.now() - cached.timestamp < ACTIVITY_CACHE_TTL) {
-            return res.json(cached.data);
+        if (cached) {
+            return res.json(cached);
         }
 
         // 1. Get Repos assigned to team
@@ -128,13 +130,8 @@ router.get(['/teams/:id/activity', '/team/:id/activity'], requireAuth, async (re
         // Return top 50
         const activityData = uniqueEvents.slice(0, 50);
 
-        // Cache the result
-        activityCache.set(cacheKey, { data: activityData, timestamp: Date.now() });
-        // Evict old entries to prevent unbounded growth
-        if (activityCache.size > 100) {
-            const oldest = activityCache.keys().next().value;
-            activityCache.delete(oldest);
-        }
+        // Cache the result (TTL + LRU eviction handled by createCache)
+        activityCache.set(cacheKey, activityData);
 
         res.json(activityData);
 

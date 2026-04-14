@@ -21,23 +21,29 @@ import { MOCK_MODE } from '../config'
 export default function LicenseBadge() {
   const [info, setInfo] = useState(null)
   const [error, setError] = useState(false)
+  // `now` is held in state and refreshed hourly so daysUntilExpiry recomputes
+  // even on long-lived tabs. Using `Date.now()` directly during render
+  // violates the impure-function rule and lints as an error.
+  const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
-    let cancelled = false
-    fetch('/api/v1/license', { credentials: 'include' })
+    const controller = new AbortController()
+    fetch('/api/v1/license', { credentials: 'include', signal: controller.signal })
       .then(async (r) => {
         if (!r.ok) throw new Error(`status ${r.status}`)
         return r.json()
       })
-      .then((data) => {
-        if (!cancelled) setInfo(data)
+      .then((data) => { if (!controller.signal.aborted) setInfo(data) })
+      .catch((err) => {
+        if (controller.signal.aborted || err?.name === 'AbortError') return
+        setError(true)
       })
-      .catch(() => {
-        if (!cancelled) setError(true)
-      })
-    return () => {
-      cancelled = true
-    }
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60 * 60 * 1000)
+    return () => clearInterval(id)
   }, [])
 
   // Hide until we have something meaningful — prevents layout flicker on
@@ -48,7 +54,7 @@ export default function LicenseBadge() {
   const Icon = spec.icon
 
   const daysUntilExpiry = info?.expiresAt
-    ? Math.ceil((new Date(info.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((new Date(info.expiresAt).getTime() - now) / (1000 * 60 * 60 * 24))
     : null
 
   const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry > 0

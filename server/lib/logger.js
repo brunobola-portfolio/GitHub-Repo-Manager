@@ -1,16 +1,18 @@
 import pino from 'pino';
 
 const isProduction = process.env.NODE_ENV === 'production';
+const isTest = process.env.NODE_ENV === 'test';
 
 /**
  * Structured logger for the server.
  * Uses pino for fast, JSON-structured logging.
  * In development: pretty-prints for readability.
- * In production: outputs JSON for log aggregation.
+ * In production / test: outputs JSON (avoids pino-pretty transport that breaks
+ * vitest worker bootstrap — the worker can't resolve the transport target).
  */
 const logger = pino({
-    level: process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug'),
-    transport: isProduction ? undefined : {
+    level: process.env.LOG_LEVEL || (isProduction ? 'info' : isTest ? 'silent' : 'debug'),
+    transport: (isProduction || isTest) ? undefined : {
         target: 'pino-pretty',
         options: { colorize: true }
     },

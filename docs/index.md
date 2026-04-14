@@ -59,6 +59,7 @@ Step-by-step implementation plans generated from approved specs.
 - [Reusable TabBar](plans/2026-04-10-reusable-tabbar.md) — Extraction of shared TabBar primitive + migration of call sites
 - [Modal System Redesign](plans/2026-04-11-modal-system-redesign.md) — 24-task plan: useBodyScrollLock + InsightCard + StatBar + Modal enhancement + migration of 3 hand-rolled modals + WizardPanel alignment
 - [License Mint Automation](plans/2026-04-11-license-mint-automation.md) — 10-task TDD plan: `scripts/lib/minter.js` primitives, CLI composition wrapper, mint-license.yml workflow, dependabot config, server/lib/license.js kid/resolver additions (Complete)
+- [Eight-Specialist Audit](plans/2026-04-13-eight-specialist-audit.md) — Parallel-agent audit + validated, prioritised plan covering security, legal (AGPL §13), monetization (Stripe idempotency, license cache), perf, code quality, a11y, DX (In Progress)
 
 ## Architecture
 

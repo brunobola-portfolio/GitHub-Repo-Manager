@@ -19,33 +19,43 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
 
     const handleToggleMaximize = useCallback(() => setIsMaximized((v) => !v), [])
 
-    // Debounced name availability check
+    // Debounced name availability check. Uses AbortController so a rapid
+    // typing session (or a closed modal) cancels any in-flight request and
+    // can't set stale `nameStatus` after the user has moved on.
     useEffect(() => {
         if (!name || !isOpen) {
             setNameStatus(null)
             return
         }
         setNameStatus('checking')
+        const controller = new AbortController()
         const timer = setTimeout(async () => {
             try {
                 const res = await fetch('/api/import/check-duplicates', {
                     method: 'POST',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ names: [name], org: targetOrg || undefined })
+                    body: JSON.stringify({ names: [name], org: targetOrg || undefined }),
+                    signal: controller.signal,
                 })
+                if (controller.signal.aborted) return
                 if (res.ok) {
                     const data = await res.json()
+                    if (controller.signal.aborted) return
                     const duplicates = data.duplicates || []
                     setNameStatus(duplicates.length > 0 ? 'taken' : 'available')
                 } else {
                     setNameStatus(null)
                 }
-            } catch {
+            } catch (err) {
+                if (controller.signal.aborted || err?.name === 'AbortError') return
                 setNameStatus(null)
             }
         }, 500)
-        return () => clearTimeout(timer)
+        return () => {
+            clearTimeout(timer)
+            controller.abort()
+        }
     }, [name, targetOrg, isOpen])
 
     // Reset form on close

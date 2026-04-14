@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef, lazy, Suspense } from 'react'
 import { useGitHub } from './hooks/useGitHub'
 import { Header } from './components/Header'
 import { Sidebar } from './components/Sidebar'
@@ -25,6 +25,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { SessionBanner } from './components/SessionBanner'
 import { RateLimitNotice } from './components/ui/RateLimitNotice'
 import { LandingPage } from './components/Landing/LandingPage'
+import { LegalFooter } from './components/LegalFooter'
 
 // Lazy load Pricing page
 const PricingPage = lazy(() => import('./components/Pricing/PricingPage').then(m => ({ default: m.PricingPage })))
@@ -460,9 +461,14 @@ function AppContent() {
 
   const displayRepos = selectedOrg ? orgRepos : repos
 
-  const selectedRepos = displayRepos.filter(r => selectedIds.has(r.id))
+  const selectedRepos = useMemo(
+    () => displayRepos.filter(r => selectedIds.has(r.id)),
+    [displayRepos, selectedIds]
+  )
 
-  const sidebarProps = {
+  // Memoised so child Sidebar / SlimSidebar (now React.memo'd) don't re-render
+  // on every parent render — only when an actual sidebarProps field changes.
+  const sidebarProps = useMemo(() => ({
     isPerforming,
     performAction: handleAction,
     message,
@@ -472,7 +478,7 @@ function AppContent() {
     selectedRepos,
     onTransfer: () => openModalWithData('showTransfer', selectedRepos.length > 0 ? selectedRepos : displayRepos),
     activity,
-  }
+  }), [isPerforming, handleAction, message, results, archiveRepos, deleteRepos, selectedRepos, openModalWithData, displayRepos, activity])
 
   const slimOrgContent = (
     <>
@@ -1079,6 +1085,7 @@ function AppContent() {
           </MobileDrawer>
         </>
       )}
+      <LegalFooter />
       </div>
     </>
   )

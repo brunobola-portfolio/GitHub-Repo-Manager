@@ -7,7 +7,7 @@ import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import db from '../db.js'
 import { getTierOrder } from '../lib/feature-flags.js'
-import { validateLicenseKey } from '../lib/license.js'
+import { validateLicenseKey, isLicenseExpired } from '../lib/license.js'
 import { config } from '../config.js'
 import logger from '../lib/logger.js'
 
@@ -61,8 +61,19 @@ export function getUserTier(userId) {
 
   const envKey = config.licenseKey || null
   if (envKey && PUBLIC_KEY) {
-    // Use cache if warm
+    // Use cache if warm AND the cached payload hasn't expired since startup.
+    // Without this expiry recheck, a license that expires while the process
+    // is running would keep unlocking gated features until the next restart.
     if (cachedLicenseTier && envKey === cachedLicenseKey) {
+      if (cachedLicensePayload && isLicenseExpired(cachedLicensePayload)) {
+        // Cache the exp before we null the payload so the log line shows the
+        // real expiration timestamp instead of `undefined` (caught in review).
+        const expiredAt = cachedLicensePayload.exp
+        cachedLicenseTier = null
+        cachedLicensePayload = null
+        logger.warn({ exp: expiredAt }, 'Cached license expired — downgrading to free')
+        return 'free'
+      }
       return cachedLicenseTier
     }
     // Cold start: return free until initLicenseCache() populates the cache

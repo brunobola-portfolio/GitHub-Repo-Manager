@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 const ThemeContext = createContext(null)
 
@@ -57,19 +57,22 @@ export function ThemeProvider({ children }) {
         return () => mediaQuery.removeEventListener('change', handleChange)
     }, [theme])
 
-    const toggleTheme = () => {
+    const toggleTheme = useCallback(() => {
         setTheme(prev => {
             const current = resolveTheme(prev)
             return current === 'dark' ? 'light' : 'dark'
         })
-    }
+    }, [])
 
-    const value = {
+    // useMemo so the context object identity is stable across renders that
+    // don't actually change theme/resolved — without this, every consumer of
+    // useTheme() re-renders on any ancestor re-render.
+    const value = useMemo(() => ({
         theme,
         isDark: resolved === 'dark',
         toggleTheme,
         setTheme
-    }
+    }), [theme, resolved, toggleTheme])
 
     return (
         <ThemeContext.Provider value={value}>

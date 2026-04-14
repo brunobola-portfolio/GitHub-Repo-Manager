@@ -1,40 +1,18 @@
-import { useState, useEffect, useCallback } from 'react'
 import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
 import { Loader2, FileText, BookOpen, Sparkles } from 'lucide-react'
 import { useModal } from '../../hooks/useModal'
+import { useTabData } from '../../hooks/useTabData'
 
-export function OverviewTab({ owner, repo, api, repoData }) {
+export function OverviewTab({ api, repoData }) {
     const { openModalWithData } = useModal()
-    const [readme, setReadme] = useState(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
-
-    const loadReadme = useCallback(async (signal) => {
-        setLoading(true)
-        setError(null)
-        try {
-            const data = await api.fetchReadme()
-            if (!signal.aborted) {
-                setReadme(data.data || data)
-            }
-        } catch (e) {
-            if (!signal.aborted) {
-                setReadme(null)
-                setError(e?.message || 'Failed to load README')
-            }
-        } finally {
-            if (!signal.aborted) {
-                setLoading(false)
-            }
-        }
-    }, [api])
-
-    useEffect(() => {
-        const controller = new AbortController()
-        loadReadme(controller.signal)
-        return () => controller.abort()
-    }, [loadReadme])
+    const { data: readme, loading, error } = useTabData(
+        async () => {
+            const result = await api.fetchReadme()
+            return result.data || result
+        },
+        [api],
+    )
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -61,7 +39,7 @@ export function OverviewTab({ owner, repo, api, repoData }) {
                         </div>
                     ) : error ? (
                         <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
-                            {error}
+                            {error?.message || 'Failed to load README'}
                         </div>
                     ) : readme?.content ? (
                         <div className="prose dark:prose-invert prose-sm max-w-none overflow-auto">

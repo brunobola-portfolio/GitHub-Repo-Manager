@@ -1,19 +1,18 @@
 import { Fragment, useState } from 'react'
 import { Trash2, Edit3, SkipForward } from 'lucide-react'
+import { formatFileSize, formatDate as formatDateBase } from '../utils/format'
 
 // --- Helper functions ---
 
+// `kb` here is the raw count in kilobytes; convert to bytes for the shared
+// formatter, which reports "MB"/"GB" the same way as the migration wizard.
 function formatSize(kb) {
-    if (kb >= 1024) {
-        return `${(kb / 1024).toFixed(1)} MB`
-    }
-    return `${kb} KB`
+    if (kb == null) return '0 KB'
+    return formatFileSize(kb * 1024)
 }
 
 function formatDate(iso) {
-    if (!iso) return '—'
-    const d = new Date(iso)
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    return formatDateBase(iso, { day: 'numeric', month: 'short', year: 'numeric' }) || '—'
 }
 
 function compareSummary(source, target) {

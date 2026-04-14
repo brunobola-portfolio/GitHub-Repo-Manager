@@ -7,9 +7,29 @@ import logger from '../lib/logger.js';
  * Even if the DB is leaked, an attacker still needs the secret to forge hashes.
  * The raw key has 256 bits of entropy (randomBytes(32)), making brute-force
  * infeasible regardless of hash speed — HMAC adds protection against DB-only leaks.
+ *
+ * In production, API_KEY_SECRET MUST be set; we fail fast otherwise so a missing
+ * env var can't fall back to a known default that lets attackers forge HMACs.
+ * In dev/test we generate an ephemeral per-process secret (existing API keys
+ * become invalid on restart, which is the right dev UX).
  */
+// Dev-only ephemeral secret, generated lazily and stored on process.env so
+// repeated calls within the same Node process agree on the hash. Wiped on
+// process restart, so dev API keys become invalid (the right dev UX).
+let warnedAboutMissingSecret = false;
 function getHmacSecret() {
-    return process.env.API_KEY_SECRET || 'grm-default-dev-secret-change-in-production';
+    const fromEnv = process.env.API_KEY_SECRET;
+    if (fromEnv) return fromEnv;
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('API_KEY_SECRET must be set in production');
+    }
+    const ephemeral = randomBytes(32).toString('hex');
+    process.env.API_KEY_SECRET = ephemeral;
+    if (!warnedAboutMissingSecret) {
+        warnedAboutMissingSecret = true;
+        logger.warn('API_KEY_SECRET not set; generated ephemeral dev secret (existing API keys will be invalid)');
+    }
+    return ephemeral;
 }
 
 export function hashKey(key) {
