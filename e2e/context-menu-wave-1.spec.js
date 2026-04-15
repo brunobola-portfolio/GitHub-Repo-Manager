@@ -3,7 +3,11 @@ import { test, expect } from '@playwright/test'
 test.describe('Wave 1 — Context menu items', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
-    await page.waitForSelector('[data-testid="repo-card"]')
+    // Auto-auth lands on Dashboard in mock mode; repo cards live in the
+    // Repositories view. Navigate there before waiting for the card selector.
+    await expect(page.getByRole('button', { name: 'Repositories' })).toBeVisible({ timeout: 15000 })
+    await page.getByRole('button', { name: 'Repositories' }).click()
+    await page.waitForSelector('[data-testid="repo-card"]', { timeout: 15000 })
   })
 
   test('Dry-Run opens MigrationWizard with dry-run pill visible', async ({ page }) => {

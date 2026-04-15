@@ -32,6 +32,6 @@ test.describe('Authentication Flow (Mock Mode)', () => {
   test('should show app title in header', async ({ page }) => {
     await page.goto('/')
 
-    await expect(page.getByRole('heading', { name: /GitHub Repo Manager/i })).toBeVisible({ timeout: 15000 })
+    await expect(page.getByRole('heading', { name: /Repo Manager/i })).toBeVisible({ timeout: 15000 })
   })
 })

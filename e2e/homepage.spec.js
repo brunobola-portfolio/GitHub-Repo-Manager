@@ -5,12 +5,12 @@ test.describe('Homepage', () => {
     await page.goto('/')
 
     // Check if the main heading is visible
-    await expect(page.getByRole('heading', { name: /GitHub Repo Manager/i })).toBeVisible({ timeout: 15000 })
+    await expect(page.getByRole('heading', { name: /Repo Manager/i })).toBeVisible({ timeout: 15000 })
   })
 
   test('should display header with theme toggle', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByRole('heading', { name: /GitHub Repo Manager/i })).toBeVisible({ timeout: 15000 })
+    await expect(page.getByRole('heading', { name: /Repo Manager/i })).toBeVisible({ timeout: 15000 })
 
     // Check for theme toggle button (aria-label is "Dark mode" or "Light mode")
     await expect(page.getByRole('button', { name: /dark mode|light mode/i })).toBeVisible()
@@ -18,7 +18,7 @@ test.describe('Homepage', () => {
 
   test('should be accessible with keyboard navigation', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByRole('heading', { name: /GitHub Repo Manager/i })).toBeVisible({ timeout: 15000 })
+    await expect(page.getByRole('heading', { name: /Repo Manager/i })).toBeVisible({ timeout: 15000 })
 
     // Tab through interactive elements
     await page.keyboard.press('Tab')

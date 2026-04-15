@@ -6,8 +6,10 @@ test.use({ viewport: { width: 390, height: 844 }, isMobile: true })
 test.describe('Mobile Responsiveness', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
-    // Wait for app to load
-    await expect(page.getByRole('heading', { name: /GitHub Repo Manager/i })).toBeVisible({ timeout: 15000 })
+    // The mobile header doesn't render the "Repo Manager" text heading (only
+    // an icon img). Use the auto-authenticated avatar as the ready signal —
+    // present as soon as useGitHub finishes mock auth.
+    await expect(page.getByAltText('dev-user')).toBeVisible({ timeout: 15000 })
   })
 
   test('should show mobile navigation buttons', async ({ page }) => {

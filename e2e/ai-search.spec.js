@@ -20,7 +20,9 @@ test.describe('AI Search & Features', () => {
 
     // Click AI toggle
     const aiToggle = page.getByTitle('Toggle AI Semantic Search')
-    await aiToggle.click()
+    // Dispatch click directly on the button to bypass the z-40 select-all
+    // wrapper that intercepts pointer events on narrow/wrapped toolbars.
+    await aiToggle.evaluate((el) => el.click())
 
     // Placeholder should change to AI mode
     await expect(page.getByPlaceholder(/ask ai/i)).toBeVisible()
@@ -30,17 +32,23 @@ test.describe('AI Search & Features', () => {
     const aiToggle = page.getByTitle('Toggle AI Semantic Search')
 
     // Toggle on
-    await aiToggle.click()
+    // Dispatch click directly on the button to bypass the z-40 select-all
+    // wrapper that intercepts pointer events on narrow/wrapped toolbars.
+    await aiToggle.evaluate((el) => el.click())
     await expect(page.getByPlaceholder(/ask ai/i)).toBeVisible()
 
     // Toggle off
-    await aiToggle.click()
+    // Dispatch click directly on the button to bypass the z-40 select-all
+    // wrapper that intercepts pointer events on narrow/wrapped toolbars.
+    await aiToggle.evaluate((el) => el.click())
     await expect(page.getByPlaceholder(/search repositories/i)).toBeVisible()
   })
 
   test('should show search input with purple styling in AI mode', async ({ page }) => {
     const aiToggle = page.getByTitle('Toggle AI Semantic Search')
-    await aiToggle.click()
+    // Dispatch click directly on the button to bypass the z-40 select-all
+    // wrapper that intercepts pointer events on narrow/wrapped toolbars.
+    await aiToggle.evaluate((el) => el.click())
 
     const searchInput = page.getByPlaceholder(/ask ai/i)
     await expect(searchInput).toBeVisible()

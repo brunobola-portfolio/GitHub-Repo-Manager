@@ -13,7 +13,7 @@ test.describe('Modal Interactions', () => {
     const repoCard = page.getByRole('button', { name: new RegExp(SAMPLE_PUBLIC_REPO, 'i') }).first()
     await repoCard.click({ button: 'right' })
 
-    const contextMenu = page.locator('.fixed.z-50.w-64')
+    const contextMenu = page.locator('[role="menu"]')
     await expect(contextMenu).toBeVisible({ timeout: 5000 })
 
     // Verify all context menu sections
@@ -28,7 +28,7 @@ test.describe('Modal Interactions', () => {
     const repoCard = page.getByRole('button', { name: new RegExp(SAMPLE_PUBLIC_REPO, 'i') }).first()
     await repoCard.click({ button: 'right' })
 
-    const contextMenu = page.locator('.fixed.z-50.w-64')
+    const contextMenu = page.locator('[role="menu"]')
     await expect(contextMenu).toBeVisible({ timeout: 5000 })
 
     // Click on header to close context menu
