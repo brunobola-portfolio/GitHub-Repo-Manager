@@ -1,0 +1,58 @@
+name: Release
+
+# Creates a GitHub Release when a v* tag is pushed, with auto-generated
+# notes and a production build bundle attached as an asset. Runs in
+# parallel with docker.yml (which publishes the container image).
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      SESSION_SECRET: ci-test-session-secret-not-real-32chars
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      - name: Run unit tests
+        run: npx vitest run
+
+      - name: Build frontend
+        env:
+          NODE_ENV: production
+        run: npm run build
+
+      - name: Package dist bundle
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          tar -czf "github-repo-manager-${TAG}-dist.tar.gz" dist/
+          sha256sum "github-repo-manager-${TAG}-dist.tar.gz" \
+            > "github-repo-manager-${TAG}-dist.tar.gz.sha256"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          # --generate-notes builds release notes from merged PRs and commits
+          # since the previous tag. --verify-tag ensures we never publish an
+          # ad-hoc tag that was not actually pushed to the repo.
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --generate-notes \
+            --verify-tag \
+            "github-repo-manager-${TAG}-dist.tar.gz" \
+            "github-repo-manager-${TAG}-dist.tar.gz.sha256"
