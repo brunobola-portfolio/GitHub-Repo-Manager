@@ -289,6 +289,9 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 					}
 
 					const isHovered = hoveredIndex === index || focusedIndex === index
+					// Keyboard-only focus gets an extra ring so arrow-key navigation is visible
+					// even against a matching hover bg.
+					const isKeyboardFocused = focusedIndex === index && hoveredIndex !== index
 					const hasChildren = item.children?.length > 0
 					const Icon = item.icon
 
@@ -316,7 +319,8 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 										? 'bg-black/[0.06] dark:bg-white/[0.08] text-slate-900 dark:text-white'
 										: 'text-slate-700 dark:text-slate-300'
 								}
-							`}
+							${isKeyboardFocused ? 'ring-2 ring-inset ring-indigo-500/70 dark:ring-indigo-400/70' : ''}
+								`}
 							onMouseEnter={() => {
 								if (!item.disabled) handleItemHover(index)
 							}}

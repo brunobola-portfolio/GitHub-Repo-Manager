@@ -18,12 +18,11 @@
 import express from 'express';
 import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
-import { requireAuth, createRequireAI, safeError } from '../middleware/auth.js';
-import { requireTier } from '../middleware/require-tier.js';
+import { requireAuth, createRequireAI, safeError, isValidGitHubFullName } from '../middleware/auth.js';
 import { validate, aiChatSchema, aiIndexSchema } from '../lib/validators.js';
 import { aiService, sanitizeForPrompt } from '../ai-service.js';
 import { safeJsonParse } from '../lib/utils.js';
-import { checkUsageLimit, incrementUsage } from '../lib/usage-meter.js';
+import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../lib/usage-meter.js';
 import { auditLog } from '../lib/audit.js';
 import { initSSE, streamGeminiToSSE } from './ai-streaming.js';
 
@@ -216,10 +215,8 @@ router.post('/ai/suggest', requireAuth, requireAI, async (req, res) => {
 
 router.post('/ai/readme', requireAuth, requireAI, async (req, res) => {
     const userId = req.session.userId;
-    const check = checkUsageLimit(userId, 'ai_queries');
-    if (!check.allowed) {
-        return res.status(429).json({ error: 'AI query limit exceeded', upgradeUrl: '/pricing' });
-    }
+    const check = checkAIFeatureLimit(userId, 'ai_readme');
+    if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
     try {
         const repo = req.body.repo || req.body;
         const repoName = repo?.name || req.body.name;
@@ -253,7 +250,7 @@ router.post('/ai/readme', requireAuth, requireAI, async (req, res) => {
         const result = await model.generateContent(prompt);
         const text = result.response.text();
 
-        incrementUsage(userId, 'ai_queries');
+        incrementAIUsage(userId, 'ai_readme');
         auditLog(req, 'ai.readme', 'ai', null, { repoName: cleanName, model: modelName });
         res.json({ success: true, readme: text, model: modelName });
     } catch (err) {
@@ -272,15 +269,8 @@ router.post('/ai/index', requireAuth, validate(aiIndexSchema), requireAI, async 
     if (!repo) return res.status(400).json({ error: 'Repo data required' });
 
     const userId = req.session.userId;
-    const check = checkUsageLimit(userId, 'ai_queries');
-    if (!check.allowed) {
-        return res.status(429).json({
-            error: 'AI query limit exceeded',
-            limit: check.limit,
-            current: check.current,
-            upgradeUrl: '/pricing'
-        });
-    }
+    const check = checkAIFeatureLimit(userId, 'ai_insights');
+    if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
 
     try {
         req.log.info({ repo: repo.full_name }, 'AI indexing started');
@@ -343,7 +333,7 @@ router.post('/ai/index', requireAuth, validate(aiIndexSchema), requireAI, async 
             stmtEmbed.run(repo.id, userId, JSON.stringify(embedding));
         })();
 
-        incrementUsage(userId, 'ai_queries');
+        incrementAIUsage(userId, 'ai_insights');
         auditLog(req, 'ai.index', 'ai', repo.id, { repoName: repo.full_name });
         res.json({ success: true, analysis });
 
@@ -353,21 +343,19 @@ router.post('/ai/index', requireAuth, validate(aiIndexSchema), requireAI, async 
     }
 });
 
-// Semantic Search Endpoint (Pro+: Semantic Search is a Pro feature)
-router.get('/ai/search', requireAuth, requireTier('pro'), requireAI, async (req, res) => {
+// Semantic Search — available on Free tier (capped by per-feature quota, default 50/month)
+router.get('/ai/search', requireAuth, requireAI, async (req, res) => {
     // --- mode=similar-by-id: cosine similarity lookup by repo ID ---
     if (req.query.mode === 'similar-by-id') {
         const repoId = req.query.repoId
         if (!repoId) return res.status(400).json({ error: 'repoId required' })
         try {
             const userId = req.session.userId
-            const check = checkUsageLimit(userId, 'ai_queries');
-            if (!check.allowed) {
-                return res.status(429).json({ error: 'AI query limit exceeded', upgradeUrl: '/pricing' });
-            }
+            const check = checkAIFeatureLimit(userId, 'ai_semantic_search');
+            if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
             const similar = await aiService.findSimilarById(repoId, { topK: 5, excludeSelf: true, userId })
             if (!similar) return res.status(404).json({ error: 'Repository not indexed' })
-            incrementUsage(userId, 'ai_queries');
+            incrementAIUsage(userId, 'ai_semantic_search');
             auditLog(req, 'ai.compare', 'ai', repoId, { resultCount: similar.length })
             return res.json({ mode: 'similar-by-id', similar })
         } catch (err) {
@@ -381,10 +369,8 @@ router.get('/ai/search', requireAuth, requireTier('pro'), requireAI, async (req,
 
     try {
         const userId = req.session.userId;
-        const check = checkUsageLimit(userId, 'ai_queries');
-        if (!check.allowed) {
-            return res.status(429).json({ error: 'AI query limit exceeded', upgradeUrl: '/pricing' });
-        }
+        const check = checkAIFeatureLimit(userId, 'ai_semantic_search');
+        if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
 
         // Get generic results (repo_ids and scores) scoped by user
         const results = await aiService.semanticSearch(q, 10, userId);
@@ -404,7 +390,7 @@ router.get('/ai/search', requireAuth, requireTier('pro'), requireAI, async (req,
             return { ...r, ...meta };
         });
 
-        incrementUsage(userId, 'ai_queries');
+        incrementAIUsage(userId, 'ai_semantic_search');
         auditLog(req, 'ai.search', 'ai', null, { query: q, resultCount: enriched.length });
         res.json(enriched);
 
@@ -427,10 +413,8 @@ router.get('/ai/metadata/:repoId', requireAuth, (req, res) => {
 // Enhanced README endpoint - Improve existing README
 router.post('/ai/readme/enhance', requireAuth, requireAI, async (req, res) => {
     const userId = req.session.userId;
-    const check = checkUsageLimit(userId, 'ai_queries');
-    if (!check.allowed) {
-        return res.status(429).json({ error: 'AI query limit exceeded', upgradeUrl: '/pricing' });
-    }
+    const check = checkAIFeatureLimit(userId, 'ai_readme');
+    if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
     try {
         const { repo } = req.body;
         if (!repo) return res.status(400).json({ error: 'Repo data required' });
@@ -454,7 +438,7 @@ router.post('/ai/readme/enhance', requireAuth, requireAI, async (req, res) => {
         }
 
         const result = await aiService.enhanceReadme(readmeContent, repo, fileStructure);
-        incrementUsage(userId, 'ai_queries');
+        incrementAIUsage(userId, 'ai_readme');
         auditLog(req, 'ai.readme.enhance', 'ai', null, { repoName: repo.full_name });
         res.json({ success: true, ...result, currentReadme: readmeContent });
 
@@ -467,10 +451,8 @@ router.post('/ai/readme/enhance', requireAuth, requireAI, async (req, res) => {
 // Quality Report - Comprehensive repo health analysis
 router.post('/ai/quality-report', requireAuth, requireAI, async (req, res) => {
     const userId = req.session.userId;
-    const check = checkUsageLimit(userId, 'ai_queries');
-    if (!check.allowed) {
-        return res.status(429).json({ error: 'AI query limit exceeded', upgradeUrl: '/pricing' });
-    }
+    const check = checkAIFeatureLimit(userId, 'ai_insights');
+    if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
     try {
         const { repo } = req.body;
         if (!repo) return res.status(400).json({ error: 'Repo data required' });
@@ -490,7 +472,7 @@ router.post('/ai/quality-report', requireAuth, requireAI, async (req, res) => {
         } catch (e) { /* No contents */ }
 
         const report = await aiService.generateQualityReport(repo, readmeContent, fileStructure);
-        incrementUsage(userId, 'ai_queries');
+        incrementAIUsage(userId, 'ai_insights');
         auditLog(req, 'ai.quality_report', 'ai', null, { repoName: repo.full_name });
         res.json({ success: true, report, repo: repo.full_name });
 
@@ -620,10 +602,8 @@ router.post('/ai/batch-index', requireAuth, requireAI, async (req, res) => {
 
     const userId = req.session.userId;
     const batchCount = Math.min(repos.length, 10);
-    const check = checkUsageLimit(userId, 'ai_queries');
-    if (!check.allowed) {
-        return res.status(429).json({ error: 'AI query limit exceeded', upgradeUrl: '/pricing' });
-    }
+    const check = checkAIFeatureLimit(userId, 'ai_insights');
+    if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
 
     const results = [];
     const limit = batchCount; // Max 10 at a time
@@ -709,10 +689,8 @@ router.post('/ai/batch-index', requireAuth, requireAI, async (req, res) => {
     }
 
     // Increment usage by number of repos actually processed (not just requested)
-    if (analyzedRepos.length > 0) {
-        for (let i = 0; i < analyzedRepos.length; i++) {
-            incrementUsage(userId, 'ai_queries');
-        }
+    for (let i = 0; i < analyzedRepos.length; i++) {
+        incrementAIUsage(userId, 'ai_insights');
     }
     auditLog(req, 'ai.batch_index', 'ai', null, { repoCount: analyzedRepos.length });
 
@@ -737,14 +715,8 @@ router.post('/ai/generate-commit', requireAuth, requireAI, async (req, res) => {
         }
 
         const userId = req.session.userId;
-        const limit = await checkUsageLimit(userId, 'ai_queries');
-        if (!limit.allowed) {
-            return res.status(429).json({
-                error: 'usage_limit_exceeded',
-                message: `AI query limit reached. Resets ${limit.resetDate || 'next month'}.`,
-                remaining: 0,
-            });
-        }
+        const limit = checkAIFeatureLimit(userId, 'ai_commit');
+        if (!limit.allowed) return res.status(429).json(quotaExceededResponse(limit));
 
         const formatInstructions = {
             conventional: 'Use Conventional Commits format: type(scope): description. Types: feat, fix, chore, refactor, docs, style, perf, test, build, ci, revert.',
@@ -788,7 +760,7 @@ Rules:
                 }
                 const message = parsed.body ? `${parsed.subject}\n\n${parsed.body}` : parsed.subject;
 
-                await incrementUsage(userId, 'ai_queries');
+                incrementAIUsage(userId, 'ai_commit');
                 auditLog(req, 'ai_generate_commit', 'ai', null, { format, diff_length: diff.length, streamed: true });
 
                 sse.sendDone({ message, subject: parsed.subject, body: parsed.body || '', format_used: format });
@@ -813,7 +785,7 @@ Rules:
             ? `${parsed.subject}\n\n${parsed.body}`
             : parsed.subject;
 
-        await incrementUsage(userId, 'ai_queries');
+        incrementAIUsage(userId, 'ai_commit');
         auditLog(req, 'ai_generate_commit', 'ai', null, { format, diff_length: diff.length });
 
         res.json({
@@ -841,7 +813,7 @@ router.post('/ai/generate-pr', requireAuth, requireAI, async (req, res) => {
         }
 
         const userId = req.session.userId;
-        const limit = await checkUsageLimit(userId, 'ai_queries');
+        const limit = checkUsageLimit(userId, 'ai_queries');
         if (!limit.allowed) {
             return res.status(429).json({
                 error: 'usage_limit_exceeded',
@@ -899,7 +871,7 @@ Rules:
                     parsed = { title: commits[0]?.message?.split('\n')[0] || 'Update', summary: raw, test_plan: '', breaking_changes: null, related_issues: [], suggested_labels: [], suggested_reviewers: [] };
                 }
 
-                await incrementUsage(userId, 'ai_queries');
+                incrementUsage(userId, 'ai_queries');
                 auditLog(req, 'ai_generate_pr', 'ai', null, { commit_count: commits.length, streamed: true });
 
                 sse.sendDone({
@@ -934,7 +906,7 @@ Rules:
             };
         }
 
-        await incrementUsage(userId, 'ai_queries');
+        incrementUsage(userId, 'ai_queries');
         auditLog(req, 'ai_generate_pr', 'ai', null, { commit_count: commits.length });
 
         res.json({
@@ -968,7 +940,7 @@ router.post('/ai/refine', requireAuth, requireAI, async (req, res) => {
         }
 
         const userId = req.session.userId;
-        const limit = await checkUsageLimit(userId, 'ai_queries');
+        const limit = checkUsageLimit(userId, 'ai_queries');
         if (!limit.allowed) {
             return res.status(429).json({
                 error: 'usage_limit_exceeded',
@@ -1010,7 +982,7 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
                 );
                 const raw = await streamGeminiToSSE(streamResult, sse);
 
-                await incrementUsage(userId, 'ai_queries');
+                incrementUsage(userId, 'ai_queries');
                 auditLog(req, 'ai_refine', 'ai', null, { instruction, content_type, streamed: true });
 
                 sse.sendDone({ refined_content: raw.trim() });
@@ -1025,7 +997,7 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
         );
         const refined = result.response.text().trim();
 
-        await incrementUsage(userId, 'ai_queries');
+        incrementUsage(userId, 'ai_queries');
         auditLog(req, 'ai_refine', 'ai', null, { instruction, content_type });
 
         res.json({ refined_content: refined });
@@ -1057,7 +1029,7 @@ router.post('/ai/analyze-context', requireAuth, requireAI, async (req, res) => {
         }
 
         const userId = req.session.userId;
-        const limit = await checkUsageLimit(userId, 'ai_queries');
+        const limit = checkUsageLimit(userId, 'ai_queries');
         if (!limit.allowed) {
             return res.status(429).json({ error: 'usage_limit_exceeded', message: 'AI query limit reached.' });
         }
@@ -1098,7 +1070,7 @@ Stats: ${diff_summary.files} files, +${diff_summary.additions} -${diff_summary.d
             breakingChanges: parsed.breakingChanges || false,
         };
 
-        await incrementUsage(userId, 'ai_queries');
+        incrementUsage(userId, 'ai_queries');
         contextCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
 
         res.json(responseData);
@@ -1121,7 +1093,7 @@ router.post('/ai/chat-refine', requireAuth, requireAI, async (req, res) => {
         }
 
         const userId = req.session.userId;
-        const limit = await checkUsageLimit(userId, 'ai_queries');
+        const limit = checkUsageLimit(userId, 'ai_queries');
         if (!limit.allowed) {
             return res.status(429).json({ error: 'usage_limit_exceeded', message: 'AI query limit reached.' });
         }
@@ -1164,7 +1136,7 @@ router.post('/ai/chat-refine', requireAuth, requireAI, async (req, res) => {
             const streamResult = await chat.sendMessageStream(userMessage);
             const raw = await streamGeminiToSSE(streamResult, sse);
 
-            await incrementUsage(userId, 'ai_queries');
+            incrementUsage(userId, 'ai_queries');
             auditLog(req, 'ai_chat_refine', 'ai', null, { content_type, message_length: message.length });
 
             sse.sendDone({ refined_content: raw.trim() });
@@ -1176,6 +1148,157 @@ router.post('/ai/chat-refine', requireAuth, requireAI, async (req, res) => {
         if (!res.headersSent) {
             res.status(500).json({ error: safeError(error, 'Failed to chat refine') });
         }
+    }
+});
+
+// ------------------------------------------------------------------
+// Migration Risk Analysis (AI)
+// ------------------------------------------------------------------
+// Analyzes a source repo's migration risk to a target platform (GitHub, Azure DevOps,
+// or another org) before the actual migration runs. Returns a structured risk report
+// so users can triage blockers before spending time on a migration plan.
+//
+// Available to Free tier (capped at migrationRiskPerMonth, default 5/month).
+
+router.post('/ai/migration-risk', requireAuth, requireAI, async (req, res) => {
+    const userId = req.session.userId;
+    const check = checkAIFeatureLimit(userId, 'ai_migration_risk');
+    if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
+
+    try {
+        const { repo, source = 'github', target = 'github' } = req.body;
+        if (!repo || !repo.full_name) {
+            return res.status(400).json({ error: 'repo.full_name is required', code: 'VALIDATION_ERROR' });
+        }
+        // Full-name is spliced into GitHub API URLs below — reject anything that
+        // would let a caller escape the intended repo scope.
+        if (!isValidGitHubFullName(repo.full_name)) {
+            return res.status(400).json({ error: 'Invalid repo.full_name format', code: 'VALIDATION_ERROR' });
+        }
+        const allowedPlatforms = new Set(['github', 'azure-devops', 'gitlab', 'bitbucket', 'other']);
+        const safeSource = allowedPlatforms.has(source) ? source : 'other';
+        const safeTarget = allowedPlatforms.has(target) ? target : 'other';
+
+        // Pull a handful of signals that strongly predict migration pain.
+        // Each call is soft-failing — missing data just weakens the analysis,
+        // it doesn't block the whole report.
+        const [branchesResult, lfsResult, workflowsResult, languagesResult] = await Promise.allSettled([
+            githubApi(`/repos/${repo.full_name}/branches?per_page=100`, req.session.accessToken),
+            githubApi(`/repos/${repo.full_name}/contents/.gitattributes`, req.session.accessToken),
+            githubApi(`/repos/${repo.full_name}/actions/workflows`, req.session.accessToken),
+            githubApi(`/repos/${repo.full_name}/languages`, req.session.accessToken),
+        ]);
+
+        const branches = branchesResult.status === 'fulfilled' ? (branchesResult.value.data || []) : [];
+        const workflowCount = workflowsResult.status === 'fulfilled' ? (workflowsResult.value.data?.total_count ?? 0) : 0;
+        const languages = languagesResult.status === 'fulfilled' ? (languagesResult.value.data || {}) : {};
+
+        let hasLFS = false;
+        if (lfsResult.status === 'fulfilled') {
+            try {
+                const gitattrs = Buffer.from(lfsResult.value.data.content, 'base64').toString('utf-8');
+                hasLFS = /filter=lfs/i.test(gitattrs);
+            } catch { /* ignore */ }
+        }
+
+        const sizeMB = Math.round((repo.size || 0) / 1024);
+        const signals = {
+            sizeMB,
+            branches: branches.length,
+            openIssues: repo.open_issues_count ?? 0,
+            hasLFS,
+            workflowCount,
+            languages: Object.keys(languages),
+            private: !!repo.private,
+            archived: !!repo.archived,
+            hasWiki: !!repo.has_wiki,
+            hasPages: !!repo.has_pages,
+        };
+
+        // Ask the AI for a structured risk report.
+        const systemPrompt = `You are a repository migration expert. Given the repository signals below, produce a structured migration risk analysis.
+
+Repository: ${sanitizeForPrompt(repo.full_name, 200)}
+Source platform: ${sanitizeForPrompt(safeSource, 40)}
+Target platform: ${sanitizeForPrompt(safeTarget, 40)}
+Signals: ${JSON.stringify(signals)}
+
+Respond with ONLY valid JSON matching this schema — no code fences, no prose:
+{
+  "overallRisk": "low | medium | high | critical",
+  "score": 0,
+  "summary": "one-sentence executive summary",
+  "blockers": ["specific blockers that must be resolved first"],
+  "warnings": ["things that will slow the migration or need manual intervention"],
+  "recommendations": ["concrete next steps, ordered by priority"],
+  "estimatedDurationMinutes": 0
+}
+
+Rules:
+- score is 0 (no risk) to 100 (critical, do not migrate).
+- Flag LFS, >1GB size, >50 branches, active CI/CD, GitHub Pages, and wikis as warnings or blockers as appropriate.
+- Be specific, not generic. Reference the actual signals.`;
+
+        const model = aiService.model;
+        const result = await model.generateContent(systemPrompt);
+        const raw = result.response.text().trim();
+
+        let parsed = null;
+        let parseError = false;
+        try {
+            const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+            parsed = JSON.parse(cleaned);
+        } catch {
+            parseError = true;
+            parsed = {};
+        }
+
+        // Explicitly coerce each field to its expected type — spread of raw AI
+        // output would let Gemini hiccups leak null/string-where-array through
+        // to the UI and crash `.map()` calls on the client.
+        const ALLOWED_RISK = new Set(['low', 'medium', 'high', 'critical', 'unknown']);
+        const asStringArray = (v) => Array.isArray(v) ? v.filter(x => typeof x === 'string').map(x => x.slice(0, 400)) : [];
+        const clampedScore = typeof parsed.score === 'number' && Number.isFinite(parsed.score)
+            ? Math.max(0, Math.min(100, Math.round(parsed.score)))
+            : 0;
+        const normalizedRisk = ALLOWED_RISK.has(parsed.overallRisk) ? parsed.overallRisk : 'unknown';
+
+        const report = {
+            repo: repo.full_name,
+            source: safeSource,
+            target: safeTarget,
+            signals,
+            overallRisk: parseError ? 'unknown' : normalizedRisk,
+            score: parseError ? 0 : clampedScore,
+            summary: typeof parsed.summary === 'string'
+                ? parsed.summary.slice(0, 500)
+                : (parseError
+                    ? 'AI returned an unparseable response. Review signals manually or retry.'
+                    : ''),
+            blockers: asStringArray(parsed.blockers),
+            warnings: parseError
+                ? [`AI parse error. Raw preview: ${raw.slice(0, 300)}`]
+                : asStringArray(parsed.warnings),
+            recommendations: parseError
+                ? ['Retry the analysis', 'Or review the signals manually']
+                : asStringArray(parsed.recommendations),
+            estimatedDurationMinutes: typeof parsed.estimatedDurationMinutes === 'number' && Number.isFinite(parsed.estimatedDurationMinutes)
+                ? Math.max(0, Math.round(parsed.estimatedDurationMinutes))
+                : 0,
+            parseError,
+        };
+
+        incrementAIUsage(userId, 'ai_migration_risk');
+        auditLog(req, 'ai.migration_risk', 'ai', repo.full_name, {
+            source: safeSource,
+            target: safeTarget,
+            overallRisk: report.overallRisk,
+            parseError,
+        });
+        res.json({ success: true, report });
+    } catch (error) {
+        req.log.error({ err: error }, 'Migration risk analysis failed');
+        handleAIError(res, error, 'Failed to analyze migration risk.');
     }
 });
 

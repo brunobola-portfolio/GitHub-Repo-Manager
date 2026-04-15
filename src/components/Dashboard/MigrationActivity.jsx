@@ -36,7 +36,14 @@ export function MigrationActivity({ loading: parentLoading }) {
     fetch('/api/migrations/stats', { credentials: 'include' })
       .then(r => r.json())
       .then(data => { if (mounted) setStats(data) })
-      .catch(() => {})
+      .catch((err) => {
+        // Dashboard widget: degrade silently to the "no stats" state, but
+        // leave a breadcrumb so a rate-limit storm / stale session shows up
+        // in the console instead of disappearing.
+        if (err?.name !== 'AbortError') {
+          console.warn('MigrationActivity: stats fetch failed', err)
+        }
+      })
       .finally(() => { if (mounted) setLoading(false) })
     return () => { mounted = false }
   }, [])

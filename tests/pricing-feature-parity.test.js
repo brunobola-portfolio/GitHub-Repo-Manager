@@ -43,11 +43,11 @@ describe('Pricing page ↔ feature-flags parity', () => {
         expect(section).toMatch(/included:\s*'?50'?/)
     })
 
-    it('Free aiQueriesPerMonth=100 matches "100" on the Free pricing card', () => {
+    it('Free aiQueriesPerMonth=200 matches "200" on the Free pricing card', () => {
         const free = getFeatures('free')
-        expect(free.aiQueriesPerMonth).toBe(100)
+        expect(free.aiQueriesPerMonth).toBe(200)
         const section = tierSection('Free')
-        expect(section).toMatch(/included:\s*'?100'?/)
+        expect(section).toMatch(/included:\s*'?200'?/)
     })
 
     it('Free apiKeys=2 matches "2" on the Free pricing card', () => {
@@ -57,12 +57,12 @@ describe('Pricing page ↔ feature-flags parity', () => {
         expect(section).toMatch(/API keys[^}]*included:\s*'?2'?/)
     })
 
-    it('Pro aiQueriesPerMonth=2000 matches "2,000" on the Pro pricing card', () => {
+    it('Pro aiQueriesPerMonth=5000 matches "5,000" on the Pro pricing card', () => {
         const pro = getFeatures('pro')
-        expect(pro.aiQueriesPerMonth).toBe(2000)
+        expect(pro.aiQueriesPerMonth).toBe(5000)
         const section = tierSection('Pro')
         // Page renders the formatted string with a thousands separator.
-        expect(section).toMatch(/included:\s*'2,000'/)
+        expect(section).toMatch(/included:\s*'5,000'/)
     })
 
     it('Pro apiKeys=10 matches "10" on the Pro pricing card', () => {
@@ -93,10 +93,16 @@ describe('Pricing page ↔ feature-flags parity', () => {
         expect(section).toMatch(/Unlimited team members/i)
     })
 
-    it('Pro semanticSearch=true is present on the Pro pricing card', () => {
+    it('Free semanticSearch=true — present on Free tier (capped)', () => {
+        const free = getFeatures('free')
+        expect(free.semanticSearch).toBe(true)
+        const section = tierSection('Free')
+        expect(section).toMatch(/Semantic Search/i)
+    })
+
+    it('Pro semanticSearch=true with unlimited per-feature cap', () => {
         const pro = getFeatures('pro')
         expect(pro.semanticSearch).toBe(true)
-        const section = tierSection('Pro')
-        expect(section).toMatch(/Semantic Search/i)
+        expect(pro.semanticSearchPerMonth).toBe(Infinity)
     })
 })

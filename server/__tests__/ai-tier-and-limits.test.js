@@ -10,9 +10,20 @@ vi.mock('../lib/audit.js', () => ({ auditLog: vi.fn() }))
 
 const mockCheckUsageLimit = vi.fn()
 const mockIncrementUsage = vi.fn()
+const mockCheckAIFeatureLimit = vi.fn()
+const mockIncrementAIUsage = vi.fn()
 vi.mock('../lib/usage-meter.js', () => ({
     checkUsageLimit: (...args) => mockCheckUsageLimit(...args),
     incrementUsage: (...args) => mockIncrementUsage(...args),
+    checkAIFeatureLimit: (...args) => mockCheckAIFeatureLimit(...args),
+    incrementAIUsage: (...args) => mockIncrementAIUsage(...args),
+    quotaExceededResponse: (check) => ({
+        error: 'usage_limit_exceeded',
+        metric: check.metric,
+        limit: check.limit,
+        current: check.current,
+        upgradeUrl: '/pricing',
+    }),
 }))
 
 const mockGetFeatures = vi.fn()
@@ -108,14 +119,14 @@ async function buildApp(routerFactory) {
 }
 
 // ---------------------------------------------------------------------------
-// TEST 1 — GET /api/ai/search returns 403 when user is free tier
+// TEST 1 — GET /api/ai/search: available on Free (capped by ai_semantic_search),
+// returns 429 when the per-feature cap is hit.
 // ---------------------------------------------------------------------------
 
-describe('GET /api/ai/search — pro gate', () => {
+describe('GET /api/ai/search — free-tier access + per-feature cap', () => {
     let app
     beforeEach(async () => {
         vi.clearAllMocks()
-        mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 100, remaining: 100 })
         const express2 = express()
         express2.use(express.json())
         // Free user — userTier = 'free'
@@ -129,34 +140,25 @@ describe('GET /api/ai/search — pro gate', () => {
         app = express2
     })
 
-    it('returns 403 for free-tier user attempting semantic search', async () => {
-        const res = await request(app).get('/api/ai/search?q=react')
-        expect(res.status).toBe(403)
-        expect(res.body.error).toBe('upgrade_required')
-        expect(res.body.requiredTier).toBe('pro')
-    })
-
-    it('allows pro-tier user to reach the handler', async () => {
-        // Rebuild app with pro session
-        const app2 = express()
-        app2.use(express.json())
-        app2.use((req, _res, next) => {
-            req.session = makeSession({ userTier: 'pro' })
-            req.log = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
-            next()
-        })
-        const { default: aiRouter } = await import('../routes/ai.js')
-        app2.use('/api', aiRouter)
-
-        // No results — handler returns []
+    it('allows a free-tier user under the per-feature cap', async () => {
+        mockCheckAIFeatureLimit.mockReturnValue({ allowed: true, current: 3, limit: 50, remaining: 47, metric: 'ai_semantic_search' })
         const { default: db } = await import('../db.js')
         db.prepare.mockReturnValue({ get: vi.fn(() => null), all: vi.fn(() => []) })
         const { aiService } = await import('../ai-service.js')
         aiService.semanticSearch = vi.fn().mockResolvedValue([])
 
-        const res = await request(app2).get('/api/ai/search?q=react')
+        const res = await request(app).get('/api/ai/search?q=react')
         expect(res.status).toBe(200)
         expect(Array.isArray(res.body)).toBe(true)
+    })
+
+    it('returns 429 usage_limit_exceeded when the per-feature semantic search cap is hit', async () => {
+        mockCheckAIFeatureLimit.mockReturnValue({ allowed: false, current: 50, limit: 50, remaining: 0, metric: 'ai_semantic_search' })
+        const res = await request(app).get('/api/ai/search?q=react')
+        expect(res.status).toBe(429)
+        expect(res.body.error).toBe('usage_limit_exceeded')
+        expect(res.body.metric).toBe('ai_semantic_search')
+        expect(res.body.upgradeUrl).toBe('/pricing')
     })
 })
 
@@ -181,18 +183,18 @@ describe('POST /api/ai/suggest — 429 when limit exceeded', () => {
     })
 
     it('returns 429 with upgradeUrl when checkUsageLimit returns allowed: false', async () => {
-        mockCheckUsageLimit.mockReturnValue({ allowed: false, current: 2000, limit: 2000, remaining: 0 })
+        mockCheckUsageLimit.mockReturnValue({ allowed: false, current: 5000, limit: 5000, remaining: 0 })
         const res = await request(app)
             .post('/api/ai/suggest')
             .send({ repo: { name: 'test', id: 1 } })
         expect(res.status).toBe(429)
         expect(res.body.error).toMatch(/limit/i)
         expect(res.body.upgradeUrl).toBe('/pricing')
-        expect(res.body.limit).toBe(2000)
+        expect(res.body.limit).toBe(5000)
     })
 
     it('allows request when checkUsageLimit returns allowed: true', async () => {
-        mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 2000, remaining: 2000 })
+        mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 5000, remaining: 5000 })
         const { aiService } = await import('../ai-service.js')
         // aiService.model.generateContent — mock it
         aiService.model = {
@@ -261,7 +263,7 @@ describe('POST /api/v1/teams/:id/members — teamMembersMax limit (Pro at 15)', 
 
         mockGetFeatures.mockReturnValue({
             maxRepos: Infinity,
-            aiQueriesPerMonth: 2000,
+            aiQueriesPerMonth: 5000,
             teamMembersMax: 15,
             apiKeys: 10,
         })

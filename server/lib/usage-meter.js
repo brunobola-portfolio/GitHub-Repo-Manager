@@ -27,9 +27,17 @@ export function getCurrentUsage(userId, metricType) {
     return row?.count || 0;
 }
 
+// Maps a usage metric to the tier-feature key that bounds it.
+// New per-feature Free-tier metrics let us enforce meaningful trial caps
+// (e.g. 5 README generations / month) independently of the global ai_queries quota.
 const METRIC_TO_FEATURE = {
     ai_queries: 'aiQueriesPerMonth',
     repos_managed: 'maxRepos',
+    ai_readme: 'readmeGenPerMonth',
+    ai_commit: 'commitGenPerMonth',
+    ai_insights: 'repoInsightsPerMonth',
+    ai_migration_risk: 'migrationRiskPerMonth',
+    ai_semantic_search: 'semanticSearchPerMonth',
 };
 
 export function checkUsageLimit(userId, metricType) {
@@ -43,5 +51,58 @@ export function checkUsageLimit(userId, metricType) {
         current,
         limit,
         remaining: Math.max(0, limit - current),
+    };
+}
+
+// Check both a per-feature cap AND the global ai_queries cap.
+// Returns the first limit that would be exceeded, so error messages can
+// point the user at the specific quota they hit.
+export function checkAIFeatureLimit(userId, featureMetric) {
+    const featureCheck = checkUsageLimit(userId, featureMetric);
+    if (!featureCheck.allowed) return { ...featureCheck, metric: featureMetric };
+    const globalCheck = checkUsageLimit(userId, 'ai_queries');
+    if (!globalCheck.allowed) return { ...globalCheck, metric: 'ai_queries' };
+    return { ...featureCheck, metric: featureMetric };
+}
+
+// Increment the feature-specific counter AND the global ai_queries counter in a
+// single transaction so the two rows never drift on a partial write (crash,
+// OS-level sqlite sync failure, etc).
+const incrementAIUsageTxn = db.transaction((userId, featureMetric) => {
+    if (featureMetric && featureMetric !== 'ai_queries') {
+        incrementUsage(userId, featureMetric);
+    }
+    incrementUsage(userId, 'ai_queries');
+});
+
+export function incrementAIUsage(userId, featureMetric) {
+    incrementAIUsageTxn(userId, featureMetric);
+}
+
+// Build a standard 429 error body for quota-exceeded responses.
+// All AI endpoints should use this so clients can parse a consistent shape
+// (error, message, metric, limit, current, remaining, upgradeUrl).
+const FEATURE_LABELS = {
+    ai_readme: 'README Generator',
+    ai_commit: 'Commit Generator',
+    ai_insights: 'Repo Insights',
+    ai_migration_risk: 'Migration Risk Analysis',
+    ai_semantic_search: 'Semantic Search',
+};
+
+export function quotaExceededResponse(check, fallbackLabel = 'AI') {
+    const isFeature = check.metric && check.metric !== 'ai_queries';
+    const label = FEATURE_LABELS[check.metric] || fallbackLabel;
+    const message = isFeature
+        ? `${label} limit reached (${check.current}/${check.limit} this month). Upgrade to Pro for unlimited.`
+        : `AI query limit reached (${check.current}/${check.limit} this month). Upgrade to Pro for more.`;
+    return {
+        error: 'usage_limit_exceeded',
+        message,
+        metric: check.metric,
+        limit: check.limit,
+        current: check.current,
+        remaining: check.remaining,
+        upgradeUrl: '/pricing',
     };
 }

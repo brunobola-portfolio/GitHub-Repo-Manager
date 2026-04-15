@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react'
 
 function UsageBar({ label, current, limit }) {
   const isInf = limit === 'Infinity' || limit === Infinity || limit === null || limit === undefined
-  const pct = isInf ? 0 : Math.min(100, (current / limit) * 100)
+  const pct = isInf ? 0 : Math.min(100, (current / Math.max(1, limit)) * 100)
 
   return (
     <div className="space-y-1">
@@ -85,18 +85,53 @@ export function UsageDashboard() {
   const reposLimit = usage.repos?.limit ?? usage.metrics?.repos_managed?.limit ?? null
   const teamsLimit = usage.teams?.limit ?? null
   const tier = usage.tier || 'free'
+  const aiFeatures = usage.aiFeatures || {}
+
+  // Per-feature AI quotas (only render when caps apply — Pro/Enterprise return Infinity)
+  const featureRows = [
+    { key: 'readme', label: 'README Generator' },
+    { key: 'commit', label: 'Commit Generator' },
+    { key: 'insights', label: 'Repo Insights' },
+    { key: 'migrationRisk', label: 'Migration Risk Analysis' },
+    { key: 'semanticSearch', label: 'Semantic Search' },
+  ]
+  const perFeatureHasLimits = featureRows.some(r => {
+    const l = aiFeatures[r.key]?.limit
+    return l !== undefined && l !== null && l !== Infinity && l !== 'Infinity'
+  })
 
   return (
     <div className="space-y-6" data-testid="usage-dashboard">
       <div>
         <h3 className="text-sm font-semibold mb-3">Usage This Month</h3>
         <div className="space-y-4">
-          <UsageBar label="AI Queries" current={aiCurrent} limit={aiLimit} />
+          <UsageBar label="AI Queries (total)" current={aiCurrent} limit={aiLimit} />
           {apiKeysLimit !== null && (
             <UsageBar label="API Keys" current={apiKeysCurrent} limit={apiKeysLimit} />
           )}
         </div>
       </div>
+
+      {perFeatureHasLimits && (
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+          <h3 className="text-sm font-semibold mb-3">AI Features</h3>
+          <div className="space-y-4">
+            {featureRows.map(({ key, label }) => {
+              const f = aiFeatures[key]
+              if (!f) return null
+              return (
+                <UsageBar
+                  key={key}
+                  label={label}
+                  current={f.current || 0}
+                  limit={f.limit}
+                />
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
         <h3 className="text-sm font-semibold mb-2">Plan Limits</h3>
         <dl className="text-xs space-y-1 text-slate-600 dark:text-slate-400">

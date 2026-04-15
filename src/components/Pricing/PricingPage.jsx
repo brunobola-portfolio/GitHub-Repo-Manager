@@ -14,15 +14,18 @@ const TIERS_MONTHLY = [
     enterprise: false,
     ctaText: 'Get Started',
     features: [
-      { label: 'repositories managed', included: '50' },
-      { label: 'AI queries / month', included: '100' },
-      { label: 'Dashboard, dark mode, shortcuts', included: true },
+      { label: 'Repositories managed', included: '50' },
+      { label: 'AI Assistant (conversational)', included: true },
+      { label: 'Semantic Search (AI)', included: '50 / month' },
+      { label: 'Migration Risk Analysis (AI)', included: '5 / month' },
+      { label: 'Repo Insights / Quality Report', included: '10 / month' },
+      { label: 'README Generator (AI)', included: '5 / month' },
+      { label: 'Commit Generator (AI)', included: '50 / month' },
+      { label: 'PR Review Experience', included: true },
+      { label: 'AI queries / month (total)', included: '200' },
       { label: 'Community Health Dashboard', included: true },
-      { label: 'Dry-Run migration (simulate)', included: true },
+      { label: 'Dry-Run migration', included: true },
       { label: 'Export Metadata (JSON)', included: true },
-      { label: 'Repo Insights', included: '5 / month' },
-      { label: 'README Generator (AI)', included: '3 / month' },
-      { label: 'Commit Generator (AI)', included: '20 / month' },
       { label: 'Basic bulk on your own repos', included: true },
       { label: 'API keys', included: '2' },
       { label: 'Community support', included: true },
@@ -36,15 +39,13 @@ const TIERS_MONTHLY = [
     ctaText: 'Upgrade to Pro',
     features: [
       { label: 'Everything in Free, unlimited', included: true },
-      { label: 'AI queries / month', included: '2,000' },
-      { label: 'Semantic Search (AI)', included: true },
-      { label: 'AI Assistant (conversational)', included: true },
+      { label: 'AI queries / month', included: '5,000' },
+      { label: 'Unlimited README / Commit / Insights', included: true },
+      { label: 'Advanced Bulk (transfer, mirror, cross-org)', included: true },
+      { label: 'Sync Repository (mirror sync)', included: true },
       { label: 'Azure DevOps Cloud migration', included: true },
-      { label: 'Migration Risk Analysis', included: true },
-      { label: 'Advanced Bulk (transfer, mirror)', included: true },
       { label: 'Teams — up to 15 members', included: true },
-      { label: 'PR Review Experience', included: true },
-      { label: 'Sync Repository (mirrors)', included: true },
+      { label: 'PR Review with write-back comments', included: true },
       { label: 'API keys', included: '10' },
       { label: 'Email support', included: true },
     ],
@@ -61,6 +62,7 @@ const TIERS_MONTHLY = [
       { label: 'Unlimited AI queries', included: true },
       { label: 'Unlimited team members', included: true },
       { label: 'Audit Logs', included: true },
+      { label: 'SSO', included: true },
       { label: 'API keys', included: '50' },
       { label: 'Priority Support + SLA', included: true },
     ],
@@ -86,7 +88,7 @@ const FAQS = [
   },
   {
     q: 'What counts as an AI query?',
-    a: 'Each request to the AI Assistant — including semantic searches, migration plans, and repo insights — counts as one query. Cached responses and read-only dashboard views are free.',
+    a: 'Each call to the AI Assistant, Semantic Search, Migration Risk Analysis, README Generator, Commit Generator, or Repo Insights counts as one query against your monthly total. Free-tier users also get per-feature caps (e.g. 5 READMEs/month) so no single feature drains your whole budget. Cached responses and read-only dashboard views are free.',
   },
   {
     q: 'Is my data secure?',
@@ -155,6 +157,10 @@ const SALES_EMAIL = 'bruno@bolalabs.pt'
 export function PricingPage({ onGetStarted } = {}) {
   const [isYearly, setIsYearly] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(null)
+  // Surface when self-hosters haven't configured Stripe. Silent fallback
+  // used to send users to the dashboard with no explanation — the banner
+  // makes the constraint obvious and shows the sales email for Enterprise.
+  const [stripeUnavailable, setStripeUnavailable] = useState(false)
 
   const handleCheckout = useCallback(async (tier) => {
     setCheckoutLoading(tier)
@@ -169,11 +175,14 @@ export function PricingPage({ onGetStarted } = {}) {
       if (data.url) {
         window.location.href = data.url
       } else if (res.status === 503) {
-        // Stripe not configured — fall back to dashboard
+        // Stripe not configured — fall back to dashboard AND show the banner
+        // so the user knows why they weren't redirected to checkout.
+        setStripeUnavailable(true)
         if (onGetStarted) onGetStarted(tier)
       }
     } catch {
-      // Billing not available — fall back
+      // Billing not available (network, CORS, etc.) — same UX as 503.
+      setStripeUnavailable(true)
       if (onGetStarted) onGetStarted(tier)
     } finally {
       setCheckoutLoading(null)
@@ -230,6 +239,37 @@ export function PricingPage({ onGetStarted } = {}) {
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
+
+        {/* ── Stripe-not-configured banner (self-hosted) ── */}
+        <AnimatePresence>
+          {stripeUnavailable && (
+            <motion.div
+              key="stripe-banner"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.25 }}
+              role="status"
+              className="mb-8 rounded-xl border border-amber-400/40 bg-amber-50/90 dark:bg-amber-500/10 dark:border-amber-500/30 px-5 py-4 text-sm text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center gap-3 justify-between"
+            >
+              <div>
+                <strong className="font-semibold">Checkout unavailable on this instance.</strong>{' '}
+                Stripe isn't configured for self-hosted deployments. Continue on the Free tier, or
+                contact{' '}
+                <a href={`mailto:${SALES_EMAIL}`} className="underline hover:text-amber-700 dark:hover:text-amber-100">
+                  {SALES_EMAIL}
+                </a>{' '}
+                for a Pro license key.
+              </div>
+              <button
+                onClick={() => setStripeUnavailable(false)}
+                className="text-xs font-medium underline hover:no-underline opacity-80 hover:opacity-100 self-start sm:self-auto"
+              >
+                Dismiss
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ── Hero ── */}
         <div className="text-center mb-14 sm:mb-20">

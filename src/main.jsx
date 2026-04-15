@@ -25,6 +25,24 @@ if (import.meta.env.VITE_SENTRY_DSN) {
   })
 }
 
+// Last-resort capture for promise rejections that aren't awaited or caught.
+// Without this, `.catch(() => {})` swallows errors silently and bugs like
+// rate-limit storms or stale tokens hide in dev-tools. Sentry (if configured)
+// captures automatically; we also log so self-hosted users see the trace.
+if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason
+    const message = reason instanceof Error ? reason.message : String(reason)
+    // Ignore aborted fetches — React StrictMode and route changes cancel them
+    // routinely and they aren't actionable.
+    if (message.includes('AbortError') || reason?.name === 'AbortError') return
+    console.error('[unhandledrejection]', reason)
+    if (import.meta.env.VITE_SENTRY_DSN && reason instanceof Error) {
+      Sentry.captureException(reason)
+    }
+  })
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <MotionConfig reducedMotion="user">

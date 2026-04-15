@@ -1,6 +1,8 @@
 import express from 'express';
 import logger from '../lib/logger.js';
 import { requireAuth, safeError } from '../middleware/auth.js';
+import { getUserTier } from '../middleware/require-tier.js';
+import { getTierOrder } from '../lib/feature-flags.js';
 import { MigrationEngine } from '../migration-engine.js';
 import { createPlanSchema, updatePlanSchema } from '../lib/validators.js';
 import { analyzeMigration } from '../migration-planner.js';
@@ -8,6 +10,24 @@ import db from '../db.js';
 
 const router = express.Router();
 const engine = new MigrationEngine(db);
+
+// Free users can create plans but only in dry-run mode. Real execution (and
+// resume/retry of anything that wasn't a dry-run) requires Pro+.
+function requireProOrDryRunPlan(req, res, next) {
+  const id = parseInt(req.params.id);
+  const plan = db.prepare('SELECT is_dry_run FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
+  if (!plan) return res.status(404).json({ error: 'Plan not found' });
+  const userOrder = getTierOrder(getUserTier(req.session.userId));
+  const proOrder = getTierOrder('pro');
+  if (plan.is_dry_run || userOrder >= proOrder) return next();
+  return res.status(403).json({
+    error: 'upgrade_required',
+    message: 'Real migration execution requires the Pro plan. Free users can create and run dry-run plans only.',
+    currentTier: getUserTier(req.session.userId),
+    requiredTier: 'pro',
+    upgradeUrl: '/pricing',
+  });
+}
 
 /**
  * Generate a human-friendly suggestion for a migration error
@@ -62,7 +82,11 @@ router.post('/plans', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Validation failed', details: flat });
     }
     const { source, tasks, targetOrg, schedule } = parsed.data;
-    const planId = engine.createPlan(req.session.userId, source, tasks, { targetOrg, isDryRun: schedule?.isDryRun });
+    // Free users can only create dry-run plans — force the flag regardless of input.
+    const userOrder = getTierOrder(getUserTier(req.session.userId));
+    const isFree = userOrder < getTierOrder('pro');
+    const isDryRun = isFree ? true : !!schedule?.isDryRun;
+    const planId = engine.createPlan(req.session.userId, source, tasks, { targetOrg, isDryRun });
     if (schedule?.mode === 'scheduled' && schedule?.scheduledAt) {
       const credentials = {
         githubToken: req.session.accessToken,
@@ -151,7 +175,7 @@ router.post('/plans/:id/validate', requireAuth, async (req, res) => {
 });
 
 // POST /api/migration/plans/:id/execute — Start execution
-router.post('/plans/:id/execute', requireAuth, async (req, res) => {
+router.post('/plans/:id/execute', requireAuth, requireProOrDryRunPlan, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
@@ -210,7 +234,7 @@ router.post('/plans/:id/pause', requireAuth, async (req, res) => {
 });
 
 // POST /api/migration/plans/:id/resume
-router.post('/plans/:id/resume', requireAuth, async (req, res) => {
+router.post('/plans/:id/resume', requireAuth, requireProOrDryRunPlan, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
@@ -232,7 +256,7 @@ router.post('/plans/:id/resume', requireAuth, async (req, res) => {
 });
 
 // POST /api/migration/plans/:id/tasks/:taskId/retry
-router.post('/plans/:id/tasks/:taskId/retry', requireAuth, async (req, res) => {
+router.post('/plans/:id/tasks/:taskId/retry', requireAuth, requireProOrDryRunPlan, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);

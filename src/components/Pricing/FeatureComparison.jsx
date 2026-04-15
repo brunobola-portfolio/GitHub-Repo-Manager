@@ -34,32 +34,32 @@ const CATEGORIES = [
     name: 'AI Features',
     rows: [
       {
-        feature: 'AI queries / month',
-        values: ['100', '2,000', 'Unlimited'],
+        feature: 'AI Assistant (conversational)',
+        values: [true, true, true],
+      },
+      {
+        feature: 'AI queries / month (total)',
+        values: ['200', '5,000', 'Unlimited'],
       },
       {
         feature: 'Semantic Search',
-        values: [false, true, true],
-      },
-      {
-        feature: 'AI Assistant (conversational)',
-        values: [false, true, true],
+        values: ['50 / month', 'Unlimited', 'Unlimited'],
       },
       {
         feature: 'Migration Risk Analysis (AI)',
-        values: [false, true, true],
-      },
-      {
-        feature: 'Repo Insights / Quality Report',
         values: ['5 / month', 'Unlimited', 'Unlimited'],
       },
       {
+        feature: 'Repo Insights / Quality Report',
+        values: ['10 / month', 'Unlimited', 'Unlimited'],
+      },
+      {
         feature: 'README Generator (AI)',
-        values: ['3 / month', 'Unlimited', 'Unlimited'],
+        values: ['5 / month', 'Unlimited', 'Unlimited'],
       },
       {
         feature: 'Commit Generator (AI)',
-        values: ['20 / month', 'Unlimited', 'Unlimited'],
+        values: ['50 / month', 'Unlimited', 'Unlimited'],
       },
     ],
   },
@@ -93,7 +93,7 @@ const CATEGORIES = [
       },
       {
         feature: 'PR Review Experience',
-        values: [false, true, true],
+        values: ['Read-only', 'Full + write-back', 'Full + write-back'],
       },
     ],
   },
@@ -111,6 +111,10 @@ const CATEGORIES = [
     rows: [
       {
         feature: 'Audit Logs',
+        values: [false, false, true],
+      },
+      {
+        feature: 'SSO',
         values: [false, false, true],
       },
     ],

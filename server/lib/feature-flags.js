@@ -1,36 +1,89 @@
 import logger from './logger.js';
 
+// Tier configuration.
+//
+// Per-feature monthly quotas (readmeGenPerMonth, commitGenPerMonth, repoInsightsPerMonth,
+// migrationRiskPerMonth, semanticSearchPerMonth) are tracked independently of the global
+// ai_queries counter so Free-tier users can meaningfully sample each AI capability
+// without a single feature draining their whole monthly AI budget.
 const TIER_FEATURES = {
     free: {
         maxRepos: 50,
-        aiQueriesPerMonth: 100,
-        migration: false,
+        apiKeys: 2,
+
+        // Global AI budget (applies to chat / generic AI calls)
+        aiQueriesPerMonth: 200,
+
+        // AI capabilities — all available to Free (with per-feature caps)
+        aiAssistant: true,
+        semanticSearch: true,
+        migrationRiskAnalysis: true,
+        prReview: true,
+
+        // Per-feature Free-tier quotas
+        readmeGenPerMonth: 5,
+        commitGenPerMonth: 50,
+        repoInsightsPerMonth: 10,
+        migrationRiskPerMonth: 5,
+        semanticSearchPerMonth: 50,
+
+        // Non-AI gating
+        migration: 'dry-run', // Free: dry-run only
+        bulkAdvanced: false,   // transfer / mirror / cross-org
+        syncRepository: false,
         teams: false,
         teamMembersMax: 0,
         auditLog: false,
-        apiKeys: 2,
-        semanticSearch: false,
     },
     pro: {
         maxRepos: Infinity,
-        aiQueriesPerMonth: 2000,
-        migration: 'basic',
+        apiKeys: 10,
+
+        aiQueriesPerMonth: 5000,
+
+        aiAssistant: true,
+        semanticSearch: true,
+        migrationRiskAnalysis: true,
+        prReview: true,
+
+        // Per-feature quotas lifted for Pro
+        readmeGenPerMonth: Infinity,
+        commitGenPerMonth: Infinity,
+        repoInsightsPerMonth: Infinity,
+        migrationRiskPerMonth: Infinity,
+        semanticSearchPerMonth: Infinity,
+
+        migration: 'full',
+        bulkAdvanced: true,
+        syncRepository: true,
         teams: true,
         teamMembersMax: 15,
         auditLog: false,
-        apiKeys: 10,
-        semanticSearch: true,
     },
     enterprise: {
         maxRepos: Infinity,
+        apiKeys: 50,
+
         aiQueriesPerMonth: Infinity,
+
+        aiAssistant: true,
+        semanticSearch: true,
+        migrationRiskAnalysis: true,
+        prReview: true,
+
+        readmeGenPerMonth: Infinity,
+        commitGenPerMonth: Infinity,
+        repoInsightsPerMonth: Infinity,
+        migrationRiskPerMonth: Infinity,
+        semanticSearchPerMonth: Infinity,
+
         migration: 'full',
+        bulkAdvanced: true,
+        syncRepository: true,
         teams: true,
         teamMembersMax: Infinity,
         auditLog: true,
         auditExport: true,
-        apiKeys: 50,
-        semanticSearch: true,
         sso: true,
     },
 };

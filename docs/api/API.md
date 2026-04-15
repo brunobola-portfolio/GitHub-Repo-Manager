@@ -1934,14 +1934,68 @@ Semantic search across indexed repositories.
 |---|---|
 | Auth required | Yes |
 | AI required | Yes |
+| Quota | Per-feature (`ai_semantic_search`, Free: 50/month) + global `ai_queries` |
+
+Available on Free tier since 2026-04-15 — previously Pro-only.
 
 **Query Parameters:**
 
 | Param | Type | Required | Description |
 |---|---|---|---|
-| `q` | string | Yes | Search query |
+| `q` | string | Yes (unless `mode=similar-by-id`) | Search query |
+| `mode` | string | No | `similar-by-id` to look up repos similar to a given repo ID |
+| `repoId` | string | Only with `mode=similar-by-id` | Repo ID to compare against |
 
-**Response (200):** Array of search results with scores and metadata.
+**Response (200):** Array of search results with scores and metadata. For `mode=similar-by-id`, returns `{ mode, similar }`.
+
+**Error Codes:**
+- `429 usage_limit_exceeded` — hit `ai_semantic_search` or `ai_queries` cap; response includes `metric`, `limit`, `current`, `upgradeUrl`
+
+---
+
+### `POST /api/ai/migration-risk`
+
+Analyze a repository's migration risk to a target platform before executing the migration.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| AI required | Yes |
+| Quota | Per-feature (`ai_migration_risk`, Free: 5/month) + global `ai_queries` |
+
+Pulls signals from the source repo (size, LFS, branches, workflows, languages, visibility, wiki/pages) and prompts Gemini for a structured risk report.
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `repo` | object | Yes | Repo object with `full_name` at minimum; `size`, `open_issues_count`, `private`, `archived`, `has_wiki`, `has_pages` improve accuracy |
+| `source` | string | No | Source platform label (default `github`) |
+| `target` | string | No | Target platform label (default `github`) |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "report": {
+    "repo": "owner/repo",
+    "source": "github",
+    "target": "github",
+    "signals": { "sizeMB": 123, "branches": 42, "hasLFS": false, "workflowCount": 3, "languages": ["JavaScript"], "private": false, "archived": false, "hasWiki": true, "hasPages": false, "openIssues": 7 },
+    "overallRisk": "medium",
+    "score": 45,
+    "summary": "Manageable with manual intervention on workflows.",
+    "blockers": [],
+    "warnings": ["3 CI workflows need secret re-wiring on the target."],
+    "recommendations": ["Audit GitHub Actions secrets before migration."],
+    "estimatedDurationMinutes": 45
+  }
+}
+```
+
+**Error Codes:**
+- `400 VALIDATION_ERROR` — `repo.full_name` missing
+- `429 usage_limit_exceeded` — per-feature or global AI cap hit
 
 ---
 

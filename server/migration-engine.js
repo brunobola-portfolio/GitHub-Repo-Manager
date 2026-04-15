@@ -4,6 +4,7 @@ import { migrateWorkItems } from './work-item-service.js'
 import { migrateWiki } from './wiki-service.js'
 import * as azureService from './azure-service.js'
 import { encryptCredentials, decryptCredentials, isSchedulingEnabled } from './lib/credential-encryption.js'
+import { githubApi } from './lib/github-api.js'
 import logger from './lib/logger.js'
 
 export class MigrationEngine extends EventEmitter {
@@ -493,6 +494,50 @@ export class MigrationEngine extends EventEmitter {
     // Validate target repo name before hitting external APIs
     if (!targetRepo || /^[_.]|[.]$|[/:~&%;@'"?<>|#$*\[\]\\]/.test(targetRepo) || targetRepo.length > 64) { // eslint-disable-line no-useless-escape
       throw new Error(`Invalid target repository name: "${targetRepo}". Names cannot start with _ or ., end with ., contain special characters (/ : \\ ~ & % ; @ ' " ? < > | # $ * [ ]), or exceed 64 characters.`)
+    }
+
+    // Dry-run: simulate the task without touching remote services.
+    // Validation above already ran, so a dry-run still surfaces bad target names
+    // as real failures — the simulation only skips the side-effectful API calls.
+    const planRow = this.db.prepare('SELECT is_dry_run FROM migration_plans WHERE id = ?').get(task.plan_id)
+    if (planRow && planRow.is_dry_run) {
+      callbacks.onProgress(10, '[DRY-RUN] Validating source')
+      await new Promise(r => setTimeout(r, 120))
+      if (callbacks.isCancelled()) throw new Error('Migration cancelled')
+
+      // Probe target availability for repo tasks — catches the most common
+      // real-world failure (target name collision, no write access) without
+      // side effects. Read-only GET on the target.
+      callbacks.onProgress(40, '[DRY-RUN] Checking target availability')
+      if ((task.type === 'repo' || task.type === 'repo-tfvc') && targetOwner && targetRepo) {
+        try {
+          await githubApi(`/repos/${targetOwner}/${targetRepo}`, resolvedCredentials.githubToken)
+          throw new Error(`Target already exists: ${targetOwner}/${targetRepo} — rename or delete before real migration.`)
+        } catch (e) {
+          // 404 is the happy path: target is free.
+          if (e.status && e.status !== 404) throw e
+          // Message-based pass-through for our own "Target already exists" error above.
+          if (e.message && e.message.startsWith('Target already exists:')) throw e
+        }
+      }
+
+      // For Azure-backed task types, surface missing credentials as a real failure.
+      if ((task.type === 'work-items' || task.type === 'wiki' || task.type === 'repo-tfvc') && !resolvedCredentials.azurePat) {
+        throw new Error(`Azure PAT is required for ${task.type} tasks but was not provided.`)
+      }
+
+      callbacks.onProgress(70, '[DRY-RUN] Simulating transfer')
+      await new Promise(r => setTimeout(r, 120))
+      if (callbacks.isCancelled()) throw new Error('Migration cancelled')
+
+      callbacks.onProgress(100, '[DRY-RUN] Finalizing')
+      return {
+        dryRun: true,
+        taskType: task.type,
+        sourceRef: task.source_ref,
+        targetRef: task.target_ref,
+        message: 'Simulated successfully — no writes were made. Target is available and credentials look valid.',
+      }
     }
 
     switch (task.type) {

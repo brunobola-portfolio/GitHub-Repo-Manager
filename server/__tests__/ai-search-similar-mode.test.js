@@ -28,7 +28,10 @@ vi.mock('../middleware/require-tier.js', () => ({
 
 vi.mock('../lib/usage-meter.js', () => ({
   checkUsageLimit: () => ({ allowed: true, current: 0, limit: 100, remaining: 100 }),
-  incrementUsage: vi.fn()
+  incrementUsage: vi.fn(),
+  checkAIFeatureLimit: () => ({ allowed: true, current: 0, limit: 50, remaining: 50, metric: 'ai_semantic_search' }),
+  incrementAIUsage: vi.fn(),
+  quotaExceededResponse: (check) => ({ error: 'usage_limit_exceeded', ...check }),
 }))
 
 vi.mock('../db.js', () => ({

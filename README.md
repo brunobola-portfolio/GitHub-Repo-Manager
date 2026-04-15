@@ -169,6 +169,36 @@ GitHub Repo Manager integrates **Google Gemini AI** to supercharge your workflow
 
 ---
 
+## Plans & Pricing
+
+The hosted product ships three tiers. The **Free tier includes the full AI product surface** — Assistant, Semantic Search, Migration Risk Analysis, and PR Review — so you can evaluate the AI without a credit card. Each AI capability has its own monthly cap on Free so one feature can't drain your whole budget.
+
+| Feature                                | Free            | Pro ($19/mo)  | Enterprise |
+|----------------------------------------|-----------------|---------------|------------|
+| Repositories managed                   | 50              | Unlimited     | Unlimited  |
+| AI Assistant (conversational)          | ✓               | ✓             | ✓          |
+| AI queries / month (total)             | 200             | 5,000         | Unlimited  |
+| Semantic Search                        | 50 / month      | Unlimited     | Unlimited  |
+| Migration Risk Analysis (AI)           | 5 / month       | Unlimited     | Unlimited  |
+| Repo Insights / Quality Report         | 10 / month      | Unlimited     | Unlimited  |
+| README Generator (AI)                  | 5 / month       | Unlimited     | Unlimited  |
+| Commit Generator (AI)                  | 50 / month      | Unlimited     | Unlimited  |
+| PR Review Experience                   | Read-only       | Full + write-back | Full + write-back |
+| Basic bulk on own repos                | ✓               | ✓             | ✓          |
+| Advanced bulk (transfer, mirror, cross-org) | ✗          | ✓             | ✓          |
+| Azure DevOps Cloud migration           | ✗               | ✓             | ✓          |
+| Mirror Sync                            | ✗               | ✓             | ✓          |
+| Dry-Run migration                      | ✓               | ✓             | ✓          |
+| Teams                                  | ✗               | 15 members    | Unlimited  |
+| Audit Logs / SSO                       | ✗               | ✗             | ✓          |
+| API keys                               | 2               | 10            | 50         |
+
+Self-hosting under AGPL v3 is free forever — see [LICENSE](LICENSE). The matrix above describes the hosted SaaS.
+
+See the [Free Tier Expansion spec](docs/specs/2026-04-15-free-tier-expansion.md) for the design rationale and enforcement details.
+
+---
+
 ## Azure DevOps Migration Suite
 
 ![Migration Wizard](docs/images/08_migration_wizard_hd.png)
@@ -637,6 +667,25 @@ Your support helps:
 Distributed under the **GNU Affero General Public License v3 (AGPL-3.0)**. See [`LICENSE`](LICENSE) for details.
 
 A **commercial license** is available for organizations that need to use this software without AGPL obligations. See [`LICENSE-COMMERCIAL.md`](docs/LICENSE-COMMERCIAL.md) for terms, or contact [bruno@bolalabs.pt](mailto:bruno@bolalabs.pt).
+
+### AGPL §13 — Source offer for network operators
+
+If you run a modified version of this software as a network service, AGPL §13 requires you to offer users the corresponding source code. This repo includes a machine-readable endpoint for that purpose:
+
+```http
+GET /api/v1/system/source
+```
+
+```json
+{
+  "license": "AGPL-3.0-only",
+  "sourceUrl": "https://github.com/brunobola-portfolio/GitHub-Repo-Manager",
+  "commercialLicenseUrl": "https://bolalabs.pt/license",
+  "notice": "Modified versions running as a network service must offer their corresponding source under AGPL §13."
+}
+```
+
+**If you fork and deploy this as a service, edit [server/routes/system.js](server/routes/system.js) and update `sourceUrl` to point at your modified source repo** so downstream consumers can programmatically discover it. Keep the endpoint reachable without authentication — AGPL §13 requires the offer to be made to every user of the network service.
 
 ---
 

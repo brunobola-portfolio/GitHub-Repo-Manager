@@ -38,7 +38,9 @@ router.use('/system', systemRoutes);
 router.use('/', azureRoutes);
 router.use('/', importRoutes);
 router.use('/', webhooksRoutes);
-router.use('/migration', requireTier('pro'), migrationRoutes);
+// Migration routes: Free tier gets dry-run only (enforced in migration.js per-route
+// and by forcing isDryRun=true on plan creation). Real execution requires Pro+.
+router.use('/migration', migrationRoutes);
 router.use('/repos', reposRoutes);
 router.use('/orgs', orgsRoutes);
 router.use('/', aiRoutes);

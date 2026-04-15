@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Product polish pass (2026-04-15)**: seven targeted improvements discovered by a parallel exploration agent, prioritised by impact/effort:
+  - **Global `unhandledrejection` handler** in `src/main.jsx` — routes unhandled promise rejections to `console.error` (and Sentry if configured), ignoring routine `AbortError` noise. Prevents silent failures from `.catch(() => {})` sprinkled across async flows.
+  - **RepoList empty state CTAs** — zero-repo users now see "Create your first repo" + "Import from Azure DevOps" buttons wired to the existing modals, instead of a flat "No repositories yet" message.
+  - **Pricing page: Stripe-unavailable banner** — self-hosters who trigger checkout without Stripe configured now see an amber banner with the sales email instead of a silent fallback to the dashboard.
+  - **AGPL §13 docs** — README and `.env.example` now explicitly document the `GET /api/v1/system/source` offer and instruct forks to update `sourceUrl` in `server/routes/system.js` before deploying a modified build as a network service.
+  - **ContextMenu keyboard focus ring** — arrow-key navigation now renders a visible indigo ring (ring-2 ring-inset) on the focused item; mouse hover path unchanged.
+  - **RepoList skeleton during semantic search** — while an AI search is in flight, placeholders replace the old list so users see search progress instead of stale results.
+  - **Dashboard AI Quick-Start CTA** — a gradient banner on Dashboard promotes the now-free AI Assistant and Insights, with one-click entry via a new `ai-assistant:open` custom-event listener on `AIAssistant.jsx`.
+- **Free Tier Expansion** ([spec](docs/specs/2026-04-15-free-tier-expansion.md)): AI product surface is now available to Free-tier users
+  - AI Assistant (conversational), Semantic Search (50/month), Migration Risk Analysis (5/month), and PR Review Experience are now on the Free tier
+  - Free AI query budget raised from 100 → 200/month; Pro raised from 2,000 → 5,000/month
+  - Per-feature monthly caps backed by real counters: `ai_readme` (5/mo), `ai_commit` (50/mo), `ai_insights` (10/mo), `ai_migration_risk` (5/mo), `ai_semantic_search` (50/mo). Global `ai_queries` counter is still enforced in parallel.
+  - New `POST /api/v1/ai/migration-risk` endpoint — pulls repo signals (size, LFS, branches, workflows, languages) and asks Gemini for a structured risk report (`overallRisk`, `score`, `blockers[]`, `warnings[]`, `recommendations[]`).
+  - `checkAIFeatureLimit` / `incrementAIUsage` helpers in `server/lib/usage-meter.js`.
+  - `GET /api/v1/usage` now includes an `aiFeatures` block with per-feature `{ current, limit }` pairs; `Settings/UsageDashboard.jsx` renders per-feature progress bars on Free.
 - **License Mint Automation**: GitHub Actions-based Ed25519 license minting pipeline
   - `scripts/lib/minter.js` primitives: `validateInput`, `mintLicense`, `deliverLicense`, `logMint`, `mint-license-action.js` CLI wrapper
   - `mint-license.yml` workflow with SHA-pinned actions and scoped `LICENSE_PRIVATE_PEM` secret
@@ -45,6 +60,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `WizardPanel` now uses shared `useBodyScrollLock`; icon tile gained hover-glow for consistency
+- **Tier matrix restructured**: Free tier now includes AI Assistant, Semantic Search (capped), Migration Risk Analysis (capped), and PR Review (read-only). Pro/Enterprise unchanged in structure; Pro AI-query budget bumped to 5,000/month.
+- `PricingPage.jsx`, `FeatureComparison.jsx`, and `Landing/PricingPreview.jsx` updated to match the new matrix.
+- Pricing-page FAQ answer on "What counts as an AI query?" now explains per-feature caps.
+
+### Fixed (tier enforcement gaps)
+
+- **Advanced bulk operations** (`POST /transfer`, `POST /transfer/check-conflicts`, `POST /mirror` in `server/routes/bulk.js`) now enforce `requireTier('pro')` — previously advertised Pro-only but not gated.
+- **Dry-run migration** (`migration_plans.is_dry_run`) now actually skips remote API calls in `MigrationEngine._executeTask` — previously the flag was stored but ignored. Dry-run additionally probes target availability on GitHub (404 is the happy path, 200 surfaces a "target exists" failure) and refuses `work-items`/`wiki` tasks without an Azure PAT.
+- **Free tier dry-run migration access**: moved the Pro gate from the `/migration` mount to a per-route `requireProOrDryRunPlan` helper so Free users can actually exercise the dry-run flow the pricing page advertises. `POST /plans` forces `isDryRun=true` for Free users regardless of client input.
+- **Per-feature quotas** advertised on the pricing page (3/5/20 per month for README/Insights/Commit) are now backed by real counters, not shared with the global `ai_queries` budget.
+- **`/ai/migration-risk` input validation**: `repo.full_name` is regex-validated via `isValidGitHubFullName` before being spliced into GitHub API URLs; `source`/`target` are restricted to an allowlist. Response fields are shape-coerced (risk enum, score clamped 0–100, arrays filtered). AI parse failures now return `overallRisk: 'unknown'` + `parseError: true` instead of fabricating a `medium` verdict.
+- **Uniform 429 body** across AI endpoints via shared `quotaExceededResponse` helper; `incrementAIUsage` wraps its two counter writes in `db.transaction` to prevent drift on partial writes.
 
 ### Fixed
 

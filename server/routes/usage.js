@@ -25,25 +25,36 @@ router.get('/', requireAuth, (req, res) => {
     ).get(userId);
     const apiKeyCount = apiKeyRow ? apiKeyRow.n : 0;
 
-    let aiCurrent = 0;
-    let reposCurrent = 0;
-    for (const m of metrics) {
-        if (m.metric_type === 'ai_queries') aiCurrent = m.count;
-        if (m.metric_type === 'repos_managed') reposCurrent = m.count;
-    }
+    const byType = {};
+    for (const m of metrics) byType[m.metric_type] = m.count;
+
+    const aiQueries = { current: byType.ai_queries || 0, limit: features.aiQueriesPerMonth };
+    const readme = { current: byType.ai_readme || 0, limit: features.readmeGenPerMonth };
+    const commit = { current: byType.ai_commit || 0, limit: features.commitGenPerMonth };
+    const insights = { current: byType.ai_insights || 0, limit: features.repoInsightsPerMonth };
+    const migrationRisk = { current: byType.ai_migration_risk || 0, limit: features.migrationRiskPerMonth };
+    const semanticSearch = { current: byType.ai_semantic_search || 0, limit: features.semanticSearchPerMonth };
 
     res.json({
         tier,
         period_start: periodStart,
         // Flat shape consumed by UsageDashboard
-        aiQueries: { current: aiCurrent, limit: features.aiQueriesPerMonth },
+        aiQueries,
         apiKeys: { current: apiKeyCount, limit: features.apiKeys },
         repos: { limit: features.maxRepos },
         teams: { limit: features.teamMembersMax ?? null },
+        // Per-feature AI quotas (Free-tier caps, Unlimited on Pro/Enterprise)
+        aiFeatures: {
+            readme,
+            commit,
+            insights,
+            migrationRisk,
+            semanticSearch,
+        },
         // Legacy nested shape kept for backwards compatibility
         metrics: {
-            ai_queries: { current: aiCurrent, limit: features.aiQueriesPerMonth },
-            repos_managed: { current: reposCurrent, limit: features.maxRepos },
+            ai_queries: aiQueries,
+            repos_managed: { current: byType.repos_managed || 0, limit: features.maxRepos },
         },
     });
 });

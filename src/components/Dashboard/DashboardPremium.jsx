@@ -3,7 +3,7 @@ import {
     BarChart3, TrendingUp, Activity, GitPullRequest, GitMerge,
     Zap, Heart, Users, Building2,
     Code2, Folder, Archive, Star, GitFork, CheckCircle2, XCircle,
-    Download
+    Download, Sparkles, MessageCircle, ArrowRight
 } from 'lucide-react'
 import { CategorySection } from './CategorySection'
 import { StatCard } from './StatCard'
@@ -97,6 +97,58 @@ export function DashboardPremium({
                     />
                 </div>
             </div>
+
+            {/* AI Quick-Start CTA — surfaces the free-tier AI product so new users
+                discover Assistant + Insights without having to click into a repo.
+                Collapses to nothing on empty repos (the RepoList empty state already
+                handles first-run guidance). */}
+            {repos.length > 0 && (
+                <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                    className="relative overflow-hidden rounded-2xl border border-indigo-200/50 dark:border-indigo-500/20 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-indigo-500/10 dark:via-slate-900/40 dark:to-purple-500/10 p-5 sm:p-6"
+                >
+                    <div className="absolute inset-0 pointer-events-none opacity-[0.04] dark:opacity-[0.08]"
+                        style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(99,102,241,0.6), transparent 50%), radial-gradient(circle at 80% 80%, rgba(139,92,246,0.5), transparent 50%)' }}
+                        aria-hidden="true"
+                    />
+                    <div className="relative flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-500/30">
+                            <Sparkles className="w-5 h-5 text-white" strokeWidth={2.5} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 ds-font-display">
+                                Try the AI product — free
+                            </h2>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+                                Ask the Assistant anything, run insights on a repo, or get a migration risk report. No upgrade required.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2 flex-shrink-0">
+                            <button
+                                onClick={() => {
+                                    // Open the floating AI Assistant if mounted — the FAB listens on this event
+                                    window.dispatchEvent(new CustomEvent('ai-assistant:open'))
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/10 transition-colors"
+                            >
+                                <MessageCircle className="w-3.5 h-3.5" />
+                                Open Assistant
+                            </button>
+                            {repos.length > 0 && (
+                                <button
+                                    onClick={() => openModalWithData('showRepoInsights', { repo: repos[0] })}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/30 transition-all"
+                                >
+                                    Get Insights
+                                    <ArrowRight className="w-3.5 h-3.5" />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </motion.div>
+            )}
 
             {/* CATEGORY 1: Overview Essencial (Always Visible) */}
             <CategorySection

@@ -7,7 +7,8 @@ import {
 	GitFork, Lock, Globe, ExternalLink, RefreshCw, Loader2, AlertCircle,
 	ChevronLeft, ChevronRight, Archive, Star, Trash2,
 	MoreHorizontal, ArrowRightLeft, ChevronDown, Search,
-	LayoutGrid, List as ListIcon, CheckSquare, X, Brain, Sparkles, Shield
+	LayoutGrid, List as ListIcon, CheckSquare, X, Brain, Sparkles, Shield,
+	Plus, Download
 } from 'lucide-react'
 import { PAGINATION } from '../config'
 import { aiApi } from '../api/ai'
@@ -389,9 +390,23 @@ export function RepoList({
 				<div className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
 					{repos.length === 0 ? (
 						<>
-							<Archive className="w-12 h-12 mb-4 opacity-20" />
-							<p>No repositories yet.</p>
-							<p className="text-sm mt-1 opacity-70">Create or import a repository to get started.</p>
+							<div className="w-16 h-16 mb-5 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/15 dark:to-purple-500/15 flex items-center justify-center">
+								<Archive className="w-8 h-8 text-indigo-500 dark:text-indigo-400" />
+							</div>
+							<h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">No repositories yet</h2>
+							<p className="text-sm opacity-80 mb-6 text-center max-w-md">
+								Create a new repository on GitHub, or import one from Azure DevOps — both take under a minute.
+							</p>
+							<div className="flex flex-col sm:flex-row gap-2.5">
+								<Button variant="primary" onClick={() => openModal('showCreateRepo')}>
+									<Plus className="w-4 h-4 mr-1.5" />
+									Create your first repo
+								</Button>
+								<Button variant="secondary" onClick={() => openModal('showMigrationWizard')}>
+									<Download className="w-4 h-4 mr-1.5" />
+									Import from Azure DevOps
+								</Button>
+							</div>
 						</>
 					) : (
 						<>
@@ -408,7 +423,25 @@ export function RepoList({
 					? "grid gap-4"
 					: "flex flex-col gap-3"
 				} style={viewMode === 'grid' ? { gridTemplateColumns: 'repeat(auto-fill, minmax(min(var(--card-min-width), 100%), 1fr))' } : undefined}>
-					{filteredRepos.map(repo => (
+					{/* While an AI semantic search is in flight, dim the existing list
+					    and overlay skeleton placeholders so users know results will
+					    swap. Shows 6 placeholders in grid mode, 4 in list mode. */}
+					{isSearchingAI && (
+						<>
+							{Array.from({ length: viewMode === 'grid' ? 6 : 4 }).map((_, i) => (
+								<div
+									key={`skeleton-${i}`}
+									className={`animate-pulse rounded-xl border border-slate-200/70 dark:border-white/[0.07] bg-white/60 dark:bg-white/[0.03] ${viewMode === 'grid' ? 'h-40 p-4' : 'h-20 p-3'}`}
+									aria-hidden="true"
+								>
+									<div className="h-3 w-1/3 bg-slate-200 dark:bg-white/10 rounded mb-3" />
+									<div className="h-2 w-3/4 bg-slate-200 dark:bg-white/10 rounded mb-2" />
+									<div className="h-2 w-1/2 bg-slate-200 dark:bg-white/10 rounded" />
+								</div>
+							))}
+						</>
+					)}
+					{!isSearchingAI && filteredRepos.map(repo => (
 						<RepoCard
 							key={repo.id}
 							repo={repo}

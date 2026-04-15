@@ -26,6 +26,24 @@ export function isValidGitHubUsername(username) {
 }
 
 /**
+ * Validate an "owner/repo" full-name string before splicing into GitHub API URLs.
+ * Blocks traversal (`..`), query hijacking (`?`, `&`), path injection, and
+ * unexpected characters. Repo names allow dots and underscores.
+ *
+ * @param {string} fullName
+ * @returns {boolean}
+ */
+export function isValidGitHubFullName(fullName) {
+    if (typeof fullName !== 'string') return false;
+    const parts = fullName.split('/');
+    if (parts.length !== 2) return false;
+    const [owner, repo] = parts;
+    if (!isValidGitHubUsername(owner)) return false;
+    // Repo name: alnum + . _ -, 1-100 chars, not starting with a dot.
+    return /^[a-zA-Z0-9_-][a-zA-Z0-9._-]{0,99}$/.test(repo);
+}
+
+/**
  * Verify GitHub webhook signature (X-Hub-Signature-256).
  * Uses timing-safe comparison to prevent timing attacks.
  * Reads WEBHOOK_SECRET from process.env at call time.

@@ -15,6 +15,7 @@ import express from 'express';
 import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, isValidGitHubUsername, safeError, errorResponse } from '../middleware/auth.js';
+import { requireTier } from '../middleware/require-tier.js';
 import { validate, bulkVisibilitySchema, bulkArchiveSchema, bulkDeleteSchema, bulkTransferSchema, bulkMirrorSchema, checkConflictsSchema } from '../lib/validators.js';
 import { auditLog } from '../lib/audit.js';
 
@@ -62,7 +63,8 @@ router.post('/visibility', requireAuth, validate(bulkVisibilitySchema), async (r
 });
 
 // Check for name conflicts before transfer
-router.post('/transfer/check-conflicts', requireAuth, validate(checkConflictsSchema), async (req, res) => {
+// Advanced bulk: Pro-gated (matches pricing claim for transfer/mirror/cross-org)
+router.post('/transfer/check-conflicts', requireAuth, requireTier('pro'), validate(checkConflictsSchema), async (req, res) => {
     const { repos, targetOrg } = req.body
 
     if (!isValidGitHubUsername(targetOrg))
@@ -120,8 +122,8 @@ router.post('/transfer/check-conflicts', requireAuth, validate(checkConflictsSch
     res.json({ conflicts })
 })
 
-// Transfer multiple repos to an organization
-router.post('/transfer', requireAuth, validate(bulkTransferSchema), async (req, res) => {
+// Transfer multiple repos to an organization (advanced bulk — Pro+)
+router.post('/transfer', requireAuth, requireTier('pro'), validate(bulkTransferSchema), async (req, res) => {
     const { repos, toOrg, strategies } = req.body;
 
     if (!repos?.length || !toOrg) return errorResponse(res, 400, 'Missing repositories or target organization', 'MISSING_PARAMS');
@@ -189,8 +191,8 @@ router.post('/transfer', requireAuth, validate(bulkTransferSchema), async (req, 
     });
 });
 
-// Mirror (fork) multiple repos to an organization
-router.post('/mirror', requireAuth, validate(bulkMirrorSchema), async (req, res) => {
+// Mirror (fork) multiple repos to an organization (advanced bulk — Pro+)
+router.post('/mirror', requireAuth, requireTier('pro'), validate(bulkMirrorSchema), async (req, res) => {
     const { repos, toOrg } = req.body;
 
     if (!repos?.length || !toOrg) return errorResponse(res, 400, 'Missing repositories or target organization', 'MISSING_PARAMS');

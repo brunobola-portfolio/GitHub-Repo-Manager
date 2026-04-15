@@ -26,6 +26,7 @@ Design specifications and feature requirements.
 - [Reusable TabBar](specs/2026-04-10-reusable-tabbar-design.md) — Shared TabBar primitive extracted from Modal, used across 4+ call sites
 - [Modal System Redesign](specs/2026-04-11-modal-system-redesign.md) — AI Insights scrollbar fix + shared Modal primitive consolidation + InsightCard/StatBar shared components
 - [License Mint Automation](specs/2026-04-11-license-mint-automation-design.md) — GitHub Actions-based Ed25519 license minting with Resend delivery, separate private audit repo, two-phase audit pattern, Phase 2 migration path (Implemented)
+- [Free Tier Expansion](specs/2026-04-15-free-tier-expansion.md) — Move AI Assistant, Semantic Search, Migration Risk Analysis, and PR Review (read-only) to Free tier; back advertised per-feature caps with real counters; gate advanced bulk behind Pro; honor dry-run migration flag (Implemented)
 
 ## Plans (How to build it)
 

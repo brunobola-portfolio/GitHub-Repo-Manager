@@ -39,6 +39,17 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
         }
     }, [isOpen, checkAIStatus])
 
+    // Allow other parts of the app to open the assistant via a custom event.
+    // Used by the Dashboard "Open Assistant" CTA so callers don't need a ref.
+    useEffect(() => {
+        const handler = () => {
+            setIsOpen(true)
+            setIsMinimized(false)
+        }
+        window.addEventListener('ai-assistant:open', handler)
+        return () => window.removeEventListener('ai-assistant:open', handler)
+    }, [])
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }

@@ -652,4 +652,74 @@ describe('MigrationEngine', () => {
       engine.destroy() // idempotent
     })
   })
+
+  describe('_executeTask — dry-run branch', () => {
+    let originalFetch
+
+    beforeEach(() => {
+      originalFetch = globalThis.fetch
+    })
+
+    afterEach(() => {
+      globalThis.fetch = originalFetch
+    })
+
+    // Helper: mock the global fetch used by lib/github-api.js
+    const mockFetch = (responseInit) => {
+      globalThis.fetch = async () => ({
+        ok: responseInit.ok,
+        status: responseInit.status,
+        headers: { get: () => null },
+        json: async () => responseInit.body ?? null,
+        text: async () => JSON.stringify(responseInit.body ?? {}),
+      })
+    }
+
+    it('returns { dryRun: true } without side effects when the target is free', async () => {
+      // GitHub returns 404 for the target repo — happy path for dry-run.
+      mockFetch({ ok: false, status: 404, body: { message: 'Not Found' } })
+
+      const planId = engine.createPlan(
+        1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'o/p/repo', targetRef: 'github-org/destrepo', config: {} }],
+        { isDryRun: true }
+      )
+      const tasks = db.prepare('SELECT * FROM migration_tasks WHERE plan_id = ?').all(planId)
+
+      const result = await engine._executeTask(tasks[0], { githubToken: 't' })
+      expect(result.dryRun).toBe(true)
+      expect(result.taskType).toBe('repo')
+      expect(result.targetRef).toBe('github-org/destrepo')
+      expect(result.message).toMatch(/Simulated successfully/i)
+    })
+
+    it('surfaces "Target already exists" when dry-run finds the target repo on GitHub', async () => {
+      // GitHub returns 200 — target exists, dry-run should fail loudly.
+      mockFetch({ ok: true, status: 200, body: { full_name: 'github-org/existing' } })
+
+      const planId = engine.createPlan(
+        1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'o/p/repo', targetRef: 'github-org/existing', config: {} }],
+        { isDryRun: true }
+      )
+      const tasks = db.prepare('SELECT * FROM migration_tasks WHERE plan_id = ?').all(planId)
+
+      await expect(engine._executeTask(tasks[0], { githubToken: 't' })).rejects.toThrow(/Target already exists/)
+    })
+
+    it('requires azurePat for work-items dry-run tasks', async () => {
+      // No fetch mock needed — we should fail on missing creds before any HTTP.
+      const planId = engine.createPlan(
+        1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'work-items', sourceRef: 'o/p/wi', targetRef: 'github-org/target', config: {} }],
+        { isDryRun: true }
+      )
+      const tasks = db.prepare('SELECT * FROM migration_tasks WHERE plan_id = ?').all(planId)
+
+      await expect(engine._executeTask(tasks[0], { githubToken: 't' })).rejects.toThrow(/Azure PAT is required/)
+    })
+  })
 })
