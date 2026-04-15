@@ -494,6 +494,16 @@ Verify at `http://localhost:3001/api/health`.
 <details>
 <summary><strong>Port Already in Use</strong></summary>
 
+If you see `Port is already in use` (backend 3001) or `Port 5176 is in use, trying another one...` (Vite cascading through 5173–5180), a previous dev server is still alive. One-shot cleanup:
+
+```bash
+npm run dev:kill
+```
+
+Works on Windows/macOS/Linux — kills anything listening on 3001, 5173–5180 using `netstat`+`taskkill` or `lsof`+`kill` depending on the OS. Then re-run `npm run dev:all`.
+
+Manual fallback if the script isn't available:
+
 ```bash
 # Windows
 netstat -ano | findstr :5173

@@ -26,6 +26,7 @@
     "dev": "vite",
     "dev:server": "node server/index.js",
     "dev:all": "concurrently \"npm run dev:server\" \"npm run dev\"",
+    "dev:kill": "node scripts/kill-dev-ports.js",
     "build": "vite build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
