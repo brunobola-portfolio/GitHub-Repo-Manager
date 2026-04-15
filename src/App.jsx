@@ -313,6 +313,13 @@ function AppContent() {
     }
   }, [performAction, org, toast])
 
+  const displayRepos = selectedOrg ? orgRepos : repos
+
+  const selectedRepos = useMemo(
+    () => displayRepos.filter(r => selectedIds.has(r.id)),
+    [displayRepos, selectedIds]
+  )
+
   const handleQuickAction = useCallback(async (action, repo, value) => {
     switch (action) {
       case 'visibility':
@@ -458,13 +465,6 @@ function AppContent() {
       setIsSwitchingOrg(false)
     }
   }
-
-  const displayRepos = selectedOrg ? orgRepos : repos
-
-  const selectedRepos = useMemo(
-    () => displayRepos.filter(r => selectedIds.has(r.id)),
-    [displayRepos, selectedIds]
-  )
 
   // Memoised so child Sidebar / SlimSidebar (now React.memo'd) don't re-render
   // on every parent render — only when an actual sidebarProps field changes.
