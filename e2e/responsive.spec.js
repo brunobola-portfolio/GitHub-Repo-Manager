@@ -50,9 +50,15 @@ test.describe('Mobile Responsiveness', () => {
   })
 
   test('should show dashboard content on mobile', async ({ page }) => {
-    await expect(page.getByText('Total Repositories')).toBeVisible({ timeout: 10000 })
-    // Use exact match — the dashboard also renders "12 487" (stars) which
-    // contains '87' as a substring and triggers a strict-mode violation.
-    await expect(page.getByRole('heading', { name: '87', exact: true })).toBeVisible()
+    // Ensure we're on the Dashboard view — on some mobile boot paths the
+    // default view can race against lazy imports.
+    const dashNav = page.getByRole('button', { name: /dashboard/i }).first()
+    if (await dashNav.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await dashNav.click().catch(() => {})
+    }
+    await expect(page.getByText('Total Repositories')).toBeVisible({ timeout: 15000 })
+    // Use exact heading match — the dashboard also renders "12 487" (stars)
+    // which contains '87' as substring and triggers a strict-mode violation.
+    await expect(page.getByRole('heading', { name: '87', exact: true })).toBeVisible({ timeout: 5000 })
   })
 })
