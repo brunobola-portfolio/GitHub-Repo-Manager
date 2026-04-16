@@ -73,15 +73,17 @@ const rules = [
       type: 'name-conflict',
       severity: 'blocker',
       message: `A repository named "${repo.name}" already exists in ${ctx.targetOrg || 'the target org'}.`,
-      suggestion: 'Rename on the Configure step or skip this repo.',
-      actions: [
-        { id: 'auto-rename', label: 'Auto-rename' },
-        { id: 'skip', label: 'Skip' },
-      ],
+      suggestion: 'The Configure step lets you rename or skip this repo before migration.',
+      // No inline actions: the Configure step owns rename/skip. Showing
+      // buttons here without wiring them would be a broken affordance.
     }
   },
   function ruleDuplicateInBatch(repo, ctx) {
-    const dupes = (ctx.allRepos || []).filter((r) => r.name === repo.name)
+    // Only flag when THIS repo is selected AND another selected repo shares
+    // its name. Two unselected repos with the same name is not a blocker —
+    // they won't both be migrated.
+    if (!repo.selected) return null
+    const dupes = (ctx.allRepos || []).filter((r) => r.selected && r.name === repo.name)
     if (dupes.length < 2) return null
     return {
       type: 'duplicate-in-batch',

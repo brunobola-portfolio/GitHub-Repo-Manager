@@ -69,12 +69,21 @@ describe('risk engine', () => {
     }
   })
 
-  it('flags duplicate target names in batch as blocker', () => {
-    const repos = [
-      { ...base, id: 'a', name: 'dup' },
-      { ...base, id: 'b', name: 'dup' },
+  it('flags duplicate target names in batch as blocker (only when both selected)', () => {
+    const selectedDupes = [
+      { ...base, id: 'a', name: 'dup', selected: true },
+      { ...base, id: 'b', name: 'dup', selected: true },
     ]
-    const r = evaluateRepo(repos[0], { ...ctx, allRepos: repos })
+    const r = evaluateRepo(selectedDupes[0], { ...ctx, allRepos: selectedDupes })
     expect(r.flags.some((f) => f.type === 'duplicate-in-batch')).toBe(true)
+  })
+
+  it('does not flag duplicate-in-batch when either dupe is unselected', () => {
+    const mixed = [
+      { ...base, id: 'a', name: 'dup', selected: true },
+      { ...base, id: 'b', name: 'dup', selected: false },
+    ]
+    const r = evaluateRepo(mixed[0], { ...ctx, allRepos: mixed })
+    expect(r.flags.some((f) => f.type === 'duplicate-in-batch')).toBe(false)
   })
 })

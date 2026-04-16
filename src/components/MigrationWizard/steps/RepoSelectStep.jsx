@@ -32,13 +32,14 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
   const { repos: scored, aggregate, aggregateSelected } =
     useRiskEngine(repos, conflicts, targetOrg || source.org)
 
-  // Propagate risk back to wizard state only when changed
+  // Propagate risk back to wizard state only when changed. The JSON.stringify
+  // deep comparison is the loop guard — when risk shapes match, no setState
+  // fires, so including `repos` and `onSetRepos` in deps is safe.
   useEffect(() => {
     if (scored.length === 0) return
     const needsUpdate = scored.some((r, i) => JSON.stringify(r.risk) !== JSON.stringify(repos[i]?.risk))
     if (needsUpdate) onSetRepos(scored)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scored])
+  }, [scored, repos, onSetRepos])
 
   // Local UI state
   const [searchQuery, setSearchQuery] = useState('')

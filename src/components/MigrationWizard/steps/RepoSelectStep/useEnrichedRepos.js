@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 
 /**
  * Orchestrates the Select step's data lifecycle:
@@ -15,6 +15,10 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
   const [enriching, setEnriching] = useState(false)
   const [conflictsState, setConflictsState] = useState({})
   const [fetched, setFetched] = useState(false)
+  // Tracks which repo IDs have already been enriched (activity + LFS).
+  // Using a ref instead of writing a private `_enriched` flag onto each repo
+  // keeps the shared domain object clean for consumers downstream.
+  const enrichedIdsRef = useRef(new Set())
 
   // ── 1. Base fetch ─────────────────────────────────────────────
   useEffect(() => {
@@ -98,7 +102,7 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
     if (!fetched || repos.length === 0) return
     const gitRepos = repos.filter((r) => !r.isTfvc && r.id)
     if (gitRepos.length === 0) return
-    const needsEnrichment = gitRepos.some((r) => !r._enriched)
+    const needsEnrichment = gitRepos.some((r) => !enrichedIdsRef.current.has(r.id))
     if (!needsEnrichment) return
 
     let cancelled = false
@@ -123,13 +127,15 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
       if (cancelled) return
       const activity = activityRes.status === 'fulfilled' ? (activityRes.value.activity || {}) : {}
       const lfs      = lfsRes.status === 'fulfilled'      ? (lfsRes.value.lfs      || {}) : {}
+      // Mark repos as enriched BEFORE calling onSetRepos so the guard in the
+      // next render cycle short-circuits correctly.
+      for (const r of gitRepos) enrichedIdsRef.current.add(r.id)
       onSetRepos(
         repos.map((r) => ({
           ...r,
           lastCommitDate: activity[r.id]?.lastCommitDate ?? r.lastCommitDate,
           lastCommitAuthor: activity[r.id]?.lastCommitAuthor ?? r.lastCommitAuthor,
           hasLfsMarker: lfs[r.id] ?? r.hasLfsMarker,
-          _enriched: true,
         }))
       )
     }).finally(() => { if (!cancelled) setEnriching(false) })
@@ -163,6 +169,7 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
   const retry = useCallback(() => {
     setFetched(false)
     setError('')
+    enrichedIdsRef.current = new Set()
   }, [])
 
   return { loading, error, tfvcWarning, enriching, conflicts: conflictsState, retry }
