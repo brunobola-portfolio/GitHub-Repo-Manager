@@ -3,18 +3,15 @@ import { X } from 'lucide-react'
 
 export function PatternSelectModal({ repos, onConfirm, onClose }) {
   const [pattern, setPattern] = useState('')
-  const [error, setError] = useState('')
 
-  const matches = useMemo(() => {
-    if (!pattern.trim()) { setError(''); return [] }
-    if (pattern.length > 100) { setError('Pattern too long (max 100 chars)'); return [] }
+  const { matches, error } = useMemo(() => {
+    if (!pattern.trim()) return { matches: [], error: '' }
+    if (pattern.length > 100) return { matches: [], error: 'Pattern too long (max 100 chars)' }
     try {
       const re = new RegExp(pattern, 'i')
-      setError('')
-      return repos.filter((r) => re.test(r.name))
+      return { matches: repos.filter((r) => re.test(r.name)), error: '' }
     } catch (e) {
-      setError(e.message)
-      return []
+      return { matches: [], error: e.message }
     }
   }, [pattern, repos])
 
