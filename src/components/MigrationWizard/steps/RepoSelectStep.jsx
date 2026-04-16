@@ -141,7 +141,7 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
 
   const handleApplyFixes = useCallback((changes) => {
     changes.forEach(({ repoIndex, patch }) => {
-      if (onUpdateRepo) onUpdateRepo(repoIndex, patch)
+      onUpdateRepo(repoIndex, patch)
     })
     setDrawerOpen(false)
   }, [onUpdateRepo])
@@ -268,7 +268,7 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
       <AutoFixDrawer
         open={drawerOpen}
         repos={scored}
-        allRepos={scored}
+        allRepos={repos}
         targetOrg={targetOrg}
         azureProject={source?.project}
         aiAvailable={aiAvailable}
