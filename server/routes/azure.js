@@ -209,6 +209,77 @@ router.post('/azure/pat-permissions', requireAuth, async (req, res) => {
     }
 });
 
+router.post('/azure/repos/activity', requireAuth, async (req, res) => {
+    try {
+        const { org, project, repos, pat: bodyPat } = req.body;
+        const pat = azureService.resolvePat(bodyPat, req.session);
+        if (!org || !project || !Array.isArray(repos)) {
+            return errorResponse(res, 400, 'org, project and repos[] required');
+        }
+        if (!isValidGitHubUsername(org)) return errorResponse(res, 400, 'Invalid organization name');
+        if (!pat) return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
+        const result = await azureService.listRepoActivity(org, project, repos, pat);
+        res.json({ activity: result });
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to fetch repo activity'));
+    }
+});
+
+router.post('/azure/repos/lfs-check', requireAuth, async (req, res) => {
+    try {
+        const { org, project, repos, pat: bodyPat } = req.body;
+        const pat = azureService.resolvePat(bodyPat, req.session);
+        if (!org || !project || !Array.isArray(repos)) {
+            return errorResponse(res, 400, 'org, project and repos[] required');
+        }
+        if (!isValidGitHubUsername(org)) return errorResponse(res, 400, 'Invalid organization name');
+        if (!pat) return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
+        const result = await azureService.checkLfsMarkers(org, project, repos, pat);
+        res.json({ lfs: result });
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to check LFS markers'));
+    }
+});
+
+router.post('/azure/repos/commit-activity', requireAuth, async (req, res) => {
+    try {
+        const { org, project, repoId, defaultBranch, months, pat: bodyPat } = req.body;
+        const pat = azureService.resolvePat(bodyPat, req.session);
+        if (!org || !project || !repoId) return errorResponse(res, 400, 'org, project, repoId required');
+        if (!pat) return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
+        const activity = await azureService.getCommitActivity(org, project, repoId, defaultBranch, pat, months || 12);
+        res.json({ activity });
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to fetch commit activity'));
+    }
+});
+
+router.post('/azure/repos/readme', requireAuth, async (req, res) => {
+    try {
+        const { org, project, repoId, ref, pat: bodyPat } = req.body;
+        const pat = azureService.resolvePat(bodyPat, req.session);
+        if (!org || !project || !repoId) return errorResponse(res, 400, 'org, project, repoId required');
+        if (!pat) return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
+        const readme = await azureService.getRepoReadme(org, project, repoId, pat, ref);
+        res.json(readme);
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to fetch README'));
+    }
+});
+
+router.post('/azure/repos/full-stats', requireAuth, async (req, res) => {
+    try {
+        const { org, project, repoId, defaultBranch, pat: bodyPat } = req.body;
+        const pat = azureService.resolvePat(bodyPat, req.session);
+        if (!org || !project || !repoId) return errorResponse(res, 400, 'org, project, repoId required');
+        if (!pat) return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
+        const stats = await azureService.getRepoFullStats(org, project, repoId, defaultBranch, pat);
+        res.json(stats);
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to fetch full stats'));
+    }
+});
+
 router.post('/azure/tfvc/items', requireAuth, async (req, res) => {
     try {
         const { org, project, pat: bodyPat, scopePath } = req.body;
