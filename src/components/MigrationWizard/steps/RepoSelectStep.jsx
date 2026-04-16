@@ -23,7 +23,7 @@ const FILTER_PREDICATES = {
   'conflicts':   (r) => r.risk?.flags?.some((f) => f.type === 'name-conflict'),
 }
 
-export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) {
+export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source, onChange }) {
   const targetOrg = source.targetOrg || ''
   const { loading, error, tfvcWarning, enriching, conflicts, retry } = useEnrichedRepos({
     source, repos, onSetRepos, onChange, targetOrg,

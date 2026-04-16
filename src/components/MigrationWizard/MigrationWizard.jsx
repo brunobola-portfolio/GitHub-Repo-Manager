@@ -542,7 +542,15 @@ export default function MigrationWizard({ onClose, orgs = [], initialDryRun = fa
           />
         )
       case 'repoSelect':
-        return <RepoSelectStep repos={repos} onSetRepos={setRepos} source={source} onChange={updateSource} />
+        return (
+          <RepoSelectStep
+            repos={repos}
+            onSetRepos={setRepos}
+            onUpdateRepo={updateRepo}
+            source={source}
+            onChange={updateSource}
+          />
+        )
       case 'repoConfig':
         return (
           <RepoConfigStep
