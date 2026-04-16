@@ -461,11 +461,44 @@ function buildAuthenticatedCloneUrl(remoteUrl, pat) {
     return `https://${encodeURIComponent(pat)}@${parsed.host}${parsed.pathname}`;
 }
 
+/**
+ * Fetch last-commit metadata for many repos in parallel.
+ * Returns { [repoId]: { lastCommitDate, lastCommitAuthor } | { lastCommitDate: null, lastCommitAuthor: null } }.
+ * Individual failures are swallowed (activity is a hint, not a requirement).
+ */
+async function listRepoActivity(org, project, repos, pat) {
+    const { default: pLimit } = await import('p-limit')
+    const limit = pLimit(5)
+    const entries = await Promise.all(
+        repos.map((repo) =>
+            limit(async () => {
+                const id = repo.id
+                const defaultBranch = (repo.defaultBranch || '').replace(/^refs\/heads\//, '')
+                if (!id || !defaultBranch) return [id, { lastCommitDate: null, lastCommitAuthor: null }]
+                try {
+                    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(id)}/stats/branches?name=${encodeURIComponent(defaultBranch)}&api-version=${API_VERSION}`
+                    const data = await azureFetch(url, pat)
+                    const entry = Array.isArray(data.value) ? data.value[0] : data
+                    const committer = entry?.commit?.committer
+                    return [id, {
+                        lastCommitDate: committer?.date || null,
+                        lastCommitAuthor: committer?.name || null,
+                    }]
+                } catch {
+                    return [id, { lastCommitDate: null, lastCommitAuthor: null }]
+                }
+            })
+        )
+    )
+    return Object.fromEntries(entries)
+}
+
 export {
     validatePat,
     listProjects,
     listOrganizations,
     listRepos,
+    listRepoActivity,
     getRepoDetails,
     listBranches,
     buildAuthenticatedCloneUrl,
