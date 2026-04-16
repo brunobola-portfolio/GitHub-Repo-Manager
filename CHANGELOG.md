@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-04-16
+
+### Added
+
+- **Migration Wizard — Select Repositories step redesign** ([spec](docs/specs/2026-04-16-migration-repo-select-redesign.md), [plan](docs/plans/2026-04-16-migration-repo-select-redesign.md)): a decision-support surface for picking which Azure DevOps repos to migrate.
+  - **Deterministic risk engine** (`src/components/MigrationWizard/steps/RepoSelectStep/riskRules.js`) with 10 pure rules: archived, stale, empty, size-warning (>5GB), size-critical (>10GB), LFS-suggested, name-conflict, duplicate-in-batch, invalid-chars, reserved-name. Full unit test coverage (12 tests).
+  - **5 new batched Azure enrichment endpoints** — `/api/azure/repos/activity`, `/api/azure/repos/lfs-check`, `/api/azure/repos/commit-activity`, `/api/azure/repos/readme`, `/api/azure/repos/full-stats`. All rate-limited (30/min) and capped at 200 repos per batch. Uses `p-limit(5)` concurrency against Azure DevOps REST API v7.1.
+  - **New Select step UI**: hero dashboard with stats (total/at-risk/blockers/stale), reactive quick-filter chips (Recommended, At risk, Blocked, Stale, Archived, Large, TFVC, Conflicts), search + multi-criteria sort (name/size/activity/risk), list/compact view toggle, Smart Select dropdown with presets (Recommended, Active in last year, Exclude archived/stale/blockers) + regex pattern selection modal, risk-driven row accent gradients, sticky selection summary bar (totals + estimated migration time + warning/blocker counts).
+  - **Slide-in detail panel** per repo: risk report with actionable flags, 12-month commit activity sparkline (lazy-loaded), details, README preview (4KB cap).
+  - **Keyboard-first**: `/` focus search, `?` shortcut cheatsheet, `I` invert selection, `Ctrl+A`/`Ctrl+Shift+A` select/deselect, `↑↓` navigate rows, `Enter` open detail, `Esc` close.
+  - **Virtualization** via `@tanstack/react-virtual` when repo count exceeds 50.
+  - **Next button blocked** when any selected repo has a risk-engine `blocker` flag, with tooltip explaining why.
+- **6 shared UI primitives** in `src/components/MigrationWizard/ui/repo/` — `StatCard`, `RiskBadge`, `RepoMetaBadges`, `SectionHero`, `SkeletonRow`, `RepoRiskReport`. Reused across Select, Configure, Schedule, and Summary steps.
+- **Downstream coherence**: Configure step reads cached conflict status from Select (no re-fetch), AI Review receives pre-computed client risk flags, Schedule SummaryCard adopts `StatCard`, Summary shows a Pre-flight risk resolution section, BreadcrumbNav pill turns amber when the selection has warnings.
+- **Shared motion tokens** (`src/components/MigrationWizard/ui/motion.js`): `WIZARD_EASE`, `WIZARD_SPRING`, `PANEL_SPRING`, `STAGGER_FAST`, `STAGGER_NORMAL`.
+- **`.env.test`** pinning `VITE_MOCK_MODE=true` for Playwright runs regardless of the developer's local `.env`.
+
+### Changed
+
+- **E2E suite speed & stability**: full Playwright suite now runs in ~2 minutes (was ~48 minutes) with 47 passing tests (was 0).
+  - `playwright.config.js` now starts the Express backend (3001) and Vite (5173) as separate `webServer` entries and waits for both before running tests — previously only 5173 was awaited, causing a race where every test failed at boot.
+  - CI workers 1 → 2 (parallel), retries 2 → 1 (was tripling every failure), mobile project opt-in via `E2E_MOBILE=1`.
+- **Dashboard `MigrationActivity`** guards `stats.recent.map()` with `|| []` — fixes a crash when the API returns a partial stats payload on fresh databases.
+- **App boot in mock mode** bypasses the first-run SystemSetup screen; the ceremony was trapping e2e tests at an un-clickable "Launch Workspace" button.
+- **`/api/system/setup`** no longer requires authentication — initial setup precedes any user session by definition. Rate-limited (5/min) and short-circuits when `setup_completed` is already `true`.
+
+### Fixed
+
+- Cross-step `RiskBadge` now uses correct ARIA — `role="checkbox"` on row toggles instead of the invalid `role="option"` on `<button>`.
+- `PatternSelectModal` and `ShortcutsOverlay` now trap focus and support Escape + light-mode color variants.
+- `QuickFilters` active chip state uses the `/15` opacity pattern (consistent with existing badge vocabulary) with proper dark-mode coverage.
+- `SmartSelectMenu` dropdown gets keyboard navigation (↑/↓/Esc) and focus management, and light-mode backgrounds.
+- Several stale E2E selectors (removed "AI Insights" context-menu item, non-existent `/pricing` route, `getByText('87')` matching `'12 487'` as substring) updated to current app state.
+
+### Security
+
+- All 5 new enriched-repo endpoints gated behind `requireAuth` + `isValidGitHubUsername(org)` + server-side PAT resolution. No PAT is ever logged or returned in responses.
+
+## [3.0.1]
+
 ### Added
 
 - **Product polish pass (2026-04-15)**: seven targeted improvements discovered by a parallel exploration agent, prioritised by impact/effort:
