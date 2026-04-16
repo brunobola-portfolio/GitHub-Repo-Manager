@@ -10,6 +10,7 @@ import { RepoList } from './RepoSelectStep/RepoList'
 import { RepoDetailPanel } from './RepoSelectStep/RepoDetailPanel'
 import { SelectionSummaryBar } from './RepoSelectStep/SelectionSummaryBar'
 import { SkeletonRow } from '../ui/repo/SkeletonRow'
+import { ShortcutsOverlay } from './RepoSelectStep/ShortcutsOverlay'
 
 const FILTER_PREDICATES = {
   'recommended': (r) => r.risk?.level === 'ok' && !r.isDisabled,
@@ -50,6 +51,7 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
     } catch { return new Set() }
   })
   const [activeDetailId, setActiveDetailId] = useState(null)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   useEffect(() => { localStorage.setItem('repoSelect:viewMode', viewMode) }, [viewMode])
   useEffect(() => { sessionStorage.setItem('repoSelect:filters', JSON.stringify([...activeFilters])) }, [activeFilters])
@@ -123,6 +125,7 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
     function onKey(e) {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
       if (e.key === '/') { e.preventDefault(); document.querySelector('input[aria-label="Search repositories"]')?.focus(); return }
+      if (e.key === '?') { e.preventDefault(); setShortcutsOpen(true); return }
       if (e.key === 'i' || e.key === 'I') { e.preventDefault(); invertSelection(); return }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
         e.preventDefault()
@@ -227,6 +230,8 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
         blockers={aggregateSelected.blockers}
         onFixIssues={handleFixIssues}
       />
+
+      <ShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
       {activeRepo && (
         <RepoDetailPanel
