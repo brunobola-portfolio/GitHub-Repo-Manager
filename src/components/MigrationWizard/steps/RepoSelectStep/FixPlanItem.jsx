@@ -29,7 +29,13 @@ export function FixPlanItem({ item, checked, conflictStatus, onToggle, onEdit })
           type="text"
           value={item.to}
           onChange={(e) => onEdit(item, e.target.value)}
-          className="min-w-0 flex-1 rounded bg-slate-900 px-2 py-1 font-mono text-xs text-slate-100 outline-none ring-1 ring-slate-700 focus:ring-indigo-500"
+          disabled={disabled}
+          aria-label={`Rename target for ${item.from}`}
+          className={`min-w-0 flex-1 rounded bg-slate-900 px-2 py-1 font-mono text-xs outline-none ring-1
+            ${disabled
+              ? 'cursor-not-allowed text-slate-500 ring-slate-800'
+              : 'text-slate-100 ring-slate-700 focus:ring-indigo-500'
+            }`}
         />
       </div>
       <span className="shrink-0 rounded bg-slate-700 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">

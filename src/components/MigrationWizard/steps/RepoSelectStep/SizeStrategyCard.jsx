@@ -58,7 +58,7 @@ export function SizeStrategyCard({ repo, aiSuggestion, selectedStrategy, onSelec
 }
 
 function AISuggestionBanner({ suggestion, onAccept }) {
-  const label = suggestion.strategy === 'exclude' ? 'Exclude from migration' : 'Mark for LFS migration'
+  const label = STRATEGIES.find((s) => s.key === suggestion.strategy)?.label ?? suggestion.strategy
   const confidence = Math.round((suggestion.confidence ?? 0) * 100)
   return (
     <div className="mb-3 flex items-start gap-2 rounded-md border border-indigo-500/40 bg-indigo-950/30 p-2 text-xs">
