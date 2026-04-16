@@ -8,7 +8,11 @@ const VIRTUALIZATION_THRESHOLD = 50
 export function RepoList({ repos, selectedIds, activeId, density, onToggle, onOpenDetail }) {
   if (repos.length < VIRTUALIZATION_THRESHOLD) {
     return (
-      <div className="space-y-1.5 max-h-96 overflow-y-auto pr-0.5" role="listbox" aria-multiselectable="true">
+      <div
+        className="space-y-1.5 max-h-[calc(100vh-420px)] overflow-y-auto pr-0.5"
+        role="group"
+        aria-label={`Repositories (${repos.length})`}
+      >
         <AnimatePresence initial={false}>
           {repos.map((r) => (
             <RepoRow
@@ -49,8 +53,8 @@ function VirtualList({ repos, selectedIds, activeId, density, onToggle, onOpenDe
     <div
       ref={parentRef}
       className="max-h-[32rem] overflow-y-auto pr-0.5"
-      role="listbox"
-      aria-multiselectable="true"
+      role="group"
+      aria-label={`Repositories (${repos.length})`}
     >
       <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
         {virtualizer.getVirtualItems().map((vi) => {

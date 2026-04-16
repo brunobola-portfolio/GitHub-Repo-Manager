@@ -55,25 +55,28 @@ export function QuickFilters({ repos, active, onToggle }) {
 
 function Chip({ icon: Icon, label, count, active, onClick, tone = 'slate' }) {
   const base = 'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors'
+  // /15 opacity pattern (consistent with existing wizard badges) — reads well
+  // in both light and dark modes, unlike the previous solid-fill actives.
   const activeCls = {
-    indigo:  'bg-indigo-500 text-white border-indigo-500 shadow-md shadow-indigo-500/25',
-    red:     'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/25',
-    amber:   'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/25',
-    emerald: 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-500/25',
-    violet:  'bg-violet-500 text-white border-violet-500 shadow-md shadow-violet-500/25',
-    slate:   'bg-slate-700 text-white border-slate-700 shadow-md',
+    indigo:  'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border-indigo-500/40 shadow-sm shadow-indigo-500/10',
+    red:     'bg-red-500/15 text-red-600 dark:text-red-300 border-red-500/40 shadow-sm shadow-red-500/10',
+    amber:   'bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/40 shadow-sm shadow-amber-500/10',
+    emerald: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-emerald-500/40 shadow-sm shadow-emerald-500/10',
+    violet:  'bg-violet-500/15 text-violet-600 dark:text-violet-300 border-violet-500/40 shadow-sm shadow-violet-500/10',
+    slate:   'bg-slate-500/15 text-slate-700 dark:text-slate-200 border-slate-500/40 shadow-sm',
   }[tone]
   const inactiveCls = 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
   return (
     <button
       type="button"
       aria-pressed={active}
+      aria-label={`${label}: ${count} ${count === 1 ? 'repository' : 'repositories'}`}
       onClick={onClick}
       className={`${base} ${active ? activeCls : inactiveCls}`}
     >
       {Icon && <Icon className="w-3.5 h-3.5" aria-hidden="true" />}
-      {label}
-      <span className="text-[10px] opacity-80 tabular-nums">{count}</span>
+      <span>{label}</span>
+      <span className="text-[10px] opacity-80 tabular-nums" aria-hidden="true">{count}</span>
     </button>
   )
 }

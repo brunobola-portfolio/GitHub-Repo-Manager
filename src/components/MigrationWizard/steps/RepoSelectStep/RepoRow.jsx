@@ -10,9 +10,19 @@ const ACCENT = {
   ok:      'from-indigo-500 to-violet-500',
 }
 
+/**
+ * Row representing a repo. Uses role=checkbox (multi-select list pattern)
+ * rather than role=option, because options require roving tabindex /
+ * activedescendant management that listbox consumers don't always provide.
+ * Checkbox is the correct WAI-ARIA role for a toggle row.
+ *
+ * The detail-panel trigger (ChevronRight) is a separate focusable button so
+ * keyboard users can reach "open details" without double-clicking.
+ */
 export function RepoRow({ repo, isSelected, isActive, density = 'full', onToggle, onOpenDetail, onRiskClick }) {
   const level = repo.risk?.level || 'ok'
   const accent = ACCENT[level] || ACCENT.ok
+  const canInteract = !repo.isDisabled
   return (
     <motion.div
       layout
@@ -29,47 +39,63 @@ export function RepoRow({ repo, isSelected, isActive, density = 'full', onToggle
       } ${isActive ? 'ring-2 ring-indigo-500/40' : ''}`}
     >
       <div className={`absolute top-0 left-0 bottom-0 w-[3px] rounded-l-xl bg-gradient-to-b ${accent}`} />
-      <button
-        type="button"
-        role="option"
-        aria-selected={isSelected}
-        onClick={() => onToggle(repo.id)}
-        onDoubleClick={() => onOpenDetail(repo.id)}
-        disabled={repo.isDisabled && density !== 'compact'}
-        className="w-full text-left p-3 pl-4 flex items-center gap-3"
-      >
-        <div
-          className={`w-[18px] h-[18px] rounded flex items-center justify-center shrink-0 border-2 transition-colors ${
-            isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-400 dark:border-slate-600'
-          }`}
-        >
-          {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-        </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-slate-900 dark:text-slate-100 truncate">{repo.name}</span>
-            {repo.isDisabled && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 font-semibold uppercase tracking-wide">
-                Archived
+      <div className="flex items-center gap-3 p-3 pl-4">
+        {/* Main toggle: whole row click area except the actions cluster on the right. */}
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={isSelected}
+          aria-disabled={repo.isDisabled || undefined}
+          aria-label={`${repo.name}${repo.isDisabled ? ' (archived)' : ''}`}
+          onClick={() => canInteract && onToggle(repo.id)}
+          onDoubleClick={() => onOpenDetail(repo.id)}
+          className="flex items-center gap-3 flex-1 min-w-0 text-left disabled:cursor-not-allowed"
+          disabled={!canInteract && density !== 'compact'}
+        >
+          <span
+            className={`w-[18px] h-[18px] rounded flex items-center justify-center shrink-0 border-2 transition-colors ${
+              isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-400 dark:border-slate-600'
+            }`}
+            aria-hidden="true"
+          >
+            {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+          </span>
+
+          <span className="flex-1 min-w-0">
+            <span className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-slate-900 dark:text-slate-100 truncate">{repo.name}</span>
+              {repo.isDisabled && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 font-semibold uppercase tracking-wide">
+                  Archived
+                </span>
+              )}
+            </span>
+            {density === 'full' && (
+              <span className="mt-1.5 block">
+                <RepoMetaBadges repo={repo} />
               </span>
             )}
-          </div>
-          {density === 'full' && (
-            <div className="mt-1.5">
-              <RepoMetaBadges repo={repo} />
-            </div>
-          )}
-        </div>
+          </span>
+        </button>
 
+        {/* Actions: separately focusable so keyboard users can open details without double-click. */}
         <div className="flex items-center gap-2 shrink-0">
-          <RiskBadge level={level} flags={repo.risk?.flags || []} onClick={onRiskClick ? (e) => { e.stopPropagation(); onRiskClick(repo.id) } : undefined} />
-          <ChevronRight
-            className="w-4 h-4 text-slate-400 dark:text-slate-500 cursor-pointer hover:text-indigo-400"
-            onClick={(e) => { e.stopPropagation(); onOpenDetail(repo.id) }}
+          <RiskBadge
+            level={level}
+            flags={repo.risk?.flags || []}
+            onClick={onRiskClick ? () => onRiskClick(repo.id) : undefined}
           />
+          <button
+            type="button"
+            onClick={() => onOpenDetail(repo.id)}
+            aria-label={`View details for ${repo.name}`}
+            className="p-1 rounded text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+          >
+            <ChevronRight className="w-4 h-4" aria-hidden="true" />
+          </button>
         </div>
-      </button>
+      </div>
     </motion.div>
   )
 }
