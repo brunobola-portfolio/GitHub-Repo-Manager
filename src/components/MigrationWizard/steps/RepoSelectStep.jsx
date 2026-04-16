@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { Loader2, AlertCircle, AlertTriangle, FolderGit2 } from 'lucide-react'
 import { useEnrichedRepos } from './RepoSelectStep/useEnrichedRepos'
 import { useRiskEngine } from './RepoSelectStep/useRiskEngine'
@@ -121,11 +121,15 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
     setActiveFilters(new Set(['at-risk', 'blocked']))
   }, [])
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts — scoped to the step's container to avoid
+  // stealing browser-native Ctrl+A from other parts of the page.
+  const containerRef = useRef(null)
   useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
     function onKey(e) {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
-      if (e.key === '/') { e.preventDefault(); document.querySelector('input[aria-label="Search repositories"]')?.focus(); return }
+      if (e.key === '/') { e.preventDefault(); el.querySelector('input[aria-label="Search repositories"]')?.focus(); return }
       if (e.key === '?') { e.preventDefault(); setShortcutsOpen(true); return }
       if (e.key === 'i' || e.key === 'I') { e.preventDefault(); invertSelection(); return }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
@@ -133,8 +137,8 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
         if (e.shiftKey) deselectAll(); else selectAll()
       }
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    el.addEventListener('keydown', onKey)
+    return () => el.removeEventListener('keydown', onKey)
   }, [invertSelection, selectAll, deselectAll])
 
   const activeRepo = scored.find((r) => r.id === activeDetailId) || null
@@ -170,7 +174,7 @@ export default function RepoSelectStep({ repos, onSetRepos, source, onChange }) 
   const isTfvc = source.versionControlType === 'Tfvc' || scored.some((r) => r.isTfvc)
 
   return (
-    <div className="space-y-4">
+    <div ref={containerRef} className="space-y-4" tabIndex={-1}>
       <SelectionDashboard
         repos={scored}
         aggregate={aggregate}

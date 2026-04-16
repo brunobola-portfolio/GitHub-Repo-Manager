@@ -34,7 +34,7 @@ export function SearchAndSort({ query, onQuery, sortBy, onSort, viewMode, onView
           ))}
         </select>
       </div>
-      <div className="flex rounded-xl border border-slate-300 dark:border-slate-600 overflow-hidden">
+      <div className="flex rounded-xl border border-slate-300 dark:border-slate-600 divide-x divide-slate-300 dark:divide-slate-600 overflow-hidden">
         <button
           type="button"
           onClick={() => onViewMode('list')}

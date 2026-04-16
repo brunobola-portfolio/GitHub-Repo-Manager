@@ -28,19 +28,19 @@ export function SelectionSummaryBar({ selected, warnings, blockers, onFixIssues 
           <div className="flex items-center gap-4 flex-wrap text-sm">
             <span className="font-semibold text-indigo-400">{selected.length} selected</span>
             <span className="flex items-center gap-1 text-slate-400">
-              <HardDrive className="w-3.5 h-3.5" /> {formatFileSize(totalSize * 1024, 1)}
+              <HardDrive className="w-3.5 h-3.5" aria-hidden="true" /> {formatFileSize(totalSize * 1024, 1)}
             </span>
             <span className="flex items-center gap-1 text-slate-400">
-              <Clock className="w-3.5 h-3.5" /> ~{est} min
+              <Clock className="w-3.5 h-3.5" aria-hidden="true" /> ~{est} min
             </span>
             {warnings > 0 && (
               <span className="flex items-center gap-1 text-amber-400">
-                <AlertTriangle className="w-3.5 h-3.5" /> {warnings} warning{warnings === 1 ? '' : 's'}
+                <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" /> {warnings} warning{warnings === 1 ? '' : 's'}
               </span>
             )}
             {blockers > 0 && (
               <span className="flex items-center gap-1 text-red-400">
-                <AlertOctagon className="w-3.5 h-3.5" /> {blockers} blocker{blockers === 1 ? '' : 's'}
+                <AlertOctagon className="w-3.5 h-3.5" aria-hidden="true" /> {blockers} blocker{blockers === 1 ? '' : 's'}
               </span>
             )}
             {(warnings > 0 || blockers > 0) && (
