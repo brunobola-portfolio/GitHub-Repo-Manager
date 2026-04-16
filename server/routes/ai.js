@@ -19,7 +19,7 @@ import express from 'express';
 import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, createRequireAI, safeError, isValidGitHubFullName } from '../middleware/auth.js';
-import { validate, aiChatSchema, aiIndexSchema } from '../lib/validators.js';
+import { validate, aiChatSchema, aiIndexSchema, migrationSizeStrategySchema } from '../lib/validators.js';
 import { aiService, sanitizeForPrompt } from '../ai-service.js';
 import { safeJsonParse } from '../lib/utils.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../lib/usage-meter.js';
@@ -1299,6 +1299,61 @@ Rules:
     } catch (error) {
         req.log.error({ err: error }, 'Migration risk analysis failed');
         handleAIError(res, error, 'Failed to analyze migration risk.');
+    }
+});
+
+// ------------------------------------------------------------------
+// AI Migration Size Strategy
+// ------------------------------------------------------------------
+
+router.post('/ai/migration-size-strategy', requireAuth, requireAI, async (req, res) => {
+    const userId = req.session.userId;
+    const check = checkAIFeatureLimit(userId, 'migration_assist');
+    if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
+
+    const parsed = migrationSizeStrategySchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: 'Validation failed', details: parsed.error.flatten() });
+    }
+    const { repoId, size, hasLfsMarker, branches, lastCommitDate } = parsed.data;
+
+    const sizeGb = (size / (1024 * 1024)).toFixed(1);
+    const prompt = `You are a migration assistant helping decide the best strategy for a repository that exceeds GitHub's 10 GB push limit.
+
+Repository facts (no names or business context provided):
+- Size: ${sizeGb} GB
+- Has LFS markers in .gitattributes: ${hasLfsMarker ? 'yes' : 'no'}
+- Branch count: ${branches}
+- Last commit date: ${sanitizeForPrompt(lastCommitDate || 'unknown', 50)}
+
+Choose exactly one strategy from: "exclude" or "lfs-migrate".
+- "exclude": the repository is stale, archival, or too unwieldy; skip it.
+- "lfs-migrate": run git-lfs migrate import --above=100M before pushing; appropriate when the size is caused by large binary assets.
+
+Respond with strict JSON only, no prose outside the JSON:
+{"strategy": "exclude" | "lfs-migrate", "rationale": "one short sentence", "confidence": 0.0-1.0}`;
+
+    try {
+        const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+        const model = req.genAI.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
+
+        const parsedResponse = safeJsonParse(text);
+        if (!parsedResponse || !['exclude', 'lfs-migrate'].includes(parsedResponse.strategy)) {
+            return res.status(502).json({ error: 'Unexpected AI response shape' });
+        }
+
+        incrementAIUsage(userId, 'migration_assist');
+        auditLog(req, 'ai.migration-size-strategy', 'ai', null, { repoId, size, model: modelName });
+        res.json({
+            strategy: parsedResponse.strategy,
+            rationale: String(parsedResponse.rationale || '').slice(0, 500),
+            confidence: Math.max(0, Math.min(1, Number(parsedResponse.confidence) || 0)),
+        });
+    } catch (err) {
+        req.log?.error({ err }, 'migration-size-strategy failed');
+        handleAIError(res, err, 'Failed to generate size strategy. Please try again later.');
     }
 });
 
