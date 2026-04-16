@@ -395,6 +395,9 @@ export default function MigrationWizard({ onClose, orgs = [], initialDryRun = fa
   const oauthHook = useAzureOAuth()
   const orgsHook = useAzureOrganizations()
   const selectedRepos = repos.filter((r) => r.selected)
+  const blockerCount = currentStep === 'repoSelect'
+    ? selectedRepos.reduce((sum, r) => sum + (r.risk?.flags || []).filter((f) => f.severity === 'blocker').length, 0)
+    : 0
   const [direction, setDirection] = useState(1)
   const [showConfirm, setShowConfirm] = useState(false)
   const isMobile = useMobileBreakpoint()
@@ -635,12 +638,13 @@ export default function MigrationWizard({ onClose, orgs = [], initialDryRun = fa
         <button
           type="button"
           onClick={handleNext}
-          className="ds-btn-shimmer inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg
-            text-white
-            bg-gradient-to-r from-indigo-500 to-purple-600
-            hover:from-indigo-600 hover:to-purple-700
-            shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/25
-            transition-all duration-200"
+          disabled={blockerCount > 0}
+          title={blockerCount > 0 ? `${blockerCount} blocker(s) must be resolved — open a row to see options` : undefined}
+          className={`ds-btn-shimmer inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white
+            ${blockerCount > 0
+              ? 'bg-slate-600 cursor-not-allowed opacity-60'
+              : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700'}
+            shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-200`}
         >
           Next
           <ArrowRight className="w-3.5 h-3.5" />
