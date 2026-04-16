@@ -110,6 +110,7 @@ Modified files:
 |---|---|
 | `src/components/MigrationWizard/steps/RepoSelectStep.jsx` | `handleFixIssues` opens the drawer instead of setting filters. New `handleApplyFixes(changes)` iterates and calls `onUpdateRepo(index, patch)` per change. Adds `drawerOpen` state. |
 | `src/components/MigrationWizard/steps/RepoSelectStep/SelectionSummaryBar.jsx` | Button visibility tied to `blockers > 0`. Dynamic label per §4.1. |
+| `src/components/MigrationWizard/steps/RepoSelectStep/riskRules.js` | **Required change.** Name-validating rules (`ruleInvalidChars`, `ruleReservedName`, `ruleNameConflict`, `ruleDuplicateInBatch`) must evaluate the effective name `repo.targetName ?? repo.name` instead of `repo.name`. Without this, applied fixes never clear the corresponding blocker and the drawer's own success criterion fails. Add unit tests covering the `targetName`-set path for each of these four rules. |
 
 ### 6.2 Server
 
@@ -182,13 +183,17 @@ No automatic retries. No persistent cache. Plan is recomputed each time the draw
 
 ### 7.1 Unit tests (vitest)
 
-`tests/components/MigrationWizard/steps/RepoSelectStep/autoFixRules.test.js` — one describe block per pure function:
+`tests/components/MigrationWizard/steps/RepoSelectStep/autoFixRules.test.js` — one describe block per pure function. Each fix function takes a repo object (and context where applicable) and returns `{type, from, to, reason}` or `null`:
 
-- `fixInvalidChars('my repo!')` → `'my-repo-'`.
-- `fixReserved('api')` → `'api-repo'`.
+- `fixInvalidChars(makeRepo({name: 'my repo!'}))` → `{from: 'my repo!', to: 'my-repo-', …}`.
+- `fixReserved(makeRepo({name: 'api'}))` → `{to: 'api-repo', …}`.
 - `fixDuplicates` resolves collisions with consecutive numeric suffix.
 - `fixNameConflict` applies Azure project prefix.
-- Each returns `null` for repos without the corresponding blocker.
+- Each returns `null` when the repo has no matching blocker.
+
+`tests/components/MigrationWizard/steps/RepoSelectStep/riskRules.test.js` — new coverage for the effective-name change:
+
+- Each of `ruleInvalidChars`, `ruleReservedName`, `ruleNameConflict`, `ruleDuplicateInBatch` returns `null` when `repo.targetName` is a valid/clear name, even if `repo.name` would otherwise trigger the rule.
 
 `tests/components/MigrationWizard/steps/RepoSelectStep/useAutoFixPlan.test.jsx` — hook behaviour with mocked fetch:
 
