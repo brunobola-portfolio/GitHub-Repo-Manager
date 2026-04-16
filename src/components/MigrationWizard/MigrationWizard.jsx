@@ -585,6 +585,7 @@ export default function MigrationWizard({ onClose, orgs = [], initialDryRun = fa
             planId={planId}
             onNewMigration={resetWizard}
             onViewHistory={onClose}
+            preflightFlags={selectedRepos.flatMap((r) => r.risk?.flags || [])}
           />
         )
       default:
