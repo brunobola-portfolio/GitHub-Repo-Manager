@@ -17,11 +17,13 @@ export default defineConfig({
   // Fail the build on CI if you accidentally left test.only in the source code
   forbidOnly: !!process.env.CI,
 
-  // Retry on CI only
-  retries: process.env.CI ? 2 : 0,
+  // Retry once on CI to absorb environmental flakes; two retries was just
+  // tripling every failure's runtime without improving signal.
+  retries: process.env.CI ? 1 : 0,
 
-  // Opt out of parallel tests on CI
-  workers: process.env.CI ? 1 : undefined,
+  // Parallelize on CI. workers=1 was forcing serial execution (~48min suite).
+  // Two workers completes the suite in ~half the time; requests are idempotent.
+  workers: process.env.CI ? 2 : undefined,
 
   // Reporter to use
   reporter: [
@@ -44,24 +46,46 @@ export default defineConfig({
     video: 'retain-on-failure'
   },
 
-  // Configure projects for major browsers
+  // Configure projects for major browsers. Mobile project moved behind an
+  // env flag — running every test twice (desktop + mobile) doubles CI time
+  // for little marginal signal; mobile is spot-checked via responsive.spec.js
+  // which exercises mobile viewports explicitly where it matters.
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] }
     },
-
-    {
-      name: 'mobile',
-      use: { ...devices['iPhone 13'] }
-    }
+    ...(process.env.E2E_MOBILE
+      ? [{ name: 'mobile', use: { ...devices['iPhone 13'] } }]
+      : [])
   ],
 
-  // Run your local dev server before starting the tests
-  webServer: {
-    command: 'npm run dev:all',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000
-  }
+  // Start both the Express backend (3001) and the Vite dev server (5173) and
+  // wait for BOTH before running tests. Previously only 5173 was awaited,
+  // creating a race where the frontend was ready but /api/* proxied to an
+  // unavailable Express process, causing every test to fail at boot.
+  webServer: [
+    {
+      command: 'npm run dev:server',
+      url: 'http://localhost:3001/api/system/status',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+      stdout: 'ignore',
+      stderr: 'pipe',
+      // Force mock/test env regardless of user's local .env
+      env: { NODE_ENV: 'test', VITE_MOCK_MODE: 'true' }
+    },
+    {
+      // `--mode test` makes Vite load .env.test (which pins VITE_MOCK_MODE=true)
+      // with higher precedence than the developer's local .env. Without this,
+      // a `.env` setting of VITE_MOCK_MODE=false would cripple the entire
+      // e2e suite (the mock user in useAuth would never set).
+      command: 'npx vite --mode test',
+      url: 'http://localhost:5173',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+      stdout: 'ignore',
+      stderr: 'pipe'
+    }
+  ]
 })
