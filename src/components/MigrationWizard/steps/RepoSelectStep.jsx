@@ -9,6 +9,7 @@ import { BulkActions } from './RepoSelectStep/BulkActions'
 import { RepoList } from './RepoSelectStep/RepoList'
 import { RepoDetailPanel } from './RepoSelectStep/RepoDetailPanel'
 import { SelectionSummaryBar } from './RepoSelectStep/SelectionSummaryBar'
+import { AutoFixDrawer } from './RepoSelectStep/AutoFixDrawer.jsx'
 import { SkeletonRow } from '../ui/repo/SkeletonRow'
 import { ShortcutsOverlay } from './RepoSelectStep/ShortcutsOverlay'
 
@@ -53,6 +54,17 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
   })
   const [activeDetailId, setActiveDetailId] = useState(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [aiAvailable, setAiAvailable] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/config/ai-status', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : { available: false }))
+      .then((d) => { if (!cancelled) setAiAvailable(!!d?.available) })
+      .catch(() => { if (!cancelled) setAiAvailable(false) })
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => { localStorage.setItem('repoSelect:viewMode', viewMode) }, [viewMode])
   useEffect(() => { sessionStorage.setItem('repoSelect:filters', JSON.stringify([...activeFilters])) }, [activeFilters])
@@ -93,6 +105,12 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
   const selectedIds = useMemo(() => new Set(scored.filter((r) => r.selected).map((r) => r.id)), [scored])
   const staleCount = useMemo(() => scored.filter(FILTER_PREDICATES.stale).length, [scored])
 
+  const selectedWithBlockers = scored.filter((r) => r.selected && r.risk?.level === 'blocker')
+  const manualFixCount = selectedWithBlockers.filter((r) =>
+    (r.risk?.flags || []).some((f) => f.type === 'size-critical')
+  ).length
+  const autoFixCount = Math.max(0, selectedWithBlockers.length - manualFixCount)
+
   const toggleRepo = useCallback((id) => {
     onSetRepos(repos.map((r) => r.id === id ? { ...r, selected: !r.selected } : r))
   }, [repos, onSetRepos])
@@ -118,8 +136,15 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
   }, [repos, onSetRepos])
 
   const handleFixIssues = useCallback(() => {
-    setActiveFilters(new Set(['at-risk', 'blocked']))
+    setDrawerOpen(true)
   }, [])
+
+  const handleApplyFixes = useCallback((changes) => {
+    changes.forEach(({ repoIndex, patch }) => {
+      if (onUpdateRepo) onUpdateRepo(repoIndex, patch)
+    })
+    setDrawerOpen(false)
+  }, [onUpdateRepo])
 
   // Keyboard shortcuts — scoped to the step's container to avoid
   // stealing browser-native Ctrl+A from other parts of the page.
@@ -233,10 +258,23 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
         selected={scored.filter((r) => r.selected)}
         warnings={aggregateSelected.warnings}
         blockers={aggregateSelected.blockers}
+        autoFixCount={autoFixCount}
+        manualFixCount={manualFixCount}
         onFixIssues={handleFixIssues}
       />
 
       <ShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+
+      <AutoFixDrawer
+        open={drawerOpen}
+        repos={scored}
+        allRepos={scored}
+        targetOrg={targetOrg}
+        azureProject={source?.project}
+        aiAvailable={aiAvailable}
+        onClose={() => setDrawerOpen(false)}
+        onApply={handleApplyFixes}
+      />
 
       {activeRepo && (
         <RepoDetailPanel
