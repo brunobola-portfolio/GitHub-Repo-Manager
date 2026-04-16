@@ -91,7 +91,7 @@ export function MigrationActivity({ loading: parentLoading }) {
           Recent Activity
         </h4>
         <div className="space-y-1.5">
-          {stats.recent.map(job => {
+          {(stats.recent || []).map(job => {
             const config = STATUS_CONFIG[job.status] || STATUS_CONFIG.pending
             const StatusIcon = config.icon
             const isTfvc = job.sourceType === 'azure-tfvc'
