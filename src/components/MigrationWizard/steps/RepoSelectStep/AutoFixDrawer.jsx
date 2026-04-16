@@ -1,17 +1,14 @@
 // src/components/MigrationWizard/steps/RepoSelectStep/AutoFixDrawer.jsx
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Wand2, AlertTriangle } from 'lucide-react'
 import { useAutoFixPlan } from './useAutoFixPlan.js'
 import { FixPlanItem } from './FixPlanItem.jsx'
 import { SizeStrategyCard } from './SizeStrategyCard.jsx'
 import { SIZE_CRITICAL_KB } from './riskRules.js'
-
-const VALID_NAME_RE = /^[A-Za-z0-9._-]+$/
-
-function isValidRepoName(name) {
-  return typeof name === 'string' && name.length > 0 && VALID_NAME_RE.test(name)
-}
+import { isValidRepoName } from './autoFixRules.js'
+import { useFocusTrap } from '../../../../hooks/useFocusTrap.js'
+import { useBodyScrollLock } from '../../../../hooks/useBodyScrollLock.js'
 
 export function AutoFixDrawer({
   open,
@@ -24,7 +21,7 @@ export function AutoFixDrawer({
   onApply,
 }) {
   const selected = useMemo(() => repos.filter((r) => r.selected), [repos])
-  const { plan, conflictStatuses, aiSuggestions, isValidating, isAILoading, error } = useAutoFixPlan({
+  const { plan, conflictStatuses, rawDuplicates, aiSuggestions, isValidating, isAILoading, error } = useAutoFixPlan({
     repos: selected,
     allRepos,
     targetOrg,
@@ -42,21 +39,44 @@ export function AutoFixDrawer({
   const [checks, setChecks] = useState({}) // { [repoIndex]: boolean }
   const [strategies, setStrategies] = useState({}) // { [repoId]: 'exclude' | 'lfs-migrate' }
 
+  // Critical 1 — Focus trap, Escape handler, body scroll lock
+  const drawerRef = useFocusTrap(open, onClose)
+  useBodyScrollLock(open)
+
+  // Critical 2 — Reset local state on open transition
+  const prevOpenRef = useRef(false)
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      setEdits({})
+      setChecks({})
+      setStrategies({})
+    }
+    prevOpenRef.current = open
+  }, [open])
+
+  // Important 4 — Translate repoIndex: selected subset → allRepos
+  const selectedToAllRepos = useMemo(
+    () => selected.map((r) => allRepos.findIndex((x) => x.id === r.id)),
+    [selected, allRepos],
+  )
+
   const effectivePlan = useMemo(
     () => plan.map((p) => ({ ...p, to: edits[p.repoIndex] ?? p.to })),
     [plan, edits],
   )
 
   const applySet = useMemo(() => {
+    // Important 4 — use selected[p.repoIndex] for conflict lookup, selectedToAllRepos for output
     const renameChanges = effectivePlan
       .filter((p) => {
         const checked = checks[p.repoIndex] ?? true
-        const repoId = allRepos[p.repoIndex]?.id
-        const conflict = conflictStatuses[repoId] === 'conflict'
+        const repoId = selected[p.repoIndex]?.id
+        const conflict =
+          conflictStatuses[repoId] === 'conflict' || !!rawDuplicates[p.to]
         return checked && !conflict && isValidRepoName(p.to)
       })
       .map((p) => ({
-        repoIndex: p.repoIndex,
+        repoIndex: selectedToAllRepos[p.repoIndex],
         patch: { targetName: p.to, conflictAction: 'rename' },
       }))
 
@@ -68,7 +88,7 @@ export function AutoFixDrawer({
       })
 
     return [...renameChanges, ...strategyChanges]
-  }, [effectivePlan, checks, conflictStatuses, sizeCritical, strategies, allRepos])
+  }, [effectivePlan, checks, conflictStatuses, rawDuplicates, sizeCritical, strategies, allRepos, selected, selectedToAllRepos])
 
   const handleApply = () => {
     if (applySet.length === 0) return
@@ -87,8 +107,10 @@ export function AutoFixDrawer({
             onClick={onClose}
           />
           <motion.aside
+            ref={drawerRef}
             role="dialog"
-            aria-label="Auto-fix drawer"
+            aria-modal="true"
+            aria-labelledby="autofix-drawer-title"
             className="fixed right-0 top-0 z-50 flex h-full w-full max-w-xl flex-col bg-slate-900 shadow-2xl"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
@@ -98,7 +120,7 @@ export function AutoFixDrawer({
             <header className="flex items-center justify-between border-b border-slate-700 px-5 py-4">
               <div className="flex items-center gap-2 text-slate-100">
                 <Wand2 className="h-5 w-5 text-indigo-400" />
-                <h2 className="text-lg font-semibold">Fix issues</h2>
+                <h2 id="autofix-drawer-title" className="text-lg font-semibold">Fix issues</h2>
               </div>
               <button
                 type="button"
@@ -122,13 +144,14 @@ export function AutoFixDrawer({
                   <h3 className="mb-2 text-sm font-semibold text-slate-200">Renames</h3>
                   <div className="space-y-2">
                     {plan.map((item) => {
-                      const repoId = allRepos[item.repoIndex]?.id
+                      // Important 4 — use selected[item.repoIndex] for conflict lookup
+                      const repoId = selected[item.repoIndex]?.id
                       return (
                         <FixPlanItem
                           key={`${item.repoIndex}-${item.type}`}
                           item={{ ...item, to: edits[item.repoIndex] ?? item.to }}
                           checked={checks[item.repoIndex] ?? true}
-                          conflictStatus={conflictStatuses[repoId] || (isValidating ? 'checking' : null)}
+                          conflictStatus={isValidating ? 'checking' : (conflictStatuses[repoId] ?? null)}
                           onToggle={(it, c) => setChecks((prev) => ({ ...prev, [it.repoIndex]: c }))}
                           onEdit={(it, v) => setEdits((prev) => ({ ...prev, [it.repoIndex]: v }))}
                         />

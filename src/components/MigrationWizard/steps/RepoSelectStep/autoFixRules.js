@@ -1,8 +1,12 @@
 // src/components/MigrationWizard/steps/RepoSelectStep/autoFixRules.js
 import { RESERVED_NAMES } from './riskRules.js'
 
-const VALID_NAME_RE = /^[A-Za-z0-9._-]+$/
+export const VALID_NAME_RE = /^[A-Za-z0-9._-]+$/
 const INVALID_RUN_RE = /[^A-Za-z0-9._-]+/g
+
+export function isValidRepoName(name) {
+  return typeof name === 'string' && name.length > 0 && VALID_NAME_RE.test(name)
+}
 
 export function fixInvalidChars(repo) {
   const name = repo.name

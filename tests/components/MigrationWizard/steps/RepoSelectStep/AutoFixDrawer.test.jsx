@@ -138,4 +138,102 @@ describe('AutoFixDrawer', () => {
     )
     expect(screen.getByText(/AI suggestions unavailable/i)).toBeInTheDocument()
   })
+
+  it('edit to a conflicting name excludes the item from Apply', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ duplicates: { 'existing-name': true } }),
+    })
+    const user = userEvent.setup()
+    const repos = [makeRepo({ id: 'a', name: 'api', selected: true })]
+    render(
+      <AutoFixDrawer
+        open
+        repos={repos}
+        allRepos={repos}
+        targetOrg="myorg"
+        azureProject="X"
+        aiAvailable={false}
+        onClose={() => {}}
+        onApply={() => {}}
+      />,
+    )
+    const input = screen.getByRole('textbox', { name: /Rename target for api/i })
+    await user.clear(input)
+    await user.type(input, 'existing-name')
+    // Re-request /check-duplicates should mark conflict; the applySet excludes it.
+    // Await the apply button showing (0) — it may take a moment as the hook re-evaluates.
+    expect(await screen.findByRole('button', { name: /Apply selected \(0\)/i })).toBeDisabled()
+  })
+
+  it('edit to an invalid name excludes the item from Apply', async () => {
+    const user = userEvent.setup()
+    const repos = [makeRepo({ id: 'a', name: 'api', selected: true })]
+    render(
+      <AutoFixDrawer
+        open
+        repos={repos}
+        allRepos={repos}
+        targetOrg="myorg"
+        azureProject="X"
+        aiAvailable={false}
+        onClose={() => {}}
+        onApply={() => {}}
+      />,
+    )
+    const input = screen.getByRole('textbox', { name: /Rename target for api/i })
+    await user.clear(input)
+    await user.type(input, 'bad name!')
+    expect(screen.getByRole('button', { name: /Apply selected \(0\)/i })).toBeDisabled()
+  })
+
+  it('reopening resets edits, checks, and strategies', async () => {
+    const user = userEvent.setup()
+    const repos = [makeRepo({ id: 'a', name: 'api', selected: true })]
+    const { rerender } = render(
+      <AutoFixDrawer
+        open
+        repos={repos}
+        allRepos={repos}
+        targetOrg="myorg"
+        azureProject="X"
+        aiAvailable={false}
+        onClose={() => {}}
+        onApply={() => {}}
+      />,
+    )
+    const input = screen.getByRole('textbox', { name: /Rename target for api/i })
+    await user.clear(input)
+    await user.type(input, 'edited-name')
+    expect(input).toHaveValue('edited-name')
+    // Close drawer
+    rerender(
+      <AutoFixDrawer
+        open={false}
+        repos={repos}
+        allRepos={repos}
+        targetOrg="myorg"
+        azureProject="X"
+        aiAvailable={false}
+        onClose={() => {}}
+        onApply={() => {}}
+      />,
+    )
+    // Reopen
+    rerender(
+      <AutoFixDrawer
+        open={true}
+        repos={repos}
+        allRepos={repos}
+        targetOrg="myorg"
+        azureProject="X"
+        aiAvailable={false}
+        onClose={() => {}}
+        onApply={() => {}}
+      />,
+    )
+    // Edit should be gone — fresh plan suggestion again
+    expect(screen.getByDisplayValue('api-repo')).toBeInTheDocument()
+  })
 })

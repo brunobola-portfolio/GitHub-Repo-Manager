@@ -39,6 +39,7 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAva
   const plan = useMemo(() => buildDeterministicPlan(repos, ctx), [repos, ctx])
 
   const [conflictStatuses, setConflictStatuses] = useState({})
+  const [rawDuplicates, setRawDuplicates] = useState({})
   const [aiSuggestions, setAiSuggestions] = useState({})
   const [isValidating, setIsValidating] = useState(false)
   const [isAILoading, setIsAILoading] = useState(false)
@@ -82,6 +83,8 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAva
             const repoId = repos[p.repoIndex].id
             next[repoId] = data.duplicates?.[p.to] ? 'conflict' : 'clear'
           })
+          // Store raw duplicates so callers can check edited names against known conflicts.
+          setRawDuplicates(data.duplicates || {})
           // Fix 3: prune stale entries from conflictStatuses
           const currentIds = new Set(plan.map((p) => repos[p.repoIndex].id))
           setConflictStatuses((prev) => {
@@ -163,5 +166,5 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAva
     return () => controller.abort()
   }, [plan, repos, targetOrg, aiAvailable])
 
-  return { plan, conflictStatuses, aiSuggestions, isValidating, isAILoading, error }
+  return { plan, conflictStatuses, rawDuplicates, aiSuggestions, isValidating, isAILoading, error }
 }
