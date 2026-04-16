@@ -679,8 +679,12 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
           name: r.name,
           size: r.size || 0,
           targetName: r.targetName || r.name,
-          hasLfs: r.hasLfs || false,
+          hasLfs: r.hasLfs || r.hasLfsMarker || false,
           isTfvc: r.isTfvc || false,
+          // Deterministic risk flags pre-computed by the Select step's risk engine.
+          // Backend AI analyzer can merge these with its LLM insights instead of
+          // re-deriving obvious issues (size, name-conflict, LFS, archived, stale).
+          clientRisk: r.risk ? { level: r.risk.level, flags: r.risk.flags } : null,
         })),
         workItems: wizard.workItems?.enabled ? {
           counts: wizard.workItems.counts || {},
