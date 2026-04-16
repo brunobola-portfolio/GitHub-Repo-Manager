@@ -493,12 +493,48 @@ async function listRepoActivity(org, project, repos, pat) {
     return Object.fromEntries(entries)
 }
 
+/**
+ * For each repo, check if its .gitattributes on the default branch contains
+ * `filter=lfs` markers. Returns { [repoId]: boolean }.
+ *
+ * Uses raw fetch instead of azureFetch because the Azure /items endpoint
+ * returns plain text when $format=text, not JSON.
+ */
+async function checkLfsMarkers(org, project, repos, pat) {
+    const { default: pLimit } = await import('p-limit')
+    const limit = pLimit(5)
+    const entries = await Promise.all(
+        repos.map((repo) =>
+            limit(async () => {
+                const id = repo.id
+                if (!id) return [id, false]
+                try {
+                    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(id)}/items?path=/.gitattributes&$format=text&api-version=${API_VERSION}`
+                    const res = await fetch(url, {
+                        headers: {
+                            Authorization: `Basic ${Buffer.from(`:${pat}`).toString('base64')}`,
+                            Accept: 'text/plain',
+                        },
+                    })
+                    if (!res.ok) return [id, false]
+                    const body = await res.text()
+                    return [id, /filter\s*=\s*lfs/.test(body)]
+                } catch {
+                    return [id, false]
+                }
+            })
+        )
+    )
+    return Object.fromEntries(entries)
+}
+
 export {
     validatePat,
     listProjects,
     listOrganizations,
     listRepos,
     listRepoActivity,
+    checkLfsMarkers,
     getRepoDetails,
     listBranches,
     buildAuthenticatedCloneUrl,
