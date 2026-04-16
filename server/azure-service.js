@@ -528,6 +528,62 @@ async function checkLfsMarkers(org, project, repos, pat) {
     return Object.fromEntries(entries)
 }
 
+/** 12-month commit activity histogram for a single repo. */
+async function getCommitActivity(org, project, repoId, defaultBranch, pat, months = 12) {
+  const cutoff = new Date()
+  cutoff.setMonth(cutoff.getMonth() - months)
+  const branch = (defaultBranch || '').replace(/^refs\/heads\//, '') || 'main'
+  const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/commits?searchCriteria.itemVersion.version=${encodeURIComponent(branch)}&searchCriteria.fromDate=${encodeURIComponent(cutoff.toISOString())}&$top=1000&api-version=${API_VERSION}`
+  const data = await azureFetch(url, pat)
+  const buckets = {}
+  for (const c of data.value || []) {
+    const d = new Date(c.author?.date || c.committer?.date)
+    if (isNaN(d)) continue
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    buckets[key] = (buckets[key] || 0) + 1
+  }
+  return Object.entries(buckets)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, count]) => ({ month, count }))
+}
+
+/** Fetch the repository README (first matching file in root). */
+async function getRepoReadme(org, project, repoId, pat, ref) {
+  const candidates = ['README.md', 'README.MD', 'Readme.md', 'readme.md', 'README.rst', 'README']
+  for (const name of candidates) {
+    try {
+      const versionDesc = ref ? `&versionDescriptor.version=${encodeURIComponent(ref)}` : ''
+      const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/items?path=/${name}&$format=text${versionDesc}&api-version=${API_VERSION}`
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Basic ${Buffer.from(`:${pat}`).toString('base64')}`,
+          Accept: 'text/plain',
+        },
+      })
+      if (res.ok) {
+        const text = await res.text()
+        return { name, content: text.slice(0, 4096) }
+      }
+    } catch { /* try next */ }
+  }
+  return { name: null, content: '' }
+}
+
+/** Commit count (capped) and unique contributor count over default branch. */
+async function getRepoFullStats(org, project, repoId, defaultBranch, pat) {
+  const branch = (defaultBranch || '').replace(/^refs\/heads\//, '') || 'main'
+  const CAP = 500
+  const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/commits?searchCriteria.itemVersion.version=${encodeURIComponent(branch)}&$top=${CAP}&api-version=${API_VERSION}`
+  const data = await azureFetch(url, pat)
+  const commits = data.value || []
+  const contributors = new Set(commits.map((c) => c.author?.email || c.author?.name).filter(Boolean))
+  return {
+    commitCount: commits.length,
+    commitCountCapped: commits.length >= CAP,
+    contributorCount: contributors.size,
+  }
+}
+
 export {
     validatePat,
     listProjects,
@@ -535,6 +591,9 @@ export {
     listRepos,
     listRepoActivity,
     checkLfsMarkers,
+    getCommitActivity,
+    getRepoReadme,
+    getRepoFullStats,
     getRepoDetails,
     listBranches,
     buildAuthenticatedCloneUrl,
