@@ -51,7 +51,7 @@ git commit -m "feat(wizard): add shared motion tokens"
 **Files:**
 
 - Create: `src/components/MigrationWizard/ui/repo/StatCard.jsx`
-- Test: `tests/components/MigrationWizard/ui/StatCard.test.jsx`
+- Test: `tests/components/MigrationWizard/ui/repo/StatCard.test.jsx`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -59,7 +59,7 @@ git commit -m "feat(wizard): add shared motion tokens"
 import { render, screen } from '@testing-library/react'
 import { Package } from 'lucide-react'
 import { describe, it, expect } from 'vitest'
-import { StatCard } from '../../../../src/components/MigrationWizard/ui/repo/StatCard'
+import { StatCard } from '../../../../../src/components/MigrationWizard/ui/repo/StatCard'
 
 describe('StatCard', () => {
   it('renders value and label', () => {
@@ -82,7 +82,7 @@ describe('StatCard', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run tests/components/MigrationWizard/ui/StatCard.test.jsx`
+Run: `npx vitest run tests/components/MigrationWizard/ui/repo/StatCard.test.jsx`
 Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement**
@@ -120,13 +120,13 @@ export function StatCard({ icon: Icon, label, value, tone = 'indigo' }) {
 
 - [ ] **Step 4: Run test to verify pass**
 
-Run: `npx vitest run tests/components/MigrationWizard/ui/StatCard.test.jsx`
+Run: `npx vitest run tests/components/MigrationWizard/ui/repo/StatCard.test.jsx`
 Expected: 3 passing.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/components/MigrationWizard/ui/repo/StatCard.jsx tests/components/MigrationWizard/ui/StatCard.test.jsx
+git add src/components/MigrationWizard/ui/repo/StatCard.jsx tests/components/MigrationWizard/ui/repo/StatCard.test.jsx
 git commit -m "feat(wizard): add StatCard shared component"
 ```
 
@@ -135,14 +135,14 @@ git commit -m "feat(wizard): add StatCard shared component"
 **Files:**
 
 - Create: `src/components/MigrationWizard/ui/repo/RiskBadge.jsx`
-- Test: `tests/components/MigrationWizard/ui/RiskBadge.test.jsx`
+- Test: `tests/components/MigrationWizard/ui/repo/RiskBadge.test.jsx`
 
 - [ ] **Step 1: Write the failing test**
 
 ```jsx
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
-import { RiskBadge } from '../../../../src/components/MigrationWizard/ui/repo/RiskBadge'
+import { RiskBadge } from '../../../../../src/components/MigrationWizard/ui/repo/RiskBadge'
 
 describe('RiskBadge', () => {
   it('returns null when level is ok', () => {
@@ -170,7 +170,7 @@ describe('RiskBadge', () => {
 
 - [ ] **Step 2: Run test to verify failure**
 
-Run: `npx vitest run tests/components/MigrationWizard/ui/RiskBadge.test.jsx`
+Run: `npx vitest run tests/components/MigrationWizard/ui/repo/RiskBadge.test.jsx`
 Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement**
@@ -221,13 +221,13 @@ export function RiskBadge({ level, flags, size = 'sm', onClick }) {
 
 - [ ] **Step 4: Run test**
 
-Run: `npx vitest run tests/components/MigrationWizard/ui/RiskBadge.test.jsx`
+Run: `npx vitest run tests/components/MigrationWizard/ui/repo/RiskBadge.test.jsx`
 Expected: 3 passing.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/components/MigrationWizard/ui/repo/RiskBadge.jsx tests/components/MigrationWizard/ui/RiskBadge.test.jsx
+git add src/components/MigrationWizard/ui/repo/RiskBadge.jsx tests/components/MigrationWizard/ui/repo/RiskBadge.test.jsx
 git commit -m "feat(wizard): add RiskBadge shared component"
 ```
 
@@ -236,14 +236,14 @@ git commit -m "feat(wizard): add RiskBadge shared component"
 **Files:**
 
 - Create: `src/components/MigrationWizard/ui/repo/RepoMetaBadges.jsx`
-- Test: `tests/components/MigrationWizard/ui/RepoMetaBadges.test.jsx`
+- Test: `tests/components/MigrationWizard/ui/repo/RepoMetaBadges.test.jsx`
 
 - [ ] **Step 1: Write the failing test**
 
 ```jsx
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
-import { RepoMetaBadges } from '../../../../src/components/MigrationWizard/ui/repo/RepoMetaBadges'
+import { RepoMetaBadges } from '../../../../../src/components/MigrationWizard/ui/repo/RepoMetaBadges'
 
 describe('RepoMetaBadges', () => {
   const base = { name: 'foo', size: 2048, language: 'JavaScript', branches: 3 }
@@ -251,7 +251,7 @@ describe('RepoMetaBadges', () => {
   it('renders language, size, branches', () => {
     render(<RepoMetaBadges repo={base} />)
     expect(screen.getByText('JavaScript')).toBeInTheDocument()
-    expect(screen.getByText(/2\.0 MB/)).toBeInTheDocument()
+    expect(screen.getByText(/2 MB/)).toBeInTheDocument()
     expect(screen.getByText('3')).toBeInTheDocument()
   })
 
@@ -275,7 +275,7 @@ describe('RepoMetaBadges', () => {
 
 - [ ] **Step 2: Run test**
 
-Run: `npx vitest run tests/components/MigrationWizard/ui/RepoMetaBadges.test.jsx`
+Run: `npx vitest run tests/components/MigrationWizard/ui/repo/RepoMetaBadges.test.jsx`
 Expected: FAIL.
 
 - [ ] **Step 3: Implement**
@@ -335,13 +335,13 @@ export function RepoMetaBadges({ repo, density = 'full' }) {
 
 - [ ] **Step 4: Run test**
 
-Run: `npx vitest run tests/components/MigrationWizard/ui/RepoMetaBadges.test.jsx`
+Run: `npx vitest run tests/components/MigrationWizard/ui/repo/RepoMetaBadges.test.jsx`
 Expected: 4 passing.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/components/MigrationWizard/ui/repo/RepoMetaBadges.jsx tests/components/MigrationWizard/ui/RepoMetaBadges.test.jsx
+git add src/components/MigrationWizard/ui/repo/RepoMetaBadges.jsx tests/components/MigrationWizard/ui/repo/RepoMetaBadges.test.jsx
 git commit -m "feat(wizard): add RepoMetaBadges shared component"
 ```
 
