@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react'
 import { X } from 'lucide-react'
+import { useFocusTrap } from '../../../../hooks/useFocusTrap'
 
 export function PatternSelectModal({ repos, onConfirm, onClose }) {
   const [pattern, setPattern] = useState('')
+  const panelRef = useFocusTrap(true, onClose)
 
   const { matches, error } = useMemo(() => {
     if (!pattern.trim()) return { matches: [], error: '' }
@@ -16,12 +18,19 @@ export function PatternSelectModal({ repos, onConfirm, onClose }) {
   }, [pattern, repos])
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 w-full max-w-md shadow-2xl">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pattern-select-title"
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 w-full max-w-md shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-slate-200">Select by pattern</h3>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-200">
-            <X className="w-4 h-4" />
+          <h3 id="pattern-select-title" className="text-sm font-semibold text-slate-800 dark:text-slate-200">Select by pattern</h3>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" aria-label="Close pattern dialog">
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
         <p className="text-xs text-slate-500 mb-2">Enter a regular expression. Case-insensitive match on repo name.</p>
@@ -31,17 +40,20 @@ export function PatternSelectModal({ repos, onConfirm, onClose }) {
           value={pattern}
           onChange={(e) => setPattern(e.target.value)}
           placeholder="^web-.*|.*-legacy$"
-          className="w-full px-3 py-2 text-sm bg-slate-950 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-600 focus:ring-2 focus:ring-indigo-500"
+          aria-label="Regular expression pattern"
+          aria-invalid={!!error}
+          aria-describedby={error ? 'pattern-error' : undefined}
+          className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 focus:ring-2 focus:ring-indigo-500"
         />
-        {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
-        <p className="text-xs text-slate-400 mt-2 tabular-nums">
+        {error && <p id="pattern-error" className="text-xs text-red-500 dark:text-red-400 mt-1">{error}</p>}
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 tabular-nums" aria-live="polite">
           {matches.length} of {repos.length} match
         </p>
         <div className="flex justify-end gap-2 mt-4">
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700"
+            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
           >
             Cancel
           </button>
