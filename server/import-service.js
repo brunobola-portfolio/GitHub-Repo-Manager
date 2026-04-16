@@ -141,6 +141,7 @@ async function importRepository(params) {
         targetName,
         isPrivate = true,
         description = '',
+        sizeStrategy,
         githubToken,
         onProgress = () => {}
     } = params;
@@ -214,6 +215,22 @@ async function importRepository(params) {
             } catch (e) {
                 logger.warn({ err: e }, 'LFS fetch warning');
                 // Continue even if LFS fetch fails - pointers will still be pushed
+            }
+        }
+
+        // Step 4b: Apply sizeStrategy === 'lfs-migrate' (convert large blobs to LFS in-place).
+        if (sizeStrategy === 'lfs-migrate') {
+            onProgress('lfs-migrate', 'Converting large files to LFS...', 50);
+            const migrateGit = simpleGit(workDir);
+            try {
+                await migrateGit.raw([
+                    'lfs', 'migrate', 'import',
+                    '--above=100M',
+                    '--everything',
+                    '--yes',
+                ]);
+            } catch (e) {
+                logger.warn({ err: e }, 'git-lfs migrate import failed; proceeding with original history');
             }
         }
 

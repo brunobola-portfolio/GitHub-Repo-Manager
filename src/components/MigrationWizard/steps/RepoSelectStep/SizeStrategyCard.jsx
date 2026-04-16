@@ -1,0 +1,82 @@
+// src/components/MigrationWizard/steps/RepoSelectStep/SizeStrategyCard.jsx
+import { Sparkles, X, Package, Database } from 'lucide-react'
+
+const GB = 1024 * 1024
+
+function formatSize(kb) {
+  return `${(kb / GB).toFixed(1)} GB`
+}
+
+const STRATEGIES = [
+  { key: 'exclude', label: 'Exclude from migration', icon: X, desc: 'Skip this repo.' },
+  { key: 'lfs-migrate', label: 'Mark for LFS migration', icon: Database, desc: 'Run git-lfs migrate import --above=100M before push.' },
+]
+
+export function SizeStrategyCard({ repo, aiSuggestion, selectedStrategy, onSelect }) {
+  return (
+    <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 font-medium text-slate-100">
+          <Package className="h-4 w-4 text-amber-500" />
+          {repo.name}
+        </div>
+        <span className="text-xs text-slate-400">{formatSize(repo.size)}</span>
+      </div>
+
+      {aiSuggestion && (
+        <AISuggestionBanner
+          suggestion={aiSuggestion}
+          onAccept={() => onSelect(repo, aiSuggestion.strategy)}
+        />
+      )}
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        {STRATEGIES.map(({ key, label, icon: Icon, desc }) => {
+          const active = selectedStrategy === key
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onSelect(repo, key)}
+              className={`flex flex-col items-start gap-1 rounded-md border px-3 py-2 text-left text-xs transition-colors
+                ${active
+                  ? 'border-indigo-500 bg-indigo-950/40 text-indigo-100'
+                  : 'border-slate-700 bg-slate-900/40 text-slate-300 hover:border-indigo-400/60'
+                }`}
+            >
+              <span className="flex items-center gap-1 font-medium">
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </span>
+              <span className="text-[11px] text-slate-400">{desc}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function AISuggestionBanner({ suggestion, onAccept }) {
+  const label = STRATEGIES.find((s) => s.key === suggestion.strategy)?.label ?? suggestion.strategy
+  const confidence = Math.round((suggestion.confidence ?? 0) * 100)
+  return (
+    <div className="mb-3 flex items-start gap-2 rounded-md border border-indigo-500/40 bg-indigo-950/30 p-2 text-xs">
+      <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-300" />
+      <div className="flex-1">
+        <div className="font-medium text-indigo-100">
+          AI recommends: {label} ({confidence}% confidence)
+        </div>
+        <div className="text-indigo-200/80">{suggestion.rationale}</div>
+      </div>
+      <button
+        type="button"
+        onClick={onAccept}
+        className="shrink-0 rounded bg-indigo-500 px-2 py-1 text-[11px] font-medium text-white hover:bg-indigo-400"
+      >
+        Accept
+      </button>
+    </div>
+  )
+}

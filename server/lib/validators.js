@@ -199,7 +199,8 @@ export const createPlanSchema = z.object({
                 makePrivate: z.boolean().default(true),
                 description: z.string().max(350).default(''),
                 rollbackPolicy: z.enum(['delete', 'keep-empty']).default('delete'),
-                timeout: z.number().min(60000).max(3600000).default(1800000)
+                timeout: z.number().min(60000).max(3600000).default(1800000),
+                sizeStrategy: z.enum(['exclude', 'lfs-migrate']).optional()
             }).default({})
         }),
         z.object({
@@ -210,7 +211,8 @@ export const createPlanSchema = z.object({
                 makePrivate: z.boolean().default(true),
                 description: z.string().max(350).default(''),
                 rollbackPolicy: z.enum(['delete', 'keep-empty']).default('delete'),
-                timeout: z.number().min(60000).max(3600000).default(1800000)
+                timeout: z.number().min(60000).max(3600000).default(1800000),
+                sizeStrategy: z.enum(['exclude', 'lfs-migrate']).optional()
             }).default({})
         }),
         z.object({
@@ -245,6 +247,14 @@ export const createPlanSchema = z.object({
 });
 
 export const updatePlanSchema = createPlanSchema.partial();
+
+export const migrationSizeStrategySchema = z.object({
+    repoId: z.string().min(1).max(200),
+    size: z.number().int().nonnegative(),
+    hasLfsMarker: z.boolean().default(false),
+    branches: z.number().int().nonnegative().default(0),
+    lastCommitDate: z.string().datetime().optional(),
+});
 
 // --- Middleware factory ---
 

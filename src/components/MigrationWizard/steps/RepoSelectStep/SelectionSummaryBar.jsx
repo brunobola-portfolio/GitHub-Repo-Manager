@@ -8,7 +8,7 @@ function estimateMinutes(totalSizeKb, totalBranches) {
   return Math.max(1, Math.round(seconds / 60))
 }
 
-export function SelectionSummaryBar({ selected, warnings, blockers, onFixIssues }) {
+export function SelectionSummaryBar({ selected, warnings, blockers, autoFixCount = 0, manualFixCount = 0, onFixIssues }) {
   const show = selected.length > 0
   const totalSize = selected.reduce((s, r) => s + (r.size || 0), 0)
   const totalBranches = selected.reduce((s, r) => s + (r.branches || 0), 0)
@@ -43,13 +43,19 @@ export function SelectionSummaryBar({ selected, warnings, blockers, onFixIssues 
                 <AlertOctagon className="w-3.5 h-3.5" aria-hidden="true" /> {blockers} blocker{blockers === 1 ? '' : 's'}
               </span>
             )}
-            {(warnings > 0 || blockers > 0) && (
+            {blockers > 0 && (
               <button
                 type="button"
                 onClick={onFixIssues}
+                title={
+                  autoFixCount > 0 && manualFixCount > 0
+                    ? `${autoFixCount} can be auto-fixed, ${manualFixCount} need your input`
+                    : undefined
+                }
                 className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-indigo-400 hover:text-indigo-300"
               >
-                Fix issues <ArrowRight className="w-3.5 h-3.5" />
+                {manualFixCount === 0 ? `Auto-fix (${blockers})` : `Fix issues (${blockers})`}
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}
           </div>

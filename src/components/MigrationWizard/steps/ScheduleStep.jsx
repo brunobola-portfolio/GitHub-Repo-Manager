@@ -58,15 +58,24 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
       const selectedRepos = (wizard.repos || []).filter(r => r.selected)
       const source = wizard.source || {}
       const targetOrg = source.targetOrg || ''
-      const tasks = selectedRepos.map(repo => {
-        const repoName = repo.targetName || repo.name
-        return {
-          type: repo.isTfvc ? 'repo-tfvc' : 'repo',
-          sourceRef: `${source.org}/${source.project}/${repo.name}`,
-          targetRef: targetOrg ? `${targetOrg}/${repoName}` : repoName,
-          config: { makePrivate: repo.visibility === 'private', description: repo.description || '' },
-        }
-      })
+      const tasks = selectedRepos
+        .filter((repo) => repo.sizeStrategy !== 'exclude')
+        .map(repo => {
+          const repoName = repo.targetName || repo.name
+          const baseConfig = {
+            makePrivate: repo.visibility === 'private',
+            description: repo.description || '',
+          }
+          const config = repo.sizeStrategy === 'lfs-migrate'
+            ? { ...baseConfig, sizeStrategy: 'lfs-migrate' }
+            : baseConfig
+          return {
+            type: repo.isTfvc ? 'repo-tfvc' : 'repo',
+            sourceRef: `${source.org}/${source.project}/${repo.name}`,
+            targetRef: targetOrg ? `${targetOrg}/${repoName}` : repoName,
+            config,
+          }
+        })
 
       // Add work item tasks — target the first migrated repo for issues
       if (wizard.workItems?.enabled) {

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { evaluateRepo, RESERVED_NAMES } from '../../../../../src/components/MigrationWizard/steps/RepoSelectStep/riskRules'
+import { makeRepo } from './fixtures.js'
 
 const base = {
   id: 'r1', name: 'foo', size: 1024, branches: 2, isDisabled: false,
@@ -85,5 +86,53 @@ describe('risk engine', () => {
     ]
     const r = evaluateRepo(mixed[0], { ...ctx, allRepos: mixed })
     expect(r.flags.some((f) => f.type === 'duplicate-in-batch')).toBe(false)
+  })
+})
+
+describe('riskRules effective-name resolution', () => {
+  it('ruleInvalidChars: clears when targetName is valid even if name is invalid', () => {
+    const repo = makeRepo({ name: 'bad name!', targetName: 'good-name' })
+    const { flags } = evaluateRepo(repo, { allRepos: [repo] })
+    expect(flags.some(f => f.type === 'invalid-chars')).toBe(false)
+  })
+
+  it('ruleInvalidChars: still fires when targetName is also invalid', () => {
+    const repo = makeRepo({ name: 'bad name!', targetName: 'still bad!' })
+    const { flags } = evaluateRepo(repo, { allRepos: [repo] })
+    expect(flags.some(f => f.type === 'invalid-chars')).toBe(true)
+  })
+
+  it('ruleReservedName: clears when targetName is not reserved', () => {
+    const repo = makeRepo({ name: 'api', targetName: 'api-repo' })
+    const { flags } = evaluateRepo(repo, { allRepos: [repo] })
+    expect(flags.some(f => f.type === 'reserved-name')).toBe(false)
+  })
+
+  it('ruleDuplicateInBatch: evaluates effective names across selected repos', () => {
+    const a = makeRepo({ id: 'a', name: 'dup', targetName: 'dup-a' })
+    const b = makeRepo({ id: 'b', name: 'dup', targetName: 'dup-b' })
+    const ctxA = { allRepos: [a, b] }
+    const ctxB = { allRepos: [a, b] }
+    expect(evaluateRepo(a, ctxA).flags.some(f => f.type === 'duplicate-in-batch')).toBe(false)
+    expect(evaluateRepo(b, ctxB).flags.some(f => f.type === 'duplicate-in-batch')).toBe(false)
+  })
+
+  it('ruleNameConflict: clears when targetName avoids the target-org collision', () => {
+    const repo = makeRepo({ name: 'existing', targetName: 'existing-new' })
+    const conflictCtx = { conflicts: { existing: true }, allRepos: [repo] }
+    const { flags } = evaluateRepo(repo, conflictCtx)
+    expect(flags.some(f => f.type === 'name-conflict')).toBe(false)
+  })
+
+  it('falls back to name when targetName is empty string', () => {
+    const repo = makeRepo({ name: 'my-repo', targetName: '' })
+    const { flags } = evaluateRepo(repo, { allRepos: [repo] })
+    expect(flags.some(f => f.type === 'invalid-chars')).toBe(false)
+  })
+
+  it('falls back to name when targetName is whitespace-only', () => {
+    const repo = makeRepo({ name: 'my-repo', targetName: '   ' })
+    const { flags } = evaluateRepo(repo, { allRepos: [repo] })
+    expect(flags.some(f => f.type === 'invalid-chars')).toBe(false)
   })
 })

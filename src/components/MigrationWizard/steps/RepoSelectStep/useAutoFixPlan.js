@@ -1,0 +1,170 @@
+// src/components/MigrationWizard/steps/RepoSelectStep/useAutoFixPlan.js
+import { useEffect, useMemo, useState } from 'react'
+import { buildDeterministicPlan } from './autoFixRules.js'
+import { SIZE_CRITICAL_KB } from './riskRules.js'
+
+// Fix 2: priority-aware error setter (auth > ai-quota)
+const ERROR_RANK = { auth: 2, 'ai-quota': 1 }
+
+function worseError(prev, next) {
+  if (!prev) return next
+  return (ERROR_RANK[next.type] ?? 0) > (ERROR_RANK[prev.type] ?? 0) ? next : prev
+}
+
+/**
+ * Orchestrates the three-phase auto-fix workflow for the migration Repos step.
+ *
+ * Phase 1 (sync): buildDeterministicPlan → FixItem[] for renamed blockers.
+ * Phase 2 (async): POST /api/import/check-duplicates to validate proposed
+ *   names against the target org; sets conflictStatuses[repo.id] to
+ *   'clear' | 'conflict' | 'unchecked'.
+ * Phase 3 (async, optional): when aiAvailable AND any repo > 10 GB, POST
+ *   each to /api/ai/migration-size-strategy and store suggestions.
+ *
+ * Caller expectations:
+ * - Pass stable references for `repos` and `allRepos`; new array identities
+ *   every render re-fire all network calls.
+ * - Treat `conflictStatuses` and `aiSuggestions` as keyed by repo.id, only
+ *   valid for items present in the current `plan` (stale entries are
+ *   pruned automatically when the plan changes).
+ * - Abort on unmount via the single AbortController is internal; callers
+ *   do not need to manage cleanup.
+ */
+export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAvailable }) {
+  const ctx = useMemo(
+    () => ({ allRepos, conflicts: {}, targetOrg, azureProject }),
+    [allRepos, targetOrg, azureProject],
+  )
+
+  const plan = useMemo(() => buildDeterministicPlan(repos, ctx), [repos, ctx])
+
+  const [conflictStatuses, setConflictStatuses] = useState({})
+  const [rawDuplicates, setRawDuplicates] = useState({})
+  const [aiSuggestions, setAiSuggestions] = useState({})
+  const [isValidating, setIsValidating] = useState(false)
+  const [isAILoading, setIsAILoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    if (plan.length > 0) {
+      setIsValidating(true)
+      const names = plan.map((p) => p.to)
+      fetch('/api/import/check-duplicates', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetOrg, repos: names }),
+        signal: controller.signal,
+      })
+        .then(async (res) => {
+          // Fix 2: priority-aware auth error
+          if (res.status === 401) {
+            setError((prev) => worseError(prev, { type: 'auth', message: 'Azure DevOps token expired — please reconnect.' }))
+            return
+          }
+          if (!res.ok) {
+            const unchecked = {}
+            plan.forEach((p) => { unchecked[repos[p.repoIndex].id] = 'unchecked' })
+            // Fix 3: prune stale entries from conflictStatuses
+            const currentIds = new Set(plan.map((p) => repos[p.repoIndex].id))
+            setConflictStatuses((prev) => {
+              const retained = Object.fromEntries(
+                Object.entries(prev).filter(([id]) => currentIds.has(id))
+              )
+              return { ...retained, ...unchecked }
+            })
+            return
+          }
+          const data = await res.json()
+          const next = {}
+          plan.forEach((p) => {
+            const repoId = repos[p.repoIndex].id
+            next[repoId] = data.duplicates?.[p.to] ? 'conflict' : 'clear'
+          })
+          // Store raw duplicates so callers can check edited names against known conflicts.
+          setRawDuplicates(data.duplicates || {})
+          // Fix 3: prune stale entries from conflictStatuses
+          const currentIds = new Set(plan.map((p) => repos[p.repoIndex].id))
+          setConflictStatuses((prev) => {
+            const retained = Object.fromEntries(
+              Object.entries(prev).filter(([id]) => currentIds.has(id))
+            )
+            return { ...retained, ...next }
+          })
+        })
+        .catch((e) => {
+          if (e.name === 'AbortError') return
+          const unchecked = {}
+          plan.forEach((p) => { unchecked[repos[p.repoIndex].id] = 'unchecked' })
+          // Fix 3: prune stale entries from conflictStatuses
+          const currentIds = new Set(plan.map((p) => repos[p.repoIndex].id))
+          setConflictStatuses((prev) => {
+            const retained = Object.fromEntries(
+              Object.entries(prev).filter(([id]) => currentIds.has(id))
+            )
+            return { ...retained, ...unchecked }
+          })
+        })
+        .finally(() => setIsValidating(false))
+    }
+
+    const sizeCritical = repos.filter((r) => r.selected && r.size > SIZE_CRITICAL_KB)
+    if (aiAvailable && sizeCritical.length > 0) {
+      setIsAILoading(true)
+      Promise.allSettled(
+        sizeCritical.map(async (repo) => {
+          const res = await fetch('/api/ai/migration-size-strategy', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              repoId: repo.id,
+              size: repo.size,
+              hasLfsMarker: !!repo.hasLfsMarker,
+              branches: repo.branches,
+              lastCommitDate: repo.lastCommitDate,
+            }),
+            signal: controller.signal,
+          })
+          if (res.status === 429) throw new Error('quota')
+          if (!res.ok) throw new Error('server')
+          const body = await res.json()
+          return { repoId: repo.id, body }
+        }),
+      )
+        .then((results) => {
+          // Fix 1: guard post-abort state mutation in Phase 3
+          if (controller.signal.aborted) return
+          const next = {}
+          let quotaHit = false
+          for (const r of results) {
+            if (r.status === 'fulfilled') {
+              next[r.value.repoId] = r.value.body
+            } else if (r.reason?.message === 'quota') {
+              quotaHit = true
+            }
+          }
+          // Fix 3: prune stale entries from aiSuggestions
+          const currentSizeIds = new Set(sizeCritical.map((r) => r.id))
+          setAiSuggestions((prev) => {
+            const retained = Object.fromEntries(
+              Object.entries(prev).filter(([id]) => currentSizeIds.has(id))
+            )
+            return { ...retained, ...next }
+          })
+          // Fix 2: priority-aware ai-quota error
+          if (quotaHit) setError((prev) => worseError(prev, { type: 'ai-quota', message: 'AI quota reached — try again later or upgrade.' }))
+        })
+        // Fix 1: guard Phase 3 finally block
+        .finally(() => {
+          if (!controller.signal.aborted) setIsAILoading(false)
+        })
+    }
+
+    return () => controller.abort()
+  }, [plan, repos, targetOrg, aiAvailable])
+
+  return { plan, conflictStatuses, rawDuplicates, aiSuggestions, isValidating, isAILoading, error }
+}

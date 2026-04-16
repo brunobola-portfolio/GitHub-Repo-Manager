@@ -38,6 +38,7 @@ const METRIC_TO_FEATURE = {
     ai_insights: 'repoInsightsPerMonth',
     ai_migration_risk: 'migrationRiskPerMonth',
     ai_semantic_search: 'semanticSearchPerMonth',
+    migration_assist: 'migrationAssistPerMonth',
 };
 
 export function checkUsageLimit(userId, metricType) {
