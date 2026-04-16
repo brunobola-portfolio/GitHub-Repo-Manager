@@ -51,6 +51,8 @@ test.describe('Mobile Responsiveness', () => {
 
   test('should show dashboard content on mobile', async ({ page }) => {
     await expect(page.getByText('Total Repositories')).toBeVisible({ timeout: 10000 })
-    await expect(page.getByText('87')).toBeVisible()
+    // Use exact match — the dashboard also renders "12 487" (stars) which
+    // contains '87' as a substring and triggers a strict-mode violation.
+    await expect(page.getByRole('heading', { name: '87', exact: true })).toBeVisible()
   })
 })
