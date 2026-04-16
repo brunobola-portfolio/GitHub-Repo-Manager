@@ -500,8 +500,10 @@ export default function MigrationWizard({ onClose, orgs = [], initialDryRun = fa
     }
   }, [source, updateImportJobs, nextStep])
 
-  // Close with dirty-state confirmation
-  const handleClose = useCallback(() => {
+  // Close with dirty-state confirmation. React 19's compiler handles
+  // memoization automatically; manual useCallback was tripping the
+  // compiler's preserve-manual-memoization rule.
+  const handleClose = () => {
     if (currentStep === 'summary') {
       onClose()
       return
@@ -511,12 +513,12 @@ export default function MigrationWizard({ onClose, orgs = [], initialDryRun = fa
     } else {
       onClose()
     }
-  }, [isDirty, currentStep, onClose])
+  }
 
-  const handleConfirmClose = useCallback(() => {
+  const handleConfirmClose = () => {
     setShowConfirm(false)
     onClose()
-  }, [onClose])
+  }
 
   function renderStep() {
     switch (currentStep) {
