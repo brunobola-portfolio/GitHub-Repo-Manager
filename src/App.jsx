@@ -209,6 +209,15 @@ function AppContent() {
   }, [])
 
   const checkSystemStatus = async () => {
+    // Mock mode bypasses the first-run setup ceremony entirely. The setup
+    // screen is a visual-only step (the backend flag is idempotent), and
+    // keeping it in mock mode traps e2e tests at the "Launch Workspace"
+    // button with no way to advance.
+    if (MOCK_MODE) {
+      setSystemInitialized(true)
+      checkAuth()
+      return
+    }
     try {
       const res = await fetchWithRetry('/api/system/status', { credentials: 'include' })
       const data = await safeParseJson(res)

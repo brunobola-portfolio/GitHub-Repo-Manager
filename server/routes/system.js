@@ -2,7 +2,16 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import logger from '../lib/logger.js';
 import db, { initDB } from '../db.js';
-import { requireAuth, safeError } from '../middleware/auth.js';
+import { safeError } from '../middleware/auth.js';
+
+// Rate-limit setup so an unauthenticated endpoint can't be hammered.
+const setupLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many setup attempts, please try again in a minute' }
+});
 
 const clientErrorLimiter = rateLimit({
     windowMs: 60 * 1000,
@@ -24,25 +33,24 @@ router.get('/status', (req, res) => {
     }
 });
 
-router.post('/setup', requireAuth, async (req, res) => {
+// Initial system setup. Intentionally unauthenticated — by definition the
+// system isn't yet usable, and no user account can exist until setup
+// completes. The operation is idempotent (initDB creates-if-missing, the
+// meta flag is an upsert) and rate-limited to prevent abuse.
+router.post('/setup', setupLimiter, async (req, res) => {
     try {
-        // Ensure tables exist (idempotent)
+        // Short-circuit if already set up — no need to re-run initDB.
+        try {
+            const existing = db.prepare('SELECT value FROM system_meta WHERE key = ?').get('setup_completed');
+            if (existing?.value === 'true') {
+                return res.json({ success: true, alreadyInitialized: true });
+            }
+        } catch {
+            // Table may not exist yet on first run — fall through to initDB.
+        }
+
         initDB();
 
-        // Seed if empty
-        let userCount;
-        try {
-            userCount = db.prepare('SELECT count(*) as count FROM users').get();
-        } catch (dbError) {
-            logger.error({ err: dbError }, 'Failed to query user count');
-            // If table doesn't exist, assume 0 users
-            userCount = { count: 0 };
-        }
-        if (userCount.count === 0) {
-            // We could insert a "System Admin" placeholder or just leave it
-        }
-
-        // Mark as completed
         try {
             db.prepare(`
                 INSERT INTO system_meta (key, value) VALUES ('setup_completed', 'true')

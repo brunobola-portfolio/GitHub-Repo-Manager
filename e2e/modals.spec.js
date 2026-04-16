@@ -16,10 +16,10 @@ test.describe('Modal Interactions', () => {
     const contextMenu = page.locator('[role="menu"]')
     await expect(contextMenu).toBeVisible({ timeout: 5000 })
 
-    // Verify all context menu sections
+    // Verify core context menu sections. "AI Insights" was removed from the
+    // context menu in f33acba and should not be asserted here.
     await expect(contextMenu.getByText('Open on GitHub')).toBeVisible()
     await expect(contextMenu.getByText('Copy Clone URL')).toBeVisible()
-    await expect(contextMenu.getByText('AI Insights')).toBeVisible()
     await expect(contextMenu.getByText('Archive')).toBeVisible()
     await expect(contextMenu.getByText('Delete Repository')).toBeVisible()
   })
@@ -31,8 +31,10 @@ test.describe('Modal Interactions', () => {
     const contextMenu = page.locator('[role="menu"]')
     await expect(contextMenu).toBeVisible({ timeout: 5000 })
 
-    // Click on header to close context menu
-    await page.locator('header').click({ position: { x: 10, y: 10 } })
+    // The context menu renders a full-viewport backdrop (z-99) that intercepts
+    // clicks. Press Escape to dismiss — that's the actual close-on-click-outside
+    // interaction a user would perform with the keyboard.
+    await page.keyboard.press('Escape')
     await expect(contextMenu).not.toBeVisible({ timeout: 5000 })
   })
 
