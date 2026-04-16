@@ -60,8 +60,8 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
   useEffect(() => {
     let cancelled = false
     fetch('/api/config/ai-status', { credentials: 'include' })
-      .then((r) => (r.ok ? r.json() : { available: false }))
-      .then((d) => { if (!cancelled) setAiAvailable(!!d?.available) })
+      .then((r) => (r.ok ? r.json() : { configured: false }))
+      .then((d) => { if (!cancelled) setAiAvailable(!!d?.configured) })
       .catch(() => { if (!cancelled) setAiAvailable(false) })
     return () => { cancelled = true }
   }, [])

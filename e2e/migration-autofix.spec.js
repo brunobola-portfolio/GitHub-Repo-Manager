@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 async function installMocks(page) {
   // AI status
   await page.route('**/api/config/ai-status', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ available: true }) }),
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ configured: true }) }),
   )
 
   // Azure credential checks (env-auth available so no PAT needed)

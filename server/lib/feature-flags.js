@@ -26,6 +26,7 @@ const TIER_FEATURES = {
         repoInsightsPerMonth: 10,
         migrationRiskPerMonth: 5,
         semanticSearchPerMonth: 50,
+        migrationAssistPerMonth: 5,
 
         // Non-AI gating
         migration: 'dry-run', // Free: dry-run only
@@ -52,6 +53,7 @@ const TIER_FEATURES = {
         repoInsightsPerMonth: Infinity,
         migrationRiskPerMonth: Infinity,
         semanticSearchPerMonth: Infinity,
+        migrationAssistPerMonth: Infinity,
 
         migration: 'full',
         bulkAdvanced: true,
@@ -76,6 +78,7 @@ const TIER_FEATURES = {
         repoInsightsPerMonth: Infinity,
         migrationRiskPerMonth: Infinity,
         semanticSearchPerMonth: Infinity,
+        migrationAssistPerMonth: Infinity,
 
         migration: 'full',
         bulkAdvanced: true,

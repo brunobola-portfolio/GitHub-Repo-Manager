@@ -37,6 +37,7 @@ export function SizeStrategyCard({ repo, aiSuggestion, selectedStrategy, onSelec
             <button
               key={key}
               type="button"
+              aria-pressed={active}
               onClick={() => onSelect(repo, key)}
               className={`flex flex-col items-start gap-1 rounded-md border px-3 py-2 text-left text-xs transition-colors
                 ${active
