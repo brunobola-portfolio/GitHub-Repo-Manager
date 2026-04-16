@@ -119,8 +119,20 @@ describe('riskRules effective-name resolution', () => {
 
   it('ruleNameConflict: clears when targetName avoids the target-org collision', () => {
     const repo = makeRepo({ name: 'existing', targetName: 'existing-new' })
-    const ctx = { conflicts: { existing: true }, allRepos: [repo] }
-    const { flags } = evaluateRepo(repo, ctx)
+    const conflictCtx = { conflicts: { existing: true }, allRepos: [repo] }
+    const { flags } = evaluateRepo(repo, conflictCtx)
     expect(flags.some(f => f.type === 'name-conflict')).toBe(false)
+  })
+
+  it('falls back to name when targetName is empty string', () => {
+    const repo = makeRepo({ name: 'my-repo', targetName: '' })
+    const { flags } = evaluateRepo(repo, { allRepos: [repo] })
+    expect(flags.some(f => f.type === 'invalid-chars')).toBe(false)
+  })
+
+  it('falls back to name when targetName is whitespace-only', () => {
+    const repo = makeRepo({ name: 'my-repo', targetName: '   ' })
+    const { flags } = evaluateRepo(repo, { allRepos: [repo] })
+    expect(flags.some(f => f.type === 'invalid-chars')).toBe(false)
   })
 })

@@ -10,7 +10,7 @@ export function makeRepo(overrides = {}) {
     isTfvc: false,
     hasLfsMarker: false,
     lfsEnabled: false,
-    lastCommitDate: '2025-01-01T00:00:00Z',
+    lastCommitDate: new Date().toISOString(),
     targetName: undefined,
     sizeStrategy: undefined,
     ...overrides,
