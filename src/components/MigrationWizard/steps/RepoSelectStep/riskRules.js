@@ -10,6 +10,10 @@ const GB_IN_KB = 1024 * 1024
 const TWO_YEARS_MS = 2 * 365 * 24 * 60 * 60 * 1000
 const VALID_NAME_RE = /^[A-Za-z0-9._-]+$/
 
+function effectiveName(repo) {
+  return (repo.targetName && repo.targetName.trim()) || repo.name
+}
+
 const rules = [
   function ruleArchived(repo) {
     if (!repo.isDisabled) return null
@@ -68,22 +72,19 @@ const rules = [
     }
   },
   function ruleNameConflict(repo, ctx) {
-    if (!ctx.conflicts?.[repo.name]) return null
+    const name = effectiveName(repo)
+    if (!ctx.conflicts?.[name]) return null
     return {
       type: 'name-conflict',
       severity: 'blocker',
-      message: `A repository named "${repo.name}" already exists in ${ctx.targetOrg || 'the target org'}.`,
+      message: `A repository named "${name}" already exists in ${ctx.targetOrg || 'the target org'}.`,
       suggestion: 'The Configure step lets you rename or skip this repo before migration.',
-      // No inline actions: the Configure step owns rename/skip. Showing
-      // buttons here without wiring them would be a broken affordance.
     }
   },
   function ruleDuplicateInBatch(repo, ctx) {
-    // Only flag when THIS repo is selected AND another selected repo shares
-    // its name. Two unselected repos with the same name is not a blocker —
-    // they won't both be migrated.
     if (!repo.selected) return null
-    const dupes = (ctx.allRepos || []).filter((r) => r.selected && r.name === repo.name)
+    const name = effectiveName(repo)
+    const dupes = (ctx.allRepos || []).filter((r) => r.selected && effectiveName(r) === name)
     if (dupes.length < 2) return null
     return {
       type: 'duplicate-in-batch',
@@ -93,7 +94,8 @@ const rules = [
     }
   },
   function ruleInvalidChars(repo) {
-    if (VALID_NAME_RE.test(repo.name)) return null
+    const name = effectiveName(repo)
+    if (VALID_NAME_RE.test(name)) return null
     return {
       type: 'invalid-chars',
       severity: 'blocker',
@@ -102,12 +104,13 @@ const rules = [
     }
   },
   function ruleReservedName(repo) {
-    if (!RESERVED_NAMES.includes(repo.name.toLowerCase())) return null
+    const name = effectiveName(repo)
+    if (!RESERVED_NAMES.includes(name.toLowerCase())) return null
     return {
       type: 'reserved-name',
       severity: 'blocker',
       message: 'Name is reserved by GitHub.',
-      suggestion: `Choose a different target name (${repo.name} is a GitHub-reserved path).`,
+      suggestion: `Choose a different target name (${name} is a GitHub-reserved path).`,
     }
   },
 ]
