@@ -80,4 +80,31 @@ describe('createPlanSchema', () => {
     }
     expect(createPlanSchema.safeParse(plan).success).toBe(false)
   })
+
+  it('accepts sizeStrategy on repo task config', () => {
+    const plan = {
+      source: { type: 'azure', org: 'o', project: 'p' },
+      tasks: [{ type: 'repo', sourceRef: 'o/p/r', targetRef: 'gh/r', config: { sizeStrategy: 'exclude' } }],
+    }
+    const res = createPlanSchema.safeParse(plan)
+    expect(res.success).toBe(true)
+  })
+
+  it('accepts sizeStrategy on repo-tfvc task config', () => {
+    const plan = {
+      source: { type: 'azure', org: 'o', project: 'p' },
+      tasks: [{ type: 'repo-tfvc', sourceRef: 'o/p/r', targetRef: 'gh/r', config: { sizeStrategy: 'lfs-migrate' } }],
+    }
+    const res = createPlanSchema.safeParse(plan)
+    expect(res.success).toBe(true)
+  })
+
+  it('rejects invalid sizeStrategy values', () => {
+    const plan = {
+      source: { type: 'azure', org: 'o', project: 'p' },
+      tasks: [{ type: 'repo', sourceRef: 'o/p/r', targetRef: 'gh/r', config: { sizeStrategy: 'split-history' } }],
+    }
+    const res = createPlanSchema.safeParse(plan)
+    expect(res.success).toBe(false)
+  })
 })
