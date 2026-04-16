@@ -1,10 +1,10 @@
 
 
-import { Cloud, ChevronRight } from 'lucide-react';
+import { Cloud, ChevronRight, AlertTriangle } from 'lucide-react';
 
 const VISIBLE_STEPS = ['repoSelect', 'repoConfig', 'workItems', 'wiki', 'aiReview', 'schedule'];
 
-export default function BreadcrumbNav({ source, currentStep, selectedCount, onNavigate }) {
+export default function BreadcrumbNav({ source, currentStep, selectedCount, totalWarnings = 0, onNavigate }) {
   if (source?.sourceType !== 'azure' || !VISIBLE_STEPS.includes(currentStep)) {
     return null;
   }
@@ -41,8 +41,13 @@ export default function BreadcrumbNav({ source, currentStep, selectedCount, onNa
       <span className="flex items-center text-sm font-medium text-slate-700 dark:text-slate-300">
         Repos
         {selectedCount > 0 && (
-          <span className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded-full ml-1">
+          <span className={`text-xs px-1.5 py-0.5 rounded-full ml-1 inline-flex items-center gap-1 ${
+            totalWarnings > 0
+              ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+              : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+          }`}>
             {selectedCount} selected
+            {totalWarnings > 0 && <AlertTriangle className="w-3 h-3" />}
           </span>
         )}
       </span>

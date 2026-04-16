@@ -2,9 +2,11 @@ import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
   Rocket, Calendar, Clock, Package, ClipboardList, BookOpen,
-  AlertCircle, Loader2, Info,
+  AlertCircle, Loader2, Info, Flag, HardDrive, AlertTriangle,
 } from 'lucide-react'
 import { migrationApi } from '../../../api/migration'
+import { StatCard } from '../ui/repo/StatCard'
+import { formatFileSize } from '../../../utils/format'
 
 function SummaryCard({ wizard }) {
   const selectedRepos = (wizard.repos || []).filter(r => r.selected)
@@ -12,39 +14,25 @@ function SummaryCard({ wizard }) {
     ? Object.values(wizard.workItems.counts || {}).reduce((a, b) => a + b, 0)
     : 0
   const wikiCount = wizard.wiki?.enabled ? (wizard.wiki.wikis || []).length : 0
-  const targetOrg = wizard.source?.org || 'GitHub'
+  const targetOrg = wizard.source?.targetOrg || wizard.source?.org || 'GitHub'
   const estimatedMinutes = wizard.aiPlan?.estimatedMinutes || null
+  const totalSize = selectedRepos.reduce((s, r) => s + (r.size || 0), 0)
+  const warnings = selectedRepos.reduce(
+    (s, r) => s + (r.risk?.flags || []).filter((f) => f.severity === 'warning').length,
+    0
+  )
 
   return (
     <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-3">
       <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Migration Summary</h4>
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-          <Package className="w-4 h-4 text-indigo-500" />
-          <span>{selectedRepos.length} repositories</span>
-        </div>
-        {workItemCount > 0 && (
-          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-            <ClipboardList className="w-4 h-4 text-amber-500" />
-            <span>{workItemCount} work items</span>
-          </div>
-        )}
-        {wikiCount > 0 && (
-          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-            <BookOpen className="w-4 h-4 text-emerald-500" />
-            <span>{wikiCount} wiki pages</span>
-          </div>
-        )}
-        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-          <Rocket className="w-4 h-4 text-purple-500" />
-          <span>Target: {targetOrg}</span>
-        </div>
-        {estimatedMinutes && (
-          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-            <Clock className="w-4 h-4 text-blue-500" />
-            <span>~{estimatedMinutes} min estimated</span>
-          </div>
-        )}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard icon={Package} label="Repositories" value={selectedRepos.length} tone="indigo" />
+        <StatCard icon={HardDrive} label="Total size" value={formatFileSize(totalSize * 1024, 1)} tone="cyan" />
+        {estimatedMinutes && <StatCard icon={Clock} label="Estimated" value={`~${estimatedMinutes}m`} tone="violet" />}
+        <StatCard icon={Flag} label="Target" value={targetOrg} tone="emerald" />
+        {workItemCount > 0 && <StatCard icon={ClipboardList} label="Work items" value={workItemCount} tone="amber" />}
+        {wikiCount > 0 && <StatCard icon={BookOpen} label="Wiki pages" value={wikiCount} tone="emerald" />}
+        {warnings > 0 && <StatCard icon={AlertTriangle} label="Warnings" value={warnings} tone="amber" />}
       </div>
     </div>
   )

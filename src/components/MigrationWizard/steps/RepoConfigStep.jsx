@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { Select } from '../../ui/Select'
 import { formatFileSize } from '../../../utils/format'
+import { RiskBadge } from '../ui/repo/RiskBadge'
 
 // Wrapper kept to preserve "0 B" empty-state copy and the "0 decimals for B"
 // rendering the wizard expects.
@@ -113,12 +114,15 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
     }
   }, [])
 
+  // Seed conflict state from cached repo.risk flags (set by Select step).
+  // Only run a live check when user edits a targetName (existing debounced logic in handleTargetNameChange).
   useEffect(() => {
+    const seeded = {}
     repos.forEach((repo) => {
-      if (repo.targetName?.trim()) {
-        checkConflict(repo.name, repo.targetName)
-      }
+      if (repo.risk?.flags?.some((f) => f.type === 'name-conflict')) seeded[repo.name] = 'conflict'
+      else if (repo.targetName?.trim()) seeded[repo.name] = 'clear'
     })
+    setConflicts(seeded)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -410,6 +414,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
 
                   {/* Right: visibility + status + expand */}
                   <div className="flex items-center gap-2 shrink-0">
+                    <RiskBadge level={repo.risk?.level || 'ok'} flags={repo.risk?.flags || []} />
                     <button
                       type="button"
                       onClick={() => handleVisibilityToggle(index, repo.visibility)}

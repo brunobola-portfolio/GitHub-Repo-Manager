@@ -4,7 +4,7 @@ import {
   CheckCircle2, XCircle, Clock, Package, ClipboardList, BookOpen,
   Download, Plus, History, Loader2, AlertTriangle, ExternalLink, Ban,
   Sparkles, Trophy, ChevronDown, ChevronUp, Lightbulb, Copy, Check,
-  ArrowRight, Zap, Shield, BarChart3, Timer,
+  ArrowRight, Zap, Shield, ShieldCheck, BarChart3, Timer,
 } from 'lucide-react'
 import { migrationApi } from '../../../api/migration'
 
@@ -360,7 +360,42 @@ function getStatusIcon(score) {
    MAIN COMPONENT
    ═══════════════════════════════════════════ */
 
-export default function SummaryStep({ planId, onNewMigration, onViewHistory }) {
+function PreflightSummary({ flags }) {
+  if (!flags?.length) return null
+  const byType = {}
+  for (const f of flags) byType[f.type] = (byType[f.type] || 0) + 1
+  const total = Object.values(byType).reduce((a, b) => a + b, 0)
+  if (total === 0) return null
+  const labels = {
+    'name-conflict':     'name conflict — auto-renamed on Configure',
+    'lfs-suggested':     'LFS marker detected — enable LFS on target',
+    'size-warning':      'size warning — migrated with extended timeout',
+    'size-critical':     'size blocker — resolved before migration',
+    'duplicate-in-batch':'duplicate target names — resolved on Configure',
+    'archived':          'archived repo included in scope',
+    'stale':             'stale repo included in scope',
+    'invalid-chars':     'invalid character in name — renamed',
+    'reserved-name':     'reserved GitHub name — renamed',
+    'empty':             'empty repository noted',
+  }
+  return (
+    <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 mb-4">
+      <div className="flex items-center gap-2 mb-2">
+        <ShieldCheck className="w-4 h-4 text-emerald-400" />
+        <span className="text-sm font-semibold text-emerald-400">
+          Pre-flight review resolved {total} issue{total === 1 ? '' : 's'} before migration
+        </span>
+      </div>
+      <ul className="text-xs text-slate-400 space-y-1 ml-6 list-disc">
+        {Object.entries(byType).map(([type, count]) => (
+          <li key={type}>{count} {labels[type] || type}</li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+export default function SummaryStep({ planId, onNewMigration, onViewHistory, preflightFlags = [] }) {
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -432,6 +467,9 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory }) {
 
   return (
     <div className="space-y-5">
+      {/* ── Pre-flight summary (risk engine output) ── */}
+      <PreflightSummary flags={preflightFlags} />
+
       {/* ── Dry-run banner ── */}
       {isDryRun && (
         <motion.div

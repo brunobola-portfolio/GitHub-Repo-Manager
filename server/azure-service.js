@@ -461,11 +461,139 @@ function buildAuthenticatedCloneUrl(remoteUrl, pat) {
     return `https://${encodeURIComponent(pat)}@${parsed.host}${parsed.pathname}`;
 }
 
+/**
+ * Fetch last-commit metadata for many repos in parallel.
+ * Returns { [repoId]: { lastCommitDate, lastCommitAuthor } | { lastCommitDate: null, lastCommitAuthor: null } }.
+ * Individual failures are swallowed (activity is a hint, not a requirement).
+ */
+async function listRepoActivity(org, project, repos, pat) {
+    const { default: pLimit } = await import('p-limit')
+    const limit = pLimit(5)
+    const entries = await Promise.all(
+        repos.map((repo) =>
+            limit(async () => {
+                const id = repo.id
+                const defaultBranch = (repo.defaultBranch || '').replace(/^refs\/heads\//, '')
+                if (!id || !defaultBranch) return [id, { lastCommitDate: null, lastCommitAuthor: null }]
+                try {
+                    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(id)}/stats/branches?name=${encodeURIComponent(defaultBranch)}&api-version=${API_VERSION}`
+                    const data = await azureFetch(url, pat)
+                    const entry = Array.isArray(data.value) ? data.value[0] : data
+                    const committer = entry?.commit?.committer
+                    return [id, {
+                        lastCommitDate: committer?.date || null,
+                        lastCommitAuthor: committer?.name || null,
+                    }]
+                } catch {
+                    return [id, { lastCommitDate: null, lastCommitAuthor: null }]
+                }
+            })
+        )
+    )
+    return Object.fromEntries(entries)
+}
+
+/**
+ * For each repo, check if its .gitattributes on the default branch contains
+ * `filter=lfs` markers. Returns { [repoId]: boolean }.
+ *
+ * Uses raw fetch instead of azureFetch because the Azure /items endpoint
+ * returns plain text when $format=text, not JSON.
+ */
+async function checkLfsMarkers(org, project, repos, pat) {
+    const { default: pLimit } = await import('p-limit')
+    const limit = pLimit(5)
+    const entries = await Promise.all(
+        repos.map((repo) =>
+            limit(async () => {
+                const id = repo.id
+                if (!id) return [id, false]
+                try {
+                    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(id)}/items?path=/.gitattributes&$format=text&api-version=${API_VERSION}`
+                    const res = await fetch(url, {
+                        headers: {
+                            Authorization: `Basic ${Buffer.from(`:${pat}`).toString('base64')}`,
+                            Accept: 'text/plain',
+                        },
+                    })
+                    if (!res.ok) return [id, false]
+                    const body = await res.text()
+                    return [id, /filter\s*=\s*lfs/.test(body)]
+                } catch {
+                    return [id, false]
+                }
+            })
+        )
+    )
+    return Object.fromEntries(entries)
+}
+
+/** 12-month commit activity histogram for a single repo. */
+async function getCommitActivity(org, project, repoId, defaultBranch, pat, months = 12) {
+  const cutoff = new Date()
+  cutoff.setMonth(cutoff.getMonth() - months)
+  const branch = (defaultBranch || '').replace(/^refs\/heads\//, '') || 'main'
+  const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/commits?searchCriteria.itemVersion.version=${encodeURIComponent(branch)}&searchCriteria.fromDate=${encodeURIComponent(cutoff.toISOString())}&$top=1000&api-version=${API_VERSION}`
+  const data = await azureFetch(url, pat)
+  const buckets = {}
+  for (const c of data.value || []) {
+    const d = new Date(c.author?.date || c.committer?.date)
+    if (isNaN(d)) continue
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    buckets[key] = (buckets[key] || 0) + 1
+  }
+  return Object.entries(buckets)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, count]) => ({ month, count }))
+}
+
+/** Fetch the repository README (first matching file in root). */
+async function getRepoReadme(org, project, repoId, pat, ref) {
+  const candidates = ['README.md', 'README.MD', 'Readme.md', 'readme.md', 'README.rst', 'README']
+  for (const name of candidates) {
+    try {
+      const versionDesc = ref ? `&versionDescriptor.version=${encodeURIComponent(ref)}` : ''
+      const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/items?path=/${name}&$format=text${versionDesc}&api-version=${API_VERSION}`
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Basic ${Buffer.from(`:${pat}`).toString('base64')}`,
+          Accept: 'text/plain',
+        },
+      })
+      if (res.ok) {
+        const text = await res.text()
+        return { name, content: text.slice(0, 4096) }
+      }
+    } catch { /* try next */ }
+  }
+  return { name: null, content: '' }
+}
+
+/** Commit count (capped) and unique contributor count over default branch. */
+async function getRepoFullStats(org, project, repoId, defaultBranch, pat) {
+  const branch = (defaultBranch || '').replace(/^refs\/heads\//, '') || 'main'
+  const CAP = 500
+  const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/commits?searchCriteria.itemVersion.version=${encodeURIComponent(branch)}&$top=${CAP}&api-version=${API_VERSION}`
+  const data = await azureFetch(url, pat)
+  const commits = data.value || []
+  const contributors = new Set(commits.map((c) => c.author?.email || c.author?.name).filter(Boolean))
+  return {
+    commitCount: commits.length,
+    commitCountCapped: commits.length >= CAP,
+    contributorCount: contributors.size,
+  }
+}
+
 export {
     validatePat,
     listProjects,
     listOrganizations,
     listRepos,
+    listRepoActivity,
+    checkLfsMarkers,
+    getCommitActivity,
+    getRepoReadme,
+    getRepoFullStats,
     getRepoDetails,
     listBranches,
     buildAuthenticatedCloneUrl,
