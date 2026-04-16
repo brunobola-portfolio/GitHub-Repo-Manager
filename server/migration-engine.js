@@ -555,6 +555,7 @@ export class MigrationEngine extends EventEmitter {
           targetName: targetRepo,
           isPrivate: config.makePrivate ?? true,
           description: config.description || '',
+          sizeStrategy: config.sizeStrategy,
           githubToken: resolvedCredentials.githubToken,
           onProgress: (status, message, pct) => callbacks.onProgress(pct, message)
         })
@@ -610,6 +611,7 @@ export class MigrationEngine extends EventEmitter {
             targetName: targetRepo,
             isPrivate: config.makePrivate ?? true,
             description: config.description || '',
+            sizeStrategy: config.sizeStrategy,
             githubToken: resolvedCredentials.githubToken,
             onProgress: (status, message, pct) => callbacks.onProgress(45 + Math.floor((pct / 100) * 50), message)
           })
