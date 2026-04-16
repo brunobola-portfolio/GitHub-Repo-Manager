@@ -68,12 +68,12 @@ export function RepoDetailPanel({ repo, source, onClose, onPrev, onNext, onRiskA
 
       <div className="overflow-y-auto flex-1 p-4 space-y-5">
         <section>
-          <h4 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Risk Report</h4>
+          <h4 className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mb-2">Risk Report</h4>
           <RepoRiskReport flags={repo.risk?.flags || []} onAction={(actionId) => onRiskAction(repo.id, actionId)} />
         </section>
 
         <section>
-          <h4 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Activity</h4>
+          <h4 className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mb-2">Activity</h4>
           {activity === null ? (
             <div className="h-8 rounded bg-slate-200 dark:bg-slate-800 ds-card-shimmer" />
           ) : (
@@ -88,13 +88,13 @@ export function RepoDetailPanel({ repo, source, onClose, onPrev, onNext, onRiskA
         </section>
 
         <section>
-          <h4 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Details</h4>
+          <h4 className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mb-2">Details</h4>
           <RepoMetaBadges repo={repo} />
         </section>
 
         {readme?.content && (
           <section>
-            <h4 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
+            <h4 className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mb-2">
               {readme.name} (preview)
             </h4>
             <div className="relative max-h-60 overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">

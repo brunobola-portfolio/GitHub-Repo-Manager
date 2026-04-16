@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import { PANEL_SPRING } from '../MigrationWizard/ui/motion'
 
 export function SidePanel({ isOpen, onClose, title, subtitle, children, width = 480, side = 'right' }) {
   const panelRef = useFocusTrap(isOpen, onClose)
@@ -25,7 +26,7 @@ export function SidePanel({ isOpen, onClose, title, subtitle, children, width = 
             initial={{ x: side === 'right' ? '100%' : '-100%' }}
             animate={{ x: 0 }}
             exit={{ x: side === 'right' ? '100%' : '-100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            transition={PANEL_SPRING}
             className={`fixed ${side === 'right' ? 'right-0' : 'left-0'} top-0 bottom-0 bg-white dark:bg-slate-950 z-[60] shadow-2xl flex flex-col`}
             style={{ width: `min(${width}px, 100vw)` }}
             role="dialog"
