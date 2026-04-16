@@ -11,6 +11,9 @@ export function fixInvalidChars(repo) {
   // Strip both ends only when the result opens with a hyphen (the original
   // name started with an invalid char); otherwise the trailing hyphen is
   // intentional output (e.g. "my repo!" → "my-repo-").
+  // For all-invalid names like '!!!', the collapsed form is '-' or '--' which
+  // is not a valid GitHub repo name. The UI validates `to` before apply, so
+  // the user sees an inline error rather than a broken push.
   const to = collapsed.startsWith('-')
     ? collapsed.replace(/^-+/, '').replace(/-+$/, '') || collapsed
     : collapsed
@@ -38,7 +41,7 @@ export function fixDuplicates(repo, ctx) {
   const sameName = selected.filter((r) => r.name === repo.name)
   if (sameName.length < 2) return null
   const position = sameName.findIndex((r) => r.id === repo.id)
-  if (position === 0) return null
+  if (position <= 0) return null
   return {
     type: 'duplicate-in-batch',
     from: repo.name,
@@ -68,6 +71,9 @@ export function buildDeterministicPlan(repos, ctx) {
       const result = fn(repo, ctx)
       if (result) {
         plan.push({ repoIndex: i, ...result })
+        // Single fix per repo: the risk engine re-evaluates after apply, so a repo
+        // that matches multiple rules (e.g. '!api' → invalid + reserved) resurfaces
+        // its remaining issue on the next drawer open.
         break
       }
     }

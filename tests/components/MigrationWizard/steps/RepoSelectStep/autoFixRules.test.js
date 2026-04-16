@@ -28,6 +28,11 @@ describe('fixInvalidChars', () => {
   it('strips leading and trailing hyphens', () => {
     expect(fixInvalidChars(makeRepo({ name: '!hello!' })).to).toBe('hello')
   })
+  it('keeps trailing hyphen when only the end is invalid (spec behavior)', () => {
+    // The spec §7.1 requires 'my repo!' → 'my-repo-' — trailing hyphens from
+    // invalid trailing chars are preserved to signal the auto-fix origin.
+    expect(fixInvalidChars(makeRepo({ name: 'hello!' })).to).toBe('hello-')
+  })
 })
 
 describe('fixReserved', () => {
@@ -61,6 +66,11 @@ describe('fixDuplicates', () => {
     const a = makeRepo({ id: 'a', name: 'dup', selected: true })
     const b = makeRepo({ id: 'b', name: 'dup', selected: false })
     expect(fixDuplicates(a, { allRepos: [a, b] })).toBeNull()
+  })
+  it('returns null when repo is not present in allRepos', () => {
+    const a = makeRepo({ id: 'a', name: 'dup', selected: true })
+    const orphan = makeRepo({ id: 'orphan', name: 'dup', selected: true })
+    expect(fixDuplicates(orphan, { allRepos: [a] })).toBeNull()
   })
 })
 
