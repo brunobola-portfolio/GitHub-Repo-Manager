@@ -144,10 +144,10 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAva
             }
           }
           // Fix 3: prune stale entries from aiSuggestions
-          const currentIds = new Set(plan.map((p) => repos[p.repoIndex].id))
+          const currentSizeIds = new Set(sizeCritical.map((r) => r.id))
           setAiSuggestions((prev) => {
             const retained = Object.fromEntries(
-              Object.entries(prev).filter(([id]) => currentIds.has(id))
+              Object.entries(prev).filter(([id]) => currentSizeIds.has(id))
             )
             return { ...retained, ...next }
           })

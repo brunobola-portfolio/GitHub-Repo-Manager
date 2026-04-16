@@ -141,4 +141,25 @@ describe('useAutoFixPlan', () => {
     })
     expect(result.current.aiSuggestions['a']).toBeUndefined()
   })
+
+  it('Phase 3 AI suggestion persists for size-critical repo without a rename blocker', async () => {
+    mockFetchImpl({
+      'check-duplicates': { body: { duplicates: {} } },
+      'migration-size-strategy': { body: { strategy: 'exclude', rationale: 'stale', confidence: 0.9 } },
+    })
+    // A size-critical repo with a VALID name — no rename blocker → not in plan.
+    const repos = [makeRepo({ id: 'big', name: 'valid-name', size: 11 * 1024 * 1024, selected: true })]
+    const { result } = renderHook(() =>
+      useAutoFixPlan({ repos, allRepos: repos, targetOrg: 'myorg', azureProject: 'X', aiAvailable: true }),
+    )
+    await waitFor(() => {
+      expect(result.current.aiSuggestions['big']).toEqual({
+        strategy: 'exclude',
+        rationale: 'stale',
+        confidence: 0.9,
+      })
+    })
+    // plan should be empty — no rename blockers
+    expect(result.current.plan).toHaveLength(0)
+  })
 })
