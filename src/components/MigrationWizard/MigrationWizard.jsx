@@ -23,7 +23,7 @@ import SimpleProgressStep from './steps/SimpleProgressStep'
 import SummaryStep from './steps/SummaryStep'
 import BreadcrumbNav from './BreadcrumbNav'
 import {
-  ArrowLeft, ArrowRight, Rocket, Download, AlertCircle,
+  ArrowLeft, ArrowRight, Rocket, Download, AlertCircle, AlertTriangle,
   Check, Radio, Link2, GitFork, Settings2, Sparkles,
   CalendarClock, Activity, Flag, Cloud, ChevronRight, Zap,
 } from 'lucide-react'
@@ -101,7 +101,7 @@ const STEP_HINTS = {
 /* ------------------------------------------------------------------ */
 /*  Sidebar Stepper (desktop fullscreen)                               */
 /* ------------------------------------------------------------------ */
-function SidebarStepper({ steps, currentStepIndex, onGoToStep, source, selectedCount, onBreadcrumbNavigate, currentStep }) {
+function SidebarStepper({ steps, currentStepIndex, onGoToStep, source, selectedCount, totalWarnings = 0, onBreadcrumbNavigate, currentStep }) {
   const VISIBLE_BREADCRUMB_STEPS = ['repoSelect', 'repoConfig', 'workItems', 'wiki', 'aiReview', 'schedule']
   const showBreadcrumb = source?.sourceType === 'azure' && VISIBLE_BREADCRUMB_STEPS.includes(currentStep)
 
@@ -130,8 +130,13 @@ function SidebarStepper({ steps, currentStepIndex, onGoToStep, source, selectedC
             {selectedCount > 0 && (
               <>
                 <ChevronRight className="w-2.5 h-2.5 text-slate-400 dark:text-slate-600 shrink-0" />
-                <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/15 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap inline-flex items-center gap-1 ${
+                  totalWarnings > 0
+                    ? 'text-amber-500 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-500/15'
+                    : 'text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/15'
+                }`}>
                   {selectedCount} repos
+                  {totalWarnings > 0 && <AlertTriangle className="w-2.5 h-2.5" />}
                 </span>
               </>
             )}
@@ -395,6 +400,10 @@ export default function MigrationWizard({ onClose, orgs = [], initialDryRun = fa
   const oauthHook = useAzureOAuth()
   const orgsHook = useAzureOrganizations()
   const selectedRepos = repos.filter((r) => r.selected)
+  const totalWarnings = selectedRepos.reduce(
+    (sum, r) => sum + (r.risk?.flags || []).filter((f) => f.severity === 'warning').length,
+    0
+  )
   const blockerCount = currentStep === 'repoSelect'
     ? selectedRepos.reduce((sum, r) => sum + (r.risk?.flags || []).filter((f) => f.severity === 'blocker').length, 0)
     : 0
@@ -662,6 +671,7 @@ export default function MigrationWizard({ onClose, orgs = [], initialDryRun = fa
       onGoToStep={goToStep}
       source={source}
       selectedCount={selectedRepos.length}
+      totalWarnings={totalWarnings}
       onBreadcrumbNavigate={handleBreadcrumbNavigate}
       currentStep={currentStep}
     />
@@ -729,6 +739,7 @@ export default function MigrationWizard({ onClose, orgs = [], initialDryRun = fa
                 source={source}
                 currentStep={currentStep}
                 selectedCount={selectedRepos.length}
+                totalWarnings={totalWarnings}
                 onNavigate={handleBreadcrumbNavigate}
               />
             )}
