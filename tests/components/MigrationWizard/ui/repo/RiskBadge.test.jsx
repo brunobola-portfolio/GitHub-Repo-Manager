@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
-import { RiskBadge } from '../../../../src/components/MigrationWizard/ui/repo/RiskBadge'
+import { RiskBadge } from '../../../../../src/components/MigrationWizard/ui/repo/RiskBadge'
 
 describe('RiskBadge', () => {
   it('returns null when level is ok', () => {

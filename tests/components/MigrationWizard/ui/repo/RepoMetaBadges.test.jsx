@@ -8,7 +8,7 @@ describe('RepoMetaBadges', () => {
   it('renders language, size, branches', () => {
     render(<RepoMetaBadges repo={base} />)
     expect(screen.getByText('JavaScript')).toBeInTheDocument()
-    expect(screen.getByText(/2\.0 MB/)).toBeInTheDocument()
+    expect(screen.getByText(/2 MB/)).toBeInTheDocument()
     expect(screen.getByText('3')).toBeInTheDocument()
   })
 

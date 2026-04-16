@@ -1,13 +1,5 @@
 import { Code2, HardDrive, GitBranch, Clock, Database } from 'lucide-react'
-
-/** Formats bytes to human-readable size, preserving fixed decimal places (no trailing-zero strip). */
-function formatBytes(bytes, decimals = 1) {
-  if (!bytes || bytes <= 0) return '0 Bytes'
-  const k = 1024
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1)
-  return `${(bytes / Math.pow(k, i)).toFixed(decimals)} ${sizes[i]}`
-}
+import { formatFileSize } from '../../../../utils/format'
 
 function formatRelativeTime(iso) {
   if (!iso) return null
@@ -47,7 +39,7 @@ export function RepoMetaBadges({ repo, density = 'full' }) {
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
       {repo.language && <Badge icon={Code2} tone="purple">{repo.language}</Badge>}
-      <Badge icon={HardDrive}>{formatBytes((repo.size || 0) * 1024)}</Badge>
+      <Badge icon={HardDrive}>{formatFileSize((repo.size || 0) * 1024, 1)}</Badge>
       {showBranches && <Badge icon={GitBranch} tone="sky">{repo.branches}</Badge>}
       {repo.isTfvc && <Badge tone="violet">TFVC</Badge>}
       {repo.hasLfsMarker && <Badge icon={Database} tone="amber">LFS</Badge>}

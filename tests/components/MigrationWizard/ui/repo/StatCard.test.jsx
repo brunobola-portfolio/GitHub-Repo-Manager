@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { Package } from 'lucide-react'
 import { describe, it, expect } from 'vitest'
-import { StatCard } from '../../../../src/components/MigrationWizard/ui/repo/StatCard'
+import { StatCard } from '../../../../../src/components/MigrationWizard/ui/repo/StatCard'
 
 describe('StatCard', () => {
   it('renders value and label', () => {
