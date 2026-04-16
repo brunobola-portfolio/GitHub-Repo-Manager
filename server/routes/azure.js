@@ -13,6 +13,21 @@ const orgListLimiter = rateLimit({
     message: { error: 'Too many requests — try again in a minute' },
 });
 
+// Rate limiter for enrichment endpoints: protects Azure API quota from runaway
+// clients and parallel-request storms. Each enrichment request can fan-out to
+// many Azure calls (batch endpoints) so we cap total endpoint hits per minute.
+const enrichedRepoLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many repo enrichment requests — try again in a minute' },
+});
+
+// Upper bound on batch size for enrichment endpoints. Prevents a single
+// request from fanning out to thousands of Azure API calls (quota burn / DoS).
+const MAX_BATCH_REPOS = 200;
+
 const router = express.Router();
 
 // Org name validation uses isValidGitHubUsername from auth.js
@@ -209,12 +224,15 @@ router.post('/azure/pat-permissions', requireAuth, async (req, res) => {
     }
 });
 
-router.post('/azure/repos/activity', requireAuth, async (req, res) => {
+router.post('/azure/repos/activity', requireAuth, enrichedRepoLimiter, async (req, res) => {
     try {
         const { org, project, repos, pat: bodyPat } = req.body;
         const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org || !project || !Array.isArray(repos)) {
             return errorResponse(res, 400, 'org, project and repos[] required');
+        }
+        if (repos.length > MAX_BATCH_REPOS) {
+            return errorResponse(res, 400, `Too many repos per request (max ${MAX_BATCH_REPOS})`);
         }
         if (!isValidGitHubUsername(org)) return errorResponse(res, 400, 'Invalid organization name');
         if (!pat) return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
@@ -225,12 +243,15 @@ router.post('/azure/repos/activity', requireAuth, async (req, res) => {
     }
 });
 
-router.post('/azure/repos/lfs-check', requireAuth, async (req, res) => {
+router.post('/azure/repos/lfs-check', requireAuth, enrichedRepoLimiter, async (req, res) => {
     try {
         const { org, project, repos, pat: bodyPat } = req.body;
         const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org || !project || !Array.isArray(repos)) {
             return errorResponse(res, 400, 'org, project and repos[] required');
+        }
+        if (repos.length > MAX_BATCH_REPOS) {
+            return errorResponse(res, 400, `Too many repos per request (max ${MAX_BATCH_REPOS})`);
         }
         if (!isValidGitHubUsername(org)) return errorResponse(res, 400, 'Invalid organization name');
         if (!pat) return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
@@ -241,11 +262,12 @@ router.post('/azure/repos/lfs-check', requireAuth, async (req, res) => {
     }
 });
 
-router.post('/azure/repos/commit-activity', requireAuth, async (req, res) => {
+router.post('/azure/repos/commit-activity', requireAuth, enrichedRepoLimiter, async (req, res) => {
     try {
         const { org, project, repoId, defaultBranch, months, pat: bodyPat } = req.body;
         const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org || !project || !repoId) return errorResponse(res, 400, 'org, project, repoId required');
+        if (!isValidGitHubUsername(org)) return errorResponse(res, 400, 'Invalid organization name');
         if (!pat) return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
         const activity = await azureService.getCommitActivity(org, project, repoId, defaultBranch, pat, months || 12);
         res.json({ activity });
@@ -254,11 +276,12 @@ router.post('/azure/repos/commit-activity', requireAuth, async (req, res) => {
     }
 });
 
-router.post('/azure/repos/readme', requireAuth, async (req, res) => {
+router.post('/azure/repos/readme', requireAuth, enrichedRepoLimiter, async (req, res) => {
     try {
         const { org, project, repoId, ref, pat: bodyPat } = req.body;
         const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org || !project || !repoId) return errorResponse(res, 400, 'org, project, repoId required');
+        if (!isValidGitHubUsername(org)) return errorResponse(res, 400, 'Invalid organization name');
         if (!pat) return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
         const readme = await azureService.getRepoReadme(org, project, repoId, pat, ref);
         res.json(readme);
@@ -267,11 +290,12 @@ router.post('/azure/repos/readme', requireAuth, async (req, res) => {
     }
 });
 
-router.post('/azure/repos/full-stats', requireAuth, async (req, res) => {
+router.post('/azure/repos/full-stats', requireAuth, enrichedRepoLimiter, async (req, res) => {
     try {
         const { org, project, repoId, defaultBranch, pat: bodyPat } = req.body;
         const pat = azureService.resolvePat(bodyPat, req.session);
         if (!org || !project || !repoId) return errorResponse(res, 400, 'org, project, repoId required');
+        if (!isValidGitHubUsername(org)) return errorResponse(res, 400, 'Invalid organization name');
         if (!pat) return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
         const stats = await azureService.getRepoFullStats(org, project, repoId, defaultBranch, pat);
         res.json(stats);
