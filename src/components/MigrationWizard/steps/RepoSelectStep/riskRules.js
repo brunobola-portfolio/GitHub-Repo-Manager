@@ -7,6 +7,7 @@ export const RESERVED_NAMES = [
 ]
 
 const GB_IN_KB = 1024 * 1024
+export const SIZE_CRITICAL_KB = 10 * GB_IN_KB
 const TWO_YEARS_MS = 2 * 365 * 24 * 60 * 60 * 1000
 const VALID_NAME_RE = /^[A-Za-z0-9._-]+$/
 
@@ -54,7 +55,7 @@ const rules = [
     }
   },
   function ruleSizeCritical(repo) {
-    if (repo.size <= 10 * GB_IN_KB) return null
+    if (repo.size <= SIZE_CRITICAL_KB) return null
     return {
       type: 'size-critical',
       severity: 'blocker',

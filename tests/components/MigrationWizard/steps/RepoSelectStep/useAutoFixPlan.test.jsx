@@ -62,10 +62,12 @@ describe('useAutoFixPlan', () => {
   it('Phase 3 skips when aiAvailable is false', async () => {
     mockFetchImpl({ 'check-duplicates': { body: { duplicates: {} } } })
     const repos = [makeRepo({ id: 'a', name: 'huge', size: 11 * 1024 * 1024, selected: true })]
-    renderHook(() =>
+    const { result } = renderHook(() =>
       useAutoFixPlan({ repos, allRepos: repos, targetOrg: 'myorg', azureProject: 'X', aiAvailable: false }),
     )
-    await new Promise((r) => setTimeout(r, 20))
+    // 'huge' is not in RESERVED_NAMES, so plan is empty: no duplicates call fires.
+    // Wait for the hook to report that it is not loading AI (i.e. Phase 3 was skipped).
+    await waitFor(() => expect(result.current.isAILoading).toBe(false))
     const aiCalls = global.fetch.mock.calls.filter((c) => c[0].includes('migration-size-strategy'))
     expect(aiCalls).toHaveLength(0)
   })
@@ -100,5 +102,43 @@ describe('useAutoFixPlan', () => {
     unmount()
     expect(abortSpy).toHaveBeenCalled()
     abortSpy.mockRestore()
+  })
+
+  it('Phase 2 conflict=true maps to status conflict', async () => {
+    mockFetchImpl({ 'check-duplicates': { body: { duplicates: { 'api-repo': true } } } })
+    const repos = [makeRepo({ id: 'a', name: 'api', selected: true })]
+    const { result } = renderHook(() =>
+      useAutoFixPlan({ repos, allRepos: repos, targetOrg: 'myorg', azureProject: 'X', aiAvailable: false }),
+    )
+    await waitFor(() => {
+      expect(result.current.conflictStatuses['a']).toBe('conflict')
+    })
+  })
+
+  it('Phase 2 401 sets auth error and does not set conflict status', async () => {
+    mockFetchImpl({ 'check-duplicates': { ok: false, status: 401, body: {} } })
+    const repos = [makeRepo({ id: 'a', name: 'api', selected: true })]
+    const { result } = renderHook(() =>
+      useAutoFixPlan({ repos, allRepos: repos, targetOrg: 'myorg', azureProject: 'X', aiAvailable: false }),
+    )
+    await waitFor(() => {
+      expect(result.current.error).toEqual({ type: 'auth', message: expect.any(String) })
+    })
+    expect(result.current.conflictStatuses['a']).toBeUndefined()
+  })
+
+  it('Phase 3 429 sets ai-quota error and skips suggestions for quota-hit repos', async () => {
+    mockFetchImpl({
+      'check-duplicates': { body: { duplicates: {} } },
+      'migration-size-strategy': { ok: false, status: 429, body: {} },
+    })
+    const repos = [makeRepo({ id: 'a', name: 'huge', size: 11 * 1024 * 1024, selected: true })]
+    const { result } = renderHook(() =>
+      useAutoFixPlan({ repos, allRepos: repos, targetOrg: 'myorg', azureProject: 'X', aiAvailable: true }),
+    )
+    await waitFor(() => {
+      expect(result.current.error).toEqual({ type: 'ai-quota', message: expect.any(String) })
+    })
+    expect(result.current.aiSuggestions['a']).toBeUndefined()
   })
 })

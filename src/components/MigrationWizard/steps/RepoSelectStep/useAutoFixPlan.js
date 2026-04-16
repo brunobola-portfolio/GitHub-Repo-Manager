@@ -1,9 +1,35 @@
 // src/components/MigrationWizard/steps/RepoSelectStep/useAutoFixPlan.js
 import { useEffect, useMemo, useState } from 'react'
 import { buildDeterministicPlan } from './autoFixRules.js'
+import { SIZE_CRITICAL_KB } from './riskRules.js'
 
-const SIZE_CRITICAL_KB = 10 * 1024 * 1024 // 10 GB
+// Fix 2: priority-aware error setter (auth > ai-quota)
+const ERROR_RANK = { auth: 2, 'ai-quota': 1 }
 
+function worseError(prev, next) {
+  if (!prev) return next
+  return (ERROR_RANK[next.type] ?? 0) > (ERROR_RANK[prev.type] ?? 0) ? next : prev
+}
+
+/**
+ * Orchestrates the three-phase auto-fix workflow for the migration Repos step.
+ *
+ * Phase 1 (sync): buildDeterministicPlan → FixItem[] for renamed blockers.
+ * Phase 2 (async): POST /api/import/check-duplicates to validate proposed
+ *   names against the target org; sets conflictStatuses[repo.id] to
+ *   'clear' | 'conflict' | 'unchecked'.
+ * Phase 3 (async, optional): when aiAvailable AND any repo > 10 GB, POST
+ *   each to /api/ai/migration-size-strategy and store suggestions.
+ *
+ * Caller expectations:
+ * - Pass stable references for `repos` and `allRepos`; new array identities
+ *   every render re-fire all network calls.
+ * - Treat `conflictStatuses` and `aiSuggestions` as keyed by repo.id, only
+ *   valid for items present in the current `plan` (stale entries are
+ *   pruned automatically when the plan changes).
+ * - Abort on unmount via the single AbortController is internal; callers
+ *   do not need to manage cleanup.
+ */
 export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAvailable }) {
   const ctx = useMemo(
     () => ({ allRepos, conflicts: {}, targetOrg, azureProject }),
@@ -32,14 +58,22 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAva
         signal: controller.signal,
       })
         .then(async (res) => {
+          // Fix 2: priority-aware auth error
           if (res.status === 401) {
-            setError({ type: 'auth', message: 'Azure DevOps token expired — please reconnect.' })
+            setError((prev) => worseError(prev, { type: 'auth', message: 'Azure DevOps token expired — please reconnect.' }))
             return
           }
           if (!res.ok) {
             const unchecked = {}
             plan.forEach((p) => { unchecked[repos[p.repoIndex].id] = 'unchecked' })
-            setConflictStatuses((prev) => ({ ...prev, ...unchecked }))
+            // Fix 3: prune stale entries from conflictStatuses
+            const currentIds = new Set(plan.map((p) => repos[p.repoIndex].id))
+            setConflictStatuses((prev) => {
+              const retained = Object.fromEntries(
+                Object.entries(prev).filter(([id]) => currentIds.has(id))
+              )
+              return { ...retained, ...unchecked }
+            })
             return
           }
           const data = await res.json()
@@ -48,13 +82,27 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAva
             const repoId = repos[p.repoIndex].id
             next[repoId] = data.duplicates?.[p.to] ? 'conflict' : 'clear'
           })
-          setConflictStatuses((prev) => ({ ...prev, ...next }))
+          // Fix 3: prune stale entries from conflictStatuses
+          const currentIds = new Set(plan.map((p) => repos[p.repoIndex].id))
+          setConflictStatuses((prev) => {
+            const retained = Object.fromEntries(
+              Object.entries(prev).filter(([id]) => currentIds.has(id))
+            )
+            return { ...retained, ...next }
+          })
         })
         .catch((e) => {
           if (e.name === 'AbortError') return
           const unchecked = {}
           plan.forEach((p) => { unchecked[repos[p.repoIndex].id] = 'unchecked' })
-          setConflictStatuses((prev) => ({ ...prev, ...unchecked }))
+          // Fix 3: prune stale entries from conflictStatuses
+          const currentIds = new Set(plan.map((p) => repos[p.repoIndex].id))
+          setConflictStatuses((prev) => {
+            const retained = Object.fromEntries(
+              Object.entries(prev).filter(([id]) => currentIds.has(id))
+            )
+            return { ...retained, ...unchecked }
+          })
         })
         .finally(() => setIsValidating(false))
     }
@@ -84,6 +132,8 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAva
         }),
       )
         .then((results) => {
+          // Fix 1: guard post-abort state mutation in Phase 3
+          if (controller.signal.aborted) return
           const next = {}
           let quotaHit = false
           for (const r of results) {
@@ -93,10 +143,21 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAva
               quotaHit = true
             }
           }
-          setAiSuggestions((prev) => ({ ...prev, ...next }))
-          if (quotaHit) setError({ type: 'ai-quota', message: 'AI quota reached — try again later or upgrade.' })
+          // Fix 3: prune stale entries from aiSuggestions
+          const currentIds = new Set(plan.map((p) => repos[p.repoIndex].id))
+          setAiSuggestions((prev) => {
+            const retained = Object.fromEntries(
+              Object.entries(prev).filter(([id]) => currentIds.has(id))
+            )
+            return { ...retained, ...next }
+          })
+          // Fix 2: priority-aware ai-quota error
+          if (quotaHit) setError((prev) => worseError(prev, { type: 'ai-quota', message: 'AI quota reached — try again later or upgrade.' }))
         })
-        .finally(() => setIsAILoading(false))
+        // Fix 1: guard Phase 3 finally block
+        .finally(() => {
+          if (!controller.signal.aborted) setIsAILoading(false)
+        })
     }
 
     return () => controller.abort()
