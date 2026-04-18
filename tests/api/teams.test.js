@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-// Default config mock — individual tests use vi.doMock + dynamic import
-// to swap MOCK_MODE between suites without resetting globals.
+// Shared mock state — tests flip `mockMode` before importing @/api/teams.
+// Using a single hoisted vi.mock with getters avoids the vi.mock/vi.doMock
+// interaction that leaked across runs on CI (flake: teams.test.js:27).
+let mockMode = false
 vi.mock('@/config', () => ({
-  MOCK_MODE: false,
+  get MOCK_MODE() { return mockMode },
   API_BASE_URL: '',
   API_BASE: '/api',
 }))
@@ -11,6 +13,7 @@ vi.mock('@/config', () => ({
 describe('listTeams — mock mode', () => {
   beforeEach(() => {
     vi.resetModules()
+    mockMode = false
     global.fetch = vi.fn()
   })
 
@@ -19,7 +22,7 @@ describe('listTeams — mock mode', () => {
   })
 
   it('returns seeded mock teams without hitting the network', async () => {
-    vi.doMock('@/config', () => ({ MOCK_MODE: true, API_BASE_URL: '', API_BASE: '/api' }))
+    mockMode = true
     const { listTeams } = await import('@/api/teams')
 
     const result = await listTeams()
@@ -45,6 +48,7 @@ describe('listTeams — mock mode', () => {
 describe('listTeams — real mode (free tier)', () => {
   beforeEach(() => {
     vi.resetModules()
+    mockMode = false
     global.fetch = vi.fn()
   })
 
@@ -53,7 +57,6 @@ describe('listTeams — real mode (free tier)', () => {
   })
 
   it('returns empty teams with upgradeRequired=true on 403 upgrade_required', async () => {
-    vi.doMock('@/config', () => ({ MOCK_MODE: false, API_BASE_URL: '', API_BASE: '/api' }))
     global.fetch.mockResolvedValueOnce({
       ok: false,
       status: 403,
@@ -78,7 +81,6 @@ describe('listTeams — real mode (free tier)', () => {
   })
 
   it('returns real teams on 200', async () => {
-    vi.doMock('@/config', () => ({ MOCK_MODE: false, API_BASE_URL: '', API_BASE: '/api' }))
     const payload = [
       { id: 42, name: 'Alpha', role: 'owner', member_count: 3, repo_count: 5 },
     ]
@@ -97,7 +99,6 @@ describe('listTeams — real mode (free tier)', () => {
   })
 
   it('returns empty teams with an error string on 500', async () => {
-    vi.doMock('@/config', () => ({ MOCK_MODE: false, API_BASE_URL: '', API_BASE: '/api' }))
     global.fetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
@@ -113,7 +114,6 @@ describe('listTeams — real mode (free tier)', () => {
   })
 
   it('handles network errors gracefully', async () => {
-    vi.doMock('@/config', () => ({ MOCK_MODE: false, API_BASE_URL: '', API_BASE: '/api' }))
     global.fetch.mockRejectedValueOnce(new Error('Network down'))
     const { listTeams } = await import('@/api/teams')
 
@@ -125,7 +125,6 @@ describe('listTeams — real mode (free tier)', () => {
   })
 
   it('coerces non-array JSON responses to an empty array', async () => {
-    vi.doMock('@/config', () => ({ MOCK_MODE: false, API_BASE_URL: '', API_BASE: '/api' }))
     global.fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
