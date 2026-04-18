@@ -91,7 +91,14 @@ export function ActivityChart({ activity = [], timeRange, onTimeRangeChange, loa
                     <Skeleton className="w-full rounded-xl" style={{ height: `${chartHeight}px` }} />
                 ) : (
                     <div style={{ height: `${chartHeight}px`, width: '100%', overflow: 'hidden' }}>
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={200}>
+                        <ResponsiveContainer
+                            width="100%"
+                            height="100%"
+                            minWidth={0}
+                            minHeight={0}
+                            debounce={200}
+                            initialDimension={{ width: 320, height: chartHeight }}
+                        >
                         <LineChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
                             <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} dy={10} />
