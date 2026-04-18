@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.1] - 2026-04-18
+
+### Fixed
+
+- **Flaky `AutoFixDrawer` tests on CI** — three multi-character `userEvent.type` assertions raced the last keystroke against the assertion in happy-dom under CI scheduling. Tests now use `userEvent.setup({ delay: null })` (synchronous typing) plus `findByDisplayValue` polling. No production behavior change.
+- **Removed an intrusive seeding effect in `AutoFixDrawer.jsx`** — the previous `useEffect` that seeded `strategies` from `repo.sizeStrategy` triggered a state update on every open, which compounded the typing race above. Replaced with a render-time fallback (`strategies[id] ?? repo.sizeStrategy`) that delivers the same UX (pre-selected previously applied strategy, "Fix applied" badge) without any extra render churn.
+
 ## [3.2.0] - 2026-04-18
 
 ### Added

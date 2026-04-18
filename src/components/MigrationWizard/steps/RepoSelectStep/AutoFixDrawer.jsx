@@ -43,22 +43,22 @@ export function AutoFixDrawer({
   const drawerRef = useFocusTrap(open, onClose)
   useBodyScrollLock(open)
 
-  // Critical 2 — Reset local state on open transition.
-  // Strategies are seeded from each repo's persisted `sizeStrategy` so that
-  // a fix applied in a previous open is reflected as the active selection.
+  // Critical 2 — Reset local state on open transition. The previously
+  // persisted `repo.sizeStrategy` is honored at read-time via a fallback
+  // (see `effectiveStrategy` below), so no seeding state update is needed.
   const prevOpenRef = useRef(false)
   useEffect(() => {
     if (open && !prevOpenRef.current) {
       setEdits({})
       setChecks({})
-      const seeded = {}
-      for (const r of selected) {
-        if (r.sizeStrategy) seeded[r.id] = r.sizeStrategy
-      }
-      setStrategies(seeded)
+      setStrategies({})
     }
     prevOpenRef.current = open
-  }, [open, selected])
+  }, [open])
+
+  // The active strategy for a repo is the user's in-drawer click if any,
+  // otherwise the persisted value from a previous Apply.
+  const effectiveStrategy = (repo) => strategies[repo.id] ?? repo.sizeStrategy
 
   // Important 4 — Translate repoIndex: selected subset → allRepos
   const selectedToAllRepos = useMemo(
@@ -196,7 +196,7 @@ export function AutoFixDrawer({
                         key={r.id}
                         repo={r}
                         aiSuggestion={aiSuggestions[r.id]}
-                        selectedStrategy={strategies[r.id]}
+                        selectedStrategy={effectiveStrategy(r)}
                         onSelect={(repo, strategy) =>
                           setStrategies((prev) => ({ ...prev, [repo.id]: strategy }))
                         }

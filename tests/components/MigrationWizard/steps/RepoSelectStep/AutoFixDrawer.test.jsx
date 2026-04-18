@@ -37,7 +37,7 @@ describe('AutoFixDrawer', () => {
   })
 
   it('Apply selected is disabled when nothing is checked', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const repos = [makeRepo({ id: 'a', name: 'api', selected: true })]
     render(
       <AutoFixDrawer
@@ -58,7 +58,7 @@ describe('AutoFixDrawer', () => {
   })
 
   it('calls onApply with the expected payload', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const onApply = vi.fn()
     const repos = [makeRepo({ id: 'a', name: 'api', selected: true })]
     render(
@@ -100,7 +100,7 @@ describe('AutoFixDrawer', () => {
   })
 
   it('selecting a strategy enables Apply for that repo', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const onApply = vi.fn()
     const repos = [makeRepo({ id: 'b', name: 'huge', size: 11 * 1024 * 1024, selected: true })]
     render(
@@ -123,7 +123,7 @@ describe('AutoFixDrawer', () => {
   })
 
   it('selecting lfs-migrate also enables lfsEnabled in the patch', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const onApply = vi.fn()
     const repos = [makeRepo({ id: 'b', name: 'huge', size: 11 * 1024 * 1024, selected: true })]
     render(
@@ -168,7 +168,7 @@ describe('AutoFixDrawer', () => {
       status: 200,
       json: async () => ({ duplicates: { 'existing-name': true } }),
     })
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const repos = [makeRepo({ id: 'a', name: 'api', selected: true })]
     render(
       <AutoFixDrawer
@@ -185,13 +185,14 @@ describe('AutoFixDrawer', () => {
     const input = screen.getByRole('textbox', { name: /Rename target for api/i })
     await user.clear(input)
     await user.type(input, 'existing-name')
+    await screen.findByDisplayValue('existing-name')
     // Re-request /check-duplicates should mark conflict; the applySet excludes it.
     // Await the apply button showing (0) — it may take a moment as the hook re-evaluates.
     expect(await screen.findByRole('button', { name: /Apply selected \(0\)/i })).toBeDisabled()
   })
 
   it('edit to an invalid name excludes the item from Apply', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const repos = [makeRepo({ id: 'a', name: 'api', selected: true })]
     render(
       <AutoFixDrawer
@@ -208,6 +209,7 @@ describe('AutoFixDrawer', () => {
     const input = screen.getByRole('textbox', { name: /Rename target for api/i })
     await user.clear(input)
     await user.type(input, 'bad name!')
+    await screen.findByDisplayValue('bad name!')
     expect(screen.getByRole('button', { name: /Apply selected \(0\)/i })).toBeDisabled()
   })
 
@@ -291,7 +293,7 @@ describe('AutoFixDrawer', () => {
   })
 
   it('changing the pre-applied strategy enables Apply with the new value', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const onApply = vi.fn()
     const repos = [
       makeRepo({
@@ -322,7 +324,7 @@ describe('AutoFixDrawer', () => {
   })
 
   it('reopening resets edits, checks, and strategies', async () => {
-    const user = userEvent.setup()
+    const user = userEvent.setup({ delay: null })
     const repos = [makeRepo({ id: 'a', name: 'api', selected: true })]
     const { rerender } = render(
       <AutoFixDrawer
@@ -339,7 +341,9 @@ describe('AutoFixDrawer', () => {
     const input = screen.getByRole('textbox', { name: /Rename target for api/i })
     await user.clear(input)
     await user.type(input, 'edited-name')
-    expect(input).toHaveValue('edited-name')
+    // findBy* polls — happy-dom + userEvent.type can race the last keystroke
+    // against the assertion if we read synchronously.
+    await screen.findByDisplayValue('edited-name')
     // Close drawer
     rerender(
       <AutoFixDrawer
