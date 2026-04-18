@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { sanitizeActions, dispatchAction } from '../utils/aiActions'
 import { detectRepoUrl } from '../utils/repoUrlDetector'
 import { AIAssistantPasteDialog } from './AIAssistantPasteDialog'
+import { buildWizardPayload } from '../utils/pasteDialogPayload'
 
 let msgIdCounter = 0
 const nextMsgId = () => `msg-${Date.now()}-${++msgIdCounter}`
@@ -443,40 +444,4 @@ function computeNextField(answers) {
   if (!answers.targetOrg) return 'targetOrg'
   if (answers.targetName === undefined) return 'targetName'
   return null
-}
-
-function buildWizardPayload(dialog) {
-  const detectedName = dialog.parsed.repo
-  const answerName = (dialog.answers.targetName || '').trim()
-  const finalName = !answerName || answerName.toLowerCase() === 'manter'
-    ? detectedName
-    : answerName
-
-  if (dialog.sourceType === 'azure') {
-    const { org, project, repo } = dialog.parsed
-    return {
-      initialSource: {
-        sourceType: 'azure',
-        org: org || '',
-        project: project || '',
-        targetOrg: dialog.answers.targetOrg,
-        targetName: finalName || '',
-      },
-      initialRepos: repo
-        ? [{ id: `paste-${repo}`, name: repo, selected: true, targetName: finalName || repo }]
-        : [],
-      initialStep: repo ? 'repoConfig' : 'azureConnect',
-    }
-  }
-  const { owner, repo } = dialog.parsed
-  return {
-    initialSource: {
-      sourceType: 'github',
-      githubSourceUrl: `https://github.com/${owner}/${repo}`,
-      targetOrg: dialog.answers.targetOrg,
-      targetName: finalName || '',
-    },
-    initialRepos: [],
-    initialStep: 'targetConfig',
-  }
 }
