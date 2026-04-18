@@ -72,14 +72,19 @@ function preprocess(url) {
 }
 
 function detectOtherService(url) {
-  const lower = url.toLowerCase()
-  if (lower.includes('github.com')) {
+  let host = ''
+  try {
+    host = new URL(url).hostname.toLowerCase()
+  } catch {
+    return null // not a parseable URL — fall through to other parsers
+  }
+  if (host === 'github.com' || host.endsWith('.github.com')) {
     return { error: 'This looks like a GitHub URL.', suggestion: "Use the 'Git URL' option to import from GitHub." }
   }
-  if (lower.includes('gitlab.com')) {
+  if (host === 'gitlab.com' || host.endsWith('.gitlab.com')) {
     return { error: 'This looks like a GitLab URL.', suggestion: "Use the 'Git URL' option to import from GitLab." }
   }
-  if (lower.includes('bitbucket.org')) {
+  if (host === 'bitbucket.org' || host.endsWith('.bitbucket.org')) {
     return { error: 'This looks like a Bitbucket URL.', suggestion: "Use the 'Git URL' option to import from Bitbucket." }
   }
   return null

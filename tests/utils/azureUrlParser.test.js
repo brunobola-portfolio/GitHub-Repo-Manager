@@ -204,4 +204,12 @@ describe('parseAzureUrl', () => {
     const r = parseAzureUrl('hello')
     expect(r.error).toBeTruthy()
   })
+
+  it('does not false-positive other services when the brand name appears only in the path', () => {
+    // path contains "github.com" but host is dev.azure.com
+    const r = parseAzureUrl('https://dev.azure.com/github.com/proj')
+    expect(r.error).toBeNull()
+    expect(r.org).toBe('github.com')
+    expect(r.project).toBe('proj')
+  })
 })
