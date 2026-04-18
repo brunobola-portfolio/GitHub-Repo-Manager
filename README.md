@@ -149,6 +149,12 @@ GitHub Repo Manager integrates **Google Gemini AI** to supercharge your workflow
 ### Conversational Task Automation (new in v3.3.0)
 The assistant doesn't just answer — it **dispatches real app actions** from natural-language intent. Ask "start a migration from Azure" and it opens the Migration Wizard for you; say "create a new repo" and the creation modal appears pre-focused.
 
+<div align="center">
+
+![Action Dispatch Flow](docs/images/action-dispatch.svg)
+
+</div>
+
 | Intent example | Action dispatched |
 |----------------|-------------------|
 | "migrate from Azure DevOps" | Opens the 8-step Migration Wizard |
@@ -157,7 +163,7 @@ The assistant doesn't just answer — it **dispatches real app actions** from na
 | "transfer this repo to another org" | Opens the Transfer modal |
 | "open settings" | Opens the Settings panel |
 
-Available on **every tier including Free** — the full AI product surface (Assistant, Semantic Search, Migration Risk Analysis, PR Review read-only) ships on the Free plan with per-feature monthly caps. Implementation lives in [`src/utils/aiActions.js`](src/utils/aiActions.js) with strict allow-list validation (no arbitrary action execution).
+Available on **every tier including Free** — the full AI product surface (Assistant, Semantic Search, Migration Risk Analysis, PR Review read-only) ships on the Free plan with per-feature monthly caps. Implementation lives in [`src/utils/aiActions.js`](src/utils/aiActions.js) with strict allow-list validation: any action `type` not in the five above is silently dropped, so the model cannot invoke arbitrary app state changes.
 
 ### Repository Analysis & Quality Reports
 - **Quality Scoring (0-100)** — Comprehensive analysis across 4 categories:
