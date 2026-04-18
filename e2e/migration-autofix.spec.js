@@ -87,10 +87,13 @@ test.describe('Migration Auto-Fix Drawer', () => {
     await expect(orgInput).toBeVisible({ timeout: 10000 })
     await orgInput.fill('myorg')
 
-    // Wait for validation + project list to load, then select APOS project
+    // Wait for validation + project list to load, then select APOS project.
+    // The wizard uses a custom <Select> (button-based combobox), so interact
+    // like a user would: click trigger, then click the option.
     const projectSelect = page.getByRole('combobox', { name: /project/i })
     await expect(projectSelect).toBeVisible({ timeout: 10000 })
-    await projectSelect.selectOption('APOS')
+    await projectSelect.click()
+    await page.getByRole('option', { name: 'APOS' }).click()
 
     // Click Next to advance to repoSelect
     await page.getByRole('button', { name: /Next/i }).click()

@@ -259,6 +259,7 @@ export function Select({
             {/* Select Trigger */}
             <button
                 type="button"
+                role="combobox"
                 disabled={disabled}
                 onClick={handleOpen}
                 aria-haspopup="listbox"
