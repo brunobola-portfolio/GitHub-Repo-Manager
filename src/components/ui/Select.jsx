@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, useId } from 'react'
 import { ChevronDown, Check, Search } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 
@@ -90,6 +90,7 @@ export function Select({
     }, [options, sections, filteredSections, searchQuery])
 
     const selectedOption = allOptions.find(opt => opt.value === value)
+    const listboxId = useId()
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -264,6 +265,7 @@ export function Select({
                 onClick={handleOpen}
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
+                aria-controls={listboxId}
                 aria-label={label}
                 className={`
                     w-full flex items-center justify-between gap-2
@@ -337,7 +339,7 @@ export function Select({
                             </div>
                         )}
 
-                        <div ref={listRef} role="listbox" aria-label={label} aria-busy={loading} className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
+                        <div id={listboxId} ref={listRef} role="listbox" aria-label={label} aria-busy={loading} className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
                             {/* Loading skeleton */}
                             {loading && (
                                 Array.from({ length: skeletonCount }).map((_, i) => (
