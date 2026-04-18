@@ -49,6 +49,10 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAva
     const controller = new AbortController()
 
     if (plan.length > 0) {
+      // Loading flag for the validation fetch that follows. Intentional sync
+      // set-state: it mirrors an external async operation about to start and
+      // has no derivable equivalent.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsValidating(true)
       const names = plan.map((p) => p.to)
       fetch('/api/import/check-duplicates', {
@@ -112,6 +116,9 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAva
 
     const sizeCritical = repos.filter((r) => r.selected && r.size > SIZE_CRITICAL_KB)
     if (aiAvailable && sizeCritical.length > 0) {
+      // Same reasoning as setIsValidating above — loading flag for the async
+      // AI call that follows.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAILoading(true)
       Promise.allSettled(
         sizeCritical.map(async (repo) => {

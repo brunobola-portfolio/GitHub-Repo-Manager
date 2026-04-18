@@ -46,11 +46,16 @@ export function AutoFixDrawer({
   // Critical 2 — Reset local state on open transition. The previously
   // persisted `repo.sizeStrategy` is honored at read-time via a fallback
   // (see `effectiveStrategy` below), so no seeding state update is needed.
+  // Resetting inside the effect is intentional: this is a "drawer session
+  // starts" boundary, not a derived-value case, so we accept the rule waiver.
   const prevOpenRef = useRef(false)
   useEffect(() => {
     if (open && !prevOpenRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEdits({})
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setChecks({})
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStrategies({})
     }
     prevOpenRef.current = open
