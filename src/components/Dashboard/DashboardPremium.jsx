@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
     BarChart3, TrendingUp, Activity, GitPullRequest, GitMerge,
     Zap, Heart, Users, Building2,
@@ -32,7 +32,41 @@ export function DashboardPremium({
     onOrgClick
 }) {
     const [timeRange, setTimeRange] = useState('7d')
+    const [licenseTier, setLicenseTier] = useState('free')
     const { openModalWithData } = useModal()
+
+    useEffect(() => {
+        const controller = new AbortController()
+        fetch('/api/v1/license', { credentials: 'include', signal: controller.signal })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+                if (!data || controller.signal.aborted) return
+                if (data.active && data.source === 'license_key' && data.tier) {
+                    setLicenseTier(data.tier)
+                }
+            })
+            .catch(() => { /* fall back to free copy */ })
+        return () => controller.abort()
+    }, [])
+
+    const aiBannerCopy = useMemo(() => {
+        if (licenseTier === 'enterprise') {
+            return {
+                title: 'Your AI tools — included in Enterprise',
+                body: 'Ask the Assistant anything, run insights on a repo, or get a migration risk report.',
+            }
+        }
+        if (licenseTier === 'pro') {
+            return {
+                title: 'Your AI tools — included in Pro',
+                body: 'Ask the Assistant anything, run insights on a repo, or get a migration risk report.',
+            }
+        }
+        return {
+            title: 'Try the AI product — free',
+            body: 'Ask the Assistant anything, run insights on a repo, or get a migration risk report. No upgrade required.',
+        }
+    }, [licenseTier])
 
     // Aggregate repository statistics
     const repoStats = useMemo(() => aggregateRepoStats(repos), [repos])
@@ -119,10 +153,10 @@ export function DashboardPremium({
                         </div>
                         <div className="flex-1 min-w-0">
                             <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 ds-font-display">
-                                Try the AI product — free
+                                {aiBannerCopy.title}
                             </h2>
                             <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-                                Ask the Assistant anything, run insights on a repo, or get a migration risk report. No upgrade required.
+                                {aiBannerCopy.body}
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2 flex-shrink-0">
