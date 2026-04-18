@@ -34,6 +34,24 @@ describe('risk engine', () => {
     expect(r.flags.some((f) => f.type === 'size-critical')).toBe(true)
   })
 
+  it('clears size-critical when sizeStrategy=lfs-migrate is chosen', () => {
+    const r = evaluateRepo(
+      { ...base, size: 11 * 1024 * 1024, sizeStrategy: 'lfs-migrate' },
+      ctx,
+    )
+    expect(r.flags.some((f) => f.type === 'size-critical')).toBe(false)
+    expect(r.level).not.toBe('blocker')
+  })
+
+  it('clears size-critical when sizeStrategy=exclude is chosen', () => {
+    const r = evaluateRepo(
+      { ...base, size: 11 * 1024 * 1024, sizeStrategy: 'exclude' },
+      ctx,
+    )
+    expect(r.flags.some((f) => f.type === 'size-critical')).toBe(false)
+    expect(r.level).not.toBe('blocker')
+  })
+
   it('flags name conflict as blocker', () => {
     const r = evaluateRepo(base, { ...ctx, conflicts: { foo: true } })
     expect(r.level).toBe('blocker')

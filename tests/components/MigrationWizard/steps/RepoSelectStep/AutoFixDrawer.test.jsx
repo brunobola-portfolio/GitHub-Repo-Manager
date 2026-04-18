@@ -122,6 +122,29 @@ describe('AutoFixDrawer', () => {
     ])
   })
 
+  it('selecting lfs-migrate also enables lfsEnabled in the patch', async () => {
+    const user = userEvent.setup()
+    const onApply = vi.fn()
+    const repos = [makeRepo({ id: 'b', name: 'huge', size: 11 * 1024 * 1024, selected: true })]
+    render(
+      <AutoFixDrawer
+        open
+        repos={repos}
+        allRepos={repos}
+        targetOrg="myorg"
+        azureProject="X"
+        aiAvailable={false}
+        onClose={() => {}}
+        onApply={onApply}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: /Mark for LFS migration/i }))
+    await user.click(screen.getByRole('button', { name: /Apply selected \(1\)/i }))
+    expect(onApply).toHaveBeenCalledWith([
+      { repoIndex: 0, patch: { sizeStrategy: 'lfs-migrate', lfsEnabled: true } },
+    ])
+  })
+
   it('shows AI unavailable banner when aiAvailable is false and size-critical exists', () => {
     const repos = [makeRepo({ id: 'b', name: 'huge', size: 11 * 1024 * 1024, selected: true })]
     render(
@@ -186,6 +209,116 @@ describe('AutoFixDrawer', () => {
     await user.clear(input)
     await user.type(input, 'bad name!')
     expect(screen.getByRole('button', { name: /Apply selected \(0\)/i })).toBeDisabled()
+  })
+
+  it('pre-selects the strategy when repo.sizeStrategy is already set', () => {
+    const repos = [
+      makeRepo({
+        id: 'b',
+        name: 'huge',
+        size: 11 * 1024 * 1024,
+        selected: true,
+        sizeStrategy: 'lfs-migrate',
+      }),
+    ]
+    render(
+      <AutoFixDrawer
+        open
+        repos={repos}
+        allRepos={repos}
+        targetOrg="myorg"
+        azureProject="X"
+        aiAvailable={false}
+        onClose={() => {}}
+        onApply={() => {}}
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: /Mark for LFS migration/i }),
+    ).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('shows a "Fix applied" badge when repo.sizeStrategy is already set', () => {
+    const repos = [
+      makeRepo({
+        id: 'b',
+        name: 'huge',
+        size: 11 * 1024 * 1024,
+        selected: true,
+        sizeStrategy: 'lfs-migrate',
+      }),
+    ]
+    render(
+      <AutoFixDrawer
+        open
+        repos={repos}
+        allRepos={repos}
+        targetOrg="myorg"
+        azureProject="X"
+        aiAvailable={false}
+        onClose={() => {}}
+        onApply={() => {}}
+      />,
+    )
+    expect(screen.getByText(/Fix applied/i)).toBeInTheDocument()
+  })
+
+  it('Apply count excludes already-applied strategies', () => {
+    const repos = [
+      makeRepo({
+        id: 'b',
+        name: 'huge',
+        size: 11 * 1024 * 1024,
+        selected: true,
+        sizeStrategy: 'lfs-migrate',
+      }),
+    ]
+    render(
+      <AutoFixDrawer
+        open
+        repos={repos}
+        allRepos={repos}
+        targetOrg="myorg"
+        azureProject="X"
+        aiAvailable={false}
+        onClose={() => {}}
+        onApply={() => {}}
+      />,
+    )
+    expect(
+      screen.getByRole('button', { name: /Apply selected \(0\)/i }),
+    ).toBeDisabled()
+  })
+
+  it('changing the pre-applied strategy enables Apply with the new value', async () => {
+    const user = userEvent.setup()
+    const onApply = vi.fn()
+    const repos = [
+      makeRepo({
+        id: 'b',
+        name: 'huge',
+        size: 11 * 1024 * 1024,
+        selected: true,
+        sizeStrategy: 'lfs-migrate',
+      }),
+    ]
+    render(
+      <AutoFixDrawer
+        open
+        repos={repos}
+        allRepos={repos}
+        targetOrg="myorg"
+        azureProject="X"
+        aiAvailable={false}
+        onClose={() => {}}
+        onApply={onApply}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: /Exclude from migration/i }))
+    await user.click(screen.getByRole('button', { name: /Apply selected \(1\)/i }))
+    expect(onApply).toHaveBeenCalledWith([
+      { repoIndex: 0, patch: { sizeStrategy: 'exclude' } },
+    ])
   })
 
   it('reopening resets edits, checks, and strategies', async () => {

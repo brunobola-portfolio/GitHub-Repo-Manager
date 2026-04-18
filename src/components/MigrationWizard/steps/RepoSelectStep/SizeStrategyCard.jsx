@@ -1,5 +1,5 @@
 // src/components/MigrationWizard/steps/RepoSelectStep/SizeStrategyCard.jsx
-import { Sparkles, X, Package, Database } from 'lucide-react'
+import { Sparkles, X, Package, Database, CheckCircle2 } from 'lucide-react'
 
 const GB = 1024 * 1024
 
@@ -19,6 +19,12 @@ export function SizeStrategyCard({ repo, aiSuggestion, selectedStrategy, onSelec
         <div className="flex items-center gap-2 font-medium text-slate-100">
           <Package className="h-4 w-4 text-amber-500" />
           {repo.name}
+          {repo.sizeStrategy && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-950/30 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-300">
+              <CheckCircle2 className="h-3 w-3" />
+              Fix applied
+            </span>
+          )}
         </div>
         <span className="text-xs text-slate-400">{formatSize(repo.size)}</span>
       </div>

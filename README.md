@@ -218,6 +218,7 @@ A complete migration platform for moving from Azure DevOps to GitHub with a guid
 
 - **Guided Wizard** — 8-step flow: Source Type, Configuration, Repo Selection, Target Config, Wiki, Work Items, AI Review, Execute
 - **AI-Assisted Planning** — Gemini-powered risk analysis with severity levels and mitigation suggestions
+- **Auto-Fix Drawer** — One-click resolution for blocker-level issues (size > 10 GB, name conflicts, reserved/invalid names). Choices persist across the wizard: a repo flagged for LFS migration is pre-selected the next time you open the drawer, the blocker badge clears, and the LFS toggle is auto-enabled in the Configure step.
 - **Smart URL Parser** — Supports 6+ Azure DevOps URL formats (dev.azure.com, visualstudio.com, SSH, shorthand)
 - **Dry-Run Mode** — Test migrations without making changes
 - **Scheduling** — Queue migrations for off-peak execution

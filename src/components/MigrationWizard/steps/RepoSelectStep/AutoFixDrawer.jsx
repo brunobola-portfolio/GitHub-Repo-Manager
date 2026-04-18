@@ -43,16 +43,22 @@ export function AutoFixDrawer({
   const drawerRef = useFocusTrap(open, onClose)
   useBodyScrollLock(open)
 
-  // Critical 2 — Reset local state on open transition
+  // Critical 2 — Reset local state on open transition.
+  // Strategies are seeded from each repo's persisted `sizeStrategy` so that
+  // a fix applied in a previous open is reflected as the active selection.
   const prevOpenRef = useRef(false)
   useEffect(() => {
     if (open && !prevOpenRef.current) {
       setEdits({})
       setChecks({})
-      setStrategies({})
+      const seeded = {}
+      for (const r of selected) {
+        if (r.sizeStrategy) seeded[r.id] = r.sizeStrategy
+      }
+      setStrategies(seeded)
     }
     prevOpenRef.current = open
-  }, [open])
+  }, [open, selected])
 
   // Important 4 — Translate repoIndex: selected subset → allRepos
   const selectedToAllRepos = useMemo(
@@ -81,10 +87,16 @@ export function AutoFixDrawer({
       }))
 
     const strategyChanges = sizeCritical
-      .filter((r) => strategies[r.id])
+      .filter((r) => strategies[r.id] && strategies[r.id] !== r.sizeStrategy)
       .map((r) => {
         const repoIndex = allRepos.findIndex((x) => x.id === r.id)
-        return { repoIndex, patch: { sizeStrategy: strategies[r.id] } }
+        const strategy = strategies[r.id]
+        // lfs-migrate produces LFS objects post-migration, so pre-enable
+        // the Configure-step LFS toggle to keep the wizard self-consistent.
+        const patch = strategy === 'lfs-migrate'
+          ? { sizeStrategy: strategy, lfsEnabled: true }
+          : { sizeStrategy: strategy }
+        return { repoIndex, patch }
       })
 
     return [...renameChanges, ...strategyChanges]

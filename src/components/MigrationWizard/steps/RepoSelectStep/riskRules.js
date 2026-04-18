@@ -56,6 +56,9 @@ const rules = [
   },
   function ruleSizeCritical(repo) {
     if (repo.size <= SIZE_CRITICAL_KB) return null
+    // User has acknowledged the size and chosen a mitigation in the Fix
+    // issues drawer (lfs-migrate or exclude); no longer a blocker.
+    if (repo.sizeStrategy) return null
     return {
       type: 'size-critical',
       severity: 'blocker',

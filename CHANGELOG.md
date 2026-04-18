@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-04-18
+
+### Added
+
+- **Auto-Fix Drawer — persistent fixes & visual feedback** in the Migration Wizard's Repo Select step:
+  - **Pre-selected strategy on reopen** (`src/components/MigrationWizard/steps/RepoSelectStep/AutoFixDrawer.jsx`): when reopening the drawer, the previously chosen `sizeStrategy` (`exclude` / `lfs-migrate`) is reflected as the active button instead of resetting to "no choice", removing the "did anything happen?" UX gap.
+  - **"Fix applied" badge** (`src/components/MigrationWizard/steps/RepoSelectStep/SizeStrategyCard.jsx`): emerald pill on size-critical cards once the user has committed a mitigation, so the state is legible at a glance.
+
+### Changed
+
+- **`ruleSizeCritical` honors `repo.sizeStrategy`** (`src/components/MigrationWizard/steps/RepoSelectStep/riskRules.js`): a repo with a chosen mitigation is no longer counted as a blocker. The Selection Summary Bar's blocker count drops, the row leaves the "Blocked" filter, and the wizard stops gating progression — instead of forcing the user to choose between mutating the data and being stuck.
+- **`lfs-migrate` strategy auto-enables `lfsEnabled`** in the Configure step: picking "Mark for LFS migration" in the Fix issues drawer now writes both `sizeStrategy: 'lfs-migrate'` and `lfsEnabled: true` on the repo, so the downstream Configure-step LFS toggle reflects the decision without a second click.
+- The Apply button correctly excludes already-applied strategies from its change count, so reopening the drawer with no edits keeps the action disabled.
+
 ## [3.1.0] - 2026-04-16
 
 ### Added
