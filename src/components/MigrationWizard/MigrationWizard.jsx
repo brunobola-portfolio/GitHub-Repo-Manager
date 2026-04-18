@@ -571,6 +571,7 @@ export default function MigrationWizard({
             source={source}
             orgs={orgs}
             onChangeDestination={(orgLogin) => updateSource({ targetOrg: orgLogin })}
+            onGoToStep={goToStep}
           />
         )
       case 'workItems':

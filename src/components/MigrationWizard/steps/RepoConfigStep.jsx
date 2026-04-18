@@ -31,7 +31,7 @@ function formatSize(bytes) {
  *   orgs                - array of GitHub orgs from useOrgs
  *   onChangeDestination - (orgLogin) => void
  */
-export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [], onChangeDestination }) {
+export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [], onChangeDestination, onGoToStep }) {
   const [conflicts, setConflicts] = useState({})
   const debounceTimers = useRef({})
   const [expandedBranches, setExpandedBranches] = useState({})
@@ -264,6 +264,29 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
   // ── Main layout ──────────────────────────────────────────────────
   return (
     <div className="space-y-4">
+      {source?.sourceType === 'azure' && source?.validated === false && (
+        <div
+          role="alert"
+          className="mb-4 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200"
+        >
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+          <div className="flex-1 min-w-0">
+            <p className="font-medium">Credenciais Azure por validar</p>
+            <p className="text-xs opacity-90 mt-0.5">
+              O PAT da Azure ainda não foi confirmado. A migração vai falhar no passo final se não ligares primeiro.
+            </p>
+          </div>
+          {onGoToStep && (
+            <button
+              type="button"
+              onClick={() => onGoToStep('azureConnect')}
+              className="shrink-0 rounded-md border border-amber-400 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-200 dark:border-amber-600 dark:bg-amber-900/40 dark:text-amber-100 dark:hover:bg-amber-900/60"
+            >
+              Ir para Connect
+            </button>
+          )}
+        </div>
+      )}
       {/* ── Dashboard Header ────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
