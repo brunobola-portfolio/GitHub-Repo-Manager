@@ -242,4 +242,64 @@ describe('useMigrationWizard', () => {
     expect(result.current.currentStep).toBe('schedule')
     expect(result.current.error).toBe('Select a date and time')
   })
+
+  it('seeds source fields from initialSource option', () => {
+    const { result } = renderHook(() =>
+      useMigrationWizard({
+        initialSource: {
+          sourceType: 'azure',
+          org: 'bruno',
+          project: 'AWIP',
+          targetOrg: 'bolalabs',
+          targetName: 'AWIP',
+        },
+      })
+    )
+    expect(result.current.source.sourceType).toBe('azure')
+    expect(result.current.source.org).toBe('bruno')
+    expect(result.current.source.project).toBe('AWIP')
+    expect(result.current.source.targetOrg).toBe('bolalabs')
+    expect(result.current.source.targetName).toBe('AWIP')
+  })
+
+  it('seeds repos from initialRepos option (used for Azure single-repo auto-select)', () => {
+    const { result } = renderHook(() =>
+      useMigrationWizard({
+        initialSource: { sourceType: 'azure' },
+        initialRepos: [
+          { id: 'seed-1', name: 'Cacadores', selected: true, targetName: 'Cacadores' },
+        ],
+      })
+    )
+    expect(result.current.repos).toHaveLength(1)
+    expect(result.current.repos[0].selected).toBe(true)
+    expect(result.current.repos[0].name).toBe('Cacadores')
+  })
+
+  it('starts at initialStep when provided and valid for the sourceType', () => {
+    const { result } = renderHook(() =>
+      useMigrationWizard({
+        initialSource: { sourceType: 'azure' },
+        initialStep: 'repoConfig',
+      })
+    )
+    expect(result.current.currentStep).toBe('repoConfig')
+  })
+
+  it('falls back to step 0 when initialStep does not exist in the sourceType flow', () => {
+    const { result } = renderHook(() =>
+      useMigrationWizard({
+        initialSource: { sourceType: 'github' },
+        initialStep: 'repoConfig', // github flow has no repoConfig
+      })
+    )
+    expect(result.current.currentStep).toBe('sourceType')
+  })
+
+  it('remains backward-compatible when called with no options (INITIAL_SOURCE used)', () => {
+    const { result } = renderHook(() => useMigrationWizard())
+    expect(result.current.currentStep).toBe('sourceType')
+    expect(result.current.source.sourceType).toBe('')
+    expect(result.current.repos).toEqual([])
+  })
 })

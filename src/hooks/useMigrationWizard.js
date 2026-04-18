@@ -160,10 +160,20 @@ const validators = {
  * @param {object} [options]
  * @param {boolean} [options.initialDryRun=false] - Seed schedule.isDryRun on mount
  */
-export function useMigrationWizard({ initialDryRun = false } = {}) {
-  const [currentStepIndex, setCurrentStepIndex] = useState(0)
-  const [source, setSource] = useState(INITIAL_SOURCE)
-  const [repos, setRepos] = useState([])
+export function useMigrationWizard({
+  initialDryRun = false,
+  initialSource,
+  initialRepos,
+  initialStep,
+} = {}) {
+  const [currentStepIndex, setCurrentStepIndex] = useState(() => {
+    if (!initialStep) return 0
+    const initialSteps = getStepsForSourceType(initialSource?.sourceType, false, false)
+    const idx = initialSteps.indexOf(initialStep)
+    return idx >= 0 ? idx : 0
+  })
+  const [source, setSource] = useState(() => ({ ...INITIAL_SOURCE, ...(initialSource || {}) }))
+  const [repos, setRepos] = useState(() => initialRepos || [])
   const [workItems, setWorkItems] = useState(INITIAL_WORK_ITEMS)
   const [wiki, setWiki] = useState(INITIAL_WIKI)
   const [aiPlan, setAiPlan] = useState(INITIAL_AI_PLAN)
