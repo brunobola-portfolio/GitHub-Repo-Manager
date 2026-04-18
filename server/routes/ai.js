@@ -19,7 +19,8 @@ import express from 'express';
 import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, createRequireAI, safeError, isValidGitHubFullName } from '../middleware/auth.js';
-import { validate, aiChatSchema, aiIndexSchema, migrationSizeStrategySchema } from '../lib/validators.js';
+import { validate, aiChatSchema, aiIndexSchema, migrationSizeStrategySchema, migrationDescriptionSchema } from '../lib/validators.js';
+import { defaultRepoDescription, sanitizeRepoDescription, REPO_DESCRIPTION_MAX } from '../lib/repo-description.js';
 import { aiService, sanitizeForPrompt } from '../ai-service.js';
 import { safeJsonParse } from '../lib/utils.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../lib/usage-meter.js';
@@ -51,7 +52,32 @@ function handleAIError(res, error, fallbackMessage = 'Failed to generate AI resp
             code: 'QUOTA_EXCEEDED'
         });
     }
+    if (error.status === 503 || /overload|unavailable|high demand/i.test(error.message || '')) {
+        return res.status(503).json({
+            error: 'Gemini is under heavy load right now. Give it a moment and try again.',
+            code: 'AI_OVERLOADED'
+        });
+    }
     return res.status(500).json({ error: fallbackMessage, code: 'AI_REQUEST_FAILED' });
+}
+
+/**
+ * Invoke model.generateContent with one automatic retry on transient 503 overload.
+ * Keeps total added latency bounded (~400ms) so user-facing requests don't stall.
+ */
+async function generateWithRetry(model, request, { retries = 1, delayMs = 400 } = {}) {
+    let lastError
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            return await model.generateContent(request)
+        } catch (err) {
+            lastError = err
+            const transient = err?.status === 503 || /overload|unavailable|high demand/i.test(err?.message || '')
+            if (!transient || attempt === retries) break
+            await new Promise(r => setTimeout(r, delayMs))
+        }
+    }
+    throw lastError
 }
 
 // ------------------------------------------------------------------
@@ -105,34 +131,72 @@ router.post('/ai/chat', requireAuth, validate(aiChatSchema), requireAI, async (r
         }
 
         const systemPrompt = `You are an expert GitHub Repository Manager Assistant.
-    Your goal is to help users manage their repositories, analyze code, and suggest improvements.
+Your goal is to help users manage their repositories, analyze code, and suggest improvements.
 
-    Current Context:
-    ${JSON.stringify(context || {}, null, 2)}
+You ALWAYS reply as JSON matching this exact shape:
+{
+  "reply": "<markdown text, concise and professional>",
+  "actions": [ { "type": "<action>", "label": "<short button text in the user's language>" } ]
+}
 
-    Be concise, professional, and helpful. Format your response in Markdown.`;
+The "actions" array is OPTIONAL. Include an action ONLY when the user's request maps clearly to one of the whitelisted types below. Never invent action types. Never include more than one action of the same type. Keep labels short (max 32 chars) and localized to the user's language.
 
-        const chat = model.startChat({
-            history: [
-                {
-                    role: "user",
-                    parts: [{ text: systemPrompt }],
+Whitelisted action types:
+- "open_migration_wizard": opens the Azure DevOps → GitHub migration wizard. Use when the user wants to migrate, import, or move repositories from Azure DevOps.
+- "open_migration_history": shows past migration jobs. Use when the user asks about past migrations, status, logs, or history.
+- "open_create_repo": opens the create repository modal. Use when the user wants to create, start, or initialize a new repository.
+- "open_transfer": opens the repository transfer modal. Use when the user wants to transfer ownership of a repo to another org/user.
+- "open_settings": opens the app settings modal. Use when the user wants to change preferences, configure API keys, or adjust the app.
+
+If the user just asks a question, answer in "reply" and omit "actions".
+
+Current context: ${JSON.stringify(context || {}, null, 2)}
+
+User message: ${message}`;
+
+        const result = await generateWithRetry(model, {
+            contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
+            generationConfig: {
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    type: 'object',
+                    properties: {
+                        reply: { type: 'string' },
+                        actions: {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    type: { type: 'string' },
+                                    label: { type: 'string' },
+                                },
+                                required: ['type', 'label'],
+                            },
+                        },
+                    },
+                    required: ['reply'],
                 },
-                {
-                    role: "model",
-                    parts: [{ text: "Understood. I am ready to assist with GitHub repository management tasks." }],
-                },
-            ],
+            },
         });
-
-        const result = await chat.sendMessage(message);
         const response = await result.response;
         const text = response.text();
+
+        const parsed = safeJsonParse(text);
+        if (!parsed || typeof parsed.reply !== 'string') {
+            req.log.warn({ text }, 'AI chat returned non-JSON or missing reply');
+            return res.status(502).json({
+                error: 'AI returned an invalid response. Please retry.',
+                code: 'AI_PARSE_ERROR',
+            });
+        }
 
         incrementUsage(req.session.userId, 'ai_queries');
         auditLog(req, 'ai.chat', 'ai', null, { messageLength: message.length });
 
-        res.json({ message: text });
+        res.json({
+            reply: parsed.reply,
+            actions: Array.isArray(parsed.actions) ? parsed.actions : [],
+        });
     } catch (error) {
         req.log.error({ err: error }, 'AI chat failed');
         handleAIError(res, error);
@@ -1354,6 +1418,71 @@ Respond with strict JSON only, no prose outside the JSON:
     } catch (err) {
         req.log?.error({ err }, 'migration-size-strategy failed');
         handleAIError(res, err, 'Failed to generate size strategy. Please try again later.');
+    }
+});
+
+// ------------------------------------------------------------------
+// AI Migration Description
+// ------------------------------------------------------------------
+
+router.post('/ai/migration-description', requireAuth, requireAI, async (req, res) => {
+    const userId = req.session.userId;
+    const check = checkAIFeatureLimit(userId, 'migration_assist');
+    if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
+
+    const parsed = migrationDescriptionSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: 'Validation failed', details: parsed.error.flatten() });
+    }
+    const { repoId, repoName, language, size, branches, hasLfsMarker, lastCommitDate, source } = parsed.data;
+
+    const facts = [
+        `Repo name: ${sanitizeForPrompt(repoName, 100)}`,
+        language ? `Primary language: ${sanitizeForPrompt(language, 50)}` : null,
+        `Size: ${size} KB`,
+        `Branch count: ${branches}`,
+        `LFS markers present: ${hasLfsMarker ? 'yes' : 'no'}`,
+        lastCommitDate ? `Last commit: ${sanitizeForPrompt(lastCommitDate, 50)}` : null,
+        source.isTfvc
+            ? `Source: Azure DevOps TFVC folder "${sanitizeForPrompt(source.tfvcPath || '', 200)}" in project "${sanitizeForPrompt(source.project, 100)}"`
+            : `Source: Azure DevOps Git repo in ${sanitizeForPrompt(source.org, 100)}/${sanitizeForPrompt(source.project, 100)}`,
+    ].filter(Boolean).join('\n- ');
+
+    const prompt = `You write short, professional GitHub repository descriptions.
+
+Context about the repository being migrated:
+- ${facts}
+
+Rules:
+- Single line, max ${REPO_DESCRIPTION_MAX} characters.
+- No markdown, no code blocks, no line breaks, no emoji.
+- English only.
+- Ground the description in the facts above. Do not invent features or stack details not listed.
+- If the source is Azure DevOps TFVC, mention it came from TFVC so readers understand the history.
+
+Respond with strict JSON only, no prose outside the JSON:
+{"description": "..."}`;
+
+    try {
+        const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+        const model = req.genAI.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
+
+        const parsedResponse = safeJsonParse(text);
+        const rawDescription = parsedResponse?.description;
+        // Fall through to deterministic template on any unexpected shape — keep the
+        // endpoint's contract simple: always return a usable { description }.
+        const description = typeof rawDescription === 'string' && rawDescription.trim()
+            ? sanitizeRepoDescription(rawDescription)
+            : defaultRepoDescription({ repoName, source });
+
+        incrementAIUsage(userId, 'migration_assist');
+        auditLog(req, 'ai.migration-description', 'ai', null, { repoId, model: modelName });
+        res.json({ description });
+    } catch (err) {
+        req.log?.error({ err }, 'migration-description failed');
+        handleAIError(res, err, 'Failed to generate description. Please try again later.');
     }
 });
 

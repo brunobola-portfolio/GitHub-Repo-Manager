@@ -5,11 +5,13 @@ import {
   AlertTriangle, RefreshCw, SkipForward, Edit3,
   GitBranch, HardDrive, ChevronDown, ChevronUp,
   Package, MoreHorizontal, Building2, ArrowRight,
-  Globe, ArrowLeft,
+  Globe, ArrowLeft, Sparkles,
 } from 'lucide-react'
 import { Select } from '../../ui/Select'
 import { formatFileSize } from '../../../utils/format'
 import { RiskBadge } from '../ui/repo/RiskBadge'
+import { REPO_DESCRIPTION_MAX } from '../../../utils/migrationDescription'
+import { useRepoDescriptionSuggestion } from '../../../hooks/useRepoDescriptionSuggestion'
 
 // Wrapper kept to preserve "0 B" empty-state copy and the "0 decimals for B"
 // rendering the wizard expects.
@@ -36,6 +38,34 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
   const [branchCache, setBranchCache] = useState({})
   const [loadingBranches, setLoadingBranches] = useState({})
   const [expandedCards, setExpandedCards] = useState({})
+  const [aiAvailable, setAiAvailable] = useState(false)
+  const [quotaNotice, setQuotaNotice] = useState('')
+  const [generatingId, setGeneratingId] = useState(null)
+  const { suggest } = useRepoDescriptionSuggestion({ aiAvailable })
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/config/ai-status', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : { configured: false }))
+      .then((d) => { if (!cancelled) setAiAvailable(!!d?.configured) })
+      .catch(() => { if (!cancelled) setAiAvailable(false) })
+    return () => { cancelled = true }
+  }, [])
+
+  const handleGenerateDescription = useCallback(async (repo, index) => {
+    const key = repo.id ?? index
+    setGeneratingId(key)
+    try {
+      const { description, quotaExceeded } = await suggest({ repo, source })
+      onUpdateRepo(index, { description })
+      if (quotaExceeded) {
+        setQuotaNotice('AI quota reached for this hour — used a template instead.')
+        setTimeout(() => setQuotaNotice(''), 4000)
+      }
+    } finally {
+      setGeneratingId(null)
+    }
+  }, [suggest, source, onUpdateRepo])
 
   const toggleBranchExpand = useCallback(async (repo, _index) => {
     const key = repo.id || repo.name
@@ -512,20 +542,14 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                         )}
 
                         {/* Description */}
-                        <div>
-                          <label className="text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 block">
-                            Description
-                          </label>
-                          <textarea
-                            rows="2"
-                            value={repo.description || ''}
-                            onChange={(e) => handleDescriptionChange(index, e.target.value)}
-                            placeholder="Optional description..."
-                            className="w-full px-3 py-1.5 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg
-                              text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600
-                              focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-colors resize-none"
-                          />
-                        </div>
+                        <DescriptionField
+                          repo={repo}
+                          index={index}
+                          aiAvailable={aiAvailable}
+                          isGenerating={generatingId === (repo.id ?? index)}
+                          onChange={(value) => handleDescriptionChange(index, value)}
+                          onGenerate={() => handleGenerateDescription(repo, index)}
+                        />
 
                         {/* LFS + Branch row */}
                         <div className="flex items-center gap-4">
@@ -623,6 +647,92 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
             )
           })}
         </AnimatePresence>
+      </div>
+      <AnimatePresence>
+        {quotaNotice && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            role="status"
+            className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl shadow-xl border border-amber-300/60
+              bg-amber-50/95 dark:bg-amber-900/40 dark:border-amber-500/30 text-sm text-amber-900 dark:text-amber-100 backdrop-blur"
+          >
+            {quotaNotice}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function DescriptionField({ repo, index, aiAvailable, isGenerating, onChange, onGenerate }) {
+  const value = repo.description || ''
+  const length = value.length
+  const over = length > REPO_DESCRIPTION_MAX
+  const near = !over && length > REPO_DESCRIPTION_MAX - 30
+
+  const counterTone = over
+    ? 'text-red-600 dark:text-red-400'
+    : near
+      ? 'text-amber-600 dark:text-amber-400'
+      : 'text-slate-400 dark:text-slate-500'
+
+  const buttonLabel = isGenerating
+    ? 'Generating…'
+    : aiAvailable ? 'Generate with AI' : 'Suggest'
+
+  const handleChange = (e) => {
+    const next = e.target.value.slice(0, REPO_DESCRIPTION_MAX)
+    onChange(next)
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <label
+          htmlFor={`repo-desc-${index}`}
+          className="text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400"
+        >
+          Description
+        </label>
+        <button
+          type="button"
+          onClick={onGenerate}
+          disabled={isGenerating}
+          title={aiAvailable
+            ? 'Generate a professional description with AI'
+            : 'Template-based — enable Gemini in Settings for AI-generated descriptions'}
+          className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium
+            transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed
+            ${aiAvailable
+              ? 'text-white bg-gradient-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 shadow-sm hover:shadow-md'
+              : 'text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600/60'
+            }`}
+        >
+          {isGenerating
+            ? <Loader2 className="w-3 h-3 animate-spin" />
+            : <Sparkles className={`w-3 h-3 ${aiAvailable ? '' : 'text-slate-400 dark:text-slate-500'}`} />
+          }
+          <span>{buttonLabel}</span>
+        </button>
+      </div>
+      <div className="relative">
+        <textarea
+          id={`repo-desc-${index}`}
+          rows="2"
+          value={value}
+          onChange={handleChange}
+          maxLength={REPO_DESCRIPTION_MAX}
+          placeholder="Optional description..."
+          className={`w-full px-3 py-1.5 pr-14 text-sm bg-white dark:bg-slate-900 border rounded-lg
+            text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600
+            focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-colors resize-none
+            ${over ? 'border-red-400 dark:border-red-500/60' : 'border-slate-200 dark:border-slate-700'}`}
+        />
+        <span className={`pointer-events-none absolute bottom-1.5 right-2 text-[10px] font-mono tabular-nums ${counterTone}`}>
+          {length}/{REPO_DESCRIPTION_MAX}
+        </span>
       </div>
     </div>
   )

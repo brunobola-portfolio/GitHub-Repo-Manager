@@ -93,7 +93,7 @@ export const azureImportSchema = z.object({
 
 export const aiChatSchema = z.object({
     message: z.string().min(1).max(10000),
-    context: z.record(z.unknown()).optional(),
+    context: z.record(z.string(), z.unknown()).optional(),
     history: z.array(z.object({
         role: z.enum(['user', 'assistant']),
         content: z.string().max(10000)
@@ -253,7 +253,23 @@ export const migrationSizeStrategySchema = z.object({
     size: z.number().int().nonnegative(),
     hasLfsMarker: z.boolean().default(false),
     branches: z.number().int().nonnegative().default(0),
-    lastCommitDate: z.string().datetime().optional(),
+    lastCommitDate: z.string().datetime().nullish(),
+});
+
+export const migrationDescriptionSchema = z.object({
+    repoId: z.string().min(1).max(200),
+    repoName: z.string().min(1).max(100),
+    language: z.string().max(50).nullish(),
+    size: z.number().int().nonnegative().default(0),
+    branches: z.number().int().nonnegative().default(0),
+    hasLfsMarker: z.boolean().default(false),
+    lastCommitDate: z.string().datetime().nullish(),
+    source: z.object({
+        org: z.string().min(1).max(100),
+        project: z.string().min(1).max(100),
+        isTfvc: z.boolean().default(false),
+        tfvcPath: z.string().max(500).nullish(),
+    }),
 });
 
 // --- Middleware factory ---

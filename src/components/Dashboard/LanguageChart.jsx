@@ -106,7 +106,7 @@ export function LanguageChart({ data = [], loading }) {
                     <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-8" style={{ minHeight: `${chartHeight}px` }}>
                         {/* Chart */}
                         <div style={{ maxWidth: '280px', width: '100%', height: '280px', overflow: 'hidden' }}>
-                            <ResponsiveContainer width="100%" height="100%" debounce={200}>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={200}>
                                 <PieChart>
                                     <Pie
                                         data={enrichedData}

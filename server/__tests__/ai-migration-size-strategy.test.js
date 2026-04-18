@@ -135,6 +135,21 @@ describe('POST /api/ai/migration-size-strategy', () => {
         expect(res.status).toBe(400)
     })
 
+    it('accepts lastCommitDate: null (TFVC folders have no commit metadata)', async () => {
+        const app = buildApp()
+        app.use('/api', aiRouter)
+        const res = await request(app)
+            .post('/api/ai/migration-size-strategy')
+            .send({
+                repoId: '$/APOS - Advanced POS/Cacadores',
+                size: 11 * 1024 * 1024,
+                hasLfsMarker: false,
+                branches: 0,
+                lastCommitDate: null,
+            })
+        expect(res.status).toBe(200)
+    })
+
     it('returns 401 without auth', async () => {
         const app = buildApp({ authed: false })
         app.use('/api', aiRouter)

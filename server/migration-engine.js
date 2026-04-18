@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events'
 import { importRepository } from './import-service.js'
+import { defaultRepoDescription } from './lib/repo-description.js'
 import { migrateWorkItems } from './work-item-service.js'
 import { migrateWiki } from './wiki-service.js'
 import * as azureService from './azure-service.js'
@@ -554,7 +555,10 @@ export class MigrationEngine extends EventEmitter {
           targetOwner,
           targetName: targetRepo,
           isPrivate: config.makePrivate ?? true,
-          description: config.description || '',
+          description: config.description || defaultRepoDescription({
+            repoName: azureRepo,
+            source: { org: azureOrg, project: azureProject, isTfvc: false },
+          }),
           sizeStrategy: config.sizeStrategy,
           githubToken: resolvedCredentials.githubToken,
           onProgress: (status, message, pct) => callbacks.onProgress(pct, message)
@@ -610,7 +614,10 @@ export class MigrationEngine extends EventEmitter {
             targetOwner,
             targetName: targetRepo,
             isPrivate: config.makePrivate ?? true,
-            description: config.description || '',
+            description: config.description || defaultRepoDescription({
+              repoName: targetRepo,
+              source: { org: tfvcOrg, project: tfvcProject, isTfvc: true, tfvcPath },
+            }),
             sizeStrategy: config.sizeStrategy,
             githubToken: resolvedCredentials.githubToken,
             onProgress: (status, message, pct) => callbacks.onProgress(45 + Math.floor((pct / 100) * 50), message)
