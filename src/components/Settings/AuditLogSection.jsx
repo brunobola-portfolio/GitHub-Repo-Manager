@@ -168,7 +168,7 @@ export function AuditLogSection() {
                             </tr>
                         </thead>
                         <tbody>
-                            <AnimatePresence mode="wait">
+                            <AnimatePresence>
                                 {logs.length === 0 ? (
                                     <tr>
                                         <td colSpan={5} className="px-4 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
