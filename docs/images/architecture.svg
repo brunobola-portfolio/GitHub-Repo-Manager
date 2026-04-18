@@ -38,7 +38,7 @@
 
   <!-- Frontend label -->
   <rect x="42" y="28" width="210" height="26" rx="13" fill="url(#blueGrad)" filter="shadow"/>
-  <text x="147" y="46" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">FRONTEND  ·  React 19 + Vite 7</text>
+  <text x="147" y="46" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">FRONTEND  ·  React 19 + Vite 8</text>
 
   <!-- Frontend cards -->
   <rect x="60" y="70" width="230" height="80" rx="8" fill="url(#cardGrad)" stroke="#334155" stroke-width="1" filter="shadow"/>
@@ -90,7 +90,7 @@
   <!-- Backend cards row -->
   <rect x="60" y="306" width="180" height="70" rx="8" fill="url(#cardGrad)" stroke="#334155" stroke-width="1" filter="shadow"/>
   <text x="150" y="330" text-anchor="middle" fill="#6ee7b7" font-size="13" font-weight="600">API Routes</text>
-  <text x="150" y="350" text-anchor="middle" fill="#94a3b8" font-size="11">156+ endpoints</text>
+  <text x="150" y="350" text-anchor="middle" fill="#94a3b8" font-size="11">180+ endpoints</text>
   <text x="150" y="364" text-anchor="middle" fill="#94a3b8" font-size="10">Auth · Repos · Teams · Orgs</text>
 
   <rect x="260" y="306" width="180" height="70" rx="8" fill="url(#cardGrad)" stroke="#334155" stroke-width="1" filter="shadow"/>
