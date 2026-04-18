@@ -5,9 +5,9 @@
 **The GitHub dashboard that thinks — manage, migrate, and optimize with AI**
 
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![Vite](https://img.shields.io/badge/Vite-7.2-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-8.0-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-4.1-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![Express](https://img.shields.io/badge/Express-5.1-000000?style=for-the-badge&logo=express&logoColor=white)
+![Express](https://img.shields.io/badge/Express-5.2-000000?style=for-the-badge&logo=express&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=for-the-badge&logo=node.js&logoColor=white)
 ![Gemini AI](https://img.shields.io/badge/Gemini_AI-Powered-8E75B2?style=for-the-badge&logo=google-gemini&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-WAL-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
@@ -48,7 +48,7 @@ Managing a growing GitHub ecosystem is hard. Between dozens of repositories, mul
 - **Bulk operations** to manage hundreds of repos with a few clicks
 - **Zero setup needed** — try it instantly in Demo Mode with 87 pre-loaded mock repositories
 
-> Built with the latest stack: React 19, Vite 7, Express 5, Tailwind CSS 4, and Google Gemini AI.
+> Built with the latest stack: React 19, Vite 8, Express 5, Tailwind CSS 4, and Google Gemini AI.
 
 ---
 
@@ -145,6 +145,19 @@ GitHub Repo Manager integrates **Google Gemini AI** to supercharge your workflow
 - **Natural Language Interface** — Ask questions about your repositories in plain English
 - **Context-Aware Responses** — Answers tailored to your specific projects and data
 - **Quick Actions** — Execute common tasks through conversation
+
+### Conversational Task Automation (new in v3.3.0)
+The assistant doesn't just answer — it **dispatches real app actions** from natural-language intent. Ask "start a migration from Azure" and it opens the Migration Wizard for you; say "create a new repo" and the creation modal appears pre-focused.
+
+| Intent example | Action dispatched |
+|----------------|-------------------|
+| "migrate from Azure DevOps" | Opens the 8-step Migration Wizard |
+| "show me past migrations" | Opens the Migration History panel |
+| "create a new repository" | Opens the Create Repo modal |
+| "transfer this repo to another org" | Opens the Transfer modal |
+| "open settings" | Opens the Settings panel |
+
+Available on **every tier including Free** — the full AI product surface (Assistant, Semantic Search, Migration Risk Analysis, PR Review read-only) ships on the Free plan with per-feature monthly caps. Implementation lives in [`src/utils/aiActions.js`](src/utils/aiActions.js) with strict allow-list validation (no arbitrary action execution).
 
 ### Repository Analysis & Quality Reports
 - **Quality Scoring (0-100)** — Comprehensive analysis across 4 categories:
@@ -392,10 +405,10 @@ For detailed architecture documentation, see [`docs/architecture/overview.md`](d
 
 | Category | Technologies |
 |----------|-------------|
-| **Frontend** | React 19.2, Vite 7.2, TailwindCSS 4.1 |
+| **Frontend** | React 19.2, Vite 8.0, TailwindCSS 4.1 |
 | **UI/UX** | Framer Motion 12, Lucide Icons (554), Recharts 3, Radix UI |
-| **Backend** | Node.js 20+, Express 5.1 |
-| **Database** | Better-SQLite3 12.6 (WAL mode, 32MB cache) |
+| **Backend** | Node.js 20+, Express 5.2 |
+| **Database** | Better-SQLite3 12.9 (WAL mode, 32MB cache) |
 | **Security** | Helmet.js, express-rate-limit, Zod validation, SSRF protection |
 | **AI** | Google Gemini API (gemini-embedding-001, gemini-2.5-flash) |
 | **APIs** | GitHub REST API (v2022-11-28), Azure DevOps API (v7.1) |
@@ -610,6 +623,12 @@ A: No. Source repos are never modified. Use dry-run mode to test first.
 
 ## Recently Shipped (March–April 2026)
 
+- **AI Assistant Action Dispatch (v3.3.0)** — chat can now open the Migration Wizard, Migration History, Create Repo, Transfer, and Settings modals directly from natural-language requests
+- **AI-Assisted Migration Descriptions (v3.3.0)** — Gemini generates target-repo descriptions during migration setup with a deterministic fallback when no API key is present
+- **License-Tier-Aware AI Banner (v3.3.0)** — Dashboard CTA copy adapts to Free / Pro / Enterprise tier
+- **Custom `GithubIcon` component (v3.3.0)** — replaces the deprecated `lucide-react` Github glyph
+- **Migration Repo Select Redesign (v3.1.0)** — deterministic 10-rule risk engine, 5 batched Azure enrichment endpoints, slide-in detail panel, keyboard-first UX, virtualized rows
+- **Auto-Fix Drawer (v3.2.0)** — persistent size-strategy choices with "Fix applied" badge; `lfs-migrate` auto-enables the Configure-step LFS toggle
 - **Context Menu Completeness** — Dry-Run simulation, Export Metadata (JSON), Sync Repository for mirrored repos
 - **Toast Context Provider** — unified notification system across all components
 - **License Mint Automation** — GitHub Actions workflow for distributing license keys
@@ -723,7 +742,7 @@ GET /api/v1/system/source
 
 ---
 
-**Built with React 19, Vite 7, Google Gemini AI, and Claude Code**
+**Built with React 19, Vite 8, Google Gemini AI, and Claude Code**
 
 [Overview](#why-github-repo-manager) |
 [Features](#features-overview) |

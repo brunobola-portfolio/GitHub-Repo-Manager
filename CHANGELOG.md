@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-04-18
+
+### Added
+
+- **AI Assistant action dispatch** (`src/utils/aiActions.js`, `src/components/AIAssistant.jsx`): the conversational assistant can now open five app modals from natural-language intent — Migration Wizard (`open_migration_wizard`), Migration History (`open_migration_history`), Create Repo (`open_create_repo`), Transfer (`open_transfer`), and Settings (`open_settings`). Actions go through `sanitizeActions` → `validateAction` → `dispatchAction` with a strict allow-list so the model cannot invoke arbitrary app state changes. Available on every tier, including Free.
+- **AI-assisted migration descriptions** in the Migration Wizard's Configure step: Gemini generates a target-repo description from Azure metadata when a key is configured, with a deterministic template fallback for self-hosters / mock mode. Spec: [`docs/specs/2026-04-18-ai-migration-description.md`](docs/specs/2026-04-18-ai-migration-description.md).
+- **License-tier-aware AI banner copy** on the Dashboard: the AI Quick-Start CTA adapts its copy and CTA based on the active license tier (Free / Pro / Enterprise) surfaced by `/api/v1/license`.
+- **Custom `GithubIcon` component** replacing `lucide-react`'s `Github` glyph, which was removed upstream in the Lucide 1.x line.
+
+### Changed
+
+- **Dependencies refreshed** across the tree; `eslint-plugin-react-hooks` 7.1 rules softened where they flagged intentional effect-driven resets (now annotated with `// eslint-disable-next-line react-hooks/set-state-in-effect`).
+- **Quieter `dotenv` boot** and `manualChunks` refactored to function form in `vite.config.js`.
+- **Migration repo list** surfaces renamed `targetName` inline (no second click to verify the chosen rename).
+
+### Fixed
+
+- **`Select` combobox accessibility**: added `aria-controls` + `useId`-generated listbox IDs so the combobox role wires up correctly for screen readers.
+- **`listTeams` mock-mode flake** stabilised via a getter-based mock so repeated calls in the same render don't return drifting references.
+- **E2E `selectOption` on custom Select**: replaced with explicit click + option-click pattern matching the real DOM (the underlying element is a button, not a native `<select>`).
+
 ## [3.2.1] - 2026-04-18
 
 ### Fixed

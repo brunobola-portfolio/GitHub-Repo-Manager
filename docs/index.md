@@ -27,6 +27,9 @@ Design specifications and feature requirements.
 - [Modal System Redesign](specs/2026-04-11-modal-system-redesign.md) — AI Insights scrollbar fix + shared Modal primitive consolidation + InsightCard/StatBar shared components
 - [License Mint Automation](specs/2026-04-11-license-mint-automation-design.md) — GitHub Actions-based Ed25519 license minting with Resend delivery, separate private audit repo, two-phase audit pattern, Phase 2 migration path (Implemented)
 - [Free Tier Expansion](specs/2026-04-15-free-tier-expansion.md) — Move AI Assistant, Semantic Search, Migration Risk Analysis, and PR Review (read-only) to Free tier; back advertised per-feature caps with real counters; gate advanced bulk behind Pro; honor dry-run migration flag (Implemented)
+- [Migration Repo Select Redesign](specs/2026-04-16-migration-repo-select-redesign.md) — Decision-support surface for picking which Azure DevOps repos to migrate: deterministic 10-rule risk engine, 5 batched Azure enrichment endpoints, slide-in detail panel, keyboard-first UX, virtualized rows (Implemented)
+- [Migration Auto-Fix Drawer](specs/2026-04-16-migration-autofix-drawer.md) — Persistent size-strategy choices with "Fix applied" badge; `lfs-migrate` auto-enables the Configure-step LFS toggle (Implemented)
+- [AI-Assisted Migration Description](specs/2026-04-18-ai-migration-description.md) — Gemini-generated target-repo descriptions with deterministic fallback (Implemented in v3.3.0)
 
 ## Plans (How to build it)
 
@@ -61,6 +64,9 @@ Step-by-step implementation plans generated from approved specs.
 - [Modal System Redesign](plans/2026-04-11-modal-system-redesign.md) — 24-task plan: useBodyScrollLock + InsightCard + StatBar + Modal enhancement + migration of 3 hand-rolled modals + WizardPanel alignment
 - [License Mint Automation](plans/2026-04-11-license-mint-automation.md) — 10-task TDD plan: `scripts/lib/minter.js` primitives, CLI composition wrapper, mint-license.yml workflow, dependabot config, server/lib/license.js kid/resolver additions (Complete)
 - [Eight-Specialist Audit](plans/2026-04-13-eight-specialist-audit.md) — Parallel-agent audit + validated, prioritised plan covering security, legal (AGPL §13), monetization (Stripe idempotency, license cache), perf, code quality, a11y, DX (In Progress)
+- [Comprehensive Code Review](plans/2026-04-13-comprehensive-code-review.md) — Repo-wide code review pass (In Progress)
+- [Migration Repo Select Redesign](plans/2026-04-16-migration-repo-select-redesign.md) — 10-rule risk engine + 5 batched Azure endpoints + virtualized list + slide-in detail panel (Complete)
+- [Migration Auto-Fix Drawer](plans/2026-04-16-migration-autofix-drawer-plan.md) — Persistent size-strategy choices with visual feedback (Complete)
 
 ## Architecture
 
@@ -70,7 +76,7 @@ Step-by-step implementation plans generated from approved specs.
 
 ## API
 
-- [API Reference](api/API.md) — Complete endpoint documentation (154 endpoints)
+- [API Reference](api/API.md) — Complete endpoint documentation (~180 route handlers across 21 route modules)
 
 ## Reports
 
