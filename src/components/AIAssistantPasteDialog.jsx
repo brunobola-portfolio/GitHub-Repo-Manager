@@ -152,7 +152,7 @@ const QUESTIONS = {
   targetName: {
     label: 'Nome final do repo no GitHub?',
     placeholder: 'escreve "manter" para usar o original',
-    hint: 'Deixa vazio ou "manter" para manter o nome detetado.',
+    hint: 'Escreve "manter" para manter o nome detetado.',
   },
 }
 

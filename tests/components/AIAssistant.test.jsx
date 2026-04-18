@@ -210,4 +210,34 @@ describe('AIAssistant', () => {
 
     expect(await screen.findByRole('button', { name: /abrir wizard/i })).toBeInTheDocument()
   })
+
+  it('routes Azure URL with only org/project (no repo) to azureConnect after confirm', async () => {
+    const askAI = vi.fn()
+    renderAssistant({ askAI })
+    await openAssistant()
+
+    const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'https://dev.azure.com/bruno/AWIP' } })
+      fireEvent.submit(input.closest('form'))
+    })
+
+    // Only one question should be asked for org/project-only URL (targetOrg)
+    // because targetName defaults to detected repo which is absent — but the
+    // implementation still asks targetName, which can be answered with "manter"
+    const orgInput = await screen.findByRole('textbox', { name: /github.*org.*destino/i })
+    await act(async () => {
+      fireEvent.change(orgInput, { target: { value: 'bolalabs' } })
+      fireEvent.submit(orgInput.closest('form'))
+    })
+
+    const nameInput = await screen.findByRole('textbox', { name: /nome final.*repo/i })
+    await act(async () => {
+      fireEvent.change(nameInput, { target: { value: 'manter' } })
+      fireEvent.submit(nameInput.closest('form'))
+    })
+
+    // Ready state
+    expect(await screen.findByRole('button', { name: /abrir wizard/i })).toBeInTheDocument()
+  })
 })

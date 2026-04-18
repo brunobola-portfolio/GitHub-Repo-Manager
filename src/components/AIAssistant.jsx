@@ -465,7 +465,7 @@ function buildWizardPayload(dialog) {
       initialRepos: repo
         ? [{ id: `paste-${repo}`, name: repo, selected: true, targetName: finalName || repo }]
         : [],
-      initialStep: repo ? 'repoConfig' : 'repoSelect',
+      initialStep: repo ? 'repoConfig' : 'azureConnect',
     }
   }
   const { owner, repo } = dialog.parsed
