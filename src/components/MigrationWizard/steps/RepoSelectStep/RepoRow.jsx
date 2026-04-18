@@ -65,6 +65,15 @@ export function RepoRow({ repo, isSelected, isActive, density = 'full', onToggle
           <span className="flex-1 min-w-0">
             <span className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold text-slate-900 dark:text-slate-100 truncate">{repo.name}</span>
+              {repo.targetName && repo.targetName !== repo.name && (
+                <span
+                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400"
+                  title={`Will migrate as ${repo.targetName}`}
+                >
+                  <span aria-hidden="true">→</span>
+                  <span className="truncate">{repo.targetName}</span>
+                </span>
+              )}
               {repo.isDisabled && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 font-semibold uppercase tracking-wide">
                   Archived
