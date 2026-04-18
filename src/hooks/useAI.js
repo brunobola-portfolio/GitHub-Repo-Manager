@@ -36,26 +36,73 @@ export function useAI() {
      * Send a chat message to the AI assistant
      * @param {string} message - User message
      * @param {object} context - Contextual data (repos, user info, etc.)
-     * @returns {Promise<{ message: string }>}
+     * @returns {Promise<{ reply: string, actions: Array<{type: string, label: string}> }>}
+     * @throws {Error} with .code, .status, .friendlyMessage populated for UI branching
      */
     const askAI = useCallback(async (message, context) => {
         if (MOCK_MODE) {
-            await new Promise(r => setTimeout(r, 1000))
-            return { message: "Based on the analysis of your repository structure, I recommend adding a CONTRIBUTING.md file to guide new contributors. Additionally, your test coverage seems low in the `utils` directory. Would you like me to generate some test templates for you?" }
+            await new Promise(r => setTimeout(r, 800))
+            const msg = String(message || '').toLowerCase()
+            const actions = []
+            if (/migra|import|mov[ei]/.test(msg)) {
+                actions.push({ type: 'open_migration_wizard', label: 'Open Migration Wizard' })
+            } else if (/criar|create|novo repo|new repo/.test(msg)) {
+                actions.push({ type: 'open_create_repo', label: 'Create Repository' })
+            }
+            return {
+                reply: actions.length
+                    ? 'Claro, posso abrir isso para ti.'
+                    : 'Based on the analysis of your repository structure, I recommend adding a CONTRIBUTING.md file. Would you like to explore migrations or create a new repo?',
+                actions,
+            }
         }
-        if (isSessionExpired()) throw new Error('Your session has expired. Please login again.')
-        const r = await fetch(`${API_BASE}/ai/chat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, context }),
-            credentials: 'include'
-        })
-        if (r.status === 401) throw new Error('Your session has expired. Please login again.')
+        if (isSessionExpired()) {
+            const err = new Error('Your session has expired. Please login again.')
+            err.code = 'SESSION_EXPIRED'
+            throw err
+        }
+        let r
+        try {
+            r = await fetch(`${API_BASE}/ai/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message, context }),
+                credentials: 'include',
+            })
+        } catch (networkErr) {
+            const err = new Error('Could not reach the AI service. Check your connection.')
+            err.code = 'NETWORK_ERROR'
+            err.cause = networkErr
+            throw err
+        }
         if (!r.ok) {
-            const errData = await safeParseJson(r).catch(() => ({}))
-            throw new Error(errData?.error || errData?.message || `AI request failed (${r.status})`)
+            const body = await safeParseJson(r).catch(() => ({}))
+            const code = body?.error || body?.code || `HTTP_${r.status}`
+            const err = new Error(body?.message || body?.error || `AI request failed (${r.status})`)
+            err.status = r.status
+            err.code = code
+            err.friendlyMessage = body?.message
+            throw err
         }
-        return await safeParseJson(r)
+        let body
+        try {
+            body = await safeParseJson(r)
+        } catch (parseErr) {
+            const err = new Error('AI returned an invalid response. Please retry.')
+            err.code = 'AI_PARSE_ERROR'
+            err.cause = parseErr
+            throw err
+        }
+        const reply = body?.reply || body?.message
+        if (typeof reply !== 'string' || !reply) {
+            const err = new Error('AI returned an empty response. Please retry.')
+            err.code = 'AI_EMPTY_REPLY'
+            throw err
+        }
+        return {
+            reply,
+            actions: Array.isArray(body?.actions) ? body.actions : [],
+        }
     }, [])
 
     return {
