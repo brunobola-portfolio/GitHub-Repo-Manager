@@ -222,22 +222,34 @@ describe('AIAssistant', () => {
       fireEvent.submit(input.closest('form'))
     })
 
-    // Only one question should be asked for org/project-only URL (targetOrg)
-    // because targetName defaults to detected repo which is absent — but the
-    // implementation still asks targetName, which can be answered with "manter"
     const orgInput = await screen.findByRole('textbox', { name: /github.*org.*destino/i })
     await act(async () => {
       fireEvent.change(orgInput, { target: { value: 'bolalabs' } })
       fireEvent.submit(orgInput.closest('form'))
     })
 
-    const nameInput = await screen.findByRole('textbox', { name: /nome final.*repo/i })
+    // After the fix, no targetName question is asked when no repo was detected
+    expect(await screen.findByRole('button', { name: /abrir wizard/i })).toBeInTheDocument()
+  })
+
+  it('skips the targetName question when no repo is detected in the URL', async () => {
+    renderAssistant({ askAI: vi.fn() })
+    await openAssistant()
+
+    const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
     await act(async () => {
-      fireEvent.change(nameInput, { target: { value: 'manter' } })
-      fireEvent.submit(nameInput.closest('form'))
+      fireEvent.change(input, { target: { value: 'https://dev.azure.com/bruno/AWIP' } })
+      fireEvent.submit(input.closest('form'))
     })
 
-    // Ready state
+    const orgInput = await screen.findByRole('textbox', { name: /github.*org.*destino/i })
+    await act(async () => {
+      fireEvent.change(orgInput, { target: { value: 'bolalabs' } })
+      fireEvent.submit(orgInput.closest('form'))
+    })
+
+    // targetName question should NOT appear — we should go directly to ready
+    expect(screen.queryByRole('textbox', { name: /nome final.*repo/i })).not.toBeInTheDocument()
     expect(await screen.findByRole('button', { name: /abrir wizard/i })).toBeInTheDocument()
   })
 })

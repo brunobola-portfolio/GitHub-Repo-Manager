@@ -34,7 +34,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
       setPasteDialog((prev) => {
         if (!prev) return prev
         const nextAnswers = { ...prev.answers, [field]: value }
-        const nextField = computeNextField(nextAnswers)
+        const nextField = computeNextField(nextAnswers, prev.parsed)
         return {
           ...prev,
           answers: nextAnswers,
@@ -440,8 +440,12 @@ function NotConfiguredState({ onOpenSettings }) {
     )
 }
 
-function computeNextField(answers) {
+function computeNextField(answers, parsed) {
   if (!answers.targetOrg) return 'targetOrg'
+  // Only ask for a custom name when the parser actually detected a repo
+  // to "keep". When parsed.repo is null (e.g. Azure org/project-only URL),
+  // there's nothing to rename — skip straight to ready.
+  if (!parsed || !parsed.repo) return null
   if (answers.targetName === undefined) return 'targetName'
   return null
 }
