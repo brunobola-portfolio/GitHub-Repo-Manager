@@ -168,6 +168,17 @@ describe('POST /api/ai/migration-size-strategy', () => {
         expect(res.status).toBe(502)
     })
 
+    it('accepts JSON wrapped in ```json markdown fences (Gemini default shape)', async () => {
+        const wrapped = '```json\n{"strategy":"lfs-migrate","rationale":"binary assets","confidence":0.8}\n```'
+        const app = buildApp({ geminiResponse: wrapped })
+        app.use('/api', aiRouter)
+        const res = await request(app)
+            .post('/api/ai/migration-size-strategy')
+            .send({ repoId: 'a', size: 11 * 1024 * 1024, hasLfsMarker: false, branches: 3 })
+        expect(res.status).toBe(200)
+        expect(res.body.strategy).toBe('lfs-migrate')
+    })
+
     it('returns 401 when requireAI rejects (genAI unavailable)', async () => {
         const app = buildApp({ aiAvailable: false })
         app.use('/api', aiRouter)

@@ -1401,7 +1401,8 @@ Respond with strict JSON only, no prose outside the JSON:
         const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
         const model = req.genAI.getGenerativeModel({ model: modelName });
         const result = await model.generateContent(prompt);
-        const text = result.response.text();
+        // Gemini frequently wraps JSON in ```json fences despite the prompt.
+        const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
 
         const parsedResponse = safeJsonParse(text);
         if (!parsedResponse || !['exclude', 'lfs-migrate'].includes(parsedResponse.strategy)) {
