@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Github } from 'lucide-react'
+import { Github } from '../icons/GithubIcon'
 import { HeroSection } from './HeroSection'
 import { FeaturesSection } from './FeaturesSection'
 import { PricingPreview } from './PricingPreview'

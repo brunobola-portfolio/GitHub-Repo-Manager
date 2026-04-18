@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Github, ArrowLeft, Plus, Trash2, Shield, UserPlus, BookCopy, Zap, Play, Clock, CheckCircle, XCircle, Loader2, Search, Activity } from 'lucide-react';
+import { Users, ArrowLeft, Plus, Trash2, Shield, UserPlus, BookCopy, Zap, Play, Clock, CheckCircle, XCircle, Loader2, Search, Activity } from 'lucide-react';
+import { Github } from '../icons/GithubIcon';
 import { useToast } from '../../hooks/useToast';
 import { ActivityTab } from './ActivityTab';
 import { Select } from '../ui/Select';

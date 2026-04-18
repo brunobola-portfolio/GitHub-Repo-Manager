@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, ChevronRight, Github, MoreVertical, Trash2, Edit2, Lock, Sparkles } from 'lucide-react';
+import { Users, Plus, ChevronRight, MoreVertical, Trash2, Edit2, Lock, Sparkles } from 'lucide-react';
+import { Github } from '../icons/GithubIcon';
 import { useToast } from '../../hooks/useToast';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { listTeams } from '../../api/teams';

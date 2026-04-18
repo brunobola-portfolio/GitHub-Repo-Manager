@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
-import { Github, ArrowRight, Terminal } from 'lucide-react'
+import { ArrowRight, Terminal } from 'lucide-react'
+import { Github } from '../icons/GithubIcon'
 
 const DOCKER_CMD = 'docker compose up -d'
 

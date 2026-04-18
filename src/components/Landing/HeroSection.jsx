@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
-import { Github, ArrowRight, ExternalLink } from 'lucide-react'
+import { ArrowRight, ExternalLink } from 'lucide-react'
+import { Github } from '../icons/GithubIcon'
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 28 },

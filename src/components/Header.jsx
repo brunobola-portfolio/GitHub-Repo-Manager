@@ -1,10 +1,11 @@
 
 import { useState, useRef, useEffect } from 'react'
 import {
-    Github, LogOut, RefreshCw, LayoutDashboard, FolderGit2, Plus,
+    LogOut, RefreshCw, LayoutDashboard, FolderGit2, Plus,
     Bell, Settings, User, ChevronDown, Building2, Shield, Users,
     CheckCircle2, AlertCircle, Sparkles, Moon, Sun, Wand2, Download, History, Menu, CreditCard
 } from 'lucide-react'
+import { Github } from './icons/GithubIcon'
 import { AppLogoIcon } from './AppLogo'
 import LicenseBadge from './LicenseBadge'
 import { useTheme } from '../hooks/useTheme.jsx'
