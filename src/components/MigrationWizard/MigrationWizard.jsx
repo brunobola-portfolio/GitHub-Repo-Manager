@@ -364,8 +364,15 @@ function MobileProgressBar({ steps, currentStepIndex }) {
 /* ------------------------------------------------------------------ */
 /*  Main Wizard Component                                              */
 /* ------------------------------------------------------------------ */
-export default function MigrationWizard({ onClose, orgs = [], initialDryRun = false }) {
-  const wizard = useMigrationWizard({ initialDryRun })
+export default function MigrationWizard({
+  onClose,
+  orgs = [],
+  initialDryRun = false,
+  initialSource,
+  initialRepos,
+  initialStep,
+}) {
+  const wizard = useMigrationWizard({ initialDryRun, initialSource, initialRepos, initialStep })
 
   const {
     steps,
