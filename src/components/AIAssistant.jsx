@@ -6,6 +6,8 @@ import { useModal } from '../hooks/useModal'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { motion, AnimatePresence } from 'framer-motion'
 import { sanitizeActions, dispatchAction } from '../utils/aiActions'
+import { detectRepoUrl } from '../utils/repoUrlDetector'
+import { AIAssistantPasteDialog } from './AIAssistantPasteDialog'
 
 let msgIdCounter = 0
 const nextMsgId = () => `msg-${Date.now()}-${++msgIdCounter}`
@@ -24,7 +26,33 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
     const [isLoading, setIsLoading] = useState(false)
     const messagesEndRef = useRef(null)
     const [isConfigured, setIsConfigured] = useState(true)
-    const { openModal } = useModal()
+    const { openModal, openModalWithData } = useModal()
+    const [pasteDialog, setPasteDialog] = useState(null)
+
+    const handlePasteAnswer = useCallback((field, value) => {
+      setPasteDialog((prev) => {
+        if (!prev) return prev
+        const nextAnswers = { ...prev.answers, [field]: value }
+        const nextField = computeNextField(nextAnswers)
+        return {
+          ...prev,
+          answers: nextAnswers,
+          nextField,
+          status: nextField === null ? 'ready' : 'collecting',
+        }
+      })
+    }, [])
+
+    const handlePasteCancel = useCallback(() => setPasteDialog(null), [])
+
+    const handlePasteConfirm = useCallback(() => {
+      setPasteDialog((prev) => {
+        if (!prev) return prev
+        const payload = buildWizardPayload(prev)
+        openModalWithData('showMigrationWizard', payload)
+        return null
+      })
+    }, [openModalWithData])
     const [isIdle, setIsIdle] = useState(false)
     const idleTimerRef = useRef(null)
     const handleCloseChat = useCallback(() => setIsOpen(false), [])
@@ -113,6 +141,19 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
         const trimmed = input.trim()
         if (!trimmed || isLoading) return
         setInput('')
+
+        const detection = detectRepoUrl(trimmed)
+        if (detection.sourceType) {
+          setPasteDialog({
+            status: 'collecting',
+            sourceType: detection.sourceType,
+            parsed: detection.parsed,
+            answers: {},
+            nextField: 'targetOrg',
+          })
+          return
+        }
+
         sendMessage(trimmed)
     }
 
@@ -234,6 +275,14 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                                         onOpenSettings={() => openModal('showSettings')}
                                                     />
                                                 ))}
+                                                {pasteDialog && (
+                                                  <AIAssistantPasteDialog
+                                                    dialog={pasteDialog}
+                                                    onAnswer={handlePasteAnswer}
+                                                    onConfirm={handlePasteConfirm}
+                                                    onCancel={handlePasteCancel}
+                                                  />
+                                                )}
                                                 {isLoading && <TypingIndicator />}
                                                 <div ref={messagesEndRef} />
                                             </div>
@@ -388,4 +437,46 @@ function NotConfiguredState({ onOpenSettings }) {
             </button>
         </div>
     )
+}
+
+function computeNextField(answers) {
+  if (!answers.targetOrg) return 'targetOrg'
+  if (answers.targetName === undefined) return 'targetName'
+  return null
+}
+
+function buildWizardPayload(dialog) {
+  const detectedName = dialog.parsed.repo
+  const answerName = (dialog.answers.targetName || '').trim()
+  const finalName = !answerName || answerName.toLowerCase() === 'manter'
+    ? detectedName
+    : answerName
+
+  if (dialog.sourceType === 'azure') {
+    const { org, project, repo } = dialog.parsed
+    return {
+      initialSource: {
+        sourceType: 'azure',
+        org: org || '',
+        project: project || '',
+        targetOrg: dialog.answers.targetOrg,
+        targetName: finalName || '',
+      },
+      initialRepos: repo
+        ? [{ id: `paste-${repo}`, name: repo, selected: true, targetName: finalName || repo }]
+        : [],
+      initialStep: repo ? 'repoConfig' : 'repoSelect',
+    }
+  }
+  const { owner, repo } = dialog.parsed
+  return {
+    initialSource: {
+      sourceType: 'github',
+      githubSourceUrl: `https://github.com/${owner}/${repo}`,
+      targetOrg: dialog.answers.targetOrg,
+      targetName: finalName || '',
+    },
+    initialRepos: [],
+    initialStep: 'targetConfig',
+  }
 }

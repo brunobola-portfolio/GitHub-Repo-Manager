@@ -137,4 +137,77 @@ describe('AIAssistant', () => {
 
         await waitFor(() => expect(consumerSpy).toHaveBeenCalledWith(true))
     })
+
+  it('intercepts a pasted Azure URL, shows the dialog, and does not call askAI', async () => {
+    const askAI = vi.fn()
+    renderAssistant({ askAI })
+    await openAssistant()
+
+    const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'https://dev.azure.com/bruno/AWIP/_git/Cacadores' } })
+      fireEvent.submit(input.closest('form'))
+    })
+
+    expect(askAI).not.toHaveBeenCalled()
+    expect(await screen.findByText(/URL detectado/i)).toBeInTheDocument()
+    expect(screen.getByText(/bruno/)).toBeInTheDocument()
+    expect(screen.getByText(/AWIP/)).toBeInTheDocument()
+    expect(screen.getByText(/Cacadores/)).toBeInTheDocument()
+  })
+
+  it('falls back to askAI for free-text input (no URL detected)', async () => {
+    const askAI = vi.fn().mockResolvedValue({ reply: 'Hello there', actions: [] })
+    renderAssistant({ askAI })
+    await openAssistant()
+
+    const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'hello there' } })
+      fireEvent.submit(input.closest('form'))
+    })
+
+    expect(askAI).toHaveBeenCalledWith('hello there', expect.any(Object))
+  })
+
+  it('dismisses the paste dialog when cancel is clicked', async () => {
+    renderAssistant({ askAI: vi.fn() })
+    await openAssistant()
+
+    const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'https://github.com/bolalabs/BolaLabs' } })
+      fireEvent.submit(input.closest('form'))
+    })
+
+    fireEvent.click(await screen.findByRole('button', { name: /cancelar/i }))
+    await waitFor(() => expect(screen.queryByText(/URL detectado/i)).not.toBeInTheDocument())
+  })
+
+  it('transitions to the confirm button after both answers are collected', async () => {
+    renderAssistant({ askAI: vi.fn() })
+    await openAssistant()
+
+    const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'https://dev.azure.com/bruno/AWIP/_git/Cacadores' } })
+      fireEvent.submit(input.closest('form'))
+    })
+
+    // Answer 1: targetOrg
+    const orgInput = await screen.findByRole('textbox', { name: /github.*org.*destino/i })
+    await act(async () => {
+      fireEvent.change(orgInput, { target: { value: 'bolalabs' } })
+      fireEvent.submit(orgInput.closest('form'))
+    })
+
+    // Answer 2: targetName
+    const nameInput = await screen.findByRole('textbox', { name: /nome final.*repo/i })
+    await act(async () => {
+      fireEvent.change(nameInput, { target: { value: 'manter' } })
+      fireEvent.submit(nameInput.closest('form'))
+    })
+
+    expect(await screen.findByRole('button', { name: /abrir wizard/i })).toBeInTheDocument()
+  })
 })
