@@ -1,4 +1,6 @@
 import { useState } from 'react'
+// Note: lucide-react does not export a `Github` icon; `GitBranch` is the
+// closest thematic fit for the in-chat GitHub preview badge.
 import { Wand2, X, ArrowRight, Check, Cloud, GitBranch } from 'lucide-react'
 
 /**
@@ -58,16 +60,19 @@ export function AIAssistantPasteDialog({ dialog, onAnswer, onConfirm, onCancel }
 
       {!isReady && question && (
         <form onSubmit={handleSubmit} className="space-y-2">
-          <label className="block text-xs font-medium text-slate-700 dark:text-slate-200">
+          <label
+            htmlFor={`paste-dialog-${dialog.nextField}`}
+            className="block text-xs font-medium text-slate-700 dark:text-slate-200"
+          >
             {question.label}
           </label>
           <div className="flex gap-2">
             <input
+              id={`paste-dialog-${dialog.nextField}`}
               type="text"
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder={question.placeholder}
-              aria-label={question.label}
               className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
             <button
