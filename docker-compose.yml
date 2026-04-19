@@ -1,20 +1,45 @@
+# Compose file for self-hosted production deployments.
+#
+# Enforced secrets (compose aborts with "variable not set" if any are missing):
+#   SESSION_SECRET, WEBHOOK_SECRET, CREDENTIAL_ENCRYPTION_KEY, API_KEY_SECRET,
+#   GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, EMAIL_PROVIDER, EMAIL_FROM
+#
+# We use the `${VAR:?message}` form so a missing variable fails at `docker
+# compose up` time with an explicit error, rather than silently booting with
+# dev defaults that the startup-secrets-check would then reject seconds later
+# with a less friendly message.
+#
+# Optional vars (Stripe billing, Sentry, Azure DevOps OAuth) fall back to ""
+# via `${VAR:-}` so you can ignore them until you actually need them.
+
 services:
   app:
     build: .
     ports:
       - "3001:3001"
     environment:
-      - NODE_ENV=production
-      - SESSION_SECRET=${SESSION_SECRET}
-      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
-      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3001}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-}
-      - SENTRY_DSN=${SENTRY_DSN:-}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
-      - REDIS_URL=redis://redis:6379
+      - "NODE_ENV=production"
+      # --- Core secrets — REQUIRED (compose aborts at `up` time if unset) ---
+      - "SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET must be set to a 32-plus-byte random value}"
+      - "WEBHOOK_SECRET=${WEBHOOK_SECRET:?WEBHOOK_SECRET must be set for GitHub webhook signature verification}"
+      - "CREDENTIAL_ENCRYPTION_KEY=${CREDENTIAL_ENCRYPTION_KEY:?CREDENTIAL_ENCRYPTION_KEY must be set for user credential encryption}"
+      - "API_KEY_SECRET=${API_KEY_SECRET:?API_KEY_SECRET must be set to sign issued API keys}"
+      # --- GitHub OAuth — REQUIRED for login ---
+      - "GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:?GITHUB_CLIENT_ID must be set}"
+      - "GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:?GITHUB_CLIENT_SECRET must be set}"
+      # --- Email delivery — REQUIRED in prod for license key + retention emails ---
+      - "EMAIL_PROVIDER=${EMAIL_PROVIDER:?EMAIL_PROVIDER must be set to resend (console silently drops mail)}"
+      - "EMAIL_FROM=${EMAIL_FROM:?EMAIL_FROM must be set}"
+      - "RESEND_API_KEY=${RESEND_API_KEY:-}"
+      # --- Frontend URL — required for CORS + cookies ---
+      - "FRONTEND_URL=${FRONTEND_URL:?FRONTEND_URL must be set to the public HTTPS URL of the app}"
+      # --- Optional integrations ---
+      - "GEMINI_API_KEY=${GEMINI_API_KEY:-}"
+      - "SENTRY_DSN=${SENTRY_DSN:-}"
+      - "STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}"
+      - "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}"
+      - "LICENSE_SIGNING_PRIVATE_KEY_PEM=${LICENSE_SIGNING_PRIVATE_KEY_PEM:-}"
+      - "REDIS_URL=redis://redis:6379"
     volumes:
       - app-data:/app/server/data
     depends_on:
