@@ -9,32 +9,17 @@
  * so the actual prompt text doesn't matter for MVP — what we're testing is the
  * parse/validation logic.
  *
- * Parse logic mirrors server/routes/ai.js:1382-1430.
- * Keep in sync if the route handler changes.
+ * Parse logic lives in server/lib/migration-ai-parsers.js (shared with the route).
  */
+
+import { sanitizeForPrompt } from '../../ai-service.js';
+import { parseSizeStrategyResponse } from '../../lib/migration-ai-parsers.js';
 
 export const feature = 'migration-size-strategy';
 
 // ---------------------------------------------------------------------------
-// Helpers (mirrors server/routes/ai.js imports)
-// ---------------------------------------------------------------------------
-
-// Mirrors server/lib/utils.js:safeJsonParse
-function safeJsonParse(json, fallback = null) {
-    if (json == null) return fallback;
-    try { return JSON.parse(json); } catch { return fallback; }
-}
-
-// Mirrors server/ai-service.js:sanitizeForPrompt
-function sanitizeForPrompt(text, maxLen = 5000) {
-    if (!text) return '';
-    const cleaned = String(text).replace(/\0/g, '');
-    return cleaned.slice(0, maxLen);
-}
-
-// ---------------------------------------------------------------------------
-// Prompt builder (mirrors server/routes/ai.js:1393-1407)
-// Keep in sync with server/routes/ai.js:1393-1407 prompt template.
+// Prompt builder (mirrors server/routes/ai.js:1393-1407 prompt template)
+// Keep in sync with server/routes/ai.js:1393-1407.
 // ---------------------------------------------------------------------------
 
 /**
@@ -62,33 +47,6 @@ Respond with strict JSON only, no prose outside the JSON:
 }
 
 // ---------------------------------------------------------------------------
-// Response parser (mirrors server/routes/ai.js:1414-1425 parse logic)
-// Keep in sync with server/routes/ai.js:1414-1425.
-// ---------------------------------------------------------------------------
-
-/**
- * Parse and validate the raw text from the AI provider.
- *
- * Mirrors the route handler's parse path exactly, including the same clamping
- * of confidence and slicing of rationale. Returns null if the response is
- * structurally invalid (unknown strategy).
- *
- * @param {string} text
- * @returns {{ strategy: string, rationale: string, confidence: number } | null}
- */
-export function parseResponse(text) {
-    const parsed = safeJsonParse(text);
-    if (!parsed || !['exclude', 'lfs-migrate'].includes(parsed.strategy)) {
-        return null;
-    }
-    return {
-        strategy: parsed.strategy,
-        rationale: String(parsed.rationale || '').slice(0, 500),
-        confidence: Math.max(0, Math.min(1, Number(parsed.confidence) || 0)),
-    };
-}
-
-// ---------------------------------------------------------------------------
 // Adapter entry point (called by the eval runner)
 // ---------------------------------------------------------------------------
 
@@ -106,6 +64,6 @@ export async function runCase({ input, mockResponse, provider }) {
     // Call the mock provider — it ignores the prompt and returns mockResponse.
     const { text } = await provider.generate({ prompt: 'eval-prompt' });
 
-    // Parse the response exactly as the route does.
-    return parseResponse(text);
+    // Parse the response using the shared parser (same as the route).
+    return parseSizeStrategyResponse(text);
 }

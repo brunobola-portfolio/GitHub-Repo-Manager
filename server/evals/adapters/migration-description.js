@@ -6,34 +6,18 @@
  * Exposes the handler's core logic (prompt generation + response parsing) as
  * a testable function that accepts a mock provider.
  *
- * Parse logic mirrors server/routes/ai.js:1436-1494.
- * Keep in sync if the route handler changes.
+ * Parse logic lives in server/lib/migration-ai-parsers.js (shared with the route).
  */
 
+import { sanitizeForPrompt } from '../../ai-service.js';
 import {
     defaultRepoDescription,
     sanitizeRepoDescription,
     REPO_DESCRIPTION_MAX,
 } from '../../lib/repo-description.js';
+import { parseDescriptionResponse } from '../../lib/migration-ai-parsers.js';
 
 export const feature = 'migration-description';
-
-// ---------------------------------------------------------------------------
-// Helpers (mirrors server/routes/ai.js imports)
-// ---------------------------------------------------------------------------
-
-// Mirrors server/lib/utils.js:safeJsonParse
-function safeJsonParse(json, fallback = null) {
-    if (json == null) return fallback;
-    try { return JSON.parse(json); } catch { return fallback; }
-}
-
-// Mirrors server/ai-service.js:sanitizeForPrompt
-function sanitizeForPrompt(text, maxLen = 5000) {
-    if (!text) return '';
-    const cleaned = String(text).replace(/\0/g, '');
-    return cleaned.slice(0, maxLen);
-}
 
 // ---------------------------------------------------------------------------
 // Prompt builder (mirrors server/routes/ai.js:1447-1472 prompt construction)
@@ -80,30 +64,6 @@ Respond with strict JSON only, no prose outside the JSON:
 }
 
 // ---------------------------------------------------------------------------
-// Response parser (mirrors server/routes/ai.js:1479-1485 parse logic)
-// Keep in sync with server/routes/ai.js:1479-1485.
-// ---------------------------------------------------------------------------
-
-/**
- * Parse the raw text from the AI provider and return a { description } object.
- *
- * Mirrors the route handler's fallback logic exactly: if the AI returns an
- * invalid or empty description, falls back to the deterministic default template.
- *
- * @param {string} text
- * @param {{ repoName: string, source: object }} inputForFallback
- * @returns {{ description: string }}
- */
-export function parseResponse(text, inputForFallback) {
-    const parsed = safeJsonParse(text);
-    const rawDescription = parsed?.description;
-    const description = typeof rawDescription === 'string' && rawDescription.trim()
-        ? sanitizeRepoDescription(rawDescription)
-        : defaultRepoDescription(inputForFallback);
-    return { description };
-}
-
-// ---------------------------------------------------------------------------
 // Adapter entry point (called by the eval runner)
 // ---------------------------------------------------------------------------
 
@@ -120,6 +80,6 @@ export async function runCase({ input, mockResponse, provider }) {
     // Call mock provider.
     const { text } = await provider.generate({ prompt: 'eval-prompt' });
 
-    // Parse exactly as the route does.
-    return parseResponse(text, { repoName: input.repoName, source: input.source });
+    // Parse using the shared parser (same as the route).
+    return parseDescriptionResponse(text, { repoName: input.repoName, source: input.source });
 }

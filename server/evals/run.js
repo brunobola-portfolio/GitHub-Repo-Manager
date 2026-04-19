@@ -9,6 +9,7 @@
  * Usage:
  *   node server/evals/run.js
  *   node server/evals/run.js --tag=happy-path
+ *   node server/evals/run.js --tag happy-path
  *   node server/evals/run.js --dataset=migration-size-strategy.json
  *   node server/evals/run.js --baseline=server/evals/baseline.json
  *   node server/evals/run.js --output-md=server/evals/last-run.md
@@ -32,16 +33,49 @@ const ADAPTERS_DIR = join(__dirname, 'adapters');
 // CLI argument parsing
 // ---------------------------------------------------------------------------
 
+/**
+ * Parse argv supporting both --key=value and --key value forms.
+ * Boolean flags (--verbose) are set to true when no value follows.
+ *
+ * @param {string[]} argv  — typically process.argv (includes node + script)
+ * @returns {Record<string, string|boolean>}
+ */
 function parseArgs(argv) {
     const args = {};
-    for (const arg of argv.slice(2)) {
-        const [key, value] = arg.replace(/^--/, '').split('=');
-        args[key] = value ?? true;
+    const tokens = argv.slice(2);
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        if (!token.startsWith('--')) continue;
+        const eq = token.indexOf('=');
+        if (eq >= 0) {
+            // --key=value form
+            args[token.slice(2, eq)] = token.slice(eq + 1);
+        } else {
+            const key = token.slice(2);
+            const next = tokens[i + 1];
+            if (next && !next.startsWith('--')) {
+                // --key value form
+                args[key] = next;
+                i++;
+            } else {
+                // boolean flag
+                args[key] = true;
+            }
+        }
     }
     return args;
 }
 
 const args = parseArgs(process.argv);
+
+// Reject string flags given without a value (e.g. --tag alone)
+for (const flag of ['tag', 'dataset', 'baseline', 'output-md']) {
+    if (args[flag] === true) {
+        console.error(`[eval] --${flag} requires a value (e.g. --${flag}=happy-path or --${flag} happy-path)`);
+        process.exit(1);
+    }
+}
+
 const filterTag = args.tag || null;
 const filterDataset = args.dataset || null;
 const baselinePath = args.baseline || null;
@@ -72,7 +106,18 @@ function loadDatasets() {
 
     return files.map(file => {
         const raw = readFileSync(join(DATA_DIR, file), 'utf8');
-        return { file, dataset: JSON.parse(raw) };
+        const dataset = JSON.parse(raw);
+
+        // M6: warn when dataset.feature disagrees with filename
+        const expectedFeature = file.replace(/\.json$/, '');
+        if (dataset.feature && dataset.feature !== expectedFeature) {
+            console.error(
+                `[eval] Dataset file ${file} declares feature "${dataset.feature}"; ` +
+                `expected "${expectedFeature}". Using declared feature.`
+            );
+        }
+
+        return { file, dataset };
     });
 }
 
@@ -141,17 +186,34 @@ async function runAll() {
     const totalPassed = featureResults.reduce((s, r) => s + r.passed, 0);
     const totalFailed = featureResults.reduce((s, r) => s + r.failed, 0);
 
+    // I1: exit 1 when a filter produces zero cases (prevents silent all-green on typo'd tags)
+    if (totalCases === 0 && (filterTag || filterDataset)) {
+        const filters = [
+            filterTag ? `--tag=${filterTag}` : null,
+            filterDataset ? `--dataset=${filterDataset}` : null,
+        ].filter(Boolean).join(' ');
+        console.error(`[eval] No cases matched filter(s): ${filters}`);
+        console.error('[eval] Check the filter values are correct.');
+        process.exit(1);
+    }
+
     const byFeature = {};
     for (const r of featureResults) {
         byFeature[r.feature] = { passed: r.passed, failed: r.failed };
     }
 
+    // C1: emit featureResults directly so `npm run test:evals > baseline.json`
+    // produces a usable baseline without hand-editing.
     const report = {
         runAt,
         totalCases,
         passed: totalPassed,
         failed: totalFailed,
         byFeature,
+        featureResults: featureResults.map(r => ({
+            feature: r.feature,
+            cases: r.cases.map(c => ({ id: c.id, pass: c.pass })),
+        })),
         failures: allFailures,
     };
 

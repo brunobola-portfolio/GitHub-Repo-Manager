@@ -24,8 +24,9 @@ npm run test:evals
 # Run a specific dataset
 node server/evals/run.js --dataset=migration-size-strategy.json
 
-# Filter by tag
+# Filter by tag (both forms work)
 node server/evals/run.js --tag=happy-path
+node server/evals/run.js --tag happy-path
 
 # Compare against a saved baseline
 node server/evals/run.js --baseline=server/evals/baseline.json
@@ -163,16 +164,23 @@ When the route handler changes, update the adapter to match.
 
 ## Baseline regression guard
 
-To save a baseline:
+To save a baseline — no hand-editing required:
+
 ```bash
-node server/evals/run.js > server/evals/baseline.json
-# Edit baseline.json to add a "featureResults" key wrapping the feature arrays
-# (see the runner source for the exact shape)
+node server/evals/run.js > server/evals/baseline.local.json
 ```
 
-To compare against a baseline:
+The runner emits `featureResults` directly in its JSON output, so the file is
+immediately usable as a baseline. The shape is stable: an array of
+`{ feature, cases: [{ id, pass }] }` objects.
+
+Note: use `node server/evals/run.js` directly (not `npm run test:evals`) when
+redirecting stdout to a file — npm adds a header line that would corrupt the JSON.
+
+To compare against a saved baseline:
+
 ```bash
-node server/evals/run.js --baseline=server/evals/baseline.json
+node server/evals/run.js --baseline=server/evals/baseline.local.json
 ```
 
 - **Regressions** (passed → failed): cause exit 1 — these are bugs.

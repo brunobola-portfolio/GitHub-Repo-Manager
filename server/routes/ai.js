@@ -23,6 +23,7 @@ import { validate, aiChatSchema, aiIndexSchema, migrationSizeStrategySchema, mig
 import { defaultRepoDescription, sanitizeRepoDescription, REPO_DESCRIPTION_MAX } from '../lib/repo-description.js';
 import { aiService, sanitizeForPrompt } from '../ai-service.js';
 import { safeJsonParse } from '../lib/utils.js';
+import { parseSizeStrategyResponse, parseDescriptionResponse } from '../lib/migration-ai-parsers.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../lib/usage-meter.js';
 import { auditLog } from '../lib/audit.js';
 import { initSSE, streamGeminiToSSE, streamToSSE } from './ai-streaming.js';
@@ -1411,18 +1412,14 @@ Respond with strict JSON only, no prose outside the JSON:
         // Provider strips markdown fences centrally — no manual replace needed.
         const { text } = await req.aiProvider.generate({ prompt });
 
-        const parsedResponse = safeJsonParse(text);
-        if (!parsedResponse || !['exclude', 'lfs-migrate'].includes(parsedResponse.strategy)) {
+        const sizeStrategyResult = parseSizeStrategyResponse(text);
+        if (!sizeStrategyResult) {
             return res.status(502).json({ error: 'Unexpected AI response shape' });
         }
 
         incrementAIUsage(userId, 'migration_assist');
         auditLog(req, 'ai.migration-size-strategy', 'ai', null, { repoId, size, model: modelName });
-        res.json({
-            strategy: parsedResponse.strategy,
-            rationale: String(parsedResponse.rationale || '').slice(0, 500),
-            confidence: Math.max(0, Math.min(1, Number(parsedResponse.confidence) || 0)),
-        });
+        res.json(sizeStrategyResult);
     } catch (err) {
         req.log?.error({ err }, 'migration-size-strategy failed');
         handleAIError(res, err, 'Failed to generate size strategy. Please try again later.');
@@ -1476,17 +1473,13 @@ Respond with strict JSON only, no prose outside the JSON:
         // Provider strips markdown fences centrally — text is clean.
         const { text } = await req.aiProvider.generate({ prompt });
 
-        const parsedResponse = safeJsonParse(text);
-        const rawDescription = parsedResponse?.description;
         // Fall through to deterministic template on any unexpected shape — keep the
         // endpoint's contract simple: always return a usable { description }.
-        const description = typeof rawDescription === 'string' && rawDescription.trim()
-            ? sanitizeRepoDescription(rawDescription)
-            : defaultRepoDescription({ repoName, source });
+        const descriptionResult = parseDescriptionResponse(text, { repoName, source });
 
         incrementAIUsage(userId, 'migration_assist');
         auditLog(req, 'ai.migration-description', 'ai', null, { repoId, model: modelName });
-        res.json({ description });
+        res.json(descriptionResult);
     } catch (err) {
         req.log?.error({ err }, 'migration-description failed');
         handleAIError(res, err, 'Failed to generate description. Please try again later.');
