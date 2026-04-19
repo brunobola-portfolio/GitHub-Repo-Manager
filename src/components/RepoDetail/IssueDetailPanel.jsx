@@ -125,7 +125,11 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                             {current.user && (
                                 <span className="flex items-center gap-1.5">
                                     {current.user.avatar_url && (
-                                        <img src={current.user.avatar_url} alt="" className="w-4 h-4 rounded-full" />
+                                        <img
+                                            src={current.user.avatar_url}
+                                            alt={`Avatar for ${current.user.login || 'issue author'}`}
+                                            className="w-4 h-4 rounded-full"
+                                        />
                                     )}
                                     {current.user.login}
                                 </span>
@@ -236,7 +240,11 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                             <Card key={comment.id} className="p-4">
                                 <div className="flex items-center gap-2 mb-2">
                                     {comment.user?.avatar_url && (
-                                        <img src={comment.user.avatar_url} alt="" className="w-5 h-5 rounded-full" />
+                                        <img
+                                            src={comment.user.avatar_url}
+                                            alt={`Avatar for ${comment.user.login || 'commenter'}`}
+                                            className="w-5 h-5 rounded-full"
+                                        />
                                     )}
                                     <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
                                         {comment.user?.login}

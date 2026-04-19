@@ -340,14 +340,25 @@ describe('AIConfigSection — capability matrix', () => {
 })
 
 describe('AIConfigSection — Remove Config', () => {
-    it('calls DELETE /api/user/ai-config after confirmation', async () => {
-        // Ensure window.confirm returns true so the delete proceeds
-        vi.spyOn(window, 'confirm').mockReturnValue(true)
-
+    it('opens the confirm modal, then DELETEs /api/user/ai-config once the user confirms', async () => {
         // renderSection uses GEMINI_CONFIG for GET (first fetch call)
         await renderSection(GEMINI_CONFIG)
 
-        // After initial render+fetch, queue the DELETE and refetch responses
+        // Clicking "Remove config" only opens the modal now — the non-blocking
+        // ConfirmModal pattern replaced the previous window.confirm() call.
+        const removeBtn = screen.getByRole('button', { name: /remove config/i })
+        await act(async () => {
+            fireEvent.click(removeBtn)
+        })
+
+        // No DELETE issued yet: the confirm button exists and the user must
+        // click it.
+        expect(
+            fetchMock.mock.calls.find(([, opts]) => opts?.method === 'DELETE')
+        ).toBeUndefined()
+        const confirmButton = await screen.findByRole('button', { name: /^remove configuration$/i })
+
+        // Queue the DELETE and refetch responses that fire on confirm.
         fetchMock.mockResolvedValueOnce({
             ok: true,
             status: 204,
@@ -355,9 +366,8 @@ describe('AIConfigSection — Remove Config', () => {
         })
         fetchMock.mockResolvedValueOnce(mockResponse(EMPTY_CONFIG))
 
-        const removeBtn = screen.getByRole('button', { name: /remove config/i })
         await act(async () => {
-            fireEvent.click(removeBtn)
+            fireEvent.click(confirmButton)
         })
 
         await waitFor(() => {

@@ -53,7 +53,10 @@ export function TransferModal({
 						const data = await resp.json()
 						setConflicts(data.conflicts || {})
 					} else if (!cancelled) {
-						console.warn("Conflict check failed:", resp.status)
+						// Conflict check is best-effort — the transfer RPC will
+						// re-validate server-side on submit, so a failed probe
+						// just means we can't show pre-flight warnings here.
+						setConflicts({})
 					}
 				} catch {
 					// Silently fail — transfer will still catch conflicts at execution time

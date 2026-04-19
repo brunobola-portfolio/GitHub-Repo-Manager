@@ -198,7 +198,11 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                             {current.user && (
                                 <span className="flex items-center gap-1.5">
                                     {current.user.avatar_url && (
-                                        <img src={current.user.avatar_url} alt="" className="w-4 h-4 rounded-full" />
+                                        <img
+                                            src={current.user.avatar_url}
+                                            alt={`Avatar for ${current.user.login || 'PR author'}`}
+                                            className="w-4 h-4 rounded-full"
+                                        />
                                     )}
                                     {current.user.login}
                                 </span>
@@ -348,7 +352,11 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                     <Card key={comment.id} className="p-4">
                                         <div className="flex items-center gap-2 mb-2">
                                             {comment.user?.avatar_url && (
-                                                <img src={comment.user.avatar_url} alt="" className="w-5 h-5 rounded-full" />
+                                                <img
+                                                    src={comment.user.avatar_url}
+                                                    alt={`Avatar for ${comment.user.login || 'commenter'}`}
+                                                    className="w-5 h-5 rounded-full"
+                                                />
                                             )}
                                             <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
                                                 {comment.user?.login}
@@ -469,7 +477,11 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2">
                                                     {review.user?.avatar_url && (
-                                                        <img src={review.user.avatar_url} alt="" className="w-5 h-5 rounded-full" />
+                                                        <img
+                                                            src={review.user.avatar_url}
+                                                            alt={`Avatar for reviewer ${review.user.login || 'unknown'}`}
+                                                            className="w-5 h-5 rounded-full"
+                                                        />
                                                     )}
                                                     <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
                                                         {review.user?.login}

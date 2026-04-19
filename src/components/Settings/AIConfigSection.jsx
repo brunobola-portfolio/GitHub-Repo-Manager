@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
 import { InsightCard } from '../ui/InsightCard'
+import { ConfirmModal } from '../ui/ConfirmModal'
 import {
     PROVIDER_IDS,
     PROVIDER_LABELS,
@@ -571,6 +572,7 @@ export function AIConfigSection() {
     const [testing, setTesting] = useState(false)
     const [testResult, setTestResult] = useState(null)
     const [testCountdown, setTestCountdown] = useState(0)
+    const [confirmRemove, setConfirmRemove] = useState(false)
     const countdownRef = useRef(null)
 
     // ---------------------------------------------------------------------------
@@ -712,8 +714,12 @@ export function AIConfigSection() {
     // Remove
     // ---------------------------------------------------------------------------
 
-    const handleRemove = useCallback(async () => {
-        if (!window.confirm('Remove all AI configuration? This will clear your stored API keys.')) return
+    const handleRemove = useCallback(() => {
+        // Opens the confirm modal; actual deletion runs in performRemove().
+        setConfirmRemove(true)
+    }, [])
+
+    const performRemove = useCallback(async () => {
         setRemoving(true)
         setSaveMessage(null)
         try {
@@ -723,9 +729,17 @@ export function AIConfigSection() {
             })
             if (!res.ok) throw new Error('Failed to remove configuration')
             setSaveMessage({ type: 'success', text: 'AI configuration removed.' })
+            // Only close the modal on success. On failure, `throw` lets
+            // ConfirmModal catch the error and render its own in-modal banner
+            // with a retry path; we DON'T set saveMessage for errors because
+            // the modal is still on screen and is the more contextual surface.
+            setConfirmRemove(false)
             await fetchConfig()
         } catch (err) {
-            setSaveMessage({ type: 'error', text: err.message || 'Something went wrong.' })
+            // Rethrow so ConfirmModal's handleConfirm can populate its
+            // confirmError state. The user stays on the modal with the error
+            // visible inline and a Cancel escape hatch.
+            throw err
         } finally {
             setRemoving(false)
         }
@@ -971,6 +985,18 @@ export function AIConfigSection() {
             <p className="text-xs text-slate-400 dark:text-slate-500 text-center">
                 Prices as of {PRICING_LAST_UPDATED} and informational only. We never meter LLM tokens — you pay your provider directly.
             </p>
+
+            <ConfirmModal
+                isOpen={confirmRemove}
+                onClose={() => setConfirmRemove(false)}
+                onConfirm={performRemove}
+                title="Remove AI configuration?"
+                message="This will clear your stored API keys for every provider. AI features will stop working until you add a key again. This cannot be undone."
+                confirmText="Remove configuration"
+                cancelText="Cancel"
+                variant="danger"
+                isLoading={removing}
+            />
         </div>
     )
 }

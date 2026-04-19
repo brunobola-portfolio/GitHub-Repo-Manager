@@ -450,7 +450,9 @@ function AppContent() {
         break
 
       default:
-        console.warn(`handleQuickAction: unhandled action "${action}"`)
+        // Unknown action — surface to the user via toast instead of a
+        // console-only log that nobody sees in production.
+        toast.error(`Unknown quick action: ${action}`)
         break
     }
   }, [openModalWithData, closeModal, performAction, toast, refresh, archiveRepos, deleteRepos, selectedRepos])

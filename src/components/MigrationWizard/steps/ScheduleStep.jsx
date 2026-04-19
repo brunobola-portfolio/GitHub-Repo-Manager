@@ -120,7 +120,6 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
         },
       }
 
-      console.log('[ScheduleStep] Plan data:', JSON.stringify(planData, null, 2))
       const { planId } = await migrationApi.createPlan(planData)
 
       if (schedule.mode === 'scheduled') {

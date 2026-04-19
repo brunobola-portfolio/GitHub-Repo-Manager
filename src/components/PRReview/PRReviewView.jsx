@@ -11,6 +11,7 @@ import { DiffPanel } from './DiffPanel/DiffPanel'
 import { ReviewToolbar } from './ReviewToolbar/ReviewToolbar'
 import { ReviewStatusBar } from './ReviewToolbar/ReviewStatusBar'
 import { AISummaryPanel } from './AIInsights/AISummaryPanel'
+import { ConfirmModal } from '../ui/ConfirmModal'
 
 export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   const api = useRepoDetail(owner, repo)
@@ -42,6 +43,10 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   const { toast } = useToast()
   const [submitting, setSubmitting] = useState(false)
   const [sortMode, setSortMode] = useState('risk')
+  // State-driven confirm flow (replaces blocking window.confirm) so the PR
+  // review surface stays keyboard-accessible and the rest of the app can
+  // remain interactive while the prompt is shown.
+  const [pendingSubmit, setPendingSubmit] = useState(null)
 
   // Load PR data into state when it arrives
   useEffect(() => {
@@ -123,19 +128,10 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     if (prev) dispatch({ type: 'SET_ACTIVE_FILE', filename: prev.filename })
   }, [displayFiles, state.activeFile, dispatch])
 
-  // Submit review with staleness check
-  const handleSubmitReview = useCallback(async (args) => {
-    const { event = 'COMMENT', body = '' } = args ?? {}
+  // Actually submit — shared by the normal path and the post-confirm path.
+  const doSubmit = useCallback(async ({ event, body }) => {
     setSubmitting(true)
     try {
-      const { isStale } = await checkStaleness()
-      if (isStale) {
-        // TODO: Replace window.confirm with a state-based ConfirmModal for a non-blocking UX
-        const ok = window.confirm(
-          'This PR has been updated since you started reviewing. Do you still want to submit your review?'
-        )
-        if (!ok) return
-      }
       await submitReview({
         event,
         body: body || '',
@@ -148,7 +144,28 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     } finally {
       setSubmitting(false)
     }
-  }, [checkStaleness, submitReview, state.pendingComments, state.headSha, dispatch, toast])
+  }, [submitReview, state.pendingComments, state.headSha, dispatch, toast])
+
+  // Submit review with staleness check
+  const handleSubmitReview = useCallback(async (args) => {
+    const { event = 'COMMENT', body = '' } = args ?? {}
+    setSubmitting(true)
+    try {
+      const { isStale } = await checkStaleness()
+      if (isStale) {
+        // Queue a confirmation modal and unblock the submit handler — the
+        // modal's onConfirm / onClose then decides whether to continue.
+        setSubmitting(false)
+        setPendingSubmit({ event, body })
+        return
+      }
+    } catch (e) {
+      setSubmitting(false)
+      toast.error(`Failed to check PR staleness: ${e.message}`)
+      return
+    }
+    await doSubmit({ event, body })
+  }, [checkStaleness, doSubmit, toast])
 
   // Keyboard shortcuts
   useReviewKeyboard({
@@ -206,7 +223,10 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
         onBack={onBack}
         onSubmitReview={handleSubmitReview}
         pendingCount={state.pendingComments.length}
-        submitting={submitting}
+        // Treat the staleness confirm as an in-flight submit too, otherwise
+        // the user could re-open the event menu and re-submit while the modal
+        // is open, overwriting pendingSubmit's event/body pair.
+        submitting={submitting || pendingSubmit !== null}
       />
 
       <div className="flex flex-1 min-h-0">
@@ -263,6 +283,22 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
         totalFiles={state.files?.length ?? 0}
         reviewedCount={state.reviewedFiles.length}
         pendingCommentCount={state.pendingComments.length}
+      />
+
+      <ConfirmModal
+        isOpen={pendingSubmit !== null}
+        onClose={() => setPendingSubmit(null)}
+        onConfirm={async () => {
+          const queued = pendingSubmit
+          setPendingSubmit(null)
+          if (queued) await doSubmit(queued)
+        }}
+        title="PR updated since you started"
+        message="This PR has been updated since you opened it. Submitting now will post your review against the current head — earlier line-level comments may reference stale lines. Do you still want to submit?"
+        confirmText="Submit review"
+        cancelText="Cancel"
+        variant="warning"
+        isLoading={submitting}
       />
     </div>
   )

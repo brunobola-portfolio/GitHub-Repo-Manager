@@ -148,7 +148,11 @@ function ActivityItem({ event }) {
                     {getEventDescription(event)}
                 </p>
                 <div className="flex items-center gap-3 mt-2">
-                    <img src={event.actor.avatar_url} alt="" className="w-5 h-5 rounded-full border border-slate-200 dark:border-slate-700" />
+                    <img
+                        src={event.actor.avatar_url}
+                        alt={`Avatar for ${event.actor.login || 'activity actor'}`}
+                        className="w-5 h-5 rounded-full border border-slate-200 dark:border-slate-700"
+                    />
                     <span className="text-xs text-slate-400 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {new Date(event.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
