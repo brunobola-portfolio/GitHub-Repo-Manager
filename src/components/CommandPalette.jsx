@@ -17,7 +17,9 @@ const ACTION_ITEMS = [
   { id: 'action-settings', label: 'Open Settings', modal: 'showSettings', icon: Settings },
 ]
 
-export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChange, onOpenModal, onSelectRepo }) {
+const GROUP_HEADING_CLASSES = '[&>[cmdk-group-heading]]:px-2 [&>[cmdk-group-heading]]:py-1.5 [&>[cmdk-group-heading]]:text-xs [&>[cmdk-group-heading]]:font-semibold [&>[cmdk-group-heading]]:text-slate-500 [&>[cmdk-group-heading]]:dark:text-slate-400 [&>[cmdk-group-heading]]:uppercase [&>[cmdk-group-heading]]:tracking-wider'
+
+export function CommandPalette({ isOpen, onClose, repos, onViewChange, onOpenModal, onSelectRepo }) {
   const displayRepos = repos.slice(0, 10)
 
   return (
@@ -41,7 +43,7 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
 
           <Command.Group
             heading="Navigate"
-            className="[&>[cmdk-group-heading]]:px-2 [&>[cmdk-group-heading]]:py-1.5 [&>[cmdk-group-heading]]:text-xs [&>[cmdk-group-heading]]:font-semibold [&>[cmdk-group-heading]]:text-slate-500 [&>[cmdk-group-heading]]:dark:text-slate-400 [&>[cmdk-group-heading]]:uppercase [&>[cmdk-group-heading]]:tracking-wider"
+            className={GROUP_HEADING_CLASSES}
           >
             {NAVIGATE_ITEMS.map((item) => {
               const Icon = item.icon
@@ -53,9 +55,9 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
                     onViewChange(item.view)
                     onClose()
                   }}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 cursor-pointer aria-selected:bg-indigo-50 aria-selected:dark:bg-indigo-950/50 aria-selected:text-indigo-600 aria-selected:dark:text-indigo-400 outline-none transition-colors"
+                  className="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 cursor-pointer aria-selected:bg-indigo-50 aria-selected:dark:bg-indigo-950/50 aria-selected:text-indigo-600 aria-selected:dark:text-indigo-400 outline-none transition-colors"
                 >
-                  <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 aria-selected:text-indigo-500" />
+                  <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />
                   {item.label}
                 </Command.Item>
               )
@@ -64,7 +66,7 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
 
           <Command.Group
             heading="Actions"
-            className="mt-1 [&>[cmdk-group-heading]]:px-2 [&>[cmdk-group-heading]]:py-1.5 [&>[cmdk-group-heading]]:text-xs [&>[cmdk-group-heading]]:font-semibold [&>[cmdk-group-heading]]:text-slate-500 [&>[cmdk-group-heading]]:dark:text-slate-400 [&>[cmdk-group-heading]]:uppercase [&>[cmdk-group-heading]]:tracking-wider"
+            className={`mt-1 ${GROUP_HEADING_CLASSES}`}
           >
             {ACTION_ITEMS.map((item) => {
               const Icon = item.icon
@@ -88,7 +90,7 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
           {displayRepos.length > 0 && (
             <Command.Group
               heading="Repositories"
-              className="mt-1 [&>[cmdk-group-heading]]:px-2 [&>[cmdk-group-heading]]:py-1.5 [&>[cmdk-group-heading]]:text-xs [&>[cmdk-group-heading]]:font-semibold [&>[cmdk-group-heading]]:text-slate-500 [&>[cmdk-group-heading]]:dark:text-slate-400 [&>[cmdk-group-heading]]:uppercase [&>[cmdk-group-heading]]:tracking-wider"
+              className={`mt-1 ${GROUP_HEADING_CLASSES}`}
             >
               {displayRepos.map((repo) => (
                 <Command.Item

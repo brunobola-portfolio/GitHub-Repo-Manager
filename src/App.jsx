@@ -144,6 +144,11 @@ function AppContent() {
 
   const commandPalette = useCommandPalette()
 
+  const handleOpenRepo = useCallback((repo) => {
+    setSelectedRepoDetail(repo)
+    setActiveView('repo-detail')
+  }, [])
+
   const loading = appLoading || githubLoading
   const initCalled = useRef(false)
 
@@ -744,10 +749,7 @@ function AppContent() {
                     totalPages={totalPages}
                     onRefresh={refresh}
                     onQuickAction={handleQuickAction}
-                    onRepoClick={(repo) => {
-                      setSelectedRepoDetail(repo)
-                      setActiveView('repo-detail')
-                    }}
+                    onRepoClick={handleOpenRepo}
                   />
                 </ErrorBoundary>
               </div>
@@ -1066,14 +1068,9 @@ function AppContent() {
         isOpen={commandPalette.isOpen}
         onClose={commandPalette.close}
         repos={displayRepos}
-        activeView={activeView}
-        onViewChange={(v) => { commandPalette.close(); setActiveView(v) }}
-        onOpenModal={(name) => { commandPalette.close(); openModal(name) }}
-        onSelectRepo={(repo) => {
-          commandPalette.close()
-          setSelectedRepoDetail(repo)
-          setActiveView('repo-detail')
-        }}
+        onViewChange={setActiveView}
+        onOpenModal={openModal}
+        onSelectRepo={handleOpenRepo}
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
