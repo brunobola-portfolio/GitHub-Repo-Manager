@@ -15,6 +15,7 @@ import {
 } from '../utils/api'
 import { getErrorInfo } from '../utils/errors'
 import { MOCK_MODE, API_BASE, API_ENDPOINTS, PAGINATION } from '../config'
+import { bulkExecuteWithConfirmation } from '../api/bulkConfirm'
 
 /**
  * Generate mock repository data for development
@@ -217,7 +218,7 @@ export function useRepos(user) {
             }
         }
 
-        // Real API call with retry (no retries for destructive/non-idempotent actions)
+        // Real API call — two-step dry-run + confirmation-token flow
         setIsPerforming(true)
         setMessage(`Processing ${repoNames.length} repositories...`)
 
@@ -228,15 +229,8 @@ export function useRepos(user) {
                 ...options
             }
 
-            const destructiveActions = ['transfer', 'mirror', 'delete']
-            const maxRetries = destructiveActions.includes(action) ? 0 : 2
             const endpoint = API_ENDPOINTS[action] || `${API_BASE}/${action}`
-            const resp = await fetchWithRetry(endpoint, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            }, { maxRetries })
+            const resp = await bulkExecuteWithConfirmation({ url: endpoint, body })
 
             const parsed = await safeParseJson(resp)
             const apiResults = Array.isArray(parsed?.results) ? parsed.results : []
@@ -344,12 +338,10 @@ export function useRepos(user) {
 
         setIsPerforming(true)
         try {
-            const resp = await fetchWithRetry(API_ENDPOINTS.archive, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ repos: repoNames, archive })
-            }, { maxRetries: 0 })
+            const resp = await bulkExecuteWithConfirmation({
+                url: API_ENDPOINTS.archive,
+                body: { repos: repoNames, archive },
+            })
             const data = await safeParseJson(resp)
             const msg = data?.message || `${archive ? 'Archived' : 'Unarchived'} ${repoNames.length} repositories`
             const entry = { at: new Date().toISOString(), action: 'archive', message: msg, success: true }
@@ -392,12 +384,10 @@ export function useRepos(user) {
 
         setIsPerforming(true)
         try {
-            const resp = await fetchWithRetry(API_ENDPOINTS.delete, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ repos: repoNames, confirm: confirmToken })
-            }, { maxRetries: 0 })
+            const resp = await bulkExecuteWithConfirmation({
+                url: API_ENDPOINTS.delete,
+                body: { repos: repoNames, confirm: confirmToken },
+            })
             const data = await safeParseJson(resp)
             const msg = data?.message || `Deleted ${repoNames.length} repositories`
             const entry = { at: new Date().toISOString(), action: 'delete', message: msg, success: true }

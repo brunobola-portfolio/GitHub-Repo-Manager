@@ -9,6 +9,16 @@
 import { ApiError, ErrorType } from './api'
 
 /**
+ * Map server-returned `reason` values from bulk confirmation errors to
+ * user-friendly messages.
+ */
+const BULK_REASON_MESSAGES = {
+  'repos-mismatch': 'The request was modified after confirmation; please try again.',
+  'extra-mismatch': 'The request was modified after confirmation; please try again.',
+  'expired': 'Confirmation expired; please try again.',
+}
+
+/**
  * Get user-friendly error info based on error type
  */
 export function getErrorInfo(error) {
@@ -43,6 +53,19 @@ export function getErrorInfo(error) {
             message: 'You appear to be offline. Please check your connection.',
             isRetryable: true,
             status: null
+        }
+    }
+
+    // Errors thrown by bulkExecuteWithConfirmation carry `.status` and `.reason`
+    if (error?.status != null) {
+        const friendlyMessage = BULK_REASON_MESSAGES[error.reason]
+            || error?.message
+            || 'An unexpected error occurred.'
+        return {
+            type: error.status === 403 ? ErrorType.AUTHORIZATION : ErrorType.UNKNOWN,
+            message: friendlyMessage,
+            isRetryable: false,
+            status: error.status,
         }
     }
 
