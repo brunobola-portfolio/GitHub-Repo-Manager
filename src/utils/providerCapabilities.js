@@ -66,6 +66,31 @@ export const FEATURE_LABELS = {
 }
 
 /**
+ * Feature keys for per-feature model overrides (stored as UPPER_SNAKE in DB).
+ * Must match the keys used server-side when calling createProviderForUser({ featureKey }).
+ */
+export const FEATURE_KEYS = [
+    'CHAT',
+    'PR_REVIEW',
+    'MIGRATION_DESCRIPTION',
+    'MIGRATION_SIZE',
+    'README_ANALYSIS',
+    'EMBED',
+]
+
+/**
+ * Human-readable labels for feature keys shown in the Settings UI.
+ */
+export const FEATURE_KEY_LABELS = {
+    CHAT: 'AI Chat',
+    PR_REVIEW: 'PR Review',
+    MIGRATION_DESCRIPTION: 'Migration Description',
+    MIGRATION_SIZE: 'Migration Size Strategy',
+    README_ANALYSIS: 'README Analysis',
+    EMBED: 'Embeddings',
+}
+
+/**
  * Provider defaults for form fields.
  */
 export const PROVIDER_DEFAULTS = {

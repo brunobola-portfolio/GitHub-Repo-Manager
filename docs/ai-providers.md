@@ -208,3 +208,95 @@ Response on success:
 ```
 
 Rate limited to 1 call per 10 seconds per user.
+
+---
+
+## Per-feature Model Overrides
+
+Power users can assign different models to specific features while keeping a
+single provider and API key. This is useful for cost-quality trade-offs —
+e.g. Gemini Flash for chat (cheap, fast) and Claude Sonnet for PR review
+(higher quality).
+
+**API field:** `featureOverrides` — a JSON object where keys are UPPER_SNAKE
+feature identifiers and values are model name strings.
+
+```json
+{
+  "featureOverrides": {
+    "CHAT": "gemini-2.5-flash",
+    "PR_REVIEW": "claude-sonnet-4-6",
+    "EMBED": "text-embedding-3-large"
+  }
+}
+```
+
+**Supported feature keys:**
+
+| Key                     | Feature                   |
+| ----------------------- | ------------------------- |
+| `CHAT`                  | AI Chat                   |
+| `PR_REVIEW`             | PR Review                 |
+| `MIGRATION_DESCRIPTION` | Migration Description     |
+| `MIGRATION_SIZE`        | Migration Size Strategy   |
+| `README_ANALYSIS`       | README Analysis           |
+| `EMBED`                 | Embeddings                |
+
+When a key is not present in `featureOverrides`, the primary `completionModel`
+(or `embeddingModel`) is used as the fallback.
+
+**In the Settings UI:** Expand the "Per-feature model overrides (optional)"
+section below Embedding Provider. Each feature row has a free-text model input
+and a "Reset" button.
+
+---
+
+## Cost Estimation
+
+The Settings UI shows indicative pricing next to each model name input. Prices
+are sourced from public provider documentation and last updated 2026-04-19.
+They are informational only — this application never meters LLM tokens; you
+pay your AI provider directly.
+
+| Model                    | Input ($/1M) | Output ($/1M) |
+| ------------------------ | ------------ | ------------- |
+| `gemini-2.5-flash`       | $0.30        | $2.50         |
+| `gemini-2.5-pro`         | $1.25        | $5.00         |
+| `claude-sonnet-4-6`      | $3.00        | $15.00        |
+| `claude-opus-4-5`        | $15.00       | $75.00        |
+| `gpt-4o-mini`            | $0.15        | $0.60         |
+| `gpt-4o`                 | $2.50        | $10.00        |
+| `text-embedding-3-small` | $0.02        | —             |
+| `text-embedding-3-large` | $0.13        | —             |
+| `gemini-embedding-001`   | $0.15        | —             |
+
+Prices use prefix matching — `gemini-2.5-flash-latest` resolves to the
+`gemini-2.5-flash` entry. Unknown models display "Pricing unknown — check
+provider docs".
+
+---
+
+## Multi-tenant Deployment
+
+In multi-tenant deployments you may want every user to bring their own key
+rather than sharing server credentials. Set:
+
+```env
+AI_REQUIRE_USER_CONFIG=true
+```
+
+When this variable is `true`:
+
+- `createProviderForUser` skips the `GEMINI_API_KEY` server fallback even when
+  that env var is set.
+- Users with no configured `user_ai_config` row will receive `null` from the
+  provider factory — AI features will be unavailable for them.
+- The `serverFallbackAvailable` field returned by `GET /api/user/ai-config`
+  will be `false` (because the fallback is disabled), so the "using server's
+  shared key" banner is suppressed.
+
+This is useful for:
+
+- SaaS / hosted deployments where you don't want to subsidise AI API costs.
+- Compliance environments where every AI call must be traceable to a specific
+  user's own account.

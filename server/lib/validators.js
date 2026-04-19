@@ -288,6 +288,10 @@ export const userAIConfigSchema = z.object({
     embeddingModel: z.string().max(120).nullable().optional(),
     embeddingApiKey: z.string().min(1).max(2000).nullable().optional(),
     embeddingEndpointUrl: z.string().url().max(500).nullable().optional(),
+    featureOverrides: z.record(
+        z.string().regex(/^[A-Z_]+$/, 'Feature key must be UPPER_SNAKE_CASE'),
+        z.string().max(120)
+    ).nullable().optional(),
 });
 
 export const testAIConfigSchema = z.object({

@@ -13,6 +13,7 @@
  *    embeddingProvider,
  *    embeddingModel,
  *    hasEmbeddingKey,          // boolean
+ *    featureOverrides,         // { CHAT: "model", PR_REVIEW: "model", ... } or {}
  *    updatedAt,
  *  }
  *
@@ -33,6 +34,14 @@ import logger from './logger.js';
  * @returns {object}
  */
 function toPublicShape(row) {
+    let featureOverrides = {};
+    if (row.feature_overrides_json) {
+        try {
+            featureOverrides = JSON.parse(row.feature_overrides_json);
+        } catch {
+            featureOverrides = {};
+        }
+    }
     return {
         userId: row.user_id,
         completionProvider: row.completion_provider ?? null,
@@ -41,6 +50,7 @@ function toPublicShape(row) {
         embeddingProvider: row.embedding_provider ?? null,
         embeddingModel: row.embedding_model ?? null,
         hasEmbeddingKey: !!row.embedding_credentials_enc,
+        featureOverrides,
         updatedAt: row.updated_at ?? null,
     };
 }
@@ -108,6 +118,15 @@ export function getDecryptedConfig(userId) {
         }
     }
 
+    let featureOverrides = {};
+    if (row.feature_overrides_json) {
+        try {
+            featureOverrides = JSON.parse(row.feature_overrides_json);
+        } catch {
+            featureOverrides = {};
+        }
+    }
+
     return {
         userId: row.user_id,
         completionProvider: row.completion_provider ?? null,
@@ -116,6 +135,7 @@ export function getDecryptedConfig(userId) {
         embeddingProvider: row.embedding_provider ?? null,
         embeddingModel: row.embedding_model ?? null,
         embeddingCredentials,
+        featureOverrides,
     };
 }
 
@@ -133,6 +153,7 @@ export function getDecryptedConfig(userId) {
  * @param {string|null|undefined}  [config.embeddingProvider]
  * @param {string|null|undefined}  [config.embeddingModel]
  * @param {object|null|undefined}  [config.embeddingCredentials]
+ * @param {object|null|undefined}  [config.featureOverrides]  — e.g. { CHAT: "gemini-2.5-pro", PR_REVIEW: "claude-opus-4-5" }
  */
 export function setUserAIConfig(userId, config) {
     const {
@@ -142,6 +163,7 @@ export function setUserAIConfig(userId, config) {
         embeddingProvider,
         embeddingModel,
         embeddingCredentials,
+        featureOverrides,
     } = config;
 
     // Check if a row already exists
@@ -157,6 +179,9 @@ export function setUserAIConfig(userId, config) {
         const embCredsEnc = embeddingCredentials != null
             ? encryptCredentials(embeddingCredentials)
             : null;
+        const featureOverridesJson = featureOverrides != null
+            ? JSON.stringify(featureOverrides)
+            : null;
 
         db.prepare(`
             INSERT INTO user_ai_config (
@@ -167,8 +192,9 @@ export function setUserAIConfig(userId, config) {
                 embedding_provider,
                 embedding_model,
                 embedding_credentials_enc,
+                feature_overrides_json,
                 updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
         `).run(
             userId,
             completionProvider ?? null,
@@ -177,6 +203,7 @@ export function setUserAIConfig(userId, config) {
             embeddingProvider ?? null,
             embeddingModel ?? null,
             embCredsEnc,
+            featureOverridesJson,
         );
     } else {
         // Partial update: only set fields that are not undefined
@@ -207,6 +234,10 @@ export function setUserAIConfig(userId, config) {
             updates.push('embedding_credentials_enc = ?');
             values.push(embeddingCredentials != null ? encryptCredentials(embeddingCredentials) : null);
         }
+        if (featureOverrides !== undefined) {
+            updates.push('feature_overrides_json = ?');
+            values.push(featureOverrides != null ? JSON.stringify(featureOverrides) : null);
+        }
 
         if (updates.length === 0) return; // nothing to update
 
@@ -228,4 +259,24 @@ export function setUserAIConfig(userId, config) {
  */
 export function deleteUserAIConfig(userId) {
     db.prepare('DELETE FROM user_ai_config WHERE user_id = ?').run(userId);
+}
+
+/**
+ * Return the model to use for a specific feature, respecting per-feature overrides.
+ *
+ * Lookup order:
+ *  1. User's featureOverrides[featureKey] if set.
+ *  2. fallbackModel.
+ *
+ * @param {number} userId
+ * @param {string} featureKey  — UPPER_SNAKE key e.g. 'CHAT', 'PR_REVIEW', 'EMBED'
+ * @param {string} fallbackModel  — the model to use when no override is set
+ * @returns {string}
+ */
+export function getModelForFeature(userId, featureKey, fallbackModel) {
+    const config = getUserAIConfig(userId);
+    if (config && config.featureOverrides && config.featureOverrides[featureKey]) {
+        return config.featureOverrides[featureKey];
+    }
+    return fallbackModel;
 }

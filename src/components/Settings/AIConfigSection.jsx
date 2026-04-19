@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Sparkles, Check, X, AlertTriangle, Loader2,
-    ExternalLink, ChevronDown, Cpu,
+    ExternalLink, ChevronDown, Cpu, Info, Settings2,
 } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
 import { InsightCard } from '../ui/InsightCard'
@@ -12,7 +12,14 @@ import {
     PROVIDER_CAPABILITIES,
     FEATURE_LABELS,
     PROVIDER_DEFAULTS,
+    FEATURE_KEYS,
+    FEATURE_KEY_LABELS,
 } from '../../utils/providerCapabilities'
+import {
+    getPricingForModel,
+    formatPricing,
+    PRICING_LAST_UPDATED,
+} from '../../utils/providerPricing'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -34,6 +41,24 @@ const INPUT_CLS =
     'focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition'
 
 const LABEL_CLS = 'block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1'
+
+// ---------------------------------------------------------------------------
+// Sub-component: PriceHint
+// ---------------------------------------------------------------------------
+
+/**
+ * Tiny inline pricing hint below a model name input.
+ * @param {{ modelName: string|null }} props
+ */
+function PriceHint({ modelName }) {
+    const pricing = getPricingForModel(modelName)
+    const text = formatPricing(pricing)
+    return (
+        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+            {text}
+        </p>
+    )
+}
 
 // ---------------------------------------------------------------------------
 // Sub-component: ProviderSelect
@@ -136,6 +161,7 @@ function ProviderFields({ provider, form, onChange, errors }) {
                         ) : defaults.modelHelp}
                     </p>
                 )}
+                <PriceHint modelName={form.completionModel || defaults.modelPlaceholder} />
             </div>
 
             {/* Help text */}
@@ -260,10 +286,115 @@ function EmbeddingSection({ form, onChange }) {
                             }
                             className={INPUT_CLS}
                         />
+                        <PriceHint modelName={
+                            form.embeddingModel ||
+                            (form.embeddingProvider === 'openai' ? 'text-embedding-3-small'
+                                : form.embeddingProvider === 'gemini' ? 'gemini-embedding-001'
+                                : null)
+                        } />
                     </div>
                 </>
             )}
         </div>
+    )
+}
+
+// ---------------------------------------------------------------------------
+// Sub-component: PerFeatureOverrideSection
+// ---------------------------------------------------------------------------
+
+/**
+ * Collapsed section for per-feature model overrides.
+ * @param {{ featureOverrides: object, completionModel: string, onChange: function }} props
+ */
+function PerFeatureOverrideSection({ featureOverrides, completionModel, onChange }) {
+    const [open, setOpen] = useState(false)
+
+    return (
+        <InsightCard tone="default" hover={false}>
+            <div className="space-y-3">
+                <button
+                    type="button"
+                    onClick={() => setOpen((v) => !v)}
+                    className="flex items-center justify-between w-full text-left"
+                    aria-expanded={open}
+                >
+                    <div className="flex items-center gap-2">
+                        <Settings2 className="w-4 h-4 text-slate-400" />
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                            Per-feature model overrides
+                        </span>
+                        <span className="text-xs font-normal text-slate-400">(optional)</span>
+                    </div>
+                    <ChevronDown
+                        className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+                    />
+                </button>
+
+                <AnimatePresence initial={false}>
+                    {open && (
+                        <motion.div
+                            key="feature-overrides"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                        >
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                                Override the model for specific features. Leave empty to use the completion model above.
+                            </p>
+                            <div className="space-y-3">
+                                {FEATURE_KEYS.map((key) => (
+                                    <div key={key}>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label
+                                                htmlFor={`feature-override-${key}`}
+                                                className={LABEL_CLS}
+                                            >
+                                                {FEATURE_KEY_LABELS[key]}
+                                            </label>
+                                            {featureOverrides[key] && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const next = { ...featureOverrides }
+                                                        delete next[key]
+                                                        onChange('featureOverrides', next)
+                                                    }}
+                                                    className="text-xs text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                                    aria-label={`Reset ${FEATURE_KEY_LABELS[key]} to default`}
+                                                >
+                                                    Reset
+                                                </button>
+                                            )}
+                                        </div>
+                                        <input
+                                            id={`feature-override-${key}`}
+                                            type="text"
+                                            value={featureOverrides[key] ?? ''}
+                                            onChange={(e) => {
+                                                const val = e.target.value
+                                                const next = { ...featureOverrides }
+                                                if (val) {
+                                                    next[key] = val
+                                                } else {
+                                                    delete next[key]
+                                                }
+                                                onChange('featureOverrides', next)
+                                            }}
+                                            placeholder={completionModel || 'default model'}
+                                            className={INPUT_CLS}
+                                        />
+                                        <PriceHint modelName={featureOverrides[key] || null} />
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </InsightCard>
     )
 }
 
@@ -423,6 +554,8 @@ const EMPTY_FORM = {
     embeddingEndpointUrl: '',
     hasCompletionKey: false,
     hasEmbeddingKey: false,
+    featureOverrides: {},
+    serverFallbackAvailable: false,
 }
 
 export function AIConfigSection() {
@@ -464,6 +597,8 @@ export function AIConfigSection() {
                 embeddingEndpointUrl: '',
                 hasCompletionKey: data.hasCompletionKey ?? false,
                 hasEmbeddingKey: data.hasEmbeddingKey ?? false,
+                featureOverrides: data.featureOverrides ?? {},
+                serverFallbackAvailable: data.serverFallbackAvailable ?? false,
             }
             setForm(loaded)
             setSaved(loaded)
@@ -499,6 +634,7 @@ export function AIConfigSection() {
         embeddingModel: form.embeddingModel,
         embeddingApiKey: form.embeddingApiKey,
         embeddingEndpointUrl: form.embeddingEndpointUrl,
+        featureOverrides: form.featureOverrides,
     }) !== JSON.stringify({
         completionProvider: saved.completionProvider,
         completionModel: saved.completionModel,
@@ -508,6 +644,7 @@ export function AIConfigSection() {
         embeddingModel: saved.embeddingModel,
         embeddingApiKey: saved.embeddingApiKey,
         embeddingEndpointUrl: saved.embeddingEndpointUrl,
+        featureOverrides: saved.featureOverrides,
     })
 
     // ---------------------------------------------------------------------------
@@ -529,6 +666,9 @@ export function AIConfigSection() {
         if (form.embeddingModel !== saved.embeddingModel) body.embeddingModel = form.embeddingModel || null
         if (form.embeddingApiKey !== '') body.embeddingApiKey = form.embeddingApiKey || null
         if (form.embeddingEndpointUrl !== '') body.embeddingEndpointUrl = form.embeddingEndpointUrl || null
+        if (JSON.stringify(form.featureOverrides) !== JSON.stringify(saved.featureOverrides)) {
+            body.featureOverrides = form.featureOverrides
+        }
 
         try {
             const res = await fetch(`${API_BASE_URL}/api/user/ai-config`, {
@@ -670,6 +810,16 @@ export function AIConfigSection() {
                 </div>
             </div>
 
+            {/* Server fallback indicator */}
+            {form.serverFallbackAvailable && (
+                <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl text-sm border bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700/50 text-amber-800 dark:text-amber-300">
+                    <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>
+                        Currently using the server&apos;s shared AI key. Configure your own for private, metered usage.
+                    </span>
+                </div>
+            )}
+
             {/* Completion Provider */}
             <InsightCard tone="ai" hover={false}>
                 <div className="space-y-4">
@@ -727,6 +877,24 @@ export function AIConfigSection() {
                                 <EmbeddingSection form={form} onChange={handleFieldChange} />
                             </div>
                         </InsightCard>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Per-feature model overrides */}
+            <AnimatePresence>
+                {form.completionProvider && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <PerFeatureOverrideSection
+                            featureOverrides={form.featureOverrides}
+                            completionModel={form.completionModel || (PROVIDER_DEFAULTS[form.completionProvider]?.modelPlaceholder ?? '')}
+                            onChange={handleFieldChange}
+                        />
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -798,6 +966,11 @@ export function AIConfigSection() {
 
             {/* Capability Matrix */}
             <CapabilityMatrix activeProvider={form.completionProvider} />
+
+            {/* Pricing disclaimer */}
+            <p className="text-xs text-slate-400 dark:text-slate-500 text-center">
+                Prices as of {PRICING_LAST_UPDATED} and informational only. We never meter LLM tokens — you pay your provider directly.
+            </p>
         </div>
     )
 }

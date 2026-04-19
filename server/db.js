@@ -400,6 +400,7 @@ export function initDB() {
                 embedding_provider TEXT,
                 embedding_model TEXT,
                 embedding_credentials_enc TEXT,
+                feature_overrides_json TEXT,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
@@ -427,6 +428,13 @@ export function initDB() {
     });
 
     transactions();
+
+    // Migration 004: add feature_overrides_json column to user_ai_config.
+    try {
+        db.exec(`ALTER TABLE user_ai_config ADD COLUMN feature_overrides_json TEXT`);
+    } catch (err) {
+        if (!err.message?.includes('duplicate column')) throw err;
+    }
 
     // Migration 002: add is_mirror column + index to migration_jobs.
     // Split into two separate exec() calls so a "duplicate column" error on re-run

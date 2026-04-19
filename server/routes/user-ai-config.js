@@ -62,6 +62,12 @@ function testRateLimiter(req, res, next) {
 router.get('/', requireAuth, (req, res) => {
     const config = getUserAIConfig(req.session.userId);
 
+    // serverFallbackAvailable: true iff no user config AND server has GEMINI_API_KEY
+    // AND AI_REQUIRE_USER_CONFIG is not forcing BYOK-only mode.
+    const serverFallbackAvailable = !config &&
+        !!process.env.GEMINI_API_KEY &&
+        process.env.AI_REQUIRE_USER_CONFIG !== 'true';
+
     if (!config) {
         // Return a null-shape so the frontend always has a consistent object
         return res.json({
@@ -72,11 +78,13 @@ router.get('/', requireAuth, (req, res) => {
             embeddingProvider: null,
             embeddingModel: null,
             hasEmbeddingKey: false,
+            featureOverrides: {},
             updatedAt: null,
+            serverFallbackAvailable,
         });
     }
 
-    res.json(config);
+    res.json({ ...config, serverFallbackAvailable });
 });
 
 // ---------------------------------------------------------------------------
@@ -93,6 +101,7 @@ router.post('/', requireAuth, validate(userAIConfigSchema), (req, res) => {
         embeddingModel,
         embeddingApiKey,
         embeddingEndpointUrl,
+        featureOverrides,
     } = req.body;
 
     // Build credential objects from individual fields.
@@ -133,6 +142,7 @@ router.post('/', requireAuth, validate(userAIConfigSchema), (req, res) => {
         embeddingProvider,
         embeddingModel,
         embeddingCredentials,
+        featureOverrides,
     });
 
     res.status(204).end();

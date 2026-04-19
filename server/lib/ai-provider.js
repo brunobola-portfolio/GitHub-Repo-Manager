@@ -412,7 +412,9 @@ const PROVIDER_REGISTRY = {
  *
  * Lookup order:
  *  1. user_ai_config row for userId — use their stored BYOK config.
+ *     When featureKey is provided, applies any per-feature model override.
  *  2. Server-wide env fallback (GEMINI_API_KEY) — demo / self-host mode.
+ *     Skipped when AI_REQUIRE_USER_CONFIG=true.
  *  3. null — AI not configured for this user.
  *
  * For embedding requests on a provider that doesn't natively support embeddings
@@ -421,10 +423,14 @@ const PROVIDER_REGISTRY = {
  *
  * @param {number} userId
  * @param {'completion'|'embedding'} [kind='completion']
+ * @param {object} [opts]
+ * @param {string} [opts.featureKey]  — UPPER_SNAKE key e.g. 'CHAT', 'PR_REVIEW'
  * @returns {Promise<import('./providers/openai.js').OpenAIProvider|GeminiProvider|null>}
  */
-export async function createProviderForUser(userId, kind = 'completion') {
+export async function createProviderForUser(userId, kind = 'completion', opts = {}) {
     await _loadProviders();
+
+    const { featureKey } = opts;
 
     // Lazy import to avoid circular dependency at module load time.
     const { getDecryptedConfig } = await import('./user-ai-config.js');
@@ -436,10 +442,12 @@ export async function createProviderForUser(userId, kind = 'completion') {
         if (kind === 'completion') {
             const provider = userConfig.completionProvider;
             const creds = userConfig.completionCredentials;
-            const model = userConfig.completionModel;
+            const baseModel = userConfig.completionModel;
             const entry = provider && PROVIDER_REGISTRY[provider];
 
             if (entry && creds) {
+                // Apply per-feature model override if present
+                const model = (featureKey && userConfig.featureOverrides?.[featureKey]) || baseModel;
                 return entry.create({
                     ...creds,
                     ...(model ? { model } : {}),
@@ -454,9 +462,12 @@ export async function createProviderForUser(userId, kind = 'completion') {
 
             // If the completion provider supports embeddings, use it
             if (completionEntry?.supportsEmbeddings && userConfig.completionCredentials) {
+                // Apply EMBED feature override if present
+                const baseModel = userConfig.completionModel;
+                const model = (featureKey && userConfig.featureOverrides?.[featureKey]) || baseModel;
                 return completionEntry.create({
                     ...userConfig.completionCredentials,
-                    ...(userConfig.completionModel ? { model: userConfig.completionModel } : {}),
+                    ...(model ? { model } : {}),
                 });
             }
 
@@ -467,9 +478,10 @@ export async function createProviderForUser(userId, kind = 'completion') {
             const embEntry = embProvider && PROVIDER_REGISTRY[embProvider];
 
             if (embEntry && embCreds) {
+                const model = (featureKey && userConfig.featureOverrides?.[featureKey]) || embModel;
                 return embEntry.create({
                     ...embCreds,
-                    ...(embModel ? { model: embModel, embeddingModel: embModel } : {}),
+                    ...(model ? { model, embeddingModel: model } : {}),
                 });
             }
 
@@ -478,6 +490,15 @@ export async function createProviderForUser(userId, kind = 'completion') {
     }
 
     // --- Server-wide env fallback ---
+    // When AI_REQUIRE_USER_CONFIG=true, skip the fallback entirely so every
+    // user must bring their own key (multi-tenant mode).
+    if (process.env.AI_REQUIRE_USER_CONFIG === 'true') {
+        if (!userConfig) {
+            logger.warn({ userId }, '[AI] AI_REQUIRE_USER_CONFIG=true — no user config, server fallback disabled.');
+            return null;
+        }
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (apiKey) {
         const baseModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';

@@ -8,6 +8,8 @@
  *  - Returns null when neither is set (non-production)
  *  - Embedding dispatch falls back to user's embedding_provider when completion
  *    provider is anthropic (no native embeddings)
+ *  - AI_REQUIRE_USER_CONFIG=true disables server-env fallback
+ *  - featureKey applies per-feature model override
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -80,6 +82,7 @@ beforeEach(() => {
     delete process.env.GEMINI_MODEL;
     delete process.env.GEMINI_EMBEDDING_MODEL;
     delete process.env.NODE_ENV;
+    delete process.env.AI_REQUIRE_USER_CONFIG;
     vi.clearAllMocks();
 });
 
@@ -225,5 +228,85 @@ describe('createProviderForUser()', () => {
         const provider = await createProviderForUser(1, 'embedding');
 
         expect(provider).toBeInstanceOf(GeminiProvider);
+    });
+
+    // ----- AI_REQUIRE_USER_CONFIG -----
+
+    it('returns null when AI_REQUIRE_USER_CONFIG=true and no user config (even with GEMINI_API_KEY set)', async () => {
+        _mockDecryptedConfig = null;
+        process.env.GEMINI_API_KEY = 'server-key';
+        process.env.AI_REQUIRE_USER_CONFIG = 'true';
+
+        const provider = await createProviderForUser(1, 'completion');
+
+        expect(provider).toBeNull();
+    });
+
+    it('still returns user provider when AI_REQUIRE_USER_CONFIG=true and user config exists', async () => {
+        _mockDecryptedConfig = {
+            userId: 1,
+            completionProvider: 'openai',
+            completionModel: 'gpt-4o',
+            completionCredentials: { apiKey: 'sk-user' },
+            embeddingProvider: null,
+            embeddingModel: null,
+            embeddingCredentials: null,
+            featureOverrides: {},
+        };
+        process.env.AI_REQUIRE_USER_CONFIG = 'true';
+        // GEMINI_API_KEY should not be used either way
+        delete process.env.GEMINI_API_KEY;
+
+        const provider = await createProviderForUser(1, 'completion');
+
+        expect(provider).toBeInstanceOf(MockOpenAIProvider);
+    });
+
+    it('falls back normally when AI_REQUIRE_USER_CONFIG is absent (default behavior)', async () => {
+        _mockDecryptedConfig = null;
+        process.env.GEMINI_API_KEY = 'server-key';
+        // AI_REQUIRE_USER_CONFIG not set
+
+        const provider = await createProviderForUser(1, 'completion');
+
+        expect(provider).toBeInstanceOf(GeminiProvider);
+    });
+
+    // ----- featureKey dispatch -----
+
+    it('applies featureKey override when featureOverrides has the key', async () => {
+        _mockDecryptedConfig = {
+            userId: 1,
+            completionProvider: 'openai',
+            completionModel: 'gpt-4o-mini',
+            completionCredentials: { apiKey: 'sk-user' },
+            embeddingProvider: null,
+            embeddingModel: null,
+            embeddingCredentials: null,
+            featureOverrides: { PR_REVIEW: 'gpt-4o' },
+        };
+
+        const provider = await createProviderForUser(1, 'completion', { featureKey: 'PR_REVIEW' });
+
+        expect(provider).toBeInstanceOf(MockOpenAIProvider);
+        expect(provider._modelName).toBe('gpt-4o');
+    });
+
+    it('uses base model when featureKey is provided but not in featureOverrides', async () => {
+        _mockDecryptedConfig = {
+            userId: 1,
+            completionProvider: 'openai',
+            completionModel: 'gpt-4o-mini',
+            completionCredentials: { apiKey: 'sk-user' },
+            embeddingProvider: null,
+            embeddingModel: null,
+            embeddingCredentials: null,
+            featureOverrides: {},
+        };
+
+        const provider = await createProviderForUser(1, 'completion', { featureKey: 'CHAT' });
+
+        expect(provider).toBeInstanceOf(MockOpenAIProvider);
+        expect(provider._modelName).toBe('gpt-4o-mini');
     });
 });

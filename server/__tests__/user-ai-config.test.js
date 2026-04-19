@@ -8,6 +8,8 @@
  *  - setUserAIConfig with completionCredentials: null wipes credentials
  *  - deleteUserAIConfig removes the row
  *  - Partial updates leave unspecified fields unchanged
+ *  - featureOverrides CRUD
+ *  - getModelForFeature helper
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -27,7 +29,7 @@ const mockDb = {
         }
         if (sql.includes('INSERT INTO user_ai_config')) {
             return {
-                run: (userId, compProv, compModel, compCredsEnc, embProv, embModel, embCredsEnc) => {
+                run: (userId, compProv, compModel, compCredsEnc, embProv, embModel, embCredsEnc, featureOverridesJson) => {
                     _store = {
                         user_id: userId,
                         completion_provider: compProv,
@@ -36,6 +38,7 @@ const mockDb = {
                         embedding_provider: embProv,
                         embedding_model: embModel,
                         embedding_credentials_enc: embCredsEnc,
+                        feature_overrides_json: featureOverridesJson ?? null,
                         updated_at: new Date().toISOString(),
                     };
                 },
@@ -99,7 +102,7 @@ vi.mock('../lib/logger.js', () => ({
 // Import SUT AFTER mocks are registered
 // ---------------------------------------------------------------------------
 
-const { getUserAIConfig, getDecryptedConfig, setUserAIConfig, deleteUserAIConfig } =
+const { getUserAIConfig, getDecryptedConfig, setUserAIConfig, deleteUserAIConfig, getModelForFeature } =
     await import('../lib/user-ai-config.js');
 
 // ---------------------------------------------------------------------------
@@ -243,5 +246,90 @@ describe('deleteUserAIConfig()', () => {
 
     it('does not throw when no row exists', () => {
         expect(() => deleteUserAIConfig(USER_ID)).not.toThrow();
+    });
+});
+
+describe('featureOverrides CRUD', () => {
+    it('stores featureOverrides on insert and returns them in public shape', () => {
+        setUserAIConfig(USER_ID, {
+            completionProvider: 'openai',
+            completionCredentials: { apiKey: 'sk-test' },
+            featureOverrides: { CHAT: 'gpt-4o', PR_REVIEW: 'claude-opus-4-5' },
+        });
+
+        const config = getUserAIConfig(USER_ID);
+        expect(config.featureOverrides).toEqual({ CHAT: 'gpt-4o', PR_REVIEW: 'claude-opus-4-5' });
+    });
+
+    it('stores featureOverrides via partial update', () => {
+        setUserAIConfig(USER_ID, { completionProvider: 'gemini' });
+
+        setUserAIConfig(USER_ID, {
+            featureOverrides: { EMBED: 'text-embedding-3-large' },
+        });
+
+        const config = getUserAIConfig(USER_ID);
+        expect(config.featureOverrides).toEqual({ EMBED: 'text-embedding-3-large' });
+    });
+
+    it('clears featureOverrides when set to null', () => {
+        setUserAIConfig(USER_ID, {
+            completionProvider: 'openai',
+            featureOverrides: { CHAT: 'gpt-4o' },
+        });
+
+        setUserAIConfig(USER_ID, { featureOverrides: null });
+
+        const config = getUserAIConfig(USER_ID);
+        expect(config.featureOverrides).toEqual({});
+    });
+
+    it('returns empty featureOverrides when none stored', () => {
+        setUserAIConfig(USER_ID, { completionProvider: 'gemini' });
+        const config = getUserAIConfig(USER_ID);
+        expect(config.featureOverrides).toEqual({});
+    });
+
+    it('includes featureOverrides in getDecryptedConfig', () => {
+        setUserAIConfig(USER_ID, {
+            completionProvider: 'anthropic',
+            completionCredentials: { apiKey: 'sk-ant' },
+            featureOverrides: { PR_REVIEW: 'claude-opus-4-5' },
+        });
+
+        const decrypted = getDecryptedConfig(USER_ID);
+        expect(decrypted.featureOverrides).toEqual({ PR_REVIEW: 'claude-opus-4-5' });
+    });
+});
+
+describe('getModelForFeature()', () => {
+    it('returns fallback when no config exists', () => {
+        const model = getModelForFeature(USER_ID, 'CHAT', 'gemini-2.5-flash');
+        expect(model).toBe('gemini-2.5-flash');
+    });
+
+    it('returns fallback when featureOverrides is empty', () => {
+        setUserAIConfig(USER_ID, { completionProvider: 'gemini' });
+        const model = getModelForFeature(USER_ID, 'CHAT', 'gemini-2.5-flash');
+        expect(model).toBe('gemini-2.5-flash');
+    });
+
+    it('returns override when featureOverrides has the key', () => {
+        setUserAIConfig(USER_ID, {
+            completionProvider: 'openai',
+            featureOverrides: { CHAT: 'gpt-4o', PR_REVIEW: 'gpt-4o-mini' },
+        });
+
+        expect(getModelForFeature(USER_ID, 'CHAT', 'gpt-4o-mini')).toBe('gpt-4o');
+        expect(getModelForFeature(USER_ID, 'PR_REVIEW', 'gpt-4o')).toBe('gpt-4o-mini');
+    });
+
+    it('returns fallback for a key not present in featureOverrides', () => {
+        setUserAIConfig(USER_ID, {
+            completionProvider: 'openai',
+            featureOverrides: { CHAT: 'gpt-4o' },
+        });
+
+        expect(getModelForFeature(USER_ID, 'EMBED', 'text-embedding-3-small')).toBe('text-embedding-3-small');
     });
 });

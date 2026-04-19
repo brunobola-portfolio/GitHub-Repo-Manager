@@ -368,3 +368,70 @@ describe('AIConfigSection — Remove Config', () => {
         })
     })
 })
+
+describe('AIConfigSection — server fallback indicator', () => {
+    it('shows server-fallback banner when serverFallbackAvailable is true', async () => {
+        await renderSection({ serverFallbackAvailable: true })
+        expect(screen.getByText(/currently using the server.*shared ai key/i)).toBeInTheDocument()
+    })
+
+    it('does not show server-fallback banner when serverFallbackAvailable is false', async () => {
+        await renderSection({ serverFallbackAvailable: false })
+        expect(screen.queryByText(/currently using the server.*shared ai key/i)).not.toBeInTheDocument()
+    })
+})
+
+describe('AIConfigSection — per-feature model overrides', () => {
+    it('shows per-feature section when a provider is selected', async () => {
+        await renderSection({ completionProvider: 'gemini' })
+        // The collapsed section toggle button should be visible
+        expect(screen.getByRole('button', { name: /per-feature model overrides/i })).toBeInTheDocument()
+    })
+
+    it('does not show per-feature section when no provider is selected', async () => {
+        await renderSection()
+        expect(screen.queryByRole('button', { name: /per-feature model overrides/i })).not.toBeInTheDocument()
+    })
+
+    it('expands per-feature section on click', async () => {
+        await renderSection({ completionProvider: 'gemini' })
+        const toggle = screen.getByRole('button', { name: /per-feature model overrides/i })
+        await act(async () => {
+            fireEvent.click(toggle)
+        })
+        // Feature inputs should now be visible
+        expect(screen.getByLabelText(/ai chat/i)).toBeInTheDocument()
+        expect(screen.getByLabelText(/pr review/i)).toBeInTheDocument()
+        expect(screen.getByLabelText(/embeddings/i)).toBeInTheDocument()
+    })
+
+    it('marks form dirty when a feature override is changed', async () => {
+        await renderSection({ completionProvider: 'gemini' })
+
+        // Expand section
+        const toggle = screen.getByRole('button', { name: /per-feature model overrides/i })
+        await act(async () => { fireEvent.click(toggle) })
+
+        const chatInput = screen.getByLabelText(/ai chat/i)
+        await act(async () => {
+            fireEvent.change(chatInput, { target: { value: 'gemini-2.5-pro' } })
+        })
+
+        expect(screen.getByRole('button', { name: /^save$/i })).not.toBeDisabled()
+    })
+})
+
+describe('AIConfigSection — pricing hints', () => {
+    it('shows pricing footer note', async () => {
+        await renderSection()
+        expect(screen.getByText(/prices as of/i)).toBeInTheDocument()
+        expect(screen.getByText(/you pay your provider directly/i)).toBeInTheDocument()
+    })
+
+    it('shows pricing hint for a known model', async () => {
+        await renderSection({ completionProvider: 'gemini', completionModel: 'gemini-2.5-flash' })
+        // The price hint should appear for the model
+        // gemini-2.5-flash → $0.30 in / $2.50 out per 1M tokens
+        expect(screen.getByText(/\$0\.30 in \/ \$2\.50 out per 1M tokens/i)).toBeInTheDocument()
+    })
+})

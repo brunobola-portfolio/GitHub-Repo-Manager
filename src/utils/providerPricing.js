@@ -1,0 +1,70 @@
+/**
+ * Indicative pricing data for known AI models.
+ *
+ * Prices are informational only — not billed by this application.
+ * Users pay their AI provider directly.
+ *
+ * Structure per entry:
+ *  input   — USD per 1 million input tokens
+ *  output  — USD per 1 million output tokens (undefined for embedding-only models)
+ *  currency — always 'USD'
+ *  per     — always '1M tokens'
+ */
+
+export const PROVIDER_PRICING = {
+    'gemini-2.5-flash':  { input: 0.30, output: 2.50, currency: 'USD', per: '1M tokens' },
+    'gemini-2.5-pro':    { input: 1.25, output: 5.00, currency: 'USD', per: '1M tokens' },
+    'claude-sonnet-4-6': { input: 3.00, output: 15.00, currency: 'USD', per: '1M tokens' },
+    'claude-opus-4-5':   { input: 15.00, output: 75.00, currency: 'USD', per: '1M tokens' },
+    'gpt-4o-mini':       { input: 0.15, output: 0.60, currency: 'USD', per: '1M tokens' },
+    'gpt-4o':            { input: 2.50, output: 10.00, currency: 'USD', per: '1M tokens' },
+    'gpt-5-mini':        { input: 0.15, output: 0.60, currency: 'USD', per: '1M tokens' },
+    'text-embedding-3-small': { input: 0.02, currency: 'USD', per: '1M tokens' },
+    'text-embedding-3-large': { input: 0.13, currency: 'USD', per: '1M tokens' },
+    'gemini-embedding-001':   { input: 0.15, currency: 'USD', per: '1M tokens' },
+}
+
+export const PRICING_LAST_UPDATED = '2026-04-19'
+
+/**
+ * Look up pricing for a model name using prefix matching.
+ * E.g. 'gemini-2.5-flash-latest' → matches 'gemini-2.5-flash'.
+ *
+ * @param {string|null|undefined} modelName
+ * @returns {{ input: number, output?: number, currency: string, per: string }|null}
+ */
+export function getPricingForModel(modelName) {
+    if (!modelName) return null
+
+    // Exact match first
+    if (PROVIDER_PRICING[modelName]) return PROVIDER_PRICING[modelName]
+
+    // Prefix match — find longest key that the model name starts with
+    let best = null
+    let bestLen = 0
+    for (const key of Object.keys(PROVIDER_PRICING)) {
+        if (modelName.startsWith(key) && key.length > bestLen) {
+            best = PROVIDER_PRICING[key]
+            bestLen = key.length
+        }
+    }
+    return best
+}
+
+/**
+ * Format a pricing entry into a short display string.
+ * E.g. "$0.30 in / $2.50 out per 1M tokens" or "$0.02 per 1M tokens" for embedding.
+ *
+ * @param {{ input: number, output?: number, currency: string, per: string }|null} pricing
+ * @returns {string}
+ */
+export function formatPricing(pricing) {
+    if (!pricing) return 'Pricing unknown — check provider docs'
+
+    const fmt = (n) => `$${n % 1 === 0 ? n.toFixed(0) : n % 0.1 === 0 ? n.toFixed(1) : n.toFixed(2)}`
+
+    if (pricing.output !== undefined) {
+        return `${fmt(pricing.input)} in / ${fmt(pricing.output)} out per ${pricing.per}`
+    }
+    return `${fmt(pricing.input)} per ${pricing.per}`
+}
