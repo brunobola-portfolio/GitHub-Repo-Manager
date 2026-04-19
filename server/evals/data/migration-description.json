@@ -1,0 +1,168 @@
+{
+  "feature": "migration-description",
+  "version": 1,
+  "description": "Golden dataset for the migration-description AI handler. Tests the parse/validation/sanitize logic against pre-defined mock responses without calling a real LLM.",
+  "cases": [
+    {
+      "id": "javascript-medium-git-happy",
+      "input": {
+        "repoId": "test/js-app",
+        "repoName": "customer-portal",
+        "language": "JavaScript",
+        "size": 45000,
+        "branches": 5,
+        "hasLfsMarker": false,
+        "lastCommitDate": "2025-02-10",
+        "source": { "isTfvc": false, "org": "contoso", "project": "WebApps" }
+      },
+      "mockResponse": "{\"description\":\"Customer-facing web portal built with JavaScript, migrated from Azure DevOps.\"}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "description": "string" } },
+        { "scorer": "lengthBounds", "path": "description", "args": { "min": 10, "max": 350 } },
+        { "scorer": "regexMatch", "path": "description", "args": "\\S" }
+      ],
+      "tags": ["javascript", "git-source", "happy-path"]
+    },
+    {
+      "id": "python-ml-repo-happy",
+      "input": {
+        "repoId": "test/ml-pipeline",
+        "repoName": "data-pipeline",
+        "language": "Python",
+        "size": 120000,
+        "branches": 8,
+        "hasLfsMarker": false,
+        "lastCommitDate": "2025-01-20",
+        "source": { "isTfvc": false, "org": "acmecorp", "project": "ML" }
+      },
+      "mockResponse": "{\"description\":\"Python data pipeline for model training and inference, migrated from Azure DevOps ML project.\"}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "description": "string" } },
+        { "scorer": "lengthBounds", "path": "description", "args": { "min": 10, "max": 350 } },
+        { "scorer": "regexMatch", "path": "description", "args": "\\S" }
+      ],
+      "tags": ["python", "git-source", "happy-path"]
+    },
+    {
+      "id": "rust-systems-repo-happy",
+      "input": {
+        "repoId": "test/rust-sys",
+        "repoName": "network-daemon",
+        "language": "Rust",
+        "size": 30000,
+        "branches": 3,
+        "hasLfsMarker": false,
+        "lastCommitDate": "2024-12-05",
+        "source": { "isTfvc": false, "org": "rustaceans", "project": "Networking" }
+      },
+      "mockResponse": "{\"description\":\"High-performance network daemon written in Rust, migrated from Azure DevOps Networking project.\"}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "description": "string" } },
+        { "scorer": "lengthBounds", "path": "description", "args": { "min": 10, "max": 350 } },
+        { "scorer": "regexMatch", "path": "description", "args": "\\S" }
+      ],
+      "tags": ["rust", "git-source", "happy-path"]
+    },
+    {
+      "id": "tfvc-source-happy",
+      "input": {
+        "repoId": "test/tfvc-legacy",
+        "repoName": "billing-service",
+        "language": "C#",
+        "size": 85000,
+        "branches": 1,
+        "hasLfsMarker": false,
+        "lastCommitDate": "2023-09-15",
+        "source": { "isTfvc": true, "tfvcPath": "$/FinanceOrg/billing-service", "project": "FinanceOrg", "org": "myorg" }
+      },
+      "mockResponse": "{\"description\":\"C# billing service migrated from Azure DevOps TFVC ($/FinanceOrg/billing-service).\"}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "description": "string" } },
+        { "scorer": "lengthBounds", "path": "description", "args": { "min": 10, "max": 350 } },
+        { "scorer": "regexMatch", "path": "description", "args": "TFVC|tfvc" }
+      ],
+      "tags": ["tfvc", "csharp", "happy-path"]
+    },
+    {
+      "id": "lfs-large-repo-happy",
+      "input": {
+        "repoId": "test/game-assets",
+        "repoName": "game-assets",
+        "language": null,
+        "size": 2000000,
+        "branches": 4,
+        "hasLfsMarker": true,
+        "lastCommitDate": "2024-07-01",
+        "source": { "isTfvc": false, "org": "gamedev", "project": "GameEngine" }
+      },
+      "mockResponse": "{\"description\":\"Binary game assets repository with LFS storage, migrated from Azure DevOps GameEngine project.\"}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "description": "string" } },
+        { "scorer": "lengthBounds", "path": "description", "args": { "min": 10, "max": 350 } },
+        { "scorer": "regexMatch", "path": "description", "args": "\\S" }
+      ],
+      "tags": ["lfs", "git-source", "happy-path"]
+    },
+    {
+      "id": "malformed-json-falls-back-to-default",
+      "input": {
+        "repoId": "test/fallback-case",
+        "repoName": "legacy-app",
+        "language": "Java",
+        "size": 75000,
+        "branches": 2,
+        "hasLfsMarker": false,
+        "lastCommitDate": "2024-04-01",
+        "source": { "isTfvc": false, "org": "enterprise", "project": "Backend" }
+      },
+      "mockResponse": "oops the model responded with prose instead of JSON",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "description": "string" } },
+        { "scorer": "lengthBounds", "path": "description", "args": { "min": 10, "max": 350 } },
+        { "scorer": "regexMatch", "path": "description", "args": "\\S" }
+      ],
+      "tags": ["error-path", "fallback", "malformed-response"],
+      "_note": "Malformed response triggers fallback to defaultRepoDescription(). The adapter still returns { description: string } — the fallback IS the expected behavior."
+    },
+    {
+      "id": "empty-description-falls-back",
+      "input": {
+        "repoId": "test/empty-desc",
+        "repoName": "toolkit",
+        "language": "TypeScript",
+        "size": 20000,
+        "branches": 3,
+        "hasLfsMarker": false,
+        "lastCommitDate": "2024-11-01",
+        "source": { "isTfvc": false, "org": "toolsorg", "project": "DevTools" }
+      },
+      "mockResponse": "{\"description\":\"\"}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "description": "string" } },
+        { "scorer": "lengthBounds", "path": "description", "args": { "min": 10, "max": 350 } }
+      ],
+      "tags": ["error-path", "fallback", "empty-description"],
+      "_note": "Empty description from model triggers fallback. The fallback default description is non-empty and within length bounds."
+    },
+    {
+      "id": "description-sanitization-strips-emoji",
+      "input": {
+        "repoId": "test/emoji-repo",
+        "repoName": "emoji-app",
+        "language": "JavaScript",
+        "size": 15000,
+        "branches": 2,
+        "hasLfsMarker": false,
+        "lastCommitDate": "2025-03-01",
+        "source": { "isTfvc": false, "org": "emojiland", "project": "FrontEnd" }
+      },
+      "mockResponse": "{\"description\":\"Amazing JavaScript app with great features migrated from Azure DevOps!\"}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "description": "string" } },
+        { "scorer": "lengthBounds", "path": "description", "args": { "min": 10, "max": 350 } },
+        { "scorer": "regexMatch", "path": "description", "args": "\\S" }
+      ],
+      "tags": ["javascript", "git-source", "sanitization", "happy-path"]
+    }
+  ]
+}

@@ -1,0 +1,181 @@
+{
+  "feature": "migration-size-strategy",
+  "version": 1,
+  "description": "Golden dataset for the migration-size-strategy AI handler. Tests the parse/validation logic against pre-defined mock responses without calling a real LLM.",
+  "cases": [
+    {
+      "id": "small-lfs-binary-happy",
+      "input": {
+        "repoId": "test/small-lfs",
+        "size": 12582912,
+        "hasLfsMarker": true,
+        "branches": 3,
+        "lastCommitDate": "2025-01-15"
+      },
+      "mockResponse": "{\"strategy\":\"lfs-migrate\",\"rationale\":\"Repository contains binary assets tracked in LFS.\",\"confidence\":0.8}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "strategy": "string", "rationale": "string", "confidence": "number" } },
+        { "scorer": "enumMatch", "path": "strategy", "args": ["exclude", "lfs-migrate"] },
+        { "scorer": "numberRange", "path": "confidence", "args": { "min": 0, "max": 1 } },
+        { "scorer": "lengthBounds", "path": "rationale", "args": { "min": 5, "max": 500 } }
+      ],
+      "tags": ["lfs", "happy-path"]
+    },
+    {
+      "id": "large-stale-exclude-happy",
+      "input": {
+        "repoId": "test/ancient-monolith",
+        "size": 26843545600,
+        "hasLfsMarker": false,
+        "branches": 52,
+        "lastCommitDate": "2018-03-01"
+      },
+      "mockResponse": "{\"strategy\":\"exclude\",\"rationale\":\"Repository is very large and stale; skipping is the safest choice.\",\"confidence\":0.95}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "strategy": "string", "rationale": "string", "confidence": "number" } },
+        { "scorer": "enumMatch", "path": "strategy", "args": ["exclude", "lfs-migrate"] },
+        { "scorer": "numberRange", "path": "confidence", "args": { "min": 0, "max": 1 } },
+        { "scorer": "lengthBounds", "path": "rationale", "args": { "min": 5, "max": 500 } }
+      ],
+      "tags": ["exclude", "happy-path", "stale"]
+    },
+    {
+      "id": "medium-no-lfs-lfs-migrate",
+      "input": {
+        "repoId": "test/video-assets",
+        "size": 5368709120,
+        "hasLfsMarker": false,
+        "branches": 5,
+        "lastCommitDate": "2024-10-20"
+      },
+      "mockResponse": "{\"strategy\":\"lfs-migrate\",\"rationale\":\"Large repo likely has binary blobs; lfs-migrate should reduce push size.\",\"confidence\":0.6}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "strategy": "string", "rationale": "string", "confidence": "number" } },
+        { "scorer": "enumMatch", "path": "strategy", "args": ["exclude", "lfs-migrate"] },
+        { "scorer": "numberRange", "path": "confidence", "args": { "min": 0, "max": 1 } },
+        { "scorer": "lengthBounds", "path": "rationale", "args": { "min": 5, "max": 500 } }
+      ],
+      "tags": ["lfs-migrate", "medium-size", "happy-path"]
+    },
+    {
+      "id": "many-branches-exclude",
+      "input": {
+        "repoId": "test/many-branches",
+        "size": 15728640000,
+        "hasLfsMarker": false,
+        "branches": 200,
+        "lastCommitDate": "2023-06-01"
+      },
+      "mockResponse": "{\"strategy\":\"exclude\",\"rationale\":\"Too many branches and large size make migration impractical.\",\"confidence\":0.85}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "strategy": "string", "rationale": "string", "confidence": "number" } },
+        { "scorer": "enumMatch", "path": "strategy", "args": ["exclude", "lfs-migrate"] },
+        { "scorer": "numberRange", "path": "confidence", "args": { "min": 0, "max": 1 } },
+        { "scorer": "lengthBounds", "path": "rationale", "args": { "min": 5, "max": 500 } }
+      ],
+      "tags": ["exclude", "many-branches"]
+    },
+    {
+      "id": "min-confidence-boundary",
+      "input": {
+        "repoId": "test/uncertain",
+        "size": 10737418240,
+        "hasLfsMarker": true,
+        "branches": 10,
+        "lastCommitDate": "2024-01-01"
+      },
+      "mockResponse": "{\"strategy\":\"lfs-migrate\",\"rationale\":\"LFS markers detected; recommend migration.\",\"confidence\":0.0}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "strategy": "string", "rationale": "string", "confidence": "number" } },
+        { "scorer": "enumMatch", "path": "strategy", "args": ["exclude", "lfs-migrate"] },
+        { "scorer": "numberRange", "path": "confidence", "args": { "min": 0, "max": 1 } }
+      ],
+      "tags": ["lfs", "edge-case", "boundary"]
+    },
+    {
+      "id": "max-confidence-boundary",
+      "input": {
+        "repoId": "test/certain",
+        "size": 21474836480,
+        "hasLfsMarker": false,
+        "branches": 1,
+        "lastCommitDate": "2016-01-01"
+      },
+      "mockResponse": "{\"strategy\":\"exclude\",\"rationale\":\"Ancient single-branch repo with no activity for years.\",\"confidence\":1.0}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "strategy": "string", "rationale": "string", "confidence": "number" } },
+        { "scorer": "enumMatch", "path": "strategy", "args": ["exclude", "lfs-migrate"] },
+        { "scorer": "numberRange", "path": "confidence", "args": { "min": 0, "max": 1 } }
+      ],
+      "tags": ["exclude", "edge-case", "boundary"]
+    },
+    {
+      "id": "confidence-clamped-above-1",
+      "input": {
+        "repoId": "test/overclaiming-model",
+        "size": 5368709120,
+        "hasLfsMarker": true,
+        "branches": 4,
+        "lastCommitDate": "2024-06-01"
+      },
+      "mockResponse": "{\"strategy\":\"lfs-migrate\",\"rationale\":\"High confidence pick.\",\"confidence\":1.5}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "strategy": "string", "rationale": "string", "confidence": "number" } },
+        { "scorer": "enumMatch", "path": "strategy", "args": ["exclude", "lfs-migrate"] },
+        { "scorer": "numberRange", "path": "confidence", "args": { "min": 0, "max": 1 } }
+      ],
+      "tags": ["lfs", "edge-case", "clamping"],
+      "_note": "confidence=1.5 from model gets clamped to 1.0 by parseResponse. Scorer checks the adapter output (already clamped), so it passes."
+    },
+    {
+      "id": "confidence-clamped-below-0",
+      "input": {
+        "repoId": "test/negative-confidence",
+        "size": 5368709120,
+        "hasLfsMarker": false,
+        "branches": 8,
+        "lastCommitDate": "2023-11-01"
+      },
+      "mockResponse": "{\"strategy\":\"exclude\",\"rationale\":\"Negative confidence clamped to 0.\",\"confidence\":-0.5}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "strategy": "string", "rationale": "string", "confidence": "number" } },
+        { "scorer": "enumMatch", "path": "strategy", "args": ["exclude", "lfs-migrate"] },
+        { "scorer": "numberRange", "path": "confidence", "args": { "min": 0, "max": 1 } }
+      ],
+      "tags": ["exclude", "edge-case", "clamping"],
+      "_note": "confidence=-0.5 from model gets clamped to 0.0 by parseResponse. Scorer checks the adapter output (already clamped)."
+    },
+    {
+      "id": "malformed-json-returns-null",
+      "input": {
+        "repoId": "test/bad-json",
+        "size": 1073741824,
+        "hasLfsMarker": false,
+        "branches": 2,
+        "lastCommitDate": "2024-03-01"
+      },
+      "mockResponse": "not json at all — the model hallucinated plain text",
+      "expected": [
+        { "scorer": "exactMatch", "args": null }
+      ],
+      "tags": ["error-path", "malformed-response"],
+      "_note": "Non-JSON response. parseResponse returns null. exactMatch(null, null) passes — this IS the expected outcome."
+    },
+    {
+      "id": "invalid-strategy-returns-null",
+      "input": {
+        "repoId": "test/bad-strategy",
+        "size": 2147483648,
+        "hasLfsMarker": true,
+        "branches": 6,
+        "lastCommitDate": "2024-09-01"
+      },
+      "mockResponse": "{\"strategy\":\"rewrite\",\"rationale\":\"Just rewrite the whole repo.\",\"confidence\":0.5}",
+      "expected": [
+        { "scorer": "exactMatch", "args": null }
+      ],
+      "tags": ["error-path", "invalid-strategy"],
+      "_note": "strategy='rewrite' is not in the allowed enum. parseResponse returns null. exactMatch(null, null) passes."
+    }
+  ]
+}

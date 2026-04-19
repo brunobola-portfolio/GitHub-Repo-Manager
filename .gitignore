@@ -81,3 +81,6 @@ nul
 
 # License signing keys (NEVER commit the private key)
 keys/private.pem
+
+# Eval harness — local baseline files (per-dev, not committed)
+server/evals/baseline.local.json
