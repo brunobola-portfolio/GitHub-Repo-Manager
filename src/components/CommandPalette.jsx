@@ -1,10 +1,11 @@
 import { Command } from 'cmdk'
-import { GitFork, LayoutDashboard, Users, Tag, Map, Wand2, History, Plus, ArrowRightLeft, Settings } from 'lucide-react'
+import { GitFork, LayoutDashboard, Users, Tag, Map, Wand2, History, Plus, ArrowRightLeft, Settings, Kanban } from 'lucide-react'
 
 const NAVIGATE_ITEMS = [
   { id: 'nav-dashboard', label: 'Dashboard', view: 'dashboard', icon: LayoutDashboard },
   { id: 'nav-repos', label: 'Repositories', view: 'repos', icon: GitFork },
   { id: 'nav-teams', label: 'Teams', view: 'teams', icon: Users },
+  { id: 'nav-work-board', label: 'Work Board', view: 'work-board', icon: Kanban },
   { id: 'nav-pricing', label: 'Pricing', view: 'pricing', icon: Tag },
   { id: 'nav-roadmap', label: 'Roadmap', view: 'roadmap', icon: Map },
 ]

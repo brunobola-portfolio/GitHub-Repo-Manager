@@ -46,5 +46,6 @@ A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is honest
 - Rate Limit UX (friendly notices + dev-mode exemption)
 - Landing Page (hero, features, CTA)
 - AGPL Open-Core License Key System (Ed25519 JWT)
+- Cross-Repo Work Board (Phase E3) — my reviews, stale PRs, my issues, DORA metrics.
 
 See `docs/specs/` and `docs/plans/` for detailed design and implementation history.

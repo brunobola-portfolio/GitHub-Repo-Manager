@@ -55,6 +55,7 @@ const KeyboardShortcutsHelp = lazy(() => import('./components/KeyboardShortcutsH
 const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ default: m.AIAssistant })))
 const MigrationWizard = lazy(() => import('./components/MigrationWizard/MigrationWizard'))
 const PRReviewView = lazy(() => import('./components/PRReview/PRReviewView').then(m => ({ default: m.PRReviewView })))
+const WorkBoardPage = lazy(() => import('./components/WorkBoard/WorkBoardPage').then(m => ({ default: m.WorkBoardPage })))
 const BatchIndexProgressModal = lazy(() => import('./components/AI/BatchIndexProgressModal').then(m => ({ default: m.BatchIndexProgressModal })))
 const CompareSimilarDrawer = lazy(() => import('./components/AI/CompareSimilarDrawer').then(m => ({ default: m.CompareSimilarDrawer })))
 const SecurityScanModal = lazy(() => import('./components/security/SecurityScanModal').then(m => ({ default: m.SecurityScanModal })))
@@ -880,6 +881,16 @@ function AppContent() {
                     onTeamSelect={setSelectedTeam}
                   />
                 )}
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        )}
+
+        {activeView === 'work-board' && user && (
+          <div className="animate-in fade-in duration-500">
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingFallback />}>
+                <WorkBoardPage repoCount={displayRepos.length} />
               </Suspense>
             </ErrorBoundary>
           </div>

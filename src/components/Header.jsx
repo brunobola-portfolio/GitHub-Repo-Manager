@@ -3,7 +3,8 @@ import { useState, useRef, useEffect } from 'react'
 import {
     LogOut, RefreshCw, LayoutDashboard, FolderGit2, Plus,
     Bell, Settings, User, ChevronDown, Building2, Shield, Users,
-    CheckCircle2, AlertCircle, Sparkles, Moon, Sun, Wand2, Download, History, Menu, CreditCard
+    CheckCircle2, AlertCircle, Sparkles, Moon, Sun, Wand2, Download, History, Menu, CreditCard,
+    Kanban
 } from 'lucide-react'
 import { Github } from './icons/GithubIcon'
 import { AppLogoIcon } from './AppLogo'
@@ -107,6 +108,12 @@ export function Header({
                                 onClick={() => onViewChange?.('teams')}
                                 icon={Users}
                                 label="Teams"
+                            />
+                            <NavButton
+                                active={activeView === 'work-board'}
+                                onClick={() => onViewChange?.('work-board')}
+                                icon={Kanban}
+                                label="Work Board"
                             />
                             <NavButton
                                 active={activeView === 'pricing'}

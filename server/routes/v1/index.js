@@ -28,6 +28,7 @@ import reposSyncRouter from './repos-sync.js';
 import reposSecurityRouter from './repos-security.js';
 import userAIConfigRoutes from '../user-ai-config.js';
 import userDataRoutes from '../user-data.js';
+import workBoardRoutes from '../work-board.js';
 import { requireTier } from '../../middleware/require-tier.js';
 import { createCache } from '../../lib/memory-cache.js';
 
@@ -59,6 +60,7 @@ router.use(reposSyncRouter);
 router.use(reposSecurityRouter);
 router.use('/user/ai-config', userAIConfigRoutes);
 router.use('/user/data', userDataRoutes);
+router.use('/work-board', workBoardRoutes);
 
 // ------------------------------------------------------------------
 // Team-specific inline routes
