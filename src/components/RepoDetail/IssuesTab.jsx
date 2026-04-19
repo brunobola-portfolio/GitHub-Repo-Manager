@@ -7,7 +7,7 @@ import { CircleDot, Plus, Loader2, CheckCircle2, XCircle, MessageSquare, Externa
 import { IssueDetailPanel } from './IssueDetailPanel'
 import { useTabData } from '../../hooks/useTabData'
 
-export function IssuesTab({ api }) {
+export function IssuesTab({ api, repoFullName }) {
     const [filter, setFilter] = useState('open')
     const { data, loading, reload: loadIssues } = useTabData(
         async () => {
@@ -71,6 +71,7 @@ export function IssuesTab({ api }) {
                     key={selectedIssue.number}
                     issue={selectedIssue}
                     api={api}
+                    repoFullName={repoFullName}
                     onClose={() => setSelectedIssue(null)}
                     onUpdate={() => { setSelectedIssue(null); loadIssues() }}
                 />

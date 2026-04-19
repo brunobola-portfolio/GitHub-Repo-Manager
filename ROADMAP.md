@@ -37,7 +37,9 @@ A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is honest
 - **BYOK multi-provider AI** (April 2026) — Gemini, Anthropic, OpenAI, OpenRouter, LMStudio; per-user key config; AES-256-GCM encryption at rest
 - **Custom AI Model Selection** (April 2026) — covered by BYOK; users choose provider + model in Settings → AI Configuration
 - **GitHub event ingestion pipeline** (April 2026) — real-time PR, issue, and deployment webhook ingestion
-- **Cross-Repo Work Board** (April 2026) — my reviews, stale PRs, my issues, review load, DORA metrics (deploy freq + lead time)
+- **Cross-Repo Work Board** (April 2026) — my reviews, stale PRs, my issues, review load, **Tech Debt tracker (open debt-labeled issues + per-repo hotspots)**, **full DORA dashboard (deploy frequency, lead time p50/p90, change failure rate, MTTR, CSV export)**
+- **Command Palette live GitHub search** (April 2026) — PRs, issues and repositories via the GitHub Search API, debounced, 429-aware
+- **AI Issue-to-PR Planner (plan-only)** (April 2026) — generates structured implementation plans (approach, files to touch, tests, risks, estimate) for any open issue; uses the user's configured BYOK provider
 - **SOC 2 code hardening** (April 2026) — append-only audit log with SHA-256 hash chain, self-service data erasure (GDPR Art. 17), startup secrets verification, data retention pass with warning emails
 - **Stripe billing + license key delivery** (April 2026) — Ed25519-signed JWT license keys issued and emailed on checkout completion
 - **Command Palette** — Ctrl+K keyboard-first navigation across the full app

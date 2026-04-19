@@ -5,10 +5,12 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import {
     CircleDot, X, MessageSquare, Clock, ExternalLink,
-    Loader2, Send, CheckCircle2, XCircle, ArrowLeft, Tag
+    Loader2, Send, CheckCircle2, XCircle, ArrowLeft, Tag, Sparkles
 } from 'lucide-react'
+import { AIIssuePlanner } from './AIIssuePlanner'
 
-export function IssueDetailPanel({ issue, api, onClose, onUpdate }) {
+export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }) {
+    const [showPlanner, setShowPlanner] = useState(false)
     const [detail, setDetail] = useState(null)
     const [comments, setComments] = useState([])
     const [loading, setLoading] = useState(true)
@@ -139,6 +141,21 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate }) {
                         </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
+                        {repoFullName && isOpen && (
+                            <button
+                                type="button"
+                                onClick={() => setShowPlanner(v => !v)}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                                    showPlanner
+                                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/25'
+                                        : 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
+                                }`}
+                                title="Generate an AI implementation plan for this issue"
+                            >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                AI plan
+                            </button>
+                        )}
                         {current.html_url && (
                             <a
                                 href={current.html_url}
@@ -174,6 +191,14 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate }) {
                     </div>
                 )}
             </Card>
+
+            {showPlanner && repoFullName && (
+                <AIIssuePlanner
+                    repoFullName={repoFullName}
+                    issueNumber={issue.number}
+                    onClose={() => setShowPlanner(false)}
+                />
+            )}
 
             {fetchError && (
                 <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">

@@ -19,7 +19,7 @@ import express from 'express';
 import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, createRequireAI, safeError, isValidGitHubFullName } from '../middleware/auth.js';
-import { validate, aiChatSchema, aiIndexSchema, migrationSizeStrategySchema, migrationDescriptionSchema } from '../lib/validators.js';
+import { validate, aiChatSchema, aiIndexSchema, aiIssueToPlanSchema, migrationSizeStrategySchema, migrationDescriptionSchema } from '../lib/validators.js';
 import { defaultRepoDescription, sanitizeRepoDescription, REPO_DESCRIPTION_MAX } from '../lib/repo-description.js';
 import { aiService, sanitizeForPrompt } from '../ai-service.js';
 import { safeJsonParse } from '../lib/utils.js';
@@ -510,6 +510,184 @@ router.post('/ai/readme/enhance', requireAuth, requireAI, async (req, res) => {
         res.status(500).json({ error: safeError(error, 'Failed to enhance README') });
     }
 });
+
+// ------------------------------------------------------------------
+// AI Issue-to-PR Planner (plan-only)
+// ------------------------------------------------------------------
+// Takes a GitHub issue and produces a structured implementation plan:
+// approach, files to touch, suggested tests, estimated effort. It does
+// NOT create a branch or PR — that's a future phase. This is opt-in per
+// request and counts against the `ai_queries` quota.
+
+const ISSUE_PLAN_MAX_BODY_CHARS = 4000;
+const ISSUE_PLAN_MAX_COMMENTS = 6;
+const ISSUE_PLAN_MAX_STRUCTURE_ENTRIES = 40;
+
+function normaliseIssuePlan(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const norm = {
+        title: typeof raw.title === 'string' ? raw.title.slice(0, 200) : null,
+        approach: typeof raw.approach === 'string' ? raw.approach.slice(0, 4000) : null,
+        files: [],
+        tests: typeof raw.tests === 'string' ? raw.tests.slice(0, 2000) : null,
+        risks: typeof raw.risks === 'string' ? raw.risks.slice(0, 1500) : null,
+        estimatedHours: Number.isFinite(raw.estimatedHours)
+            ? Math.max(0, Math.min(200, Number(raw.estimatedHours)))
+            : null,
+    };
+    if (Array.isArray(raw.files)) {
+        norm.files = raw.files.slice(0, 25).map(f => ({
+            path: typeof f?.path === 'string' ? f.path.slice(0, 200) : '',
+            action: ['create', 'modify', 'delete', 'rename'].includes(f?.action) ? f.action : 'modify',
+            notes: typeof f?.notes === 'string' ? f.notes.slice(0, 500) : '',
+        })).filter(f => f.path);
+    }
+    if (!norm.title && !norm.approach && norm.files.length === 0) return null;
+    return norm;
+}
+
+router.post(
+    '/ai/issue-to-plan',
+    requireAuth,
+    validate(aiIssueToPlanSchema),
+    requireAI,
+    async (req, res) => {
+        const userId = req.session.userId;
+        const usage = checkUsageLimit(userId, 'ai_queries');
+        if (!usage.allowed) {
+            return res.status(429).json({
+                error: 'usage_limit_exceeded',
+                message: `You've used ${usage.current}/${usage.limit} AI queries this month`,
+                upgradeUrl: '/pricing',
+            });
+        }
+
+        const { repoFullName, issueNumber, extraContext } = req.body;
+        if (!isValidGitHubFullName(repoFullName)) {
+            return res.status(400).json({
+                error: 'Invalid repoFullName',
+                code: 'VALIDATION_ERROR',
+            });
+        }
+
+        try {
+            // 1. Fetch issue + up to N recent comments + repo structure
+            const [issueRes, commentsRes, contentsRes] = await Promise.all([
+                githubApi(`/repos/${repoFullName}/issues/${issueNumber}`, req.session.accessToken),
+                githubApi(
+                    `/repos/${repoFullName}/issues/${issueNumber}/comments?per_page=${ISSUE_PLAN_MAX_COMMENTS}`,
+                    req.session.accessToken,
+                ).catch(() => ({ data: [] })),
+                githubApi(`/repos/${repoFullName}/contents`, req.session.accessToken)
+                    .catch(() => ({ data: [] })),
+            ]);
+
+            const issue = issueRes.data;
+            if (!issue || issue.pull_request) {
+                return res.status(404).json({
+                    error: 'Issue not found or is a pull request',
+                    code: 'ISSUE_NOT_FOUND',
+                });
+            }
+
+            const labels = (issue.labels || [])
+                .map(l => (typeof l === 'string' ? l : l?.name))
+                .filter(Boolean)
+                .slice(0, 15);
+
+            const comments = (commentsRes.data || [])
+                .slice(0, ISSUE_PLAN_MAX_COMMENTS)
+                .map(c => ({
+                    author: c.user?.login || 'unknown',
+                    body: (c.body || '').slice(0, 1000),
+                }));
+
+            const structure = (contentsRes.data || [])
+                .slice(0, ISSUE_PLAN_MAX_STRUCTURE_ENTRIES)
+                .map(f => `${f.type === 'dir' ? '📁' : '📄'} ${f.name}`)
+                .join('\n');
+
+            // 2. Build prompt — strictly JSON-out, defensive on length
+            const issueTitle = sanitizeForPrompt(issue.title || '', 300);
+            const issueBody = sanitizeForPrompt(
+                issue.body || '',
+                ISSUE_PLAN_MAX_BODY_CHARS,
+            );
+            const extra = sanitizeForPrompt(extraContext || '', 2000);
+            const commentsBlock = comments.length === 0
+                ? '(no comments)'
+                : comments.map((c, i) => `Comment ${i + 1} by @${c.author}:\n${sanitizeForPrompt(c.body, 1000)}`).join('\n\n');
+
+            const prompt = `You are a senior engineer triaging a GitHub issue. Produce a concise, actionable **plan only** — do not generate code.
+
+Repository: ${repoFullName}
+Top-level layout:
+${structure || '(empty or inaccessible)'}
+
+Issue #${issueNumber}: ${issueTitle}
+Labels: ${labels.join(', ') || 'none'}
+
+Issue body:
+${issueBody || '(no body)'}
+
+Recent discussion:
+${commentsBlock}
+
+${extra ? `Extra context from requester:\n${extra}\n` : ''}
+Respond with **only** valid JSON (no prose, no markdown fences) matching this shape:
+{
+  "title": "short imperative title for the plan",
+  "approach": "2-5 sentence high-level approach",
+  "files": [
+    { "path": "src/...", "action": "create" | "modify" | "delete" | "rename", "notes": "why/what to change" }
+  ],
+  "tests": "what new tests or assertions should validate this",
+  "risks": "biggest risks / migration concerns / follow-ups",
+  "estimatedHours": <integer 1..40>
+}
+Keep "files" to at most 12 entries. If the issue is too vague to plan, return:
+{ "title": "Needs clarification", "approach": "<what's missing>", "files": [], "tests": "", "risks": "", "estimatedHours": 0 }`;
+
+            const { text } = await req.aiProvider.generate({ prompt });
+            const parsed = safeJsonParse(text);
+            const plan = normaliseIssuePlan(parsed);
+
+            if (!plan) {
+                return res.status(502).json({
+                    error: 'AI returned an invalid plan. Please retry.',
+                    code: 'AI_PARSE_ERROR',
+                });
+            }
+
+            incrementUsage(userId, 'ai_queries');
+            auditLog(req, 'ai.issue_to_plan', 'ai', null, {
+                repoFullName,
+                issueNumber,
+                fileCount: plan.files.length,
+            });
+
+            res.json({
+                plan,
+                issue: {
+                    number: issue.number,
+                    title: issue.title,
+                    url: issue.html_url,
+                    state: issue.state,
+                    labels,
+                },
+            });
+        } catch (error) {
+            if (error.status === 404) {
+                return res.status(404).json({
+                    error: 'Issue or repository not found',
+                    code: 'ISSUE_NOT_FOUND',
+                });
+            }
+            req.log.error({ err: error, repoFullName, issueNumber }, 'AI issue-to-plan failed');
+            handleAIError(res, error, 'Failed to generate issue plan. Please try again later.');
+        }
+    },
+);
 
 // Quality Report - Comprehensive repo health analysis
 router.post('/ai/quality-report', requireAuth, requireAI, async (req, res) => {

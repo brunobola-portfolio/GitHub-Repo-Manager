@@ -268,6 +268,51 @@ export const aiApi = {
         return handleAIResponse(res, 'findSimilar')
     },
 
+    // Issue-to-PR planner (plan-only mode). Takes an issue number in a repo
+    // and returns a structured plan (files to touch, approach, tests, risks).
+    planIssue: async ({ repoFullName, issueNumber, extraContext }) => {
+        if (MOCK_MODE) {
+            await new Promise(r => setTimeout(r, 1600))
+            return {
+                plan: {
+                    title: `Implement #${issueNumber}: mock plan`,
+                    approach:
+                        'Parse the issue, identify the relevant module, add a small adapter that routes the new request, and extend the existing integration test suite. Keep changes additive to avoid breaking current consumers.',
+                    files: [
+                        { path: 'src/services/example.js', action: 'modify', notes: 'Add a new exported function wrapping the existing helper' },
+                        { path: 'src/routes/example.js', action: 'modify', notes: 'Expose a POST endpoint that calls the new helper' },
+                        { path: 'tests/services/example.test.js', action: 'create', notes: 'Cover happy path + invalid input + quota exceeded' },
+                    ],
+                    tests: 'Unit test the new helper with valid / invalid input. Add integration test that hits the new endpoint end-to-end.',
+                    risks: 'Rate-limit interaction with the downstream API; keep request budget modest. No DB migration needed.',
+                    estimatedHours: 4,
+                },
+                issue: {
+                    number: issueNumber,
+                    title: `Mock issue #${issueNumber}`,
+                    url: `https://github.com/${repoFullName}/issues/${issueNumber}`,
+                    state: 'open',
+                    labels: ['enhancement'],
+                },
+                mock: true,
+            }
+        }
+
+        const res = await fetch(`${API_BASE}/ai/issue-to-plan`, {
+            method: 'POST',
+            headers: getHeaders(),
+            credentials: 'include',
+            body: JSON.stringify({ repoFullName, issueNumber, extraContext }),
+        })
+        if (res.status === 503) {
+            const err = new Error('AI not configured. Set up a provider in Settings → AI Configuration.')
+            err.status = 503
+            err.code = 'AI_NOT_CONFIGURED'
+            throw err
+        }
+        return handleAIResponse(res, 'issue plan')
+    },
+
     // Check AI configuration status
     checkStatus: async () => {
         if (MOCK_MODE) {

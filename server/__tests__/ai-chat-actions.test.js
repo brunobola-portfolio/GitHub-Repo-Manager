@@ -51,7 +51,9 @@ vi.mock('../lib/validators.js', () => ({
     validate: () => (req, res, next) => next(),
     aiChatSchema: {},
     aiIndexSchema: {},
+    aiIssueToPlanSchema: {},
     migrationSizeStrategySchema: {},
+    migrationDescriptionSchema: {},
 }))
 
 async function buildApp() {

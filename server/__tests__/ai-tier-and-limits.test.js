@@ -90,6 +90,9 @@ vi.mock('../lib/validators.js', () => ({
     aiChatSchema: {},
     aiSuggestSchema: {},
     aiIndexSchema: {},
+    aiIssueToPlanSchema: {},
+    migrationSizeStrategySchema: {},
+    migrationDescriptionSchema: {},
 }))
 
 // ---------------------------------------------------------------------------

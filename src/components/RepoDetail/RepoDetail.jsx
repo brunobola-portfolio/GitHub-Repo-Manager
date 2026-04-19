@@ -147,7 +147,7 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription 
                 {activeTab === 'branches' && <BranchesTab api={api} />}
                 {activeTab === 'releases' && <ReleasesTab api={api} />}
                 {activeTab === 'actions' && <ActionsTab repo={r} />}
-                {activeTab === 'issues' && <IssuesTab api={api} />}
+                {activeTab === 'issues' && <IssuesTab api={api} repoFullName={`${owner}/${repoName}`} />}
                 {activeTab === 'pulls' && <PullRequestsTab api={api} onStartReview={onStartReview} onGenerateDescription={onGenerateDescription} />}
                 {activeTab === 'settings' && <SettingsTab owner={owner} repo={repoName} api={api} repoData={r} onUpdate={setRepoData} />}
             </div>
