@@ -4,6 +4,35 @@ import { Loader2, FileText, BookOpen, Sparkles } from 'lucide-react'
 import { useModal } from '../../hooks/useModal'
 import { useTabData } from '../../hooks/useTabData'
 
+/**
+ * Decode a GitHub contents-API README payload into a UTF-8 string.
+ *
+ * GitHub returns content as base64 with whitespace/newlines injected every
+ * ~60 chars — atob() rejects that whitespace, so we strip it first. The
+ * remaining atob() output is a binary string (one char per byte), which
+ * would render non-ASCII (emoji, accents, CJK) as mojibake if handed
+ * straight to React. We therefore route the bytes through TextDecoder so
+ * multi-byte UTF-8 sequences render correctly.
+ *
+ * Safe for empty/missing content — returns '' instead of throwing.
+ */
+function decodeBase64ReadmeUtf8(base64) {
+    if (!base64) return ''
+    try {
+        const cleaned = base64.replace(/\s/g, '')
+        const binary = atob(cleaned)
+        const bytes = new Uint8Array(binary.length)
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i)
+        }
+        return new TextDecoder('utf-8', { fatal: false }).decode(bytes)
+    } catch {
+        // Corrupted / non-base64 payload — fall back to the raw string so
+        // users at least see *something* instead of a blank card.
+        return base64
+    }
+}
+
 export function OverviewTab({ api, repoData }) {
     const { openModalWithData } = useModal()
     const { data: readme, loading, error } = useTabData(
@@ -44,7 +73,7 @@ export function OverviewTab({ api, repoData }) {
                     ) : readme?.content ? (
                         <div className="prose dark:prose-invert prose-sm max-w-none overflow-auto">
                             <pre className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
-                                {atob(readme.content.replace(/\n/g, ''))}
+                                {decodeBase64ReadmeUtf8(readme.content)}
                             </pre>
                         </div>
                     ) : (

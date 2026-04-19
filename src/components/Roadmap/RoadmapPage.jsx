@@ -11,11 +11,9 @@ const STAGES = [
       { title: 'GitLab Migration Importer', tier: 'Pro + Enterprise' },
       { title: 'Advanced Analytics Dashboard', tier: 'Enterprise' },
       { title: 'Dependency Graph Visualizer', tier: 'Pro' },
-      { title: 'CODEOWNERS Generator', tier: 'Free' },
+      { title: 'CODEOWNERS Generator', description: 'Suggest owners from git blame + recent reviewers (the parser that lists existing rules has shipped)', tier: 'Free' },
       { title: 'Compare with Existing', description: 'Side-by-side diff before overwriting a repo', tier: 'Pro' },
       { title: 'Security & Secrets Scan', description: 'Detect exposed tokens and keys before migration', tier: 'Pro' },
-      { title: 'README Enhance (AI diff)', description: 'AI-suggested improvements over your current README', tier: 'Pro' },
-      { title: 'Batch Indexing', description: 'Index multiple repos in one operation for semantic search', tier: 'Pro' },
     ],
   },
   {
@@ -35,10 +33,26 @@ const STAGES = [
       { title: 'GitHub Enterprise Server', description: 'Self-hosted GitHub Enterprise support', tier: 'Enterprise' },
       { title: 'Plugin / Extension System', description: 'Third-party integrations via a public plugin API', tier: 'Pro' },
       { title: 'Mobile App (React Native)', description: 'iOS and Android companion app', tier: 'All' },
-      { title: 'Custom AI Model Selection', description: 'Bring your own OpenAI / Anthropic key', tier: 'Pro + Enterprise' },
       { title: 'Org Permissions Sync', description: 'Mirror team memberships across orgs automatically', tier: 'Enterprise' },
       { title: 'Dependabot Aggregation', description: 'Unified view of all dependency alerts across repos', tier: 'Pro' },
       { title: 'Custom Workflow Templates', description: 'Reusable GitHub Actions templates per org', tier: 'Pro' },
+    ],
+  },
+  {
+    id: 'shipped',
+    items: [
+      { title: 'BYOK multi-provider AI', description: 'Gemini, Anthropic, OpenAI, OpenRouter, LMStudio — per-user key config, AES-256-GCM encryption at rest', tier: 'All' },
+      { title: 'Custom AI Model Selection', description: 'Choose provider + model per feature via Settings → AI Configuration (covered by BYOK)', tier: 'Pro + Enterprise' },
+      { title: 'README Enhance (AI diff)', description: 'AI-suggested improvements over your current README', tier: 'Pro' },
+      { title: 'Batch Indexing', description: 'Bulk AI indexing with progress modal', tier: 'Pro' },
+      { title: 'Cross-Repo Work Board', description: 'My Reviews, Stale PRs, My Issues, Review Load, Tech Debt, DORA (deploy freq, lead time p50/p90, CFR, MTTR, CSV export)', tier: 'All' },
+      { title: 'AI Issue-to-PR Planner', description: 'Plan-only mode — structured plan (approach, files, tests, risks, estimate) for any open issue', tier: 'Pro' },
+      { title: 'Command Palette live GitHub search', description: 'PRs, issues, repos via the GitHub Search API with debounce + rate-limit awareness', tier: 'All' },
+      { title: 'PR Review write-back tier gating', description: 'Free tier is strictly read-only; Pro+ required for approve / request-changes / comment / merge', tier: 'Pro + Enterprise' },
+      { title: 'GitHub event ingestion pipeline', description: 'Real-time PR, issue and deployment webhook ingestion into the Work Board', tier: 'All' },
+      { title: 'SOC 2 code hardening', description: 'Append-only audit log with SHA-256 hash chain, self-service data erasure, startup secrets check, retention pass', tier: 'Enterprise' },
+      { title: 'Stripe billing + license key delivery', description: 'Ed25519-signed JWT license keys issued on checkout completion', tier: 'Pro + Enterprise' },
+      { title: 'CODEOWNERS Parser', description: 'Reads `.github/CODEOWNERS` and returns structured rules', tier: 'Free' },
     ],
   },
 ]
@@ -108,9 +122,9 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
           </motion.p>
         </div>
 
-        {/* ── Three-column stage grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16 sm:mb-24">
-          {STAGES.map((stage, i) => (
+        {/* ── Stage grid (Now / Next / Later) ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+          {STAGES.filter(s => s.id !== 'shipped').map((stage, i) => (
             <RoadmapStage
               key={stage.id}
               stage={stage.id}
@@ -119,6 +133,17 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
             />
           ))}
         </div>
+
+        {/* ── Recently Shipped — full-width section ── */}
+        {STAGES.filter(s => s.id === 'shipped').map((stage, i) => (
+          <div key={stage.id} className="mb-16 sm:mb-24">
+            <RoadmapStage
+              stage={stage.id}
+              items={stage.items}
+              index={i}
+            />
+          </div>
+        ))}
 
         {/* ── Pricing footer link ── */}
         <motion.div

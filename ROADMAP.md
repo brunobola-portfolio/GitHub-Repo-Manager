@@ -8,11 +8,9 @@ A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is honest
 - **GitLab Migration Importer** — Pro + Enterprise. Clone GitLab repos with history.
 - **Advanced Analytics Dashboard** — Enterprise. Commit heatmaps, contributor insights, dependency graph.
 - **Dependency Graph Visualizer** — Pro. Interactive graph of repo dependencies.
-- **CODEOWNERS Generator** — Free. Auto-generate and validate CODEOWNERS files.
+- **CODEOWNERS Generator** — Free. Suggest owners from git blame + recent reviewers (the parser that lists existing rules has already shipped).
 - **Compare with Existing** — Pro. Semantic similarity search (Wave 2).
 - **Security & Secrets Scan** — Pro. Aggregates GitHub's native security alerts (Wave 2).
-- **README Enhance** — Pro. AI-generated diff of improved README (Wave 2).
-- **Batch Indexing** — Pro. Bulk AI indexing of selected repositories (Wave 2).
 
 ## Next (Q3 2026)
 
@@ -42,8 +40,12 @@ A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is honest
 - **AI Issue-to-PR Planner (plan-only)** (April 2026) — generates structured implementation plans (approach, files to touch, tests, risks, estimate) for any open issue; uses the user's configured BYOK provider
 - **SOC 2 code hardening** (April 2026) — append-only audit log with SHA-256 hash chain, self-service data erasure (GDPR Art. 17), startup secrets verification, data retention pass with warning emails
 - **Stripe billing + license key delivery** (April 2026) — Ed25519-signed JWT license keys issued and emailed on checkout completion
+- **CODEOWNERS Parser** (April 2026) — reads `.github/CODEOWNERS` (with `CODEOWNERS` fallback) and returns structured rules via `GET /api/v1/repos/:owner/:repo/codeowners`
+- **README Enhance** (April 2026) — Pro. AI-generated diff of improved README against your current file
+- **Batch Indexing** (April 2026) — Pro. Bulk AI indexing of selected repositories with progress modal
 - **Command Palette** — Ctrl+K keyboard-first navigation across the full app
 - **Bulk operations safety** — confirmation dialogs, dry-run mode, tier-gated destructive actions
+- **PR Review write-back tier gating** (April 2026) — Free tier is now strictly read-only on PR reviews; Pro+ required for approve / request-changes / comment / merge endpoints
 - Product Honesty Pass — Wave 1 (context menu completeness)
 - Product Honesty Pass — Wave 3 (UI polish, pricing, roadmap)
 - Toast Context Provider refactor

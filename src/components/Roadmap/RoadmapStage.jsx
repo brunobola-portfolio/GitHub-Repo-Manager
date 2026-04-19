@@ -23,6 +23,13 @@ const STAGE_STYLES = {
     label: 'Later',
     period: 'Q4 2026+',
   },
+  shipped: {
+    header: 'bg-indigo-500/10 dark:bg-indigo-500/15 border-indigo-500/20',
+    dot: 'bg-indigo-500',
+    badge: 'text-indigo-700 dark:text-indigo-400',
+    label: 'Recently Shipped',
+    period: 'March–April 2026',
+  },
 }
 
 export function RoadmapStage({ stage, items, index = 0 }) {

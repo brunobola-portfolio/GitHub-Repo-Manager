@@ -360,9 +360,12 @@ export function PricingPage({ onGetStarted } = {}) {
           className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 mb-12 sm:mb-16"
         >
           {[
-            { icon: GitBranch, text: '10,000+ repos managed' },
-            { icon: Cpu, text: 'AI-powered insights' },
-            { icon: Shield, text: 'Enterprise-grade security' },
+            // Capability statements only — never usage-stat claims ("X repos
+            // managed", "Y active users"): we don't aggregate that number
+            // anywhere, so advertising it would be unverified.
+            { icon: GitBranch, text: 'Scales to thousands of repos per workspace' },
+            { icon: Cpu, text: 'Multi-provider AI (Gemini, Claude, GPT, OpenRouter)' },
+            { icon: Shield, text: 'SOC 2-hardened architecture' },
           ].map(({ icon: Icon, text }) => (
             <div key={text} className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500">
               <Icon className="w-4 h-4 text-indigo-500/60 dark:text-indigo-400/50" />
