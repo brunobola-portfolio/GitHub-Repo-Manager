@@ -1,4 +1,51 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
+
+// Session-scoped draft for wizard recovery across refresh / route change.
+// We persist enough to restart where the user left off, but deliberately
+// SCRUB credentials (PATs, OAuth tokens, Basic-auth passwords) before
+// writing — sessionStorage is not a safe place for secrets. Users will be
+// re-prompted for credentials when they return.
+const DRAFT_STORAGE_KEY = 'grm-migration-wizard-draft'
+const DRAFT_SCHEMA_VERSION = 1
+
+const SENSITIVE_SOURCE_FIELDS = ['pat', 'authToken', 'authPassword']
+
+function scrubSourceForPersistence(source) {
+  const copy = { ...source }
+  for (const field of SENSITIVE_SOURCE_FIELDS) {
+    if (copy[field]) copy[field] = ''
+  }
+  // validated=true must also drop so the user re-validates with fresh creds.
+  if (copy.validated) copy.validated = false
+  return copy
+}
+
+function loadDraft() {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = window.sessionStorage.getItem(DRAFT_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (parsed?.schemaVersion !== DRAFT_SCHEMA_VERSION) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function saveDraft(draft) {
+  if (typeof window === 'undefined') return
+  try {
+    window.sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft))
+  } catch {
+    // Ignore quota / private-mode failures; the in-memory state is canonical.
+  }
+}
+
+function clearDraft() {
+  if (typeof window === 'undefined') return
+  try { window.sessionStorage.removeItem(DRAFT_STORAGE_KEY) } catch { /* ignore */ }
+}
 
 /**
  * Compute the active step sequence based on source type and feature toggles.
@@ -165,19 +212,45 @@ export function useMigrationWizard({
   initialSource,
   initialRepos,
   initialStep,
+  persistDraft = true,
 } = {}) {
+  // If the caller passes initialSource/initialRepos/initialStep, respect those
+  // — the wizard was opened with an explicit pre-fill (e.g. "Run again").
+  // Otherwise, rehydrate from sessionStorage so a refresh mid-flow doesn't
+  // destroy the user's progress.
+  const hydrated = useRef(
+    persistDraft && !initialSource && !initialRepos && !initialStep
+      ? loadDraft()
+      : null,
+  )
+
   const [currentStepIndex, setCurrentStepIndex] = useState(() => {
+    if (hydrated.current?.currentStepIndex != null) return hydrated.current.currentStepIndex
     if (!initialStep) return 0
     const initialSteps = getStepsForSourceType(initialSource?.sourceType, false, false)
     const idx = initialSteps.indexOf(initialStep)
     return idx >= 0 ? idx : 0
   })
-  const [source, setSource] = useState(() => ({ ...INITIAL_SOURCE, ...(initialSource || {}) }))
-  const [repos, setRepos] = useState(() => initialRepos || [])
-  const [workItems, setWorkItems] = useState(INITIAL_WORK_ITEMS)
-  const [wiki, setWiki] = useState(INITIAL_WIKI)
+  const [source, setSource] = useState(() => ({
+    ...INITIAL_SOURCE,
+    ...(hydrated.current?.source || {}),
+    ...(initialSource || {}),
+  }))
+  const [repos, setRepos] = useState(() => initialRepos || hydrated.current?.repos || [])
+  const [workItems, setWorkItems] = useState(() => ({
+    ...INITIAL_WORK_ITEMS,
+    ...(hydrated.current?.workItems || {}),
+  }))
+  const [wiki, setWiki] = useState(() => ({
+    ...INITIAL_WIKI,
+    ...(hydrated.current?.wiki || {}),
+  }))
   const [aiPlan, setAiPlan] = useState(INITIAL_AI_PLAN)
-  const [schedule, setSchedule] = useState(() => ({ ...INITIAL_SCHEDULE, isDryRun: initialDryRun }))
+  const [schedule, setSchedule] = useState(() => ({
+    ...INITIAL_SCHEDULE,
+    isDryRun: initialDryRun,
+    ...(hydrated.current?.schedule || {}),
+  }))
   const [planId, setPlanId] = useState(null)
   const [importJobs, setImportJobs] = useState(INITIAL_IMPORT_JOBS)
   const [error, setError] = useState(null)
@@ -286,7 +359,35 @@ export function useMigrationWizard({
     setPlanId(null)
     setImportJobs(INITIAL_IMPORT_JOBS)
     setError(null)
+    clearDraft()
   }, [])
+
+  // Persist a credential-free draft of wizard state so a refresh doesn't
+  // reset the user to step 1. The draft is dropped when they reach the
+  // 'summary' step (migration finished) or call resetWizard.
+  useEffect(() => {
+    if (!persistDraft) return
+    // Don't persist an empty pristine state (first render with no source type).
+    if (!source.sourceType && currentStepIndex === 0) {
+      clearDraft()
+      return
+    }
+    // Don't persist once the flow is complete — leaves nothing stale lurking.
+    if (currentStep === 'summary') {
+      clearDraft()
+      return
+    }
+    saveDraft({
+      schemaVersion: DRAFT_SCHEMA_VERSION,
+      savedAt: new Date().toISOString(),
+      currentStepIndex,
+      source: scrubSourceForPersistence(source),
+      repos,
+      workItems,
+      wiki,
+      schedule,
+    })
+  }, [persistDraft, currentStepIndex, currentStep, source, repos, workItems, wiki, schedule])
 
   return {
     // Step navigation

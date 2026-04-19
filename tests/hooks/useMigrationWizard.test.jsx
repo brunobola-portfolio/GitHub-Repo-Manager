@@ -1,8 +1,15 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useMigrationWizard } from '@/hooks/useMigrationWizard'
 
 describe('useMigrationWizard', () => {
+  // Wizard now persists a credential-scrubbed draft to sessionStorage so a
+  // refresh mid-flow doesn't nuke progress. Reset between tests so one test's
+  // state doesn't hydrate into the next and make these checks non-deterministic.
+  beforeEach(() => {
+    try { window.sessionStorage.clear() } catch { /* happy-dom always has it */ }
+  })
+
   it('starts at source step', () => {
     const { result } = renderHook(() => useMigrationWizard())
     expect(result.current.currentStep).toBe('sourceType')

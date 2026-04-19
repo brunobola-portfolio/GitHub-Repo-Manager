@@ -6,6 +6,7 @@ import { ApiKeysSection } from './Settings/ApiKeysSection'
 import { AuditLogSection } from './Settings/AuditLogSection'
 import { LicensePlanSection } from './Settings/LicensePlanSection'
 import { AIConfigSection } from './Settings/AIConfigSection'
+import { DangerZoneSection } from './Settings/DangerZoneSection'
 import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
 
@@ -277,6 +278,9 @@ function GeneralTabContent({
                     </div>
                 </div>
             </InsightCard>
+
+            {/* Danger Zone — GDPR Art. 17 + 20 self-service */}
+            <DangerZoneSection />
         </div>
     )
 }

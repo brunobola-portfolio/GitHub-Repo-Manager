@@ -27,6 +27,73 @@ const router = Router();
 
 const CONFIRM_STRING = 'ERASE MY DATA';
 
+/**
+ * GET /api/v1/user/data/export
+ *
+ * Self-service data export (GDPR Article 20 — right to data portability).
+ * Returns a JSON blob containing every row keyed to the authenticated user
+ * across the tables that the DELETE handler would wipe. Read-only; no
+ * side effects. Intended to be consumed by the Settings "Danger Zone"
+ * UI via fetch + Blob download.
+ */
+router.get('/export', requireAuth, (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const user = db.prepare(
+            'SELECT id, username, email, avatar_url, created_at, deleted_at FROM users WHERE id = ?'
+        ).get(userId);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        const login = user.username;
+        const all = (sql, ...params) => db.prepare(sql).all(...params);
+
+        const payload = {
+            exportedAt: new Date().toISOString(),
+            schemaVersion: 1,
+            user,
+            aiConfig: all('SELECT * FROM user_ai_config WHERE user_id = ?', userId),
+            subscriptions: all('SELECT * FROM user_subscriptions WHERE user_id = ?', userId),
+            apiKeys: all(
+                'SELECT id, name, scopes, created_at, last_used_at, revoked_at FROM api_keys WHERE user_id = ?',
+                userId,
+            ), // note: NEVER export key material — only the metadata
+            migrationJobs: all('SELECT * FROM migration_jobs WHERE user_id = ?', userId),
+            migrationPlans: all('SELECT * FROM migration_plans WHERE user_id = ?', userId),
+            prEvents: login ? all('SELECT * FROM pr_events WHERE author_login = ?', login) : [],
+            issueEvents: login ? all('SELECT * FROM issue_events WHERE author_login = ?', login) : [],
+            reviewAssignments: login
+                ? all('SELECT * FROM review_assignments WHERE reviewer_login = ?', login)
+                : [],
+            communityHealthCache: all('SELECT * FROM community_health_cache WHERE user_id = ?', userId),
+            repoMetadata: all('SELECT * FROM repo_metadata WHERE user_id = ?', userId),
+            workflowRuns: all('SELECT * FROM workflow_runs WHERE user_id = ?', userId),
+            workflowsMeta: all('SELECT * FROM workflows_meta WHERE user_id = ?', userId),
+            usageMetrics: all('SELECT * FROM usage_metrics WHERE user_id = ?', userId),
+            teamMemberships: all('SELECT * FROM team_members WHERE user_id = ?', userId),
+        };
+
+        auditLog(req, 'user.data.export', 'user', userId, {
+            rowCounts: Object.fromEntries(
+                Object.entries(payload)
+                    .filter(([, v]) => Array.isArray(v))
+                    .map(([k, v]) => [k, v.length]),
+            ),
+        });
+
+        const body = JSON.stringify(payload, null, 2);
+        const safeLogin = (login || `user-${userId}`).replace(/[^\w.-]/g, '_').slice(0, 64);
+        res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="${safeLogin}-data-export-${Date.now()}.json"`,
+        );
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        res.send(body);
+    } catch (err) {
+        logger.error({ err }, '[user-data] export failed');
+        return res.status(500).json({ error: 'Data export failed' });
+    }
+});
+
 router.delete('/', requireAuth, (req, res) => {
     try {
         const userId = req.session.userId;

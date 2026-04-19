@@ -19,10 +19,28 @@ const WELCOME_MESSAGE = {
     text: "Hi! I'm your AI assistant. Ask me to open the migration wizard, create a repo, or help you manage your projects.",
 }
 
+// Session-scoped persistence: keep chat history across panel close/open and
+// route navigation, but drop it when the tab is closed so long-lived sessions
+// don't balloon sessionStorage with stale conversation logs.
+const CHAT_STORAGE_KEY = 'grm-ai-assistant-messages'
+const CHAT_STORAGE_MAX_MESSAGES = 200
+
+function loadInitialMessages() {
+    try {
+        const raw = typeof window !== 'undefined' ? window.sessionStorage.getItem(CHAT_STORAGE_KEY) : null
+        if (!raw) return [WELCOME_MESSAGE]
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed) || parsed.length === 0) return [WELCOME_MESSAGE]
+        return parsed.slice(-CHAT_STORAGE_MAX_MESSAGES)
+    } catch {
+        return [WELCOME_MESSAGE]
+    }
+}
+
 export function AIAssistant({ askAI, user, checkAIStatus }) {
     const [isOpen, setIsOpen] = useState(false)
     const [isMinimized, setIsMinimized] = useState(false)
-    const [messages, setMessages] = useState([WELCOME_MESSAGE])
+    const [messages, setMessages] = useState(loadInitialMessages)
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const messagesEndRef = useRef(null)
@@ -83,6 +101,25 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages, isOpen])
+
+    // Persist the most recent slice of the conversation to sessionStorage so
+    // closing/reopening the panel (or navigating between routes) doesn't wipe
+    // context. We cap at CHAT_STORAGE_MAX_MESSAGES to bound storage footprint.
+    useEffect(() => {
+        try {
+            if (typeof window === 'undefined') return
+            // Skip persisting a pristine state with only the welcome message.
+            if (messages.length <= 1 && messages[0]?.id === 'welcome') {
+                window.sessionStorage.removeItem(CHAT_STORAGE_KEY)
+                return
+            }
+            const bounded = messages.slice(-CHAT_STORAGE_MAX_MESSAGES)
+            window.sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(bounded))
+        } catch {
+            // Quota exceeded or private mode — degrade silently, the in-memory
+            // state is still correct for this session.
+        }
+    }, [messages])
 
     useEffect(() => {
         if (isOpen) { setIsIdle(false); return }
