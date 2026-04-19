@@ -540,6 +540,45 @@ export function initDB() {
         if (!err.message?.includes('duplicate column')) throw err;
     }
 
+    // Migration 005 (G1 — SOC 2 CC7.2): append-only audit log hash chain.
+    // Add prev_hash + row_hash columns to audit_log_v2.
+    try {
+        db.exec(`ALTER TABLE audit_log_v2 ADD COLUMN prev_hash TEXT NOT NULL DEFAULT ''`);
+    } catch (err) {
+        if (!err.message?.includes('duplicate column')) throw err;
+    }
+    try {
+        db.exec(`ALTER TABLE audit_log_v2 ADD COLUMN row_hash TEXT NOT NULL DEFAULT ''`);
+    } catch (err) {
+        if (!err.message?.includes('duplicate column')) throw err;
+    }
+
+    // Append-only triggers — idempotent via IF NOT EXISTS.
+    // All UPDATEs and DELETEs are unconditionally rejected; auditLog() uses a
+    // single INSERT (no subsequent UPDATE), so these triggers never fire during
+    // normal operation.
+    db.exec(`
+        CREATE TRIGGER IF NOT EXISTS audit_log_v2_no_update
+        BEFORE UPDATE ON audit_log_v2
+        BEGIN
+            SELECT RAISE(ABORT, 'audit_log_v2 is append-only; updates are not permitted');
+        END
+    `);
+    db.exec(`
+        CREATE TRIGGER IF NOT EXISTS audit_log_v2_no_delete
+        BEFORE DELETE ON audit_log_v2
+        BEGIN
+            SELECT RAISE(ABORT, 'audit_log_v2 is append-only; deletions are not permitted');
+        END
+    `);
+
+    // Migration 006 (G3 — GDPR Article 17): tombstone columns on users table.
+    try {
+        db.exec(`ALTER TABLE users ADD COLUMN deleted_at TEXT`);
+    } catch (err) {
+        if (!err.message?.includes('duplicate column')) throw err;
+    }
+
     logger.info('SQLite Database initialized successfully');
 }
 

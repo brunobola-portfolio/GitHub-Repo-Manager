@@ -33,12 +33,25 @@ import { aiService } from './ai-service.js';
 import { safeError } from './middleware/auth.js';
 import { createSQLiteStore } from './lib/session-store.js';
 import logger, { requestLoggerMiddleware } from './lib/logger.js';
+import { verifySecretsAtStartup } from './lib/startup-secrets-check.js';
 
 // API v1 route aggregator
 import v1Routes from './routes/v1/index.js';
 
 // Initialize monitoring before anything else
 await initMonitoring();
+
+// G4 — Startup secrets verification (SOC 2 CC6.1)
+// Must run before initDB() so that encryption-key checks happen before any
+// user credentials are accessed from the database.
+{
+    const secretsReport = verifySecretsAtStartup({ nodeEnv: config.nodeEnv });
+    if (secretsReport.errors.length > 0) {
+        secretsReport.errors.forEach(e => logger.fatal(`[secrets] ${e}`));
+        process.exit(1);
+    }
+    secretsReport.warnings.forEach(w => logger.warn(`[secrets] ${w}`));
+}
 
 initDB();
 
