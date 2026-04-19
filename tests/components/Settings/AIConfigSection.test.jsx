@@ -299,7 +299,7 @@ describe('AIConfigSection — 400 validation error', () => {
         // After renderSection, the GET has been consumed. Queue the POST 400 mock now.
         fetchMock.mockResolvedValueOnce(
             mockResponse(
-                { error: 'Validation failed', errors: { completionApiKey: 'API key is required' } },
+                { error: 'Validation failed', code: 'VALIDATION', details: [{ field: 'completionApiKey', message: 'API key is required' }] },
                 { status: 400 }
             )
         )

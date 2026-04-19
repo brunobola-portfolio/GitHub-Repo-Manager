@@ -25,6 +25,7 @@ import { SlimSidebar } from './components/Sidebar'
 import { Menu, Building2, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SessionBanner } from './components/SessionBanner'
+import { BYOKUpgradeBanner } from './components/BYOKUpgradeBanner'
 import { RateLimitNotice } from './components/ui/RateLimitNotice'
 import { LandingPage } from './components/Landing/LandingPage'
 import { LegalFooter } from './components/LegalFooter'
@@ -669,6 +670,11 @@ function AppContent() {
         onLogin={handleLogin}
         onDismiss={() => setSessionExpired(false)}
       />
+      {/* BYOK first-login upgrade banner */}
+      <BYOKUpgradeBanner
+        isAuthenticated={!!user}
+        onOpenAISettings={() => openModalWithData('showSettings', { initialTab: 'ai' })}
+      />
 
       <main id="main-content" className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 pt-3 md:pt-4 lg:pt-5 pb-20 md:pb-6 transition-all duration-300 relative z-[1]">
         {activeView === 'pricing' && (
@@ -974,6 +980,7 @@ function AppContent() {
         <SettingsModal
           isOpen={modalStates.showSettings}
           onClose={() => closeModal('showSettings')}
+          initialTab={getModalData('showSettings')?.initialTab}
         />
       </Suspense>
 

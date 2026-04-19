@@ -186,6 +186,11 @@ app.use(session(sessionConfig));
 import { attachTier } from './middleware/require-tier.js';
 app.use('/api/', attachTier);
 
+// Attach BYOK AI provider (lazy) — makes req.getAIProvider(kind) available on
+// all /api/* requests and shims req.aiProvider / req.genAI for legacy call-sites.
+import { attachAIProvider } from './middleware/auth.js';
+app.use('/api/', attachAIProvider());
+
 // Per-tenant limiters AFTER session + tier attachment so req.userTier is available
 const apiLimiter  = await createTenantLimiters('api');
 const authLimiter = await createTenantLimiters('auth', {

@@ -136,14 +136,25 @@ export const requireAuth = (req, res, next) => {
  */
 export function attachAIProvider() {
     return async (req, _res, next) => {
-        // Lazy per-request provider resolver with caching
+        // Skip eager resolution when there's no user session and no server-wide
+        // fallback key. Keeps /api/health and similar unauthenticated endpoints
+        // from triggering a DB lookup on every poll.
+        if (!req.session?.userId && !process.env.GEMINI_API_KEY) {
+            return next();
+        }
+
+        // Lazy per-request provider resolver with Promise-level caching.
+        // Storing the Promise (not the resolved value) prevents double-invocation
+        // when two concurrent awaits race before the first DB lookup completes.
         req.getAIProvider = async (kind = 'completion') => {
             if (!req._aiProviderCache) req._aiProviderCache = new Map();
             if (req._aiProviderCache.has(kind)) return req._aiProviderCache.get(kind);
-            const { createProviderForUser } = await import('../lib/ai-provider.js');
-            const p = await createProviderForUser(req.session?.userId, kind).catch(() => null);
-            req._aiProviderCache.set(kind, p);
-            return p;
+            const promise = (async () => {
+                const { createProviderForUser } = await import('../lib/ai-provider.js');
+                return createProviderForUser(req.session?.userId, kind).catch(() => null);
+            })();
+            req._aiProviderCache.set(kind, promise);
+            return promise;
         };
 
         // Best-effort legacy shim: set req.aiProvider / req.genAI to the user's

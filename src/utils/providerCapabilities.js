@@ -19,36 +19,42 @@ export const PROVIDER_LABELS = {
     local: 'Local (LMStudio / Ollama)',
 }
 
+/**
+ * Tri-state feature values:
+ *  'yes'     — supported natively
+ *  'no'      — not supported
+ *  'depends' — support depends on configuration (e.g. routed model or local model loaded)
+ */
 export const PROVIDER_CAPABILITIES = {
     gemini: {
-        aiChat: true,
-        semanticSearch: true,
-        codeReview: true,
-        migration: true,
+        aiChat: 'yes',
+        semanticSearch: 'yes',
+        codeReview: 'yes',
+        migration: 'yes',
     },
     anthropic: {
-        aiChat: true,
-        semanticSearch: false, // no native embeddings — needs embedding provider override
-        codeReview: true,
-        migration: true,
+        aiChat: 'yes',
+        semanticSearch: 'no', // no native embeddings — needs embedding provider override
+        codeReview: 'yes',
+        migration: 'yes',
     },
     openai: {
-        aiChat: true,
-        semanticSearch: true,
-        codeReview: true,
-        migration: true,
+        aiChat: 'yes',
+        semanticSearch: 'yes',
+        codeReview: 'yes',
+        migration: 'yes',
     },
     openrouter: {
-        aiChat: true,
-        semanticSearch: false, // depends on routed model
-        codeReview: true,
-        migration: true,
+        aiChat: 'yes',
+        semanticSearch: 'depends', // OpenRouter routes to backends; some models support embeddings
+        codeReview: 'yes',
+        migration: 'yes',
     },
     local: {
-        aiChat: true,
-        semanticSearch: false, // depends on local model
-        codeReview: true,
-        migration: true,
+        aiChat: 'yes',
+        semanticSearch: 'depends', // depends on the local model loaded
+        codeReview: 'yes',
+        migration: 'yes',
     },
 }
 

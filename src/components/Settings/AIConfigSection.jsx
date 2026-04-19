@@ -87,7 +87,7 @@ function ProviderFields({ provider, form, onChange, errors }) {
                         autoComplete="off"
                     />
                     {errors.completionApiKey && (
-                        <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                        <p role="alert" aria-live="polite" className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
                             <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                             {errors.completionApiKey}
                         </p>
@@ -207,16 +207,16 @@ function EmbeddingSection({ form, onChange }) {
             )}
 
             <div>
-                <label className={LABEL_CLS}>Embedding Provider</label>
+                <label htmlFor="embedding-provider" className={LABEL_CLS}>Embedding Provider</label>
                 <div className="relative">
                     <select
+                        id="embedding-provider"
                         value={form.embeddingProvider ?? ''}
                         onChange={(e) => onChange('embeddingProvider', e.target.value || null)}
                         className={`${INPUT_CLS} pr-8 appearance-none cursor-pointer`}
-                        aria-label="Embedding provider"
                     >
                         <option value="">— Select embedding provider —</option>
-                        {PROVIDER_IDS.filter((id) => PROVIDER_CAPABILITIES[id]?.semanticSearch).map((id) => (
+                        {PROVIDER_IDS.filter((id) => PROVIDER_CAPABILITIES[id]?.semanticSearch === 'yes').map((id) => (
                             <option key={id} value={id}>{PROVIDER_LABELS[id]}</option>
                         ))}
                     </select>
@@ -227,10 +227,11 @@ function EmbeddingSection({ form, onChange }) {
             {form.embeddingProvider && (
                 <>
                     <div>
-                        <label className={LABEL_CLS}>
+                        <label htmlFor="embedding-api-key" className={LABEL_CLS}>
                             {PROVIDER_DEFAULTS[form.embeddingProvider]?.apiKeyLabel ?? 'API Key'}
                         </label>
                         <input
+                            id="embedding-api-key"
                             type="password"
                             value={form.embeddingApiKey ?? ''}
                             onChange={(e) => onChange('embeddingApiKey', e.target.value)}
@@ -244,8 +245,9 @@ function EmbeddingSection({ form, onChange }) {
                         />
                     </div>
                     <div>
-                        <label className={LABEL_CLS}>Embedding Model</label>
+                        <label htmlFor="embedding-model" className={LABEL_CLS}>Embedding Model</label>
                         <input
+                            id="embedding-model"
                             type="text"
                             value={form.embeddingModel ?? ''}
                             onChange={(e) => onChange('embeddingModel', e.target.value)}
@@ -373,11 +375,17 @@ function CapabilityMatrix({ activeProvider }) {
                                             )}
                                         </td>
                                         {features.map((f) => {
-                                            const supported = PROVIDER_CAPABILITIES[pid]?.[f]
+                                            const cap = PROVIDER_CAPABILITIES[pid]?.[f]
                                             return (
                                                 <td key={f} className="text-center py-1.5 px-2">
-                                                    {supported ? (
+                                                    {cap === 'yes' ? (
                                                         <Check className="w-3.5 h-3.5 text-emerald-500 mx-auto" />
+                                                    ) : cap === 'depends' ? (
+                                                        <span
+                                                            className="inline-block text-xs font-semibold text-amber-500 leading-none"
+                                                            aria-label="depends on configuration"
+                                                            title="Depends on configuration"
+                                                        >~</span>
                                                     ) : (
                                                         <X className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 mx-auto" />
                                                     )}
@@ -390,7 +398,7 @@ function CapabilityMatrix({ activeProvider }) {
                         </tbody>
                     </table>
                 </div>
-                {activeProvider && !PROVIDER_CAPABILITIES[activeProvider]?.semanticSearch && (
+                {activeProvider && PROVIDER_CAPABILITIES[activeProvider]?.semanticSearch !== 'yes' && (
                     <p className="text-xs text-amber-700 dark:text-amber-400">
                         Semantic search requires an embedding provider. Configure one above or switch to Gemini / OpenAI.
                     </p>
@@ -538,14 +546,18 @@ export function AIConfigSection() {
 
             const data = await res.json().catch(() => ({}))
 
-            if (res.status === 400 && data.errors) {
-                // Field-level validation errors
+            if (res.status === 400 && Array.isArray(data?.details)) {
+                // Field-level validation errors from server's { details: [{ field, message }] } shape
                 const fieldErrors = {}
-                for (const [field, msg] of Object.entries(data.errors)) {
-                    fieldErrors[field] = msg
+                for (const item of data.details) {
+                    if (item?.field && item?.message) {
+                        fieldErrors[item.field] = item.message
+                    }
                 }
-                setErrors(fieldErrors)
-                return
+                if (Object.keys(fieldErrors).length > 0) {
+                    setErrors(fieldErrors)
+                    return
+                }
             }
 
             throw new Error(data.error || data.message || 'Save failed')

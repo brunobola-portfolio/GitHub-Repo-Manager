@@ -36,7 +36,7 @@ const TABS = [
     { id: 'audit', label: 'Audit Log', icon: Shield },
 ]
 
-export function SettingsModal({ isOpen, onClose }) {
+export function SettingsModal({ isOpen, onClose, initialTab }) {
     const { theme, setTheme } = useTheme()
     const [activeTab, setActiveTab] = useState('general')
 
@@ -53,10 +53,10 @@ export function SettingsModal({ isOpen, onClose }) {
     const [clearing, setClearing] = useState(false)
     const [cacheMessage, setCacheMessage] = useState(null)
 
-    // Reset to general tab when modal opens
+    // Reset tab when modal opens — honour initialTab if provided
     useEffect(() => {
-        if (isOpen) setActiveTab('general')
-    }, [isOpen])
+        if (isOpen) setActiveTab(initialTab ?? 'general')
+    }, [isOpen, initialTab])
 
     const handleSave = () => {
         localStorage.setItem('cache-settings', JSON.stringify(cacheSettings))
