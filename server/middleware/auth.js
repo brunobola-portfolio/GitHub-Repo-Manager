@@ -124,32 +124,78 @@ export const requireAuth = (req, res, next) => {
 };
 
 /**
- * Factory for the requireAI middleware.
- * Returns an Express middleware that guards AI-dependent routes.
- * Checks both the GEMINI_API_KEY env var and that aiService has been
- * successfully initialized (aiService.genAI is truthy).
+ * Attach per-user AI provider helpers to every authenticated request.
  *
- * @param {object} aiService - The imported aiService singleton
+ * `req.getAIProvider(kind)` — async, cached per-request.
+ * `req.aiProvider` and `req.genAI` — shimmed for backward compat with
+ *   call-sites that haven't been migrated to the provider abstraction yet.
+ *
+ * Call this middleware AFTER session is populated.
+ *
  * @returns {(req, res, next) => void}
  */
+export function attachAIProvider() {
+    return async (req, _res, next) => {
+        // Lazy per-request provider resolver with caching
+        req.getAIProvider = async (kind = 'completion') => {
+            if (!req._aiProviderCache) req._aiProviderCache = new Map();
+            if (req._aiProviderCache.has(kind)) return req._aiProviderCache.get(kind);
+            const { createProviderForUser } = await import('../lib/ai-provider.js');
+            const p = await createProviderForUser(req.session?.userId, kind).catch(() => null);
+            req._aiProviderCache.set(kind, p);
+            return p;
+        };
+
+        // Best-effort legacy shim: set req.aiProvider / req.genAI to the user's
+        // completion provider so unmigrated call-sites keep working.
+        try {
+            const p = await req.getAIProvider('completion');
+            if (p) {
+                req.aiProvider = p;
+                // rawSDK is only defined on GeminiProvider; null for other providers.
+                req.genAI = p.rawSDK ?? null;
+            }
+        } catch {
+            // Soft-fail — requireAI will surface the error when the route runs.
+        }
+
+        next();
+    };
+}
+
+/**
+ * Factory for the requireAI middleware.
+ * Returns an Express middleware that guards AI-dependent routes.
+ *
+ * Checks whether the request has a resolved AI provider (user BYOK or
+ * server-wide env fallback). Accepts `aiService` for backward compat
+ * with existing callers but no longer relies on it.
+ *
+ * @param {object} [aiService] - Legacy aiService singleton (ignored, kept for compat)
+ * @returns {(req, res, next) => Promise<void>}
+ */
 export function createRequireAI(aiService) {
-    return (req, res, next) => {
-        if (!process.env.GEMINI_API_KEY) {
-            return res.status(503).json({
+    return async (req, res, next) => {
+        // req.aiProvider is populated by attachAIProvider() but may be absent
+        // when the middleware wasn't applied (e.g. API-key auth paths that skip
+        // the session middleware). Re-resolve if needed.
+        let provider = req.aiProvider;
+        if (!provider && typeof req.getAIProvider === 'function') {
+            provider = await req.getAIProvider('completion').catch(() => null);
+        }
+
+        if (!provider) {
+            return res.status(400).json({
                 error: 'AI_NOT_CONFIGURED',
-                message: 'AI features are not configured. Please set GEMINI_API_KEY in server/.env file.'
+                message: 'AI features require a provider API key. Configure one in Settings → AI Configuration.',
+                configureUrl: '/settings#ai',
             });
         }
 
-        if (!aiService.genAI) {
-            return res.status(503).json({
-                error: 'AI_NOT_INITIALIZED',
-                message: 'AI service failed to initialize. Please check your GEMINI_API_KEY.'
-            });
-        }
+        // Ensure legacy fields are set for unmigrated call-sites.
+        if (!req.aiProvider) req.aiProvider = provider;
+        if (!req.genAI && provider.rawSDK) req.genAI = provider.rawSDK;
 
-        req.genAI = aiService.genAI;       // legacy: kept for tests + untouched call-sites
-        req.aiProvider = aiService.provider;  // new provider abstraction
         next();
     };
 }

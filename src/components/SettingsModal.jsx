@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck } from 'lucide-react'
+import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
 import { API_BASE_URL } from '../config'
 import { ApiKeysSection } from './Settings/ApiKeysSection'
 import { AuditLogSection } from './Settings/AuditLogSection'
 import { LicensePlanSection } from './Settings/LicensePlanSection'
+import { AIConfigSection } from './Settings/AIConfigSection'
 import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
 
@@ -30,6 +31,7 @@ function SettingsIcon({ className }) {
 const TABS = [
     { id: 'general', label: 'General', icon: SettingsIcon },
     { id: 'api-keys', label: 'API Keys', icon: Key },
+    { id: 'ai', label: 'AI Configuration', icon: Sparkles },
     { id: 'license', label: 'License & Plan', icon: BadgeCheck },
     { id: 'audit', label: 'Audit Log', icon: Shield },
 ]
@@ -126,6 +128,7 @@ export function SettingsModal({ isOpen, onClose }) {
                 />
             )}
             {activeTab === 'api-keys' && <div><ApiKeysSection /></div>}
+            {activeTab === 'ai' && <div><AIConfigSection /></div>}
             {activeTab === 'license' && <div><LicensePlanSection /></div>}
             {activeTab === 'audit' && <div><AuditLogSection /></div>}
         </Modal>
