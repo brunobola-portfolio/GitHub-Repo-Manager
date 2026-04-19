@@ -76,9 +76,11 @@ Step-by-step implementation plans generated from approved specs.
 
 - [AI Providers (BYOK)](ai-providers.md) — BYOK multi-provider setup (Gemini, Anthropic, OpenAI, OpenRouter, LMStudio)
 - [GitHub Event Ingestion](event-ingestion.md) — GitHub webhook ingestion (PR, issues, deployments)
+- [GitHub Webhook Setup](guides/github-webhook-setup.md) — Step-by-step GitHub webhook configuration, event selection, troubleshooting
 - [Cross-Repo Work Board](work-board.md) — Work Board — reviews, stale PRs, DORA
 - [Security Hardening](security-hardening.md) — SOC 2 code hardening (audit chain, data erasure, retention)
 - [Billing and Licensing](billing-and-licensing.md) — Stripe subscription + license key delivery
+- [Stripe Setup](guides/stripe-setup.md) — Stripe product + webhook configuration
 
 ## Architecture
 

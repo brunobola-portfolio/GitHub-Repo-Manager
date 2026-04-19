@@ -130,8 +130,9 @@ A single board across all your repositories — no context switching.
 - **My Reviews** — every PR where you are a requested reviewer, sorted by age
 - **My Issues** — every open issue assigned to you across all tracked repos
 - **Stale PRs** (Pro+) — PRs open beyond a configurable threshold, ranked by staleness
-- **Review Load** (Pro+) — per-reviewer review queue depth for team planning
-- **DORA Metrics** (Enterprise) — deploy frequency and lead time for changes
+- **Review Load** (Pro+) — per-reviewer submitted vs pending counts, visualised as stacked bars to spot overloaded reviewers at a glance
+- **Tech Debt** (Pro+) — open issues labelled with `tech-debt`, `technical-debt`, `debt`, `refactor`, `refactoring`, `cleanup` or `code-smell`, grouped by repo with hotspot ranking
+- **DORA Metrics** (Enterprise) — deploy frequency, lead-time p50/p90, change failure rate, MTTR p50/p90, and CSV export for the whole 4-metric set
 
 ### Command Palette (Ctrl+K)
 

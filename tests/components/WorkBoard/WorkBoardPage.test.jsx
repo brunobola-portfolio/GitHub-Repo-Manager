@@ -58,12 +58,17 @@ const MOCK_TECH_DEBT = {
     hotspots: [{ repoFullName: 'org/repo', count: 1, oldestAgeDays: 7 }],
 }
 
+const MOCK_REVIEW_LOAD = [
+    { reviewerLogin: 'alice', reviewsSubmitted: 18, reviewsPending: 4 },
+]
+
 const mockUseMyPendingReviews = vi.fn(() => ({ data: MOCK_REVIEWS, loading: false, error: null, refresh: vi.fn() }))
 const mockUseStalePRs = vi.fn(() => ({ data: MOCK_STALE, loading: false, error: null, refresh: vi.fn() }))
 const mockUseMyOpenIssues = vi.fn(() => ({ data: MOCK_ISSUES, loading: false, error: null, refresh: vi.fn() }))
 const mockUseDORAMetrics = vi.fn(() => ({ data: MOCK_DORA, loading: false, error: null, refresh: vi.fn() }))
 const mockUseDORASummary = vi.fn(() => ({ data: MOCK_DORA_SUMMARY, loading: false, error: null, refresh: vi.fn() }))
 const mockUseTechDebt = vi.fn(() => ({ data: MOCK_TECH_DEBT, loading: false, error: null, refresh: vi.fn() }))
+const mockUseReviewLoad = vi.fn(() => ({ data: MOCK_REVIEW_LOAD, loading: false, error: null, refresh: vi.fn() }))
 
 vi.mock('@/hooks/useWorkBoard', () => ({
     useMyPendingReviews: () => mockUseMyPendingReviews(),
@@ -72,6 +77,7 @@ vi.mock('@/hooks/useWorkBoard', () => ({
     useDORAMetrics: (opts) => mockUseDORAMetrics(opts),
     useDORASummary: (opts) => mockUseDORASummary(opts),
     useTechDebt: (opts) => mockUseTechDebt(opts),
+    useReviewLoad: (opts) => mockUseReviewLoad(opts),
 }))
 
 // ---------------------------------------------------------------------------
@@ -91,6 +97,7 @@ beforeEach(() => {
     mockUseDORAMetrics.mockReturnValue({ data: MOCK_DORA, loading: false, error: null, refresh: vi.fn() })
     mockUseDORASummary.mockReturnValue({ data: MOCK_DORA_SUMMARY, loading: false, error: null, refresh: vi.fn() })
     mockUseTechDebt.mockReturnValue({ data: MOCK_TECH_DEBT, loading: false, error: null, refresh: vi.fn() })
+    mockUseReviewLoad.mockReturnValue({ data: MOCK_REVIEW_LOAD, loading: false, error: null, refresh: vi.fn() })
 })
 
 // ---------------------------------------------------------------------------
@@ -108,11 +115,12 @@ describe('WorkBoardPage', () => {
         expect(screen.getByText(/12 repos tracked/i)).toBeInTheDocument()
     })
 
-    it('renders all five tabs', () => {
+    it('renders all six tabs', () => {
         renderPage()
         expect(screen.getByRole('button', { name: /my reviews/i })).toBeInTheDocument()
         expect(screen.getByRole('button', { name: /stale prs/i })).toBeInTheDocument()
         expect(screen.getByRole('button', { name: /my issues/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /review load/i })).toBeInTheDocument()
         expect(screen.getByRole('button', { name: /tech debt/i })).toBeInTheDocument()
         expect(screen.getByRole('button', { name: /dora/i })).toBeInTheDocument()
     })

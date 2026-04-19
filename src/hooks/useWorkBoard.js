@@ -148,6 +148,14 @@ function getMockDORAFull() {
     return _mockDORAFull
 }
 
+const MOCK_REVIEW_LOAD = [
+    { reviewerLogin: 'alice', reviewsSubmitted: 18, reviewsPending: 4 },
+    { reviewerLogin: 'bob', reviewsSubmitted: 12, reviewsPending: 7 },
+    { reviewerLogin: 'carol', reviewsSubmitted: 9, reviewsPending: 1 },
+    { reviewerLogin: 'dave', reviewsSubmitted: 5, reviewsPending: 6 },
+    { reviewerLogin: 'eve', reviewsSubmitted: 3, reviewsPending: 2 },
+]
+
 const MOCK_TECH_DEBT = {
     items: [
         { repoFullName: 'acme/backend', issueNumber: 204, title: 'Refactor auth middleware — deprecated passport strategy', labels: ['tech-debt', 'refactor'], openedAt: new Date(Date.now() - 42 * 24 * 3600 * 1000).toISOString(), ageDays: 42, assignees: ['alice'] },
@@ -192,4 +200,9 @@ export function useDORASummary({ environment = 'production' } = {}) {
 export function useTechDebt({ repoIds } = {}) {
     const qs = repoIds && repoIds.length > 0 ? `?repoIds=${repoIds.join(',')}` : ''
     return useWorkBoardFetch(`/api/v1/work-board/tech-debt${qs}`, MOCK_TECH_DEBT)
+}
+
+export function useReviewLoad({ repoIds } = {}) {
+    const qs = repoIds && repoIds.length > 0 ? `?repoIds=${repoIds.join(',')}` : ''
+    return useWorkBoardFetch(`/api/v1/work-board/review-load${qs}`, MOCK_REVIEW_LOAD)
 }

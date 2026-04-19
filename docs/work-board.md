@@ -11,7 +11,9 @@ every tracked repository.
 | **My Reviews** | Free+ | PRs where you are a requested reviewer and the review is still pending |
 | **Stale PRs** | Pro+ | Open PRs that have not been merged or closed within a configurable threshold (default 7 days) |
 | **My Issues** | Free+ | Open issues that are assigned to your GitHub login |
-| **DORA** | Enterprise+ | Deployment frequency sparkline + median lead time for changes (last 30 days) |
+| **Review Load** | Pro+ | Per-reviewer submitted vs pending counts over the last 30 days — stacked-bar view to spot imbalanced review queues |
+| **Tech Debt** | Pro+ | Open issues labelled `tech-debt`, `technical-debt`, `technical debt` (with space), `debt`, `refactor`, `refactoring`, `code-smell`, or `cleanup`, grouped by repo with hotspot ranking |
+| **DORA** | Enterprise+ | Four-metric dashboard: deploy frequency, lead-time p50/p90, change failure rate, MTTR p50/p90 — plus CSV export |
 
 ## Pricing tier gating
 
@@ -21,8 +23,12 @@ every tracked repository.
 | My Issues | Yes | Yes | Yes |
 | Stale PRs | — | Yes | Yes |
 | Review Load | — | Yes | Yes |
+| Tech Debt | — | Yes | Yes |
 | DORA — deploy frequency | — | — | Yes |
-| DORA — lead time for changes | — | — | Yes |
+| DORA — lead time (p50/p90) | — | — | Yes |
+| DORA — change failure rate | — | — | Yes |
+| DORA — MTTR (p50/p90) | — | — | Yes |
+| DORA — CSV export | — | — | Yes |
 
 Users who attempt to access a higher-tier tab see an "Upgrade" card with a link
 to the pricing page.
