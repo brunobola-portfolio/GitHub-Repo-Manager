@@ -82,9 +82,21 @@ router.post('/plans', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Validation failed', details: flat });
     }
     const { source, tasks, targetOrg, schedule } = parsed.data;
-    // Free users can only create dry-run plans — force the flag regardless of input.
+    // Free tier gate — "real migration execution requires Pro" per pricing page.
+    // Previously this silently coerced isDryRun=true when a Free user explicitly
+    // requested a real run; that was surprising (the API appeared to accept the
+    // payload but produced a dry-run plan). Now we reject the request outright
+    // so the contract is explicit.
     const userOrder = getTierOrder(getUserTier(req.session.userId));
     const isFree = userOrder < getTierOrder('pro');
+    if (isFree && schedule?.isDryRun === false) {
+      return res.status(403).json({
+        error: 'upgrade_required',
+        message: 'Real migration execution requires the Pro plan. Free-tier users can still create and run dry-run plans.',
+        requiredTier: 'pro',
+        upgradeUrl: '/pricing',
+      });
+    }
     const isDryRun = isFree ? true : !!schedule?.isDryRun;
     const planId = engine.createPlan(req.session.userId, source, tasks, { targetOrg, isDryRun });
     if (schedule?.mode === 'scheduled' && schedule?.scheduledAt) {

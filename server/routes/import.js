@@ -127,11 +127,16 @@ router.post('/import/azure', requireAuth, async (req, res) => {
             }
         }).catch(err => {
             try {
+                // Sanitise the error message before persisting — upstream git
+                // / Azure failures may embed internal hostnames, temp paths,
+                // or credential URIs. Surfacing them later via
+                // /import/status/:id would be an information leak.
+                const safeMsg = safeError(err, 'Import failed unexpectedly');
                 db.prepare(`
                     UPDATE migration_jobs SET status = 'failed', error_message = ?,
                     progress_message = ?, completed_at = datetime('now')
                     WHERE id = ?
-                `).run(err.message || 'Unknown error', err.message || 'Import failed unexpectedly', jobId);
+                `).run(safeMsg, safeMsg, jobId);
             } catch (dbErr) {
                 logger.error({ err: dbErr, jobId }, 'Failed to update migration job status after import error');
             }
@@ -216,11 +221,12 @@ router.post('/import/url', requireAuth, validate(importSchema), async (req, res)
             }
         }).catch(err => {
             try {
+                const safeMsg = safeError(err, 'Import failed unexpectedly');
                 db.prepare(`
                     UPDATE migration_jobs SET status = 'failed', error_message = ?,
                     progress_message = ?, completed_at = datetime('now')
                     WHERE id = ?
-                `).run(err.message || 'Unknown error', err.message || 'Import failed unexpectedly', jobId);
+                `).run(safeMsg, safeMsg, jobId);
             } catch (dbErr) {
                 logger.error({ err: dbErr, jobId }, 'Failed to update migration job status after URL import error');
             }
@@ -447,10 +453,11 @@ router.post('/import/azure/batch', requireAuth, async (req, res) => {
                     `).run(result.error, result.error, jobId);
                 }
             } catch (err) {
+                const safeMsg = safeError(err, 'Import failed');
                 db.prepare(`
                     UPDATE migration_jobs SET status = 'failed', error_message = ?, progress_message = ?, completed_at = datetime('now')
                     WHERE id = ?
-                `).run(err.message || 'Unknown error', err.message || 'Import failed', jobId);
+                `).run(safeMsg, safeMsg, jobId);
             }
         };
 

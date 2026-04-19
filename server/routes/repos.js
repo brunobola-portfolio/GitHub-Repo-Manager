@@ -23,6 +23,7 @@ import express from 'express';
 import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, isValidGitHubUsername, safeError, errorResponse } from '../middleware/auth.js';
+import { requireTier } from '../middleware/require-tier.js';
 import { actionsService } from '../actions-service.js';
 import { communityHealthService } from '../community-health-service.js';
 import { safeJsonParse } from '../lib/utils.js';
@@ -596,8 +597,9 @@ router.post('/:owner/:repo/pulls', requireAuth, validate(prCreateSchema), async 
     }
 });
 
-// Merge pull request
-router.put('/:owner/:repo/pulls/:pull_number/merge', requireAuth, async (req, res) => {
+// Merge pull request — write-back is tier-gated as Pro+ per pricing page
+// ("Read-only on Free; Full + write-back on Pro/Enterprise").
+router.put('/:owner/:repo/pulls/:pull_number/merge', requireAuth, requireTier('pro'), async (req, res) => {
     try {
         const { owner, repo, pull_number } = req.params;
         const { commit_title, commit_message, merge_method = 'merge' } = req.body;
@@ -728,8 +730,8 @@ router.get('/:owner/:repo/pulls/:pull_number/comments', requireAuth, async (req,
     }
 });
 
-// Create inline review comment
-router.post('/:owner/:repo/pulls/:pull_number/comments', requireAuth, async (req, res) => {
+// Create inline review comment — tier-gated as Pro+ (write-back).
+router.post('/:owner/:repo/pulls/:pull_number/comments', requireAuth, requireTier('pro'), async (req, res) => {
     try {
         const { owner, repo, pull_number } = req.params;
         const { body, commit_id, path, line, side, start_line, start_side } = req.body;
@@ -774,8 +776,8 @@ router.post('/:owner/:repo/pulls/:pull_number/comments', requireAuth, async (req
     }
 });
 
-// Reply to a PR review comment thread
-router.post('/:owner/:repo/pulls/:pull_number/comments/:comment_id/replies', requireAuth, async (req, res) => {
+// Reply to a PR review comment thread — tier-gated as Pro+ (write-back).
+router.post('/:owner/:repo/pulls/:pull_number/comments/:comment_id/replies', requireAuth, requireTier('pro'), async (req, res) => {
     try {
         const { owner, repo, pull_number, comment_id } = req.params;
         const { body } = req.body;
@@ -809,8 +811,9 @@ router.post('/:owner/:repo/pulls/:pull_number/comments/:comment_id/replies', req
     }
 });
 
-// Submit a PR review (approve, request changes, or comment)
-router.post('/:owner/:repo/pulls/:pull_number/reviews', requireAuth, async (req, res) => {
+// Submit a PR review (approve, request changes, or comment) — tier-gated as
+// Pro+ (write-back). Free tier can still fetch reviews for read-only mode.
+router.post('/:owner/:repo/pulls/:pull_number/reviews', requireAuth, requireTier('pro'), async (req, res) => {
     try {
         const { owner, repo, pull_number } = req.params;
         const { commit_id, event, body, comments } = req.body;

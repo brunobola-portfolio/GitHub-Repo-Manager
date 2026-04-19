@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { githubApi } from '../../lib/github-api.js'
 import { auditLog } from '../../lib/audit.js'
-import { requireAuth } from '../../middleware/auth.js'
+import { requireAuth, safeError } from '../../middleware/auth.js'
 
 
 const router = Router()
@@ -38,7 +38,10 @@ router.get('/repos/:owner/:repo/export', requireAuth, async (req, res) => {
     res.send(body)
   } catch (err) {
     req.log.error({ err, owner, repo }, 'repo export failed')
-    res.status(err.status || 500).json({ error: err.message || 'Export failed' })
+    // Never leak err.message — third-party API errors may embed temp file
+    // paths, credential URIs, or internal hostnames. safeError() returns
+    // a generic fallback in production.
+    res.status(err.status || 500).json({ error: safeError(err, 'Export failed') })
   }
 })
 

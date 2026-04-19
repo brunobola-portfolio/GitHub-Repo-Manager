@@ -17,7 +17,11 @@ vi.mock('../middleware/auth.js', () => ({
   requireAuth: (req, res, next) => {
     if (!req.session?.accessToken) return res.status(401).json({ error: 'Session expired. Please login again.' })
     next()
-  }
+  },
+  // Route now uses safeError to sanitise upstream error messages before
+  // sending them to the client. Passthrough in tests so error content
+  // assertions work (the real helper masks to fallback only in production).
+  safeError: (err, fallback) => err?.message || fallback,
 }))
 
 vi.mock('../middleware/require-tier.js', () => ({
