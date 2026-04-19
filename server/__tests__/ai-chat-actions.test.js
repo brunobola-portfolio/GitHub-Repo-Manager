@@ -23,8 +23,26 @@ vi.mock('../middleware/auth.js', async () => {
             if (!req.session?.accessToken) return res.status(401).json({ error: 'Session expired' })
             next()
         },
+        // Provider-neutral /ai/chat now reads req.aiProvider.generate({prompt, schema}).
+        // Wrap the raw-SDK mockGenerateContent so existing cases continue to assert
+        // via the same fake model call — the schema path returns { text, parsed } and
+        // the test inspects text. Overload errors from mockGenerateContent surface as
+        // thrown AIError instances, which providerGenerateWithRetry handles.
         createRequireAI: () => (req, res, next) => {
             req.genAI = { getGenerativeModel: () => mockModel }
+            req.aiProvider = {
+                async generate({ prompt, schema }) {
+                    const result = await mockGenerateContent({
+                        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                        ...(schema ? { generationConfig: { responseMimeType: 'application/json', responseSchema: schema } } : {}),
+                    })
+                    const text = result.response.text()
+                    if (schema) {
+                        try { return { text, parsed: JSON.parse(text) } } catch { return { text } }
+                    }
+                    return { text }
+                },
+            }
             next()
         },
     }

@@ -97,30 +97,3 @@ export async function streamToSSE(textChunks, sse) {
     return accumulated;
 }
 
-/**
- * @deprecated Use streamToSSE() with a provider.generateStream() iterable instead.
- *
- * Backward-compatible adapter for callers that pass a raw Gemini
- * `generateContentStream` result (which exposes `.stream` as an async
- * iterable of chunk objects with a `.text()` method).
- *
- * Kept for one release so existing callers that haven't migrated to
- * req.aiProvider.generateStream() continue to work without changes.
- *
- * NOTE: This function does NOT propagate an AbortSignal to the underlying
- * Gemini stream. If the client disconnects mid-stream, the Gemini request
- * continues running to completion and burns tokens. Migrate to
- * provider.generateStream({ signal }) to avoid this.
- *
- * @param {{ stream: AsyncIterable<{ text(): string }> }} geminiStream
- * @param {ReturnType<initSSE>} sse
- * @returns {Promise<string>}
- */
-export async function streamGeminiToSSE(geminiStream, sse) {
-    async function* adapter() {
-        for await (const chunk of geminiStream.stream) {
-            yield chunk.text();
-        }
-    }
-    return streamToSSE(adapter(), sse);
-}

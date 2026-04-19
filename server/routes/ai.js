@@ -26,7 +26,7 @@ import { safeJsonParse } from '../lib/utils.js';
 import { parseSizeStrategyResponse, parseDescriptionResponse } from '../lib/migration-ai-parsers.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../lib/usage-meter.js';
 import { auditLog } from '../lib/audit.js';
-import { initSSE, streamGeminiToSSE, streamToSSE } from './ai-streaming.js';
+import { initSSE, streamToSSE } from './ai-streaming.js';
 import { AIError, AI_ERROR_CODE } from '../lib/ai-provider.js';
 
 const router = express.Router();
@@ -68,15 +68,17 @@ function handleAIError(res, error, fallbackMessage = 'Failed to generate AI resp
 }
 
 /**
- * Invoke model.generateContent with one automatic retry on transient 503 overload.
- * Keeps total added latency bounded (~400ms) so user-facing requests don't stall.
- * Works with both raw SDK model objects and AIError-typed errors.
+ * Provider-neutral retry wrapper — retries a provider.generate()
+ * call when the error maps to AI_ERROR_CODE.OVERLOAD (503-equivalent in any
+ * vendor). Works with any AIProvider implementation (Gemini, Anthropic,
+ * OpenAI, OpenRouter, Local). Replaces the raw-SDK generateWithRetry when
+ * using req.aiProvider.
  */
-async function generateWithRetry(model, request, { retries = 1, delayMs = 400 } = {}) {
+async function providerGenerateWithRetry(provider, opts, { retries = 1, delayMs = 400 } = {}) {
     let lastError
     for (let attempt = 0; attempt <= retries; attempt++) {
         try {
-            return await model.generateContent(request)
+            return await provider.generate(opts)
         } catch (err) {
             lastError = err
             const isOverload = (err instanceof AIError && err.code === AI_ERROR_CODE.OVERLOAD)
@@ -125,28 +127,11 @@ router.post('/ai/chat', requireAuth, validate(aiChatSchema), requireAI, async (r
             });
         }
 
-        // Use configured model from environment or default
-        const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-
-        // TODO(provider-migration): generateWithRetry() wraps the raw SDK model for its
-        // 503-overload retry loop. Migrate by extending AIProvider.generate() with a
-        // retries option (e.g. { retries: 1, delayMs: 400 }) and using AIError.OVERLOAD
-        // to decide when to retry.
-
-        // Legacy path: req.aiProvider is the new abstraction; req.genAI is the raw SDK.
-        // ai/chat still uses generateWithRetry for its retry semantics, so we use
-        // req.genAI.getGenerativeModel to get a model handle for that helper.
-        let model;
-        try {
-            model = req.genAI.getGenerativeModel({ model: modelName });
-        } catch (modelError) {
-            req.log.error({ err: modelError, model: modelName }, 'Failed to load AI model');
-            return res.status(503).json({
-                error: `AI model "${modelName}" is not available. Please check your configuration.`,
-                code: 'MODEL_UNAVAILABLE'
-            });
-        }
-
+        // Provider-neutral path via req.aiProvider — works with Gemini,
+        // Anthropic, OpenAI, OpenRouter, LocalProvider. Structured output
+        // uses `schema` which every provider implementation handles
+        // (for JSON-incapable providers the implementation coerces via
+        // system prompt + JSON parse).
         const systemPrompt = `You are an expert GitHub Repository Manager Assistant.
 Your goal is to help users manage their repositories, analyze code, and suggest improvements.
 
@@ -171,34 +156,33 @@ Current context: ${JSON.stringify(context || {}, null, 2)}
 
 User message: ${message}`;
 
-        const result = await generateWithRetry(model, {
-            contents: [{ role: 'user', parts: [{ text: systemPrompt }] }],
-            generationConfig: {
-                responseMimeType: 'application/json',
-                responseSchema: {
-                    type: 'object',
-                    properties: {
-                        reply: { type: 'string' },
-                        actions: {
-                            type: 'array',
-                            items: {
-                                type: 'object',
-                                properties: {
-                                    type: { type: 'string' },
-                                    label: { type: 'string' },
-                                },
-                                required: ['type', 'label'],
-                            },
+        const schema = {
+            type: 'object',
+            properties: {
+                reply: { type: 'string' },
+                actions: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            type: { type: 'string' },
+                            label: { type: 'string' },
                         },
+                        required: ['type', 'label'],
                     },
-                    required: ['reply'],
                 },
             },
-        });
-        const response = await result.response;
-        const text = response.text();
+            required: ['reply'],
+        };
 
-        const parsed = safeJsonParse(text);
+        const { text, parsed: parsedFromProvider } = await providerGenerateWithRetry(
+            req.aiProvider,
+            { prompt: systemPrompt, schema },
+        );
+
+        // Prefer the provider's parsed payload (when it returns one) but fall
+        // back to a JSON reparse so providers that only return text still work.
+        const parsed = parsedFromProvider || safeJsonParse(text);
         if (!parsed || typeof parsed.reply !== 'string') {
             req.log.warn({ text }, 'AI chat returned non-JSON or missing reply');
             return res.status(502).json({
@@ -355,14 +339,27 @@ router.post('/ai/index', requireAuth, validate(aiIndexSchema), requireAI, async 
                 req.log.warn({ repo: repo.full_name, err: e }, 'README content decode failed');
             }
         } else {
-            req.log.warn({ repo: repo.full_name }, 'No README found');
+            // Promise.allSettled buries the real error; inspect reason.status so
+            // a "no README" (404) doesn't warn as loudly as an auth/rate-limit
+            // failure that actually degrades the indexing prompt.
+            const reason = readmeResult.reason;
+            if (reason?.status === 404) {
+                req.log.debug({ repo: repo.full_name }, 'No README yet on repo (expected)');
+            } else {
+                req.log.warn({ err: reason, repo: repo.full_name }, 'README fetch failed');
+            }
         }
 
         let fileStructure = [];
         if (contentsResult.status === 'fulfilled') {
             fileStructure = contentsResult.value.data.map(f => ({ name: f.name, type: f.type }));
         } else {
-            req.log.warn({ repo: repo.full_name }, 'Could not fetch contents');
+            const reason = contentsResult.reason;
+            if (reason?.status === 404) {
+                req.log.debug({ repo: repo.full_name }, 'Repo has no top-level contents (empty repo)');
+            } else {
+                req.log.warn({ err: reason, repo: repo.full_name }, 'contents fetch failed');
+            }
         }
 
         // 3. Generate Analysis (Summary, Health Score, Topics)
@@ -482,22 +479,32 @@ router.post('/ai/readme/enhance', requireAuth, requireAI, async (req, res) => {
         const { repo } = req.body;
         if (!repo) return res.status(400).json({ error: 'Repo data required' });
 
-        // Fetch current README
+        // Fetch current README. 404 is expected ("no README yet") and fine;
+        // any other failure (401, 429, 5xx) means the prompt context will be
+        // degraded, so distinguish and log at the right level.
         let readmeContent = '';
         try {
             const { data } = await githubApi(`/repos/${repo.full_name}/readme`, req.session.accessToken);
             readmeContent = Buffer.from(data.content, 'base64').toString('utf-8');
         } catch (e) {
-            req.log.warn({ repo: repo.full_name }, 'No README found');
+            if (e?.status === 404) {
+                req.log.debug({ repo: repo.full_name }, 'No README yet on repo (expected)');
+            } else {
+                req.log.warn({ err: e, repo: repo.full_name }, 'README fetch failed — continuing without README context');
+            }
         }
 
-        // Fetch file structure
+        // Fetch file structure — same pattern.
         let fileStructure = [];
         try {
             const { data } = await githubApi(`/repos/${repo.full_name}/contents`, req.session.accessToken);
             fileStructure = data.map(f => ({ name: f.name, type: f.type }));
         } catch (e) {
-            req.log.warn({ repo: repo.full_name }, 'Could not fetch contents');
+            if (e?.status === 404) {
+                req.log.debug({ repo: repo.full_name }, 'Repo has no top-level contents (empty repo)');
+            } else {
+                req.log.warn({ err: e, repo: repo.full_name }, 'contents fetch failed — continuing with empty file structure');
+            }
         }
 
         const result = await aiService.enhanceReadme(readmeContent, repo, fileStructure);
@@ -983,18 +990,21 @@ Rules:
 - body uses bullet points with "- " prefix if present
 - No markdown fences, no explanation, ONLY the JSON object`;
 
-        // TODO(provider-migration): startChat() is a Gemini-specific session API with no
-        // provider-neutral equivalent; adding it to AIProvider would leak Gemini semantics.
-        // When this route moves to Claude/another provider, replace with a stateless
-        // generate() loop driven by caller-side message history.
-        const model = aiService.model;
-        const chat = model.startChat({ history: [{ role: 'user', parts: [{ text: systemPrompt }] }, { role: 'model', parts: [{ text: '{"subject": "", "body": ""}' }] }] });
+        // Provider-neutral path via req.aiProvider (works with Gemini,
+        // Anthropic, OpenAI, OpenRouter, LocalProvider). Previously this
+        // called Gemini's startChat() session API, so any user on Claude/
+        // OpenAI would silently fall back to Gemini or break. The "history"
+        // here was only priming (system prompt + dummy reply), never real
+        // multi-turn state, so a single prompt carries the same semantics.
+        const userMessage = `Generate a commit message for this diff:\n\n${safeDiff}`;
 
         if (req.query.stream === 'true') {
             const sse = initSSE(res);
             try {
-                const streamResult = await chat.sendMessageStream(`Generate a commit message for this diff:\n\n${safeDiff}`);
-                const raw = await streamGeminiToSSE(streamResult, sse);
+                const iter = req.aiProvider.generateStream({
+                    prompt: systemPrompt + '\n\n' + userMessage,
+                });
+                const raw = await streamToSSE(iter, sse);
 
                 let parsed;
                 try {
@@ -1009,14 +1019,16 @@ Rules:
                 auditLog(req, 'ai_generate_commit', 'ai', null, { format, diff_length: diff.length, streamed: true });
 
                 sse.sendDone({ message, subject: parsed.subject, body: parsed.body || '', format_used: format });
-            } catch (err) {
+            } catch {
                 sse.sendError('Failed to generate commit message');
             }
             return;
         }
 
-        const result = await chat.sendMessage(`Generate a commit message for this diff:\n\n${safeDiff}`);
-        const raw = result.response.text().trim();
+        const { text: raw } = await req.aiProvider.generate({
+            prompt: userMessage,
+            systemPrompt,
+        });
 
         let parsed;
         try {
@@ -1097,20 +1109,18 @@ Rules:
 - breaking_changes should be null if none detected
 - No markdown fences in the response, ONLY the JSON object`;
 
-        // TODO(provider-migration): startChat() is a Gemini-specific session API with no
-        // provider-neutral equivalent; adding it to AIProvider would leak Gemini semantics.
-        // When this route moves to Claude/another provider, replace with a stateless
-        // generate() loop driven by caller-side message history.
-        const model = aiService.model;
-        const chat = model.startChat({ history: [{ role: 'user', parts: [{ text: systemPrompt }] }, { role: 'model', parts: [{ text: '{}' }] }] });
+        // Provider-neutral path via req.aiProvider — see /ai/generate-commit
+        // above for the rationale. The old Gemini startChat history was only
+        // priming, never multi-turn state.
+        const userMessage = `Generate a PR description.\n\nCommits:\n${commitList}\n\nFiles changed:\n${filesInfo}\n\nPatches:\n${safePatches}`;
 
         if (req.query.stream === 'true') {
             const sse = initSSE(res);
             try {
-                const streamResult = await chat.sendMessageStream(
-                    `Generate a PR description.\n\nCommits:\n${commitList}\n\nFiles changed:\n${filesInfo}\n\nPatches:\n${safePatches}`
-                );
-                const raw = await streamGeminiToSSE(streamResult, sse);
+                const iter = req.aiProvider.generateStream({
+                    prompt: systemPrompt + '\n\n' + userMessage,
+                });
+                const raw = await streamToSSE(iter, sse);
 
                 let parsed;
                 try {
@@ -1134,10 +1144,10 @@ Rules:
             return;
         }
 
-        const result = await chat.sendMessage(
-            `Generate a PR description.\n\nCommits:\n${commitList}\n\nFiles changed:\n${filesInfo}\n\nPatches:\n${safePatches}`
-        );
-        const raw = result.response.text().trim();
+        const { text: raw } = await req.aiProvider.generate({
+            prompt: userMessage,
+            systemPrompt,
+        });
 
         let parsed;
         try {
@@ -1220,35 +1230,34 @@ router.post('/ai/refine', requireAuth, requireAI, async (req, res) => {
         const systemPrompt = `You are refining ${safeContentType}. Apply the requested change to the content below.
 Return ONLY the refined content, no explanation, no markdown fences.`;
 
-        // TODO(provider-migration): startChat() is a Gemini-specific session API with no
-        // provider-neutral equivalent; adding it to AIProvider would leak Gemini semantics.
-        // When this route moves to Claude/another provider, replace with a stateless
-        // generate() loop driven by caller-side message history.
-        const model = aiService.model;
-        const chat = model.startChat({ history: [{ role: 'user', parts: [{ text: systemPrompt }] }, { role: 'model', parts: [{ text: 'Ready.' }] }] });
+        // Provider-neutral path via req.aiProvider — see /ai/generate-commit
+        // above for the rationale. The old "Ready." dummy reply priming is
+        // now a single prompt passed through the abstraction.
+        const userMessage = `Refinement instruction: ${instructionText}\n\nOriginal content:\n${original_content}${diffContext}`;
 
         if (req.query.stream === 'true') {
             const sse = initSSE(res);
             try {
-                const streamResult = await chat.sendMessageStream(
-                    `Refinement instruction: ${instructionText}\n\nOriginal content:\n${original_content}${diffContext}`
-                );
-                const raw = await streamGeminiToSSE(streamResult, sse);
+                const iter = req.aiProvider.generateStream({
+                    prompt: systemPrompt + '\n\n' + userMessage,
+                });
+                const raw = await streamToSSE(iter, sse);
 
                 incrementUsage(userId, 'ai_queries');
                 auditLog(req, 'ai_refine', 'ai', null, { instruction, content_type, streamed: true });
 
                 sse.sendDone({ refined_content: raw.trim() });
-            } catch (err) {
+            } catch {
                 sse.sendError('Failed to refine content');
             }
             return;
         }
 
-        const result = await chat.sendMessage(
-            `Refinement instruction: ${instructionText}\n\nOriginal content:\n${original_content}${diffContext}`
-        );
-        const refined = result.response.text().trim();
+        const { text: rawRefined } = await req.aiProvider.generate({
+            prompt: userMessage,
+            systemPrompt,
+        });
+        const refined = rawRefined.trim();
 
         incrementUsage(userId, 'ai_queries');
         auditLog(req, 'ai_refine', 'ai', null, { instruction, content_type });
@@ -1362,40 +1371,42 @@ router.post('/ai/chat-refine', requireAuth, requireAI, async (req, res) => {
 
         const systemPrompt = `You are a helpful AI assistant refining ${typeLabel}. Apply the user's instruction to improve the content. Return ONLY the refined content, no explanation.${diffCtx}`;
 
-        const chatHistory = [
-            { role: 'user', parts: [{ text: systemPrompt }] },
-            { role: 'model', parts: [{ text: 'Ready to help refine.' }] },
-        ];
-
+        // Flatten the conversation into a single stateless prompt so the
+        // provider abstraction can handle it regardless of vendor. Modern
+        // chat models (Gemini, Claude, GPT) follow labelled transcripts,
+        // so we emit "User:" / "Assistant:" markers for history turns and
+        // end with the latest user message. This is what replaces the old
+        // Gemini-specific startChat({ history }) path.
         const safeHistory = Array.isArray(history) ? history.slice(-10) : [];
-        for (const entry of safeHistory) {
-            chatHistory.push({
-                role: entry.role === 'user' ? 'user' : 'model',
-                parts: [{ text: sanitizeForPrompt(entry.content, 4000) }],
-            });
-        }
-
-        // TODO(provider-migration): startChat() is a Gemini-specific session API with no
-        // provider-neutral equivalent; adding it to AIProvider would leak Gemini semantics.
-        // When this route moves to Claude/another provider, replace with a stateless
-        // generate() loop driven by caller-side message history.
-        const model = aiService.model;
-        const chat = model.startChat({ history: chatHistory });
+        const historyBlock = safeHistory
+            .map((entry) => {
+                const role = entry.role === 'user' ? 'User' : 'Assistant';
+                return `${role}: ${sanitizeForPrompt(entry.content, 4000)}`;
+            })
+            .join('\n\n');
 
         const userMessage = current_output
             ? `Current content:\n${sanitizeForPrompt(current_output, 6000)}\n\nInstruction: ${message}`
             : message;
 
+        const fullPrompt = [
+            historyBlock ? `Conversation so far:\n${historyBlock}` : null,
+            `User: ${userMessage}`,
+            'Assistant:',
+        ].filter(Boolean).join('\n\n');
+
         const sse = initSSE(res);
         try {
-            const streamResult = await chat.sendMessageStream(userMessage);
-            const raw = await streamGeminiToSSE(streamResult, sse);
+            const iter = req.aiProvider.generateStream({
+                prompt: systemPrompt + '\n\n' + fullPrompt,
+            });
+            const raw = await streamToSSE(iter, sse);
 
             incrementUsage(userId, 'ai_queries');
             auditLog(req, 'ai_chat_refine', 'ai', null, { content_type, message_length: message.length });
 
             sse.sendDone({ refined_content: raw.trim() });
-        } catch (err) {
+        } catch {
             sse.sendError('Failed to refine content');
         }
     } catch (error) {

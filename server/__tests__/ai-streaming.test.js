@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { EventEmitter } from 'events'
-import { initSSE, streamGeminiToSSE } from '../routes/ai-streaming.js'
+import { initSSE } from '../routes/ai-streaming.js'
 
 function makeRes() {
     const writes = []
@@ -83,43 +83,3 @@ describe('initSSE', () => {
     })
 })
 
-describe('streamGeminiToSSE', () => {
-    function makeGeminiStream(chunks) {
-        // Mimics @google/generative-ai's `stream` property: an async iterable
-        // of objects exposing a synchronous `.text()` getter.
-        return {
-            async *stream() {
-                for (const c of chunks) yield { text: () => c }
-            },
-        }
-    }
-
-    it('accumulates text and writes one SSE chunk per Gemini chunk', async () => {
-        const res = makeRes()
-        const sse = initSSE(res)
-        const gemini = { stream: (async function* () { yield { text: () => 'a' }; yield { text: () => 'b' } })() }
-        const full = await streamGeminiToSSE(gemini, sse)
-        expect(full).toBe('ab')
-        expect(res.writes.length).toBe(2)
-    })
-
-    it('stops iterating when the client disconnects mid-stream', async () => {
-        const res = makeRes()
-        const req = makeReq()
-        const sse = initSSE(res, req)
-
-        const gemini = {
-            stream: (async function* () {
-                yield { text: () => 'first' }
-                req.emit('close') // simulate disconnect mid-stream
-                yield { text: () => 'second' }
-            })(),
-        }
-
-        const full = await streamGeminiToSSE(gemini, sse)
-        // first chunk got through; second was dropped because the loop bailed on isAborted
-        expect(full).toBe('first')
-        expect(res.writes.length).toBe(1)
-        expect(sse.isAborted).toBe(true)
-    })
-})
