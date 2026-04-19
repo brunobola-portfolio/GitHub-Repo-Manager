@@ -17,6 +17,8 @@ import { ModalProvider } from './contexts/ModalContext'
 import { useSelection } from './hooks/useSelection'
 import { useModal } from './hooks/useModal'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { useCommandPalette } from './hooks/useCommandPalette'
+import { CommandPalette } from './components/CommandPalette'
 import { useResponsiveLayout } from './hooks/useResponsiveLayout'
 import CollapsiblePanel from './components/ui/CollapsiblePanel'
 import { SlimSidebar } from './components/Sidebar'
@@ -139,6 +141,8 @@ function AppContent() {
     onViewChange: setActiveView,
     enabled: !!user && !anyModalOpen
   })
+
+  const commandPalette = useCommandPalette()
 
   const loading = appLoading || githubLoading
   const initCalled = useRef(false)
@@ -1057,6 +1061,20 @@ function AppContent() {
           onClose={() => closeModal('showLicenseActivation')}
         />
       </Suspense>
+
+      <CommandPalette
+        isOpen={commandPalette.isOpen}
+        onClose={commandPalette.close}
+        repos={displayRepos}
+        activeView={activeView}
+        onViewChange={(v) => { commandPalette.close(); setActiveView(v) }}
+        onOpenModal={(name) => { commandPalette.close(); openModal(name) }}
+        onSelectRepo={(repo) => {
+          commandPalette.close()
+          setSelectedRepoDetail(repo)
+          setActiveView('repo-detail')
+        }}
+      />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <Suspense fallback={null}>
