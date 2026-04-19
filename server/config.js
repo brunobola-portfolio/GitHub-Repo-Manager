@@ -120,7 +120,14 @@ function loadConfig() {
         process.exit(1);
     }
 
-    return Object.freeze(result.data);
+    // In production, default log level to 'warn' so info-level chatter doesn't
+    // fill disk + Sentry breadcrumbs. Operator can still override via LOG_LEVEL.
+    const data = result.data;
+    if (data.nodeEnv === 'production' && !process.env.LOG_LEVEL) {
+        data.logLevel = 'warn';
+    }
+
+    return Object.freeze(data);
 }
 
 export const config = loadConfig();
