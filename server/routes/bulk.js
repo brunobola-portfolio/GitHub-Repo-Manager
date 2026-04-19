@@ -8,6 +8,14 @@
  * - POST /archive - Archive/unarchive multiple repos
  * - POST /delete - Delete multiple repos
  *
+ * All destructive endpoints require:
+ *   1. requireAuth
+ *   2. requireTier('pro')
+ *   3. A two-step dry-run → confirmation-token flow (see bulk-helpers.js)
+ *
+ * Read-only endpoints (/transfer/check-conflicts, /community-health/compare)
+ * are unchanged — no token required.
+ *
  * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
  */
 
@@ -18,52 +26,46 @@ import { requireAuth, isValidGitHubUsername, safeError, errorResponse } from '..
 import { requireTier } from '../middleware/require-tier.js';
 import { validate, bulkVisibilitySchema, bulkArchiveSchema, bulkDeleteSchema, bulkTransferSchema, bulkMirrorSchema, checkConflictsSchema } from '../lib/validators.js';
 import { auditLog } from '../lib/audit.js';
+import { performBulk } from '../lib/bulk-helpers.js';
 
 const router = express.Router();
 
-// Change visibility for multiple repos
-router.post('/visibility', requireAuth, validate(bulkVisibilitySchema), async (req, res) => {
-    const { repos, makePublic } = req.body;
+// ---------------------------------------------------------------------------
+// POST /visibility — Change visibility for multiple repos
+// Previously unguarded; now requires Pro + dry-run/confirmation
+// ---------------------------------------------------------------------------
+router.post('/visibility', requireAuth, requireTier('pro'), validate(bulkVisibilitySchema), async (req, res) => {
+    const { repos, makePublic, dryRun } = req.body;
 
     if (!repos?.length) return errorResponse(res, 400, 'No repositories specified', 'MISSING_REPOS');
     if (!Array.isArray(repos) || repos.some(r => typeof r !== 'string' || !r.includes('/')))
         return errorResponse(res, 400, 'Invalid repository format. Expected owner/repo strings.', 'INVALID_FORMAT');
     if (typeof makePublic !== 'boolean') return errorResponse(res, 400, 'makePublic must be a boolean', 'INVALID_PARAM');
 
-    const results = [];
-
-    // Process sequentially to avoid hitting rate limits too hard
-    for (const repoFullName of repos) {
-        try {
+    await performBulk({
+        req,
+        res,
+        action: 'bulk.visibility',
+        repos,
+        extraData: { makePublic },
+        dryRun,
+        execute: async (repoFullName) => {
             req.log.info({ repo: repoFullName, makePublic }, 'Toggling repo visibility');
             await githubApi(`/repos/${repoFullName}`, req.session.accessToken, {
                 method: 'PATCH',
                 body: JSON.stringify({ private: !makePublic })
             });
             req.log.info({ repo: repoFullName }, 'Visibility change succeeded');
-            results.push({ repo: repoFullName, success: true });
-        } catch (error) {
-            req.log.error({ err: error, repo: repoFullName }, 'Visibility change failed');
-            results.push({ repo: repoFullName, success: false, error: safeError(error, 'Operation failed') });
-        }
-    }
-
-    const successCount = results.filter(r => r.success).length;
-    const failureCount = results.length - successCount;
-
-    if (successCount > 0) {
-        auditLog(req, 'bulk.visibility', 'bulk', JSON.stringify(repos), { makePublic, successCount });
-    }
-
-    const statusCode = failureCount === 0 ? 200 : successCount === 0 ? 500 : 207;
-    res.status(statusCode).json({
-        message: `Successfully changed visibility for ${successCount} repositories.`,
-        results
+            return {};
+        },
+        messageFn: (successCount) =>
+            `Successfully changed visibility for ${successCount} repositories.`,
     });
 });
 
-// Check for name conflicts before transfer
-// Advanced bulk: Pro-gated (matches pricing claim for transfer/mirror/cross-org)
+// ---------------------------------------------------------------------------
+// POST /transfer/check-conflicts — Read-only, Pro-gated. No token required.
+// ---------------------------------------------------------------------------
 router.post('/transfer/check-conflicts', requireAuth, requireTier('pro'), validate(checkConflictsSchema), async (req, res) => {
     const { repos, targetOrg } = req.body
 
@@ -122,28 +124,34 @@ router.post('/transfer/check-conflicts', requireAuth, requireTier('pro'), valida
     res.json({ conflicts })
 })
 
-// Transfer multiple repos to an organization (advanced bulk — Pro+)
+// ---------------------------------------------------------------------------
+// POST /transfer — Transfer multiple repos to an organization (Pro+)
+// Now requires dry-run → confirmation-token; toOrg + strategies locked in token
+// ---------------------------------------------------------------------------
 router.post('/transfer', requireAuth, requireTier('pro'), validate(bulkTransferSchema), async (req, res) => {
-    const { repos, toOrg, strategies } = req.body;
+    const { repos, toOrg, strategies, dryRun } = req.body;
 
     if (!repos?.length || !toOrg) return errorResponse(res, 400, 'Missing repositories or target organization', 'MISSING_PARAMS');
     if (!isValidGitHubUsername(toOrg)) return errorResponse(res, 400, 'Invalid target organization name', 'INVALID_ORG');
     if (!Array.isArray(repos) || repos.some(r => typeof r !== 'string' || !r.includes('/')))
         return errorResponse(res, 400, 'Invalid repository format. Expected owner/repo strings.', 'INVALID_FORMAT');
 
-    const results = [];
+    await performBulk({
+        req,
+        res,
+        action: 'bulk.transfer',
+        repos,
+        extraData: { toOrg, strategies: strategies || {} },
+        dryRun,
+        execute: async (repoFullName) => {
+            const strategy = strategies?.[repoFullName]
+            const action = strategy?.action || 'transfer'
 
-    for (const repoFullName of repos) {
-        const strategy = strategies?.[repoFullName]
-        const action = strategy?.action || 'transfer'
+            // Skip repos marked as skip
+            if (action === 'skip') {
+                return { skipped: true }
+            }
 
-        // Skip repos marked as skip
-        if (action === 'skip') {
-            results.push({ repo: repoFullName, success: true, skipped: true })
-            continue
-        }
-
-        try {
             // Replace: delete target repo first
             if (action === 'replace') {
                 const repoName = repoFullName.split('/').pop()
@@ -153,8 +161,7 @@ router.post('/transfer', requireAuth, requireTier('pro'), validate(bulkTransferS
                     })
                 } catch (delError) {
                     if (delError.status !== 404) {
-                        results.push({ repo: repoFullName, success: false, error: `Failed to delete target: ${safeError(delError)}` })
-                        continue
+                        throw new Error(`Failed to delete target: ${safeError(delError)}`)
                     }
                 }
             }
@@ -169,46 +176,37 @@ router.post('/transfer', requireAuth, requireTier('pro'), validate(bulkTransferS
                 method: 'POST',
                 body: JSON.stringify(transferBody)
             })
-            results.push({ repo: repoFullName, success: true })
-        } catch (error) {
-            const ghErrors = error.data?.errors?.map(e => e.message).join('; ')
-            const detail = ghErrors || safeError(error, 'Operation failed')
-            results.push({ repo: repoFullName, success: false, error: detail })
-        }
-    }
-
-    const successCount = results.filter(r => r.success).length;
-    const failureCount = results.length - successCount;
-
-    if (successCount > 0) {
-        auditLog(req, 'bulk.transfer', 'bulk', JSON.stringify(repos), { newOwner: toOrg, successCount });
-    }
-
-    const statusCode = failureCount === 0 ? 200 : successCount === 0 ? 500 : 207;
-    res.status(statusCode).json({
-        message: `Transferred ${successCount} repositories to ${toOrg}.`,
-        results
+            return {}
+        },
+        messageFn: (successCount) =>
+            `Transferred ${successCount} repositories to ${toOrg}.`,
     });
 });
 
-// Mirror (fork) multiple repos to an organization (advanced bulk — Pro+)
+// ---------------------------------------------------------------------------
+// POST /mirror — Mirror (fork) multiple repos to an org (Pro+)
+// Now requires dry-run → confirmation-token; toOrg locked in token
+// ---------------------------------------------------------------------------
 router.post('/mirror', requireAuth, requireTier('pro'), validate(bulkMirrorSchema), async (req, res) => {
-    const { repos, toOrg } = req.body;
+    const { repos, toOrg, dryRun } = req.body;
 
     if (!repos?.length || !toOrg) return errorResponse(res, 400, 'Missing repositories or target organization', 'MISSING_PARAMS');
     if (!isValidGitHubUsername(toOrg)) return errorResponse(res, 400, 'Invalid target organization name', 'INVALID_ORG');
     if (!Array.isArray(repos) || repos.some(r => typeof r !== 'string' || !r.includes('/')))
         return errorResponse(res, 400, 'Invalid repository format. Expected owner/repo strings.', 'INVALID_FORMAT');
 
-    const results = [];
-
-    for (const repoFullName of repos) {
-        try {
+    await performBulk({
+        req,
+        res,
+        action: 'bulk.mirror',
+        repos,
+        extraData: { toOrg },
+        dryRun,
+        execute: async (repoFullName) => {
             const { data } = await githubApi(`/repos/${repoFullName}/forks`, req.session.accessToken, {
                 method: 'POST',
                 body: JSON.stringify({ organization: toOrg })
             });
-            results.push({ repo: repoFullName, success: true, mirrorUrl: data.html_url });
             try {
                 db.prepare(`
                     INSERT INTO migration_jobs
@@ -225,96 +223,75 @@ router.post('/mirror', requireAuth, requireTier('pro'), validate(bulkMirrorSchem
             } catch (dbErr) {
                 req.log?.error?.({ err: dbErr, repo: repoFullName }, 'migration_jobs insert failed for mirror');
             }
-        } catch (error) {
-            results.push({ repo: repoFullName, success: false, error: safeError(error, 'Operation failed') });
-        }
-    }
-
-    const successCount = results.filter(r => r.success).length;
-    const failureCount = results.length - successCount;
-    const statusCode = failureCount === 0 ? 200 : successCount === 0 ? 500 : 207;
-    res.status(statusCode).json({
-        message: `Mirrored ${successCount} repositories to ${toOrg}.`,
-        results
+            return { mirrorUrl: data.html_url };
+        },
+        messageFn: (successCount) =>
+            `Mirrored ${successCount} repositories to ${toOrg}.`,
     });
 });
 
-// Archive/unarchive multiple repos
-router.post('/archive', requireAuth, validate(bulkArchiveSchema), async (req, res) => {
-    const { repos, archive = true } = req.body;
+// ---------------------------------------------------------------------------
+// POST /archive — Archive/unarchive multiple repos
+// Previously unguarded; now requires Pro + dry-run/confirmation
+// ---------------------------------------------------------------------------
+router.post('/archive', requireAuth, requireTier('pro'), validate(bulkArchiveSchema), async (req, res) => {
+    const { repos, archive = true, dryRun } = req.body;
 
     if (!repos?.length) return errorResponse(res, 400, 'No repositories specified', 'MISSING_REPOS');
     if (!Array.isArray(repos) || repos.some(r => typeof r !== 'string' || !r.includes('/')))
         return errorResponse(res, 400, 'Invalid repository format. Expected owner/repo strings.', 'INVALID_FORMAT');
 
-    const results = [];
-
-    for (const repoFullName of repos) {
-        try {
+    await performBulk({
+        req,
+        res,
+        action: 'bulk.archive',
+        repos,
+        extraData: { archive },
+        dryRun,
+        execute: async (repoFullName) => {
             await githubApi(`/repos/${repoFullName}`, req.session.accessToken, {
                 method: 'PATCH',
                 body: JSON.stringify({ archived: archive })
             });
-            results.push({ repo: repoFullName, success: true });
-        } catch (error) {
-            results.push({ repo: repoFullName, success: false, error: safeError(error, 'Operation failed') });
-        }
-    }
-
-    const successCount = results.filter(r => r.success).length;
-    const failureCount = results.length - successCount;
-
-    if (successCount > 0) {
-        auditLog(req, 'bulk.archive', 'bulk', JSON.stringify(repos), { archive, successCount });
-    }
-
-    const statusCode = failureCount === 0 ? 200 : successCount === 0 ? 500 : 207;
-    res.status(statusCode).json({
-        message: `${archive ? 'Archived' : 'Unarchived'} ${successCount} repositories.`,
-        results
+            return {};
+        },
+        messageFn: (successCount) =>
+            `${archive ? 'Archived' : 'Unarchived'} ${successCount} repositories.`,
     });
 });
 
-// Delete multiple repos
-router.post('/delete', requireAuth, validate(bulkDeleteSchema), async (req, res) => {
-    const { repos } = req.body;
+// ---------------------------------------------------------------------------
+// POST /delete — Delete multiple repos (HIGHEST RISK)
+// Previously unguarded; now requires Pro + dry-run/confirmation
+// ---------------------------------------------------------------------------
+router.post('/delete', requireAuth, requireTier('pro'), validate(bulkDeleteSchema), async (req, res) => {
+    const { repos, dryRun } = req.body;
 
     if (!repos?.length) return errorResponse(res, 400, 'No repositories specified', 'MISSING_REPOS');
     if (!Array.isArray(repos) || repos.some(r => typeof r !== 'string' || !r.includes('/')))
         return errorResponse(res, 400, 'Invalid repository format. Expected owner/repo strings.', 'INVALID_FORMAT');
 
-    const results = [];
-
-    for (const repoFullName of repos) {
-        try {
+    await performBulk({
+        req,
+        res,
+        action: 'bulk.delete',
+        repos,
+        extraData: {},
+        dryRun,
+        execute: async (repoFullName) => {
             await githubApi(`/repos/${repoFullName}`, req.session.accessToken, {
                 method: 'DELETE'
             });
-            results.push({ repo: repoFullName, success: true });
-        } catch (error) {
-            results.push({ repo: repoFullName, success: false, error: safeError(error, 'Operation failed') });
-        }
-    }
-
-    const successCount = results.filter(r => r.success).length;
-    const failureCount = results.length - successCount;
-
-    if (successCount > 0) {
-        auditLog(req, 'bulk.delete', 'bulk', JSON.stringify(repos), { successCount });
-    }
-
-    const statusCode = failureCount === 0 ? 200 : successCount === 0 ? 500 : 207;
-    res.status(statusCode).json({
-        message: `Deleted ${successCount} repositories.`,
-        results
+            return {};
+        },
+        messageFn: (successCount) =>
+            `Deleted ${successCount} repositories.`,
     });
 });
 
-// ------------------------------------------------------------------
-// Community Health Comparison
-// ------------------------------------------------------------------
-
-// Compare community health for multiple repos
+// ---------------------------------------------------------------------------
+// POST /community-health/compare — Read-only. No token required.
+// ---------------------------------------------------------------------------
 router.post('/community-health/compare', requireAuth, async (req, res) => {
     try {
         const { repos } = req.body;

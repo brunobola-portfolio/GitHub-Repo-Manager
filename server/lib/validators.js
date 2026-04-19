@@ -25,16 +25,19 @@ export const createRepoSchema = z.object({
 
 export const bulkVisibilitySchema = z.object({
     repos: z.array(z.string().min(1).max(200)).min(1).max(100),
-    makePublic: z.boolean()
+    makePublic: z.boolean(),
+    dryRun: z.boolean().optional().default(false)
 });
 
 export const bulkArchiveSchema = z.object({
     repos: z.array(z.string().min(1).max(200)).min(1).max(100),
-    archive: z.boolean().optional().default(true)
+    archive: z.boolean().optional().default(true),
+    dryRun: z.boolean().optional().default(false)
 });
 
 export const bulkDeleteSchema = z.object({
-    repos: z.array(z.string().min(1).max(200)).min(1).max(100)
+    repos: z.array(z.string().min(1).max(200)).min(1).max(100),
+    dryRun: z.boolean().optional().default(false)
 });
 
 const strategySchema = z.discriminatedUnion('action', [
@@ -47,7 +50,8 @@ const strategySchema = z.discriminatedUnion('action', [
 export const bulkTransferSchema = z.object({
     repos: z.array(z.string().min(1).max(200)).min(1).max(100),
     toOrg: z.string().min(1).max(39),
-    strategies: z.record(z.string(), strategySchema).optional()
+    strategies: z.record(z.string(), strategySchema).optional(),
+    dryRun: z.boolean().optional().default(false)
 });
 
 export const checkConflictsSchema = z.object({
@@ -57,7 +61,8 @@ export const checkConflictsSchema = z.object({
 
 export const bulkMirrorSchema = z.object({
     repos: z.array(z.string().min(1).max(200)).min(1).max(100),
-    toOrg: z.string().min(1).max(39)
+    toOrg: z.string().min(1).max(39),
+    dryRun: z.boolean().optional().default(false)
 });
 
 export const teamCreateSchema = z.object({
