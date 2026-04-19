@@ -107,6 +107,11 @@ export async function streamToSSE(textChunks, sse) {
  * Kept for one release so existing callers that haven't migrated to
  * req.aiProvider.generateStream() continue to work without changes.
  *
+ * NOTE: This function does NOT propagate an AbortSignal to the underlying
+ * Gemini stream. If the client disconnects mid-stream, the Gemini request
+ * continues running to completion and burns tokens. Migrate to
+ * provider.generateStream({ signal }) to avoid this.
+ *
  * @param {{ stream: AsyncIterable<{ text(): string }> }} geminiStream
  * @param {ReturnType<initSSE>} sse
  * @returns {Promise<string>}

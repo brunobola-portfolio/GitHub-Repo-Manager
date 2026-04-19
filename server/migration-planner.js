@@ -142,7 +142,7 @@ export function fallbackAnalysis(context) {
  */
 export async function analyzeMigration(context) {
   // If AI is not configured, use fallback
-  if (!aiService.model) {
+  if (!aiService.provider) {
     return fallbackAnalysis(context);
   }
 
@@ -176,8 +176,7 @@ Return a JSON object with exactly this structure (no markdown, raw JSON only):
 
 Consider: repo sizes, LFS usage, name conflicts, work item volume, optimal execution order${repos.some(r => r.isTfvc) ? ', TFVC conversion time and history limitations' : ''}.`;
 
-    const result = await aiService.model.generateContent(prompt);
-    const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+    const { text } = await aiService.provider.generate({ prompt });
 
     try {
       const parsed = JSON.parse(text);

@@ -127,6 +127,11 @@ router.post('/ai/chat', requireAuth, validate(aiChatSchema), requireAI, async (r
         // Use configured model from environment or default
         const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
+        // TODO(provider-migration): generateWithRetry() wraps the raw SDK model for its
+        // 503-overload retry loop. Migrate by extending AIProvider.generate() with a
+        // retries option (e.g. { retries: 1, delayMs: 400 }) and using AIError.OVERLOAD
+        // to decide when to retry.
+
         // Legacy path: req.aiProvider is the new abstraction; req.genAI is the raw SDK.
         // ai/chat still uses generateWithRetry for its retry semantics, so we use
         // req.genAI.getGenerativeModel to get a model handle for that helper.
@@ -799,6 +804,10 @@ Rules:
 - body uses bullet points with "- " prefix if present
 - No markdown fences, no explanation, ONLY the JSON object`;
 
+        // TODO(provider-migration): startChat() is a Gemini-specific session API with no
+        // provider-neutral equivalent; adding it to AIProvider would leak Gemini semantics.
+        // When this route moves to Claude/another provider, replace with a stateless
+        // generate() loop driven by caller-side message history.
         const model = aiService.model;
         const chat = model.startChat({ history: [{ role: 'user', parts: [{ text: systemPrompt }] }, { role: 'model', parts: [{ text: '{"subject": "", "body": ""}' }] }] });
 
@@ -909,6 +918,10 @@ Rules:
 - breaking_changes should be null if none detected
 - No markdown fences in the response, ONLY the JSON object`;
 
+        // TODO(provider-migration): startChat() is a Gemini-specific session API with no
+        // provider-neutral equivalent; adding it to AIProvider would leak Gemini semantics.
+        // When this route moves to Claude/another provider, replace with a stateless
+        // generate() loop driven by caller-side message history.
         const model = aiService.model;
         const chat = model.startChat({ history: [{ role: 'user', parts: [{ text: systemPrompt }] }, { role: 'model', parts: [{ text: '{}' }] }] });
 
@@ -1028,6 +1041,10 @@ router.post('/ai/refine', requireAuth, requireAI, async (req, res) => {
         const systemPrompt = `You are refining ${safeContentType}. Apply the requested change to the content below.
 Return ONLY the refined content, no explanation, no markdown fences.`;
 
+        // TODO(provider-migration): startChat() is a Gemini-specific session API with no
+        // provider-neutral equivalent; adding it to AIProvider would leak Gemini semantics.
+        // When this route moves to Claude/another provider, replace with a stateless
+        // generate() loop driven by caller-side message history.
         const model = aiService.model;
         const chat = model.startChat({ history: [{ role: 'user', parts: [{ text: systemPrompt }] }, { role: 'model', parts: [{ text: 'Ready.' }] }] });
 
@@ -1179,6 +1196,10 @@ router.post('/ai/chat-refine', requireAuth, requireAI, async (req, res) => {
             });
         }
 
+        // TODO(provider-migration): startChat() is a Gemini-specific session API with no
+        // provider-neutral equivalent; adding it to AIProvider would leak Gemini semantics.
+        // When this route moves to Claude/another provider, replace with a stateless
+        // generate() loop driven by caller-side message history.
         const model = aiService.model;
         const chat = model.startChat({ history: chatHistory });
 

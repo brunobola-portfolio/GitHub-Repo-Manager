@@ -48,11 +48,10 @@ export class AIError extends Error {
      * @param {unknown} [opts.cause]   — original error (preserved for logging)
      */
     constructor({ code, message, status, cause } = {}) {
-        super(message || code);
+        super(message || code, cause ? { cause } : undefined);
         this.name = 'AIError';
         this.code = code || AI_ERROR_CODE.UNKNOWN;
         this.status = status;
-        this.cause = cause;
     }
 }
 
