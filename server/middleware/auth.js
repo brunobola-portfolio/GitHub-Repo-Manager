@@ -48,7 +48,11 @@ export function isValidGitHubFullName(fullName) {
  * Uses timing-safe comparison to prevent timing attacks.
  * Reads WEBHOOK_SECRET from process.env at call time.
  *
- * @param {string|object} payload - Raw request body (string) or parsed object
+ * @param {Buffer|string|object} payload - Raw request body. Accepts Buffer
+ *   (express.raw — what real GitHub deliveries produce), string (legacy),
+ *   or object (legacy). JSON.stringify(buffer) would produce a garbage
+ *   "{\"type\":\"Buffer\",...}" string and fail verification against GitHub's
+ *   bytes-level signature.
  * @param {string} signature - Value of the X-Hub-Signature-256 header
  * @returns {boolean}
  */
@@ -57,8 +61,14 @@ export function verifyWebhookSignature(payload, signature) {
     if (!WEBHOOK_SECRET) return false; // Reject if no secret configured
     if (!signature) return false;
 
+    const bytes = Buffer.isBuffer(payload)
+        ? payload
+        : typeof payload === 'string'
+            ? payload
+            : JSON.stringify(payload);
+
     const expected = 'sha256=' + createHmac('sha256', WEBHOOK_SECRET)
-        .update(typeof payload === 'string' ? payload : JSON.stringify(payload))
+        .update(bytes)
         .digest('hex');
 
     try {

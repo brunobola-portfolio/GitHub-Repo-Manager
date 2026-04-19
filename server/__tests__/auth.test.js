@@ -83,6 +83,18 @@ describe('verifyWebhookSignature', () => {
             .update(JSON.stringify(obj)).digest('hex')
         expect(verifyWebhookSignature(obj, expected)).toBe(true)
     })
+
+    it('handles Buffer payloads (real GitHub deliveries via express.raw)', () => {
+        // Express raw body middleware yields a Buffer. Verifier must use the
+        // bytes directly — not JSON.stringify the Buffer (which would produce
+        // a garbage `{"type":"Buffer","data":[...]}` string).
+        process.env.WEBHOOK_SECRET = 'test-secret'
+        const crypto = require('crypto')
+        const buf = Buffer.from('{"action":"opened","number":42}', 'utf8')
+        const expected = 'sha256=' + crypto.createHmac('sha256', 'test-secret')
+            .update(buf).digest('hex')
+        expect(verifyWebhookSignature(buf, expected)).toBe(true)
+    })
 })
 
 describe('safeError', () => {
