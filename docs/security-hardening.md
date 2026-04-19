@@ -224,3 +224,103 @@ openssl rand -base64 48
 ```
 
 Rotate secrets by updating the environment variable and restarting the server. After rotating `SESSION_SECRET`, all existing sessions are invalidated (users must log in again). After rotating `CREDENTIAL_ENCRYPTION_KEY`, any encrypted BYOK credentials stored under the old key will fail to decrypt — re-save credentials via the BYOK settings page.
+
+---
+
+## G2 — Data retention (BYOK credential age-out)
+
+### Policy summary
+
+User AI credentials stored in `user_ai_config.completion_credentials_enc` and `embedding_credentials_enc` are purged when the row has not been updated for `DATA_RETENTION_DAYS` days (default **365**). Users receive a warning email **30 days** before purge (`DATA_RETENTION_WARNING_LEAD_DAYS`).
+
+### Env vars
+
+| Variable | Default | Description |
+|---|---|---|
+| `DATA_RETENTION_DAYS` | `365` | Inactivity period before credentials are deleted |
+| `DATA_RETENTION_WARNING_LEAD_DAYS` | `30` | How many days before purge the warning email is sent |
+
+### Schema change
+
+`Migration 008` adds a `warning_sent_at DATETIME` column to `user_ai_config` so the one-off warning is sent exactly once per retention cycle.
+
+### Running the retention pass
+
+The CLI script `server/scripts/retention.js` performs one full pass:
+
+```bash
+# Dry run — inspect what would happen without any DB writes
+npm run retention:dry
+
+# Live run — warns and purges as appropriate
+npm run retention:run
+```
+
+Both commands print a JSON summary:
+
+```json
+{
+  "checked": 12,
+  "warned": 2,
+  "purged": 1,
+  "skipped": 3,
+  "dryRun": false
+}
+```
+
+### Scheduling via cron
+
+Run the retention pass daily (or weekly). Example crontab entry:
+
+```cron
+# Every day at 02:00 UTC
+0 2 * * * cd /opt/github-repo-manager && npm run retention:run >> /var/log/grm-retention.log 2>&1
+```
+
+For container deployments, use your orchestrator's CronJob primitive (Kubernetes `CronJob`, Railway cron, etc.) pointing at:
+
+```sh
+node server/scripts/retention.js
+```
+
+### What users experience
+
+1. **335 days of inactivity**: a warning email is sent informing the user that their credentials will be deleted in 30 days. The email explains how to reset the clock (use any AI feature) and how to re-add credentials later.
+2. **365 days of inactivity**: `completion_credentials_enc` and `embedding_credentials_enc` are set to `NULL`. A `user_ai_config.purged` event is written to `audit_log_v2`.
+3. **After purge**: the user's settings page shows no keys configured. They can re-enter their API keys at any time via **Settings → AI & Keys**.
+
+---
+
+## Email delivery
+
+### Configuring Resend
+
+Set the following environment variables to enable live email delivery:
+
+| Variable | Description |
+|---|---|
+| `EMAIL_PROVIDER` | Set to `resend` to use the Resend adapter. Defaults to `console`. |
+| `RESEND_API_KEY` | Your Resend API key (from resend.com dashboard). Required when `EMAIL_PROVIDER=resend`. |
+| `EMAIL_FROM` | The verified sender address (e.g. `noreply@bolalabs.pt`). Required when `EMAIL_PROVIDER=resend`. |
+
+```bash
+EMAIL_PROVIDER=resend
+RESEND_API_KEY=re_xxxxxxxxxxxxx
+EMAIL_FROM=noreply@bolalabs.pt
+```
+
+### Console adapter (development / fallback)
+
+When `EMAIL_PROVIDER` is unset or set to `console`, emails are logged to stdout instead of delivered. The log entry includes the recipient address and subject but **never the body** (which may contain license keys or credentials).
+
+```text
+INFO [email:dev] would send { to: "user@example.com", subject: "Your license", bodyLength: 1234 }
+```
+
+Use `isEmailDeliveryConfigured()` from `server/lib/email.js` to check at runtime whether actual delivery is configured — e.g. to decide whether to show the license key on-screen as a fallback.
+
+### Verifying delivery in dev
+
+1. Leave `EMAIL_PROVIDER` unset (console mode).
+2. Trigger a Stripe webhook or run `npm run retention:dry`.
+3. Check server stdout for `[email:dev] would send` lines confirming subject and recipient.

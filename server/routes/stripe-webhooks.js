@@ -2,6 +2,7 @@ import { getStripe, isStripeEnabled } from '../lib/stripe.js';
 import { config } from '../config.js';
 import db from '../db.js';
 import logger from '../lib/logger.js';
+import { issueLicenseForCheckout } from '../lib/license-issuer.js';
 
 const VALID_TIERS = new Set(['free', 'pro', 'enterprise']);
 
@@ -72,6 +73,7 @@ export async function stripeWebhookHandler(req, res) {
                 const userId = parseInt(session.metadata?.userId);
                 const rawTier = session.metadata?.tier || 'pro';
                 const tier = await reconcileTierFromPrice(stripe, session, rawTier, session.id);
+
                 if (userId) {
                     db.prepare(`
                         INSERT INTO user_subscriptions (user_id, tier, stripe_customer_id, stripe_subscription_id, status)
@@ -79,6 +81,29 @@ export async function stripeWebhookHandler(req, res) {
                         ON CONFLICT(user_id) DO UPDATE SET
                             tier = ?, stripe_customer_id = ?, stripe_subscription_id = ?, status = 'active', updated_at = datetime('now')
                     `).run(userId, tier, session.customer, session.subscription, tier, session.customer, session.subscription);
+
+                    // Issue + email license (best-effort; webhook must still return 200)
+                    try {
+                        const stripeCustomer = await stripe.customers.retrieve(session.customer);
+                        const user = db.prepare('SELECT email FROM users WHERE id = ?').get(userId);
+                        const recipientEmail = stripeCustomer.email || user?.email;
+                        if (recipientEmail) {
+                            await issueLicenseForCheckout({
+                                userId,
+                                email: recipientEmail,
+                                tier,
+                                seats: parseInt(session.metadata?.seats) || 1,
+                                months: 12,
+                                stripeSubscriptionId: session.subscription,
+                                stripeSessionId: session.id,
+                            });
+                        } else {
+                            logger.warn({ userId, sessionId: session.id }, 'stripe-webhook: no email for license delivery');
+                        }
+                    } catch (err) {
+                        logger.error({ err, sessionId: session.id }, 'stripe-webhook: license issuance failed');
+                        // Do NOT rethrow — return 200 to Stripe regardless
+                    }
                 }
                 break;
             }

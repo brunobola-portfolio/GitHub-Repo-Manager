@@ -579,6 +579,32 @@ export function initDB() {
         if (!err.message?.includes('duplicate column')) throw err;
     }
 
+    // Migration 007: issued_licenses table (Stripe → license key flow).
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS issued_licenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            stripe_subscription_id TEXT,
+            stripe_session_id TEXT,
+            tier TEXT NOT NULL,
+            license_key TEXT NOT NULL,
+            expires_at DATETIME,
+            issued_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            email_delivered INTEGER DEFAULT 0,
+            email_delivered_at DATETIME,
+            UNIQUE (stripe_session_id),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+        )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_issued_licenses_user ON issued_licenses(user_id)`);
+
+    // Migration 008 (G2 — data retention): warning_sent_at column on user_ai_config.
+    try {
+        db.exec(`ALTER TABLE user_ai_config ADD COLUMN warning_sent_at DATETIME`);
+    } catch (err) {
+        if (!err.message?.includes('duplicate column')) throw err;
+    }
+
     logger.info('SQLite Database initialized successfully');
 }
 

@@ -46,7 +46,9 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "playwright:install": "playwright install",
-    "test:evals": "node server/evals/run.js"
+    "test:evals": "node server/evals/run.js",
+    "retention:run": "node server/scripts/retention.js",
+    "retention:dry": "node server/scripts/retention.js --dry-run"
   },
   "dependencies": {
     "@git-diff-view/react": "^0.1.3",
