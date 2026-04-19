@@ -68,10 +68,10 @@ export function BYOKUpgradeBanner({ isAuthenticated, onOpenAISettings }) {
                                     <Sparkles className="w-4 h-4 text-white" strokeWidth={2} />
                                 </div>
                                 <p className="text-sm font-medium text-white/95 truncate">
-                                    As funcionalidades de IA agora usam a tua própria chave de provider (BYOK).{' '}
+                                    AI features now use your own provider key (BYOK).{' '}
                                     <span className="text-white/75 hidden sm:inline">
-                                        Configura em Settings → AI Configuration. Se a aplicação tem uma chave
-                                        partilhada do servidor, continua a funcionar normalmente.
+                                        Configure it in Settings → AI Configuration. If a shared server key is
+                                        configured, your AI features keep working without any setup.
                                     </span>
                                 </p>
                             </div>
@@ -87,7 +87,7 @@ export function BYOKUpgradeBanner({ isAuthenticated, onOpenAISettings }) {
                                         active:scale-[0.97] transition-all duration-200
                                         focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 focus-visible:ring-offset-indigo-600 focus:outline-none"
                                 >
-                                    Configurar agora
+                                    Configure now
                                     <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                                 </button>
                                 <button
@@ -97,7 +97,7 @@ export function BYOKUpgradeBanner({ isAuthenticated, onOpenAISettings }) {
                                         hover:bg-white/15
                                         transition-colors duration-200
                                         focus-visible:ring-2 focus-visible:ring-white focus:outline-none"
-                                    aria-label="Dispensar notificação"
+                                    aria-label="Dismiss notification"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>

@@ -81,7 +81,7 @@ describe('BYOKUpgradeBanner', () => {
         await waitFor(() => {
             expect(screen.getByText(/BYOK/i)).toBeInTheDocument()
         })
-        expect(screen.getByRole('button', { name: /configurar agora/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /configure now/i })).toBeInTheDocument()
     })
 
     it('does not render when user is not authenticated', async () => {
@@ -129,11 +129,11 @@ describe('BYOKUpgradeBanner', () => {
         })
 
         await waitFor(() => {
-            expect(screen.getByRole('button', { name: /dispensar/i })).toBeInTheDocument()
+            expect(screen.getByRole('button', { name: /dismiss/i })).toBeInTheDocument()
         })
 
         await act(async () => {
-            fireEvent.click(screen.getByRole('button', { name: /dispensar/i }))
+            fireEvent.click(screen.getByRole('button', { name: /dismiss/i }))
         })
 
         expect(localStorage.getItem('byok-banner-dismissed')).toBe('1')
@@ -149,11 +149,11 @@ describe('BYOKUpgradeBanner', () => {
         })
 
         await waitFor(() => {
-            expect(screen.getByRole('button', { name: /configurar agora/i })).toBeInTheDocument()
+            expect(screen.getByRole('button', { name: /configure now/i })).toBeInTheDocument()
         })
 
         await act(async () => {
-            fireEvent.click(screen.getByRole('button', { name: /configurar agora/i }))
+            fireEvent.click(screen.getByRole('button', { name: /configure now/i }))
         })
 
         expect(onOpenAISettings).toHaveBeenCalledOnce()

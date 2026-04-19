@@ -770,6 +770,7 @@ function AppContent() {
                     <SlimSidebar
                       selectedRepos={selectedRepos}
                       onOpenImport={() => openModal('showMigrationWizard')}
+                      onNavigateWorkBoard={() => setActiveView('work-board')}
                     />
                   }
                 >

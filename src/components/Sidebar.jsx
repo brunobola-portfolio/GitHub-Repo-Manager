@@ -7,7 +7,7 @@ import {
     ArrowRightLeft, Lock, Unlock, History, Zap, CheckCircle, XCircle,
     Loader2, Archive, Trash2, MoreHorizontal,
     GitCommit, GitPullRequest, CircleDot, Play, ExternalLink,
-    Clock, ChevronRight, Download
+    Clock, ChevronRight, Download, Kanban
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useSelection } from '../hooks/useSelection'
@@ -85,9 +85,9 @@ function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRe
   )
 }
 
-function SlimSidebarBase({ selectedRepos, onOpenImport }) {
+function SlimSidebarBase({ selectedRepos, onOpenImport, onNavigateWorkBoard }) {
   const [openPopover, setOpenPopover] = useState(null)
-  
+
   // Define hooks at top level individually
   const actionsRef = useRef(null)
   const historyRef = useRef(null)
@@ -99,6 +99,17 @@ function SlimSidebarBase({ selectedRepos, onOpenImport }) {
 
   return (
     <div className="flex flex-col items-center gap-2 py-3">
+        {onNavigateWorkBoard && (
+          <>
+            <SlimIconButton
+              icon={Kanban}
+              label="Work Board"
+              isActive={false}
+              onClick={onNavigateWorkBoard}
+            />
+            <div className="w-6 border-t border-slate-200 dark:border-slate-700/50" />
+          </>
+        )}
         <SlimIconButton
           icon={Zap}
           label="Quick Actions"

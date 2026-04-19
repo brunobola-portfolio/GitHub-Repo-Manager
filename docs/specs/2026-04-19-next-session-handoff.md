@@ -111,3 +111,52 @@ npm run lint      # eslint
 ```
 
 Then manual smoke in browser before committing.
+
+## Delivered in follow-up session (2026-04-19, Part 2)
+
+The items below were picked up from "Priority 3 / 4" above and landed in the
+same day as the handoff doc. They are included in the 2026-04-19 arc.
+
+- **P1 env sweep finish** — added `NODE_ENV` and `LICENSE_KEY` to `.env.example`
+  (both were already parsed by `server/config.js`, but the file only documented
+  the minter side of licensing).
+- **BYOK banner i18n** — translated the upgrade banner copy from pt-PT to
+  English; updated `tests/components/BYOKUpgradeBanner.test.jsx` accordingly.
+- **Sidebar nav entry for Work Board** — added a Kanban-icon shortcut in
+  `SlimSidebar` that routes to the Work Board view.
+- **P3/F1 — Command Palette live GitHub search** —
+  new `server/routes/search.js` (GET `/api/v1/search/github`) proxies to
+  GitHub's Search API for PRs, issues, and repositories, with validation,
+  429/401 surfacing, and partial-results fallback in `type=all` mode. Wired
+  into `CommandPalette` with 300 ms debounce and an `AbortController`. Tests:
+  `server/__tests__/search-routes.test.js`.
+- **P3/F4 — DORA polish** — added `changeFailureRate` and
+  `meanTimeToRecovery` aggregations; new endpoints `/api/v1/work-board/dora`,
+  `/dora.csv`, `/change-failure-rate`, `/mttr`. The `DORATab` now shows four
+  KPI cards (deploys, lead-time p50/p90, CFR, MTTR p50/p90), sparkline, and a
+  CSV export button. Tests in `event-aggregations.test.js` and
+  `work-board-routes.test.js`.
+- **P3/F5 subset — Tech Debt Tracker** — added `listTechDebtIssues` +
+  `techDebtHotspots` aggregations, `/api/v1/work-board/tech-debt` endpoint
+  (Pro tier), and a new `TechDebtTab` component with hotspot summary and
+  issue list. Default label match: `tech-debt`, `technical-debt`, `debt`,
+  `refactor`, `cleanup`, `code-smell`.
+- **P3/F6 — AI Issue-to-PR Planner (plan-only)** — new endpoint
+  `POST /api/ai/issue-to-plan` takes `{repoFullName, issueNumber,
+  extraContext?}`, fetches the issue + up to 6 comments + repo structure,
+  prompts the user's BYOK provider for a JSON plan, validates + normalises
+  the output (clamps files to 25, unknown action → "modify"), and returns
+  `{plan, issue}`. Wired into `IssueDetailPanel` via a new
+  `AIIssuePlanner.jsx` side component and an "AI plan" CTA (shown only for
+  open issues). Plan-only — no branches or PRs are created.
+  Tests: `server/__tests__/ai-issue-to-plan.test.js`.
+
+**Still out of scope / deferred:**
+
+- F2 Dependency Risk Scoring — requires Syft/Grype binaries + reachability
+  analysis; infra work, not a day of code.
+- F3 Bulk template actions full flow (N-repo preview + diff viewer) —
+  estimated 3-4 weeks; needs its own spec.
+- P4 MCP host.
+- P4 App-level endpoint-smoke test (would require booting Express + a test
+  DB; the per-route supertest files cover the individual contracts).
