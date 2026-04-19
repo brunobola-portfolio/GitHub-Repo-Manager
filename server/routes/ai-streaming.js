@@ -74,18 +74,48 @@ export function initSSE(res, req) {
 }
 
 /**
- * Stream a Gemini generateContentStream result through SSE.
+ * Stream any AsyncIterable<string> of text chunks through SSE.
  * Returns the full accumulated text. Stops promptly if the client disconnects.
+ *
+ * This is the canonical streaming helper going forward. Pass any async
+ * iterable that yields string chunks — including GeminiProvider.generateStream()
+ * or any future provider's stream method.
+ *
+ * @param {AsyncIterable<string>} textChunks
+ * @param {ReturnType<initSSE>} sse
+ * @returns {Promise<string>} accumulated full text
  */
-export async function streamGeminiToSSE(stream, sse) {
+export async function streamToSSE(textChunks, sse) {
     let accumulated = '';
-    for await (const chunk of stream.stream) {
+    for await (const text of textChunks) {
         if (sse.isAborted) break;
-        const text = chunk.text();
         if (text) {
             accumulated += text;
             sse.sendChunk(text);
         }
     }
     return accumulated;
+}
+
+/**
+ * @deprecated Use streamToSSE() with a provider.generateStream() iterable instead.
+ *
+ * Backward-compatible adapter for callers that pass a raw Gemini
+ * `generateContentStream` result (which exposes `.stream` as an async
+ * iterable of chunk objects with a `.text()` method).
+ *
+ * Kept for one release so existing callers that haven't migrated to
+ * req.aiProvider.generateStream() continue to work without changes.
+ *
+ * @param {{ stream: AsyncIterable<{ text(): string }> }} geminiStream
+ * @param {ReturnType<initSSE>} sse
+ * @returns {Promise<string>}
+ */
+export async function streamGeminiToSSE(geminiStream, sse) {
+    async function* adapter() {
+        for await (const chunk of geminiStream.stream) {
+            yield chunk.text();
+        }
+    }
+    return streamToSSE(adapter(), sse);
 }

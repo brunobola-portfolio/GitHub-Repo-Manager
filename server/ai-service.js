@@ -1,6 +1,6 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import db from './db.js';
 import logger from './lib/logger.js';
+import { GeminiProvider, AIError, AI_ERROR_CODE } from './lib/ai-provider.js';
 
 /**
  * Sanitize user-controlled text before interpolation into AI prompts.
@@ -17,9 +17,30 @@ export function sanitizeForPrompt(text, maxLen = 5000) {
 
 class AIService {
     constructor() {
-        this.genAI = null;
-        this.model = null;
-        this.embeddingModel = null;
+        this.provider = null;
+    }
+
+    /**
+     * Backward-compat getter: returns the raw SDK instance.
+     * Used by req.genAI middleware and tests that mock the SDK directly.
+     */
+    get genAI() {
+        return this.provider?.rawSDK ?? null;
+    }
+
+    /**
+     * Backward-compat getter: returns the provider's main model handle.
+     * External code that reads aiService.model continues to work.
+     */
+    get model() {
+        return this.provider?.model ?? null;
+    }
+
+    /**
+     * Backward-compat getter: returns the provider's embedding model handle.
+     */
+    get embeddingModel() {
+        return this.provider?.embeddingModel ?? null;
     }
 
     initialize(apiKey, modelName = null) {
@@ -27,38 +48,27 @@ class AIService {
             logger.warn('AI Service: No API key provided');
             return;
         }
-        
+
         try {
-            this.genAI = new GoogleGenerativeAI(apiKey);
-            
-            // Use model from env or default to gemini-2.5-flash (stable)
-            const model = modelName || process.env.GEMINI_MODEL || "gemini-2.5-flash";
-            
-            // Initialize models with error handling
-            try {
-                this.model = this.genAI.getGenerativeModel({ model });
+            const model = modelName || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+            const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
+
+            this.provider = new GeminiProvider({ apiKey, model, embeddingModel });
+
+            if (this.provider.model) {
                 logger.info({ model }, 'AI Service: Initialized with model');
-            } catch (modelError) {
-                logger.error({ err: modelError, model }, 'AI Service: Failed to initialize model');
+            } else {
                 logger.warn('Suggestion: Verify GEMINI_MODEL in .env or try: gemini-2.5-flash-lite, gemini-3-flash-preview');
-                this.model = null;
             }
-            
-            // Initialize embedding model (separate from main model)
-            try {
-                const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-001";
-                this.embeddingModel = this.genAI.getGenerativeModel({ model: embeddingModel });
+
+            if (this.provider.embeddingModel) {
                 logger.info({ embeddingModel }, 'AI Service: Embedding model initialized');
-            } catch (embedError) {
-                logger.error({ err: embedError }, 'AI Service: Failed to initialize embedding model');
+            } else {
                 logger.warn('Suggestion: Verify GEMINI_EMBEDDING_MODEL in .env or try: gemini-embedding-001, gemini-embedding-2-preview');
-                this.embeddingModel = null;
             }
         } catch (error) {
             logger.error({ err: error }, 'AI Service: Initialization failed');
-            this.genAI = null;
-            this.model = null;
-            this.embeddingModel = null;
+            this.provider = null;
         }
     }
 
@@ -154,17 +164,17 @@ class AIService {
      * @returns {Promise<number[]>} Vector array
      */
     async embedText(text) {
-        if (!this.embeddingModel) {
+        if (!this.provider?.embeddingModel) {
             throw new Error('AI embedding model not initialized. Please check GEMINI_API_KEY configuration.');
         }
 
         try {
-            const result = await this.embeddingModel.embedContent(text);
-            return result.embedding.values;
+            return await this.provider.embed(text);
         } catch (error) {
             logger.error({ err: error }, 'Embedding generation failed');
-            if (error.message?.includes('not found') || error.status === 404) {
-                const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-001";
+            // Preserve the existing human-friendly message for NOT_FOUND
+            if (error instanceof AIError && error.code === AI_ERROR_CODE.NOT_FOUND) {
+                const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
                 throw new Error(`Embedding model "${embeddingModel}" is not available. Please verify your API access and GEMINI_EMBEDDING_MODEL configuration.`);
             }
             throw error;
@@ -274,7 +284,7 @@ class AIService {
      * @param {object} fileStructure - truncated file tree
      */
     async analyzeRepo(repoData, readmeContent, fileStructure) {
-        if (!this.model) {
+        if (!this.provider?.model) {
             throw new Error('AI model not initialized. Please check GEMINI_API_KEY and GEMINI_MODEL configuration.');
         }
 
@@ -319,8 +329,8 @@ class AIService {
         `;
 
         try {
-            const result = await this.model.generateContent(prompt);
-            const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+            // Provider handles markdown-fence stripping centrally
+            const { text } = await this.provider.generate({ prompt });
             const aiAnalysis = JSON.parse(text);
 
             // Merge AI analysis with computed metrics
@@ -332,7 +342,7 @@ class AIService {
             };
         } catch (error) {
             logger.error({ err: error }, 'Repository analysis failed');
-            if (error.message?.includes('not found') || error.status === 404) {
+            if (error instanceof AIError && error.code === AI_ERROR_CODE.NOT_FOUND) {
                 throw new Error(`AI model not available. Please verify GEMINI_MODEL configuration in .env file.`);
             }
             throw error;
@@ -346,7 +356,7 @@ class AIService {
      * @param {object} fileStructure - File tree
      */
     async enhanceReadme(currentReadme, repoData, fileStructure) {
-        if (!this.model) {
+        if (!this.provider?.model) {
             throw new Error('AI model not initialized. Please check GEMINI_API_KEY and GEMINI_MODEL configuration.');
         }
 
@@ -381,15 +391,18 @@ class AIService {
         `;
 
         try {
-            const result = await this.model.generateContent(prompt);
+            // Note: enhanceReadme returns raw markdown, so we use the raw text (not fence-stripped)
+            // from the provider. The provider strips fences from JSON-looking output but markdown
+            // is returned verbatim — for pure markdown we want the original text() anyway.
+            const { text } = await this.provider.generate({ prompt });
             return {
-                enhancement: result.response.text(),
+                enhancement: text,
                 missingSections,
                 patterns
             };
         } catch (error) {
             logger.error({ err: error }, 'README enhancement failed');
-            if (error.message?.includes('not found') || error.status === 404) {
+            if (error instanceof AIError && error.code === AI_ERROR_CODE.NOT_FOUND) {
                 throw new Error(`AI model not available. Please verify GEMINI_MODEL configuration in .env file.`);
             }
             throw error;
@@ -450,7 +463,7 @@ class AIService {
             return null;
         }
 
-        if (!this.model) {
+        if (!this.provider?.model) {
             throw new Error('AI model not initialized. Please check GEMINI_API_KEY and GEMINI_MODEL configuration.');
         }
 
@@ -512,24 +525,25 @@ ${sanitizeForPrompt(JSON.stringify(
     null, 2
 ), 3000)}`;
 
-        const result = await this.model.generateContent({
-            contents: [
-                {
-                    role: 'user',
-                    parts: [
-                        { text: systemPrompt + '\n\n' + prContext },
-                        // Diff content passed as a separate part to mitigate prompt injection
-                        { text: 'Diff patches for key files:\n```diff\n' + sanitizeForPrompt(topFilePatches, 80000) + '\n```' }
-                    ]
-                }
-            ],
+        // Two-part contents preserves anti-injection partitioning.
+        // We pass parts + generationConfig directly to keep the Gemini-structured
+        // response path; the schema triggers JSON parsing in the provider.
+        const parts = [
+            { text: systemPrompt + '\n\n' + prContext },
+            // Diff content is a separate part to mitigate prompt injection
+            { text: 'Diff patches for key files:\n```diff\n' + sanitizeForPrompt(topFilePatches, 80000) + '\n```' }
+        ];
+
+        const { parsed } = await this.provider.generate({
+            parts,
+            schema: responseSchema,
             generationConfig: {
                 responseMimeType: 'application/json',
                 responseSchema,
-            }
+            },
         });
 
-        return JSON.parse(result.response.text());
+        return parsed;
     }
 }
 

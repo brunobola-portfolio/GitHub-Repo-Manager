@@ -61,19 +61,27 @@ function buildApp({ authed = true, aiAvailable = true, geminiResponse = null, ge
     app.use((req, _res, next) => {
         if (authed) req.session = { userId: 'user-1', accessToken: 'ghtoken' }
         req.log = { error: () => {}, warn: () => {}, info: () => {} }
-        req.genAI = aiAvailable ? {
-            getGenerativeModel: () => ({
-                generateContent: async () => {
-                    if (geminiThrows) throw geminiThrows
-                    return {
-                        response: {
-                            text: () => geminiResponse ?? JSON.stringify({
-                                description: 'A modernization of the legacy POS client, migrated from Azure DevOps TFVC.',
-                            }),
-                        },
-                    }
+        const mockGenContent = async () => {
+            if (geminiThrows) throw geminiThrows
+            return {
+                response: {
+                    text: () => geminiResponse ?? JSON.stringify({
+                        description: 'A modernization of the legacy POS client, migrated from Azure DevOps TFVC.',
+                    }),
                 },
-            }),
+            }
+        }
+        req.genAI = aiAvailable ? { getGenerativeModel: () => ({ generateContent: mockGenContent }) } : null
+        // Inject req.aiProvider for routes migrated to the new provider abstraction.
+        // Returns { text } matching the provider contract. We do NOT strip fences
+        // here because this endpoint's response is plain JSON (no outer fences) and
+        // sanitizeRepoDescription handles any embedded markdown in the description value.
+        req.aiProvider = aiAvailable ? {
+            generate: async () => {
+                const result = await mockGenContent()
+                return { text: result.response.text() }
+            },
+            generateStream: async function* () {},
         } : null
         next()
     })

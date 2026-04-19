@@ -81,21 +81,29 @@ function buildApp({ authed = true, aiAvailable = true, geminiResponse = null, ge
             req.session = { userId: 'user-1', accessToken: 'ghtoken' }
         }
         req.log = { error: () => {}, warn: () => {}, info: () => {} }
-        req.genAI = aiAvailable ? {
-            getGenerativeModel: () => ({
-                generateContent: async () => {
-                    if (geminiThrows) throw geminiThrows
-                    return {
-                        response: {
-                            text: () => geminiResponse ?? JSON.stringify({
-                                strategy: 'lfs-migrate',
-                                rationale: 'binary assets',
-                                confidence: 0.75,
-                            }),
-                        },
-                    }
+        const mockGenContent = async () => {
+            if (geminiThrows) throw geminiThrows
+            return {
+                response: {
+                    text: () => geminiResponse ?? JSON.stringify({
+                        strategy: 'lfs-migrate',
+                        rationale: 'binary assets',
+                        confidence: 0.75,
+                    }),
                 },
-            }),
+            }
+        }
+        req.genAI = aiAvailable ? { getGenerativeModel: () => ({ generateContent: mockGenContent }) } : null
+        // Inject req.aiProvider for routes migrated to the new provider abstraction.
+        // generate() strips fences like the real provider and returns { text }.
+        req.aiProvider = aiAvailable ? {
+            generate: async () => {
+                const result = await mockGenContent()
+                const raw = result.response.text()
+                const text = raw.replace(/```json/g, '').replace(/```/g, '').trim()
+                return { text }
+            },
+            generateStream: async function* () {},
         } : null
         next()
     })

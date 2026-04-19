@@ -148,7 +148,8 @@ export function createRequireAI(aiService) {
             });
         }
 
-        req.genAI = aiService.genAI;
+        req.genAI = aiService.genAI;       // legacy: kept for tests + untouched call-sites
+        req.aiProvider = aiService.provider;  // new provider abstraction
         next();
     };
 }

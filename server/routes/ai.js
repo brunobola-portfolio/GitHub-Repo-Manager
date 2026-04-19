@@ -25,34 +25,39 @@ import { aiService, sanitizeForPrompt } from '../ai-service.js';
 import { safeJsonParse } from '../lib/utils.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../lib/usage-meter.js';
 import { auditLog } from '../lib/audit.js';
-import { initSSE, streamGeminiToSSE } from './ai-streaming.js';
+import { initSSE, streamGeminiToSSE, streamToSSE } from './ai-streaming.js';
+import { AIError, AI_ERROR_CODE } from '../lib/ai-provider.js';
 
 const router = express.Router();
 
 // Create requireAI middleware from the factory
 const requireAI = createRequireAI(aiService);
 
-/** Shared AI error handler — maps common Gemini errors to user-friendly responses. */
+/** Shared AI error handler — maps common AI errors to user-friendly responses. */
 function handleAIError(res, error, fallbackMessage = 'Failed to generate AI response. Please try again later.') {
-    if (error.message?.includes('not found') || error.status === 404) {
+    // Prefer typed AIError codes; fall back to legacy string/status matching for
+    // errors that haven't been converted yet (e.g. raw SDK errors on legacy paths).
+    const code = error instanceof AIError ? error.code : null;
+
+    if (code === AI_ERROR_CODE.NOT_FOUND || (!code && (error.message?.includes('not found') || error.status === 404))) {
         return res.status(404).json({
             error: 'The configured AI model is not available. Please verify the GEMINI_MODEL setting.',
             code: 'MODEL_NOT_FOUND'
         });
     }
-    if (error.message?.includes('API key') || error.status === 401) {
+    if (code === AI_ERROR_CODE.AUTH || (!code && (error.message?.includes('API key') || error.status === 401))) {
         return res.status(401).json({
             error: 'Invalid or expired Gemini API key. Please check your GEMINI_API_KEY in .env file.',
             code: 'INVALID_API_KEY'
         });
     }
-    if (error.message?.includes('quota') || error.status === 429) {
+    if (code === AI_ERROR_CODE.QUOTA || (!code && (error.message?.includes('quota') || error.status === 429))) {
         return res.status(429).json({
             error: 'API quota exceeded. Please try again later or check your Gemini API usage limits.',
             code: 'QUOTA_EXCEEDED'
         });
     }
-    if (error.status === 503 || /overload|unavailable|high demand/i.test(error.message || '')) {
+    if (code === AI_ERROR_CODE.OVERLOAD || (!code && (error.status === 503 || /overload|unavailable|high demand/i.test(error.message || '')))) {
         return res.status(503).json({
             error: 'Gemini is under heavy load right now. Give it a moment and try again.',
             code: 'AI_OVERLOADED'
@@ -64,6 +69,7 @@ function handleAIError(res, error, fallbackMessage = 'Failed to generate AI resp
 /**
  * Invoke model.generateContent with one automatic retry on transient 503 overload.
  * Keeps total added latency bounded (~400ms) so user-facing requests don't stall.
+ * Works with both raw SDK model objects and AIError-typed errors.
  */
 async function generateWithRetry(model, request, { retries = 1, delayMs = 400 } = {}) {
     let lastError
@@ -72,8 +78,10 @@ async function generateWithRetry(model, request, { retries = 1, delayMs = 400 } 
             return await model.generateContent(request)
         } catch (err) {
             lastError = err
-            const transient = err?.status === 503 || /overload|unavailable|high demand/i.test(err?.message || '')
-            if (!transient || attempt === retries) break
+            const isOverload = (err instanceof AIError && err.code === AI_ERROR_CODE.OVERLOAD)
+                || err?.status === 503
+                || /overload|unavailable|high demand/i.test(err?.message || '')
+            if (!isOverload || attempt === retries) break
             await new Promise(r => setTimeout(r, delayMs))
         }
     }
@@ -118,8 +126,11 @@ router.post('/ai/chat', requireAuth, validate(aiChatSchema), requireAI, async (r
 
         // Use configured model from environment or default
         const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-        let model;
 
+        // Legacy path: req.aiProvider is the new abstraction; req.genAI is the raw SDK.
+        // ai/chat still uses generateWithRetry for its retry semantics, so we use
+        // req.genAI.getGenerativeModel to get a model handle for that helper.
+        let model;
         try {
             model = req.genAI.getGenerativeModel({ model: modelName });
         } catch (modelError) {
@@ -228,20 +239,6 @@ router.post('/ai/suggest', requireAuth, requireAI, async (req, res) => {
             });
         }
 
-        // Use configured model from environment or default
-        const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-        let model;
-
-        try {
-            model = req.genAI.getGenerativeModel({ model: modelName });
-        } catch (modelError) {
-            req.log.error({ err: modelError, model: modelName }, 'Failed to load AI model');
-            return res.status(503).json({
-                error: `AI model "${modelName}" is not available. Please check your configuration.`,
-                code: 'MODEL_UNAVAILABLE'
-            });
-        }
-
         const prompt = `Analyze this GitHub repository metadata and suggest 3 concrete improvements.
     Focus on: Description clarity, Topics (SEO), and Community standards (License, Contributing).
 
@@ -256,9 +253,7 @@ router.post('/ai/suggest', requireAuth, requireAI, async (req, res) => {
     }
     Do not include markdown formatting in the JSON output, just raw JSON.`;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+        const { text } = await req.aiProvider.generate({ prompt });
 
         const parsed = safeJsonParse(text);
         if (!parsed) {
@@ -310,9 +305,7 @@ router.post('/ai/readme', requireAuth, requireAI, async (req, res) => {
     Make it sound exciting and professional.`;
 
         const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-        const model = req.genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent(prompt);
-        const text = result.response.text();
+        const { text } = await req.aiProvider.generate({ prompt });
 
         incrementAIUsage(userId, 'ai_readme');
         auditLog(req, 'ai.readme', 'ai', null, { repoName: cleanName, model: modelName });
@@ -597,11 +590,11 @@ File manifest: ${sanitizeForPrompt(JSON.stringify((fileManifest || []).map(f => 
                     80000
                 );
 
-                const model = aiService.model;
-                const streamResult = await model.generateContentStream({
-                    contents: [{ role: 'user', parts: [{ text: systemPrompt + '\n\n' + prContext + '\n\nDiff:\n' + patchText }] }],
+                const textStream = req.aiProvider.generateStream({
+                    prompt: systemPrompt + '\n\n' + prContext + '\n\nDiff:\n' + patchText,
+                    signal: sse.signal,
                 });
-                const raw = await streamGeminiToSSE(streamResult, sse);
+                const raw = await streamToSSE(textStream, sse);
 
                 let parsed;
                 try {
@@ -1108,13 +1101,11 @@ Files: ${sanitizeForPrompt(files, 2000)}
 Commits: ${sanitizeForPrompt(commitMessages, 2000)}
 Stats: ${diff_summary.files} files, +${diff_summary.additions} -${diff_summary.deletions}`;
 
-        const model = aiService.model;
-        const result = await model.generateContent(prompt);
-        const raw = result.response.text().trim();
+        const { text: raw } = await req.aiProvider.generate({ prompt });
 
         let parsed;
         try {
-            parsed = JSON.parse(raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, ''));
+            parsed = JSON.parse(raw);
         } catch {
             parsed = { changeType: 'chore', complexity: 'medium', breakingChanges: false };
         }
@@ -1303,15 +1294,12 @@ Rules:
 - Flag LFS, >1GB size, >50 branches, active CI/CD, GitHub Pages, and wikis as warnings or blockers as appropriate.
 - Be specific, not generic. Reference the actual signals.`;
 
-        const model = aiService.model;
-        const result = await model.generateContent(systemPrompt);
-        const raw = result.response.text().trim();
+        const { text: raw } = await req.aiProvider.generate({ prompt: systemPrompt });
 
         let parsed = null;
         let parseError = false;
         try {
-            const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
-            parsed = JSON.parse(cleaned);
+            parsed = JSON.parse(raw);
         } catch {
             parseError = true;
             parsed = {};
@@ -1399,10 +1387,8 @@ Respond with strict JSON only, no prose outside the JSON:
 
     try {
         const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-        const model = req.genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent(prompt);
-        // Gemini frequently wraps JSON in ```json fences despite the prompt.
-        const text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+        // Provider strips markdown fences centrally — no manual replace needed.
+        const { text } = await req.aiProvider.generate({ prompt });
 
         const parsedResponse = safeJsonParse(text);
         if (!parsedResponse || !['exclude', 'lfs-migrate'].includes(parsedResponse.strategy)) {
@@ -1466,9 +1452,8 @@ Respond with strict JSON only, no prose outside the JSON:
 
     try {
         const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-        const model = req.genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent(prompt);
-        const text = result.response.text();
+        // Provider strips markdown fences centrally — text is clean.
+        const { text } = await req.aiProvider.generate({ prompt });
 
         const parsedResponse = safeJsonParse(text);
         const rawDescription = parsedResponse?.description;

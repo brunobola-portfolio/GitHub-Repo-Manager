@@ -79,6 +79,15 @@ async function buildApp() {
     app.use((req, _res, next) => {
         req.session = { accessToken: 'tok', userId: 1, user: { id: 1, login: 'alice' } }
         req.log = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+        // Inject req.aiProvider for routes migrated to the new provider abstraction.
+        // generate() wraps mockGenerateContent and returns { text } matching provider contract.
+        req.aiProvider = {
+            generate: async () => {
+                const result = await mockGenerateContent()
+                return { text: result.response.text() }
+            },
+            generateStream: async function* () {},
+        }
         next()
     })
     const { default: aiRouter } = await import('../routes/ai.js')
