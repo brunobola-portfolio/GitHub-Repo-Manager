@@ -277,6 +277,23 @@ export const migrationDescriptionSchema = z.object({
     }),
 });
 
+// --- BYOK / User AI Config Schemas ---
+
+export const userAIConfigSchema = z.object({
+    completionProvider: z.enum(['gemini', 'anthropic', 'openai', 'openrouter', 'local']).nullable().optional(),
+    completionModel: z.string().max(120).nullable().optional(),
+    completionApiKey: z.string().min(1).max(2000).nullable().optional(),
+    completionEndpointUrl: z.string().url().max(500).nullable().optional(),
+    embeddingProvider: z.enum(['gemini', 'openai', 'local']).nullable().optional(),
+    embeddingModel: z.string().max(120).nullable().optional(),
+    embeddingApiKey: z.string().min(1).max(2000).nullable().optional(),
+    embeddingEndpointUrl: z.string().url().max(500).nullable().optional(),
+});
+
+export const testAIConfigSchema = z.object({
+    kind: z.enum(['completion', 'embedding']),
+});
+
 // --- Middleware factory ---
 
 /**

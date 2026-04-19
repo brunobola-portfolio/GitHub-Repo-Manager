@@ -25,6 +25,18 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import logger from './logger.js';
 
+// Lazy imports for providers to avoid circular deps at module load.
+// Resolved in the PROVIDERS registry below.
+let _AnthropicProvider, _OpenAIProvider, _OpenRouterProvider, _LocalProvider;
+async function _loadProviders() {
+    if (!_AnthropicProvider) {
+        ({ AnthropicProvider: _AnthropicProvider } = await import('./providers/anthropic.js'));
+        ({ OpenAIProvider: _OpenAIProvider } = await import('./providers/openai.js'));
+        ({ OpenRouterProvider: _OpenRouterProvider } = await import('./providers/openrouter.js'));
+        ({ LocalProvider: _LocalProvider } = await import('./providers/local.js'));
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Error taxonomy
 // ---------------------------------------------------------------------------
@@ -357,4 +369,126 @@ export function createProvider(featureKey) {
         `[AI] Unknown AI_PROVIDER "${providerName}". Supported providers: gemini. ` +
         'To add a new provider, implement the provider interface in server/lib/ai-provider.js.'
     );
+}
+
+// ---------------------------------------------------------------------------
+// Provider registry
+// ---------------------------------------------------------------------------
+
+/**
+ * Registry of all known providers.
+ * `create(opts)` — factory for this provider
+ * `supportsEmbeddings` — whether this provider natively supports embed()
+ */
+const PROVIDER_REGISTRY = {
+    gemini: {
+        create: (opts) => new GeminiProvider(opts),
+        supportsEmbeddings: true,
+    },
+    anthropic: {
+        create: (opts) => new _AnthropicProvider(opts),
+        supportsEmbeddings: false,
+    },
+    openai: {
+        create: (opts) => new _OpenAIProvider(opts),
+        supportsEmbeddings: true,
+    },
+    openrouter: {
+        create: (opts) => new _OpenRouterProvider(opts),
+        supportsEmbeddings: false,
+    },
+    local: {
+        create: (opts) => new _LocalProvider(opts),
+        supportsEmbeddings: true,
+    },
+};
+
+// ---------------------------------------------------------------------------
+// createProviderForUser — per-user provider resolution
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolves an AI provider for a given user + feature kind.
+ *
+ * Lookup order:
+ *  1. user_ai_config row for userId — use their stored BYOK config.
+ *  2. Server-wide env fallback (GEMINI_API_KEY) — demo / self-host mode.
+ *  3. null — AI not configured for this user.
+ *
+ * For embedding requests on a provider that doesn't natively support embeddings
+ * (anthropic, openrouter), the function falls back to the user's configured
+ * embedding_provider. If that's also absent, returns null.
+ *
+ * @param {number} userId
+ * @param {'completion'|'embedding'} [kind='completion']
+ * @returns {Promise<import('./providers/openai.js').OpenAIProvider|GeminiProvider|null>}
+ */
+export async function createProviderForUser(userId, kind = 'completion') {
+    await _loadProviders();
+
+    // Lazy import to avoid circular dependency at module load time.
+    const { getDecryptedConfig } = await import('./user-ai-config.js');
+
+    const userConfig = getDecryptedConfig(userId);
+
+    if (userConfig) {
+        // --- Completion path ---
+        if (kind === 'completion') {
+            const provider = userConfig.completionProvider;
+            const creds = userConfig.completionCredentials;
+            const model = userConfig.completionModel;
+            const entry = provider && PROVIDER_REGISTRY[provider];
+
+            if (entry && creds) {
+                return entry.create({
+                    ...creds,
+                    ...(model ? { model } : {}),
+                });
+            }
+        }
+
+        // --- Embedding path ---
+        if (kind === 'embedding') {
+            const completionProvider = userConfig.completionProvider;
+            const completionEntry = completionProvider && PROVIDER_REGISTRY[completionProvider];
+
+            // If the completion provider supports embeddings, use it
+            if (completionEntry?.supportsEmbeddings && userConfig.completionCredentials) {
+                return completionEntry.create({
+                    ...userConfig.completionCredentials,
+                    ...(userConfig.completionModel ? { model: userConfig.completionModel } : {}),
+                });
+            }
+
+            // Otherwise fall back to the dedicated embedding provider
+            const embProvider = userConfig.embeddingProvider;
+            const embCreds = userConfig.embeddingCredentials;
+            const embModel = userConfig.embeddingModel;
+            const embEntry = embProvider && PROVIDER_REGISTRY[embProvider];
+
+            if (embEntry && embCreds) {
+                return embEntry.create({
+                    ...embCreds,
+                    ...(embModel ? { model: embModel, embeddingModel: embModel } : {}),
+                });
+            }
+
+            return null;
+        }
+    }
+
+    // --- Server-wide env fallback ---
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey) {
+        const baseModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+        const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
+        return new GeminiProvider({ apiKey, model: baseModel, embeddingModel });
+    }
+
+    // Production: warn loudly but don't crash here (caller decides how to handle null)
+    if (process.env.NODE_ENV === 'production') {
+        logger.warn({ userId }, '[AI] No provider configured for user and no server fallback (GEMINI_API_KEY).');
+    }
+
+    return null;
 }

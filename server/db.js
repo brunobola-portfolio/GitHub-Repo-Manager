@@ -390,6 +390,22 @@ export function initDB() {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_license_keys_hash ON license_keys(license_key_hash)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_license_keys_tier ON license_keys(tier)`);
 
+        // Per-user AI configuration (BYOK — bring-your-own-key)
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS user_ai_config (
+                user_id INTEGER PRIMARY KEY,
+                completion_provider TEXT,
+                completion_model TEXT,
+                completion_credentials_enc TEXT,
+                embedding_provider TEXT,
+                embedding_model TEXT,
+                embedding_credentials_enc TEXT,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_user_ai_config_updated ON user_ai_config(updated_at)`);
+
         // Indexes for performance
         db.exec(`CREATE INDEX IF NOT EXISTS idx_members_user ON team_members(user_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_repos_team ON repo_assignments(team_id)`);

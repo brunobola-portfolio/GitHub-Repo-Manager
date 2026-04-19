@@ -26,6 +26,7 @@ import licenseRoutes from '../license.js';
 import reposExportRouter from './repos-export.js';
 import reposSyncRouter from './repos-sync.js';
 import reposSecurityRouter from './repos-security.js';
+import userAIConfigRoutes from '../user-ai-config.js';
 import { requireTier } from '../../middleware/require-tier.js';
 import { createCache } from '../../lib/memory-cache.js';
 
@@ -55,6 +56,7 @@ router.use('/license', licenseRoutes);
 router.use(reposExportRouter);
 router.use(reposSyncRouter);
 router.use(reposSecurityRouter);
+router.use('/user/ai-config', userAIConfigRoutes);
 
 // ------------------------------------------------------------------
 // Team-specific inline routes
