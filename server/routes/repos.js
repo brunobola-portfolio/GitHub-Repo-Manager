@@ -1202,6 +1202,124 @@ router.get('/:owner/:repo/codeowners', requireAuth, async (req, res) => {
 });
 
 // ------------------------------------------------------------------
+// Suggest CODEOWNERS rules (read-only generator)
+// ------------------------------------------------------------------
+// Walks the N most recent commits and groups their authors by the top-level
+// path they touched. Produces a `rules` array suggesting 1–3 owners per
+// directory plus a generated preview body the caller can diff against an
+// existing CODEOWNERS file. Strictly advisory — we never write anything to
+// the repo from this endpoint.
+
+router.get('/:owner/:repo/codeowners/suggest', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const commitLimit = Math.min(
+            200,
+            Math.max(20, Number.parseInt(req.query.commits, 10) || 100),
+        );
+        const minTouchesPerOwner = Math.max(
+            1,
+            Number.parseInt(req.query.minTouches, 10) || 2,
+        );
+        const maxOwnersPerPath = Math.min(
+            5,
+            Math.max(1, Number.parseInt(req.query.maxOwners, 10) || 3),
+        );
+
+        // 1. Fetch recent commits — we only need sha + author login.
+        const { data: commits } = await githubApi(
+            `/repos/${owner}/${repo}/commits?per_page=${commitLimit}`,
+            req.session.accessToken,
+        );
+        if (!Array.isArray(commits) || commits.length === 0) {
+            return res.json({
+                found: false,
+                rules: [],
+                preview: '',
+                analyzedCommits: 0,
+                note: 'Repository has no accessible commits — nothing to suggest.',
+            });
+        }
+
+        // 2. For each commit, grab its file list. Use allSettled + a tight
+        //    concurrency cap so one bad commit doesn't sink the whole batch.
+        const BATCH = 5;
+        const pathOwnerCounts = new Map(); // `topLevel` → Map<login, count>
+
+        for (let i = 0; i < commits.length; i += BATCH) {
+            const slice = commits.slice(i, i + BATCH);
+            const results = await Promise.allSettled(
+                slice.map((c) => githubApi(
+                    `/repos/${owner}/${repo}/commits/${c.sha}`,
+                    req.session.accessToken,
+                )),
+            );
+            for (const r of results) {
+                if (r.status !== 'fulfilled') continue;
+                const detail = r.value.data;
+                const login = detail?.author?.login || detail?.committer?.login;
+                if (!login || login === 'web-flow') continue;
+                for (const file of detail.files || []) {
+                    if (!file.filename) continue;
+                    // Use first path segment; fall back to root '/' for top-
+                    // level files so they still get an owner suggestion.
+                    const top = file.filename.includes('/')
+                        ? file.filename.split('/')[0] + '/'
+                        : '/';
+                    if (!pathOwnerCounts.has(top)) pathOwnerCounts.set(top, new Map());
+                    const bucket = pathOwnerCounts.get(top);
+                    bucket.set(login, (bucket.get(login) || 0) + 1);
+                }
+            }
+        }
+
+        // 3. Rank owners per directory and emit a CODEOWNERS-style rule.
+        const rules = [];
+        for (const [pattern, bucket] of pathOwnerCounts) {
+            const owners = [...bucket.entries()]
+                .filter(([, count]) => count >= minTouchesPerOwner)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, maxOwnersPerPath)
+                .map(([login]) => `@${login}`);
+            if (owners.length === 0) continue;
+            rules.push({ pattern, owners });
+        }
+        // Stable ordering: root last, alphabetical otherwise.
+        rules.sort((a, b) => {
+            if (a.pattern === '/' && b.pattern !== '/') return 1;
+            if (b.pattern === '/' && a.pattern !== '/') return -1;
+            return a.pattern.localeCompare(b.pattern);
+        });
+
+        const preview = [
+            '# Auto-suggested CODEOWNERS rules',
+            `# Derived from the last ${commits.length} commits on ${owner}/${repo}.`,
+            '# Review each rule before committing — this is a starting point, not a final policy.',
+            '',
+            ...rules.map(r => `${r.pattern.padEnd(24)} ${r.owners.join(' ')}`),
+            '',
+        ].join('\n');
+
+        auditLog(req, 'codeowners.suggest', 'repo', `${owner}/${repo}`, {
+            commitsScanned: commits.length,
+            rulesProduced: rules.length,
+        });
+
+        res.json({
+            found: rules.length > 0,
+            rules,
+            preview,
+            analyzedCommits: commits.length,
+        });
+    } catch (error) {
+        req.log.error({ err: error }, 'Suggest CODEOWNERS failed');
+        res.status(error.status || 500).json({
+            error: safeError(error, 'Failed to suggest CODEOWNERS'),
+        });
+    }
+});
+
+// ------------------------------------------------------------------
 // GitHub Actions (per-repo)
 // ------------------------------------------------------------------
 

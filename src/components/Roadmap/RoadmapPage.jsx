@@ -7,20 +7,20 @@ const STAGES = [
   {
     id: 'now',
     items: [
-      { title: 'Azure DevOps Server (On-Premise)', tier: 'Enterprise' },
-      { title: 'GitLab Migration Importer', tier: 'Pro + Enterprise' },
-      { title: 'Advanced Analytics Dashboard', tier: 'Enterprise' },
-      { title: 'Dependency Graph Visualizer', tier: 'Pro' },
-      { title: 'CODEOWNERS Generator', description: 'Suggest owners from git blame + recent reviewers (the parser that lists existing rules has shipped)', tier: 'Free' },
-      { title: 'Compare with Existing', description: 'Side-by-side diff before overwriting a repo', tier: 'Pro' },
-      { title: 'Security & Secrets Scan', description: 'Detect exposed tokens and keys before migration', tier: 'Pro' },
+      { title: 'CODEOWNERS Generator', description: 'Backend suggest endpoint now shipping — frontend review UI is the last piece', tier: 'Free' },
+      { title: 'Compare with Existing', description: 'Semantic index + query in place; side-by-side diff UI remaining', tier: 'Pro' },
+      { title: 'Security & Secrets Scan', description: 'Aggregates GitHub Dependabot + secret scanning alerts', tier: 'Pro' },
     ],
   },
   {
     id: 'next',
     items: [
+      { title: 'Azure DevOps Server (On-Premise)', description: 'PAT + URL adaptation for self-hosted Azure DevOps', tier: 'Enterprise' },
+      { title: 'GitLab Migration Importer', description: 'Clone GitLab repos with history + issues (best-effort)', tier: 'Pro + Enterprise' },
       { title: 'Bitbucket Migration Importer', tier: 'Pro + Enterprise' },
-      { title: 'SSO / SAML', description: 'Single sign-on via your identity provider', tier: 'Enterprise' },
+      { title: 'Advanced Analytics Dashboard', description: 'Commit heatmaps, contributor insights, dependency graph', tier: 'Enterprise' },
+      { title: 'Dependency Graph Visualizer', description: 'Interactive graph of repo dependencies (SBOM-derived)', tier: 'Pro' },
+      { title: 'SSO / SAML', description: 'Single sign-on via your identity provider (Okta, Entra ID, SAML 2.0)', tier: 'Enterprise' },
       { title: 'Backup & Restore System', description: 'Scheduled snapshots with point-in-time restore', tier: 'Enterprise' },
       { title: 'Security Alerts Dashboard', description: 'Aggregated Dependabot and secret scanning alerts', tier: 'Pro' },
       { title: 'SBOM Export', description: 'Software Bill of Materials in SPDX / CycloneDX format', tier: 'Enterprise' },

@@ -1,22 +1,22 @@
 # Roadmap
 
-A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is honestly either in progress or on the wishlist — nothing on the Pricing Page is vaporware.
+A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is either in progress or planned — we moved items to **Next** when they're not genuinely close to shipping, so the "Shipping Now" list stays honest.
 
 ## Shipping Now (Q2 2026)
 
-- **Azure DevOps Server (on-premise)** — Enterprise. PAT + URL adaptation for self-hosted Azure DevOps.
-- **GitLab Migration Importer** — Pro + Enterprise. Clone GitLab repos with history.
-- **Advanced Analytics Dashboard** — Enterprise. Commit heatmaps, contributor insights, dependency graph.
-- **Dependency Graph Visualizer** — Pro. Interactive graph of repo dependencies.
-- **CODEOWNERS Generator** — Free. Suggest owners from git blame + recent reviewers (the parser that lists existing rules has already shipped).
-- **Compare with Existing** — Pro. Semantic similarity search (Wave 2).
-- **Security & Secrets Scan** — Pro. Aggregates GitHub's native security alerts (Wave 2).
+- **CODEOWNERS Generator** — Free. Suggest owners from recent commit authorship; the parser + the generator endpoint (`GET /:owner/:repo/codeowners/suggest`) are in place and returning rules — frontend presentation is the last piece.
+- **Compare with Existing** — Pro. Semantic similarity search (Wave 2) is indexing + querying; side-by-side diff UI is the remaining piece.
+- **Security & Secrets Scan** — Pro. Aggregates GitHub's native Dependabot / secret scanning alerts.
 
 ## Next (Q3 2026)
 
+- **Azure DevOps Server (on-premise)** — Enterprise. PAT + URL adaptation for self-hosted Azure DevOps.
+- **GitLab Migration Importer** — Pro + Enterprise. Clone GitLab repos with history. Scope: sources, branches, default protections, issues (best-effort).
 - **Bitbucket Migration Importer** — Pro + Enterprise.
-- **SSO / SAML** — Enterprise. Okta, Azure AD, SAML 2.0.
-- **Backup & Restore System** — Enterprise.
+- **Advanced Analytics Dashboard** — Enterprise. Commit heatmaps, contributor insights, dependency graph.
+- **Dependency Graph Visualizer** — Pro. Interactive graph of repo dependencies (SBOM-derived).
+- **SSO / SAML** — Enterprise. Okta, Entra ID, SAML 2.0.
+- **Backup & Restore System** — Enterprise. Scheduled snapshots with point-in-time restore.
 - **Security Alerts Dashboard** — Pro. Cross-repo CVE aggregation.
 - **SBOM Export** — Enterprise. CycloneDX + SPDX.
 - **Release Notes Generator** — Pro. AI from commits + PRs.
