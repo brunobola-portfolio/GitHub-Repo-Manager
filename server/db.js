@@ -407,6 +407,86 @@ export function initDB() {
         `);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_user_ai_config_updated ON user_ai_config(updated_at)`);
 
+        // -----------------------------------------------------------------------
+        // GitHub Event Ingestion Pipeline (Phase E1)
+        // -----------------------------------------------------------------------
+
+        // PR lifecycle events — one row per distinct event
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS pr_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                github_event_id TEXT,
+                repo_id INTEGER NOT NULL,
+                repo_full_name TEXT NOT NULL,
+                pr_number INTEGER NOT NULL,
+                action TEXT NOT NULL,
+                author_login TEXT,
+                title TEXT,
+                base_ref TEXT,
+                head_ref TEXT,
+                merged INTEGER,
+                first_commit_at DATETIME,
+                requested_reviewer_logins TEXT,
+                assignee_logins TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (github_event_id)
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_pr_events_repo_pr ON pr_events(repo_id, pr_number)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_pr_events_repo_created ON pr_events(repo_id, created_at)`);
+
+        // Issue lifecycle events
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS issue_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                github_event_id TEXT,
+                repo_id INTEGER NOT NULL,
+                repo_full_name TEXT NOT NULL,
+                issue_number INTEGER NOT NULL,
+                action TEXT NOT NULL,
+                author_login TEXT,
+                assignee_logins TEXT,
+                labels TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (github_event_id)
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_issue_events_repo_issue ON issue_events(repo_id, issue_number)`);
+
+        // Deployment events — DORA deploy frequency + MTTR
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS deployment_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                github_event_id TEXT,
+                repo_id INTEGER NOT NULL,
+                repo_full_name TEXT NOT NULL,
+                deployment_id INTEGER,
+                environment TEXT,
+                state TEXT,
+                sha TEXT,
+                ref TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (github_event_id)
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_deployment_events_repo_env_created ON deployment_events(repo_id, environment, created_at)`);
+
+        // Active review assignments — derived view for cross-org review queue
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS review_assignments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                repo_id INTEGER NOT NULL,
+                repo_full_name TEXT NOT NULL,
+                pr_number INTEGER NOT NULL,
+                reviewer_login TEXT NOT NULL,
+                requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                completed_at DATETIME,
+                state TEXT DEFAULT 'pending',
+                UNIQUE (repo_id, pr_number, reviewer_login)
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_review_assignments_reviewer_state ON review_assignments(reviewer_login, state)`);
+
         // Indexes for performance
         db.exec(`CREATE INDEX IF NOT EXISTS idx_members_user ON team_members(user_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_repos_team ON repo_assignments(team_id)`);

@@ -122,6 +122,10 @@ app.post('/api/v1/webhooks/stripe', express.raw({ type: 'application/json' }), s
 import { actionsWebhookHandler } from './routes/webhooks.js';
 app.post('/api/v1/webhooks/actions', express.raw({ type: 'application/json' }), actionsWebhookHandler);
 app.post('/api/webhooks/actions', express.raw({ type: 'application/json' }), actionsWebhookHandler);
+// GitHub event ingestion pipeline (Phase E1) — PR, issues, deployments
+import { githubEventsWebhookHandler } from './routes/github-events-webhook.js';
+app.post('/api/v1/webhooks/github', express.raw({ type: 'application/json' }), githubEventsWebhookHandler);
+app.post('/api/webhooks/github', express.raw({ type: 'application/json' }), githubEventsWebhookHandler);
 
 app.use(express.json({ limit: '10kb' }));
 app.use(requestLoggerMiddleware);
