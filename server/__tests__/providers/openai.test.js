@@ -193,7 +193,7 @@ describe('OpenAIProvider.generate()', () => {
             .rejects.toMatchObject({ code: AI_ERROR_CODE.OVERLOAD });
     });
 
-    it('uses parts array as user message content', async () => {
+    it('uses parts array as multi-part content blocks in user message', async () => {
         const mockFetch = vi.fn(() =>
             jsonResponse({ choices: [{ message: { content: 'ok' } }] })
         );
@@ -203,8 +203,11 @@ describe('OpenAIProvider.generate()', () => {
 
         const body = JSON.parse(mockFetch.mock.calls[0][1].body);
         const userMsg = body.messages.find(m => m.role === 'user');
-        expect(userMsg.content).toContain('part1');
-        expect(userMsg.content).toContain('part2');
+        // Each part must be a distinct content block, not a joined string
+        expect(Array.isArray(userMsg.content)).toBe(true);
+        expect(userMsg.content).toHaveLength(2);
+        expect(userMsg.content[0]).toEqual({ type: 'text', text: 'part1' });
+        expect(userMsg.content[1]).toEqual({ type: 'text', text: 'part2' });
     });
 
     it('uses modelOverride when provided', async () => {

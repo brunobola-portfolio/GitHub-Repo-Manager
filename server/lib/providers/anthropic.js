@@ -82,6 +82,18 @@ export class AnthropicProvider {
     }
 
     // -------------------------------------------------------------------------
+    // Public accessor
+    // -------------------------------------------------------------------------
+
+    /**
+     * Return the configured model name without exposing the private field directly.
+     * @returns {string}
+     */
+    getModelName() {
+        return this._modelName;
+    }
+
+    // -------------------------------------------------------------------------
     // Internal HTTP helpers
     // -------------------------------------------------------------------------
 
@@ -198,17 +210,6 @@ export class AnthropicProvider {
     async generate({ prompt, parts, schema, generationConfig, systemPrompt, modelOverride } = {}) {
         const model = modelOverride || this._modelName;
 
-        // Build the user message content
-        let userContent;
-        if (parts && Array.isArray(parts)) {
-            userContent = parts
-                .filter(p => p.text != null)
-                .map(p => p.text)
-                .join('\n');
-        } else {
-            userContent = prompt || '';
-        }
-
         // Build the system prompt
         let effectiveSystem = systemPrompt || '';
         if (schema) {
@@ -220,11 +221,19 @@ export class AnthropicProvider {
                 : jsonInstruction;
         }
 
+        // Build user message content — preserve parts as distinct blocks (anti-injection)
+        let userMessageContent;
+        if (Array.isArray(parts) && parts.length) {
+            userMessageContent = parts.map((p) => ({ type: 'text', text: String(p.text ?? '') }));
+        } else {
+            userMessageContent = prompt || '';
+        }
+
         // Build request body
         const body = {
             model,
             max_tokens: DEFAULT_MAX_TOKENS,
-            messages: [{ role: 'user', content: userContent }],
+            messages: [{ role: 'user', content: userMessageContent }],
         };
 
         if (effectiveSystem) {
@@ -326,8 +335,18 @@ export class AnthropicProvider {
             while (true) {
                 if (signal?.aborted) break;
 
-                const { done, value } = await reader.read();
+                let done, value;
+                try {
+                    ({ done, value } = await reader.read());
+                } catch (readErr) {
+                    if (readErr?.name === 'AbortError' || signal?.aborted) {
+                        throw new AIError({ code: AI_ERROR_CODE.CANCELED, message: 'Generation was cancelled', cause: readErr });
+                    }
+                    throw readErr;
+                }
+
                 if (done) break;
+                if (signal?.aborted) break;
 
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split('\n');
@@ -349,6 +368,12 @@ export class AnthropicProvider {
                     }
                 }
             }
+        } catch (err) {
+            if (err instanceof AIError) throw err;
+            if (err?.name === 'AbortError' || signal?.aborted) {
+                throw new AIError({ code: AI_ERROR_CODE.CANCELED, message: 'Generation was cancelled', cause: err });
+            }
+            throw err;
         } finally {
             reader.releaseLock();
         }

@@ -82,6 +82,18 @@ export class OpenAIProvider {
     }
 
     // -------------------------------------------------------------------------
+    // Public accessor
+    // -------------------------------------------------------------------------
+
+    /**
+     * Return the configured model name without exposing the private field directly.
+     * @returns {string}
+     */
+    getModelName() {
+        return this._modelName;
+    }
+
+    // -------------------------------------------------------------------------
     // Internal HTTP helpers
     // -------------------------------------------------------------------------
 
@@ -209,18 +221,15 @@ export class OpenAIProvider {
         }
 
         // Build user content from parts or prompt
-        let userContent;
-        if (parts && Array.isArray(parts)) {
-            // Join text parts (OpenAI chat completions take a string or array of content parts)
-            userContent = parts
-                .filter(p => p.text != null)
-                .map(p => p.text)
-                .join('\n');
+        if (Array.isArray(parts) && parts.length) {
+            // Send as native multi-part content array to preserve anti-injection partition
+            messages.push({
+                role: 'user',
+                content: parts.map((p) => ({ type: 'text', text: String(p.text ?? '') })),
+            });
         } else {
-            userContent = prompt || '';
+            messages.push({ role: 'user', content: prompt || '' });
         }
-
-        messages.push({ role: 'user', content: userContent });
 
         // Build request body
         const body = { model, messages };
@@ -339,8 +348,18 @@ export class OpenAIProvider {
             while (true) {
                 if (signal?.aborted) break;
 
-                const { done, value } = await reader.read();
+                let done, value;
+                try {
+                    ({ done, value } = await reader.read());
+                } catch (readErr) {
+                    if (readErr?.name === 'AbortError' || signal?.aborted) {
+                        throw new AIError({ code: AI_ERROR_CODE.CANCELED, message: 'Generation was cancelled', cause: readErr });
+                    }
+                    throw readErr;
+                }
+
                 if (done) break;
+                if (signal?.aborted) break;
 
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split('\n');
@@ -360,6 +379,12 @@ export class OpenAIProvider {
                     }
                 }
             }
+        } catch (err) {
+            if (err instanceof AIError) throw err;
+            if (err?.name === 'AbortError' || signal?.aborted) {
+                throw new AIError({ code: AI_ERROR_CODE.CANCELED, message: 'Generation was cancelled', cause: err });
+            }
+            throw err;
         } finally {
             reader.releaseLock();
         }

@@ -21,6 +21,7 @@
 
 import db from '../db.js';
 import { encryptCredentials, decryptCredentials } from './credential-encryption.js';
+import logger from './logger.js';
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -92,6 +93,7 @@ export function getDecryptedConfig(userId) {
             completionCredentials = decryptCredentials(row.completion_credentials_enc);
         } catch {
             // If decryption fails (e.g. key rotation), treat as no credentials
+            logger.warn({ userId }, 'Failed to decrypt completion credentials — possible CREDENTIAL_ENCRYPTION_KEY rotation');
             completionCredentials = null;
         }
     }
@@ -101,6 +103,7 @@ export function getDecryptedConfig(userId) {
         try {
             embeddingCredentials = decryptCredentials(row.embedding_credentials_enc);
         } catch {
+            logger.warn({ userId }, 'Failed to decrypt embedding credentials — possible CREDENTIAL_ENCRYPTION_KEY rotation');
             embeddingCredentials = null;
         }
     }

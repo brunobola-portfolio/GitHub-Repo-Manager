@@ -23,6 +23,7 @@ import {
 } from '../lib/user-ai-config.js';
 import { createProviderForUser } from '../lib/ai-provider.js';
 import logger from '../lib/logger.js';
+import { redactSecrets } from '../lib/redact-secrets.js';
 
 const router = express.Router();
 
@@ -182,7 +183,7 @@ router.post('/test', requireAuth, testRateLimiter, validate(testAIConfigSchema),
             return res.json({
                 ok: true,
                 latencyMs,
-                modelUsed: provider._modelName || null,
+                modelUsed: provider.getModelName?.() || null,
                 response: text?.slice(0, 100),
             });
         }
@@ -193,7 +194,7 @@ router.post('/test', requireAuth, testRateLimiter, validate(testAIConfigSchema),
             return res.json({
                 ok: true,
                 latencyMs,
-                modelUsed: provider._embeddingModelName || provider._modelName || null,
+                modelUsed: provider._embeddingModelName || provider.getModelName?.() || null,
                 dimensions: embedding.length,
             });
         }
@@ -201,14 +202,17 @@ router.post('/test', requireAuth, testRateLimiter, validate(testAIConfigSchema),
         return res.status(400).json({ ok: false, error: 'Invalid kind', code: 'INVALID_KIND' });
     } catch (err) {
         const latencyMs = Date.now() - t0;
-        logger.warn({ err, userId, kind }, 'AI config test call failed');
 
-        // Do NOT expose raw error messages (may contain partial key info from error body)
-        const safeMessage = err?.message
-            ?.replace(/sk-[a-zA-Z0-9-_]{10,}/g, '[REDACTED]')
-            ?.replace(/key_[a-zA-Z0-9-_]{10,}/g, '[REDACTED]')
-            ?.slice(0, 200)
-            || 'Test call failed';
+        // Redact first — do NOT include the raw err object (may carry auth headers in err.cause)
+        const safeMessage = redactSecrets(err?.message || 'Test call failed').slice(0, 200) || 'Test call failed';
+
+        logger.warn({
+            code: err?.code,
+            status: err?.status,
+            message: safeMessage,
+            userId,
+            kind,
+        }, 'AI config test call failed');
 
         return res.json({
             ok: false,
