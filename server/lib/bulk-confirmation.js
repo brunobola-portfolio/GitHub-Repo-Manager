@@ -16,7 +16,7 @@
  * Copyright (c) 2025-2026 Bola Labs. All rights reserved.
  */
 
-import { createHmac, createHash, randomBytes } from 'node:crypto'
+import { createHmac, createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 
 // ---------------------------------------------------------------------------
 // Secret resolution (evaluated once at module load)
@@ -26,6 +26,9 @@ let _secret = null
 
 function getSecret() {
     if (_secret) return _secret
+    if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET && !process.env.GITHUB_CLIENT_SECRET) {
+        throw new Error('bulk-confirmation: SESSION_SECRET (or GITHUB_CLIENT_SECRET) must be set in production')
+    }
     const s = process.env.SESSION_SECRET || process.env.GITHUB_CLIENT_SECRET
     if (s) {
         _secret = s
@@ -65,17 +68,25 @@ function sign(header, payload, secret) {
     return createHmac('sha256', secret).update(data).digest('base64url')
 }
 
+function canonicalStringify(v) {
+    if (v === null || typeof v !== 'object' || Array.isArray(v)) return JSON.stringify(v)
+    const keys = Object.keys(v).sort()
+    return '{' + keys.map(k => JSON.stringify(k) + ':' + canonicalStringify(v[k])).join(',') + '}'
+}
+
+function normalizeRepos(repos) {
+    return [...new Set(repos.map(r => String(r).trim()))].sort()
+}
+
 function timingSafeEquals(a, b) {
-    // If lengths differ we still do a compare to avoid short-circuit timing leaks
-    const aBuf = Buffer.from(a)
-    const bBuf = Buffer.from(b.padEnd(a.length, '\0'))
-    const safePad = Buffer.alloc(aBuf.length, 0)
-    const aCmp = aBuf.length === bBuf.length ? aBuf : safePad
-    // Use Buffer.from to ensure same type
-    const bCmp = aBuf.length === bBuf.length ? bBuf : Buffer.from(b)
-    // Only report equal if lengths match AND content matches
-    if (aBuf.length !== Buffer.from(b).length) return false
-    return aBuf.equals(Buffer.from(b))
+    const aBuf = Buffer.from(a, 'utf8')
+    const bBuf = Buffer.from(b, 'utf8')
+    if (aBuf.length !== bBuf.length) {
+        // Still perform a dummy compare to equalise CPU time, then fail.
+        timingSafeEqual(aBuf, Buffer.alloc(aBuf.length))
+        return false
+    }
+    return timingSafeEqual(aBuf, bBuf)
 }
 
 // ---------------------------------------------------------------------------
@@ -96,12 +107,14 @@ export function issueToken({ userId, action, repos, extraData = {} }) {
     const secret = getSecret()
     const now = Math.floor(Date.now() / 1000)
 
+    const normalizedRepos = normalizeRepos(repos)
+
     const headerObj = { alg: ALGORITHM, typ: 'bulk-confirm' }
     const payloadObj = {
         uid:   userId,
         act:   action,
-        repos: sha256hex(JSON.stringify([...repos].sort())),
-        extra: sha256hex(JSON.stringify(extraData)),
+        repos: sha256hex(JSON.stringify(normalizedRepos)),
+        extra: sha256hex(canonicalStringify(extraData)),
         iat:   now,
         exp:   now + TTL_SECONDS,
     }
@@ -166,13 +179,14 @@ export function verifyToken(token, { userId, action, repos, extraData = {} }) {
     }
 
     // Check repos hash
-    const expectedReposHash = sha256hex(JSON.stringify([...repos].sort()))
+    const normalizedRepos = normalizeRepos(repos)
+    const expectedReposHash = sha256hex(JSON.stringify(normalizedRepos))
     if (p.repos !== expectedReposHash) {
         return { valid: false, reason: 'repos-mismatch' }
     }
 
     // Check extra hash
-    const expectedExtraHash = sha256hex(JSON.stringify(extraData))
+    const expectedExtraHash = sha256hex(canonicalStringify(extraData))
     if (p.extra !== expectedExtraHash) {
         return { valid: false, reason: 'extra-mismatch' }
     }

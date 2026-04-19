@@ -28,7 +28,7 @@ const CONFIRMATION_HEADER = 'x-bulk-confirmation-token'
  * @returns {Promise<void>}  Sends the response.
  */
 export async function performBulk({ req, res, action, repos, extraData = {}, dryRun, execute, messageFn }) {
-    const userId = req.session?.userId || req.tenantId
+    const userId = req.tenantId ?? req.session?.userId
 
     // ------------------------------------------------------------------
     // DRY-RUN path: issue a confirmation token, return plan, no side effects

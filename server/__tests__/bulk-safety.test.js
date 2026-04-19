@@ -111,6 +111,7 @@ describe('Bulk ops safety — dry-run + confirmation-token flow', () => {
     // Case 1: POST /bulk/delete without dryRun AND without confirmation token → 400
     // -------------------------------------------------------------------------
     it('case 1: POST /bulk/delete without dryRun and without token → 400 confirmation-token-required', async () => {
+        const { githubApi } = await import('../lib/github-api.js')
         const app = buildApp()
         app.use('/bulk', bulkRouter)
         const res = await request(app)
@@ -118,6 +119,7 @@ describe('Bulk ops safety — dry-run + confirmation-token flow', () => {
             .send({ repos: ['owner/repo1'] })
         expect(res.status).toBe(400)
         expect(res.body.reason || res.body.code || res.body.error).toMatch(/confirmation/i)
+        expect(githubApi).not.toHaveBeenCalled()
     })
 
     // -------------------------------------------------------------------------
@@ -147,43 +149,35 @@ describe('Bulk ops safety — dry-run + confirmation-token flow', () => {
     // Case 3: POST /bulk/delete with stale/expired token → 400 expired
     // -------------------------------------------------------------------------
     it('case 3: POST /bulk/delete with expired token → 400 expired', async () => {
-        // We need to get a real token first, then mock the passage of time
-        // Strategy: import the confirmation module and forge a token with past exp
-        const confirmMod = await import('../lib/bulk-confirmation.js')
-        const { issueToken, verifyToken } = confirmMod
+        const { githubApi } = await import('../lib/github-api.js')
+        const { issueToken } = await import('../lib/bulk-confirmation.js')
 
-        const repos = ['owner/repo1']
-        // Issue a token but verify with a tampered expiry check
-        // We test this by forging a token with past iat/exp
-        // The real approach: issueToken then manipulate time or use the module's internals
-        // Since we can't easily go back in time, we'll call verifyToken directly to confirm
-        // it returns 'expired' for a token crafted with past exp.
-
-        // Actually, let's test at the HTTP layer by calling the endpoint with a hand-crafted token
-        // We'll issue a real token, wait... can't wait 60s. Instead, we test that verifyToken
-        // returns expired for a token with exp in the past.
-        const fakeExpiredResult = verifyToken('bad.token.here', {
-            userId: 'user-123',
-            action: 'bulk.delete',
-            repos: repos,
-        })
-        // Should be invalid (bad sig or expired)
-        expect(fakeExpiredResult.valid).toBe(false)
-
-        // More robust HTTP-layer test: use a token for wrong user to confirm rejection pipeline
-        // We'll forge an expired token by calling issueToken from a separate context
-        // and checking the HTTP endpoint rejects it properly.
         const app = buildApp()
         app.use('/bulk', bulkRouter)
 
-        const staleToken = 'eyJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiJ1c2VyLTEyMyIsImFjdCI6ImJ1bGsuZGVsZXRlIiwicmVwb3MiOiJhYmMiLCJleHRyYSI6ImFiYyIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwMDAwMDYwfQ.invalidsignature'
+        // Forge a token that has already expired by advancing the real system time
+        vi.useFakeTimers()
+        const realNow = Date.now()
+        vi.setSystemTime(realNow - 120_000) // 2 minutes in the past
+
+        const staleToken = issueToken({
+            userId: 'user-123',
+            action: 'bulk.delete',
+            repos: ['owner/repo'],
+            extraData: {},
+        })
+
+        vi.setSystemTime(realNow) // back to now — token is now 2 minutes old, TTL is 60s
+        vi.useRealTimers()
+
         const res = await request(app)
             .post('/bulk/delete')
             .set('X-Bulk-Confirmation-Token', staleToken)
-            .send({ repos: repos })
+            .send({ repos: ['owner/repo'] })
+
         expect(res.status).toBe(400)
-        // Should be expired or bad-signature
-        expect(['expired', 'bad-signature'].some(r => JSON.stringify(res.body).includes(r))).toBe(true)
+        expect(res.body.reason).toBe('expired')
+        expect(githubApi).not.toHaveBeenCalled()
     })
 
     // -------------------------------------------------------------------------
