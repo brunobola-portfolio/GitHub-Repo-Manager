@@ -30,16 +30,14 @@ export async function actionsWebhookHandler(req, res) {
             if (!payload.repository?.id || !payload.workflow_run?.workflow_id) {
                 return errorResponse(res, 400, 'Invalid webhook payload: missing repository or workflow data');
             }
-            try {
-                actionsService.storeWorkflowRun(payload.workflow_run);
-                actionsService.updateWorkflowMeta(
-                    payload.repository.id,
-                    payload.workflow_run.workflow_id
-                );
-            } catch (serviceError) {
-                logger.error({ err: serviceError }, 'Webhook service processing failed');
-                // Still return success to GitHub so it doesn't retry
-            }
+            // Propagate persistence failures. GitHub will retry on 5xx which
+            // is what we want — silently returning 200 on DB failure previously
+            // caused events to be lost with no replay path.
+            actionsService.storeWorkflowRun(payload.workflow_run);
+            actionsService.updateWorkflowMeta(
+                payload.repository.id,
+                payload.workflow_run.workflow_id
+            );
         }
 
         res.json({ success: true });

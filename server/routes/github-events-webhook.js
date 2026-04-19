@@ -60,7 +60,23 @@ export async function githubEventsWebhookHandler(req, res) {
         try {
             await handler.handle(payload, deliveryId);
         } catch (err) {
-            logger.error({ err, eventType, deliveryId }, 'github-events: handler failed');
+            // Fast-ack pattern: we already returned 200 to GitHub so a
+            // handler failure here will NOT be retried by GitHub. To
+            // recover, an operator needs enough context to find the
+            // delivery in the GitHub webhook UI and hit "Redeliver".
+            logger.error(
+                {
+                    err,
+                    eventType,
+                    deliveryId,
+                    repoId: payload?.repository?.id,
+                    repoFullName: payload?.repository?.full_name,
+                    action: payload?.action,
+                    prNumber: payload?.pull_request?.number,
+                    issueNumber: payload?.issue?.number,
+                },
+                'github-events: handler failed — re-run via GitHub webhook UI "Redeliver"',
+            );
         }
     } catch (err) {
         logger.error({ err }, 'github-events: webhook dispatch failed');

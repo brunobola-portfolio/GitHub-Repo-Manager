@@ -51,11 +51,50 @@ export function verifySecretsAtStartup({ nodeEnv }) {
             );
         }
 
+        // Stripe webhook signature verification key — required when Stripe is
+        // enabled. Without it, webhook signatures cannot be verified and a
+        // forged payload could grant an attacker a paid tier.
+        if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_WEBHOOK_SECRET) {
+            errors.push(
+                'STRIPE_WEBHOOK_SECRET must be set when STRIPE_SECRET_KEY is present ' +
+                '(required to verify Stripe webhook signatures — without it, forged ' +
+                'webhooks could grant paid tiers)'
+            );
+        }
+
+        // EMAIL_PROVIDER=console silently succeeds (logs, never sends). In
+        // production that means license-key emails and data-retention warnings
+        // are dropped on the floor. Default of 'console' is development-only.
+        const emailProvider = process.env.EMAIL_PROVIDER;
+        if (!emailProvider || emailProvider === 'console') {
+            errors.push(
+                'EMAIL_PROVIDER must be set to a real delivery driver in production ' +
+                "(got '" + (emailProvider || '<unset>') + "'). Set EMAIL_PROVIDER=resend " +
+                'and configure RESEND_API_KEY + EMAIL_FROM, otherwise license keys and ' +
+                'retention warnings will never be delivered.'
+            );
+        } else if (emailProvider === 'resend' && !process.env.RESEND_API_KEY) {
+            errors.push(
+                'RESEND_API_KEY must be set when EMAIL_PROVIDER=resend'
+            );
+        }
+
         // Warn if HTTPS enforcement has been intentionally disabled.
         if (process.env.DISABLE_HTTPS_ENFORCEMENT === 'true') {
             warnings.push(
                 'HTTPS enforcement is disabled via DISABLE_HTTPS_ENFORCEMENT=true ' +
                 '— NOT recommended for production'
+            );
+        }
+
+        // Non-HTTPS FRONTEND_URL will break CORS + cookies + HSTS in any real
+        // browser; warn rather than abort so operators with a reverse proxy in
+        // front of us can still override explicitly.
+        const feUrl = process.env.FRONTEND_URL;
+        if (feUrl && !/^https:\/\//.test(feUrl) && !/localhost|127\.0\.0\.1/.test(feUrl)) {
+            warnings.push(
+                `FRONTEND_URL=${feUrl} is not HTTPS — browsers will reject cookies with ` +
+                'Secure flag and HSTS will fail. Serve over HTTPS or proxy through one.'
             );
         }
     }

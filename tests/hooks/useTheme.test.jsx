@@ -188,9 +188,12 @@ describe('useTheme', () => {
     })
   })
 
-  it.skip('does not react to system changes when theme is not system', () => {
-    // This test is skipped because the event handler closure captures the initial theme value
-    // In real usage, this works correctly because setting theme to 'light' recreates the effect
+  it('does not react to system changes when theme is not system', () => {
+    // When the user explicitly sets theme=light or dark, switching the OS
+    // preference must not flip the class back. The hook re-runs its effect
+    // on every theme change, swapping the event handler — so we have to
+    // read the *latest* handler that was attached, not the one from the
+    // initial mount (which still had theme='system' closed over).
     const { result } = renderHook(() => useTheme(), {
       wrapper: ThemeProvider
     })
@@ -201,15 +204,19 @@ describe('useTheme', () => {
 
     expect(document.documentElement.classList.contains('dark')).toBe(false)
 
-    // Simulate system preference change to dark
+    // Simulate system preference change to dark, using the handler attached
+    // AFTER the theme switched to 'light'.
     matchMediaMock.matches = true
-    const changeHandler = matchMediaMock.addEventListener.mock.calls[0][1]
+    const calls = matchMediaMock.addEventListener.mock.calls
+    const latestHandler = calls[calls.length - 1][1]
 
     act(() => {
-      changeHandler()
+      latestHandler()
     })
 
-    // Should still be light, not affected by system change
+    // Should still be light, not affected by system change — because the
+    // current handler's closure has theme === 'light', so its guard
+    // `if (theme === 'system')` fails and no class toggle happens.
     expect(document.documentElement.classList.contains('dark')).toBe(false)
   })
 

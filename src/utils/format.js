@@ -3,8 +3,12 @@
  * for display in the GitHub Repo Manager UI
  */
 
-/** Default locale for number formatting. Change to 'en-US' for international format. */
-export const APP_LOCALE = 'pt-PT'
+/**
+ * Default locale for number formatting. The UI ships in English so numbers
+ * render in en-US style (1,234 / 1.23M). Override per-call via `options.locale`
+ * on formatNumber/formatCompact if a localised surface ever lands.
+ */
+export const APP_LOCALE = 'en-US'
 
 /**
  * Formats a number with thousand separators
@@ -17,8 +21,9 @@ export const APP_LOCALE = 'pt-PT'
  * @param {string} options.compactDisplay - 'short' or 'long' (for compact notation)
  * @returns {string} Formatted number string
  * @example
- * formatNumber(1234) // "1.234" (pt-PT) or "1,234" (en-US)
- * formatNumber(1234567) // "1.234.567" (pt-PT) or "1,234,567" (en-US)
+ * formatNumber(1234)    // "1,234"  (default en-US)
+ * formatNumber(1234567) // "1,234,567"
+ * formatNumber(1234, { locale: 'pt-PT' }) // "1.234"
  */
 export function formatNumber(value, options = {}) {
 	const {
@@ -48,11 +53,11 @@ export function formatNumber(value, options = {}) {
 /**
  * Formats a number in compact form (1K, 1M, 1B)
  * @param {number} value - The number to format
- * @param {string} locale - Locale for formatting (default: 'pt-PT')
+ * @param {string} locale - Locale for formatting (default: APP_LOCALE = 'en-US')
  * @returns {string} Compact formatted number
  * @example
- * formatCompact(1234) // "1,2 mil" (pt-PT) or "1.2K" (en-US)
- * formatCompact(1234567) // "1,2 M" (pt-PT) or "1.2M" (en-US)
+ * formatCompact(1234)    // "1.2K"
+ * formatCompact(1234567) // "1.2M"
  */
 export function formatCompact(value, locale = APP_LOCALE) {
 	if (value == null || isNaN(value)) return '0'

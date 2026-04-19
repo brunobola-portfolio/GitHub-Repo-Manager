@@ -8,13 +8,9 @@ import {
 } from '@/utils/format'
 
 describe('formatNumber', () => {
-  it('formats numbers with thousand separators (pt-PT)', () => {
-    // pt-PT uses non-breaking space or regular space, result could be "1234" or "1 234" depending on browser
-    const result1 = formatNumber(1234)
-    expect(result1).toMatch(/1[\s\u00A0.]?234/)
-
-    const result2 = formatNumber(1234567)
-    expect(result2).toMatch(/1[\s\u00A0.]234[\s\u00A0.]567/)
+  it('formats numbers with thousand separators (default locale en-US)', () => {
+    expect(formatNumber(1234)).toBe('1,234')
+    expect(formatNumber(1234567)).toBe('1,234,567')
   })
 
   it('formats numbers with thousand separators (en-US)', () => {

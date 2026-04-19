@@ -22,24 +22,26 @@ const STRONG = 'a'.repeat(40); // 40-char random-like string, no weak words
 // Snapshot and restore process.env around each test.
 let envSnapshot;
 
+const TRACKED_KEYS = [
+    'SESSION_SECRET', 'WEBHOOK_SECRET', 'CREDENTIAL_ENCRYPTION_KEY',
+    'DISABLE_HTTPS_ENFORCEMENT', 'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET',
+    'LICENSE_SIGNING_PRIVATE_KEY_PEM', 'EMAIL_PROVIDER', 'RESEND_API_KEY',
+    'FRONTEND_URL',
+];
+
 beforeEach(() => {
     envSnapshot = { ...process.env };
-    // Clean all relevant keys so tests start from a blank slate.
-    delete process.env.SESSION_SECRET;
-    delete process.env.WEBHOOK_SECRET;
-    delete process.env.CREDENTIAL_ENCRYPTION_KEY;
-    delete process.env.DISABLE_HTTPS_ENFORCEMENT;
-    delete process.env.STRIPE_SECRET_KEY;
-    delete process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM;
+    for (const k of TRACKED_KEYS) delete process.env[k];
+    // Production-good defaults for email + URL so tests that only exercise a
+    // different axis don't trip the new email / HTTPS guards. Tests that want
+    // to assert those guards explicitly unset these.
+    process.env.EMAIL_PROVIDER = 'resend';
+    process.env.RESEND_API_KEY = 're_test_key';
+    process.env.FRONTEND_URL = 'https://example.com';
 });
 
 afterEach(() => {
-    // Restore only the keys we care about to avoid side-effects on the suite.
-    const keys = [
-        'SESSION_SECRET', 'WEBHOOK_SECRET', 'CREDENTIAL_ENCRYPTION_KEY',
-        'DISABLE_HTTPS_ENFORCEMENT', 'STRIPE_SECRET_KEY', 'LICENSE_SIGNING_PRIVATE_KEY_PEM',
-    ];
-    for (const k of keys) {
+    for (const k of TRACKED_KEYS) {
         if (envSnapshot[k] !== undefined) {
             process.env[k] = envSnapshot[k];
         } else {
@@ -179,5 +181,92 @@ describe('G4 — verifySecretsAtStartup', () => {
         process.env.WEBHOOK_SECRET = STRONG;
         const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(errors.some(e => e.includes('LICENSE_SIGNING_PRIVATE_KEY_PEM'))).toBe(false);
+    });
+
+    // -----------------------------------------------------------------------
+    // STRIPE_WEBHOOK_SECRET conditional check
+    // -----------------------------------------------------------------------
+
+    it('production + STRIPE_SECRET_KEY set + missing STRIPE_WEBHOOK_SECRET → error', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.STRIPE_SECRET_KEY = 'sk_live_test';
+        process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM = '-----BEGIN PRIVATE KEY-----\n...';
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('STRIPE_WEBHOOK_SECRET'))).toBe(true);
+    });
+
+    it('production + Stripe fully configured → no Stripe-related errors', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.STRIPE_SECRET_KEY = 'sk_live_test';
+        process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test';
+        process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM = '-----BEGIN PRIVATE KEY-----\n...';
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('STRIPE_WEBHOOK_SECRET'))).toBe(false);
+        expect(errors.some(e => e.includes('LICENSE_SIGNING_PRIVATE_KEY_PEM'))).toBe(false);
+    });
+
+    // -----------------------------------------------------------------------
+    // EMAIL_PROVIDER check — must be a real driver in production
+    // -----------------------------------------------------------------------
+
+    it('production + EMAIL_PROVIDER=console → error (silent no-op)', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.EMAIL_PROVIDER = 'console';
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('EMAIL_PROVIDER'))).toBe(true);
+    });
+
+    it('production + EMAIL_PROVIDER unset → error', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        delete process.env.EMAIL_PROVIDER;
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('EMAIL_PROVIDER'))).toBe(true);
+    });
+
+    it('production + EMAIL_PROVIDER=resend + missing RESEND_API_KEY → error', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.EMAIL_PROVIDER = 'resend';
+        delete process.env.RESEND_API_KEY;
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('RESEND_API_KEY'))).toBe(true);
+    });
+
+    it('development + EMAIL_PROVIDER=console → no error', () => {
+        process.env.EMAIL_PROVIDER = 'console';
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'development' });
+        expect(errors).toHaveLength(0);
+    });
+
+    // -----------------------------------------------------------------------
+    // FRONTEND_URL HTTPS warning
+    // -----------------------------------------------------------------------
+
+    it('production + FRONTEND_URL with http:// → warning', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.FRONTEND_URL = 'http://app.example.com';
+        const { warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(warnings.some(w => w.includes('FRONTEND_URL') && w.includes('HTTPS'))).toBe(true);
+    });
+
+    it('production + FRONTEND_URL with https:// → no HTTPS warning', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.FRONTEND_URL = 'https://app.example.com';
+        const { warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(warnings.some(w => w.includes('FRONTEND_URL') && w.includes('HTTPS'))).toBe(false);
+    });
+
+    it('production + FRONTEND_URL points at localhost → no HTTPS warning (reverse-proxy escape hatch)', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.FRONTEND_URL = 'http://localhost:5173';
+        const { warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(warnings.some(w => w.includes('FRONTEND_URL') && w.includes('HTTPS'))).toBe(false);
     });
 });
