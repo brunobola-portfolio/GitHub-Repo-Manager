@@ -17,8 +17,13 @@ vi.mock('../lib/email.js', () => ({
     sendEmail: vi.fn(),
 }))
 
+vi.mock('../lib/audit.js', () => ({
+    auditLogDirect: vi.fn(),
+}))
+
 import { default as db, __mockPrepare as mockPrepare } from '../db.js'
 import { sendEmail } from '../lib/email.js'
+import { auditLogDirect } from '../lib/audit.js'
 
 // Reference "now" for tests: 2026-04-18
 const NOW = new Date('2026-04-18T12:00:00.000Z')
@@ -55,6 +60,7 @@ describe('runRetentionPass', () => {
         vi.resetModules()
         mockPrepare.mockReset()
         vi.mocked(sendEmail).mockReset()
+        vi.mocked(auditLogDirect).mockReset()
         delete process.env.DATA_RETENTION_DAYS
         delete process.env.DATA_RETENTION_WARNING_LEAD_DAYS
     })
@@ -118,19 +124,17 @@ describe('runRetentionPass', () => {
         expect(sendEmail).not.toHaveBeenCalled()
     })
 
-    it('row past retention deadline → credentials deleted + audit event written', async () => {
+    it('row past retention deadline → credentials deleted + auditLogDirect called (preserves hash chain)', async () => {
         // 400 days ago — past the 365-day purge threshold
         const date = new Date(NOW.getTime() - 400 * 24 * 60 * 60 * 1000).toISOString()
         const row = makeRow({ updatedAt: date })
 
         const selectStmt = { all: vi.fn(() => [row]) }
         const updateCredStmt = { run: vi.fn(), get: vi.fn(), all: vi.fn(() => []) }
-        const auditStmt = { run: vi.fn(), get: vi.fn(), all: vi.fn(() => []) }
 
         mockPrepare.mockImplementation((sql) => {
             if (/FROM user_ai_config/.test(sql)) return selectStmt
             if (/UPDATE user_ai_config\s+SET completion_credentials_enc/.test(sql)) return updateCredStmt
-            if (/INSERT INTO audit_log_v2/.test(sql)) return auditStmt
             return { run: vi.fn(), get: vi.fn(() => undefined), all: vi.fn(() => []) }
         })
 
@@ -140,28 +144,26 @@ describe('runRetentionPass', () => {
         expect(result.purged).toBe(1)
         expect(result.warned).toBe(0)
         expect(updateCredStmt.run).toHaveBeenCalledOnce()
-        expect(auditStmt.run).toHaveBeenCalledOnce()
-
-        // Verify the audit call mentions the correct action
-        const auditSql = mockPrepare.mock.calls.find(
-            ([sql]) => /INSERT INTO audit_log_v2/.test(sql)
-        )?.[0]
-        expect(auditSql).toBeTruthy()
+        // Must use auditLogDirect (not a raw INSERT) so the hash chain is preserved
+        expect(auditLogDirect).toHaveBeenCalledOnce()
+        expect(auditLogDirect).toHaveBeenCalledWith(expect.objectContaining({
+            actor_user_id: row.user_id,
+            action: 'user_ai_config.purged',
+            entity_type: 'user_ai_config',
+        }))
         expect(sendEmail).not.toHaveBeenCalled()
     })
 
-    it('dryRun: true → all logic runs but DB writes are skipped', async () => {
+    it('dryRun: true → all logic runs but DB writes and audit calls are skipped', async () => {
         const date = new Date(NOW.getTime() - 400 * 24 * 60 * 60 * 1000).toISOString()
         const row = makeRow({ updatedAt: date })
 
         const selectStmt = { all: vi.fn(() => [row]) }
         const updateStmt = { run: vi.fn(), get: vi.fn(), all: vi.fn(() => []) }
-        const auditStmt = { run: vi.fn(), get: vi.fn(), all: vi.fn(() => []) }
 
         mockPrepare.mockImplementation((sql) => {
             if (/FROM user_ai_config/.test(sql)) return selectStmt
             if (/UPDATE user_ai_config/.test(sql)) return updateStmt
-            if (/INSERT INTO audit_log_v2/.test(sql)) return auditStmt
             return { run: vi.fn(), get: vi.fn(() => undefined), all: vi.fn(() => []) }
         })
 
@@ -172,7 +174,8 @@ describe('runRetentionPass', () => {
         expect(result.purged).toBe(1)
         // No DB mutations should have been issued
         expect(updateStmt.run).not.toHaveBeenCalled()
-        expect(auditStmt.run).not.toHaveBeenCalled()
+        // auditLogDirect is also skipped in dryRun mode
+        expect(auditLogDirect).not.toHaveBeenCalled()
     })
 
     it('missing recipient email → warning skipped + logged', async () => {

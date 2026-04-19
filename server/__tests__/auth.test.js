@@ -50,9 +50,20 @@ describe('verifyWebhookSignature', () => {
         process.env.WEBHOOK_SECRET = originalEnv
     })
 
-    it('returns false when no secret configured', () => {
+    it('returns true when WEBHOOK_SECRET unset in non-production (dev friction tradeoff)', () => {
         delete process.env.WEBHOOK_SECRET
+        const savedEnv = process.env.NODE_ENV
+        process.env.NODE_ENV = 'development'
+        expect(verifyWebhookSignature('payload', 'sha256=abc')).toBe(true)
+        process.env.NODE_ENV = savedEnv
+    })
+
+    it('returns false when WEBHOOK_SECRET unset in production', () => {
+        delete process.env.WEBHOOK_SECRET
+        const savedEnv = process.env.NODE_ENV
+        process.env.NODE_ENV = 'production'
         expect(verifyWebhookSignature('payload', 'sha256=abc')).toBe(false)
+        process.env.NODE_ENV = savedEnv
     })
 
     it('returns false when no signature provided', () => {

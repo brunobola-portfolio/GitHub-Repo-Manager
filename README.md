@@ -9,9 +9,9 @@
 ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-4.1-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-5.2-000000?style=for-the-badge&logo=express&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=for-the-badge&logo=node.js&logoColor=white)
-![Gemini AI](https://img.shields.io/badge/Gemini_AI-Powered-8E75B2?style=for-the-badge&logo=google-gemini&logoColor=white)
+![BYOK AI](https://img.shields.io/badge/AI-BYOK%20(Gemini%2FAnthropicOpenAI%2FOpenRouter%2FLMStudio)-8E75B2?style=for-the-badge)
 ![SQLite](https://img.shields.io/badge/SQLite-WAL-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-414%20passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-1473%20passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
 ![License](https://img.shields.io/badge/License-AGPL%20v3-blue?style=for-the-badge)
 
 **A full-stack AI-powered dashboard for managing repositories, teams, CI/CD, and migrating from Azure DevOps — all in one beautiful interface.**
@@ -48,7 +48,7 @@ Managing a growing GitHub ecosystem is hard. Between dozens of repositories, mul
 - **Bulk operations** to manage hundreds of repos with a few clicks
 - **Zero setup needed** — try it instantly in Demo Mode with 87 pre-loaded mock repositories
 
-> Built with the latest stack: React 19, Vite 8, Express 5, Tailwind CSS 4, and Google Gemini AI.
+> Built with the latest stack: React 19, Vite 8, Express 5, Tailwind CSS 4, and BYOK AI — bring your own Gemini, Anthropic, OpenAI, OpenRouter, or LMStudio key.
 
 ---
 
@@ -123,6 +123,32 @@ Organize, filter, and manage your repositories with powerful tools built for sca
 - **Multi-Repo Comparison** — Compare health scores across repositories
 - **Performance Cache** — Fast repeated access with intelligent caching
 
+### Cross-Repo Work Board
+
+A single board across all your repositories — no context switching.
+
+- **My Reviews** — every PR where you are a requested reviewer, sorted by age
+- **My Issues** — every open issue assigned to you across all tracked repos
+- **Stale PRs** (Pro+) — PRs open beyond a configurable threshold, ranked by staleness
+- **Review Load** (Pro+) — per-reviewer review queue depth for team planning
+- **DORA Metrics** (Enterprise) — deploy frequency and lead time for changes
+
+### Command Palette (Ctrl+K)
+
+Keyboard-first navigation across the entire app — search repos, jump to any page, trigger bulk actions.
+
+### BYOK — Multi-Provider AI
+
+Configure any of these providers in Settings → AI Configuration:
+
+| Provider | Free tier | Models |
+|----------|-----------|--------|
+| Google Gemini | Yes | gemini-2.5-flash, gemini-2.5-pro |
+| Anthropic | No | claude-opus-4, claude-sonnet-4-5 |
+| OpenAI | No | gpt-4o, o4-mini |
+| OpenRouter | Yes (50 req/day) | 30+ models |
+| LMStudio | Local (free) | Any local model |
+
 ### Additional Features
 
 - **Dark/Light Mode** — System preference detection with manual toggle
@@ -132,6 +158,7 @@ Organize, filter, and manage your repositories with powerful tools built for sca
 - **Smart Notifications** — Non-intrusive toast feedback on all actions
 - **Local Caching** — Fast performance with intelligent data caching
 - **Offline Support** — Continue browsing cached data when disconnected
+- **GitHub Webhook Ingestion** — real-time PR, issue, and deployment events (see `docs/event-ingestion.md`)
 
 ---
 
@@ -139,7 +166,7 @@ Organize, filter, and manage your repositories with powerful tools built for sca
 
 ![AI Assistant](docs/images/09_ai_assistant_dark_hd.png)
 
-GitHub Repo Manager integrates **Google Gemini AI** to supercharge your workflow with 10+ AI features:
+GitHub Repo Manager integrates AI via **BYOK** (Bring Your Own Key) — configure Gemini, Anthropic, OpenAI, OpenRouter, or LMStudio in Settings → AI Configuration. 10+ AI features ship on every tier:
 
 ### Conversational AI Assistant
 - **Natural Language Interface** — Ask questions about your repositories in plain English
@@ -181,10 +208,11 @@ Available on **every tier including Free** — the full AI product surface (Assi
 | **Project Classification** | Auto-detect project type (library, app, tool, etc.) |
 | **Semantic Search** | Find repos using natural language via vector embeddings |
 | **Commit Generator** | AI-powered conventional commit messages from diffs |
-| **AI Review Step** | Gemini-powered risk assessment embedded in the migration wizard |
+| **AI Review Step** | AI-powered risk assessment embedded in the migration wizard |
 | **Batch Indexing** | Index up to 10 repos at once for semantic search |
+| **BYOK / Multi-provider** | Gemini, Anthropic, OpenAI, OpenRouter, LMStudio — configurable per user in Settings |
 
-> **Free to use**: Gemini AI has a generous free tier. Without an API key, the app works perfectly with mock AI responses.
+> Without any key configured, AI features return high-quality mock responses automatically.
 
 ---
 
@@ -286,7 +314,7 @@ Open [http://localhost:5173](http://localhost:5173) and explore with **87 pre-lo
 - **Node.js** 18+ (20+ recommended)
 - **npm** or **yarn**
 - **GitHub account** (for real mode with OAuth)
-- **Google Gemini API key** (optional, for AI features)
+- **AI provider key** (optional — add your own Gemini, Anthropic, OpenAI, OpenRouter, or LMStudio key in Settings → AI Configuration after first login; see `docs/ai-providers.md`)
 
 ### Setup
 
@@ -354,26 +382,23 @@ docker compose up -d
 
 ### Environment Variables
 
+The essentials to get started:
+
 ```env
-# GitHub OAuth (Required for Real Mode)
+# GitHub OAuth (required for real mode)
 GITHUB_CLIENT_ID=your_github_oauth_client_id
 GITHUB_CLIENT_SECRET=your_github_oauth_client_secret
 
-# AI Features (Optional - free tier available)
-# Get your key: https://aistudio.google.com/apikey
-GEMINI_API_KEY=your_gemini_api_key
+# Server security (required in production)
+SESSION_SECRET=<random 48+ byte string>
+WEBHOOK_SECRET=<random 48+ byte string>
 
-# Azure DevOps Migration (Optional)
-AZURE_PAT=your_azure_personal_access_token
-
-# Server Configuration
-PORT=3001
-SESSION_SECRET=your_random_session_secret_min_32_chars
+# Frontend / dev
 FRONTEND_URL=http://localhost:5173
-
-# Development
 VITE_MOCK_MODE=true
 ```
+
+See `.env.example` for the complete list of variables, including AI configuration (`GEMINI_API_KEY`, `AI_REQUIRE_USER_CONFIG`), email delivery (`EMAIL_PROVIDER`, `RESEND_API_KEY`), Stripe billing (`STRIPE_SECRET_KEY`), license issuance (`LICENSE_SIGNING_PRIVATE_KEY_PEM`), data retention (`DATA_RETENTION_DAYS`), and observability (`LOG_LEVEL`, `SENTRY_DSN`).
 
 ### Setting Up GitHub OAuth
 
@@ -385,13 +410,20 @@ VITE_MOCK_MODE=true
    - **Authorization callback URL**: `http://localhost:3001/api/auth/callback`
 4. Copy the **Client ID** and **Client Secret** to your `.env` file
 
-### Setting Up AI Features
+### Setting Up AI Features (BYOK)
 
-1. Visit [Google AI Studio](https://aistudio.google.com/apikey)
-2. Create a new API key (free tier: 250 requests/day)
-3. Add to `.env` as `GEMINI_API_KEY`
+AI features use **Bring Your Own Key** — each user configures their own provider key in the app:
 
-> Without an API key, all AI features return high-quality mock responses automatically.
+1. Log in via GitHub OAuth
+2. Open **Settings → AI Configuration**
+3. Choose your provider: Gemini, Anthropic, OpenAI, OpenRouter, or LMStudio
+4. Paste your API key — it is encrypted at rest with AES-256-GCM
+
+See [`docs/ai-providers.md`](docs/ai-providers.md) for per-provider setup instructions and free-tier limits.
+
+> **Single-tenant self-hosts**: you may set `GEMINI_API_KEY` in `.env` as a shared server-wide fallback so users don't need to configure their own key. Set `AI_REQUIRE_USER_CONFIG=true` to disable this fallback in multi-tenant deployments.
+>
+> Without any key configured, AI features return high-quality mock responses automatically.
 
 ---
 
@@ -459,10 +491,10 @@ Real examples of what the AI can do for your repositories:
 
 </div>
 
-- **With Gemini API key**: Full AI-powered analysis, semantic search with vector embeddings, natural language chat
-- **Without API key**: Algorithmic fallbacks for quality scoring, pattern detection, and smart suggestions — the app works perfectly either way
+- **With a provider key** (configured in Settings → AI Configuration): Full AI-powered analysis, semantic search with vector embeddings, natural language chat
+- **Without any key**: Algorithmic fallbacks for quality scoring, pattern detection, and smart suggestions — the app works perfectly either way
 
-> **Free tier available**: Google Gemini offers 250 requests/day at no cost. [Get your API key](https://aistudio.google.com/apikey)
+See [`docs/ai-providers.md`](docs/ai-providers.md) for per-provider setup and free-tier limits.
 
 ---
 
@@ -601,13 +633,13 @@ A: The UI works offline with cached data. Live features require internet.
 <summary><strong>AI Features</strong></summary>
 
 **Q: Do I need to pay for AI?**
-A: Google Gemini has a free tier (250 req/day). Check [ai.google.dev](https://ai.google.dev/).
+A: Several providers have free tiers — Google Gemini offers 250 req/day, OpenRouter 50 req/day. See [`docs/ai-providers.md`](docs/ai-providers.md).
 
 **Q: What data is sent to AI?**
 A: Only repository metadata (name, description, topics, README). Never code content.
 
 **Q: Can I use a different AI provider?**
-A: Currently Gemini only. The architecture supports adding providers — see `server/ai-service.js`.
+A: Yes. Go to **Settings → AI Configuration** and choose from Gemini, Anthropic, OpenAI, OpenRouter, or LMStudio. Each user can configure their own key. See [`docs/ai-providers.md`](docs/ai-providers.md) for setup details.
 
 </details>
 
@@ -629,23 +661,22 @@ A: No. Source repos are never modified. Use dry-run mode to test first.
 
 ## Recently Shipped (March–April 2026)
 
-- **AI Assistant Action Dispatch (v3.3.0)** — chat can now open the Migration Wizard, Migration History, Create Repo, Transfer, and Settings modals directly from natural-language requests
-- **AI-Assisted Migration Descriptions (v3.3.0)** — Gemini generates target-repo descriptions during migration setup with a deterministic fallback when no API key is present
-- **License-Tier-Aware AI Banner (v3.3.0)** — Dashboard CTA copy adapts to Free / Pro / Enterprise tier
-- **Custom `GithubIcon` component (v3.3.0)** — replaces the deprecated `lucide-react` Github glyph
-- **Migration Repo Select Redesign (v3.1.0)** — deterministic 10-rule risk engine, 5 batched Azure enrichment endpoints, slide-in detail panel, keyboard-first UX, virtualized rows
-- **Auto-Fix Drawer (v3.2.0)** — persistent size-strategy choices with "Fix applied" badge; `lfs-migrate` auto-enables the Configure-step LFS toggle
-- **Context Menu Completeness** — Dry-Run simulation, Export Metadata (JSON), Sync Repository for mirrored repos
-- **Toast Context Provider** — unified notification system across all components
-- **License Mint Automation** — GitHub Actions workflow for distributing license keys
-- **License Badge** — active tier display with Ed25519-signed JWT keys
+- **BYOK — Multi-provider AI** — configure Gemini, Anthropic, OpenAI, OpenRouter, or LMStudio per user in Settings → AI Configuration; keys encrypted at rest with AES-256-GCM
+- **GitHub Event Ingestion** — real-time PR, issue, and deployment webhook pipeline (see `docs/event-ingestion.md`)
+- **Cross-Repo Work Board** — my reviews, stale PRs, review load, DORA metrics across all repos
+- **SOC 2 Code Hardening** — append-only audit log with SHA-256 hash chain, self-service data erasure (GDPR Art. 17), startup secrets verification, data retention + warning emails
+- **Command Palette (Ctrl+K)** — keyboard-first app-wide navigation and actions
+- **Stripe Billing + License Key Delivery** — Ed25519-signed JWT license keys issued and emailed on checkout completion
+- **AI Assistant Action Dispatch (v3.3.0)** — chat opens Migration Wizard, Create Repo, Transfer, and Settings modals from natural-language requests
+- **AI-Assisted Migration Descriptions (v3.3.0)** — AI generates target-repo descriptions with deterministic fallback when no key is present
+- **Migration Repo Select Redesign (v3.1.0)** — 10-rule risk engine, 5 batched Azure enrichment endpoints, slide-in detail panel, keyboard-first UX, virtualized rows
+- **Auto-Fix Drawer (v3.2.0)** — persistent size-strategy choices with "Fix applied" badge; LFS toggle auto-enabled
+- **Bulk Operations Safety** — confirmation dialogs, dry-run mode, tier-gated destructive actions
 - **PR Review Experience** — file tree, diff viewer, AI insights, conversation threads
+- **License Mint Automation** — GitHub Actions workflow for Ed25519-signed license key distribution
 - **Modal System Redesign** — shared Modal primitive with body scroll lock
 - **Health Dashboard Premium** — tabbed organization with visual polish
-- **Landing Page** — hero, features, CTA sections
 - **Rate Limit UX** — friendly notices with dev-mode exemption
-- **RepoDetail Actions Tab** — GitHub Actions workflows + runs view
-- **Pricing + Roadmap pages** — honest tier matrix and public roadmap
 
 ## Roadmap
 
@@ -748,7 +779,7 @@ GET /api/v1/system/source
 
 ---
 
-**Built with React 19, Vite 8, Google Gemini AI, and Claude Code**
+**Built with React 19, Vite 8, BYOK AI, and Claude Code**
 
 [Overview](#why-github-repo-manager) |
 [Features](#features-overview) |

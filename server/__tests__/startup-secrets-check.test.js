@@ -29,11 +29,16 @@ beforeEach(() => {
     delete process.env.WEBHOOK_SECRET;
     delete process.env.CREDENTIAL_ENCRYPTION_KEY;
     delete process.env.DISABLE_HTTPS_ENFORCEMENT;
+    delete process.env.STRIPE_SECRET_KEY;
+    delete process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM;
 });
 
 afterEach(() => {
     // Restore only the keys we care about to avoid side-effects on the suite.
-    const keys = ['SESSION_SECRET', 'WEBHOOK_SECRET', 'CREDENTIAL_ENCRYPTION_KEY', 'DISABLE_HTTPS_ENFORCEMENT'];
+    const keys = [
+        'SESSION_SECRET', 'WEBHOOK_SECRET', 'CREDENTIAL_ENCRYPTION_KEY',
+        'DISABLE_HTTPS_ENFORCEMENT', 'STRIPE_SECRET_KEY', 'LICENSE_SIGNING_PRIVATE_KEY_PEM',
+    ];
     for (const k of keys) {
         if (envSnapshot[k] !== undefined) {
             process.env[k] = envSnapshot[k];
@@ -146,5 +151,33 @@ describe('G4 — verifySecretsAtStartup', () => {
         process.env.DISABLE_HTTPS_ENFORCEMENT = 'false';
         const { warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(warnings.some(w => w.includes('HTTPS enforcement is disabled'))).toBe(false);
+    });
+
+    // -----------------------------------------------------------------------
+    // C3 — LICENSE_SIGNING_PRIVATE_KEY_PEM conditional check
+    // -----------------------------------------------------------------------
+
+    it('production + STRIPE_SECRET_KEY set + missing LICENSE_SIGNING_PRIVATE_KEY_PEM → error', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.STRIPE_SECRET_KEY = 'sk_live_xxxxxxxxxxxxxxxxxxxxx';
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('LICENSE_SIGNING_PRIVATE_KEY_PEM'))).toBe(true);
+    });
+
+    it('production + STRIPE_SECRET_KEY set + LICENSE_SIGNING_PRIVATE_KEY_PEM set → no error for license key', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.STRIPE_SECRET_KEY = 'sk_live_xxxxxxxxxxxxxxxxxxxxx';
+        process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM = '-----BEGIN PRIVATE KEY-----\nMCowBQYDK2VwAyEA...\n-----END PRIVATE KEY-----';
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('LICENSE_SIGNING_PRIVATE_KEY_PEM'))).toBe(false);
+    });
+
+    it('production + no STRIPE_SECRET_KEY + no LICENSE_SIGNING_PRIVATE_KEY_PEM → no error (billing not enabled)', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('LICENSE_SIGNING_PRIVATE_KEY_PEM'))).toBe(false);
     });
 });

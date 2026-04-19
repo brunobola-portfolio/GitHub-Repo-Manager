@@ -28,13 +28,20 @@ A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is honest
 - **GitHub Enterprise Server** — Enterprise.
 - **Plugin / Extension System** — Free + Pro.
 - **Mobile App (React Native)** — all tiers.
-- **Custom AI Model Selection** — Pro + Enterprise.
 - **Org Permissions Sync** — Enterprise.
 - **Dependabot Aggregation** — Pro.
 - **Custom Workflow Templates** — Pro.
 
 ## Recently Shipped (March–April 2026)
 
+- **BYOK multi-provider AI** (April 2026) — Gemini, Anthropic, OpenAI, OpenRouter, LMStudio; per-user key config; AES-256-GCM encryption at rest
+- **Custom AI Model Selection** (April 2026) — covered by BYOK; users choose provider + model in Settings → AI Configuration
+- **GitHub event ingestion pipeline** (April 2026) — real-time PR, issue, and deployment webhook ingestion
+- **Cross-Repo Work Board** (April 2026) — my reviews, stale PRs, my issues, review load, DORA metrics (deploy freq + lead time)
+- **SOC 2 code hardening** (April 2026) — append-only audit log with SHA-256 hash chain, self-service data erasure (GDPR Art. 17), startup secrets verification, data retention pass with warning emails
+- **Stripe billing + license key delivery** (April 2026) — Ed25519-signed JWT license keys issued and emailed on checkout completion
+- **Command Palette** — Ctrl+K keyboard-first navigation across the full app
+- **Bulk operations safety** — confirmation dialogs, dry-run mode, tier-gated destructive actions
 - Product Honesty Pass — Wave 1 (context menu completeness)
 - Product Honesty Pass — Wave 3 (UI polish, pricing, roadmap)
 - Toast Context Provider refactor
@@ -46,6 +53,5 @@ A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is honest
 - Rate Limit UX (friendly notices + dev-mode exemption)
 - Landing Page (hero, features, CTA)
 - AGPL Open-Core License Key System (Ed25519 JWT)
-- Cross-Repo Work Board (Phase E3) — my reviews, stale PRs, my issues, DORA metrics.
 
 See `docs/specs/` and `docs/plans/` for detailed design and implementation history.

@@ -63,12 +63,12 @@ vi.mock('../middleware/require-tier.js', () => ({
 
 const { default: workBoardRouter } = await import('../routes/work-board.js')
 
-function makeApp(tier = 'free', githubLogin = 'testuser') {
+function makeApp(tier = 'free', userLogin = 'testuser') {
     const app = express()
     app.use(express.json())
     // Inject a valid session (accessToken present so requireAuth passes)
     app.use((req, _res, next) => {
-        req.session = { userId: 1, accessToken: 'ghp_mock', githubLogin, login: githubLogin }
+        req.session = { userId: 1, accessToken: 'ghp_mock', userLogin }
         req.userTier = tier
         next()
     })

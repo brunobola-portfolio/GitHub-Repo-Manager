@@ -44,7 +44,7 @@ function parseRepoIds(raw) {
 // ---------------------------------------------------------------------------
 router.get('/my-reviews', requireAuth, (req, res) => {
     try {
-        const reviewerLogin = req.session?.githubLogin || req.session?.login || null;
+        const reviewerLogin = req.session?.userLogin || null;
         if (!reviewerLogin) {
             return errorResponse(res, 400, 'GitHub login not found in session');
         }
@@ -61,7 +61,7 @@ router.get('/my-reviews', requireAuth, (req, res) => {
 // ---------------------------------------------------------------------------
 router.get('/my-issues', requireAuth, (req, res) => {
     try {
-        const assigneeLogin = req.session?.githubLogin || req.session?.login || null;
+        const assigneeLogin = req.session?.userLogin || null;
         if (!assigneeLogin) {
             return errorResponse(res, 400, 'GitHub login not found in session');
         }

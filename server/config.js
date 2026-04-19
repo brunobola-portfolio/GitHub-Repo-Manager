@@ -44,7 +44,35 @@ const configSchema = z.object({
     stripeSecretKey: z.string().optional(),
     stripeWebhookSecret: z.string().optional(),
     stripePriceProMonthly: z.string().optional(),
+    stripePriceProYearly: z.string().optional(),
     stripePriceEnterpriseMonthly: z.string().optional(),
+    stripePriceEnterpriseYearly: z.string().optional(),
+
+    // Credential vault — AES-256-GCM key for encrypting user BYOK keys and Azure PATs.
+    // Falls back to SESSION_SECRET if unset.
+    credentialEncryptionKey: z.string().optional(),
+
+    // API key signing secret (grm_live_* keys)
+    apiKeySecret: z.string().optional(),
+
+    // Email delivery ('console' | 'resend')
+    emailProvider: z.enum(['console', 'resend']).default('console'),
+    resendApiKey: z.string().optional(),
+    emailFrom: z.string().optional(),
+
+    // License issuance — Ed25519 PEM key. Required in prod when Stripe is enabled.
+    licenseSigningPrivateKeyPem: z.string().optional(),
+
+    // Data retention (G2)
+    dataRetentionDays: z.coerce.number().default(365),
+    dataRetentionWarningLeadDays: z.coerce.number().default(30),
+
+    // AI multi-tenant enforcement
+    aiRequireUserConfig: z.string().optional(),
+    disableAiReview: z.string().optional(),
+
+    // Observability
+    logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 
     // Mock mode
     mockMode: z.string().optional(),
@@ -70,7 +98,20 @@ function loadConfig() {
         stripeSecretKey: process.env.STRIPE_SECRET_KEY,
         stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
         stripePriceProMonthly: process.env.STRIPE_PRICE_PRO_MONTHLY,
+        stripePriceProYearly: process.env.STRIPE_PRICE_PRO_YEARLY,
         stripePriceEnterpriseMonthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY,
+        stripePriceEnterpriseYearly: process.env.STRIPE_PRICE_ENTERPRISE_YEARLY,
+        credentialEncryptionKey: process.env.CREDENTIAL_ENCRYPTION_KEY,
+        apiKeySecret: process.env.API_KEY_SECRET,
+        emailProvider: process.env.EMAIL_PROVIDER,
+        resendApiKey: process.env.RESEND_API_KEY,
+        emailFrom: process.env.EMAIL_FROM,
+        licenseSigningPrivateKeyPem: process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM,
+        dataRetentionDays: process.env.DATA_RETENTION_DAYS,
+        dataRetentionWarningLeadDays: process.env.DATA_RETENTION_WARNING_LEAD_DAYS,
+        aiRequireUserConfig: process.env.AI_REQUIRE_USER_CONFIG,
+        disableAiReview: process.env.DISABLE_AI_REVIEW,
+        logLevel: process.env.LOG_LEVEL,
         mockMode: process.env.VITE_MOCK_MODE,
     });
 

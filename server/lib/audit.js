@@ -119,6 +119,78 @@ export function auditLog(req, action, resourceType, resourceId, details = {}) {
 }
 
 /**
+ * Write a structured audit entry without an HTTP request object.
+ * Use this helper from background tasks (retention, cron jobs) that have no
+ * `req` to pass to `auditLog()`. Shares the exact same hash-chain logic.
+ *
+ * @param {object} opts
+ * @param {number|string} opts.actor_user_id - The user whose data is being acted on
+ * @param {string} opts.action               - Action string (e.g. 'user_ai_config.purged')
+ * @param {string} opts.entity_type          - Resource type (e.g. 'user_ai_config')
+ * @param {string|number} opts.entity_id     - Resource ID
+ * @param {object} [opts.metadata]           - Extra metadata (serialised as JSON in details)
+ */
+export function auditLogDirect({ actor_user_id, action, entity_type, entity_id, metadata = {} }) {
+    try {
+        const userId = actor_user_id ?? 0;
+        const detailsJson = JSON.stringify(metadata);
+
+        // 1. Grab the last row's hash to form the chain link.
+        const lastRow = db.prepare(
+            `SELECT id, row_hash FROM audit_log_v2 ORDER BY id DESC LIMIT 1`
+        ).get();
+        const prevHash = lastRow?.row_hash ?? '';
+
+        // 2. Predict the next id from the SQLite autoincrement sequence.
+        const seqRow = db.prepare(
+            `SELECT seq FROM sqlite_sequence WHERE name = 'audit_log_v2'`
+        ).get();
+        const anticipatedId = seqRow ? seqRow.seq + 1 : 1;
+
+        // 3. Determine the timestamp.
+        const createdAt = new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+
+        // 4. Pre-compute the row hash.
+        const rowHash = computeRowHash({
+            id: anticipatedId,
+            action,
+            resource_type: entity_type,
+            resource_id: String(entity_id ?? ''),
+            user_id: userId,
+            created_at: createdAt,
+            details: detailsJson,
+            prev_hash: prevHash,
+        });
+
+        // 5. Single INSERT — same schema as auditLog().
+        const info = db.prepare(`
+            INSERT INTO audit_log_v2
+                (user_id, action, resource_type, resource_id, details,
+                 ip_address, user_agent, api_key_id, prev_hash, row_hash, created_at)
+            VALUES (?, ?, ?, ?, ?, '', '', NULL, ?, ?, ?)
+        `).run(
+            userId,
+            action,
+            entity_type,
+            String(entity_id ?? ''),
+            detailsJson,
+            prevHash,
+            rowHash,
+            createdAt,
+        );
+
+        if (info.lastInsertRowid !== anticipatedId) {
+            logger.warn(
+                { anticipatedId, actual: info.lastInsertRowid },
+                '[audit] auditLogDirect ROWID mismatch — chain remains valid'
+            );
+        }
+    } catch (err) {
+        logger.error({ err, action, entity_type }, 'Failed to write audit log (direct)');
+    }
+}
+
+/**
  * Walk the audit_log_v2 hash chain and verify integrity.
  *
  * Each row's row_hash is recomputed from its stored fields and compared

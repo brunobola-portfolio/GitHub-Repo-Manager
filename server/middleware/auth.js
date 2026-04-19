@@ -58,7 +58,14 @@ export function isValidGitHubFullName(fullName) {
  */
 export function verifyWebhookSignature(payload, signature) {
     const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
-    if (!WEBHOOK_SECRET) return false; // Reject if no secret configured
+    if (!WEBHOOK_SECRET) {
+        // In development, accept unsigned webhooks so local ngrok testing works.
+        // Production MUST set WEBHOOK_SECRET (enforced by startup-secrets-check).
+        if (process.env.NODE_ENV !== 'production') {
+            return true;
+        }
+        return false;
+    }
     if (!signature) return false;
 
     const bytes = Buffer.isBuffer(payload)

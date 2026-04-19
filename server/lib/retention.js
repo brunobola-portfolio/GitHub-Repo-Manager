@@ -3,6 +3,7 @@
 // Commercial license: https://bolalabs.pt/license
 
 import db from '../db.js'
+import { auditLogDirect } from './audit.js'
 import { sendEmail } from './email.js'
 import logger from './logger.js'
 
@@ -144,13 +145,14 @@ export async function runRetentionPass({ now = new Date(), dryRun = false } = {}
                     WHERE user_id = ?
                 `).run(row.user_id)
 
-                // Audit event using raw db insert (no req object available here)
-                const auditDetails = JSON.stringify({ reason: 'data_retention', updatedAt: row.updated_at })
-                db.prepare(`
-                    INSERT INTO audit_log_v2
-                        (user_id, action, resource_type, resource_id, details, ip_address, user_agent)
-                    VALUES (?, 'user_ai_config.purged', 'user_ai_config', ?, ?, '', '')
-                `).run(row.user_id, String(row.user_id), auditDetails)
+                // Audit event via auditLogDirect to preserve the hash chain.
+                auditLogDirect({
+                    actor_user_id: row.user_id,
+                    action: 'user_ai_config.purged',
+                    entity_type: 'user_ai_config',
+                    entity_id: String(row.user_id),
+                    metadata: { reason: 'data_retention', updatedAt: row.updated_at },
+                })
             }
 
             stats.purged++

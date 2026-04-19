@@ -42,6 +42,15 @@ export function verifySecretsAtStartup({ nodeEnv }) {
             );
         }
 
+        // License signing key — required when Stripe billing is enabled.
+        // Without it, paid customers receive no license key after checkout.
+        if (process.env.STRIPE_SECRET_KEY && !process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM) {
+            errors.push(
+                'LICENSE_SIGNING_PRIVATE_KEY_PEM must be set when STRIPE_SECRET_KEY is present ' +
+                '(required for license key issuance after checkout)'
+            );
+        }
+
         // Warn if HTTPS enforcement has been intentionally disabled.
         if (process.env.DISABLE_HTTPS_ENFORCEMENT === 'true') {
             warnings.push(

@@ -30,6 +30,10 @@ Design specifications and feature requirements.
 - [Migration Repo Select Redesign](specs/2026-04-16-migration-repo-select-redesign.md) — Decision-support surface for picking which Azure DevOps repos to migrate: deterministic 10-rule risk engine, 5 batched Azure enrichment endpoints, slide-in detail panel, keyboard-first UX, virtualized rows (Implemented)
 - [Migration Auto-Fix Drawer](specs/2026-04-16-migration-autofix-drawer.md) — Persistent size-strategy choices with "Fix applied" badge; `lfs-migrate` auto-enables the Configure-step LFS toggle (Implemented)
 - [AI-Assisted Migration Description](specs/2026-04-18-ai-migration-description.md) — Gemini-generated target-repo descriptions with deterministic fallback (Implemented in v3.3.0)
+- [BYOK and Remaining Phase 0](specs/2026-04-19-byok-and-remaining-phase-0.md) — BYOK multi-provider AI, event ingestion, Work Board, SOC 2 hardening
+- [Expert Panel Review](specs/2026-04-19-expert-panel-review.md) — Expert panel findings and prioritised feature gaps
+- [Feature Research and Roadmap Gaps](specs/2026-04-19-feature-research-and-roadmap-gaps.md) — Research into unimplemented features and roadmap alignment
+- [Next-Session Handoff](specs/2026-04-19-next-session-handoff.md) — Starting point for the next agent session
 
 ## Plans (How to build it)
 
@@ -67,6 +71,14 @@ Step-by-step implementation plans generated from approved specs.
 - [Comprehensive Code Review](plans/2026-04-13-comprehensive-code-review.md) — Repo-wide code review pass (In Progress)
 - [Migration Repo Select Redesign](plans/2026-04-16-migration-repo-select-redesign.md) — 10-rule risk engine + 5 batched Azure endpoints + virtualized list + slide-in detail panel (Complete)
 - [Migration Auto-Fix Drawer](plans/2026-04-16-migration-autofix-drawer-plan.md) — Persistent size-strategy choices with visual feedback (Complete)
+
+## Guides
+
+- [AI Providers (BYOK)](ai-providers.md) — BYOK multi-provider setup (Gemini, Anthropic, OpenAI, OpenRouter, LMStudio)
+- [GitHub Event Ingestion](event-ingestion.md) — GitHub webhook ingestion (PR, issues, deployments)
+- [Cross-Repo Work Board](work-board.md) — Work Board — reviews, stale PRs, DORA
+- [Security Hardening](security-hardening.md) — SOC 2 code hardening (audit chain, data erasure, retention)
+- [Billing and Licensing](billing-and-licensing.md) — Stripe subscription + license key delivery
 
 ## Architecture
 

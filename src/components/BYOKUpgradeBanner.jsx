@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, X, ArrowRight } from 'lucide-react'
-import { API_BASE_URL } from '../config'
+import { API_BASE_URL, MOCK_MODE } from '../config'
 
 const DISMISS_KEY = 'byok-banner-dismissed'
 
@@ -21,6 +21,7 @@ export function BYOKUpgradeBanner({ isAuthenticated, onOpenAISettings }) {
 
     useEffect(() => {
         if (!isAuthenticated) return
+        if (MOCK_MODE) return // Don't fetch in demo mode — no backend, would 401
         if (localStorage.getItem(DISMISS_KEY) === '1') return
 
         let cancelled = false

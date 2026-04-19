@@ -1,7 +1,7 @@
 # Security Hardening — SOC 2 Code-Side Prep (Phase G)
 
-> **Scope**: G1 + G3 + G4 from `docs/specs/2026-04-19-byok-and-remaining-phase-0.md §2.3`.
-> G2 (email-based breach notification) is deferred pending email-infrastructure decision.
+> **Scope**: G1 + G2 + G3 + G4 from `docs/specs/2026-04-19-byok-and-remaining-phase-0.md §2.3`.
+> All four items are implemented. G2 (email-based retention warnings) uses `server/lib/email.js` with a `console` adapter in dev and a Resend adapter in production.
 > Real SOC 2 certification is a 12-month business process; these items make the codebase audit-ready.
 
 ---
