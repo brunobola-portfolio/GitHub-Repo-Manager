@@ -29,6 +29,7 @@ import reposSecurityRouter from './repos-security.js';
 import userAIConfigRoutes from '../user-ai-config.js';
 import userDataRoutes from '../user-data.js';
 import workBoardRoutes from '../work-board.js';
+import searchRoutes from '../search.js';
 import { requireTier } from '../../middleware/require-tier.js';
 import { createCache } from '../../lib/memory-cache.js';
 
@@ -61,6 +62,7 @@ router.use(reposSecurityRouter);
 router.use('/user/ai-config', userAIConfigRoutes);
 router.use('/user/data', userDataRoutes);
 router.use('/work-board', workBoardRoutes);
+router.use('/search', searchRoutes);
 
 // ------------------------------------------------------------------
 // Team-specific inline routes
