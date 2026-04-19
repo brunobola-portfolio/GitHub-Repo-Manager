@@ -28,6 +28,10 @@ const {
     deployFrequency,
     leadTimeForChanges,
     reviewLoadByReviewer,
+    changeFailureRate,
+    meanTimeToRecovery,
+    listTechDebtIssues,
+    techDebtHotspots,
 } = await import('../lib/event-aggregations.js')
 
 // ---------------------------------------------------------------------------
@@ -291,5 +295,160 @@ describe('reviewLoadByReviewer', () => {
         reviewLoadByReviewer({ since })
         const allArgs = mockPrepare.mock.results[0].value.all.mock.calls[0]
         expect(allArgs).toContain(since.toISOString())
+    })
+})
+
+// ---------------------------------------------------------------------------
+// changeFailureRate
+// ---------------------------------------------------------------------------
+
+describe('changeFailureRate', () => {
+    it('returns null rate when no deployments in window', () => {
+        mockRows = []
+        const result = changeFailureRate()
+        expect(result.total).toBe(0)
+        expect(result.rate).toBeNull()
+    })
+
+    it('computes rate from final-state rows', () => {
+        mockRows = [
+            { state: 'success' }, { state: 'success' }, { state: 'success' },
+            { state: 'success' }, { state: 'success' }, { state: 'success' },
+            { state: 'success' }, { state: 'success' }, { state: 'success' },
+            { state: 'failure' },
+        ]
+        const result = changeFailureRate()
+        expect(result.total).toBe(10)
+        expect(result.failed).toBe(1)
+        expect(result.successful).toBe(9)
+        expect(result.rate).toBeCloseTo(0.1, 3)
+    })
+
+    it('treats "error" state as a failure', () => {
+        mockRows = [{ state: 'success' }, { state: 'error' }]
+        const result = changeFailureRate()
+        expect(result.failed).toBe(1)
+        expect(result.rate).toBeCloseTo(0.5, 3)
+    })
+})
+
+// ---------------------------------------------------------------------------
+// meanTimeToRecovery
+// ---------------------------------------------------------------------------
+
+describe('meanTimeToRecovery', () => {
+    it('returns zero sample when no failures', () => {
+        mockRows = []
+        const result = meanTimeToRecovery()
+        expect(result.sampleSize).toBe(0)
+        expect(result.p50).toBeNull()
+        expect(result.unresolved).toBe(0)
+    })
+
+    it('computes p50/p90 from failure->recovery pairs (hours)', () => {
+        const mkPair = (failedHoursAgoVal, recoveredHoursAgoVal) => ({
+            repoId: 1,
+            failedAt: hoursAgo(failedHoursAgoVal),
+            recoveredAt: hoursAgo(recoveredHoursAgoVal),
+        })
+        // durations (hours): 1, 2, 3, 4, 10
+        mockRows = [
+            mkPair(10, 9),  // 1h
+            mkPair(20, 18), // 2h
+            mkPair(30, 27), // 3h
+            mkPair(40, 36), // 4h
+            mkPair(50, 40), // 10h
+        ]
+        const result = meanTimeToRecovery()
+        expect(result.sampleSize).toBe(5)
+        expect(result.p50).toBeCloseTo(3, 0)
+        expect(result.p90).toBeCloseTo(10, 0)
+        expect(result.unresolved).toBe(0)
+    })
+
+    it('counts unresolved failures (no recoveredAt)', () => {
+        mockRows = [
+            { repoId: 1, failedAt: hoursAgo(5), recoveredAt: hoursAgo(4) },
+            { repoId: 1, failedAt: hoursAgo(3), recoveredAt: null },
+            { repoId: 2, failedAt: hoursAgo(2), recoveredAt: null },
+        ]
+        const result = meanTimeToRecovery()
+        expect(result.sampleSize).toBe(1)
+        expect(result.unresolved).toBe(2)
+    })
+})
+
+// ---------------------------------------------------------------------------
+// listTechDebtIssues
+// ---------------------------------------------------------------------------
+
+describe('listTechDebtIssues', () => {
+    it('returns items whose labels match default debt labels', () => {
+        mockRows = [
+            {
+                repoFullName: 'org/a', repoId: 1, issueNumber: 10, title: 'Clean up',
+                authorLogin: 'alice', rawLabels: JSON.stringify(['tech-debt']),
+                rawAssignees: '[]', openedAt: daysAgo(7),
+            },
+            {
+                repoFullName: 'org/b', repoId: 2, issueNumber: 11, title: 'Feature',
+                authorLogin: 'bob', rawLabels: JSON.stringify(['enhancement']),
+                rawAssignees: '[]', openedAt: daysAgo(3),
+            },
+        ]
+        const result = listTechDebtIssues()
+        expect(result).toHaveLength(1)
+        expect(result[0].issueNumber).toBe(10)
+        expect(result[0].labels).toContain('tech-debt')
+        expect(result[0].ageDays).toBeGreaterThan(6)
+    })
+
+    it('respects custom label list', () => {
+        mockRows = [
+            { repoFullName: 'o/a', repoId: 1, issueNumber: 1, title: 't',
+              rawLabels: JSON.stringify(['custom-flag']), rawAssignees: '[]', openedAt: daysAgo(1) },
+        ]
+        const empty = listTechDebtIssues({ labels: ['debt'] })
+        expect(empty).toEqual([])
+        const matched = listTechDebtIssues({ labels: ['custom-flag'] })
+        expect(matched).toHaveLength(1)
+    })
+
+    it('gracefully handles malformed JSON in labels/assignees', () => {
+        mockRows = [
+            { repoFullName: 'o/a', repoId: 1, issueNumber: 1, title: 't',
+              rawLabels: 'not-json', rawAssignees: 'also-not-json', openedAt: daysAgo(1) },
+        ]
+        const result = listTechDebtIssues()
+        expect(result).toEqual([])
+    })
+
+    it('respects limit', () => {
+        mockRows = Array.from({ length: 5 }, (_, i) => ({
+            repoFullName: 'o/a', repoId: 1, issueNumber: i + 1, title: `t${i}`,
+            rawLabels: JSON.stringify(['debt']), rawAssignees: '[]', openedAt: daysAgo(1),
+        }))
+        const result = listTechDebtIssues({ limit: 2 })
+        expect(result).toHaveLength(2)
+    })
+})
+
+// ---------------------------------------------------------------------------
+// techDebtHotspots
+// ---------------------------------------------------------------------------
+
+describe('techDebtHotspots', () => {
+    it('groups tech-debt items by repo, sorted by count desc', () => {
+        mockRows = [
+            { repoFullName: 'org/a', repoId: 1, issueNumber: 1, title: 't', rawLabels: JSON.stringify(['debt']), rawAssignees: '[]', openedAt: daysAgo(30) },
+            { repoFullName: 'org/a', repoId: 1, issueNumber: 2, title: 't', rawLabels: JSON.stringify(['debt']), rawAssignees: '[]', openedAt: daysAgo(10) },
+            { repoFullName: 'org/b', repoId: 2, issueNumber: 3, title: 't', rawLabels: JSON.stringify(['debt']), rawAssignees: '[]', openedAt: daysAgo(5) },
+        ]
+        const result = techDebtHotspots()
+        expect(result).toHaveLength(2)
+        expect(result[0].repoFullName).toBe('org/a')
+        expect(result[0].count).toBe(2)
+        expect(result[0].oldestAgeDays).toBeGreaterThan(29)
+        expect(result[1].count).toBe(1)
     })
 })

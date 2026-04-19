@@ -13,6 +13,10 @@ const mockListMyOpenIssues = vi.fn(() => [])
 const mockDeployFrequency = vi.fn(() => ({ totalDeployments: 0, perDay: [] }))
 const mockLeadTimeForChanges = vi.fn(() => ({ sampleSize: 0, medianHours: null, p50: null, p90: null }))
 const mockReviewLoadByReviewer = vi.fn(() => [])
+const mockChangeFailureRate = vi.fn(() => ({ total: 0, failed: 0, successful: 0, rate: null }))
+const mockMeanTimeToRecovery = vi.fn(() => ({ sampleSize: 0, medianHours: null, p50: null, p90: null, unresolved: 0 }))
+const mockListTechDebtIssues = vi.fn(() => [])
+const mockTechDebtHotspots = vi.fn(() => [])
 
 vi.mock('../lib/event-aggregations.js', () => ({
     listMyPendingReviews: (...a) => mockListMyPendingReviews(...a),
@@ -21,6 +25,10 @@ vi.mock('../lib/event-aggregations.js', () => ({
     deployFrequency: (...a) => mockDeployFrequency(...a),
     leadTimeForChanges: (...a) => mockLeadTimeForChanges(...a),
     reviewLoadByReviewer: (...a) => mockReviewLoadByReviewer(...a),
+    changeFailureRate: (...a) => mockChangeFailureRate(...a),
+    meanTimeToRecovery: (...a) => mockMeanTimeToRecovery(...a),
+    listTechDebtIssues: (...a) => mockListTechDebtIssues(...a),
+    techDebtHotspots: (...a) => mockTechDebtHotspots(...a),
 }))
 
 vi.mock('../middleware/auth.js', () => ({
@@ -96,6 +104,10 @@ beforeEach(() => {
     mockDeployFrequency.mockReturnValue({ totalDeployments: 0, perDay: [] })
     mockLeadTimeForChanges.mockReturnValue({ sampleSize: 0, medianHours: null, p50: null, p90: null })
     mockReviewLoadByReviewer.mockReturnValue([])
+    mockChangeFailureRate.mockReturnValue({ total: 0, failed: 0, successful: 0, rate: null })
+    mockMeanTimeToRecovery.mockReturnValue({ sampleSize: 0, medianHours: null, p50: null, p90: null, unresolved: 0 })
+    mockListTechDebtIssues.mockReturnValue([])
+    mockTechDebtHotspots.mockReturnValue([])
 })
 
 // ---------------------------------------------------------------------------
@@ -242,5 +254,133 @@ describe('GET /api/v1/work-board/lead-time', () => {
         expect(res.status).toBe(200)
         expect(res.body.data.medianHours).toBe(24)
         expect(res.body.data.p90).toBe(72)
+    })
+})
+
+// ---------------------------------------------------------------------------
+// change-failure-rate + mttr  (Enterprise+)
+// ---------------------------------------------------------------------------
+
+describe('GET /api/v1/work-board/change-failure-rate', () => {
+    it('returns 403 for pro user', async () => {
+        const res = await request(makeApp('pro')).get('/api/v1/work-board/change-failure-rate')
+        expect(res.status).toBe(403)
+    })
+
+    it('returns CFR shape for enterprise', async () => {
+        mockChangeFailureRate.mockReturnValue({ total: 50, failed: 3, successful: 47, rate: 0.06 })
+        const res = await request(makeApp('enterprise')).get('/api/v1/work-board/change-failure-rate')
+        expect(res.status).toBe(200)
+        expect(res.body.data.rate).toBe(0.06)
+        expect(res.body.data.total).toBe(50)
+    })
+})
+
+describe('GET /api/v1/work-board/mttr', () => {
+    it('returns 403 for free user', async () => {
+        const res = await request(makeApp('free')).get('/api/v1/work-board/mttr')
+        expect(res.status).toBe(403)
+    })
+
+    it('returns MTTR shape for enterprise', async () => {
+        mockMeanTimeToRecovery.mockReturnValue({
+            sampleSize: 4, medianHours: 2, p50: 2, p90: 8, unresolved: 1,
+        })
+        const res = await request(makeApp('enterprise')).get('/api/v1/work-board/mttr')
+        expect(res.status).toBe(200)
+        expect(res.body.data.p50).toBe(2)
+        expect(res.body.data.unresolved).toBe(1)
+    })
+})
+
+// ---------------------------------------------------------------------------
+// dora summary + csv export
+// ---------------------------------------------------------------------------
+
+describe('GET /api/v1/work-board/dora', () => {
+    it('403 for free user', async () => {
+        const res = await request(makeApp('free')).get('/api/v1/work-board/dora')
+        expect(res.status).toBe(403)
+    })
+
+    it('returns all four DORA metrics for enterprise', async () => {
+        mockDeployFrequency.mockReturnValue({ totalDeployments: 5, perDay: [] })
+        mockLeadTimeForChanges.mockReturnValue({ sampleSize: 3, medianHours: 4, p50: 4, p90: 10 })
+        mockChangeFailureRate.mockReturnValue({ total: 5, failed: 0, successful: 5, rate: 0 })
+        mockMeanTimeToRecovery.mockReturnValue({ sampleSize: 0, medianHours: null, p50: null, p90: null, unresolved: 0 })
+
+        const res = await request(makeApp('enterprise')).get('/api/v1/work-board/dora')
+        expect(res.status).toBe(200)
+        expect(res.body.data).toMatchObject({
+            environment: 'production',
+            deployFrequency: { totalDeployments: 5 },
+            leadTime: { p90: 10 },
+            changeFailureRate: { rate: 0 },
+            mttr: { sampleSize: 0 },
+        })
+    })
+})
+
+describe('GET /api/v1/work-board/dora.csv', () => {
+    it('returns text/csv with proper headers', async () => {
+        mockDeployFrequency.mockReturnValue({ totalDeployments: 2, perDay: [{ date: '2026-04-01', count: 2 }] })
+        mockLeadTimeForChanges.mockReturnValue({ sampleSize: 1, medianHours: 3, p50: 3, p90: 3 })
+        mockChangeFailureRate.mockReturnValue({ total: 2, failed: 0, successful: 2, rate: 0 })
+        mockMeanTimeToRecovery.mockReturnValue({ sampleSize: 0, medianHours: null, p50: null, p90: null, unresolved: 0 })
+
+        const res = await request(makeApp('enterprise')).get('/api/v1/work-board/dora.csv')
+        expect(res.status).toBe(200)
+        expect(res.headers['content-type']).toContain('text/csv')
+        expect(res.headers['content-disposition']).toContain('attachment')
+        // CSV should contain known headers
+        expect(res.text).toContain('metric,value')
+        expect(res.text).toContain('total_deployments_30d,2')
+        expect(res.text).toContain('2026-04-01,2')
+    })
+
+    it('403 for pro user', async () => {
+        const res = await request(makeApp('pro')).get('/api/v1/work-board/dora.csv')
+        expect(res.status).toBe(403)
+    })
+
+    it('properly escapes commas and quotes in values', async () => {
+        mockDeployFrequency.mockReturnValue({ totalDeployments: 0, perDay: [{ date: 'weird,"date"', count: 1 }] })
+        mockLeadTimeForChanges.mockReturnValue({ sampleSize: 0, medianHours: null, p50: null, p90: null })
+        mockChangeFailureRate.mockReturnValue({ total: 0, failed: 0, successful: 0, rate: null })
+        mockMeanTimeToRecovery.mockReturnValue({ sampleSize: 0, medianHours: null, p50: null, p90: null, unresolved: 0 })
+
+        const res = await request(makeApp('enterprise')).get('/api/v1/work-board/dora.csv')
+        expect(res.status).toBe(200)
+        // Weird date should be quoted and inner " escaped to ""
+        expect(res.text).toContain('"weird,""date"""')
+    })
+})
+
+// ---------------------------------------------------------------------------
+// tech-debt (Pro+)
+// ---------------------------------------------------------------------------
+
+describe('GET /api/v1/work-board/tech-debt', () => {
+    it('returns 403 for free user', async () => {
+        const res = await request(makeApp('free')).get('/api/v1/work-board/tech-debt')
+        expect(res.status).toBe(403)
+    })
+
+    it('returns items + hotspots shape for pro user', async () => {
+        mockListTechDebtIssues.mockReturnValue([
+            { repoFullName: 'o/a', issueNumber: 1, title: 'x', labels: ['tech-debt'], openedAt: new Date().toISOString(), ageDays: 5 },
+        ])
+        mockTechDebtHotspots.mockReturnValue([{ repoFullName: 'o/a', count: 1, oldestAgeDays: 5 }])
+
+        const res = await request(makeApp('pro')).get('/api/v1/work-board/tech-debt')
+        expect(res.status).toBe(200)
+        expect(res.body.data.items).toHaveLength(1)
+        expect(res.body.data.hotspots).toHaveLength(1)
+    })
+
+    it('forwards custom labels query param as array', async () => {
+        await request(makeApp('pro')).get('/api/v1/work-board/tech-debt?labels=debt,slop,cleanup')
+        const firstArg = mockListTechDebtIssues.mock.calls[0][0]
+        expect(firstArg.labels).toEqual(['debt', 'slop', 'cleanup'])
     })
 })

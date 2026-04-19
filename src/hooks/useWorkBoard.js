@@ -111,6 +111,57 @@ function getMockDORA() {
     return _mockDORA
 }
 
+function makeMockDORAFull() {
+    const base = getMockDORA()
+    return {
+        environment: 'production',
+        windowStart: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(),
+        deployFrequency: {
+            totalDeployments: base.totalDeployments,
+            perDay: base.perDay,
+        },
+        leadTime: {
+            sampleSize: base.sampleSize,
+            medianHours: base.medianLeadTimeHours,
+            p50: base.p50,
+            p90: base.p90,
+        },
+        changeFailureRate: {
+            total: 42,
+            failed: 5,
+            successful: 37,
+            rate: 0.119,
+        },
+        mttr: {
+            sampleSize: 5,
+            medianHours: 3.2,
+            p50: 3.2,
+            p90: 11.5,
+            unresolved: 0,
+        },
+    }
+}
+
+let _mockDORAFull = null
+function getMockDORAFull() {
+    if (!_mockDORAFull) _mockDORAFull = makeMockDORAFull()
+    return _mockDORAFull
+}
+
+const MOCK_TECH_DEBT = {
+    items: [
+        { repoFullName: 'acme/backend', issueNumber: 204, title: 'Refactor auth middleware — deprecated passport strategy', labels: ['tech-debt', 'refactor'], openedAt: new Date(Date.now() - 42 * 24 * 3600 * 1000).toISOString(), ageDays: 42, assignees: ['alice'] },
+        { repoFullName: 'acme/frontend', issueNumber: 98, title: 'Remove legacy jQuery plugins from settings page', labels: ['cleanup', 'tech-debt'], openedAt: new Date(Date.now() - 21 * 24 * 3600 * 1000).toISOString(), ageDays: 21, assignees: [] },
+        { repoFullName: 'acme/backend', issueNumber: 237, title: 'Replace synchronous fs.readFile with streams', labels: ['tech-debt', 'perf'], openedAt: new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString(), ageDays: 14, assignees: ['bob'] },
+        { repoFullName: 'acme/infra', issueNumber: 17, title: 'Migrate Terraform workspace to 1.9+', labels: ['refactor'], openedAt: new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(), ageDays: 7, assignees: [] },
+    ],
+    hotspots: [
+        { repoFullName: 'acme/backend', count: 2, oldestAgeDays: 42 },
+        { repoFullName: 'acme/frontend', count: 1, oldestAgeDays: 21 },
+        { repoFullName: 'acme/infra', count: 1, oldestAgeDays: 7 },
+    ],
+}
+
 // ---------------------------------------------------------------------------
 // Public hooks
 // ---------------------------------------------------------------------------
@@ -131,4 +182,14 @@ export function useMyOpenIssues() {
 export function useDORAMetrics({ environment = 'production' } = {}) {
     const url = `/api/v1/work-board/deploy-freq?environment=${environment}`
     return useWorkBoardFetch(url, getMockDORA())
+}
+
+export function useDORASummary({ environment = 'production' } = {}) {
+    const url = `/api/v1/work-board/dora?environment=${environment}`
+    return useWorkBoardFetch(url, getMockDORAFull())
+}
+
+export function useTechDebt({ repoIds } = {}) {
+    const qs = repoIds && repoIds.length > 0 ? `?repoIds=${repoIds.join(',')}` : ''
+    return useWorkBoardFetch(`/api/v1/work-board/tech-debt${qs}`, MOCK_TECH_DEBT)
 }

@@ -43,17 +43,35 @@ const MOCK_ISSUES = [
     { repoFullName: 'org/app', issueNumber: 5, labels: ['bug'], openedAt: new Date().toISOString(), ageDays: 3 },
 ]
 const MOCK_DORA = { totalDeployments: 42, perDay: [{ date: '2026-04-01', count: 7 }], medianLeadTimeHours: 18 }
+const MOCK_DORA_SUMMARY = {
+    environment: 'production',
+    windowStart: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(),
+    deployFrequency: { totalDeployments: 42, perDay: [{ date: '2026-04-01', count: 7 }] },
+    leadTime: { sampleSize: 5, medianHours: 18, p50: 18, p90: 36 },
+    changeFailureRate: { total: 10, failed: 1, successful: 9, rate: 0.1 },
+    mttr: { sampleSize: 1, medianHours: 2, p50: 2, p90: 3, unresolved: 0 },
+}
+const MOCK_TECH_DEBT = {
+    items: [
+        { repoFullName: 'org/repo', issueNumber: 99, title: 'Refactor X', labels: ['tech-debt'], openedAt: new Date().toISOString(), ageDays: 7, assignees: [] },
+    ],
+    hotspots: [{ repoFullName: 'org/repo', count: 1, oldestAgeDays: 7 }],
+}
 
 const mockUseMyPendingReviews = vi.fn(() => ({ data: MOCK_REVIEWS, loading: false, error: null, refresh: vi.fn() }))
 const mockUseStalePRs = vi.fn(() => ({ data: MOCK_STALE, loading: false, error: null, refresh: vi.fn() }))
 const mockUseMyOpenIssues = vi.fn(() => ({ data: MOCK_ISSUES, loading: false, error: null, refresh: vi.fn() }))
 const mockUseDORAMetrics = vi.fn(() => ({ data: MOCK_DORA, loading: false, error: null, refresh: vi.fn() }))
+const mockUseDORASummary = vi.fn(() => ({ data: MOCK_DORA_SUMMARY, loading: false, error: null, refresh: vi.fn() }))
+const mockUseTechDebt = vi.fn(() => ({ data: MOCK_TECH_DEBT, loading: false, error: null, refresh: vi.fn() }))
 
 vi.mock('@/hooks/useWorkBoard', () => ({
     useMyPendingReviews: () => mockUseMyPendingReviews(),
     useStalePRs: (opts) => mockUseStalePRs(opts),
     useMyOpenIssues: () => mockUseMyOpenIssues(),
     useDORAMetrics: (opts) => mockUseDORAMetrics(opts),
+    useDORASummary: (opts) => mockUseDORASummary(opts),
+    useTechDebt: (opts) => mockUseTechDebt(opts),
 }))
 
 // ---------------------------------------------------------------------------
@@ -71,6 +89,8 @@ beforeEach(() => {
     mockUseStalePRs.mockReturnValue({ data: MOCK_STALE, loading: false, error: null, refresh: vi.fn() })
     mockUseMyOpenIssues.mockReturnValue({ data: MOCK_ISSUES, loading: false, error: null, refresh: vi.fn() })
     mockUseDORAMetrics.mockReturnValue({ data: MOCK_DORA, loading: false, error: null, refresh: vi.fn() })
+    mockUseDORASummary.mockReturnValue({ data: MOCK_DORA_SUMMARY, loading: false, error: null, refresh: vi.fn() })
+    mockUseTechDebt.mockReturnValue({ data: MOCK_TECH_DEBT, loading: false, error: null, refresh: vi.fn() })
 })
 
 // ---------------------------------------------------------------------------
@@ -88,11 +108,12 @@ describe('WorkBoardPage', () => {
         expect(screen.getByText(/12 repos tracked/i)).toBeInTheDocument()
     })
 
-    it('renders all four tabs', () => {
+    it('renders all five tabs', () => {
         renderPage()
         expect(screen.getByRole('button', { name: /my reviews/i })).toBeInTheDocument()
         expect(screen.getByRole('button', { name: /stale prs/i })).toBeInTheDocument()
         expect(screen.getByRole('button', { name: /my issues/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /tech debt/i })).toBeInTheDocument()
         expect(screen.getByRole('button', { name: /dora/i })).toBeInTheDocument()
     })
 
@@ -164,7 +185,7 @@ describe('WorkBoardPage', () => {
     it('DORA tab shows upsell when 403 from backend', () => {
         const err403 = new Error('upgrade_required')
         err403.status = 403
-        mockUseDORAMetrics.mockReturnValue({ data: null, loading: false, error: err403, refresh: vi.fn() })
+        mockUseDORASummary.mockReturnValue({ data: null, loading: false, error: err403, refresh: vi.fn() })
 
         renderPage()
         fireEvent.click(screen.getByRole('button', { name: /dora/i }))

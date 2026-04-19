@@ -23,6 +23,10 @@ import {
     deployFrequency,
     leadTimeForChanges,
     reviewLoadByReviewer,
+    changeFailureRate,
+    meanTimeToRecovery,
+    listTechDebtIssues,
+    techDebtHotspots,
 } from '../lib/event-aggregations.js';
 
 const router = express.Router();
@@ -131,6 +135,138 @@ router.get('/lead-time', requireAuth, requireTier('enterprise'), (req, res) => {
         res.json({ data });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch lead time'));
+    }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/work-board/change-failure-rate   (Enterprise+)
+// ---------------------------------------------------------------------------
+router.get('/change-failure-rate', requireAuth, requireTier('enterprise'), (req, res) => {
+    try {
+        const environment = req.query.environment || 'production';
+        const repoIds = parseRepoIds(req.query.repoIds);
+        const since = req.query.since ? new Date(req.query.since) : undefined;
+        const data = changeFailureRate({ environment, since, repoIds });
+        res.json({ data });
+    } catch (err) {
+        errorResponse(res, 500, safeError(err, 'Failed to fetch change failure rate'));
+    }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/work-board/mttr    (Enterprise+)
+// ---------------------------------------------------------------------------
+router.get('/mttr', requireAuth, requireTier('enterprise'), (req, res) => {
+    try {
+        const environment = req.query.environment || 'production';
+        const repoIds = parseRepoIds(req.query.repoIds);
+        const since = req.query.since ? new Date(req.query.since) : undefined;
+        const data = meanTimeToRecovery({ environment, since, repoIds });
+        res.json({ data });
+    } catch (err) {
+        errorResponse(res, 500, safeError(err, 'Failed to fetch MTTR'));
+    }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/work-board/dora     (Enterprise+) — combined DORA summary
+// ---------------------------------------------------------------------------
+router.get('/dora', requireAuth, requireTier('enterprise'), (req, res) => {
+    try {
+        const environment = req.query.environment || 'production';
+        const repoIds = parseRepoIds(req.query.repoIds);
+        const since = req.query.since ? new Date(req.query.since) : undefined;
+
+        const deploy = deployFrequency({ environment, since, repoIds });
+        const lead = leadTimeForChanges({ since, repoIds });
+        const cfr = changeFailureRate({ environment, since, repoIds });
+        const mttr = meanTimeToRecovery({ environment, since, repoIds });
+
+        res.json({
+            data: {
+                environment,
+                windowStart: (since || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).toISOString(),
+                deployFrequency: deploy,
+                leadTime: lead,
+                changeFailureRate: cfr,
+                mttr,
+            },
+        });
+    } catch (err) {
+        errorResponse(res, 500, safeError(err, 'Failed to fetch DORA summary'));
+    }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/work-board/dora.csv  (Enterprise+) — CSV export
+// ---------------------------------------------------------------------------
+function csvEscape(v) {
+    if (v == null) return '';
+    const s = String(v);
+    if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+}
+
+router.get('/dora.csv', requireAuth, requireTier('enterprise'), (req, res) => {
+    try {
+        const environment = req.query.environment || 'production';
+        const repoIds = parseRepoIds(req.query.repoIds);
+        const since = req.query.since ? new Date(req.query.since) : undefined;
+
+        const deploy = deployFrequency({ environment, since, repoIds });
+        const lead = leadTimeForChanges({ since, repoIds });
+        const cfr = changeFailureRate({ environment, since, repoIds });
+        const mttr = meanTimeToRecovery({ environment, since, repoIds });
+
+        const headerRows = [
+            ['metric', 'value'],
+            ['environment', environment],
+            ['total_deployments_30d', deploy.totalDeployments],
+            ['lead_time_p50_hours', lead.p50],
+            ['lead_time_p90_hours', lead.p90],
+            ['lead_time_sample_size', lead.sampleSize],
+            ['change_failure_rate', cfr.rate],
+            ['change_failures', cfr.failed],
+            ['change_failure_total', cfr.total],
+            ['mttr_p50_hours', mttr.p50],
+            ['mttr_p90_hours', mttr.p90],
+            ['mttr_sample_size', mttr.sampleSize],
+            ['mttr_unresolved_failures', mttr.unresolved],
+            [],
+            ['date', 'successful_deployments'],
+            ...deploy.perDay.map(p => [p.date, p.count]),
+        ];
+
+        const csv = headerRows
+            .map(row => row.map(csvEscape).join(','))
+            .join('\r\n');
+
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="dora-${environment}-${new Date().toISOString().slice(0, 10)}.csv"`,
+        );
+        res.send(csv);
+    } catch (err) {
+        errorResponse(res, 500, safeError(err, 'Failed to export DORA CSV'));
+    }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/work-board/tech-debt  (Pro+) — debt-labelled issues
+// ---------------------------------------------------------------------------
+router.get('/tech-debt', requireAuth, requireTier('pro'), (req, res) => {
+    try {
+        const repoIds = parseRepoIds(req.query.repoIds);
+        const limit = Math.min(Number.parseInt(req.query.limit || '100', 10), 500);
+        const labels = req.query.labels
+            ? String(req.query.labels).split(',').map(s => s.trim()).filter(Boolean)
+            : undefined;
+        const items = listTechDebtIssues({ labels, repoIds, limit });
+        const hotspots = techDebtHotspots({ labels, repoIds });
+        res.json({ data: { items, hotspots } });
+    } catch (err) {
+        errorResponse(res, 500, safeError(err, 'Failed to fetch tech debt'));
     }
 });
 

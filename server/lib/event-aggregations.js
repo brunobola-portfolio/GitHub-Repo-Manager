@@ -289,6 +289,223 @@ export function leadTimeForChanges({ since, repoIds } = {}) {
 }
 
 // ---------------------------------------------------------------------------
+// listTechDebtIssues
+// ---------------------------------------------------------------------------
+
+const DEFAULT_DEBT_LABELS = [
+    'tech-debt',
+    'technical-debt',
+    'technical debt',
+    'debt',
+    'refactor',
+    'refactoring',
+    'code-smell',
+    'cleanup',
+];
+
+/**
+ * Open issues that carry any of the configured "debt" labels. Uses the latest
+ * snapshot per (repo, issue_number) so re-labelled or re-opened issues are
+ * reflected correctly.
+ *
+ * @param {object} opts
+ * @param {string[]} [opts.labels] — label names (case-insensitive)
+ * @param {number[]} [opts.repoIds]
+ * @param {number} [opts.limit=100]
+ * @returns {Array<{ repoFullName, issueNumber, title, labels, openedAt, ageDays, assignees }>}
+ */
+export function listTechDebtIssues({ labels, repoIds, limit = 100 } = {}) {
+    const wanted = (Array.isArray(labels) && labels.length > 0 ? labels : DEFAULT_DEBT_LABELS)
+        .map(l => String(l).toLowerCase());
+    const { clause, bindings } = repoIdsFilter(repoIds);
+
+    // Latest row per (repo_id, issue_number). We filter in JS because labels
+    // are stored as JSON text; this runs against the already-small result set.
+    const rows = db.prepare(`
+        SELECT
+            ie.repo_full_name  AS repoFullName,
+            ie.repo_id         AS repoId,
+            ie.issue_number    AS issueNumber,
+            ie.title           AS title,
+            ie.author_login    AS authorLogin,
+            ie.assignee_logins AS rawAssignees,
+            ie.labels          AS rawLabels,
+            (
+                SELECT MIN(ie2.created_at)
+                FROM issue_events ie2
+                WHERE ie2.repo_id      = ie.repo_id
+                  AND ie2.issue_number = ie.issue_number
+                  AND ie2.action       = 'opened'
+            ) AS openedAt
+        FROM issue_events ie
+        WHERE ie.id IN (
+            SELECT MAX(id)
+            FROM issue_events
+            GROUP BY repo_id, issue_number
+        )
+          AND NOT EXISTS (
+              SELECT 1 FROM issue_events ie_close
+              WHERE ie_close.repo_id      = ie.repo_id
+                AND ie_close.issue_number = ie.issue_number
+                AND ie_close.action       = 'closed'
+          )
+          ${clause.replace(/AND repo_id/g, 'AND ie.repo_id')}
+        ORDER BY openedAt ASC
+    `).all(...bindings);
+
+    const matched = [];
+    for (const r of rows) {
+        let lbls = [];
+        try { lbls = JSON.parse(r.rawLabels || '[]'); } catch { /* empty */ }
+        const lower = lbls.map(l => String(l).toLowerCase());
+        if (!lower.some(l => wanted.includes(l))) continue;
+
+        let assignees = [];
+        try { assignees = JSON.parse(r.rawAssignees || '[]'); } catch { /* empty */ }
+
+        matched.push({
+            repoFullName: r.repoFullName,
+            issueNumber: r.issueNumber,
+            title: r.title || null,
+            labels: lbls,
+            authorLogin: r.authorLogin || null,
+            assignees,
+            openedAt: r.openedAt,
+            ageDays: r.openedAt ? Math.round(daysSince(r.openedAt) * 10) / 10 : null,
+        });
+        if (matched.length >= limit) break;
+    }
+    return matched;
+}
+
+/**
+ * Count of open debt-labelled issues grouped by repo — used by the Tech Debt
+ * tab to show hotspots.
+ */
+export function techDebtHotspots({ labels, repoIds } = {}) {
+    const items = listTechDebtIssues({ labels, repoIds, limit: 1000 });
+    const byRepo = new Map();
+    for (const it of items) {
+        const prev = byRepo.get(it.repoFullName) || { repoFullName: it.repoFullName, count: 0, oldestAgeDays: 0 };
+        prev.count += 1;
+        if (it.ageDays != null && it.ageDays > prev.oldestAgeDays) prev.oldestAgeDays = it.ageDays;
+        byRepo.set(it.repoFullName, prev);
+    }
+    return Array.from(byRepo.values()).sort((a, b) => b.count - a.count);
+}
+
+// ---------------------------------------------------------------------------
+// changeFailureRate (DORA)
+// ---------------------------------------------------------------------------
+
+/**
+ * DORA change failure rate — ratio of failed deployments over total deployment
+ * attempts in a window. GitHub sends a status row for every state transition,
+ * so we dedupe on `deployment_id` taking the LAST state reached.
+ *
+ * @param {object} opts
+ * @param {string} [opts.environment='production']
+ * @param {Date}   [opts.since]  — default 30 days ago
+ * @param {number[]} [opts.repoIds]
+ * @returns {{ total, failed, successful, rate }}  — rate is 0..1 (null if total=0)
+ */
+export function changeFailureRate({ environment = 'production', since, repoIds } = {}) {
+    const sinceDate = since instanceof Date ? since : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const { clause, bindings } = repoIdsFilter(repoIds);
+
+    // For each deployment_id, the final recorded state in the window.
+    const rows = db.prepare(`
+        SELECT state
+        FROM deployment_events de_outer
+        WHERE environment = ?
+          AND created_at  >= ?
+          ${clause}
+          AND id = (
+              SELECT MAX(id)
+              FROM deployment_events de_inner
+              WHERE de_inner.deployment_id = de_outer.deployment_id
+                AND de_inner.environment   = de_outer.environment
+          )
+    `).all(environment, sinceDate.toISOString(), ...bindings);
+
+    const total = rows.length;
+    if (total === 0) {
+        return { total: 0, failed: 0, successful: 0, rate: null };
+    }
+    const failed = rows.filter(r => r.state === 'failure' || r.state === 'error').length;
+    const successful = rows.filter(r => r.state === 'success').length;
+    return {
+        total,
+        failed,
+        successful,
+        rate: Math.round((failed / total) * 1000) / 1000,
+    };
+}
+
+// ---------------------------------------------------------------------------
+// meanTimeToRecovery (DORA)
+// ---------------------------------------------------------------------------
+
+/**
+ * DORA MTTR — for each failure event, measure the time until the next
+ * success event on the same (repo_id, environment). Returns median/p50/p90
+ * in hours. Failures with no subsequent success in the window are excluded.
+ *
+ * @param {object} opts
+ * @param {string} [opts.environment='production']
+ * @param {Date}   [opts.since]
+ * @param {number[]} [opts.repoIds]
+ * @returns {{ sampleSize, medianHours, p50, p90, unresolved }}
+ */
+export function meanTimeToRecovery({ environment = 'production', since, repoIds } = {}) {
+    const sinceDate = since instanceof Date ? since : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const { clause, bindings } = repoIdsFilter(repoIds);
+
+    const rows = db.prepare(`
+        SELECT
+            de_fail.repo_id        AS repoId,
+            de_fail.created_at     AS failedAt,
+            (
+                SELECT MIN(de_ok.created_at)
+                FROM deployment_events de_ok
+                WHERE de_ok.repo_id     = de_fail.repo_id
+                  AND de_ok.environment = de_fail.environment
+                  AND de_ok.state       = 'success'
+                  AND de_ok.created_at  >  de_fail.created_at
+            ) AS recoveredAt
+        FROM deployment_events de_fail
+        WHERE de_fail.environment = ?
+          AND de_fail.created_at  >= ?
+          AND de_fail.state IN ('failure', 'error')
+          ${clause.replace(/AND repo_id/g, 'AND de_fail.repo_id')}
+    `).all(environment, sinceDate.toISOString(), ...bindings);
+
+    const unresolved = rows.filter(r => !r.recoveredAt).length;
+    const hours = rows
+        .filter(r => r.recoveredAt)
+        .map(r => (new Date(r.recoveredAt) - new Date(r.failedAt)) / (1000 * 60 * 60))
+        .filter(h => h >= 0)
+        .sort((a, b) => a - b);
+
+    if (hours.length === 0) {
+        return { sampleSize: 0, medianHours: null, p50: null, p90: null, unresolved };
+    }
+
+    const p = (pct) => {
+        const idx = Math.ceil(pct * hours.length) - 1;
+        return Math.round(hours[Math.max(0, idx)] * 10) / 10;
+    };
+
+    return {
+        sampleSize: hours.length,
+        medianHours: p(0.5),
+        p50: p(0.5),
+        p90: p(0.9),
+        unresolved,
+    };
+}
+
+// ---------------------------------------------------------------------------
 // reviewLoadByReviewer
 // ---------------------------------------------------------------------------
 
