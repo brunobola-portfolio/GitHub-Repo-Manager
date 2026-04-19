@@ -181,4 +181,188 @@ describe('stripeWebhookHandler', () => {
         expect(res.statusCode).toBe(500)
         expect(res.body).toEqual({ error: 'Webhook ledger failure' })
     })
+
+    // ------------------------------------------------------------------
+    // customer.subscription.updated — tier reconciliation + period window
+    // ------------------------------------------------------------------
+    it('customer.subscription.updated — uses price metadata as source of truth and updates the subscription row', async () => {
+        const periodStart = 1_700_000_000
+        const periodEnd = 1_702_592_000
+        mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+            id: 'evt_sub_upd',
+            type: 'customer.subscription.updated',
+            data: {
+                object: {
+                    id: 'sub_abc',
+                    status: 'active',
+                    current_period_start: periodStart,
+                    current_period_end: periodEnd,
+                    metadata: { tier: 'pro' },
+                    items: { data: [{ price: { metadata: { tier: 'enterprise' } } }] },
+                },
+            },
+        })
+        let capturedUpdate = null
+        mockPrepare.mockImplementation((sql) => {
+            if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) {
+                return { run: vi.fn(() => ({ changes: 1 })) }
+            }
+            if (/UPDATE user_subscriptions SET\s+tier/i.test(sql)) {
+                return {
+                    run: vi.fn((...args) => {
+                        capturedUpdate = { tier: args[0], status: args[1], periodStart: args[2], periodEnd: args[3], subId: args[4] }
+                        return { changes: 1 }
+                    }),
+                }
+            }
+            return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+        })
+        const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+        await stripeWebhookHandler(req, res)
+        expect(res.statusCode).toBe(200)
+        expect(capturedUpdate).not.toBeNull()
+        // price metadata wins over session/sub metadata
+        expect(capturedUpdate.tier).toBe('enterprise')
+        expect(capturedUpdate.status).toBe('active')
+        expect(capturedUpdate.subId).toBe('sub_abc')
+        expect(capturedUpdate.periodStart).toBe(new Date(periodStart * 1000).toISOString())
+        expect(capturedUpdate.periodEnd).toBe(new Date(periodEnd * 1000).toISOString())
+    })
+
+    it('customer.subscription.updated — transitions status from active to past_due when Stripe reports it', async () => {
+        mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+            id: 'evt_sub_upd2',
+            type: 'customer.subscription.updated',
+            data: {
+                object: {
+                    id: 'sub_def',
+                    status: 'past_due',
+                    current_period_start: 1_700_000_000,
+                    current_period_end: 1_702_592_000,
+                    metadata: { tier: 'pro' },
+                    items: { data: [{ price: { metadata: { tier: 'pro' } } }] },
+                },
+            },
+        })
+        let capturedStatus = null
+        mockPrepare.mockImplementation((sql) => {
+            if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+            if (/UPDATE user_subscriptions SET\s+tier/i.test(sql)) {
+                return { run: vi.fn((...args) => { capturedStatus = args[1]; return { changes: 1 } }) }
+            }
+            return { get: vi.fn(), run: vi.fn(), all: vi.fn(() => []) }
+        })
+        const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+        await stripeWebhookHandler(req, res)
+        expect(capturedStatus).toBe('past_due')
+        expect(res.statusCode).toBe(200)
+    })
+
+    // ------------------------------------------------------------------
+    // customer.subscription.deleted — downgrade to free + cancelled
+    // ------------------------------------------------------------------
+    it('customer.subscription.deleted — downgrades user to free tier and sets status=cancelled', async () => {
+        mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+            id: 'evt_sub_del',
+            type: 'customer.subscription.deleted',
+            data: { object: { id: 'sub_zzz', status: 'canceled' } },
+        })
+        let capturedSubId = null
+        mockPrepare.mockImplementation((sql) => {
+            if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+            if (/UPDATE user_subscriptions SET tier = 'free', status = 'cancelled'/.test(sql)) {
+                return { run: vi.fn((...args) => { capturedSubId = args[0]; return { changes: 1 } }) }
+            }
+            return { get: vi.fn(), run: vi.fn(), all: vi.fn(() => []) }
+        })
+        const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+        await stripeWebhookHandler(req, res)
+        expect(res.statusCode).toBe(200)
+        expect(capturedSubId).toBe('sub_zzz')
+    })
+
+    // ------------------------------------------------------------------
+    // invoice.payment_failed — flip to past_due only when subscription id present
+    // ------------------------------------------------------------------
+    it('invoice.payment_failed — marks subscription past_due when invoice has subscription id', async () => {
+        mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+            id: 'evt_pay_fail',
+            type: 'invoice.payment_failed',
+            data: { object: { subscription: 'sub_pay1' } },
+        })
+        let capturedSubId = null
+        mockPrepare.mockImplementation((sql) => {
+            if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+            if (/UPDATE user_subscriptions SET status = 'past_due'/.test(sql)) {
+                return { run: vi.fn((...args) => { capturedSubId = args[0]; return { changes: 1 } }) }
+            }
+            return { get: vi.fn(), run: vi.fn(), all: vi.fn(() => []) }
+        })
+        const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+        await stripeWebhookHandler(req, res)
+        expect(res.statusCode).toBe(200)
+        expect(capturedSubId).toBe('sub_pay1')
+    })
+
+    it('invoice.payment_failed — skips update when subscription id is missing (one-off invoice)', async () => {
+        mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+            id: 'evt_pay_fail_oneoff',
+            type: 'invoice.payment_failed',
+            data: { object: { subscription: null } },
+        })
+        const updateRun = vi.fn(() => ({ changes: 0 }))
+        mockPrepare.mockImplementation((sql) => {
+            if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+            if (/UPDATE user_subscriptions SET status = 'past_due'/.test(sql)) {
+                return { run: updateRun }
+            }
+            return { get: vi.fn(), run: vi.fn(), all: vi.fn(() => []) }
+        })
+        const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+        await stripeWebhookHandler(req, res)
+        expect(res.statusCode).toBe(200)
+        expect(updateRun).not.toHaveBeenCalled()
+    })
+
+    // ------------------------------------------------------------------
+    // invoice.paid — recover past_due → active
+    // ------------------------------------------------------------------
+    it('invoice.paid — flips subscription back to active when Stripe reports payment', async () => {
+        mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+            id: 'evt_paid',
+            type: 'invoice.paid',
+            data: { object: { subscription: 'sub_rec1' } },
+        })
+        let capturedSubId = null
+        mockPrepare.mockImplementation((sql) => {
+            if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+            if (/UPDATE user_subscriptions SET status = 'active'/.test(sql)) {
+                return { run: vi.fn((...args) => { capturedSubId = args[0]; return { changes: 1 } }) }
+            }
+            return { get: vi.fn(), run: vi.fn(), all: vi.fn(() => []) }
+        })
+        const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+        await stripeWebhookHandler(req, res)
+        expect(res.statusCode).toBe(200)
+        expect(capturedSubId).toBe('sub_rec1')
+    })
+
+    it('unknown event types return 200 without side effects (forward-compat)', async () => {
+        mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+            id: 'evt_unknown',
+            type: 'customer.cash_balance.created',
+            data: { object: {} },
+        })
+        const updateRun = vi.fn()
+        mockPrepare.mockImplementation((sql) => {
+            if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+            if (/UPDATE user_subscriptions/.test(sql)) return { run: updateRun }
+            return { get: vi.fn(), run: vi.fn(), all: vi.fn(() => []) }
+        })
+        const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+        await stripeWebhookHandler(req, res)
+        expect(res.statusCode).toBe(200)
+        expect(res.body).toEqual({ received: true })
+        expect(updateRun).not.toHaveBeenCalled()
+    })
 })
