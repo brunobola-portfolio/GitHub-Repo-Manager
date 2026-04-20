@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-04-20
+
+### Added
+
+- **BYOK provider parity across every AI endpoint** — five remaining endpoints (`/ai/chat`, `/ai/generate-commit`, `/ai/generate-pr`, `/ai/refine`, `/ai/chat-refine`) migrated off Gemini's `startChat()` session API onto `req.aiProvider.generate()` / `generateStream()`. Chat-refine flattens conversation history into a labelled `User: / Assistant:` transcript so multi-turn keeps working with Anthropic, OpenAI, OpenRouter, and Local providers — not just Gemini.
+- **CODEOWNERS Suggest endpoint + UI** — `GET /api/v1/repos/:owner/:repo/codeowners/suggest` walks the N most recent commits, groups authors by top-level directory, and returns ranked owner suggestions plus a paste-ready preview body. New Suggest modal accessible from RepoDetail → Settings → CODEOWNERS card with hotspot pills, per-path owners, copy-to-clipboard, and tunable `commits` / `minTouches` / `maxOwners` controls.
+- **Compare with Existing — side-by-side diff modal** — Each result row in the Similar Repositories drawer now has a Compare action that opens a modal showing README and `package.json` from the source and target repo side-by-side (with full UTF-8 decode and per-file tabs).
+- **Cross-Repo Work Board** — Review Load tab (per-reviewer submitted vs pending stacked bars) and Tech Debt tab (open issues labelled `tech-debt`, `refactor`, `cleanup`, `debt`, `code-smell` with per-repo hotspot ranking).
+- **DORA dashboard polish** — change failure rate, MTTR p50/p90, lead-time p50/p90, and CSV export of the four-metric set.
+- **Command Palette live GitHub search** — searches PRs, issues, and repositories via the GitHub Search API with 300ms debounce, AbortController-backed cancellation, and explicit 429/401 surfaces.
+- **AI Issue-to-PR Planner (plan-only)** — `POST /api/ai/issue-to-plan` takes an issue and returns a structured plan (approach, files to touch, tests, risks, estimate); rendered inline on the issue detail panel. Uses the user's BYOK provider; never creates branches or PRs.
+- **Self-service GDPR surfaces** — Settings → Danger Zone exposes both `GET /api/v1/user/data/export` (Article 20, JSON download) and `DELETE /api/v1/user/data` (Article 17, requires "ERASE MY DATA" confirmation).
+- **Migration Wizard session recovery + AI Assistant chat persistence** — both now survive a refresh / route change via sessionStorage. The wizard scrubs PATs, OAuth tokens, and Basic-auth passwords before persisting.
+
+### Changed
+
+- **PR Review write-back is now strictly Pro+** — `requireTier('pro')` added to four endpoints (`PUT /merge`, `POST /comments`, `POST /comments/:id/replies`, `POST /reviews`) so Free tier is read-only as the pricing page advertises. Locked by 9 new tier-gate tests so a future refactor cannot silently regress the gate.
+- **Webhook persistence failures now propagate** — Actions webhook returns 500 on DB failure instead of silently 200, so GitHub re-delivers. GitHub-events webhook keeps the fast-ack pattern but logs failures with `eventId`, `repoFullName`, PR/issue number for manual `Redeliver`.
+- **Startup secrets check hardened** — production aborts if `EMAIL_PROVIDER=console`, if Stripe is enabled without `STRIPE_WEBHOOK_SECRET`, or if `RESEND_API_KEY` is missing when `EMAIL_PROVIDER=resend`. Warns on non-HTTPS `FRONTEND_URL`.
+- **Error-message leaks plugged** — `import.js` (3 sites), `repos-export.js`, and `azure/tfvc.js` (1 legacy site) all sanitise `err.message` through `safeError()` before persisting to `migration_jobs.error_message` so internal paths / credential URIs no longer reach the client.
+- **README UTF-8 rendering fixed** — `OverviewTab` decodes base64 README payloads through `TextDecoder('utf-8')` so emoji, accents, and CJK render correctly instead of mojibake.
+- **6 oversized files split via barrel pattern** — `server/routes/ai.js` (1678 → 35), `server/routes/repos.js` (1467 → 44), `server/routes/import.js` (958 → 11), `server/routes/import/azure.js` (692 → 9), `src/components/Settings/AIConfigSection.jsx` (1002 → 480), `src/components/MigrationWizard/steps/AIReviewStep.jsx` (1052 → 409). Zero functional changes; default exports preserved so every test mock and consumer keeps working unchanged.
+- **ROADMAP honesty pass** — vapourware features (GitLab, Bitbucket, Azure on-prem importers, Advanced Analytics, Dependency Graph Visualizer) moved from "Shipping Now" to "Next (Q3 2026)" so the in-progress list reflects reality. Pricing page swapped the unverifiable "10,000+ repos managed" claim for capability statements that match the code.
+- **Provider-neutral retry wrapper** replaces the Gemini-specific `generateWithRetry`. Old `streamGeminiToSSE` adapter removed (no remaining callers).
+- **Production log level** defaults to `warn` instead of `info` to cut disk + Sentry breadcrumb noise.
+- **Sentry init** now logs environment, sample rate, and DSN host on success or failure so wiring is visible at boot.
+
+### Fixed
+
+- **Tier-gate test for PR write-back** previously passed locally only because the developer's `.env` had `GEMINI_API_KEY` set; rewritten with `vi.stubEnv` so it passes deterministically in CI without that env.
+- **Lint errors** unbroken: `bulkConfirm.js` had `headers` declared twice in the same object literal (the second silently won); `AIConfigSection.jsx` had a `try/catch (e) { throw e }` clause that lint correctly flagged as useless. Both fixed.
+- **`APP_LOCALE`** changed from `pt-PT` to `en-US` to match the English UI; numbers now render `1,234` instead of `1.234`.
+- **Avatar `alt=""`** replaced with descriptive labels on 6 profile-image components (a11y).
+- **Two `window.confirm()` calls** replaced with state-driven `ConfirmModal` (PR Review staleness check; AI config remove); PR Review's modal also locks the toolbar while open to prevent double-submit.
+- **`useTheme` "system change ignored" test** un-skipped — the closure-capture race was a test bug, not a hook bug.
+
+### Tests
+
+- 1582 unit tests passing (up from 1473 at the start of the arc).
+- New suites: PR write-back tier gate (9), Actions webhook (6), Stripe event types (+6), PR Review staleness modal (6), Search routes (8), AI Issue-to-Plan (7), CODEOWNERS suggest endpoint (7) + UI (5), Compare diff modal (5), orgs.js (5), stats.js cache (7), event-aggregations new metrics (~14).
+
+### Compliance
+
+- GDPR Article 17 + Article 20 self-service surfaces are live in the UI (previously the DELETE endpoint shipped without a consumer).
+- Audit log hash chain unchanged; retention pass + email scheduler documented in `docs/guides/github-webhook-setup.md` (new).
+
 ## [3.3.0] - 2026-04-18
 
 ### Added
