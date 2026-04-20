@@ -445,6 +445,7 @@ export function initDB() {
                 issue_number INTEGER NOT NULL,
                 action TEXT NOT NULL,
                 author_login TEXT,
+                title TEXT,
                 assignee_logins TEXT,
                 labels TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -601,6 +602,13 @@ export function initDB() {
     // Migration 008 (G2 — data retention): warning_sent_at column on user_ai_config.
     try {
         db.exec(`ALTER TABLE user_ai_config ADD COLUMN warning_sent_at DATETIME`);
+    } catch (err) {
+        if (!err.message?.includes('duplicate column')) throw err;
+    }
+
+    // Migration 009: add title column to issue_events (fixes /tech-debt 500).
+    try {
+        db.exec(`ALTER TABLE issue_events ADD COLUMN title TEXT`);
     } catch (err) {
         if (!err.message?.includes('duplicate column')) throw err;
     }

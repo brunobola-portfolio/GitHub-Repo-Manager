@@ -144,6 +144,7 @@ export function listMyOpenIssues({ assigneeLogin, limit = 100 }) {
         SELECT
             ie_open.repo_full_name  AS repoFullName,
             ie_open.issue_number    AS issueNumber,
+            ie_open.title           AS openedTitle,
             ie_open.assignee_logins AS rawAssignees,
             ie_open.labels          AS rawLabels,
             ie_open.created_at      AS openedAt,
@@ -162,7 +163,16 @@ export function listMyOpenIssues({ assigneeLogin, limit = 100 }) {
                   AND ie3.issue_number  = ie_open.issue_number
                 ORDER BY ie3.id DESC
                 LIMIT 1
-            ) AS latestLabels
+            ) AS latestLabels,
+            (
+                SELECT ie4.title
+                FROM issue_events ie4
+                WHERE ie4.repo_id       = ie_open.repo_id
+                  AND ie4.issue_number  = ie_open.issue_number
+                  AND ie4.title IS NOT NULL
+                ORDER BY ie4.id DESC
+                LIMIT 1
+            ) AS latestTitle
         FROM issue_events ie_open
         WHERE ie_open.action = 'opened'
           AND ie_open.assignee_logins LIKE ?
@@ -188,6 +198,7 @@ export function listMyOpenIssues({ assigneeLogin, limit = 100 }) {
         return {
             repoFullName: r.repoFullName,
             issueNumber: r.issueNumber,
+            title: r.latestTitle || r.openedTitle || null,
             labels,
             openedAt: r.openedAt,
             ageDays: r.openedAt ? Math.round(daysSince(r.openedAt) * 10) / 10 : null,

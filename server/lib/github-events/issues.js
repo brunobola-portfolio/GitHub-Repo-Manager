@@ -39,8 +39,8 @@ export async function handle(payload, eventId) {
         db.prepare(`
             INSERT OR IGNORE INTO issue_events
                 (github_event_id, repo_id, repo_full_name, issue_number, action,
-                 author_login, assignee_logins, labels)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                 author_login, assignee_logins, labels, title)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
             eventId,
             repoId,
@@ -50,6 +50,7 @@ export async function handle(payload, eventId) {
             issue.user?.login ?? null,
             assigneeLogins,
             labels,
+            issue.title ?? null,
         );
     } catch (err) {
         if (err.code === 'SQLITE_CONSTRAINT') {
