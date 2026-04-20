@@ -31,15 +31,19 @@ function makeBulkError(message, status, reason, body) {
  *                                   Error has `.status`, `.reason` (if server returned one), `.body`.
  */
 export async function bulkExecuteWithConfirmation({ url, body, fetchOptions = {} }) {
+  // Spread fetchOptions FIRST so caller-supplied opts (e.g. signal) come
+  // through, then re-set headers explicitly so caller's headers cannot stomp
+  // our Content-Type. Previously we declared `headers` twice in the literal,
+  // which is a no-dupe-keys lint error and a footgun (the second wins
+  // silently — the first declaration was always dead code).
+  const { headers: callerHeaders, ...restFetchOptions } = fetchOptions
   const baseOptions = {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    ...fetchOptions,
-    // Headers must be merged carefully so fetchOptions headers don't stomp Content-Type
+    ...restFetchOptions,
     headers: {
       'Content-Type': 'application/json',
-      ...(fetchOptions.headers || {}),
+      ...(callerHeaders || {}),
     },
   }
 

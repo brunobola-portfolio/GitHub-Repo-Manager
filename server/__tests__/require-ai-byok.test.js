@@ -173,6 +173,7 @@ describe('attachAIProvider middleware', () => {
 
     afterEach(() => {
         vi.restoreAllMocks()
+        vi.unstubAllEnvs()
     })
 
     it('attaches req.getAIProvider function', async () => {
@@ -281,7 +282,15 @@ describe('attachAIProvider middleware', () => {
         expect(req.aiProvider).toBeUndefined()
     })
 
-    it('handles missing session gracefully (userId = undefined)', async () => {
+    it('handles missing session gracefully (userId = undefined) when a server-wide GEMINI_API_KEY is set', async () => {
+        // Middleware short-circuits when there's NO session AND NO server-wide
+        // GEMINI_API_KEY (intent: avoid a DB lookup on every /api/health
+        // poll). To exercise the missing-session path we therefore have to
+        // simulate the "single-tenant deployment with shared key" scenario.
+        // vi.stubEnv handles cleanup automatically (vi.unstubAllEnvs in
+        // afterEach via vi.restoreAllMocks).
+        vi.stubEnv('GEMINI_API_KEY', 'test-server-wide-key')
+
         const provider = fakeGeminiProvider()
         const mockCreate = vi.fn().mockResolvedValue(provider)
         vi.doMock('../lib/ai-provider.js', () => ({
@@ -295,5 +304,29 @@ describe('attachAIProvider middleware', () => {
         await mw(req, {}, makeNext())
 
         expect(mockCreate).toHaveBeenCalledWith(undefined, 'completion')
+    })
+
+    it('short-circuits without invoking the provider factory when there is no session AND no GEMINI_API_KEY', async () => {
+        // The "fast path" that the previous test deliberately bypasses.
+        // Documents that the behaviour is intentional, not a regression.
+        // vi.stubEnv with empty string is treated as falsy by the
+        // `!process.env.GEMINI_API_KEY` guard, and unstubs cleanly.
+        vi.stubEnv('GEMINI_API_KEY', '')
+
+        const mockCreate = vi.fn()
+        vi.doMock('../lib/ai-provider.js', () => ({
+            createProviderForUser: mockCreate,
+        }))
+
+        const { attachAIProvider: attach } = await import('../middleware/auth.js')
+        const mw = attach()
+
+        const req = {} // no session
+        const next = makeNext()
+        await mw(req, {}, next)
+
+        expect(next).toHaveBeenCalled()
+        expect(mockCreate).not.toHaveBeenCalled()
+        expect(req.getAIProvider).toBeUndefined()
     })
 })

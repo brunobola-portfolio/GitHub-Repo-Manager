@@ -200,6 +200,12 @@ export function AIConfigSection() {
     const performRemove = useCallback(async () => {
         setRemoving(true)
         setSaveMessage(null)
+        // Note: we deliberately DON'T wrap this body in a try/catch — errors
+        // propagate to ConfirmModal's handleConfirm, which populates its
+        // own in-modal `confirmError` banner. The user stays on the modal
+        // with the error visible inline and a Cancel escape hatch.
+        // The `try/finally` (no catch) below makes sure setRemoving(false)
+        // still fires on the error path without a useless catch clause.
         try {
             const res = await fetch(`${API_BASE_URL}/api/user/ai-config`, {
                 method: 'DELETE',
@@ -207,17 +213,10 @@ export function AIConfigSection() {
             })
             if (!res.ok) throw new Error('Failed to remove configuration')
             setSaveMessage({ type: 'success', text: 'AI configuration removed.' })
-            // Only close the modal on success. On failure, `throw` lets
-            // ConfirmModal catch the error and render its own in-modal banner
-            // with a retry path; we DON'T set saveMessage for errors because
-            // the modal is still on screen and is the more contextual surface.
+            // Only close the modal on success. On failure, the rethrown error
+            // keeps the modal open via ConfirmModal's catch path.
             setConfirmRemove(false)
             await fetchConfig()
-        } catch (err) {
-            // Rethrow so ConfirmModal's handleConfirm can populate its
-            // confirmError state. The user stays on the modal with the error
-            // visible inline and a Cancel escape hatch.
-            throw err
         } finally {
             setRemoving(false)
         }
