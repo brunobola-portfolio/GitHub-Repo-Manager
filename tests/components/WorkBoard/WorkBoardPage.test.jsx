@@ -117,12 +117,12 @@ describe('WorkBoardPage', () => {
 
     it('renders all six tabs', () => {
         renderPage()
-        expect(screen.getByRole('button', { name: /my reviews/i })).toBeInTheDocument()
-        expect(screen.getByRole('button', { name: /stale prs/i })).toBeInTheDocument()
-        expect(screen.getByRole('button', { name: /my issues/i })).toBeInTheDocument()
-        expect(screen.getByRole('button', { name: /review load/i })).toBeInTheDocument()
-        expect(screen.getByRole('button', { name: /tech debt/i })).toBeInTheDocument()
-        expect(screen.getByRole('button', { name: /dora/i })).toBeInTheDocument()
+        expect(screen.getByRole('tab', { name: /my reviews/i })).toBeInTheDocument()
+        expect(screen.getByRole('tab', { name: /stale prs/i })).toBeInTheDocument()
+        expect(screen.getByRole('tab', { name: /my issues/i })).toBeInTheDocument()
+        expect(screen.getByRole('tab', { name: /review load/i })).toBeInTheDocument()
+        expect(screen.getByRole('tab', { name: /tech debt/i })).toBeInTheDocument()
+        expect(screen.getByRole('tab', { name: /dora/i })).toBeInTheDocument()
     })
 
     it('DORA tab has Enterprise badge', () => {
@@ -169,19 +169,19 @@ describe('WorkBoardPage', () => {
 
     it('clicking Stale PRs tab shows stale PR data', () => {
         renderPage()
-        fireEvent.click(screen.getByRole('button', { name: /stale prs/i }))
+        fireEvent.click(screen.getByRole('tab', { name: /stale prs/i }))
         expect(screen.getByText('Old PR')).toBeInTheDocument()
     })
 
     it('clicking My Issues tab shows issue data with labels', () => {
         renderPage()
-        fireEvent.click(screen.getByRole('button', { name: /my issues/i }))
+        fireEvent.click(screen.getByRole('tab', { name: /my issues/i }))
         expect(screen.getByText('bug')).toBeInTheDocument()
     })
 
     it('clicking DORA tab shows KPI metrics', () => {
         renderPage()
-        fireEvent.click(screen.getByRole('button', { name: /dora/i }))
+        fireEvent.click(screen.getByRole('tab', { name: /dora/i }))
         expect(screen.getByText(/deployments/i)).toBeInTheDocument()
         expect(screen.getByText('42')).toBeInTheDocument()
     })
@@ -196,7 +196,7 @@ describe('WorkBoardPage', () => {
         mockUseDORASummary.mockReturnValue({ data: null, loading: false, error: err403, refresh: vi.fn() })
 
         renderPage()
-        fireEvent.click(screen.getByRole('button', { name: /dora/i }))
+        fireEvent.click(screen.getByRole('tab', { name: /dora/i }))
         expect(screen.getByText(/enterprise feature/i)).toBeInTheDocument()
         expect(screen.getByRole('link', { name: /view pricing/i })).toBeInTheDocument()
     })
@@ -207,7 +207,7 @@ describe('WorkBoardPage', () => {
         mockUseStalePRs.mockReturnValue({ data: null, loading: false, error: err403, refresh: vi.fn() })
 
         renderPage()
-        fireEvent.click(screen.getByRole('button', { name: /stale prs/i }))
+        fireEvent.click(screen.getByRole('tab', { name: /stale prs/i }))
         expect(screen.getByText(/pro feature/i)).toBeInTheDocument()
     })
 })

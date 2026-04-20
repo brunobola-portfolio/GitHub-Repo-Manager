@@ -73,12 +73,15 @@ function SkeletonList({ count = 5 }) {
 
 function EmptyState({ icon: Icon, title, subtitle }) {
     return (
-        <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
-                <Icon className="w-7 h-7 opacity-40" />
+        <div className="flex flex-col items-center justify-center py-20 px-6 text-slate-400">
+            <div className="relative w-20 h-20 mb-5">
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-500/15 via-purple-500/10 to-transparent blur-lg" />
+                <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-slate-200/60 dark:border-slate-700/50 flex items-center justify-center shadow-sm">
+                    <Icon className="w-9 h-9 text-indigo-400/70 dark:text-indigo-300/50" />
+                </div>
             </div>
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">{title}</p>
-            {subtitle && <p className="text-xs text-center max-w-xs">{subtitle}</p>}
+            <p className="text-base font-semibold text-slate-700 dark:text-slate-200 mb-1.5">{title}</p>
+            {subtitle && <p className="text-xs text-center max-w-sm leading-relaxed">{subtitle}</p>}
         </div>
     )
 }
@@ -168,7 +171,7 @@ function MyReviewsTab() {
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className="flex items-start gap-3 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+                    className="flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
                 >
                     <div className="mt-0.5 p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex-shrink-0">
                         <GitPullRequest className="w-4 h-4" />
@@ -252,7 +255,7 @@ function StalePRsTab() {
                             initial={{ opacity: 0, y: 4 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.03 }}
-                            className="flex items-start gap-3 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+                            className="flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
                         >
                             <div className="mt-0.5 p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex-shrink-0">
                                 <AlertTriangle className="w-4 h-4" />
@@ -322,7 +325,7 @@ function MyIssuesTab() {
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.03 }}
-                    className="flex items-start gap-3 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+                    className="flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
                 >
                     <div className="mt-0.5 p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex-shrink-0">
                         <CircleDot className="w-4 h-4" />
@@ -713,7 +716,7 @@ function TechDebtTab() {
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: Math.min(i * 0.02, 0.3) }}
-                        className="flex items-start gap-3 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group bg-white/60 dark:bg-slate-900/40"
+                        className="flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group bg-white/60 dark:bg-slate-900/40"
                     >
                         <div className="mt-0.5 p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex-shrink-0">
                             <Wrench className="w-4 h-4" />
@@ -757,13 +760,124 @@ function TechDebtTab() {
 // ---------------------------------------------------------------------------
 
 const TABS = [
-    { id: 'reviews',     label: 'My Reviews',  icon: GitPullRequest, component: MyReviewsTab },
-    { id: 'stale',       label: 'Stale PRs',   icon: AlertTriangle,  component: StalePRsTab  },
-    { id: 'issues',      label: 'My Issues',   icon: CircleDot,      component: MyIssuesTab  },
-    { id: 'reviewload',  label: 'Review Load', icon: Users,          component: ReviewLoadTab, badge: 'Pro' },
-    { id: 'techdebt',    label: 'Tech Debt',   icon: Wrench,         component: TechDebtTab, badge: 'Pro' },
-    { id: 'dora',        label: 'DORA',        icon: BarChart3,      component: DORATab, badge: 'Enterprise' },
+    { id: 'reviews',     label: 'My Reviews',  icon: GitPullRequest, component: MyReviewsTab, accent: 'purple' },
+    { id: 'stale',       label: 'Stale PRs',   icon: AlertTriangle,  component: StalePRsTab,  accent: 'amber' },
+    { id: 'issues',      label: 'My Issues',   icon: CircleDot,      component: MyIssuesTab,  accent: 'emerald' },
+    { id: 'reviewload',  label: 'Review Load', icon: Users,          component: ReviewLoadTab, badge: 'Pro', accent: 'sky' },
+    { id: 'techdebt',    label: 'Tech Debt',   icon: Wrench,         component: TechDebtTab, badge: 'Pro', accent: 'amber' },
+    { id: 'dora',        label: 'DORA',        icon: BarChart3,      component: DORATab, badge: 'Enterprise', accent: 'indigo' },
 ]
+
+// ---------------------------------------------------------------------------
+// KPI summary row — quick counts across the four primary tabs
+// ---------------------------------------------------------------------------
+
+const KPI_ACCENTS = {
+    purple:  { ring: 'from-purple-500/20',  dot: 'bg-purple-500',  text: 'text-purple-600 dark:text-purple-300' },
+    amber:   { ring: 'from-amber-500/20',   dot: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-300' },
+    emerald: { ring: 'from-emerald-500/20', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-300' },
+    indigo:  { ring: 'from-indigo-500/20',  dot: 'bg-indigo-500',  text: 'text-indigo-600 dark:text-indigo-300' },
+}
+
+function KpiTile({ icon: Icon, label, value, hint, loading, accent = 'indigo', onClick, active }) {
+    const a = KPI_ACCENTS[accent] || KPI_ACCENTS.indigo
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`
+                group relative text-left p-5 rounded-2xl border backdrop-blur-xl overflow-hidden
+                transition-all duration-300 ds-hover-lift
+                ${active
+                    ? 'border-indigo-400/60 dark:border-indigo-500/50 bg-white dark:bg-slate-900 shadow-lg shadow-indigo-500/10'
+                    : 'border-slate-200/60 dark:border-slate-700/40 bg-white/70 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600'
+                }
+            `}
+        >
+            <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full bg-gradient-to-br ${a.ring} to-transparent blur-2xl opacity-70 group-hover:opacity-100 transition-opacity`} />
+            <div className="relative flex items-start justify-between gap-3">
+                <div className={`p-2 rounded-xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-slate-200/60 dark:border-slate-700/50 ${a.text}`}>
+                    <Icon className="w-4 h-4" />
+                </div>
+                <span className={`w-1.5 h-1.5 rounded-full ${a.dot} mt-2 opacity-70`} />
+            </div>
+            <div className="relative mt-4">
+                <div className="text-3xl font-bold tabular-nums text-slate-900 dark:text-slate-50 ds-font-display leading-none">
+                    {loading ? <span className="inline-block w-10 h-7 rounded-md bg-slate-200 dark:bg-slate-700 animate-pulse" /> : (value ?? 0)}
+                </div>
+                <div className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    {label}
+                </div>
+                {hint && <div className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">{hint}</div>}
+            </div>
+        </button>
+    )
+}
+
+function KpiRow({ activeTab, setActiveTab }) {
+    const reviews = useMyPendingReviews()
+    const stale = useStalePRs({ staleAfterDays: 7 })
+    const issues = useMyOpenIssues()
+    const debt = useTechDebt()
+
+    const reviewsCount = Array.isArray(reviews.data) ? reviews.data.length : 0
+    const staleCount = Array.isArray(stale.data) ? stale.data.length : 0
+    const issuesCount = Array.isArray(issues.data) ? issues.data.length : 0
+    const debtCount = debt.data?.items?.length ?? 0
+
+    const oldestReviewHours = reviewsCount > 0
+        ? Math.max(...reviews.data.map(r => r.ageHours || 0))
+        : 0
+    const oldestStaleDays = staleCount > 0
+        ? Math.max(...stale.data.map(p => p.ageDays || 0))
+        : 0
+    const hotspotRepo = debt.data?.hotspots?.[0]?.repoFullName || null
+
+    return (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <KpiTile
+                icon={GitPullRequest}
+                label="Pending reviews"
+                value={reviewsCount}
+                hint={reviewsCount > 0 ? `oldest ${ageLabel(oldestReviewHours)}` : 'all caught up'}
+                loading={reviews.loading}
+                accent="purple"
+                active={activeTab === 'reviews'}
+                onClick={() => setActiveTab('reviews')}
+            />
+            <KpiTile
+                icon={AlertTriangle}
+                label="Stale PRs"
+                value={staleCount}
+                hint={staleCount > 0 ? `oldest ${dayLabel(oldestStaleDays)}` : 'nothing stale'}
+                loading={stale.loading}
+                accent="amber"
+                active={activeTab === 'stale'}
+                onClick={() => setActiveTab('stale')}
+            />
+            <KpiTile
+                icon={CircleDot}
+                label="Open issues"
+                value={issuesCount}
+                hint={issuesCount > 0 ? 'assigned to you' : 'nothing on your plate'}
+                loading={issues.loading}
+                accent="emerald"
+                active={activeTab === 'issues'}
+                onClick={() => setActiveTab('issues')}
+            />
+            <KpiTile
+                icon={Wrench}
+                label="Tech debt"
+                value={debtCount}
+                hint={hotspotRepo ? `hotspot: ${hotspotRepo.split('/').pop()}` : 'no debt tracked'}
+                loading={debt.loading}
+                accent="indigo"
+                active={activeTab === 'techdebt'}
+                onClick={() => setActiveTab('techdebt')}
+            />
+        </div>
+    )
+}
 
 // ---------------------------------------------------------------------------
 // WorkBoardPage
@@ -775,42 +889,59 @@ export function WorkBoardPage({ repoCount = 0 }) {
     const ActiveComponent = TABS.find(t => t.id === activeTab)?.component || MyReviewsTab
 
     return (
-        <div className="max-w-4xl mx-auto space-y-5 animate-in fade-in duration-500">
+        <div className="max-w-6xl mx-auto space-y-7 animate-in fade-in duration-500 px-1">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-end justify-between gap-4 flex-wrap">
                 <div>
-                    <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 ds-font-display">
+                    <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-500 dark:text-indigo-400 mb-2">
+                        <span className="w-6 h-px bg-gradient-to-r from-transparent via-indigo-400 to-indigo-500" />
+                        Cross-Repo Activity
+                    </div>
+                    <h1 className="text-3xl md:text-4xl font-bold ds-font-display ds-gradient-text leading-tight">
                         Work Board
                     </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                        {repoCount > 0 ? `${repoCount} repos tracked` : 'Cross-repo activity across all your repos'}
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                        {repoCount > 0
+                            ? `${repoCount} repos tracked · live signals across reviews, issues & delivery`
+                            : 'Live signals across reviews, issues & delivery'}
                     </p>
                 </div>
             </div>
 
+            {/* KPI row */}
+            <KpiRow activeTab={activeTab} setActiveTab={setActiveTab} />
+
             {/* Main card */}
-            <div className="rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-lg shadow-slate-200/30 dark:shadow-black/30 overflow-hidden">
+            <div className="relative rounded-3xl border border-slate-200/60 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-xl shadow-slate-300/20 dark:shadow-black/40 overflow-hidden">
+                <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[520px] h-[220px] rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-transparent blur-3xl" />
+
                 {/* Tab bar */}
-                <div className="flex items-center gap-0.5 p-2 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/80 dark:bg-slate-800/40 overflow-x-auto">
+                <div role="tablist" aria-label="Work Board sections" className="relative flex items-center gap-1 p-2.5 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/60 dark:bg-slate-800/30 overflow-x-auto">
                     {TABS.map(tab => {
                         const Icon = tab.icon
                         const isActive = activeTab === tab.id
                         return (
                             <button
                                 key={tab.id}
+                                role="tab"
+                                aria-selected={isActive}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`
-                                    flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200
+                                    relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200
                                     ${isActive
-                                        ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                                        : 'text-slate-500 dark:text-slate-400 hover:bg-white/70 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-300'
+                                        ? 'bg-gradient-to-br from-white to-slate-50 dark:from-slate-700 dark:to-slate-800 text-indigo-600 dark:text-indigo-300 shadow-md shadow-indigo-500/10 ring-1 ring-indigo-500/20'
+                                        : 'text-slate-500 dark:text-slate-400 hover:bg-white/70 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200'
                                     }
                                 `}
                             >
                                 <Icon className="w-4 h-4" />
                                 {tab.label}
                                 {tab.badge && (
-                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 text-indigo-600 dark:text-indigo-400">
+                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                                        tab.badge === 'Enterprise'
+                                            ? 'bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40 text-amber-700 dark:text-amber-300'
+                                            : 'bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 text-indigo-600 dark:text-indigo-300'
+                                    }`}>
                                         {tab.badge}
                                     </span>
                                 )}
@@ -826,8 +957,8 @@ export function WorkBoardPage({ repoCount = 0 }) {
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.15 }}
-                        className="min-h-[320px]"
+                        transition={{ duration: 0.18 }}
+                        className="min-h-[380px]"
                     >
                         <ActiveComponent />
                     </motion.div>
