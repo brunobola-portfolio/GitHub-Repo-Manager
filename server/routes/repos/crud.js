@@ -1,0 +1,460 @@
+/*
+ * GitHub Repo Manager - Repos CRUD Routes
+ *
+ * Endpoints:
+ *   GET    /                                     — list user repos
+ *   POST   /                                     — create repo
+ *   POST   /generate                             — template generate
+ *   GET    /:owner/:repo                         — get repo
+ *   PATCH  /:owner/:repo                         — update repo
+ *   PUT    /:owner/:repo/topics                  — replace topics
+ *   POST   /:owner/:repo/forks                   — fork
+ *   GET    /:owner/:repo/collaborators           — list collaborators
+ *   PUT    /:owner/:repo/collaborators/:username — add collaborator
+ *   GET    /:owner/:repo/contents                — get contents
+ *   PUT    /:owner/:repo/contents                — create/update file
+ *   DELETE /:owner/:repo/contents                — delete file
+ *   GET    /:owner/:repo/readme                  — get README
+ *   GET    /:owner/:repo/labels                  — list labels
+ *   POST   /:owner/:repo/labels                  — create label
+ *   DELETE /:owner/:repo/labels/:name            — delete label
+ *   GET    /:owner/:repo/commits                 — list commits
+ *   GET    /:owner/:repo/compare/:basehead       — compare commits
+ *
+ * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ */
+
+import express from 'express';
+import db from '../../db.js';
+import { githubApi } from '../../lib/github-api.js';
+import { requireAuth, isValidGitHubUsername, safeError, errorResponse } from '../../middleware/auth.js';
+import {
+    validate,
+    createRepoSchema,
+    repoUpdateSchema,
+    topicsSchema,
+    forkSchema,
+    templateGenerateSchema,
+} from '../../lib/validators.js';
+import { auditLog } from '../../lib/audit.js';
+
+const router = express.Router();
+
+function clampPerPage(value, defaultVal = 30) {
+    return Math.min(Math.max(parseInt(value) || defaultVal, 1), 100);
+}
+
+// Validate :owner and :repo URL params (replicated per sub-router — Express
+// param validators are local to the router they're attached to).
+const GITHUB_NAME_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$/;
+
+router.param('owner', (req, res, next, val) => {
+    if (!GITHUB_NAME_RE.test(val) || val.length > 39) {
+        return errorResponse(res, 400, 'Invalid owner name', 'INVALID_PARAM');
+    }
+    next();
+});
+
+router.param('repo', (req, res, next, val) => {
+    if (!GITHUB_NAME_RE.test(val) || val.length > 100) {
+        return errorResponse(res, 400, 'Invalid repository name', 'INVALID_PARAM');
+    }
+    next();
+});
+
+/**
+ * Validate a file path to prevent path traversal attacks.
+ * Rejects paths containing '..', absolute paths starting with '/', and null bytes.
+ * @param {string} path
+ * @returns {boolean} true if the path is safe
+ */
+function validatePath(path) {
+    if (!path) return true; // empty path is fine (root listing)
+    if (typeof path !== 'string') return false;
+    if (path.includes('\0')) return false;
+    if (path.startsWith('/')) return false;
+    if (path.split('/').some(segment => segment === '..')) return false;
+    return true;
+}
+
+// ------------------------------------------------------------------
+// Repository CRUD
+// ------------------------------------------------------------------
+
+// List repos (personal or org)
+router.get('/', requireAuth, async (req, res) => {
+    try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const perPage = clampPerPage(req.query.per_page, 30);
+        const org = req.query.org || '';
+
+        let endpoint;
+        if (org && org !== '') {
+            if (!isValidGitHubUsername(org)) {
+                return errorResponse(res, 400, 'Invalid organization name', 'INVALID_PARAM');
+            }
+            // Specific organization - fetch org repos
+            endpoint = `/orgs/${org}/repos?page=${page}&per_page=${perPage}&sort=updated`;
+        } else {
+            // All repos - include personal + organization membership
+            endpoint = `/user/repos?page=${page}&per_page=${perPage}&sort=updated&affiliation=owner,organization_member`;
+        }
+
+        const { data, headers } = await githubApi(endpoint, req.session.accessToken);
+
+        // Extract pagination info from the Link header
+        const linkHeader = headers.get('link');
+        let totalPages = null;
+        if (linkHeader) {
+            const lastMatch = linkHeader.match(/page=(\d+)>; rel="last"/);
+            if (lastMatch) totalPages = parseInt(lastMatch[1]);
+        }
+
+        // Build mirror map from migration_jobs for this user
+        const mirrorMap = new Map();
+        const mirrorRows = db.prepare(`
+            SELECT target_owner, target_repo FROM migration_jobs
+            WHERE user_id=? AND is_mirror=1
+        `).all(req.session.userId);
+        for (const row of mirrorRows) {
+            mirrorMap.set(`${row.target_owner}/${row.target_repo}`, true);
+        }
+
+        // Annotate each repo with isMirror flag
+        const repos = data.map((repo) => ({
+            ...repo,
+            isMirror: mirrorMap.has(repo.full_name) || false
+        }));
+
+        res.json({ repos, page: parseInt(page), totalPages });
+    } catch (error) {
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Create repo (personal or org)
+router.post('/', requireAuth, validate(createRepoSchema), async (req, res) => {
+    try {
+        const { name, description, org, isPrivate, autoInit, license } = req.body;
+
+        const endpoint = org ? `/orgs/${org}/repos` : '/user/repos';
+        const { data } = await githubApi(endpoint, req.session.accessToken, {
+            method: 'POST',
+            body: JSON.stringify({
+                name,
+                description,
+                private: isPrivate,
+                auto_init: autoInit,
+                license_template: license
+            })
+        });
+
+        res.json({ success: true, repo: data });
+    } catch (error) {
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Create repository from template
+router.post('/generate', requireAuth, validate(templateGenerateSchema), async (req, res) => {
+    try {
+        const { template_owner, template_repo, owner, name, description, include_all_branches, private: isPrivate } = req.body;
+
+        const { data } = await githubApi(`/repos/${template_owner}/${template_repo}/generate`, req.session.accessToken, {
+            method: 'POST',
+            headers: { 'Accept': 'application/vnd.github.baptiste-preview+json' },
+            body: JSON.stringify({ owner, name, description, include_all_branches, private: isPrivate })
+        });
+        res.json({ success: true, repo: data });
+    } catch (error) {
+        req.log.error({ err: error }, 'Generate from template failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Get single repository details
+router.get('/:owner/:repo', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { data } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        req.log.error({ err: error }, 'Get repo failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Update repository settings
+router.patch('/:owner/:repo', requireAuth, validate(repoUpdateSchema), async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken, {
+            method: 'PATCH',
+            body: JSON.stringify(req.body)
+        });
+
+        const action = req.body.archived === true ? 'repo.archive'
+            : req.body.archived === false ? 'repo.unarchive'
+            : 'repo.update';
+        auditLog(req, action, 'repo', `${owner}/${repo}`, req.body);
+        res.json(data);
+    } catch (error) {
+        req.log.error({ err: error }, 'Update repo failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Update repository topics
+router.put('/:owner/:repo/topics', requireAuth, validate(topicsSchema), async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { names } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/topics`, req.session.accessToken, {
+            method: 'PUT',
+            headers: { 'Accept': 'application/vnd.github.mercy-preview+json' },
+            body: JSON.stringify({ names })
+        });
+        auditLog(req, 'repo.topics.update', 'repo', `${owner}/${repo}`, { names });
+        res.json(data);
+    } catch (error) {
+        req.log.error({ err: error }, 'Update topics failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Fork a repository
+router.post('/:owner/:repo/forks', requireAuth, validate(forkSchema), async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { organization, name, default_branch_only } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/forks`, req.session.accessToken, {
+            method: 'POST',
+            body: JSON.stringify({ organization, name, default_branch_only })
+        });
+        res.json({ success: true, repo: data });
+    } catch (error) {
+        req.log.error({ err: error }, 'Fork repo failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// ------------------------------------------------------------------
+// Collaborators
+// ------------------------------------------------------------------
+
+// List Collaborators for a specific Repo
+router.get('/:owner/:repo/collaborators', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const result = await githubApi(`/repos/${owner}/${repo}/collaborators`, req.session.accessToken);
+        res.json(result.data || []);
+    } catch (error) {
+        // 403 usually means you don't have permission to view collaborators (need push access)
+        if (error.status === 403) {
+            return res.json([]); // Fail gracefully by returning empty
+        }
+        res.status(500).json({ error: 'Failed to fetch collaborators' });
+    }
+});
+
+// Add a Collaborator to a Repo
+router.put('/:owner/:repo/collaborators/:username', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, username } = req.params;
+        if (!isValidGitHubUsername(username)) return res.status(400).json({ error: 'Invalid username format' });
+        const { permission = 'push' } = req.body;
+        const allowedPermissions = ['pull', 'push', 'admin', 'maintain', 'triage'];
+        if (!allowedPermissions.includes(permission)) {
+            return res.status(400).json({ error: 'Invalid permission level' });
+        }
+
+        const result = await githubApi(`/repos/${owner}/${repo}/collaborators/${username}`, req.session.accessToken, {
+            method: 'PUT',
+            body: JSON.stringify({ permission })
+        });
+
+        res.json({ success: true, invitation: result.data });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to add collaborator' });
+    }
+});
+
+// ------------------------------------------------------------------
+// Repository Contents & Files
+// ------------------------------------------------------------------
+
+// Get file/directory contents (path is optional, use query param for nested paths)
+router.get('/:owner/:repo/contents', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { path = '', ref } = req.query;
+
+        if (!validatePath(path)) {
+            return res.status(400).json({ error: 'Invalid path: must be relative and cannot contain ".." or null bytes' });
+        }
+
+        let url = `/repos/${owner}/${repo}/contents/${path}`;
+        if (ref) url += `?ref=${encodeURIComponent(ref)}`;
+
+        const { data } = await githubApi(url, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        req.log.error({ err: error }, 'Get contents failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Create/Update file (path in query param)
+router.put('/:owner/:repo/contents', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { path } = req.query;
+        const { message, content, branch, sha } = req.body;
+
+        if (!path) return res.status(400).json({ error: 'Path query parameter required' });
+        if (!validatePath(path)) {
+            return res.status(400).json({ error: 'Invalid path: must be relative and cannot contain ".." or null bytes' });
+        }
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/contents/${path}`, req.session.accessToken, {
+            method: 'PUT',
+            body: JSON.stringify({ message, content, branch, sha })
+        });
+        res.json({ success: true, commit: data.commit, content: data.content });
+    } catch (error) {
+        req.log.error({ err: error }, 'Create or update file failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Delete file (path in query param)
+router.delete('/:owner/:repo/contents', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { path } = req.query;
+        const { message, sha, branch } = req.body;
+
+        if (!path) return res.status(400).json({ error: 'Path query parameter required' });
+        if (!validatePath(path)) {
+            return res.status(400).json({ error: 'Invalid path: must be relative and cannot contain ".." or null bytes' });
+        }
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/contents/${path}`, req.session.accessToken, {
+            method: 'DELETE',
+            body: JSON.stringify({ message, sha, branch })
+        });
+        res.json({ success: true, commit: data.commit });
+    } catch (error) {
+        req.log.error({ err: error }, 'Delete file failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Get README
+router.get('/:owner/:repo/readme', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { data } = await githubApi(`/repos/${owner}/${repo}/readme`, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        if (error.status === 404) {
+            res.json({ exists: false });
+        } else {
+            req.log.error({ err: error }, 'Get README failed');
+            res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+        }
+    }
+});
+
+// ------------------------------------------------------------------
+// Labels Management
+// ------------------------------------------------------------------
+
+// List labels
+router.get('/:owner/:repo/labels', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { data } = await githubApi(`/repos/${owner}/${repo}/labels?per_page=100`, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        req.log.error({ err: error }, 'List labels failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Create label
+router.post('/:owner/:repo/labels', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { name, color, description } = req.body;
+
+        const { data } = await githubApi(`/repos/${owner}/${repo}/labels`, req.session.accessToken, {
+            method: 'POST',
+            body: JSON.stringify({ name, color, description })
+        });
+        res.json({ success: true, label: data });
+    } catch (error) {
+        req.log.error({ err: error }, 'Create label failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Delete label
+router.delete('/:owner/:repo/labels/:name', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, name } = req.params;
+        await githubApi(`/repos/${owner}/${repo}/labels/${encodeURIComponent(name)}`, req.session.accessToken, {
+            method: 'DELETE'
+        });
+        res.json({ success: true, message: 'Label deleted' });
+    } catch (error) {
+        req.log.error({ err: error }, 'Delete label failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// ------------------------------------------------------------------
+// Commits & Comparison
+// ------------------------------------------------------------------
+
+// List commits
+router.get('/:owner/:repo/commits', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const { sha, path, author, since, until } = req.query;
+
+        let url = `/repos/${owner}/${repo}/commits?per_page=${clampPerPage(req.query.per_page)}`;
+        if (sha) url += `&sha=${encodeURIComponent(sha)}`;
+        if (path) url += `&path=${encodeURIComponent(path)}`;
+        if (author) url += `&author=${encodeURIComponent(author)}`;
+        if (since) url += `&since=${encodeURIComponent(since)}`;
+        if (until) url += `&until=${encodeURIComponent(until)}`;
+
+        const { data } = await githubApi(url, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        req.log.error({ err: error }, 'List commits failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Compare commits
+router.get('/:owner/:repo/compare/:basehead', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, basehead } = req.params;
+        const parts = basehead.split('...');
+        const encodedBasehead = parts.length === 2
+            ? `${encodeURIComponent(parts[0])}...${encodeURIComponent(parts[1])}`
+            : encodeURIComponent(basehead);
+        const { data } = await githubApi(`/repos/${owner}/${repo}/compare/${encodedBasehead}`, req.session.accessToken);
+        res.json(data);
+    } catch (error) {
+        req.log.error({ err: error }, 'Compare commits failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+export default router;
