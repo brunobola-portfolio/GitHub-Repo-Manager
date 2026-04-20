@@ -4,15 +4,25 @@
 
 **The GitHub dashboard that thinks — manage, migrate, and optimize with AI**
 
+<!-- Stack -->
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![Vite](https://img.shields.io/badge/Vite-8.0-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-4.1-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.1-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-5.2-000000?style=for-the-badge&logo=express&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=for-the-badge&logo=node.js&logoColor=white)
-![BYOK AI](https://img.shields.io/badge/AI-BYOK%20(Gemini%2FAnthropicOpenAI%2FOpenRouter%2FLMStudio)-8E75B2?style=for-the-badge)
 ![SQLite](https://img.shields.io/badge/SQLite-WAL-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-1473%20passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
-![License](https://img.shields.io/badge/License-AGPL%20v3-blue?style=for-the-badge)
+
+<!-- BYOK AI Providers -->
+![BYOK](https://img.shields.io/badge/BYOK-AI-8E75B2?style=for-the-badge)
+![Gemini](https://img.shields.io/badge/Gemini-4285F4?style=for-the-badge&logo=googlegemini&logoColor=white)
+![Anthropic](https://img.shields.io/badge/Anthropic-191919?style=for-the-badge&logo=anthropic&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)
+![OpenRouter](https://img.shields.io/badge/OpenRouter-6466F1?style=for-the-badge)
+![LM Studio](https://img.shields.io/badge/LM_Studio-4B2DDC?style=for-the-badge)
+
+<!-- Quality -->
+![Tests](https://img.shields.io/badge/Tests-1473_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
+![License](https://img.shields.io/badge/License-AGPL_v3-blue?style=for-the-badge&logo=gnu&logoColor=white)
 
 **A full-stack AI-powered dashboard for managing repositories, teams, CI/CD, and migrating from Azure DevOps — all in one beautiful interface.**
 
