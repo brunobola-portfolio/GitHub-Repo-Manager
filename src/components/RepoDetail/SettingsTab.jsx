@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
-import { Settings, Save, Loader2, CheckCircle2, XCircle, AlertTriangle, Lock, Globe, Webhook, Trash2, Plus, RefreshCw } from 'lucide-react'
+import { CodeownersSuggestModal } from '../CodeownersSuggestModal'
+import { Settings, Save, Loader2, CheckCircle2, XCircle, AlertTriangle, Lock, Globe, Webhook, Trash2, Plus, RefreshCw, Users } from 'lucide-react'
 
-export function SettingsTab({ api, repoData, onUpdate }) {
+export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
+    const [codeownersOpen, setCodeownersOpen] = useState(false)
     const [saving, setSaving] = useState(false)
     const [message, setMessage] = useState(null)
     const [form, setForm] = useState({
@@ -244,6 +246,36 @@ export function SettingsTab({ api, repoData, onUpdate }) {
                     </div>
                 </div>
             </Card>
+
+            {/* Governance — CODEOWNERS generator */}
+            <Card className="p-6">
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                            <Users className="w-4 h-4 text-indigo-500" />
+                            CODEOWNERS
+                        </h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
+                            Auto-suggest ownership rules from recent commit authorship. Review the proposed owners per directory and paste the generated file into <code className="font-mono text-xs">.github/CODEOWNERS</code>.
+                        </p>
+                    </div>
+                    <Button
+                        variant="secondary"
+                        onClick={() => setCodeownersOpen(true)}
+                        disabled={!owner || !repo}
+                    >
+                        <Users className="w-4 h-4 mr-1.5" />
+                        Suggest
+                    </Button>
+                </div>
+            </Card>
+
+            <CodeownersSuggestModal
+                isOpen={codeownersOpen}
+                onClose={() => setCodeownersOpen(false)}
+                owner={owner}
+                repo={repo}
+            />
 
             <ConfirmModal
                 isOpen={!!confirmAction}
