@@ -4,8 +4,6 @@ A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is either
 
 ## Shipping Now (Q2 2026)
 
-- **CODEOWNERS Generator** — Free. Suggest owners from recent commit authorship; the parser + the generator endpoint (`GET /:owner/:repo/codeowners/suggest`) are in place and returning rules — frontend presentation is the last piece.
-- **Compare with Existing** — Pro. Semantic similarity search (Wave 2) is indexing + querying; side-by-side diff UI is the remaining piece.
 - **Security & Secrets Scan** — Pro. Aggregates GitHub's native Dependabot / secret scanning alerts.
 
 ## Next (Q3 2026)
@@ -40,7 +38,8 @@ A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is either
 - **AI Issue-to-PR Planner (plan-only)** (April 2026) — generates structured implementation plans (approach, files to touch, tests, risks, estimate) for any open issue; uses the user's configured BYOK provider
 - **SOC 2 code hardening** (April 2026) — append-only audit log with SHA-256 hash chain, self-service data erasure (GDPR Art. 17), startup secrets verification, data retention pass with warning emails
 - **Stripe billing + license key delivery** (April 2026) — Ed25519-signed JWT license keys issued and emailed on checkout completion
-- **CODEOWNERS Parser** (April 2026) — reads `.github/CODEOWNERS` (with `CODEOWNERS` fallback) and returns structured rules via `GET /api/v1/repos/:owner/:repo/codeowners`
+- **CODEOWNERS Parser + Generator** (April 2026) — `GET /codeowners` reads the existing `.github/CODEOWNERS`; the new `GET /codeowners/suggest` derives owner rules from recent commit authorship (top-level directory grouping, touch-count ranking, tunable via commits / minTouches / maxOwners query params). Accessible from RepoDetail → Settings → CODEOWNERS card, with hotspot pills, per-path owner list, and copy-to-clipboard preview.
+- **Compare with Existing — side-by-side diff** (April 2026) — adds the remaining piece to the semantic-similarity search. From the Similar Repositories drawer, each result now has a **Compare** button that opens a side-by-side diff modal comparing README and package.json between the source repo and the target.
 - **README Enhance** (April 2026) — Pro. AI-generated diff of improved README against your current file
 - **Batch Indexing** (April 2026) — Pro. Bulk AI indexing of selected repositories with progress modal
 - **Command Palette** — Ctrl+K keyboard-first navigation across the full app

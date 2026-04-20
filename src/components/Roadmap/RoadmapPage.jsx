@@ -7,8 +7,6 @@ const STAGES = [
   {
     id: 'now',
     items: [
-      { title: 'CODEOWNERS Generator', description: 'Backend suggest endpoint now shipping — frontend review UI is the last piece', tier: 'Free' },
-      { title: 'Compare with Existing', description: 'Semantic index + query in place; side-by-side diff UI remaining', tier: 'Pro' },
       { title: 'Security & Secrets Scan', description: 'Aggregates GitHub Dependabot + secret scanning alerts', tier: 'Pro' },
     ],
   },
@@ -52,7 +50,8 @@ const STAGES = [
       { title: 'GitHub event ingestion pipeline', description: 'Real-time PR, issue and deployment webhook ingestion into the Work Board', tier: 'All' },
       { title: 'SOC 2 code hardening', description: 'Append-only audit log with SHA-256 hash chain, self-service data erasure, startup secrets check, retention pass', tier: 'Enterprise' },
       { title: 'Stripe billing + license key delivery', description: 'Ed25519-signed JWT license keys issued on checkout completion', tier: 'Pro + Enterprise' },
-      { title: 'CODEOWNERS Parser', description: 'Reads `.github/CODEOWNERS` and returns structured rules', tier: 'Free' },
+      { title: 'CODEOWNERS Parser + Generator', description: 'Parse existing CODEOWNERS OR suggest rules from recent commit authorship (hotspots + per-path owners + copy-to-clipboard preview)', tier: 'Free' },
+      { title: 'Compare with Existing — side-by-side diff', description: 'From the Similar Repositories drawer, open a side-by-side README / package.json diff against any similar repo', tier: 'Pro' },
     ],
   },
 ]
