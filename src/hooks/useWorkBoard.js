@@ -26,25 +26,34 @@ async function apiFetch(url) {
     return res.json()
 }
 
-function useWorkBoardFetch(url, mockData) {
+function useWorkBoardFetch(url, mockData, { refreshIntervalMs = 60_000 } = {}) {
     const [data, setData] = useState(null)
+    const [meta, setMeta] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [lastFetchedAt, setLastFetchedAt] = useState(null)
     const mountedRef = useRef(true)
+    const intervalRef = useRef(null)
 
-    const fetch = useCallback(async () => {
+    const fetchOnce = useCallback(async () => {
         if (!mountedRef.current) return
         setLoading(true)
         setError(null)
         try {
             if (MOCK_MODE) {
                 // Simulate a brief network delay for realistic UX
-                await new Promise(r => setTimeout(r, 120))
-                if (mountedRef.current) setData(mockData)
+                await new Promise(r => setTimeout(r, 80))
+                if (!mountedRef.current) return
+                setData(mockData)
+                setMeta(null)
+                setLastFetchedAt(new Date())
                 return
             }
             const json = await apiFetch(url)
-            if (mountedRef.current) setData(json.data ?? json)
+            if (!mountedRef.current) return
+            setData(json.data ?? json)
+            setMeta(json.meta || null)
+            setLastFetchedAt(json.meta?.fetchedAt ? new Date(json.meta.fetchedAt) : new Date())
         } catch (err) {
             if (mountedRef.current) setError(err)
         } finally {
@@ -54,11 +63,40 @@ function useWorkBoardFetch(url, mockData) {
 
     useEffect(() => {
         mountedRef.current = true
-        fetch()
-        return () => { mountedRef.current = false }
-    }, [fetch])
+        fetchOnce()
 
-    return { data, loading, error, refresh: fetch }
+        const startInterval = () => {
+            if (refreshIntervalMs > 0 && !intervalRef.current) {
+                intervalRef.current = setInterval(() => {
+                    if (!document.hidden) fetchOnce()
+                }, refreshIntervalMs)
+            }
+        }
+        const stopInterval = () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current)
+                intervalRef.current = null
+            }
+        }
+        const onVisibility = () => {
+            if (document.hidden) {
+                stopInterval()
+            } else {
+                fetchOnce()
+                startInterval()
+            }
+        }
+
+        startInterval()
+        document.addEventListener('visibilitychange', onVisibility)
+        return () => {
+            mountedRef.current = false
+            stopInterval()
+            document.removeEventListener('visibilitychange', onVisibility)
+        }
+    }, [fetchOnce, refreshIntervalMs])
+
+    return { data, meta, loading, error, lastFetchedAt, refresh: fetchOnce }
 }
 
 // ---------------------------------------------------------------------------
@@ -174,35 +212,35 @@ const MOCK_TECH_DEBT = {
 // Public hooks
 // ---------------------------------------------------------------------------
 
-export function useMyPendingReviews() {
-    return useWorkBoardFetch('/api/v1/work-board/my-reviews', MOCK_REVIEWS)
+export function useMyPendingReviews(opts = {}) {
+    return useWorkBoardFetch('/api/v1/work-board/my-reviews', MOCK_REVIEWS, opts)
 }
 
-export function useStalePRs({ staleAfterDays = 7 } = {}) {
+export function useStalePRs({ staleAfterDays = 7, ...opts } = {}) {
     const url = `/api/v1/work-board/stale-prs?staleAfterDays=${staleAfterDays}`
-    return useWorkBoardFetch(url, MOCK_STALE_PRS)
+    return useWorkBoardFetch(url, MOCK_STALE_PRS, opts)
 }
 
-export function useMyOpenIssues() {
-    return useWorkBoardFetch('/api/v1/work-board/my-issues', MOCK_ISSUES)
+export function useMyOpenIssues(opts = {}) {
+    return useWorkBoardFetch('/api/v1/work-board/my-issues', MOCK_ISSUES, opts)
 }
 
-export function useDORAMetrics({ environment = 'production' } = {}) {
+export function useDORAMetrics({ environment = 'production', ...opts } = {}) {
     const url = `/api/v1/work-board/deploy-freq?environment=${environment}`
-    return useWorkBoardFetch(url, getMockDORA())
+    return useWorkBoardFetch(url, getMockDORA(), opts)
 }
 
-export function useDORASummary({ environment = 'production' } = {}) {
+export function useDORASummary({ environment = 'production', ...opts } = {}) {
     const url = `/api/v1/work-board/dora?environment=${environment}`
-    return useWorkBoardFetch(url, getMockDORAFull())
+    return useWorkBoardFetch(url, getMockDORAFull(), opts)
 }
 
-export function useTechDebt({ repoIds } = {}) {
+export function useTechDebt({ repoIds, ...opts } = {}) {
     const qs = repoIds && repoIds.length > 0 ? `?repoIds=${repoIds.join(',')}` : ''
-    return useWorkBoardFetch(`/api/v1/work-board/tech-debt${qs}`, MOCK_TECH_DEBT)
+    return useWorkBoardFetch(`/api/v1/work-board/tech-debt${qs}`, MOCK_TECH_DEBT, opts)
 }
 
-export function useReviewLoad({ repoIds } = {}) {
+export function useReviewLoad({ repoIds, ...opts } = {}) {
     const qs = repoIds && repoIds.length > 0 ? `?repoIds=${repoIds.join(',')}` : ''
-    return useWorkBoardFetch(`/api/v1/work-board/review-load${qs}`, MOCK_REVIEW_LOAD)
+    return useWorkBoardFetch(`/api/v1/work-board/review-load${qs}`, MOCK_REVIEW_LOAD, opts)
 }

@@ -130,6 +130,38 @@ describe('CommandPalette', () => {
     expect(repoItems.length).toBe(0)
   })
 
+  it('does not render Work Board group when activeView is not "work-board"', () => {
+    renderPalette({ activeView: 'repos' })
+    expect(screen.queryByText('Work Board', { selector: '[cmdk-group-heading]' })).toBeNull()
+    expect(screen.queryByText('Open My Reviews')).toBeNull()
+  })
+
+  it('renders Work Board group items when activeView === "work-board"', () => {
+    renderPalette({ activeView: 'work-board' })
+    expect(screen.getByText('Open My Reviews')).toBeInTheDocument()
+    expect(screen.getByText('Open Stale PRs')).toBeInTheDocument()
+    expect(screen.getByText('Open My Issues')).toBeInTheDocument()
+    expect(screen.getByText('Open Tech Debt')).toBeInTheDocument()
+    expect(screen.getByText('Open Review Load')).toBeInTheDocument()
+    expect(screen.getByText('Open DORA')).toBeInTheDocument()
+    expect(screen.getByText('Regenerate AI summary')).toBeInTheDocument()
+    expect(screen.getByText('Save current filters as preset')).toBeInTheDocument()
+  })
+
+  it('selecting "Open Tech Debt" dispatches workboard:go-tab with detail "techdebt" and closes', () => {
+    const { props } = renderPalette({ activeView: 'work-board' })
+    const handler = vi.fn()
+    window.addEventListener('workboard:go-tab', handler)
+    try {
+      fireEvent.click(screen.getByText('Open Tech Debt'))
+      expect(handler).toHaveBeenCalledTimes(1)
+      expect(handler.mock.calls[0][0].detail).toBe('techdebt')
+      expect(props.onClose).toHaveBeenCalled()
+    } finally {
+      window.removeEventListener('workboard:go-tab', handler)
+    }
+  })
+
   it('Esc key calls onClose', () => {
     const { props } = renderPalette()
     fireEvent.keyDown(document.activeElement || document.body, {

@@ -34,6 +34,7 @@ import { safeError } from './middleware/auth.js';
 import { createSQLiteStore } from './lib/session-store.js';
 import logger, { requestLoggerMiddleware } from './lib/logger.js';
 import { verifySecretsAtStartup } from './lib/startup-secrets-check.js';
+import { startWorkBoardSweeper, stopWorkBoardSweeper } from './lib/work-board-sweeper.js';
 
 // API v1 route aggregator
 import v1Routes from './routes/v1/index.js';
@@ -290,6 +291,9 @@ const server = app.listen(config.port, () => {
     logger.info({ port: config.port, frontend: config.frontendUrl, mode: config.nodeEnv }, 'GitHub Repo Manager API is live');
 });
 
+// Start background sweeper for Work Board cache + snooze TTL cleanup
+startWorkBoardSweeper();
+
 server.on('error', (e) => {
     if (e.code === 'EADDRINUSE') {
         logger.fatal({ port: config.port }, 'Port is already in use');
@@ -323,6 +327,12 @@ function gracefulShutdown(signal) {
                 WHERE status IN ('pending', 'running')`).run();
         } catch (e) {
             logger.warn({ err: e }, 'Could not update migration plans/tasks');
+        }
+
+        try {
+            stopWorkBoardSweeper();
+        } catch (e) {
+            logger.warn({ err: e }, 'Could not stop work-board sweeper');
         }
 
         try {

@@ -8,12 +8,12 @@
  *   4. DORA         — deploy freq + lead time (Enterprise+)
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     GitPullRequest, CircleDot, Rocket, BarChart3,
     ExternalLink, Clock, AlertTriangle, Lock,
-    Download, Wrench, Flame, Users,
+    Download, Wrench, Flame, Users, RefreshCw,
 } from 'lucide-react'
 import {
     useMyPendingReviews,
@@ -23,6 +23,18 @@ import {
     useTechDebt,
     useReviewLoad,
 } from '../../hooks/useWorkBoard'
+import { useRelativeTime } from '../../hooks/useRelativeTime'
+import { useUrlParams } from '../../hooks/useUrlParams'
+import { WorkBoardFilterBar } from './filters/WorkBoardFilterBar'
+import { PresetDropdown } from './filters/PresetDropdown'
+import { FilterProvider } from './filters/filter-context'
+import { useWorkBoardFilters, applyFilters } from './filters/filter-context-helpers'
+import { InlineActions } from './InlineActions'
+import { useReviewAction } from '../../hooks/useReviewAction'
+import { useContextShortcut } from '../../hooks/useKeyboardShortcuts'
+import { useModal } from '../../hooks/useModal'
+import { KeyboardHelpModal } from './KeyboardHelpModal'
+import { AISummaryCard } from './AISummaryCard'
 import { MOCK_MODE, API_BASE_URL } from '../../config'
 
 // ---------------------------------------------------------------------------
@@ -135,6 +147,24 @@ function UpsellCard({ tier }) {
 
 function MyReviewsTab() {
     const { data, loading, error, refresh } = useMyPendingReviews()
+    const { params } = useWorkBoardFilters()
+    const [optimisticallyRemoved, setOptimisticallyRemoved] = useState(() => new Set())
+    const actions = useReviewAction({
+        onOptimistic: (_action, args) => {
+            setOptimisticallyRemoved(prev => {
+                const next = new Set(prev)
+                next.add(`${args.repoFullName}#${args.prNumber}`)
+                return next
+            })
+        },
+        onRollback: (_action, args) => {
+            setOptimisticallyRemoved(prev => {
+                const next = new Set(prev)
+                next.delete(`${args.repoFullName}#${args.prNumber}`)
+                return next
+            })
+        },
+    })
 
     if (loading) return <SkeletonList count={5} />
     if (error) {
@@ -146,7 +176,8 @@ function MyReviewsTab() {
         )
     }
 
-    const reviews = data || []
+    const filtered = applyFilters(data || [], params)
+    const reviews = filtered.filter(r => !optimisticallyRemoved.has(`${r.repoFullName}#${r.prNumber}`))
     if (reviews.length === 0) {
         return (
             <>
@@ -191,6 +222,16 @@ function MyReviewsTab() {
                         {ageLabel(r.ageHours)}
                         <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
+                    <InlineActions
+                        onApprove={() => actions.approve({ repoFullName: r.repoFullName, prNumber: r.prNumber })}
+                        onRequestChanges={() => {
+                            const body = window.prompt('What needs changing?')
+                            if (body && body.trim()) {
+                                actions.requestChanges({ repoFullName: r.repoFullName, prNumber: r.prNumber, body })
+                            }
+                        }}
+                        onSnooze={(hours) => actions.snooze({ repoFullName: r.repoFullName, prNumber: r.prNumber, hours })}
+                    />
                 </motion.a>
             ))}
         </div>
@@ -204,6 +245,24 @@ function MyReviewsTab() {
 function StalePRsTab() {
     const [staleAfterDays, setStaleAfterDays] = useState(7)
     const { data, loading, error, refresh } = useStalePRs({ staleAfterDays })
+    const { params } = useWorkBoardFilters()
+    const [optimisticallyRemoved, setOptimisticallyRemoved] = useState(() => new Set())
+    const actions = useReviewAction({
+        onOptimistic: (_action, args) => {
+            setOptimisticallyRemoved(prev => {
+                const next = new Set(prev)
+                next.add(`${args.repoFullName}#${args.prNumber}`)
+                return next
+            })
+        },
+        onRollback: (_action, args) => {
+            setOptimisticallyRemoved(prev => {
+                const next = new Set(prev)
+                next.delete(`${args.repoFullName}#${args.prNumber}`)
+                return next
+            })
+        },
+    })
 
     if (loading) return <SkeletonList count={6} />
     if (error) {
@@ -215,7 +274,8 @@ function StalePRsTab() {
         )
     }
 
-    const prs = data || []
+    const filtered = applyFilters(data || [], params)
+    const prs = filtered.filter(p => !optimisticallyRemoved.has(`${p.repoFullName}#${p.prNumber}`))
 
     return (
         <>
@@ -275,6 +335,9 @@ function StalePRsTab() {
                                 {dayLabel(pr.ageDays)}
                                 <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
+                            <InlineActions
+                                onSnooze={(hours) => actions.snooze({ repoFullName: pr.repoFullName, prNumber: pr.prNumber, hours })}
+                            />
                         </motion.a>
                     ))}
                 </div>
@@ -289,6 +352,7 @@ function StalePRsTab() {
 
 function MyIssuesTab() {
     const { data, loading, error, refresh } = useMyOpenIssues()
+    const { params } = useWorkBoardFilters()
 
     if (loading) return <SkeletonList count={4} />
     if (error) {
@@ -300,7 +364,7 @@ function MyIssuesTab() {
         )
     }
 
-    const issues = data || []
+    const issues = applyFilters(data || [], params)
     if (issues.length === 0) {
         return (
             <>
@@ -650,6 +714,7 @@ function ReviewLoadTab() {
 
 function TechDebtTab() {
     const { data, loading, error, refresh } = useTechDebt()
+    const { params } = useWorkBoardFilters()
 
     if (loading) return <SkeletonList count={5} />
     if (error) {
@@ -661,7 +726,7 @@ function TechDebtTab() {
         )
     }
 
-    const items = data?.items || []
+    const items = applyFilters(data?.items || [], params)
     const hotspots = data?.hotspots || []
 
     if (items.length === 0) {
@@ -759,6 +824,8 @@ function TechDebtTab() {
 // Tab definitions
 // ---------------------------------------------------------------------------
 
+// g-prefix keyboard navigation — maps second-key to tab id
+
 const TABS = [
     { id: 'reviews',     label: 'My Reviews',  icon: GitPullRequest, component: MyReviewsTab, accent: 'purple' },
     { id: 'stale',       label: 'Stale PRs',   icon: AlertTriangle,  component: StalePRsTab,  accent: 'amber' },
@@ -814,12 +881,7 @@ function KpiTile({ icon: Icon, label, value, hint, loading, accent = 'indigo', o
     )
 }
 
-function KpiRow({ activeTab, setActiveTab }) {
-    const reviews = useMyPendingReviews()
-    const stale = useStalePRs({ staleAfterDays: 7 })
-    const issues = useMyOpenIssues()
-    const debt = useTechDebt()
-
+function KpiRow({ activeTab, setActiveTab, reviews, stale, issues, debt }) {
     const reviewsCount = Array.isArray(reviews.data) ? reviews.data.length : 0
     const staleCount = Array.isArray(stale.data) ? stale.data.length : 0
     const issuesCount = Array.isArray(issues.data) ? issues.data.length : 0
@@ -884,7 +946,88 @@ function KpiRow({ activeTab, setActiveTab }) {
 // ---------------------------------------------------------------------------
 
 export function WorkBoardPage({ repoCount = 0 }) {
-    const [activeTab, setActiveTab] = useState('reviews')
+    const [params, setParams] = useUrlParams(['tab', 'repos', 'authors', 'labels', 'age', 'snoozed'])
+    const activeTab = params.tab || 'reviews'
+    const setActiveTab = (tab) => setParams({ tab: tab === 'reviews' ? '' : tab })
+
+    // Help modal state (from centralized ModalContext)
+    const { modalStates, openModal, closeModal } = useModal()
+    const helpOpen = modalStates.workBoardHelp || false
+
+    // `?` opens help (Shift+/ yields event.key === '?' on most layouts)
+    useContextShortcut({ key: '?', handler: () => openModal('workBoardHelp') })
+    // Escape closes help
+    useContextShortcut({ key: 'Escape', handler: () => closeModal('workBoardHelp'), when: helpOpen, deps: [helpOpen] })
+
+    // Note: a `g`-prefix tab chord was considered but `g` is already bound
+    // globally to "Open Dev Toolkit" in useKeyboardShortcuts. Tabs remain
+    // accessible via click, URL (`?tab=…`), and the command palette.
+
+    // Command palette wiring — listen for palette-originated events and act.
+    // Keeping listeners here means any palette implementation can drive the page
+    // without threading callbacks through many layers.
+    useEffect(() => {
+        const onGoTab = (e) => {
+            if (typeof e.detail === 'string') setActiveTab(e.detail)
+        }
+        const onRegen = () => window.dispatchEvent(new CustomEvent('workboard:ai-regenerate-internal'))
+        const onSave = () => {
+            // Lightweight first pass: nudge user to the filter-bar PresetDropdown.
+            // A deeper integration would open the dropdown + focus its input; we
+            // skip that to avoid cross-component ref coupling.
+            if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+                window.alert('Use the Presets dropdown in the filter bar to save the current filters as a preset.')
+            }
+        }
+        window.addEventListener('workboard:go-tab', onGoTab)
+        window.addEventListener('workboard:regenerate-ai', onRegen)
+        window.addEventListener('workboard:save-preset', onSave)
+        return () => {
+            window.removeEventListener('workboard:go-tab', onGoTab)
+            window.removeEventListener('workboard:regenerate-ai', onRegen)
+            window.removeEventListener('workboard:save-preset', onSave)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    const reviews = useMyPendingReviews()
+    const stale = useStalePRs({ staleAfterDays: 7 })
+    const issues = useMyOpenIssues()
+    const debt = useTechDebt()
+
+    // Aggregate filter options from the data loaded by all primary tabs.
+    const allItems = [
+        ...(Array.isArray(reviews.data) ? reviews.data : []),
+        ...(Array.isArray(stale.data) ? stale.data : []),
+        ...(Array.isArray(issues.data) ? issues.data : []),
+        ...((debt.data?.items) || []),
+    ]
+    const availableRepos = Array.from(new Set(allItems.map(i => i.repoFullName).filter(Boolean))).sort()
+    const availableAuthors = Array.from(new Set(allItems.map(i => i.authorLogin).filter(Boolean))).sort()
+    const availableLabels = Array.from(new Set(allItems.flatMap(i => i.labels || []).filter(Boolean))).sort()
+
+    const earliest = (() => {
+        const times = [reviews.lastFetchedAt, stale.lastFetchedAt, issues.lastFetchedAt, debt.lastFetchedAt]
+            .filter(Boolean)
+            .map(d => d.getTime())
+        return times.length > 0 ? new Date(Math.min(...times)) : null
+    })()
+    const earliestLabel = useRelativeTime(earliest)
+
+    const [refreshing, setRefreshing] = useState(false)
+    const refreshAll = async () => {
+        setRefreshing(true)
+        try {
+            await Promise.all([
+                reviews.refresh?.(),
+                stale.refresh?.(),
+                issues.refresh?.(),
+                debt.refresh?.(),
+            ])
+        } finally {
+            setRefreshing(false)
+        }
+    }
 
     const ActiveComponent = TABS.find(t => t.id === activeTab)?.component || MyReviewsTab
 
@@ -906,10 +1049,55 @@ export function WorkBoardPage({ repoCount = 0 }) {
                             : 'Live signals across reviews, issues & delivery'}
                     </p>
                 </div>
+                <div className="flex items-center gap-3">
+                    {earliest && (
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500" aria-live="polite">
+                            updated {earliestLabel}
+                        </span>
+                    )}
+                    <button
+                        type="button"
+                        onClick={refreshAll}
+                        disabled={refreshing}
+                        aria-label="Refresh work board"
+                        className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                    >
+                        <motion.div animate={{ rotate: refreshing ? 360 : 0 }} transition={{ duration: 0.6, ease: 'easeInOut' }}>
+                            <RefreshCw className="w-4 h-4" />
+                        </motion.div>
+                    </button>
+                </div>
             </div>
 
+            {/* AI summary card — silently hides when ai_not_configured */}
+            <AISummaryCard />
+
             {/* KPI row */}
-            <KpiRow activeTab={activeTab} setActiveTab={setActiveTab} />
+            <KpiRow
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                reviews={reviews}
+                stale={stale}
+                issues={issues}
+                debt={debt}
+            />
+
+            <FilterProvider
+                params={params}
+                availableRepos={availableRepos}
+                availableAuthors={availableAuthors}
+                availableLabels={availableLabels}
+            >
+            {/* Filter bar (URL-synced) */}
+            <WorkBoardFilterBar
+                filters={params}
+                setFilters={setParams}
+                availableRepos={availableRepos}
+                availableAuthors={availableAuthors}
+                availableLabels={availableLabels}
+            >
+                <PresetDropdown currentFilters={params} onApply={setParams} />
+            </WorkBoardFilterBar>
 
             {/* Main card */}
             <div className="relative rounded-3xl border border-slate-200/60 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-xl shadow-slate-300/20 dark:shadow-black/40 overflow-hidden">
@@ -964,6 +1152,9 @@ export function WorkBoardPage({ repoCount = 0 }) {
                     </motion.div>
                 </AnimatePresence>
             </div>
+            </FilterProvider>
+
+            <KeyboardHelpModal open={helpOpen} onClose={() => closeModal('workBoardHelp')} />
         </div>
     )
 }

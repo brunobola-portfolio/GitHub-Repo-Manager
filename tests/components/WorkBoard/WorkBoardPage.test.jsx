@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react'
 
 // ---------------------------------------------------------------------------
 // Mock MOCK_MODE=true so no real fetches happen during component tests
@@ -7,6 +7,17 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 vi.mock('@/config', () => ({
     MOCK_MODE: true,
     API_BASE_URL: '',
+}))
+
+// ---------------------------------------------------------------------------
+// Mock useToast so inline action hooks used by tabs don't require a provider
+// ---------------------------------------------------------------------------
+vi.mock('@/hooks/useToast', () => ({
+    useToast: () => ({
+        toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn(), custom: vi.fn() },
+        toasts: [],
+        dismissToast: vi.fn(),
+    }),
 }))
 
 // ---------------------------------------------------------------------------
@@ -84,13 +95,24 @@ vi.mock('@/hooks/useWorkBoard', () => ({
 // Import after mocks
 // ---------------------------------------------------------------------------
 const { WorkBoardPage } = await import('@/components/WorkBoard/WorkBoardPage')
+const { ModalProvider } = await import('@/contexts/ModalContext')
 
 function renderPage(props = {}) {
-    return render(<WorkBoardPage repoCount={7} {...props} />)
+    return render(
+        <ModalProvider>
+            <WorkBoardPage repoCount={7} {...props} />
+        </ModalProvider>
+    )
 }
 
 beforeEach(() => {
     vi.clearAllMocks()
+    // Mock fetch so AISummaryCard (which POSTs on mount) renders as null silently
+    global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({ code: 'ai_not_configured' }),
+    })
     mockUseMyPendingReviews.mockReturnValue({ data: MOCK_REVIEWS, loading: false, error: null, refresh: vi.fn() })
     mockUseStalePRs.mockReturnValue({ data: MOCK_STALE, loading: false, error: null, refresh: vi.fn() })
     mockUseMyOpenIssues.mockReturnValue({ data: MOCK_ISSUES, loading: false, error: null, refresh: vi.fn() })
@@ -147,7 +169,11 @@ describe('WorkBoardPage', () => {
         mockUseMyPendingReviews.mockReturnValue({ data: null, loading: true, error: null, refresh: vi.fn() })
         renderPage()
         // Skeleton rows have animate-pulse class
-        const { container } = render(<WorkBoardPage />)
+        const { container } = render(
+            <ModalProvider>
+                <WorkBoardPage />
+            </ModalProvider>
+        )
         expect(container.querySelector('.animate-pulse')).toBeInTheDocument()
     })
 
@@ -176,7 +202,9 @@ describe('WorkBoardPage', () => {
     it('clicking My Issues tab shows issue data with labels', () => {
         renderPage()
         fireEvent.click(screen.getByRole('tab', { name: /my issues/i }))
-        expect(screen.getByText('bug')).toBeInTheDocument()
+        // `bug` may appear both in the filter bar (label chip) and inside the
+        // issue row — as long as it renders at least once, the tab is alive.
+        expect(screen.getAllByText('bug').length).toBeGreaterThan(0)
     })
 
     it('clicking DORA tab shows KPI metrics', () => {
@@ -201,6 +229,11 @@ describe('WorkBoardPage', () => {
         expect(screen.getByRole('link', { name: /view pricing/i })).toBeInTheDocument()
     })
 
+    it('renders a refresh button', () => {
+        renderPage()
+        expect(screen.getByRole('button', { name: /refresh work board/i })).toBeInTheDocument()
+    })
+
     it('Stale PRs tab shows upsell when 403 from backend', () => {
         const err403 = new Error('upgrade_required')
         err403.status = 403
@@ -209,5 +242,47 @@ describe('WorkBoardPage', () => {
         renderPage()
         fireEvent.click(screen.getByRole('tab', { name: /stale prs/i }))
         expect(screen.getByText(/pro feature/i)).toBeInTheDocument()
+    })
+
+    // ---------------------------------------------------------------------------
+    // Keyboard shortcuts
+    // ---------------------------------------------------------------------------
+
+    it('pressing ? opens the keyboard help modal', async () => {
+        renderPage()
+        fireEvent.keyDown(window, { key: '?' })
+        expect(await screen.findByText(/keyboard shortcuts/i)).toBeInTheDocument()
+    })
+
+    it('dispatching workboard:go-tab switches the active tab', async () => {
+        renderPage()
+        act(() => {
+            window.dispatchEvent(new CustomEvent('workboard:go-tab', { detail: 'techdebt' }))
+        })
+        await waitFor(() => {
+            expect(screen.getByRole('tab', { name: /tech debt/i })).toHaveAttribute('aria-selected', 'true')
+        })
+    })
+
+    it('dispatching workboard:regenerate-ai re-fires workboard:ai-regenerate-internal', () => {
+        renderPage()
+        const innerHandler = vi.fn()
+        window.addEventListener('workboard:ai-regenerate-internal', innerHandler)
+        try {
+            act(() => {
+                window.dispatchEvent(new CustomEvent('workboard:regenerate-ai'))
+            })
+            expect(innerHandler).toHaveBeenCalledTimes(1)
+        } finally {
+            window.removeEventListener('workboard:ai-regenerate-internal', innerHandler)
+        }
+    })
+
+    it('clicking a tab switches the active section', async () => {
+        renderPage()
+        fireEvent.click(screen.getByRole('tab', { name: /tech debt/i }))
+        await waitFor(() => {
+            expect(screen.getByRole('tab', { name: /tech debt/i })).toHaveAttribute('aria-selected', 'true')
+        })
     })
 })

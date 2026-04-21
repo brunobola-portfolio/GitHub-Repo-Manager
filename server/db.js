@@ -613,6 +613,51 @@ export function initDB() {
         if (!err.message?.includes('duplicate column')) throw err;
     }
 
+    // Migration 010 (Work Board mega-upgrade): live-data cache keyed by user+query.
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS work_board_cache (
+            user_id     INTEGER NOT NULL,
+            query_type  TEXT    NOT NULL,
+            payload     TEXT    NOT NULL,
+            etag        TEXT,
+            fetched_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            expires_at  DATETIME NOT NULL,
+            PRIMARY KEY (user_id, query_type),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_wbc_expires ON work_board_cache(expires_at)`);
+
+    // Migration 011: snoozed PR/issue rows for Work Board.
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS work_board_snooze (
+            user_id        INTEGER NOT NULL,
+            repo_full_name TEXT    NOT NULL,
+            item_type      TEXT    NOT NULL,
+            item_number    INTEGER NOT NULL,
+            until_at       DATETIME NOT NULL,
+            created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, repo_full_name, item_type, item_number),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_wbs_until ON work_board_snooze(until_at)`);
+
+    // Migration 012: saved filter presets.
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS work_board_presets (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id    INTEGER NOT NULL,
+            name       TEXT    NOT NULL,
+            filters    TEXT    NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (user_id, name),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_wbp_user ON work_board_presets(user_id)`);
+
     logger.info('SQLite Database initialized successfully');
 }
 

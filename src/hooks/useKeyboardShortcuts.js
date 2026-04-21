@@ -88,3 +88,25 @@ export function useKeyboardShortcuts({
 
     return { showHelp, setShowHelp, shortcuts: SHORTCUTS }
 }
+
+/**
+ * Register a single-key shortcut scoped to the current view.
+ * Ignores keystrokes while typing in inputs or when a modifier is held.
+ */
+export function useContextShortcut({ key, handler, when = true, deps = [] }) {
+    useEffect(() => {
+        if (!when) return undefined
+        function h(e) {
+            const tag = (e.target?.tagName || '').toLowerCase()
+            if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) return
+            if (e.metaKey || e.ctrlKey || e.altKey) return
+            if (e.key === key) {
+                e.preventDefault()
+                handler(e)
+            }
+        }
+        window.addEventListener('keydown', h)
+        return () => window.removeEventListener('keydown', h)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [key, when, ...deps])
+}
