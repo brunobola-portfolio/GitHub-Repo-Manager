@@ -24,11 +24,13 @@ test.describe('Work Board — zero config UX', () => {
         await expect(page.getByRole('heading', { name: /work board/i })).toBeVisible()
         await expect(page.getByRole('button', { name: /refresh work board/i })).toBeVisible()
 
-        // KPI row: all four tiles are rendered with labels
+        // KPI row: all four tiles are rendered with labels. "Stale PRs" and
+        // "Tech debt" also appear in the tab bar, and "Tech debt" surfaces in
+        // hotspot chips — narrow to the first visible match (the KPI tile).
         await expect(page.getByText('Pending reviews', { exact: false })).toBeVisible()
         await expect(page.getByText('Stale PRs', { exact: false }).first()).toBeVisible()
         await expect(page.getByText('Open issues', { exact: false })).toBeVisible()
-        await expect(page.getByText('Tech debt', { exact: false })).toBeVisible()
+        await expect(page.getByText('Tech debt', { exact: false }).first()).toBeVisible()
 
         // Tab bar
         await expect(page.getByRole('tab', { name: /my reviews/i })).toBeVisible()
