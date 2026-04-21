@@ -62,6 +62,15 @@ describe('ConflictPanel', () => {
         expect(onResolve).toHaveBeenCalledWith({ action: 'rename', newName: 'repo-new' })
     })
 
+    it('associates the rename input with its label via htmlFor/id', () => {
+        render(<ConflictPanel conflict={mockConflict} repoName="repo" onResolve={() => {}} />)
+        fireEvent.click(screen.getByRole('button', { name: /rename/i }))
+        // getByLabelText only works if htmlFor ↔ id are correctly wired up.
+        const input = screen.getByLabelText(/new repository name/i)
+        expect(input).toBeInTheDocument()
+        expect(input.tagName).toBe('INPUT')
+    })
+
     it('shows resolved state and allows changing resolution', () => {
         const onResolve = vi.fn()
         render(<ConflictPanel conflict={mockConflict} repoName="repo" resolution={{ action: 'skip' }} onResolve={onResolve} />)

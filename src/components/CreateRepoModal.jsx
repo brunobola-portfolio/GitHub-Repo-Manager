@@ -143,6 +143,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                         <Select
                             value={targetOrg}
                             onChange={setTargetOrg}
+                            label="Owner"
                             options={[
                                 { value: '', label: 'My personal account' },
                                 ...(orgs?.map((org) => ({
@@ -155,15 +156,19 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
 
                     {/* Repository Name */}
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        <label htmlFor="create-repo-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                             Repository Name <span className="text-red-400">*</span>
                         </label>
                         <div className="relative">
                             <input
+                                id="create-repo-name"
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value.replace(/\s/g, '-'))}
                                 placeholder="my-awesome-project"
+                                aria-label="Repository name"
+                                aria-required="true"
+                                aria-invalid={nameStatus === 'taken'}
                                 className="w-full px-4 py-3 pr-10 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors"
                                 autoComplete="off"
                             />
@@ -193,14 +198,16 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
 
                     {/* Description */}
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        <label htmlFor="create-repo-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                             Description <span className="text-slate-400 font-normal">(optional)</span>
                         </label>
                         <div className="relative">
                             <textarea
+                                id="create-repo-description"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 placeholder="A short description of your repository"
+                                aria-label="Repository description"
                                 rows={3}
                                 className="w-full px-4 py-3 pr-10 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/80 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none transition-colors"
                             />

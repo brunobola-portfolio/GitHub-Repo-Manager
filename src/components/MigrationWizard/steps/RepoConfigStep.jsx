@@ -421,6 +421,8 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                           type="text"
                           value={repo.targetName || ''}
                           onChange={(e) => handleTargetNameChange(repo, index, e.target.value)}
+                          aria-label={`Target repository name for ${repo.name}`}
+                          aria-invalid={conflictStatus === 'conflict'}
                           className={`w-full px-2.5 py-1 text-sm rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100
                             focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-colors
                             ${conflictStatus === 'conflict'

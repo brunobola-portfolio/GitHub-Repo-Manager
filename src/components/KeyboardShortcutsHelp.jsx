@@ -12,7 +12,7 @@ export function KeyboardShortcutsHelp({ isOpen, onClose, shortcuts }) {
     }
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/60 dark:bg-black/75 backdrop-blur-md flex items-center justify-center p-4" onClick={onClose}>
+        <div role="presentation" className="fixed inset-0 z-50 bg-black/60 dark:bg-black/75 backdrop-blur-md flex items-center justify-center p-4" onClick={onClose}>
             <div
                 ref={modalRef}
                 role="dialog"

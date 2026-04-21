@@ -143,19 +143,22 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
             {showCreate && (
                 <Card className="p-4 space-y-3">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title *</label>
-                        <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                            placeholder="PR title"
+                        <label htmlFor="pr-title" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title *</label>
+                        <input id="pr-title" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                            placeholder="PR title" aria-label="Pull request title" aria-required="true"
                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Head Branch *</label>
+                            <label htmlFor="pr-head-branch" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Head Branch *</label>
                             {branches.length > 0 ? (
                                 <div className="relative">
                                     <select
+                                        id="pr-head-branch"
                                         value={form.head}
                                         onChange={e => setForm(f => ({ ...f, head: e.target.value }))}
+                                        aria-label="Head branch"
+                                        aria-required="true"
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm appearance-none pr-8"
                                     >
                                         <option value="">Select branch...</option>
@@ -166,18 +169,21 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                     <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                                 </div>
                             ) : (
-                                <input type="text" value={form.head} onChange={e => setForm(f => ({ ...f, head: e.target.value }))}
-                                    placeholder="feature-branch"
+                                <input id="pr-head-branch" type="text" value={form.head} onChange={e => setForm(f => ({ ...f, head: e.target.value }))}
+                                    placeholder="feature-branch" aria-label="Head branch" aria-required="true"
                                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Base Branch *</label>
+                            <label htmlFor="pr-base-branch" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Base Branch *</label>
                             {branches.length > 0 ? (
                                 <div className="relative">
                                     <select
+                                        id="pr-base-branch"
                                         value={form.base}
                                         onChange={e => setForm(f => ({ ...f, base: e.target.value }))}
+                                        aria-label="Base branch"
+                                        aria-required="true"
                                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm appearance-none pr-8"
                                     >
                                         <option value="">Select branch...</option>
@@ -188,16 +194,16 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                     <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                                 </div>
                             ) : (
-                                <input type="text" value={form.base} onChange={e => setForm(f => ({ ...f, base: e.target.value }))}
-                                    placeholder="main"
+                                <input id="pr-base-branch" type="text" value={form.base} onChange={e => setForm(f => ({ ...f, base: e.target.value }))}
+                                    placeholder="main" aria-label="Base branch" aria-required="true"
                                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
                             )}
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
-                        <textarea value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
-                            rows={3} placeholder="Describe the changes..."
+                        <label htmlFor="pr-body" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
+                        <textarea id="pr-body" value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+                            rows={3} placeholder="Describe the changes..." aria-label="Pull request description"
                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm resize-none" />
                     </div>
                     <div className="flex items-center justify-between">
@@ -226,7 +232,20 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
             ) : (
                 <div className="space-y-2">
                     {pulls.map(pr => (
-                        <Card key={pr.id} className="p-3 cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors" onClick={() => setSelectedPR(pr)}>
+                        <Card
+                            key={pr.id}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Open pull request #${pr.number}: ${pr.title}`}
+                            className="p-3 cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            onClick={() => setSelectedPR(pr)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    setSelectedPR(pr)
+                                }
+                            }}
+                        >
                             <div className="flex items-start gap-3">
                                 <div className="mt-0.5">{getPrIcon(pr)}</div>
                                 <div className="flex-1 min-w-0">
@@ -252,7 +271,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                     </div>
                                 </div>
                                 {pr.state === 'open' && (
-                                    <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                                    <div role="presentation" className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                                         <Button variant="ghost" size="sm" onClick={() => handleMerge(pr)}
                                             className="text-purple-600 dark:text-purple-400 text-xs">
                                             <GitMerge className="w-3.5 h-3.5 mr-1" /> Merge

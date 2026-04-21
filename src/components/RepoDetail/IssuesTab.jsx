@@ -117,15 +117,15 @@ export function IssuesTab({ api, repoFullName }) {
             {showCreate && (
                 <Card className="p-4 space-y-3">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title *</label>
-                        <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                            placeholder="Issue title"
+                        <label htmlFor="issue-title" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title *</label>
+                        <input id="issue-title" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                            placeholder="Issue title" aria-label="Issue title" aria-required="true"
                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
-                        <textarea value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
-                            rows={4} placeholder="Describe the issue..."
+                        <label htmlFor="issue-body" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
+                        <textarea id="issue-body" value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+                            rows={4} placeholder="Describe the issue..." aria-label="Issue description"
                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm resize-none" />
                     </div>
                     <div className="flex gap-2">
@@ -143,7 +143,20 @@ export function IssuesTab({ api, repoFullName }) {
             ) : (
                 <div className="space-y-2">
                     {issues.map(issue => (
-                        <Card key={issue.id} className="p-3 cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors" onClick={() => setSelectedIssue(issue)}>
+                        <Card
+                            key={issue.id}
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Open issue #${issue.number}: ${issue.title}`}
+                            className="p-3 cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            onClick={() => setSelectedIssue(issue)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    setSelectedIssue(issue)
+                                }
+                            }}
+                        >
                             <div className="flex items-start gap-3">
                                 <div className={`mt-0.5 ${issue.state === 'open' ? 'text-green-500' : 'text-purple-500'}`}>
                                     <CircleDot className="w-4 h-4" />
@@ -176,7 +189,7 @@ export function IssuesTab({ api, repoFullName }) {
                                         )}
                                     </div>
                                 </div>
-                                <div onClick={e => e.stopPropagation()}>
+                                <div role="presentation" onClick={e => e.stopPropagation()}>
                                     {issue.state === 'open' ? (
                                         <Button variant="ghost" size="sm" onClick={() => handleClose(issue)} className="text-purple-600 dark:text-purple-400 text-xs shrink-0">
                                             Close

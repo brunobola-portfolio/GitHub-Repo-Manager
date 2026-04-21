@@ -174,13 +174,18 @@ export function ConflictPanel({ conflict, repoName, onResolve, resolution }) {
                 ) : pendingAction === 'rename' ? (
                     /* Rename flow */
                     <div className="space-y-2">
-                        <label className="block text-xs text-slate-600 dark:text-slate-400 font-medium">
+                        <label
+                            htmlFor={`conflict-rename-${repoName}`}
+                            className="block text-xs text-slate-600 dark:text-slate-400 font-medium"
+                        >
                             New repository name
                         </label>
                         <input
+                            id={`conflict-rename-${repoName}`}
                             type="text"
                             value={renameValue}
                             onChange={(e) => setRenameValue(e.target.value)}
+                            aria-label="New repository name"
                             className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                         <div className="flex gap-2">

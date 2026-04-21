@@ -18,7 +18,7 @@ export function ShortcutsOverlay({ open, onClose }) {
   const panelRef = useFocusTrap(open, onClose)
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div role="presentation" className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div
         ref={panelRef}
         role="dialog"
