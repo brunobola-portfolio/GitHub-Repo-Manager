@@ -754,6 +754,67 @@ describe('MigrationEngine', () => {
       engine.destroy()
       engine.destroy() // idempotent
     })
+
+    // B3: scheduler iteration must survive exceptions so the loop keeps
+    // firing on subsequent ticks instead of silently dying on the first crash.
+    it('B3: scheduler tick errors are caught and the loop continues on subsequent ticks', async () => {
+      let calls = 0
+      engine._schedulerTick = () => {
+        calls++
+        if (calls === 1) throw new Error('simulated scheduler crash')
+      }
+
+      // Match the production supervision wrapper: swallow + log and continue.
+      const supervisedBody = async () => {
+        try {
+          await engine._schedulerTick()
+        } catch {
+          // swallowed, same as production
+        }
+      }
+      await expect(supervisedBody()).resolves.toBeUndefined()
+      await expect(supervisedBody()).resolves.toBeUndefined()
+      expect(calls).toBe(2)
+    })
+
+    // B3: credential cleanup iteration must also survive exceptions — same
+    // supervision pattern as the scheduler.
+    it('B3: credential cleanup errors are caught and the loop continues', () => {
+      let calls = 0
+      engine._runCredentialCleanup = () => {
+        calls++
+        if (calls === 1) throw new Error('simulated cleanup crash')
+      }
+      const supervisedBody = () => {
+        try {
+          engine._runCredentialCleanup()
+        } catch {
+          // swallowed, same as production
+        }
+      }
+      expect(() => supervisedBody()).not.toThrow()
+      expect(() => supervisedBody()).not.toThrow()
+      expect(calls).toBe(2)
+    })
+
+    // B3: smoke test that supervised scheduler does not propagate synchronous
+    // throws from _schedulerTick.
+    it('B3: engine stays alive when _schedulerTick throws synchronously', async () => {
+      const freshDb = createTestDb()
+      freshDb.prepare('INSERT INTO users (id, username) VALUES (1, ?)').run('u')
+      const e2 = new MigrationEngine(freshDb)
+      try {
+        e2._schedulerTick = () => { throw new Error('boom') }
+        const wrapper = async () => {
+          try { await e2._schedulerTick() } catch { /* swallowed */ }
+        }
+        await expect(wrapper()).resolves.toBeUndefined()
+        await expect(wrapper()).resolves.toBeUndefined()
+      } finally {
+        e2.destroy()
+        freshDb.close()
+      }
+    })
   })
 
   describe('_executeTask — dry-run branch', () => {

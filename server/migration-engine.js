@@ -700,34 +700,54 @@ export class MigrationEngine extends EventEmitter {
   }
 
   /**
+   * Runs a single scheduler tick: picks up due plans and dispatches them.
+   * Extracted so tests can drive iterations deterministically and so
+   * _startScheduler's supervision wrapper stays small.
+   */
+  _schedulerTick() {
+    const duePlans = this.db.prepare(
+      `SELECT id, credentials_enc FROM migration_plans WHERE status = 'scheduled' AND scheduled_at <= datetime('now')`
+    ).all()
+
+    for (const plan of duePlans) {
+      const credentials = plan.credentials_enc ? decryptCredentials(plan.credentials_enc) : null
+      // Clear credentials immediately after reading
+      this.db.prepare('UPDATE migration_plans SET credentials_enc = NULL WHERE id = ?').run(plan.id)
+      this.executePlan(plan.id, credentials).catch(err => {
+        logger.error({ err, planId: plan.id }, 'Scheduled plan failed')
+      })
+    }
+  }
+
+  /**
    * Starts the scheduler interval that checks for due plans every 30 seconds.
+   * The tick body is wrapped in try/catch so a single failed iteration
+   * (e.g. DB corrupted, credential decryption failure) logs and continues
+   * rather than taking the whole scheduler down via an unhandled rejection.
    */
   _startScheduler() {
-    this._schedulerInterval = setInterval(() => {
+    this._schedulerInterval = setInterval(async () => {
       try {
-        const duePlans = this.db.prepare(
-          `SELECT id, credentials_enc FROM migration_plans WHERE status = 'scheduled' AND scheduled_at <= datetime('now')`
-        ).all()
-
-        for (const plan of duePlans) {
-          const credentials = plan.credentials_enc ? decryptCredentials(plan.credentials_enc) : null
-          // Clear credentials immediately after reading
-          this.db.prepare('UPDATE migration_plans SET credentials_enc = NULL WHERE id = ?').run(plan.id)
-          this.executePlan(plan.id, credentials).catch(err => {
-            logger.error({ err, planId: plan.id }, 'Scheduled plan failed')
-          })
-        }
+        await this._schedulerTick()
       } catch (err) {
-        logger.error({ err }, 'Scheduler tick error')
+        logger.error({ err }, 'migration-engine scheduler iteration failed; will retry next tick')
       }
     }, 30000)
   }
 
   /**
    * Starts the credential cleanup interval that runs hourly.
+   * Wrapped in try/catch for the same supervision reasons as the scheduler —
+   * a single failed cleanup should not silently kill the loop.
    */
   _startCredentialCleanup() {
-    this._cleanupInterval = setInterval(() => this._runCredentialCleanup(), 3600000)
+    this._cleanupInterval = setInterval(() => {
+      try {
+        this._runCredentialCleanup()
+      } catch (err) {
+        logger.error({ err }, 'migration-engine credential cleanup iteration failed; will retry next tick')
+      }
+    }, 3600000)
   }
 
   /**
