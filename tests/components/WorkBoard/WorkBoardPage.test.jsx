@@ -10,6 +10,17 @@ vi.mock('@/config', () => ({
 }))
 
 // ---------------------------------------------------------------------------
+// Mock useToast so inline action hooks used by tabs don't require a provider
+// ---------------------------------------------------------------------------
+vi.mock('@/hooks/useToast', () => ({
+    useToast: () => ({
+        toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn(), custom: vi.fn() },
+        toasts: [],
+        dismissToast: vi.fn(),
+    }),
+}))
+
+// ---------------------------------------------------------------------------
 // Mock framer-motion to avoid animation timing in tests
 // ---------------------------------------------------------------------------
 vi.mock('framer-motion', async (importOriginal) => {

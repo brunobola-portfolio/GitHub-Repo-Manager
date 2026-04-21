@@ -28,6 +28,8 @@ import { useUrlParams } from '../../hooks/useUrlParams'
 import { WorkBoardFilterBar } from './filters/WorkBoardFilterBar'
 import { PresetDropdown } from './filters/PresetDropdown'
 import { FilterProvider, useWorkBoardFilters, applyFilters } from './filters/filter-context'
+import { InlineActions } from './InlineActions'
+import { useReviewAction } from '../../hooks/useReviewAction'
 import { MOCK_MODE, API_BASE_URL } from '../../config'
 
 // ---------------------------------------------------------------------------
@@ -141,6 +143,23 @@ function UpsellCard({ tier }) {
 function MyReviewsTab() {
     const { data, loading, error, refresh } = useMyPendingReviews()
     const { params } = useWorkBoardFilters()
+    const [optimisticallyRemoved, setOptimisticallyRemoved] = useState(() => new Set())
+    const actions = useReviewAction({
+        onOptimistic: (_action, args) => {
+            setOptimisticallyRemoved(prev => {
+                const next = new Set(prev)
+                next.add(`${args.repoFullName}#${args.prNumber}`)
+                return next
+            })
+        },
+        onRollback: (_action, args) => {
+            setOptimisticallyRemoved(prev => {
+                const next = new Set(prev)
+                next.delete(`${args.repoFullName}#${args.prNumber}`)
+                return next
+            })
+        },
+    })
 
     if (loading) return <SkeletonList count={5} />
     if (error) {
@@ -152,7 +171,8 @@ function MyReviewsTab() {
         )
     }
 
-    const reviews = applyFilters(data || [], params)
+    const filtered = applyFilters(data || [], params)
+    const reviews = filtered.filter(r => !optimisticallyRemoved.has(`${r.repoFullName}#${r.prNumber}`))
     if (reviews.length === 0) {
         return (
             <>
@@ -197,6 +217,16 @@ function MyReviewsTab() {
                         {ageLabel(r.ageHours)}
                         <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
+                    <InlineActions
+                        onApprove={() => actions.approve({ repoFullName: r.repoFullName, prNumber: r.prNumber })}
+                        onRequestChanges={() => {
+                            const body = window.prompt('What needs changing?')
+                            if (body && body.trim()) {
+                                actions.requestChanges({ repoFullName: r.repoFullName, prNumber: r.prNumber, body })
+                            }
+                        }}
+                        onSnooze={(hours) => actions.snooze({ repoFullName: r.repoFullName, prNumber: r.prNumber, hours })}
+                    />
                 </motion.a>
             ))}
         </div>
@@ -211,6 +241,23 @@ function StalePRsTab() {
     const [staleAfterDays, setStaleAfterDays] = useState(7)
     const { data, loading, error, refresh } = useStalePRs({ staleAfterDays })
     const { params } = useWorkBoardFilters()
+    const [optimisticallyRemoved, setOptimisticallyRemoved] = useState(() => new Set())
+    const actions = useReviewAction({
+        onOptimistic: (_action, args) => {
+            setOptimisticallyRemoved(prev => {
+                const next = new Set(prev)
+                next.add(`${args.repoFullName}#${args.prNumber}`)
+                return next
+            })
+        },
+        onRollback: (_action, args) => {
+            setOptimisticallyRemoved(prev => {
+                const next = new Set(prev)
+                next.delete(`${args.repoFullName}#${args.prNumber}`)
+                return next
+            })
+        },
+    })
 
     if (loading) return <SkeletonList count={6} />
     if (error) {
@@ -222,7 +269,8 @@ function StalePRsTab() {
         )
     }
 
-    const prs = applyFilters(data || [], params)
+    const filtered = applyFilters(data || [], params)
+    const prs = filtered.filter(p => !optimisticallyRemoved.has(`${p.repoFullName}#${p.prNumber}`))
 
     return (
         <>
@@ -282,6 +330,9 @@ function StalePRsTab() {
                                 {dayLabel(pr.ageDays)}
                                 <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
+                            <InlineActions
+                                onSnooze={(hours) => actions.snooze({ repoFullName: pr.repoFullName, prNumber: pr.prNumber, hours })}
+                            />
                         </motion.a>
                     ))}
                 </div>
