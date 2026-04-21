@@ -76,7 +76,7 @@ function parseRepoIds(raw) {
 //     error via meta.liveFetchError (do not surface raw error to clients in
 //     prod — fetcher messages are already safe as they come from our code).
 // ---------------------------------------------------------------------------
-async function resolveTabData({ userId, queryType, token, webhookData, fetcher, fetchArgs }) {
+async function resolveTabData({ userId, queryType, token, webhookData, fetcher, fetchArgs, liveSkipReason }) {
     if (userId) {
         const cached = getCached(userId, queryType);
         if (cached?.isFresh) {
@@ -89,6 +89,13 @@ async function resolveTabData({ userId, queryType, token, webhookData, fetcher, 
                 },
             };
         }
+    }
+
+    if (liveSkipReason) {
+        return {
+            data: webhookData,
+            meta: { source: 'webhook', fetchedAt: new Date(), liveSkipReason },
+        };
     }
 
     if (!token) {
@@ -194,16 +201,16 @@ router.get('/stale-prs', requireAuth, requireTier('pro'), async (req, res) => {
 
         // Live search uses author:<login>; it can't replicate per-repo filtering
         // so we only invoke it when no repoIds filter was supplied.
-        const login = req.session?.userLogin || null;
-        const fetcher = (!repoIds && login) ? fetchStalePRs : null;
+        const reviewerLogin = req.session?.userLogin || null;
 
         const { data, meta } = await resolveTabData({
             userId: req.session?.userId,
             queryType: 'stale_prs',
-            token: fetcher ? req.session?.accessToken : null,
+            token: reviewerLogin ? req.session?.accessToken : null,
             webhookData,
-            fetcher: fetcher || (async () => ({ items: [] })),
-            fetchArgs: { login, staleAfterDays, limit },
+            fetcher: fetchStalePRs,
+            fetchArgs: { login: reviewerLogin, staleAfterDays, limit },
+            liveSkipReason: repoIds ? 'repo_ids_filter' : undefined,
         });
         res.json({ data, meta });
     } catch (err) {
@@ -401,15 +408,14 @@ router.get('/tech-debt', requireAuth, requireTier('pro'), async (req, res) => {
 
         // Only use live fallback when no per-repo filtering is requested —
         // GitHub search cannot scope to our internal repoIds.
-        const fetcher = !repoIds ? fetchTechDebtIssues : null;
-
         const { data: items, meta } = await resolveTabData({
             userId: req.session?.userId,
             queryType: 'tech_debt',
-            token: fetcher ? req.session?.accessToken : null,
+            token: req.session?.accessToken,
             webhookData: webhookItems,
-            fetcher: fetcher || (async () => ({ items: [] })),
+            fetcher: fetchTechDebtIssues,
             fetchArgs: { labels, limit },
+            liveSkipReason: repoIds ? 'repo_ids_filter' : undefined,
         });
 
         // hotspots stay webhook-sourced even when items come from live —

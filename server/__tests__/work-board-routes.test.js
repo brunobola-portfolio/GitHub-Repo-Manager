@@ -216,6 +216,18 @@ describe('GET /api/v1/work-board/stale-prs', () => {
         const res = await request(makeUnauthedApp()).get('/api/v1/work-board/stale-prs')
         expect(res.status).toBe(401)
     })
+
+    it('/stale-prs with repoIds skips live fetch and marks liveSkipReason=repo_ids_filter', async () => {
+        mockGetCached.mockReturnValue(null)
+        mockListStalePRs.mockReturnValue([
+            { repoFullName: 'o/r', prNumber: 42, title: 't', authorLogin: 'a', ageDays: 10 },
+        ])
+        const res = await request(makeApp('pro')).get('/api/v1/work-board/stale-prs?repoIds=1,2')
+        expect(res.status).toBe(200)
+        expect(res.body.meta.source).toBe('webhook')
+        expect(res.body.meta.liveSkipReason).toBe('repo_ids_filter')
+        expect(mockFetchStalePRs).not.toHaveBeenCalled()
+    })
 })
 
 // ---------------------------------------------------------------------------
@@ -412,6 +424,19 @@ describe('GET /api/v1/work-board/tech-debt', () => {
         const firstArg = mockListTechDebtIssues.mock.calls[0][0]
         expect(firstArg.labels).toEqual(['debt', 'slop', 'cleanup'])
     })
+
+    it('/tech-debt with repoIds skips live fetch and marks liveSkipReason=repo_ids_filter', async () => {
+        mockGetCached.mockReturnValue(null)
+        mockListTechDebtIssues.mockReturnValue([
+            { repoFullName: 'o/a', issueNumber: 1, title: 'x', labels: ['tech-debt'], openedAt: new Date().toISOString(), ageDays: 5 },
+        ])
+        mockTechDebtHotspots.mockReturnValue([])
+        const res = await request(makeApp('pro')).get('/api/v1/work-board/tech-debt?repoIds=1')
+        expect(res.status).toBe(200)
+        expect(res.body.meta.source).toBe('webhook')
+        expect(res.body.meta.liveSkipReason).toBe('repo_ids_filter')
+        expect(mockFetchTechDebtIssues).not.toHaveBeenCalled()
+    })
 })
 
 // ---------------------------------------------------------------------------
@@ -470,6 +495,7 @@ describe('live fallback (/my-reviews)', () => {
         expect(res.body.data).toEqual(webhookItems)
         expect(res.body.meta.source).toBe('merged')
         expect(mockFetchMyPendingReviews).toHaveBeenCalledTimes(1)
+        expect(mockPutCached).toHaveBeenCalledTimes(1)
     })
 
     it('fetcher throws → returns webhook data with source=webhook and liveFetchError', async () => {
