@@ -21,12 +21,13 @@
 ![LM Studio](https://img.shields.io/badge/LM_Studio-4B2DDC?style=for-the-badge)
 
 <!-- Quality -->
-![Tests](https://img.shields.io/badge/Tests-1473_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-1764_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
 ![License](https://img.shields.io/badge/License-AGPL_v3-blue?style=for-the-badge&logo=gnu&logoColor=white)
+![Release](https://img.shields.io/github/v/release/brunobola-portfolio/GitHub-Repo-Manager?style=for-the-badge&logo=github&logoColor=white)
 
 **A full-stack AI-powered dashboard for managing repositories, teams, CI/CD, and migrating from Azure DevOps — all in one beautiful interface.**
 
-[Try Demo Mode](#quick-start-demo-mode) | [Features](#features-overview) | [Installation](#installation) | [Documentation](docs/)
+[Try Demo Mode](#quick-start-demo-mode) | [Features](#features-overview) | [Installation](#installation) | [Documentation](docs/) | [What's new in v3.5.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v3.5.0)
 
 </div>
 
@@ -138,6 +139,10 @@ Organize, filter, and manage your repositories with powerful tools built for sca
 A single cockpit across all your repositories — no context switching.
 
 ![Work Board — KPI row, filter bar, inline actions](docs/images/33_work_board_dark_hd.png)
+
+Filters are URL-synced and round-trip through the browser history — share a filtered view by copy-pasting the URL.
+
+![Filters applied — 1 matching PR](docs/images/37_work_board_filters_active_hd.png)
 
 - **Zero-config data** — live-fetches PRs and issues from GitHub when no webhook is configured; ETag-revalidated with a 5-minute cache.
 - **Auto-refresh** — polls every 60 s, pauses when the tab is hidden, shows "updated N ago".
@@ -544,6 +549,22 @@ See [`docs/ai-providers.md`](docs/ai-providers.md) for per-provider setup and fr
 
 ### AI Assistant
 ![AI Assistant](docs/images/09_ai_assistant_dark_hd.png)
+
+### Work Board (Dark Mode)
+
+![Work Board Dark](docs/images/33_work_board_dark_hd.png)
+
+### Work Board (Light Mode)
+
+![Work Board Light](docs/images/36_work_board_light_hd.png)
+
+### Work Board — Filters Applied
+
+![Filters Active](docs/images/37_work_board_filters_active_hd.png)
+
+### Work Board — Command Palette
+
+![Command Palette](docs/images/35_work_board_command_palette_hd.png)
 
 </details>
 

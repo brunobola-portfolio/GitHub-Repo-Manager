@@ -152,6 +152,18 @@ Add your GitHub OAuth credentials and a Google Gemini API key (free tier availab
 
 ---
 
+## What's New in v3.5.0 — Work Board Mega-Upgrade
+
+Shipped April 2026: the cross-repo Work Board graduated from a webhook-only digest to a zero-config, keyboard-driven cockpit.
+
+- **Zero-config data** — PRs, issues, stale PRs, and tech-debt queries now fall back to live GitHub Search when webhook data is missing. No setup required to see value on day one. Results cached 5 minutes with ETag revalidation.
+- **Auto-refresh + filters + server-side presets** — 60-second polling pauses when the tab is hidden; filters (repo / author / label / age) are URL-synced and saveable as named presets that persist across devices.
+- **Inline actions** — approve, request-changes, snooze, or re-request review on any PR directly from the board with optimistic UI and proper `scope_required` fallback.
+- **AI summary card (BYOK, cross-provider)** — Anthropic, OpenAI, Gemini, OpenRouter, and Local (Ollama/LMStudio) all produce a headline + severity-ranked bullets + urgency gauge from the same JSON-schema-constrained prompt.
+- **Command palette group** — `⌘K` on `/work-board` surfaces six navigate-to-tab actions plus regenerate-AI and save-preset.
+
+Full changelog: [CHANGELOG.md](../CHANGELOG.md) · [Release notes](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v3.5.0).
+
 ## What's Next
 
 The roadmap includes advanced analytics with commit activity heatmaps, custom themes, repository templates, GitHub Enterprise support, and an ambitious v3.0 with automated code review agents, semantic search across all repositories, and multi-platform migration support for GitLab and Bitbucket.

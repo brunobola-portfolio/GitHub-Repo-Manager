@@ -4,6 +4,8 @@ The Cross-Repo Work Board gives engineers and team leads a single view of all
 review assignments, open issues, stale PRs, and DORA engineering metrics across
 every tracked repository.
 
+![Work Board — dark mode cockpit](images/33_work_board_dark_hd.png)
+
 ## What the Work Board shows
 
 | Tab | Who can see it | Description |

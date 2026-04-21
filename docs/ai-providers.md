@@ -226,6 +226,7 @@ feature identifiers and values are model name strings.
   "featureOverrides": {
     "CHAT": "gemini-2.5-flash",
     "PR_REVIEW": "claude-sonnet-4-6",
+    "WORK_BOARD_SUMMARY": "gpt-4o-mini",
     "EMBED": "text-embedding-3-large"
   }
 }
@@ -233,14 +234,22 @@ feature identifiers and values are model name strings.
 
 **Supported feature keys:**
 
-| Key                     | Feature                   |
-| ----------------------- | ------------------------- |
-| `CHAT`                  | AI Chat                   |
-| `PR_REVIEW`             | PR Review                 |
-| `MIGRATION_DESCRIPTION` | Migration Description     |
-| `MIGRATION_SIZE`        | Migration Size Strategy   |
-| `README_ANALYSIS`       | README Analysis           |
-| `EMBED`                 | Embeddings                |
+| Key                     | Feature                                                                 |
+| ----------------------- | ----------------------------------------------------------------------- |
+| `CHAT`                  | AI Chat                                                                 |
+| `PR_REVIEW`             | PR Review                                                               |
+| `MIGRATION_DESCRIPTION` | Migration Description                                                   |
+| `MIGRATION_SIZE`        | Migration Size Strategy                                                 |
+| `README_ANALYSIS`       | README Analysis                                                         |
+| `WORK_BOARD_SUMMARY`    | Cross-Repo Work Board AI summary (headline + bullets + urgency score)   |
+| `EMBED`                 | Embeddings                                                              |
+
+The Work Board summary is tuned conservatively (strict JSON schema, "never
+invent" clause, tolerant JSON extractor). Small, cheap models such as
+`gpt-4o-mini`, `gemini-2.5-flash`, or local `qwen2.5:7b` produce acceptable
+output; larger models (Claude Sonnet, GPT-4o) lift bullet quality at a modest
+cost premium. The endpoint is rate-limited to 1 call / 5 min / user with a
+5-minute response cache, so runaway spend is not a concern.
 
 When a key is not present in `featureOverrides`, the primary `completionModel`
 (or `embeddingModel`) is used as the fallback.
