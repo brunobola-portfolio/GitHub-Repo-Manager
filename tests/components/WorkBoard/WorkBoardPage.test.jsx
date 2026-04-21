@@ -278,10 +278,9 @@ describe('WorkBoardPage', () => {
         }
     })
 
-    it('pressing g then t switches to Tech Debt', async () => {
+    it('clicking a tab switches the active section', async () => {
         renderPage()
-        fireEvent.keyDown(window, { key: 'g' })
-        fireEvent.keyDown(window, { key: 't' })
+        fireEvent.click(screen.getByRole('tab', { name: /tech debt/i }))
         await waitFor(() => {
             expect(screen.getByRole('tab', { name: /tech debt/i })).toHaveAttribute('aria-selected', 'true')
         })

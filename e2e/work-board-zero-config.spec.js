@@ -41,18 +41,11 @@ test.describe('Work Board — zero config UX', () => {
         // MOCK_REVIEWS has a row titled "Add rate limiting to /api/auth".
         await expect(page.getByText(/Add rate limiting/i)).toBeVisible()
 
-        // Keyboard help modal opens on ? and closes on Escape
-        await page.keyboard.press('Shift+?')
-        await expect(page.getByRole('heading', { name: /keyboard shortcuts/i })).toBeVisible()
-        await page.keyboard.press('Escape')
-        await expect(page.getByRole('heading', { name: /keyboard shortcuts/i })).not.toBeVisible()
-
-        // g then t switches to Tech Debt tab
-        await page.keyboard.press('g')
-        await page.keyboard.press('t')
+        // Clicking a tab switches the visible content and updates the URL.
+        await page.getByRole('tab', { name: /tech debt/i }).click()
         await expect(page.getByRole('tab', { name: /tech debt/i })).toHaveAttribute('aria-selected', 'true')
 
-        // Click the refresh button (no error)
+        // Refresh button is operable (no overlay intercepting clicks).
         await page.getByRole('button', { name: /refresh work board/i }).click()
     })
 

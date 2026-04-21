@@ -5,12 +5,7 @@ const ROWS = [
     { group: 'Navigate', items: [
         ['j  /  \u2193', 'next row'],
         ['k  /  \u2191', 'previous row'],
-        ['g  r', 'go to My Reviews'],
-        ['g  s', 'go to Stale PRs'],
-        ['g  i', 'go to My Issues'],
-        ['g  l', 'go to Review Load'],
-        ['g  t', 'go to Tech Debt'],
-        ['g  d', 'go to DORA'],
+        ['Click a tab', 'switch section (or use \u2318K command palette)'],
     ]},
     { group: 'Actions', items: [
         ['Enter', 'open the active row on GitHub'],

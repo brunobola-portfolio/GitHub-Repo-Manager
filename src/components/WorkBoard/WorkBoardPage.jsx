@@ -825,7 +825,6 @@ function TechDebtTab() {
 // ---------------------------------------------------------------------------
 
 // g-prefix keyboard navigation — maps second-key to tab id
-const TAB_KEYS = { r: 'reviews', s: 'stale', i: 'issues', l: 'reviewload', t: 'techdebt', d: 'dora' }
 
 const TABS = [
     { id: 'reviews',     label: 'My Reviews',  icon: GitPullRequest, component: MyReviewsTab, accent: 'purple' },
@@ -960,38 +959,9 @@ export function WorkBoardPage({ repoCount = 0 }) {
     // Escape closes help
     useContextShortcut({ key: 'Escape', handler: () => closeModal('workBoardHelp'), when: helpOpen, deps: [helpOpen] })
 
-    // g-prefix tab navigation — press `g`, then a letter within 800ms
-    const [pendingG, setPendingG] = useState(false)
-    useContextShortcut({ key: 'g', handler: () => setPendingG(true) })
-
-    useEffect(() => {
-        if (!pendingG) return undefined
-        let cancelled = false
-        const timer = setTimeout(() => { if (!cancelled) setPendingG(false) }, 800)
-        function h(e) {
-            const tag = (e.target?.tagName || '').toLowerCase()
-            if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) {
-                setPendingG(false)
-                return
-            }
-            if (e.metaKey || e.ctrlKey || e.altKey) {
-                setPendingG(false)
-                return
-            }
-            if (TAB_KEYS[e.key]) {
-                e.preventDefault()
-                setActiveTab(TAB_KEYS[e.key])
-            }
-            setPendingG(false)
-        }
-        window.addEventListener('keydown', h, { once: true })
-        return () => {
-            cancelled = true
-            clearTimeout(timer)
-            window.removeEventListener('keydown', h)
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pendingG])
+    // Note: a `g`-prefix tab chord was considered but `g` is already bound
+    // globally to "Open Dev Toolkit" in useKeyboardShortcuts. Tabs remain
+    // accessible via click, URL (`?tab=…`), and the command palette.
 
     // Command palette wiring — listen for palette-originated events and act.
     // Keeping listeners here means any palette implementation can drive the page
