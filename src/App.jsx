@@ -29,6 +29,7 @@ import { BYOKUpgradeBanner } from './components/BYOKUpgradeBanner'
 import { RateLimitNotice } from './components/ui/RateLimitNotice'
 import { LandingPage } from './components/Landing/LandingPage'
 import { LegalFooter } from './components/LegalFooter'
+import { RouteFallback } from './components/ui/RouteFallback'
 
 // Lazy load Pricing page
 const PricingPage = lazy(() => import('./components/Pricing/PricingPage').then(m => ({ default: m.PricingPage })))
@@ -61,17 +62,8 @@ const CompareSimilarDrawer = lazy(() => import('./components/AI/CompareSimilarDr
 const SecurityScanModal = lazy(() => import('./components/security/SecurityScanModal').then(m => ({ default: m.SecurityScanModal })))
 const LicenseActivationModal = lazy(() => import('./components/Settings/LicenseActivationModal').then(m => ({ default: m.LicenseActivationModal })))
 
-// Loading fallback component
-function LoadingFallback() {
-  return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <div className="text-center">
-        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-        <p className="text-slate-500 dark:text-slate-400 text-sm">Loading...</p>
-      </div>
-    </div>
-  )
-}
+// Loading fallback component (kept as local alias for legacy callsites below)
+const LoadingFallback = RouteFallback
 
 function AppContent() {
   const [_session, setSession] = useState(null)

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import {
     Sparkles,
@@ -16,7 +16,22 @@ import { aiApi } from '../../api/ai'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { InsightCard } from '../ui/InsightCard'
 import { StatBar } from '../ui/StatBar'
-import { ReadmeEnhanceDiffPanel } from './ReadmeEnhanceDiffPanel'
+
+// ReadmeEnhanceDiffPanel pulls in @git-diff-view/react + shiki (~1 MB). Only load
+// it when the user actually clicks "Enhance with AI" so the main Insights modal
+// stays lightweight.
+const ReadmeEnhanceDiffPanel = lazy(() =>
+    import('./ReadmeEnhanceDiffPanel').then((m) => ({ default: m.ReadmeEnhanceDiffPanel }))
+)
+
+function DiffPanelFallback() {
+    return (
+        <div className="flex items-center justify-center py-8 text-slate-500 dark:text-slate-400 text-sm">
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Loading diff viewer…
+        </div>
+    )
+}
 
 const TABS = [
     { id: 'overview',    label: 'Overview',    icon: Sparkles },
@@ -497,7 +512,11 @@ function ReadmeGrid({ data, repo }) {
                     </p>
                 </InsightCard>
                 <div className="flex justify-center">{enhanceButton}</div>
-                {showEnhance && <ReadmeEnhanceDiffPanel repo={repo} />}
+                {showEnhance && (
+                    <Suspense fallback={<DiffPanelFallback />}>
+                        <ReadmeEnhanceDiffPanel repo={repo} />
+                    </Suspense>
+                )}
             </div>
         )
     }
@@ -530,7 +549,11 @@ function ReadmeGrid({ data, repo }) {
                     ))}
                 </div>
             </InsightCard>
-            {showEnhance && <ReadmeEnhanceDiffPanel repo={repo} />}
+            {showEnhance && (
+                <Suspense fallback={<DiffPanelFallback />}>
+                    <ReadmeEnhanceDiffPanel repo={repo} />
+                </Suspense>
+            )}
         </div>
     )
 }
