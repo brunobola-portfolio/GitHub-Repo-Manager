@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-const { applyFilters } = await import('@/components/WorkBoard/filters/filter-context')
+const { applyFilters } = await import('@/components/WorkBoard/filters/filter-context-helpers')
 
 const items = [
     { repoFullName: 'acme/x', authorLogin: 'alice', labels: ['bug'], openedAt: new Date(Date.now() - 10 * 24 * 3600 * 1000).toISOString() },
