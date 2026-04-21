@@ -35,6 +35,7 @@ import { createSQLiteStore } from './lib/session-store.js';
 import logger, { requestLoggerMiddleware } from './lib/logger.js';
 import { verifySecretsAtStartup } from './lib/startup-secrets-check.js';
 import { startWorkBoardSweeper, stopWorkBoardSweeper } from './lib/work-board-sweeper.js';
+import { startEmailRetryWorker, stopEmailRetryWorker } from './lib/email-retry-worker.js';
 
 // API v1 route aggregator
 import v1Routes from './routes/v1/index.js';
@@ -294,6 +295,9 @@ const server = app.listen(config.port, () => {
 // Start background sweeper for Work Board cache + snooze TTL cleanup
 startWorkBoardSweeper();
 
+// Start background worker that re-drives the email dead-letter queue
+startEmailRetryWorker();
+
 server.on('error', (e) => {
     if (e.code === 'EADDRINUSE') {
         logger.fatal({ port: config.port }, 'Port is already in use');
@@ -333,6 +337,12 @@ function gracefulShutdown(signal) {
             stopWorkBoardSweeper();
         } catch (e) {
             logger.warn({ err: e }, 'Could not stop work-board sweeper');
+        }
+
+        try {
+            stopEmailRetryWorker();
+        } catch (e) {
+            logger.warn({ err: e }, 'Could not stop email retry worker');
         }
 
         try {

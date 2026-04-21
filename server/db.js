@@ -658,6 +658,26 @@ export function initDB() {
     `);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_wbp_user ON work_board_presets(user_id)`);
 
+    // Migration 013 (P1 — email resilience): dead-letter queue for undelivered
+    // emails. Populated after the initial 3-attempt retry exhausts; a
+    // background worker retries rows whose next_retry_at is in the past.
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS email_dead_letter (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            to_address TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            body_html TEXT,
+            body_text TEXT,
+            context_json TEXT,
+            attempts INTEGER NOT NULL DEFAULT 1,
+            last_error TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            next_retry_at DATETIME,
+            resolved_at DATETIME
+        )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_email_dl_next_retry ON email_dead_letter(next_retry_at) WHERE resolved_at IS NULL`);
+
     logger.info('SQLite Database initialized successfully');
 }
 
