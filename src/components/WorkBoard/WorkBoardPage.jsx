@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
     GitPullRequest, CircleDot, Rocket, BarChart3,
     ExternalLink, Clock, AlertTriangle, Lock,
-    Download, Wrench, Flame, Users,
+    Download, Wrench, Flame, Users, RefreshCw,
 } from 'lucide-react'
 import {
     useMyPendingReviews,
@@ -23,6 +23,7 @@ import {
     useTechDebt,
     useReviewLoad,
 } from '../../hooks/useWorkBoard'
+import { useRelativeTime } from '../../hooks/useRelativeTime'
 import { MOCK_MODE, API_BASE_URL } from '../../config'
 
 // ---------------------------------------------------------------------------
@@ -814,12 +815,7 @@ function KpiTile({ icon: Icon, label, value, hint, loading, accent = 'indigo', o
     )
 }
 
-function KpiRow({ activeTab, setActiveTab }) {
-    const reviews = useMyPendingReviews()
-    const stale = useStalePRs({ staleAfterDays: 7 })
-    const issues = useMyOpenIssues()
-    const debt = useTechDebt()
-
+function KpiRow({ activeTab, setActiveTab, reviews, stale, issues, debt }) {
     const reviewsCount = Array.isArray(reviews.data) ? reviews.data.length : 0
     const staleCount = Array.isArray(stale.data) ? stale.data.length : 0
     const issuesCount = Array.isArray(issues.data) ? issues.data.length : 0
@@ -886,6 +882,34 @@ function KpiRow({ activeTab, setActiveTab }) {
 export function WorkBoardPage({ repoCount = 0 }) {
     const [activeTab, setActiveTab] = useState('reviews')
 
+    const reviews = useMyPendingReviews()
+    const stale = useStalePRs({ staleAfterDays: 7 })
+    const issues = useMyOpenIssues()
+    const debt = useTechDebt()
+
+    const earliest = (() => {
+        const times = [reviews.lastFetchedAt, stale.lastFetchedAt, issues.lastFetchedAt, debt.lastFetchedAt]
+            .filter(Boolean)
+            .map(d => d.getTime())
+        return times.length > 0 ? new Date(Math.min(...times)) : null
+    })()
+    const earliestLabel = useRelativeTime(earliest)
+
+    const [refreshing, setRefreshing] = useState(false)
+    const refreshAll = async () => {
+        setRefreshing(true)
+        try {
+            await Promise.all([
+                reviews.refresh?.(),
+                stale.refresh?.(),
+                issues.refresh?.(),
+                debt.refresh?.(),
+            ])
+        } finally {
+            setRefreshing(false)
+        }
+    }
+
     const ActiveComponent = TABS.find(t => t.id === activeTab)?.component || MyReviewsTab
 
     return (
@@ -906,10 +930,35 @@ export function WorkBoardPage({ repoCount = 0 }) {
                             : 'Live signals across reviews, issues & delivery'}
                     </p>
                 </div>
+                <div className="flex items-center gap-3">
+                    {earliest && (
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500" aria-live="polite">
+                            updated {earliestLabel}
+                        </span>
+                    )}
+                    <button
+                        type="button"
+                        onClick={refreshAll}
+                        disabled={refreshing}
+                        aria-label="Refresh work board"
+                        className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                    >
+                        <motion.div animate={{ rotate: refreshing ? 360 : 0 }} transition={{ duration: 0.6, ease: 'easeInOut' }}>
+                            <RefreshCw className="w-4 h-4" />
+                        </motion.div>
+                    </button>
+                </div>
             </div>
 
             {/* KPI row */}
-            <KpiRow activeTab={activeTab} setActiveTab={setActiveTab} />
+            <KpiRow
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                reviews={reviews}
+                stale={stale}
+                issues={issues}
+                debt={debt}
+            />
 
             {/* Main card */}
             <div className="relative rounded-3xl border border-slate-200/60 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-xl shadow-slate-300/20 dark:shadow-black/40 overflow-hidden">

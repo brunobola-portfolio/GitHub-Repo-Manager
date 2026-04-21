@@ -201,6 +201,11 @@ describe('WorkBoardPage', () => {
         expect(screen.getByRole('link', { name: /view pricing/i })).toBeInTheDocument()
     })
 
+    it('renders a refresh button', () => {
+        renderPage()
+        expect(screen.getByRole('button', { name: /refresh work board/i })).toBeInTheDocument()
+    })
+
     it('Stale PRs tab shows upsell when 403 from backend', () => {
         const err403 = new Error('upgrade_required')
         err403.status = 403
