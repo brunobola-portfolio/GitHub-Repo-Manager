@@ -26,6 +26,7 @@ import {
 import { useRelativeTime } from '../../hooks/useRelativeTime'
 import { useUrlParams } from '../../hooks/useUrlParams'
 import { WorkBoardFilterBar } from './filters/WorkBoardFilterBar'
+import { PresetDropdown } from './filters/PresetDropdown'
 import { FilterProvider, useWorkBoardFilters, applyFilters } from './filters/filter-context'
 import { MOCK_MODE, API_BASE_URL } from '../../config'
 
@@ -993,7 +994,9 @@ export function WorkBoardPage({ repoCount = 0 }) {
                 availableRepos={availableRepos}
                 availableAuthors={availableAuthors}
                 availableLabels={availableLabels}
-            />
+            >
+                <PresetDropdown currentFilters={params} onApply={setParams} />
+            </WorkBoardFilterBar>
 
             {/* Main card */}
             <div className="relative rounded-3xl border border-slate-200/60 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-xl shadow-slate-300/20 dark:shadow-black/40 overflow-hidden">
