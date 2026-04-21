@@ -5,6 +5,7 @@ import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js'
 import { githubApi } from '../../lib/github-api.js';
 import logger from '../../lib/logger.js';
 import { validate, importSchema } from '../../lib/validators.js';
+import { assertSafeExternalUrl } from '../../lib/url-validator.js';
 import { updateJobProgress } from './_shared.js';
 
 const router = express.Router();
@@ -14,6 +15,12 @@ router.post('/import/validate-url', requireAuth, async (req, res) => {
         const { url, credentials } = req.body;
         if (!url) {
             return errorResponse(res, 400, 'URL is required', 'MISSING_URL');
+        }
+        try {
+            assertSafeExternalUrl(url);
+        } catch (guardErr) {
+            const reason = String(guardErr.message || '').replace(/^ssrf_guard:\s*/, '');
+            return res.status(400).json({ code: 'invalid_source_url', error: reason });
         }
         const result = await importService.validateSourceUrl(url, credentials);
         res.json(result);
@@ -28,6 +35,15 @@ router.post('/import/url', requireAuth, validate(importSchema), async (req, res)
 
         if (!sourceUrl) {
             return errorResponse(res, 400, 'Source URL is required', 'MISSING_URL');
+        }
+
+        // SSRF guard: reject internal / link-local / loopback / credential-embedded URLs
+        // before we hand the string to git.
+        try {
+            assertSafeExternalUrl(sourceUrl);
+        } catch (guardErr) {
+            const reason = String(guardErr.message || '').replace(/^ssrf_guard:\s*/, '');
+            return res.status(400).json({ code: 'invalid_source_url', error: reason });
         }
 
         // Extract repo name from URL if not provided
