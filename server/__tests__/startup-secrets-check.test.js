@@ -11,7 +11,7 @@
  *  6. Production + all strong secrets → no errors.
  *  7. Missing WEBHOOK_SECRET in production → error.
  *  8. DISABLE_HTTPS_ENFORCEMENT=true in production → warning.
- *  9. Missing CREDENTIAL_ENCRYPTION_KEY AND SESSION_SECRET in production → error.
+ *  9. Missing CREDENTIAL_ENCRYPTION_KEY in production → error (S1).
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -63,6 +63,7 @@ describe('G4 — verifySecretsAtStartup', () => {
 
     it('production + missing WEBHOOK_SECRET → error', () => {
         process.env.SESSION_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(errors.some(e => e.includes('WEBHOOK_SECRET') && e.includes('must be set'))).toBe(true);
     });
@@ -70,6 +71,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + short SESSION_SECRET (< 32 bytes) → error', () => {
         process.env.SESSION_SECRET = 'short';
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(errors.some(e => e.includes('SESSION_SECRET') && e.includes('shorter than 32'))).toBe(true);
     });
@@ -77,21 +79,36 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + short WEBHOOK_SECRET (< 32 bytes) → error', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = 'tiny';
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(errors.some(e => e.includes('WEBHOOK_SECRET') && e.includes('shorter than 32'))).toBe(true);
     });
 
-    it('production + no SESSION_SECRET AND no CREDENTIAL_ENCRYPTION_KEY → extra error', () => {
+    // S1 — CREDENTIAL_ENCRYPTION_KEY is now a first-class required secret in prod.
+    it('production + missing CREDENTIAL_ENCRYPTION_KEY → error', () => {
+        process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
-        // SESSION_SECRET is also missing — should trigger both the "must be set" error
-        // AND the encryption-key error. At minimum the encryption-key error fires.
         const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
-        expect(errors.length).toBeGreaterThan(0);
+        expect(errors.some(e => e.includes('CREDENTIAL_ENCRYPTION_KEY') && e.includes('must be set'))).toBe(true);
+    });
+
+    it('production + short CREDENTIAL_ENCRYPTION_KEY (< 32 bytes) → error', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = 'tooshort';
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('CREDENTIAL_ENCRYPTION_KEY') && e.includes('shorter than 32'))).toBe(true);
+    });
+
+    it('development + missing CREDENTIAL_ENCRYPTION_KEY → no error (fallback to SESSION_SECRET allowed)', () => {
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'development' });
+        expect(errors.some(e => e.includes('CREDENTIAL_ENCRYPTION_KEY'))).toBe(false);
     });
 
     it('production + all strong secrets → no errors', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(errors).toHaveLength(0);
     });
@@ -103,6 +120,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + SESSION_SECRET containing "password" → warning', () => {
         process.env.SESSION_SECRET = 'my_long_password_key_that_is_definitely_over_32_chars';
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         const { warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(warnings.some(w => w.includes('SESSION_SECRET') && w.includes('weak default'))).toBe(true);
     });
@@ -110,6 +128,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + WEBHOOK_SECRET containing "secret" → warning', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = 'webhook_secret_value_that_is_at_least_32_chars_long!';
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         const { warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(warnings.some(w => w.includes('WEBHOOK_SECRET') && w.includes('weak default'))).toBe(true);
     });
@@ -142,6 +161,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + DISABLE_HTTPS_ENFORCEMENT=true → warning', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         process.env.DISABLE_HTTPS_ENFORCEMENT = 'true';
         const { warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(warnings.some(w => w.includes('HTTPS enforcement is disabled'))).toBe(true);
@@ -150,6 +170,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + DISABLE_HTTPS_ENFORCEMENT=false → no HTTPS warning', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         process.env.DISABLE_HTTPS_ENFORCEMENT = 'false';
         const { warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(warnings.some(w => w.includes('HTTPS enforcement is disabled'))).toBe(false);
@@ -162,6 +183,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + STRIPE_SECRET_KEY set + missing LICENSE_SIGNING_PRIVATE_KEY_PEM → error', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         process.env.STRIPE_SECRET_KEY = 'sk_live_xxxxxxxxxxxxxxxxxxxxx';
         const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(errors.some(e => e.includes('LICENSE_SIGNING_PRIVATE_KEY_PEM'))).toBe(true);
@@ -170,6 +192,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + STRIPE_SECRET_KEY set + LICENSE_SIGNING_PRIVATE_KEY_PEM set → no error for license key', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         process.env.STRIPE_SECRET_KEY = 'sk_live_xxxxxxxxxxxxxxxxxxxxx';
         process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM = '-----BEGIN PRIVATE KEY-----\nMCowBQYDK2VwAyEA...\n-----END PRIVATE KEY-----';
         const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
@@ -179,6 +202,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + no STRIPE_SECRET_KEY + no LICENSE_SIGNING_PRIVATE_KEY_PEM → no error (billing not enabled)', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(errors.some(e => e.includes('LICENSE_SIGNING_PRIVATE_KEY_PEM'))).toBe(false);
     });
@@ -190,6 +214,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + STRIPE_SECRET_KEY set + missing STRIPE_WEBHOOK_SECRET → error', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         process.env.STRIPE_SECRET_KEY = 'sk_live_test';
         process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM = '-----BEGIN PRIVATE KEY-----\n...';
         const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
@@ -199,6 +224,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + Stripe fully configured → no Stripe-related errors', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         process.env.STRIPE_SECRET_KEY = 'sk_live_test';
         process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test';
         process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM = '-----BEGIN PRIVATE KEY-----\n...';
@@ -214,6 +240,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + EMAIL_PROVIDER=console → error (silent no-op)', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         process.env.EMAIL_PROVIDER = 'console';
         const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(errors.some(e => e.includes('EMAIL_PROVIDER'))).toBe(true);
@@ -222,6 +249,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + EMAIL_PROVIDER unset → error', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         delete process.env.EMAIL_PROVIDER;
         const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(errors.some(e => e.includes('EMAIL_PROVIDER'))).toBe(true);
@@ -230,6 +258,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + EMAIL_PROVIDER=resend + missing RESEND_API_KEY → error', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         process.env.EMAIL_PROVIDER = 'resend';
         delete process.env.RESEND_API_KEY;
         const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
@@ -249,6 +278,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + FRONTEND_URL with http:// → warning', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         process.env.FRONTEND_URL = 'http://app.example.com';
         const { warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(warnings.some(w => w.includes('FRONTEND_URL') && w.includes('HTTPS'))).toBe(true);
@@ -257,6 +287,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + FRONTEND_URL with https:// → no HTTPS warning', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         process.env.FRONTEND_URL = 'https://app.example.com';
         const { warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(warnings.some(w => w.includes('FRONTEND_URL') && w.includes('HTTPS'))).toBe(false);
@@ -265,6 +296,7 @@ describe('G4 — verifySecretsAtStartup', () => {
     it('production + FRONTEND_URL points at localhost → no HTTPS warning (reverse-proxy escape hatch)', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
         process.env.FRONTEND_URL = 'http://localhost:5173';
         const { warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(warnings.some(w => w.includes('FRONTEND_URL') && w.includes('HTTPS'))).toBe(false);

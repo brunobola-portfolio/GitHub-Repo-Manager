@@ -21,7 +21,10 @@ export function verifySecretsAtStartup({ nodeEnv }) {
     const warnings = [];
 
     // In production every security-critical key must be present and strong.
-    const required = ['SESSION_SECRET', 'WEBHOOK_SECRET'];
+    // CREDENTIAL_ENCRYPTION_KEY joins the required list (S1 — P0 security):
+    // without a dedicated key, a leaked .env or session-store dump would also
+    // expose every user BYOK credential and Azure PAT.
+    const required = ['SESSION_SECRET', 'WEBHOOK_SECRET', 'CREDENTIAL_ENCRYPTION_KEY'];
 
     if (nodeEnv === 'production') {
         for (const key of required) {
@@ -31,15 +34,6 @@ export function verifySecretsAtStartup({ nodeEnv }) {
             } else if (v.length < 32) {
                 errors.push(`${key} is shorter than 32 bytes (got ${v.length})`);
             }
-        }
-
-        // Credential encryption relies on CREDENTIAL_ENCRYPTION_KEY with a
-        // fallback to SESSION_SECRET (see server/lib/credential-encryption.js:11).
-        if (!process.env.CREDENTIAL_ENCRYPTION_KEY && !process.env.SESSION_SECRET) {
-            errors.push(
-                'CREDENTIAL_ENCRYPTION_KEY or SESSION_SECRET must be set ' +
-                '(used for user credential encryption)'
-            );
         }
 
         // License signing key — required when Stripe billing is enabled.
