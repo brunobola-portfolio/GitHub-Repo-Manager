@@ -44,6 +44,7 @@ import {
     fetchMyOpenIssues,
     fetchTechDebtIssues,
 } from '../lib/work-board-github.js';
+import { filterOutSnoozed } from '../lib/work-board-snooze.js';
 
 const router = express.Router();
 
@@ -155,7 +156,11 @@ router.get('/my-reviews', requireAuth, async (req, res) => {
             fetcher: fetchMyPendingReviews,
             fetchArgs: { login: reviewerLogin, limit },
         });
-        res.json({ data, meta });
+        const includeSnoozed = req.query.includeSnoozed === '1';
+        const finalData = (includeSnoozed || !req.session?.userId)
+            ? data
+            : filterOutSnoozed({ userId: req.session.userId, items: data, itemType: 'pr' });
+        res.json({ data: finalData, meta });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch pending reviews'));
     }
@@ -180,7 +185,11 @@ router.get('/my-issues', requireAuth, async (req, res) => {
             fetcher: fetchMyOpenIssues,
             fetchArgs: { login: assigneeLogin, limit },
         });
-        res.json({ data, meta });
+        const includeSnoozed = req.query.includeSnoozed === '1';
+        const finalData = (includeSnoozed || !req.session?.userId)
+            ? data
+            : filterOutSnoozed({ userId: req.session.userId, items: data, itemType: 'issue' });
+        res.json({ data: finalData, meta });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch open issues'));
     }
@@ -212,7 +221,11 @@ router.get('/stale-prs', requireAuth, requireTier('pro'), async (req, res) => {
             fetchArgs: { login: reviewerLogin, staleAfterDays, limit },
             liveSkipReason: repoIds ? 'repo_ids_filter' : undefined,
         });
-        res.json({ data, meta });
+        const includeSnoozed = req.query.includeSnoozed === '1';
+        const finalData = (includeSnoozed || !req.session?.userId)
+            ? data
+            : filterOutSnoozed({ userId: req.session.userId, items: data, itemType: 'pr' });
+        res.json({ data: finalData, meta });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch stale PRs'));
     }
@@ -420,7 +433,11 @@ router.get('/tech-debt', requireAuth, requireTier('pro'), async (req, res) => {
 
         // hotspots stay webhook-sourced even when items come from live —
         // they're a summary of stored event history, not a reproducible search.
-        res.json({ data: { items, hotspots }, meta });
+        const includeSnoozed = req.query.includeSnoozed === '1';
+        const filteredItems = (includeSnoozed || !req.session?.userId)
+            ? items
+            : filterOutSnoozed({ userId: req.session.userId, items, itemType: 'issue' });
+        res.json({ data: { items: filteredItems, hotspots }, meta });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch tech debt'));
     }

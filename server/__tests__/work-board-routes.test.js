@@ -54,6 +54,17 @@ vi.mock('../lib/work-board-github.js', () => ({
     DEFAULT_DEBT_LABELS: [],
 }))
 
+const mockFilterOutSnoozed = vi.fn(({ items }) => items)
+
+vi.mock('../lib/work-board-snooze.js', () => ({
+    filterOutSnoozed: (...a) => mockFilterOutSnoozed(...a),
+    snooze: vi.fn(),
+    unsnooze: vi.fn(),
+    isSnoozed: vi.fn(),
+    listSnoozes: vi.fn(),
+    purgeExpiredSnoozes: vi.fn(),
+}))
+
 vi.mock('../middleware/auth.js', () => ({
     requireAuth: (req, res, next) => {
         // If no session accessToken simulated by app, reject
@@ -137,6 +148,7 @@ beforeEach(() => {
     mockFetchStalePRs.mockResolvedValue({ items: [], totalCount: 0 })
     mockFetchMyOpenIssues.mockResolvedValue({ items: [], totalCount: 0 })
     mockFetchTechDebtIssues.mockResolvedValue({ items: [], totalCount: 0 })
+    mockFilterOutSnoozed.mockImplementation(({ items }) => items)
 })
 
 // ---------------------------------------------------------------------------
@@ -542,4 +554,26 @@ describe('webhook-only envelope', () => {
         expect(res.body.meta.source).toBe('webhook')
         expect(res.body.meta.requiresWebhook).toBe(true)
     })
+})
+
+// ---------------------------------------------------------------------------
+// snooze filter integration (Task 5)
+// ---------------------------------------------------------------------------
+
+describe('snooze filter (/my-reviews)', () => {
+    it('/my-reviews hides snoozed items by default and includes them with ?includeSnoozed=1', async () => {
+        mockGetCached.mockReturnValue(null);
+        mockFilterOutSnoozed.mockImplementation(({ items }) => items.filter(i => i.prNumber !== 42));
+        mockListMyPendingReviews.mockReturnValue([
+            { repoFullName: 'o/r', prNumber: 42, title: 'hidden', authorLogin: 'a' },
+            { repoFullName: 'o/r', prNumber: 43, title: 'visible', authorLogin: 'a' },
+        ]);
+        mockFetchMyPendingReviews.mockResolvedValue({ items: [], totalCount: 0 });
+
+        const res = await request(makeApp('free')).get('/api/v1/work-board/my-reviews');
+        expect(res.body.data.map(r => r.prNumber)).toEqual([43]);
+
+        const res2 = await request(makeApp('free')).get('/api/v1/work-board/my-reviews?includeSnoozed=1');
+        expect(res2.body.data.map(r => r.prNumber)).toEqual([42, 43]);
+    });
 })
