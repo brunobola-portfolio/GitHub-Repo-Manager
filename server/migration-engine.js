@@ -281,13 +281,16 @@ export class MigrationEngine extends EventEmitter {
     }
 
     const executeOne = async (task) => {
-      // Mark task as running
-      this.db.prepare(
-        "UPDATE migration_tasks SET status = 'running', started_at = datetime(?) WHERE id = ?"
-      ).run(new Date().toISOString(), task.id)
-      this.emit('task-status', { planId, taskId: task.id, status: 'running' })
-
       try {
+        // Mark task as running. Kept inside the try so the finally below
+        // always cleans up inFlight + runningByType even if the DB write
+        // itself throws (e.g. locked or corrupted SQLite). Without this the
+        // main execution loop could spin forever waiting for inFlight to drain.
+        this.db.prepare(
+          "UPDATE migration_tasks SET status = 'running', started_at = datetime(?) WHERE id = ?"
+        ).run(new Date().toISOString(), task.id)
+        this.emit('task-status', { planId, taskId: task.id, status: 'running' })
+
         const metadata = await this._executeTask(task, credentials)
         // Check for cancellation after execution
         if (this._isCancelled(planId)) return
@@ -313,6 +316,12 @@ export class MigrationEngine extends EventEmitter {
     }
 
     // Main execution loop
+    // Collect every dispatched promise so we can await them all before
+    // finalizing the plan. Each promise swallows its own error via .catch so
+    // a single task crash doesn't reject the others (Promise.allSettled below
+    // would tolerate rejections, but the per-task .catch also guarantees we
+    // log unexpected crashes that bypass executeOne's own try/catch).
+    const promises = []
     while (taskQueue.length > 0 || inFlight.size > 0) {
       if (this._isCancelled(planId)) break
       if (this._pausedPlans.has(planId)) break
@@ -321,7 +330,12 @@ export class MigrationEngine extends EventEmitter {
       let next = processNext()
       while (next) {
         inFlight.add(next.id)
-        executeOne(next) // deliberately not awaited — runs concurrently
+        const taskId = next.id
+        promises.push(
+          executeOne(next).catch(err => {
+            logger.error({ err, taskId }, 'migration-engine: task crashed')
+          })
+        )
         next = processNext()
       }
 
@@ -334,10 +348,11 @@ export class MigrationEngine extends EventEmitter {
       }
     }
 
-    // Wait for remaining in-flight tasks to finish
-    while (inFlight.size > 0) {
-      await new Promise(resolve => setTimeout(resolve, 500))
-    }
+    // Ensure every dispatched task has fully settled before we finalize the
+    // plan. allSettled — not all — so a rejected promise doesn't short-circuit
+    // the wait (the per-task .catch above already converts rejections to
+    // resolutions, but allSettled adds belt-and-braces).
+    await Promise.allSettled(promises)
 
     // If cancelled or paused, don't finalize
     if (this._isCancelled(planId) || this._pausedPlans.has(planId)) return

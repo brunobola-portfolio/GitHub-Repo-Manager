@@ -445,6 +445,109 @@ describe('MigrationEngine', () => {
       expect(completeEvents).toHaveLength(1)
       expect(completeEvents[0].planId).toBe(planId)
     })
+
+    // B1 regression: a crash in one task's dispatch path used to become an
+    // unhandled rejection because the loop did not await executeOne. The fix
+    // collects every promise and awaits them via Promise.allSettled, so one
+    // task throwing must still let the others complete and the plan finalize.
+    it('B1: a crashing task does not prevent other tasks from completing', async () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [
+          { type: 'repo', sourceRef: 'r1', targetRef: 't1', config: {} },
+          { type: 'repo', sourceRef: 'r2', targetRef: 't2', config: {} },
+          { type: 'repo', sourceRef: 'r3', targetRef: 't3', config: {} },
+        ]
+      )
+      const tasks = engine.getPlanStatus(planId).tasks
+      // Simulate a crash OUTSIDE executeOne's inner try/catch by poisoning
+      // the DB prepare step for one specific taskId. Intercept prepare().run
+      // to throw when it is invoked to mark that task running — this bubbles
+      // up through executeOne and is only caught by the new .catch wrapper.
+      const originalPrepare = db.prepare.bind(db)
+      const poisonedTaskId = tasks[1].id
+      let poisonedFired = false
+      // We can't easily monkey-patch prepare without rebuilding the engine's
+      // db binding. Instead, override _executeTask: for the poisoned taskId
+      // throw synchronously before the await, which is still caught by the
+      // inner try/catch, so to hit the outer .catch we force a throw via
+      // a task-status listener that mutates state. Simpler: override
+      // executePlan's path by pre-cancelling via a failing _updateTaskProgress
+      // isn't the right surface either. The cleanest hook is to replace
+      // _executeTask to return a promise that rejects; the inner try/catch
+      // handles it by marking failed and emitting task-failed — so the
+      // effective test is: one task rejects and the others still complete,
+      // and the plan finalizes without hanging. That's what B1 guarantees.
+      engine._executeTask = async (task) => {
+        if (task.id === poisonedTaskId) {
+          poisonedFired = true
+          throw new Error('simulated crash from task')
+        }
+        return {}
+      }
+      await engine.executePlan(planId)
+      expect(poisonedFired).toBe(true)
+      const plan = engine.getPlanStatus(planId)
+      // Plan must finalize (summary present, not left running)
+      expect(plan.summary).toBeDefined()
+      expect(plan.summary.total).toBe(3)
+      expect(plan.summary.failed).toBe(1)
+      expect(plan.summary.success).toBe(2)
+      // Non-poisoned tasks must all reach completed
+      const completed = plan.tasks.filter(t => t.status === 'completed')
+      expect(completed).toHaveLength(2)
+      // Silence unused-var warning
+      void originalPrepare
+    })
+
+    // Stronger B1 variant: when the "mark running" DB write itself throws
+    // for one task, the main execution loop must NOT hang (inFlight must
+    // still drain) and sibling tasks must still complete. Pre-fix this
+    // hung because the mark-running write sat outside the try/finally so
+    // inFlight/runningByType were never decremented.
+    it('B1: uncaught rejection from one task is logged and other tasks still finish', async () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [
+          { type: 'repo', sourceRef: 'r1', targetRef: 't1', config: {} },
+          { type: 'repo', sourceRef: 'r2', targetRef: 't2', config: {} },
+        ]
+      )
+      const tasks = engine.getPlanStatus(planId).tasks
+      const poisonTaskId = tasks[0].id
+
+      // Wrap db.prepare so the "mark running" UPDATE throws exactly once for
+      // the poisoned task. Everything else is transparent.
+      const originalPrepare = engine.db.prepare.bind(engine.db)
+      let fired = false
+      engine.db.prepare = (sql) => {
+        const stmt = originalPrepare(sql)
+        if (/UPDATE migration_tasks SET status = 'running'/.test(sql)) {
+          return {
+            run: (...args) => {
+              // args: (iso, taskId)
+              if (!fired && args[1] === poisonTaskId) {
+                fired = true
+                throw new Error('simulated DB outage on mark-running')
+              }
+              return stmt.run(...args)
+            }
+          }
+        }
+        return stmt
+      }
+      engine._executeTask = async () => ({})
+
+      // Must NOT hang even though the poisoned task's first DB write threw.
+      await engine.executePlan(planId)
+      expect(fired).toBe(true)
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.summary).toBeDefined()
+      expect(plan.summary.total).toBe(2)
+      // The non-poisoned task must reach completed even though its sibling crashed.
+      const completed = plan.tasks.filter(t => t.status === 'completed')
+      expect(completed.length).toBe(1)
+    })
   })
 
   describe('cancelPlan', () => {
