@@ -142,6 +142,41 @@
   transform: scale(1.03);
 }
 
+/* ===== MODAL PADDING TOKENS ===== */
+/* Uniform header / body / footer padding used by Modal, ConfirmModal,
+ * WizardPanel, and consumer modals. Keeps spacing consistent across the app
+ * so every modal has the same rhythm — previously body padding mixed p-4,
+ * p-5, p-6 across components which made densities look different.
+ *
+ * Callers can still add `bodyClassName` or local padding when a specific
+ * modal truly needs something different. */
+
+.ds-modal-header {
+  padding: 1rem 1.25rem; /* py-4 px-5 */
+}
+
+.ds-modal-body {
+  padding: 1.5rem; /* p-6 */
+}
+
+.ds-modal-footer {
+  padding: 1rem 1.25rem; /* py-4 px-5 */
+  border-top: 1px solid rgb(226 232 240 / 0.6); /* slate-200/60 */
+}
+
+:where(.dark) .ds-modal-footer {
+  border-top-color: rgb(51 65 85 / 0.5); /* slate-700/50 */
+}
+
+@media (min-width: 768px) {
+  .ds-modal-header {
+    padding: 1.25rem 1.5rem; /* md:py-5 md:px-6 */
+  }
+  .ds-modal-footer {
+    padding: 1.25rem 1.5rem;
+  }
+}
+
 /* ===== OPT-IN CARD SHIMMER ===== */
 
 .ds-card-shimmer {

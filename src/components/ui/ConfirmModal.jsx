@@ -120,7 +120,7 @@ export function ConfirmModal({
                         </div>
 
                         {/* Body - Scrollable */}
-                        <div className="p-6 bg-slate-50/30 dark:bg-slate-950/50 flex-1 overflow-y-auto">
+                        <div className="ds-modal-body bg-slate-50/30 dark:bg-slate-950/50 flex-1 overflow-y-auto">
                             <p id="confirm-modal-body" className="text-slate-600 dark:text-slate-300 leading-relaxed">{message}</p>
 
                             {requiresInput && (

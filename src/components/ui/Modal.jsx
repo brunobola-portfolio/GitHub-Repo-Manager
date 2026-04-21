@@ -204,7 +204,7 @@ export function Modal({
                                 role={tabs && tabs.length > 0 ? 'tabpanel' : undefined}
                                 aria-labelledby={tabs && tabs.length > 0 && activeTab ? `tab-${effectiveTabsLayoutId}-${activeTab}` : undefined}
                                 aria-busy={isBusy || undefined}
-                                className={`flex-1 overflow-y-auto p-6 custom-scrollbar bg-slate-50/30 dark:bg-slate-950 ${bodyClassName}`}
+                                className={`flex-1 overflow-y-auto ds-modal-body custom-scrollbar bg-slate-50/30 dark:bg-slate-950 ${bodyClassName}`}
                             >
                                 {staggerChildren ? (
                                     <motion.div
