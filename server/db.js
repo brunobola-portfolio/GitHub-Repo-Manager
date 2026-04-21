@@ -678,6 +678,45 @@ export function initDB() {
     `);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_email_dl_next_retry ON email_dead_letter(next_retry_at) WHERE resolved_at IS NULL`);
 
+    // Migration 014 (perf): composite indexes on hot query paths flagged by the
+    // performance audit. Each index below is added only where no existing index
+    // is a covering leftmost-prefix; single-column indexes stay in place for
+    // other queries (they remain useful and SQLite's planner picks whichever
+    // is cheaper).
+    //
+    //   migration_jobs — Repo CRUD (mirrorMap) filters user_id + is_mirror
+    //       (routes/repos/crud.js); import history / counters filter user_id +
+    //       status (routes/import/status.js). Existing idx_migration_jobs_mirror
+    //       starts with target_owner, so neither pair is covered.
+    //   audit_log_v2 — routes/audit.js always filters user_id, often adds
+    //       action and a created_at range, then ORDER BY created_at DESC.
+    //       user_id + action + created_at lets the planner satisfy filter +
+    //       sort from the index alone.
+    //   issue_events / pr_events — lib/event-aggregations.js repeatedly picks
+    //       the latest event per (repo_id, issue_number|pr_number) and filters
+    //       by action ('opened' / 'closed'). Existing indexes stop at
+    //       (repo_id, number); adding action as the third column covers the
+    //       NOT EXISTS / MAX(id) correlated subqueries.
+    //   work_board_snooze — listSnoozes() filters user_id AND until_at > now
+    //       and orders by until_at DESC. The table PK starts with user_id but
+    //       continues to repo_full_name, so range + sort on until_at can't use
+    //       it efficiently.
+    //
+    // review_assignments(reviewer_login, state) is already covered by the
+    // existing idx_review_assignments_reviewer_state — not re-added.
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_mig_user_mirror
+             ON migration_jobs(user_id, is_mirror)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_mig_user_status
+             ON migration_jobs(user_id, status)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_v2_user_action_created
+             ON audit_log_v2(user_id, action, created_at)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_issue_events_repo_issue_action
+             ON issue_events(repo_id, issue_number, action)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_pr_events_repo_pr_action
+             ON pr_events(repo_id, pr_number, action)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_wbs_user_until
+             ON work_board_snooze(user_id, until_at)`);
+
     logger.info('SQLite Database initialized successfully');
 }
 
