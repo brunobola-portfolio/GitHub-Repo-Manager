@@ -7,6 +7,7 @@ import express from 'express';
 import { requireAuth, errorResponse, safeError } from '../middleware/auth.js';
 import * as snoozeLib from '../lib/work-board-snooze.js';
 import { invalidate as invalidateCache } from '../lib/work-board-cache.js';
+import { githubApi } from '../lib/github-api.js';
 
 const router = express.Router();
 
@@ -65,6 +66,52 @@ router.get('/snoozes', requireAuth, (req, res) => {
         res.json({ data: rows });
     } catch (e) {
         errorResponse(res, 500, safeError(e, 'Failed to list snoozes'));
+    }
+});
+
+const EVENT_MAP = { approve: 'APPROVE', request_changes: 'REQUEST_CHANGES', comment: 'COMMENT' };
+
+router.post('/review-action', requireAuth, async (req, res) => {
+    try {
+        const { repoFullName, prNumber, action, body } = req.body || {};
+        if (typeof repoFullName !== 'string' || !/^[^/]+\/[^/]+$/.test(repoFullName)) {
+            return errorResponse(res, 400, 'invalid repoFullName');
+        }
+        if (!Number.isInteger(prNumber) || prNumber <= 0) {
+            return errorResponse(res, 400, 'prNumber must be a positive integer');
+        }
+        const event = EVENT_MAP[action];
+        if (!event) return errorResponse(res, 400, 'action must be approve | request_changes | comment');
+        if ((event === 'REQUEST_CHANGES' || event === 'COMMENT')
+            && (typeof body !== 'string' || body.trim().length === 0)) {
+            return errorResponse(res, 400, `action "${action}" requires a body`);
+        }
+
+        const payload = { event };
+        if (typeof body === 'string' && body.trim().length > 0) payload.body = body.trim();
+
+        try {
+            const { data: review } = await githubApi(
+                `/repos/${repoFullName}/pulls/${prNumber}/reviews`,
+                req.session.accessToken,
+                { method: 'POST', body: JSON.stringify(payload) },
+            );
+            invalidateCache(req.session.userId, 'my_reviews');
+            return res.json({ data: { id: review.id, state: review.state } });
+        } catch (err) {
+            if (err.status === 403) {
+                return errorResponse(
+                    res,
+                    403,
+                    err.data?.message || err.message || 'OAuth scope "repo" required to submit reviews',
+                    'scope_required',
+                );
+            }
+            if (err.status === 404) return errorResponse(res, 404, 'PR not found');
+            throw err;
+        }
+    } catch (e) {
+        return errorResponse(res, 500, safeError(e, 'Failed to submit review'));
     }
 });
 

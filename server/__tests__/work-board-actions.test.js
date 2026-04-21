@@ -131,3 +131,90 @@ describe('GET /api/v1/work-board/snoozes', () => {
         expect(res.body.data).toEqual([]);
     });
 });
+
+vi.mock('../lib/github-api.js', () => ({ githubApi: vi.fn() }));
+const { githubApi } = await import('../lib/github-api.js');
+
+describe('POST /api/v1/work-board/review-action', () => {
+    beforeEach(() => { githubApi.mockReset(); });
+
+    it('approves a PR via POST /repos/:owner/:repo/pulls/:n/reviews with event=APPROVE', async () => {
+        githubApi.mockResolvedValue({ data: { id: 1, state: 'APPROVED' } });
+        const res = await request(makeApp()).post('/api/v1/work-board/review-action')
+            .send({ repoFullName: 'org/repo', prNumber: 42, action: 'approve' });
+        expect(res.status).toBe(200);
+        expect(res.body.data).toMatchObject({ id: 1, state: 'APPROVED' });
+        const [path, token, options] = githubApi.mock.calls[0];
+        expect(path).toBe('/repos/org/repo/pulls/42/reviews');
+        expect(token).toBe('tok');
+        expect(options.method).toBe('POST');
+        expect(JSON.parse(options.body)).toMatchObject({ event: 'APPROVE' });
+    });
+
+    it('request_changes requires a non-empty body', async () => {
+        const res = await request(makeApp()).post('/api/v1/work-board/review-action')
+            .send({ repoFullName: 'org/repo', prNumber: 42, action: 'request_changes' });
+        expect(res.status).toBe(400);
+    });
+
+    it('request_changes with a body submits event=REQUEST_CHANGES', async () => {
+        githubApi.mockResolvedValue({ data: { id: 2, state: 'CHANGES_REQUESTED' } });
+        const res = await request(makeApp()).post('/api/v1/work-board/review-action')
+            .send({ repoFullName: 'org/repo', prNumber: 42, action: 'request_changes', body: 'please rename' });
+        expect(res.status).toBe(200);
+        expect(res.body.data.state).toBe('CHANGES_REQUESTED');
+        const [,, options] = githubApi.mock.calls[0];
+        expect(JSON.parse(options.body)).toMatchObject({ event: 'REQUEST_CHANGES', body: 'please rename' });
+    });
+
+    it('comment requires a non-empty body', async () => {
+        const res = await request(makeApp()).post('/api/v1/work-board/review-action')
+            .send({ repoFullName: 'org/repo', prNumber: 42, action: 'comment' });
+        expect(res.status).toBe(400);
+    });
+
+    it('maps a GitHub 403 to scope_required', async () => {
+        const err = new Error('Resource not accessible by integration');
+        err.status = 403;
+        err.data = { message: 'Resource not accessible by integration' };
+        githubApi.mockRejectedValueOnce(err);
+        const res = await request(makeApp()).post('/api/v1/work-board/review-action')
+            .send({ repoFullName: 'org/repo', prNumber: 42, action: 'approve' });
+        expect(res.status).toBe(403);
+        expect(res.body.code).toBe('scope_required');
+    });
+
+    it('maps a GitHub 404 to 404 PR not found', async () => {
+        const err = new Error('Not Found');
+        err.status = 404;
+        githubApi.mockRejectedValueOnce(err);
+        const res = await request(makeApp()).post('/api/v1/work-board/review-action')
+            .send({ repoFullName: 'org/repo', prNumber: 42, action: 'approve' });
+        expect(res.status).toBe(404);
+    });
+
+    it('invalidates my_reviews cache after a successful review', async () => {
+        githubApi.mockResolvedValueOnce({ data: { id: 1, state: 'APPROVED' } });
+        await request(makeApp()).post('/api/v1/work-board/review-action')
+            .send({ repoFullName: 'org/repo', prNumber: 42, action: 'approve' });
+        expect(cacheLib.invalidate).toHaveBeenCalledWith(1, 'my_reviews');
+    });
+
+    it('rejects unknown action', async () => {
+        const res = await request(makeApp()).post('/api/v1/work-board/review-action')
+            .send({ repoFullName: 'org/repo', prNumber: 42, action: 'explode' });
+        expect(res.status).toBe(400);
+    });
+
+    it('rejects invalid repoFullName', async () => {
+        const res = await request(makeApp()).post('/api/v1/work-board/review-action')
+            .send({ repoFullName: 'invalid', prNumber: 42, action: 'approve' });
+        expect(res.status).toBe(400);
+    });
+
+    it('rejects non-positive prNumber', async () => {
+        const res = await request(makeApp()).post('/api/v1/work-board/review-action')
+            .send({ repoFullName: 'org/repo', prNumber: 0, action: 'approve' });
+        expect(res.status).toBe(400);
+    });
+});
