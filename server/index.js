@@ -36,6 +36,7 @@ import logger, { requestLoggerMiddleware } from './lib/logger.js';
 import { verifySecretsAtStartup } from './lib/startup-secrets-check.js';
 import { startWorkBoardSweeper, stopWorkBoardSweeper } from './lib/work-board-sweeper.js';
 import { startEmailRetryWorker, stopEmailRetryWorker } from './lib/email-retry-worker.js';
+import { startWebhookRetryWorker, stopWebhookRetryWorker } from './lib/webhook-retry-worker.js';
 
 // API v1 route aggregator
 import v1Routes from './routes/v1/index.js';
@@ -298,6 +299,9 @@ startWorkBoardSweeper();
 // Start background worker that re-drives the email dead-letter queue
 startEmailRetryWorker();
 
+// Start background worker that re-drives the GitHub webhook dead-letter queue
+startWebhookRetryWorker();
+
 server.on('error', (e) => {
     if (e.code === 'EADDRINUSE') {
         logger.fatal({ port: config.port }, 'Port is already in use');
@@ -343,6 +347,12 @@ function gracefulShutdown(signal) {
             stopEmailRetryWorker();
         } catch (e) {
             logger.warn({ err: e }, 'Could not stop email retry worker');
+        }
+
+        try {
+            stopWebhookRetryWorker();
+        } catch (e) {
+            logger.warn({ err: e }, 'Could not stop webhook retry worker');
         }
 
         try {

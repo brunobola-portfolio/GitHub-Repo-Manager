@@ -678,7 +678,34 @@ export function initDB() {
     `);
     db.exec(`CREATE INDEX IF NOT EXISTS idx_email_dl_next_retry ON email_dead_letter(next_retry_at) WHERE resolved_at IS NULL`);
 
-    // Migration 014 (perf): composite indexes on hot query paths flagged by the
+    // Migration 014 (P1 — webhook resilience): dead-letter queue for GitHub
+    // webhook handler failures. The /api/v1/webhooks/github endpoint uses a
+    // fast-ack pattern (200 before dispatch), so handler errors would
+    // otherwise be lost silently. Rows inserted here are retried by
+    // webhook-retry-worker with exponential backoff, capped at 10 attempts.
+    // UNIQUE (delivery_id) prevents double-DLQ if the same delivery somehow
+    // fails twice; the INSERT … ON CONFLICT in the route increments attempts
+    // and refreshes last_error instead.
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS webhook_events_dead_letter (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            delivery_id TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            payload TEXT NOT NULL,
+            last_error TEXT NOT NULL,
+            attempts INTEGER NOT NULL DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            next_retry_at DATETIME NOT NULL,
+            resolved_at DATETIME
+        )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_webhook_dl_next_retry
+             ON webhook_events_dead_letter(next_retry_at)
+             WHERE resolved_at IS NULL`);
+    db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_webhook_dl_delivery
+             ON webhook_events_dead_letter(delivery_id)`);
+
+    // Migration 015 (perf): composite indexes on hot query paths flagged by the
     // performance audit. Each index below is added only where no existing index
     // is a covering leftmost-prefix; single-column indexes stay in place for
     // other queries (they remain useful and SQLite's planner picks whichever

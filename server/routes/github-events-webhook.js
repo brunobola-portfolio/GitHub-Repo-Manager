@@ -12,13 +12,14 @@
  * UNIQUE (github_event_id) constraint + INSERT OR IGNORE in each handler.
  */
 import logger from '../lib/logger.js';
+import db from '../db.js';
 import { verifyWebhookSignature, errorResponse } from '../middleware/auth.js';
 import * as pullRequestHandler from '../lib/github-events/pull_request.js';
 import * as pullRequestReviewHandler from '../lib/github-events/pull_request_review.js';
 import * as issuesHandler from '../lib/github-events/issues.js';
 import * as deploymentStatusHandler from '../lib/github-events/deployment_status.js';
 
-const HANDLERS = {
+export const HANDLERS = {
     pull_request: pullRequestHandler,
     pull_request_review: pullRequestReviewHandler,
     issues: issuesHandler,
@@ -60,10 +61,29 @@ export async function githubEventsWebhookHandler(req, res) {
         try {
             await handler.handle(payload, deliveryId);
         } catch (err) {
-            // Fast-ack pattern: we already returned 200 to GitHub so a
-            // handler failure here will NOT be retried by GitHub. To
-            // recover, an operator needs enough context to find the
-            // delivery in the GitHub webhook UI and hit "Redeliver".
+            // Fast-ack pattern: we already returned 200 to GitHub, so a
+            // handler failure here will NOT be retried by GitHub. Route the
+            // event into the webhook dead-letter queue so
+            // webhook-retry-worker can re-drive it with exponential backoff.
+            // ON CONFLICT protects against the (very rare) case where the
+            // same delivery_id is dispatched twice before the row is
+            // resolved — we bump `attempts` and refresh `last_error`
+            // instead of failing.
+            const errorMessage = err?.message || String(err);
+            try {
+                db.prepare(`
+                    INSERT INTO webhook_events_dead_letter
+                        (delivery_id, event_type, payload, last_error, next_retry_at)
+                    VALUES (?, ?, ?, ?, datetime('now', '+5 minutes'))
+                    ON CONFLICT(delivery_id) DO UPDATE SET
+                        attempts = webhook_events_dead_letter.attempts + 1,
+                        last_error = excluded.last_error,
+                        next_retry_at = excluded.next_retry_at,
+                        resolved_at = NULL
+                `).run(deliveryId, eventType, req.body.toString(), errorMessage);
+            } catch (dlqErr) {
+                logger.error({ dlqErr, deliveryId }, 'webhook DLQ insert failed');
+            }
             logger.error(
                 {
                     err,
@@ -75,7 +95,7 @@ export async function githubEventsWebhookHandler(req, res) {
                     prNumber: payload?.pull_request?.number,
                     issueNumber: payload?.issue?.number,
                 },
-                'github-events: handler failed — re-run via GitHub webhook UI "Redeliver"',
+                'github-events: handler failed — stored in DLQ',
             );
         }
     } catch (err) {
