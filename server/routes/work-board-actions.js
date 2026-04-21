@@ -7,8 +7,10 @@ import express from 'express';
 import { requireAuth, errorResponse, safeError } from '../middleware/auth.js';
 import * as snoozeLib from '../lib/work-board-snooze.js';
 import * as presets from '../lib/work-board-presets.js';
-import { invalidate as invalidateCache } from '../lib/work-board-cache.js';
+import { invalidate as invalidateCache, getCached as getCacheRow, putCached as putCacheRow } from '../lib/work-board-cache.js';
 import { githubApi } from '../lib/github-api.js';
+import { generateSummary } from '../lib/work-board-summary.js';
+import * as aggregations from '../lib/event-aggregations.js';
 
 const router = express.Router();
 
@@ -151,6 +153,60 @@ router.delete('/presets/:id', requireAuth, (req, res) => {
         if (!removed) return errorResponse(res, 404, 'preset not found');
         res.json({ data: { removed } });
     } catch (e) { errorResponse(res, 500, safeError(e, 'Failed to delete preset')); }
+});
+
+const aiSummaryLastCall = new Map(); // userId → ms timestamp
+const AI_SUMMARY_COOLDOWN_MS = 5 * 60 * 1000;
+const AI_SUMMARY_CACHE_TTL_SEC = 300;
+
+function loadDataSources(userId, userLogin) {
+    const pluck = (type, fallbackFn) => {
+        const row = getCacheRow(userId, type);
+        if (row?.isFresh) return row.payload;
+        try { return fallbackFn(); } catch { return []; }
+    };
+    return {
+        reviews:  pluck('my_reviews', () => aggregations.listMyPendingReviews({ reviewerLogin: userLogin, limit: 20 })),
+        stalePRs: pluck('stale_prs',  () => aggregations.listStalePRs({ staleAfterDays: 7, limit: 20 })),
+        issues:   pluck('my_issues',  () => aggregations.listMyOpenIssues({ assigneeLogin: userLogin, limit: 20 })),
+        techDebt: (() => {
+            const row = getCacheRow(userId, 'tech_debt');
+            if (row?.isFresh) return row.payload;
+            try {
+                const items = aggregations.listTechDebtIssues({ limit: 20 });
+                const hotspots = aggregations.techDebtHotspots({});
+                return { items, hotspots };
+            } catch {
+                return { items: [], hotspots: [] };
+            }
+        })(),
+    };
+}
+
+router.post('/ai-summary', requireAuth, async (req, res) => {
+    const userId = req.session.userId;
+    try {
+        const cached = getCacheRow(userId, 'ai_summary');
+        const last = aiSummaryLastCall.get(userId) || 0;
+        const now = Date.now();
+        if (cached?.isFresh && (now - last) < AI_SUMMARY_COOLDOWN_MS) {
+            return res.json({ data: cached.payload, meta: { cached: true, generatedAt: cached.fetchedAt } });
+        }
+
+        const dataSources = loadDataSources(userId, req.session.userLogin);
+        const summary = await generateSummary({ userId, dataSources });
+        putCacheRow(userId, 'ai_summary', summary, null, AI_SUMMARY_CACHE_TTL_SEC);
+        aiSummaryLastCall.set(userId, now);
+        res.json({ data: summary, meta: { cached: false, generatedAt: new Date() } });
+    } catch (e) {
+        if (e.code === 'ai_not_configured') {
+            return errorResponse(res, 404, 'AI is not configured for this user', 'ai_not_configured');
+        }
+        if (e.code === 'ai_invalid_response') {
+            return errorResponse(res, 502, 'AI provider returned an invalid response', 'ai_invalid_response');
+        }
+        errorResponse(res, 500, safeError(e, 'Failed to generate AI summary'));
+    }
 });
 
 export default router;
