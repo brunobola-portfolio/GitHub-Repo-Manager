@@ -95,9 +95,14 @@ vi.mock('@/hooks/useWorkBoard', () => ({
 // Import after mocks
 // ---------------------------------------------------------------------------
 const { WorkBoardPage } = await import('@/components/WorkBoard/WorkBoardPage')
+const { ModalProvider } = await import('@/contexts/ModalContext')
 
 function renderPage(props = {}) {
-    return render(<WorkBoardPage repoCount={7} {...props} />)
+    return render(
+        <ModalProvider>
+            <WorkBoardPage repoCount={7} {...props} />
+        </ModalProvider>
+    )
 }
 
 beforeEach(() => {
@@ -158,7 +163,11 @@ describe('WorkBoardPage', () => {
         mockUseMyPendingReviews.mockReturnValue({ data: null, loading: true, error: null, refresh: vi.fn() })
         renderPage()
         // Skeleton rows have animate-pulse class
-        const { container } = render(<WorkBoardPage />)
+        const { container } = render(
+            <ModalProvider>
+                <WorkBoardPage />
+            </ModalProvider>
+        )
         expect(container.querySelector('.animate-pulse')).toBeInTheDocument()
     })
 
@@ -227,5 +236,24 @@ describe('WorkBoardPage', () => {
         renderPage()
         fireEvent.click(screen.getByRole('tab', { name: /stale prs/i }))
         expect(screen.getByText(/pro feature/i)).toBeInTheDocument()
+    })
+
+    // ---------------------------------------------------------------------------
+    // Keyboard shortcuts
+    // ---------------------------------------------------------------------------
+
+    it('pressing ? opens the keyboard help modal', async () => {
+        renderPage()
+        fireEvent.keyDown(window, { key: '?' })
+        expect(await screen.findByText(/keyboard shortcuts/i)).toBeInTheDocument()
+    })
+
+    it('pressing g then t switches to Tech Debt', async () => {
+        renderPage()
+        fireEvent.keyDown(window, { key: 'g' })
+        fireEvent.keyDown(window, { key: 't' })
+        await waitFor(() => {
+            expect(screen.getByRole('tab', { name: /tech debt/i })).toHaveAttribute('aria-selected', 'true')
+        })
     })
 })

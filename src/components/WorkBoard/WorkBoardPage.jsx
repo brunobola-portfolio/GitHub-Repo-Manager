@@ -8,7 +8,7 @@
  *   4. DORA         — deploy freq + lead time (Enterprise+)
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     GitPullRequest, CircleDot, Rocket, BarChart3,
@@ -30,6 +30,9 @@ import { PresetDropdown } from './filters/PresetDropdown'
 import { FilterProvider, useWorkBoardFilters, applyFilters } from './filters/filter-context'
 import { InlineActions } from './InlineActions'
 import { useReviewAction } from '../../hooks/useReviewAction'
+import { useContextShortcut } from '../../hooks/useKeyboardShortcuts'
+import { useModal } from '../../hooks/useModal'
+import { KeyboardHelpModal } from './KeyboardHelpModal'
 import { MOCK_MODE, API_BASE_URL } from '../../config'
 
 // ---------------------------------------------------------------------------
@@ -819,6 +822,9 @@ function TechDebtTab() {
 // Tab definitions
 // ---------------------------------------------------------------------------
 
+// g-prefix keyboard navigation — maps second-key to tab id
+const TAB_KEYS = { r: 'reviews', s: 'stale', i: 'issues', l: 'reviewload', t: 'techdebt', d: 'dora' }
+
 const TABS = [
     { id: 'reviews',     label: 'My Reviews',  icon: GitPullRequest, component: MyReviewsTab, accent: 'purple' },
     { id: 'stale',       label: 'Stale PRs',   icon: AlertTriangle,  component: StalePRsTab,  accent: 'amber' },
@@ -942,6 +948,48 @@ export function WorkBoardPage({ repoCount = 0 }) {
     const [params, setParams] = useUrlParams(['tab', 'repos', 'authors', 'labels', 'age', 'snoozed'])
     const activeTab = params.tab || 'reviews'
     const setActiveTab = (tab) => setParams({ tab: tab === 'reviews' ? '' : tab })
+
+    // Help modal state (from centralized ModalContext)
+    const { modalStates, openModal, closeModal } = useModal()
+    const helpOpen = modalStates.workBoardHelp || false
+
+    // `?` opens help (Shift+/ yields event.key === '?' on most layouts)
+    useContextShortcut({ key: '?', handler: () => openModal('workBoardHelp') })
+    // Escape closes help
+    useContextShortcut({ key: 'Escape', handler: () => closeModal('workBoardHelp'), when: helpOpen, deps: [helpOpen] })
+
+    // g-prefix tab navigation — press `g`, then a letter within 800ms
+    const [pendingG, setPendingG] = useState(false)
+    useContextShortcut({ key: 'g', handler: () => setPendingG(true) })
+
+    useEffect(() => {
+        if (!pendingG) return undefined
+        let cancelled = false
+        const timer = setTimeout(() => { if (!cancelled) setPendingG(false) }, 800)
+        function h(e) {
+            const tag = (e.target?.tagName || '').toLowerCase()
+            if (tag === 'input' || tag === 'textarea' || e.target?.isContentEditable) {
+                setPendingG(false)
+                return
+            }
+            if (e.metaKey || e.ctrlKey || e.altKey) {
+                setPendingG(false)
+                return
+            }
+            if (TAB_KEYS[e.key]) {
+                e.preventDefault()
+                setActiveTab(TAB_KEYS[e.key])
+            }
+            setPendingG(false)
+        }
+        window.addEventListener('keydown', h, { once: true })
+        return () => {
+            cancelled = true
+            clearTimeout(timer)
+            window.removeEventListener('keydown', h)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pendingG])
 
     const reviews = useMyPendingReviews()
     const stale = useStalePRs({ staleAfterDays: 7 })
@@ -1103,6 +1151,8 @@ export function WorkBoardPage({ repoCount = 0 }) {
                 </AnimatePresence>
             </div>
             </FilterProvider>
+
+            <KeyboardHelpModal open={helpOpen} onClose={() => closeModal('workBoardHelp')} />
         </div>
     )
 }
