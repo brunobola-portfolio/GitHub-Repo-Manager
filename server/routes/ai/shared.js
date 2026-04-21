@@ -10,7 +10,8 @@
 
 import { createRequireAI } from '../../middleware/auth.js';
 import { aiService } from '../../ai-service.js';
-import { AIError, AI_ERROR_CODE } from '../../lib/ai-provider.js';
+import { AIError, AI_ERROR_CODE, toAIError } from '../../lib/ai-provider.js';
+import logger from '../../lib/logger.js';
 
 // ---------------------------------------------------------------------------
 // requireAI — factory-built middleware, instantiated once per process.
@@ -40,10 +41,28 @@ export function handleAIError(res, error, fallbackMessage = 'Failed to generate 
             code: 'INVALID_API_KEY',
         });
     }
+    if (code === AI_ERROR_CODE.RATE_LIMITED) {
+        return res.status(429).json({
+            error: 'AI provider rate limit hit. Please try again in a moment.',
+            code: 'RATE_LIMITED',
+        });
+    }
     if (code === AI_ERROR_CODE.QUOTA || (!code && (error.message?.includes('quota') || error.status === 429))) {
         return res.status(429).json({
             error: 'API quota exceeded. Please try again later or check your Gemini API usage limits.',
             code: 'QUOTA_EXCEEDED',
+        });
+    }
+    if (code === AI_ERROR_CODE.TIMEOUT) {
+        return res.status(504).json({
+            error: 'AI provider request timed out. Please try again.',
+            code: 'AI_TIMEOUT',
+        });
+    }
+    if (code === AI_ERROR_CODE.NETWORK) {
+        return res.status(502).json({
+            error: 'Could not reach the AI provider. Please try again.',
+            code: 'AI_NETWORK_ERROR',
         });
     }
     if (code === AI_ERROR_CODE.OVERLOAD || (!code && (error.status === 503 || /overload|unavailable|high demand/i.test(error.message || '')))) {
@@ -58,24 +77,86 @@ export function handleAIError(res, error, fallbackMessage = 'Failed to generate 
 // ---------------------------------------------------------------------------
 // providerGenerateWithRetry — retry wrapper that works with any provider.
 // ---------------------------------------------------------------------------
-/**
- * Retries a provider.generate() call when the error maps to
- * AI_ERROR_CODE.OVERLOAD (503-equivalent in any vendor). Works with any
- * AIProvider implementation (Gemini, Anthropic, OpenAI, OpenRouter, Local).
+/*
+ * Retry policy (mirrors server/lib/github-api.js):
+ *   - 3 retries (total 4 attempts) for the options.retries default
+ *   - Backoff: 400 ms, 800 ms, 1600 ms, ... with ±20% jitter
+ *   - Retry-After (from 429 AIError.retryAfterMs) is honoured and CLAMPED to 60 s
+ *   - Retryable codes: OVERLOAD, TIMEOUT, RATE_LIMITED, NETWORK
+ *   - Non-retryable: AUTH, QUOTA, NOT_FOUND, INVALID_RESPONSE, CANCELED, UNKNOWN
+ *
+ * Streaming note: this wrapper is ONLY used with provider.generate() (blocking).
+ * We intentionally do NOT retry provider.generateStream() — retrying mid-stream
+ * would replay chunks the client has already consumed. If a stream errors
+ * mid-flight the caller surfaces that to the client; a full retry is the
+ * client's choice, not ours.
  */
-export async function providerGenerateWithRetry(provider, opts, { retries = 1, delayMs = 400 } = {}) {
+
+const RETRYABLE_CODES = new Set([
+    AI_ERROR_CODE.OVERLOAD,
+    AI_ERROR_CODE.TIMEOUT,
+    AI_ERROR_CODE.RATE_LIMITED,
+    AI_ERROR_CODE.NETWORK,
+]);
+
+const DEFAULT_RETRIES = 3;
+const DEFAULT_BASE_DELAY_MS = 400;
+const MAX_RETRY_AFTER_MS = 60_000;
+
+function computeBackoff(attempt, baseDelayMs) {
+    // attempt is 1-indexed: 1 → base, 2 → base*2, 3 → base*4, ...
+    const base = baseDelayMs * Math.pow(2, attempt - 1);
+    const jitter = 0.8 + Math.random() * 0.4; // 0.8 .. 1.2
+    return Math.round(base * jitter);
+}
+
+function sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * Invoke provider.generate() with retry on transient AI errors.
+ *
+ * @param {object} provider         — AIProvider instance
+ * @param {object} opts             — forwarded to provider.generate
+ * @param {object} [cfg]
+ * @param {number} [cfg.retries]    — number of retries (default 3 → 4 attempts)
+ * @param {number} [cfg.delayMs]    — base backoff delay (default 400)
+ */
+export async function providerGenerateWithRetry(
+    provider,
+    opts,
+    { retries = DEFAULT_RETRIES, delayMs = DEFAULT_BASE_DELAY_MS } = {},
+) {
     let lastError;
+
     for (let attempt = 0; attempt <= retries; attempt++) {
         try {
             return await provider.generate(opts);
-        } catch (err) {
+        } catch (rawErr) {
+            // Normalise raw SDK errors so we can dispatch on a stable code.
+            const err = rawErr instanceof AIError ? rawErr : toAIError(rawErr);
             lastError = err;
-            const isOverload = (err instanceof AIError && err.code === AI_ERROR_CODE.OVERLOAD)
-                || err?.status === 503
-                || /overload|unavailable|high demand/i.test(err?.message || '');
-            if (!isOverload || attempt === retries) break;
-            await new Promise((r) => setTimeout(r, delayMs));
+
+            const isRetryable = RETRYABLE_CODES.has(err.code);
+            if (!isRetryable || attempt === retries) break;
+
+            // Prefer server-supplied Retry-After on 429 when present; otherwise
+            // exponential backoff with jitter. Either way we clamp to 60s.
+            let waitMs;
+            if (err.code === AI_ERROR_CODE.RATE_LIMITED && typeof err.retryAfterMs === 'number') {
+                waitMs = Math.min(err.retryAfterMs, MAX_RETRY_AFTER_MS);
+            } else {
+                waitMs = Math.min(computeBackoff(attempt + 1, delayMs), MAX_RETRY_AFTER_MS);
+            }
+
+            logger.warn(
+                { attempt: attempt + 1, code: err.code, status: err.status, waitMs },
+                'AI provider transient error, retrying',
+            );
+            await sleep(waitMs);
         }
     }
+
     throw lastError;
 }

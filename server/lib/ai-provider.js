@@ -42,28 +42,33 @@ async function _loadProviders() {
 // ---------------------------------------------------------------------------
 
 export const AI_ERROR_CODE = Object.freeze({
-    QUOTA: 'QUOTA',
-    AUTH: 'AUTH',
-    OVERLOAD: 'OVERLOAD',
-    NOT_FOUND: 'NOT_FOUND',
-    INVALID_RESPONSE: 'INVALID_RESPONSE',
-    CANCELED: 'CANCELED',
-    UNKNOWN: 'UNKNOWN',
+    QUOTA: 'QUOTA',                    // 403 "over quota" / billing — NOT retryable
+    AUTH: 'AUTH',                      // 401 bad/expired key — NOT retryable
+    OVERLOAD: 'OVERLOAD',              // 500/502/503/504/529 — retryable
+    TIMEOUT: 'TIMEOUT',                // 408 / AbortError — retryable
+    RATE_LIMITED: 'RATE_LIMITED',      // 429 with Retry-After — retryable (honour header)
+    NETWORK: 'NETWORK',                // fetch threw / ECONNRESET / ETIMEDOUT / ENOTFOUND — retryable
+    NOT_FOUND: 'NOT_FOUND',            // 404 model/resource — NOT retryable
+    INVALID_RESPONSE: 'INVALID_RESPONSE', // unparseable JSON etc — NOT retryable
+    CANCELED: 'CANCELED',              // client abort — NOT retryable
+    UNKNOWN: 'UNKNOWN',                // everything else — NOT retryable
 });
 
 export class AIError extends Error {
     /**
      * @param {object} opts
-     * @param {string} opts.code       — one of AI_ERROR_CODE
-     * @param {string} [opts.message]  — human-readable message
-     * @param {number} [opts.status]   — HTTP status hint (for middleware mapping)
-     * @param {unknown} [opts.cause]   — original error (preserved for logging)
+     * @param {string} opts.code           — one of AI_ERROR_CODE
+     * @param {string} [opts.message]      — human-readable message
+     * @param {number} [opts.status]       — HTTP status hint (for middleware mapping)
+     * @param {number} [opts.retryAfterMs] — backoff hint from Retry-After (capped by caller)
+     * @param {unknown} [opts.cause]       — original error (preserved for logging)
      */
-    constructor({ code, message, status, cause } = {}) {
+    constructor({ code, message, status, retryAfterMs, cause } = {}) {
         super(message || code, cause ? { cause } : undefined);
         this.name = 'AIError';
         this.code = code || AI_ERROR_CODE.UNKNOWN;
         this.status = status;
+        if (retryAfterMs !== undefined) this.retryAfterMs = retryAfterMs;
     }
 }
 
@@ -72,8 +77,108 @@ export class AIError extends Error {
 // ---------------------------------------------------------------------------
 
 /**
+ * Network-layer errno codes that indicate transient connectivity problems
+ * (as opposed to hostname typos, which also surface as ENOTFOUND but are
+ * still arguably worth one retry in case of DNS flapping).
+ */
+const NETWORK_ERROR_CODES = new Set([
+    'ECONNRESET',
+    'ETIMEDOUT',
+    'ENOTFOUND',
+    'EAI_AGAIN',
+    'ECONNREFUSED',
+    'EPIPE',
+]);
+
+/**
+ * Parse a Retry-After header (seconds delta OR HTTP-date) into milliseconds.
+ * Returns null when the input is absent or unparseable.
+ *
+ * @param {string|number|undefined|null} headerValue
+ * @returns {number|null}
+ */
+function parseRetryAfterToMs(headerValue) {
+    if (headerValue === undefined || headerValue === null || headerValue === '') return null;
+    const asNumber = Number(headerValue);
+    if (Number.isFinite(asNumber) && asNumber >= 0) {
+        return Math.floor(asNumber * 1000);
+    }
+    const asDate = Date.parse(String(headerValue));
+    if (!Number.isNaN(asDate)) {
+        const ms = asDate - Date.now();
+        return ms > 0 ? ms : 0;
+    }
+    return null;
+}
+
+/**
+ * Extract a Retry-After hint (ms) from any of the shapes vendor SDKs may use:
+ *   - err.retryAfterMs       — already normalised
+ *   - err.retryAfter         — seconds (numeric) or HTTP-date
+ *   - err.headers['retry-after']
+ *   - err.response.headers.get('retry-after')
+ */
+function extractRetryAfterMs(err) {
+    if (!err || typeof err !== 'object') return null;
+
+    if (typeof err.retryAfterMs === 'number' && Number.isFinite(err.retryAfterMs)) {
+        return Math.max(0, Math.floor(err.retryAfterMs));
+    }
+    const direct = parseRetryAfterToMs(err.retryAfter);
+    if (direct !== null) return direct;
+
+    const h = err.headers;
+    if (h) {
+        const val = typeof h.get === 'function'
+            ? (h.get('retry-after') || h.get('Retry-After'))
+            : (h['retry-after'] || h['Retry-After']);
+        const parsed = parseRetryAfterToMs(val);
+        if (parsed !== null) return parsed;
+    }
+
+    const rh = err.response?.headers;
+    if (rh) {
+        const val = typeof rh.get === 'function'
+            ? (rh.get('retry-after') || rh.get('Retry-After'))
+            : (rh['retry-after'] || rh['Retry-After']);
+        const parsed = parseRetryAfterToMs(val);
+        if (parsed !== null) return parsed;
+    }
+
+    return null;
+}
+
+/**
+ * Detect a network / transport-level error that did not reach the server
+ * (or whose response could not be read). These are safe to retry.
+ */
+function isNetworkErrorShape(err) {
+    if (!err || typeof err !== 'object') return false;
+    // fetch() throws TypeError on DNS / connect / stream failures
+    if (err.name === 'TypeError') return true;
+    if (err.name === 'FetchError') return true;
+    if (err.name === 'AbortError') return true;
+    if (err.code && NETWORK_ERROR_CODES.has(err.code)) return true;
+    // Node's fetch surfaces the real error via err.cause
+    if (err.cause?.code && NETWORK_ERROR_CODES.has(err.cause.code)) return true;
+    if (err.cause?.name === 'AbortError') return true;
+    return false;
+}
+
+/**
  * Convert an arbitrary vendor SDK error into an AIError.
  * Preserves the original error in `.cause` for logging.
+ *
+ * Mapping rules (first match wins):
+ *   - AIError passthrough
+ *   - Network / AbortError / ECONN*, ENOTFOUND          -> NETWORK
+ *   - 408 or timeout / TimeoutError                     -> TIMEOUT
+ *   - 429 or rate-limit (carries Retry-After)           -> RATE_LIMITED
+ *   - 403 with quota/billing, or legacy "quota" message -> QUOTA
+ *   - 401 or API key / unauthorised                     -> AUTH
+ *   - 404 or "not found"                                -> NOT_FOUND
+ *   - 500/502/503/504/529 or overload/unavailable       -> OVERLOAD
+ *   - else                                              -> UNKNOWN
  *
  * @param {unknown} err
  * @returns {AIError}
@@ -84,17 +189,67 @@ export function toAIError(err) {
     const msg = err?.message || '';
     const status = err?.status;
 
+    // -- Network / transport-level failures come first: status may be absent. --
+    if (isNetworkErrorShape(err)) {
+        // Don't misclassify AbortError fired by our own timeout wrapper — callers
+        // that want a distinct CANCELED can inspect .cause.
+        return new AIError({ code: AI_ERROR_CODE.NETWORK, message: msg || 'network error', cause: err });
+    }
+
+    // -- Request timeout --
+    if (status === 408 || err?.name === 'TimeoutError' || /request timeout|timed out/i.test(msg)) {
+        return new AIError({ code: AI_ERROR_CODE.TIMEOUT, message: msg || 'request timeout', status: 408, cause: err });
+    }
+
+    // -- Rate limit (429) — distinct from QUOTA. Carries Retry-After when available. --
+    if (status === 429) {
+        const retryAfterMs = extractRetryAfterMs(err);
+        return new AIError({
+            code: AI_ERROR_CODE.RATE_LIMITED,
+            message: msg || 'rate limited',
+            status: 429,
+            ...(retryAfterMs !== null ? { retryAfterMs } : {}),
+            cause: err,
+        });
+    }
+    if (/rate[\s-]?limit/i.test(msg)) {
+        return new AIError({
+            code: AI_ERROR_CODE.RATE_LIMITED,
+            message: msg,
+            status: status || 429,
+            cause: err,
+        });
+    }
+
+    // -- Quota (billing) — 403 with quota/billing wording, OR the legacy
+    //    "quota" string match. Retained as non-retryable. --
+    if ((status === 403 && /quota|billing/i.test(msg)) || /over quota|quota exceeded|billing/i.test(msg)) {
+        return new AIError({ code: AI_ERROR_CODE.QUOTA, message: msg, status: status || 403, cause: err });
+    }
+    // Back-compat: bare /quota/i without status was previously QUOTA. Keep it so.
+    if (/quota/i.test(msg) && status !== 429) {
+        return new AIError({ code: AI_ERROR_CODE.QUOTA, message: msg, status: status || 403, cause: err });
+    }
+
+    // -- Auth --
+    if (status === 401 || /API key|unauthori[sz]ed/i.test(msg)) {
+        return new AIError({ code: AI_ERROR_CODE.AUTH, message: msg, status: 401, cause: err });
+    }
+
+    // -- Not found --
     if (status === 404 || /not found/i.test(msg)) {
         return new AIError({ code: AI_ERROR_CODE.NOT_FOUND, message: msg, status: 404, cause: err });
     }
-    if (status === 401 || /API key/i.test(msg)) {
-        return new AIError({ code: AI_ERROR_CODE.AUTH, message: msg, status: 401, cause: err });
-    }
-    if (status === 429 || /quota/i.test(msg)) {
-        return new AIError({ code: AI_ERROR_CODE.QUOTA, message: msg, status: 429, cause: err });
-    }
-    if (status === 503 || /overload|unavailable|high demand/i.test(msg)) {
-        return new AIError({ code: AI_ERROR_CODE.OVERLOAD, message: msg, status: 503, cause: err });
+
+    // -- Overload (includes Anthropic 529 "Overloaded") --
+    if (status === 500 || status === 502 || status === 503 || status === 504 || status === 529
+        || /overload|unavailable|high demand/i.test(msg)) {
+        return new AIError({
+            code: AI_ERROR_CODE.OVERLOAD,
+            message: msg,
+            status: status || 503,
+            cause: err,
+        });
     }
 
     return new AIError({ code: AI_ERROR_CODE.UNKNOWN, message: msg, status, cause: err });

@@ -114,9 +114,9 @@ describe('toAIError', () => {
         expect(err.code).toBe(AI_ERROR_CODE.AUTH)
     })
 
-    it('maps status 429 to QUOTA', () => {
+    it('maps status 429 to RATE_LIMITED (distinct from QUOTA)', () => {
         const err = toAIError(Object.assign(new Error('rate limit'), { status: 429 }))
-        expect(err.code).toBe(AI_ERROR_CODE.QUOTA)
+        expect(err.code).toBe(AI_ERROR_CODE.RATE_LIMITED)
         expect(err.status).toBe(429)
     })
 
@@ -234,10 +234,12 @@ describe('GeminiProvider', () => {
         })
 
         it('normalises SDK errors via toAIError', async () => {
-            const sdkErr = Object.assign(new Error('quota exceeded'), { status: 429 })
+            // 429 now normalises to RATE_LIMITED (429 billing-style quota
+            // would arrive as 403 and still map to QUOTA).
+            const sdkErr = Object.assign(new Error('rate limit exceeded'), { status: 429 })
             mockGenerateContent.mockRejectedValue(sdkErr)
             await expect(provider.generate({ prompt: 'test' }))
-                .rejects.toMatchObject({ code: AI_ERROR_CODE.QUOTA })
+                .rejects.toMatchObject({ code: AI_ERROR_CODE.RATE_LIMITED })
         })
 
         it('propagates AIError unchanged (does not double-wrap)', async () => {

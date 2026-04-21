@@ -161,9 +161,9 @@ describe('POST /api/ai/chat (JSON mode with actions)', () => {
 
     it('maps Gemini 503 overload to AI_OVERLOADED with specific copy', async () => {
         const overloadErr = Object.assign(new Error('[GoogleGenerativeAI Error]: [503 Service Unavailable] This model is currently experiencing high demand.'), { status: 503 })
-        mockGenerateContent
-            .mockRejectedValueOnce(overloadErr)
-            .mockRejectedValueOnce(overloadErr)
+        // providerGenerateWithRetry now retries 3 times (4 total attempts)
+        // on OVERLOAD, so exhaust every attempt to reach the error handler.
+        mockGenerateContent.mockRejectedValue(overloadErr)
 
         const app = await buildApp()
         const res = await request(app).post('/api/ai/chat').send({ message: 'hi' })
@@ -171,9 +171,9 @@ describe('POST /api/ai/chat (JSON mode with actions)', () => {
         expect(res.status).toBe(503)
         expect(res.body.code).toBe('AI_OVERLOADED')
         expect(res.body.error).toMatch(/heavy load|moment|try again/i)
-        // one retry should have happened
-        expect(mockGenerateContent).toHaveBeenCalledTimes(2)
-    })
+        // 1 initial + 3 retries = 4 attempts
+        expect(mockGenerateContent).toHaveBeenCalledTimes(4)
+    }, 15000)
 
     it('recovers when the first 503 is followed by a successful retry', async () => {
         const overloadErr = Object.assign(new Error('overload'), { status: 503 })
