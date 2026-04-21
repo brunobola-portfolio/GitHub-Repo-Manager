@@ -95,6 +95,15 @@ describe('work-board-github', () => {
         await fetchTechDebtIssues({ token: 'tok' });
         expect(DEFAULT_DEBT_LABELS.length).toBeGreaterThan(3);
         expect(DEFAULT_DEBT_LABELS).toContain('tech-debt');
+        const [path] = mockGithubApi.mock.calls[0];
+        expect(path).toContain('label%3A%22tech-debt%22');
+    });
+
+    it('fetchTechDebtIssues falls back to DEFAULT_DEBT_LABELS when labels contain only empty strings', async () => {
+        mockGithubApi.mockResolvedValue(makeSearchResult([]));
+        await fetchTechDebtIssues({ token: 'tok', labels: ['', '  ', null] });
+        const [path] = mockGithubApi.mock.calls[0];
+        expect(path).toContain('label%3A%22tech-debt%22');
     });
 
     it('normaliseIssue returns labels and assignees as string arrays', async () => {

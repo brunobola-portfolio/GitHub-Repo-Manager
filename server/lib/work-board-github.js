@@ -35,6 +35,15 @@ async function callSearch({ token, q, perPage = 100 }) {
     };
 }
 
+/**
+ * Normalise a GitHub /search/issues PR item.
+ *
+ * Note on time fields:
+ *   - `ageHours` is hours since `updated_at` — "how stale has activity been?"
+ *   - `ageDays`  is days since `created_at` — "how long has this PR existed?"
+ * The two intentionally use different source timestamps because reviewers
+ * care about both dimensions (activity freshness vs. overall age).
+ */
 function normalisePR(issue) {
     return {
         repoFullName: extractRepoFullName(issue),
@@ -85,7 +94,8 @@ export async function fetchMyOpenIssues({ token, login, limit = 100 }) {
 }
 
 export async function fetchTechDebtIssues({ token, labels, limit = 100 }) {
-    const effectiveLabels = (Array.isArray(labels) && labels.length > 0 ? labels : DEFAULT_DEBT_LABELS);
+    const filtered = Array.isArray(labels) ? labels.filter(l => l != null).map(l => String(l).trim()).filter(Boolean) : [];
+    const effectiveLabels = filtered.length > 0 ? filtered : DEFAULT_DEBT_LABELS;
     const labelQ = effectiveLabels.map(l => `label:"${l}"`).join(' OR ');
     const q = `is:open is:issue archived:false (${labelQ})`;
     const r = await callSearch({ token, q, perPage: limit });
