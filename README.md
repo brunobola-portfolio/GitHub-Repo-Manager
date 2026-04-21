@@ -476,7 +476,7 @@ For detailed architecture documentation, see [`docs/architecture/overview.md`](d
 | **UI/UX** | Framer Motion 12, Lucide Icons (554), Recharts 3, Radix UI |
 | **Backend** | Node.js 20+, Express 5.2 |
 | **Database** | Better-SQLite3 12.9 (WAL mode, 32MB cache) |
-| **Security** | Helmet.js, express-rate-limit, Zod validation, SSRF protection |
+| **Security** | Helmet.js, express-rate-limit, Zod validation on critical routes, SSRF protection |
 | **AI** | Google Gemini API (gemini-embedding-001, gemini-2.5-flash) |
 | **APIs** | GitHub REST API (v2022-11-28), Azure DevOps API (v7.1) |
 | **Logging** | Pino (structured JSON logging with credential redaction) |
@@ -493,7 +493,7 @@ For detailed architecture documentation, see [`docs/architecture/overview.md`](d
 | `delete_repo` | Required for bulk delete action |
 | `admin:org` | Create teams, manage organization settings (optional) |
 
-> **Security**: Tokens are stored in encrypted server-side sessions (`httpOnly`, `sameSite: lax`). The backend uses Helmet.js headers, rate limiting (200 req/15min API, 20 req/15min auth), parameterized SQL, and Zod input validation. Azure PATs are encrypted at rest with AES-256-GCM.
+> **Security**: Tokens are stored in encrypted server-side sessions (`httpOnly`, `sameSite: lax`). The backend uses Helmet.js headers, tier-aware rate limiting, parameterized SQL queries throughout, and Zod schemas on billing / license / search / API-key routes (roadmap: extend to all routes). Azure PATs and BYOK provider keys are encrypted at rest with AES-256-GCM + PBKDF2-HMAC-SHA256 key derivation.
 
 ---
 

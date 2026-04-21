@@ -75,6 +75,7 @@ export const FEATURE_KEYS = [
     'MIGRATION_DESCRIPTION',
     'MIGRATION_SIZE',
     'README_ANALYSIS',
+    'WORK_BOARD_SUMMARY',
     'EMBED',
 ]
 
@@ -87,6 +88,7 @@ export const FEATURE_KEY_LABELS = {
     MIGRATION_DESCRIPTION: 'Migration Description',
     MIGRATION_SIZE: 'Migration Size Strategy',
     README_ANALYSIS: 'README Analysis',
+    WORK_BOARD_SUMMARY: 'Work Board Summary',
     EMBED: 'Embeddings',
 }
 
