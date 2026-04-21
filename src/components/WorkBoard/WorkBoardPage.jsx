@@ -992,6 +992,33 @@ export function WorkBoardPage({ repoCount = 0 }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pendingG])
 
+    // Command palette wiring — listen for palette-originated events and act.
+    // Keeping listeners here means any palette implementation can drive the page
+    // without threading callbacks through many layers.
+    useEffect(() => {
+        const onGoTab = (e) => {
+            if (typeof e.detail === 'string') setActiveTab(e.detail)
+        }
+        const onRegen = () => window.dispatchEvent(new CustomEvent('workboard:ai-regenerate-internal'))
+        const onSave = () => {
+            // Lightweight first pass: nudge user to the filter-bar PresetDropdown.
+            // A deeper integration would open the dropdown + focus its input; we
+            // skip that to avoid cross-component ref coupling.
+            if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+                window.alert('Use the Presets dropdown in the filter bar to save the current filters as a preset.')
+            }
+        }
+        window.addEventListener('workboard:go-tab', onGoTab)
+        window.addEventListener('workboard:regenerate-ai', onRegen)
+        window.addEventListener('workboard:save-preset', onSave)
+        return () => {
+            window.removeEventListener('workboard:go-tab', onGoTab)
+            window.removeEventListener('workboard:regenerate-ai', onRegen)
+            window.removeEventListener('workboard:save-preset', onSave)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
     const reviews = useMyPendingReviews()
     const stale = useStalePRs({ staleAfterDays: 7 })
     const issues = useMyOpenIssues()

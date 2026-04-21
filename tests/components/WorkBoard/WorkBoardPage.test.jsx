@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react'
 
 // ---------------------------------------------------------------------------
 // Mock MOCK_MODE=true so no real fetches happen during component tests
@@ -252,6 +252,30 @@ describe('WorkBoardPage', () => {
         renderPage()
         fireEvent.keyDown(window, { key: '?' })
         expect(await screen.findByText(/keyboard shortcuts/i)).toBeInTheDocument()
+    })
+
+    it('dispatching workboard:go-tab switches the active tab', async () => {
+        renderPage()
+        act(() => {
+            window.dispatchEvent(new CustomEvent('workboard:go-tab', { detail: 'techdebt' }))
+        })
+        await waitFor(() => {
+            expect(screen.getByRole('tab', { name: /tech debt/i })).toHaveAttribute('aria-selected', 'true')
+        })
+    })
+
+    it('dispatching workboard:regenerate-ai re-fires workboard:ai-regenerate-internal', () => {
+        renderPage()
+        const innerHandler = vi.fn()
+        window.addEventListener('workboard:ai-regenerate-internal', innerHandler)
+        try {
+            act(() => {
+                window.dispatchEvent(new CustomEvent('workboard:regenerate-ai'))
+            })
+            expect(innerHandler).toHaveBeenCalledTimes(1)
+        } finally {
+            window.removeEventListener('workboard:ai-regenerate-internal', innerHandler)
+        }
     })
 
     it('pressing g then t switches to Tech Debt', async () => {

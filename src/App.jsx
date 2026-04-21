@@ -1089,6 +1089,7 @@ function AppContent() {
         isOpen={commandPalette.isOpen}
         onClose={commandPalette.close}
         repos={displayRepos}
+        activeView={activeView}
         onViewChange={setActiveView}
         onOpenModal={openModal}
         onSelectRepo={handleOpenRepo}

@@ -3,6 +3,7 @@ import { Command } from 'cmdk'
 import {
   GitFork, LayoutDashboard, Users, Tag, Map, Wand2, History, Plus,
   ArrowRightLeft, Settings, Kanban, GitPullRequest, CircleDot, Loader2,
+  AlertTriangle, Wrench, BarChart3, Sparkles, Bookmark,
 } from 'lucide-react'
 import { searchApi } from '../api/search'
 import { MOCK_MODE } from '../config'
@@ -22,6 +23,21 @@ const ACTION_ITEMS = [
   { id: 'action-create-repo', label: 'Create Repository', modal: 'showCreateRepo', icon: Plus },
   { id: 'action-transfer', label: 'Transfer Repository', modal: 'showTransfer', icon: ArrowRightLeft },
   { id: 'action-settings', label: 'Open Settings', modal: 'showSettings', icon: Settings },
+]
+
+// Work Board group — only rendered when activeView === 'work-board'.
+// Items dispatch CustomEvents on `window`; WorkBoardPage/AISummaryCard
+// listen and react. Keeping the coupling loose (via events) avoids threading
+// refs/callbacks through many layers just for palette wiring.
+const WORK_BOARD_ITEMS = [
+  { id: 'wb-reviews',    label: 'Open My Reviews',                event: 'workboard:go-tab',        detail: 'reviews',    icon: GitPullRequest },
+  { id: 'wb-stale',      label: 'Open Stale PRs',                 event: 'workboard:go-tab',        detail: 'stale',      icon: AlertTriangle },
+  { id: 'wb-issues',     label: 'Open My Issues',                 event: 'workboard:go-tab',        detail: 'issues',     icon: CircleDot },
+  { id: 'wb-techdebt',   label: 'Open Tech Debt',                 event: 'workboard:go-tab',        detail: 'techdebt',   icon: Wrench },
+  { id: 'wb-reviewload', label: 'Open Review Load',               event: 'workboard:go-tab',        detail: 'reviewload', icon: Users },
+  { id: 'wb-dora',       label: 'Open DORA',                      event: 'workboard:go-tab',        detail: 'dora',       icon: BarChart3 },
+  { id: 'wb-regen-ai',   label: 'Regenerate AI summary',          event: 'workboard:regenerate-ai',                       icon: Sparkles },
+  { id: 'wb-save-preset',label: 'Save current filters as preset', event: 'workboard:save-preset',                         icon: Bookmark },
 ]
 
 const GROUP_HEADING_CLASSES = '[&>[cmdk-group-heading]]:px-2 [&>[cmdk-group-heading]]:py-1.5 [&>[cmdk-group-heading]]:text-xs [&>[cmdk-group-heading]]:font-semibold [&>[cmdk-group-heading]]:text-slate-500 [&>[cmdk-group-heading]]:dark:text-slate-400 [&>[cmdk-group-heading]]:uppercase [&>[cmdk-group-heading]]:tracking-wider'
@@ -84,7 +100,7 @@ function useDebouncedGitHubSearch(query, enabled) {
   return { data, loading, error }
 }
 
-export function CommandPalette({ isOpen, onClose, repos, onViewChange, onOpenModal, onSelectRepo }) {
+export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChange, onOpenModal, onSelectRepo }) {
   const [input, setInput] = useState('')
   const displayRepos = repos.slice(0, 10)
   const liveEnabled = isOpen && !MOCK_MODE
@@ -165,6 +181,28 @@ export function CommandPalette({ isOpen, onClose, repos, onViewChange, onOpenMod
               )
             })}
           </Command.Group>
+
+          {activeView === 'work-board' && (
+            <Command.Group heading="Work Board" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+              {WORK_BOARD_ITEMS.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Command.Item
+                    key={item.id}
+                    value={item.label}
+                    onSelect={() => {
+                      window.dispatchEvent(new CustomEvent(item.event, { detail: item.detail }))
+                      onClose()
+                    }}
+                    className={ITEM_CLASSES}
+                  >
+                    <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />
+                    {item.label}
+                  </Command.Item>
+                )
+              })}
+            </Command.Group>
+          )}
 
           {displayRepos.length > 0 && (
             <Command.Group heading="Your Repositories" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>

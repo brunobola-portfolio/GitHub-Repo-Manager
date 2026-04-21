@@ -66,6 +66,13 @@ export function AISummaryCard() {
 
     useEffect(() => { fetchSummary() }, [fetchSummary])
 
+    // Listen for the command-palette-originated regenerate event.
+    useEffect(() => {
+        const h = () => fetchSummary()
+        window.addEventListener('workboard:ai-regenerate-internal', h)
+        return () => window.removeEventListener('workboard:ai-regenerate-internal', h)
+    }, [fetchSummary])
+
     if (dismissed) return null
     if (state.status === 'hidden') return null
     if (state.status === 'loading' && !state.data) {
