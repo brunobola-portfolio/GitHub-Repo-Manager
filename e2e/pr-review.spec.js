@@ -1,0 +1,211 @@
+import { test, expect } from '@playwright/test'
+
+/**
+ * PR Review experience — smoke / regression tripwire.
+ *
+ * Mock mode auto-authenticates the frontend via useAuth, but the server-side
+ * `/api/repos/**` routes still require a real GitHub session. To avoid a 401
+ * chain when navigating repo -> PR -> review, we stub the `/api/repos/**`
+ * endpoints the flow actually touches with minimal-but-realistic fixtures.
+ *
+ * This is a regression tripwire: each test MUST pass against the current
+ * codebase. If the PR Review UI breaks (component name changes, layout
+ * shuffle, keyboard handler regressed), these tests fail.
+ */
+
+const REPO_OWNER = 'dev-user'
+const REPO_NAME = 'fintech-dashboard'
+const PR_NUMBER = 42
+
+const MOCK_REPO = {
+    id: 1,
+    name: REPO_NAME,
+    full_name: `${REPO_OWNER}/${REPO_NAME}`,
+    owner: { login: REPO_OWNER },
+    private: true,
+    html_url: `https://github.com/${REPO_OWNER}/${REPO_NAME}`,
+    description: 'Mock repo for PR review E2E',
+    language: 'TypeScript',
+    stargazers_count: 12,
+    watchers_count: 3,
+    forks_count: 1,
+    open_issues_count: 2,
+    default_branch: 'main',
+    archived: false,
+    fork: false,
+    topics: [],
+}
+
+const MOCK_PR = {
+    id: 1001,
+    number: PR_NUMBER,
+    state: 'open',
+    title: 'Add rate limiting to /api/auth',
+    body: 'Protect auth routes against credential stuffing.',
+    user: { login: 'dev-user', avatar_url: 'https://github.com/ghost.png' },
+    head: { ref: 'feat/rate-limit', sha: 'deadbeef1234567890' },
+    base: { ref: 'main' },
+    html_url: `https://github.com/${REPO_OWNER}/${REPO_NAME}/pull/${PR_NUMBER}`,
+    created_at: '2026-04-10T10:00:00Z',
+    updated_at: '2026-04-15T09:00:00Z',
+    merged: false,
+    merged_at: null,
+    mergeable: true,
+    mergeable_state: 'clean',
+    draft: false,
+    changed_files: 2,
+    additions: 40,
+    deletions: 5,
+    commits: 3,
+}
+
+const MOCK_PR_FILES = [
+    {
+        sha: 'f1',
+        filename: 'server/middleware/rate-limit.js',
+        status: 'added',
+        additions: 35,
+        deletions: 0,
+        changes: 35,
+        patch: '@@ -0,0 +1,3 @@\n+export const rateLimit = () => {}\n+// mock patch\n',
+    },
+    {
+        sha: 'f2',
+        filename: 'server/routes/auth.js',
+        status: 'modified',
+        additions: 5,
+        deletions: 5,
+        changes: 10,
+        patch: '@@ -1,3 +1,3 @@\n-// before\n+// after\n',
+    },
+]
+
+async function mockApi(page) {
+    // Repo detail fetch
+    await page.route(`**/api/repos/${REPO_OWNER}/${REPO_NAME}`, (route) =>
+        route.fulfill({ contentType: 'application/json', body: JSON.stringify(MOCK_REPO) })
+    )
+    // Pull requests list (state=open, etc.)
+    await page.route(`**/api/repos/${REPO_OWNER}/${REPO_NAME}/pulls*`, (route) => {
+        const url = route.request().url()
+        // Only intercept the list endpoint (not /pulls/42 or /pulls/42/files).
+        // The list URL has `/pulls?...` or `/pulls` exactly.
+        if (/\/pulls(\?|$)/.test(url)) {
+            return route.fulfill({
+                contentType: 'application/json',
+                body: JSON.stringify([MOCK_PR]),
+            })
+        }
+        return route.fallback()
+    })
+    // Single PR
+    await page.route(`**/api/repos/${REPO_OWNER}/${REPO_NAME}/pulls/${PR_NUMBER}`, (route) =>
+        route.fulfill({ contentType: 'application/json', body: JSON.stringify(MOCK_PR) })
+    )
+    await page.route(`**/api/repos/${REPO_OWNER}/${REPO_NAME}/pulls/${PR_NUMBER}/reviews`, (route) =>
+        route.fulfill({ contentType: 'application/json', body: JSON.stringify([]) })
+    )
+    await page.route(`**/api/repos/${REPO_OWNER}/${REPO_NAME}/pulls/${PR_NUMBER}/files`, (route) =>
+        route.fulfill({ contentType: 'application/json', body: JSON.stringify(MOCK_PR_FILES) })
+    )
+    await page.route(`**/api/repos/${REPO_OWNER}/${REPO_NAME}/pulls/${PR_NUMBER}/comments`, (route) =>
+        route.fulfill({ contentType: 'application/json', body: JSON.stringify([]) })
+    )
+    // PR comments via issues API (PRDetailPanel uses this)
+    await page.route(`**/api/repos/${REPO_OWNER}/${REPO_NAME}/issues/${PR_NUMBER}/comments`, (route) =>
+        route.fulfill({ contentType: 'application/json', body: JSON.stringify([]) })
+    )
+    // AI review summary — keep quiet, test doesn't depend on it
+    await page.route('**/api/ai/review-summary', (route) =>
+        route.fulfill({ status: 204, body: '' })
+    )
+}
+
+async function openPRReview(page) {
+    await page.goto('/')
+    await expect(page.getByAltText('dev-user')).toBeVisible({ timeout: 15000 })
+
+    // Repositories -> first repo with matching name
+    await page.getByRole('button', { name: 'Repositories' }).click()
+    await page.getByRole('button', { name: REPO_NAME }).first().click()
+
+    // Pull Requests tab (RepoDetail uses TabBar with role=tab)
+    await page.getByRole('tab', { name: /pull requests/i }).click()
+
+    // Click the PR card
+    await page.getByRole('button', { name: new RegExp(`Open pull request #${PR_NUMBER}`, 'i') }).click()
+
+    // PRDetailPanel is rendered; click the "Review" button to open PRReviewView.
+    await page.getByRole('button', { name: /^Review$/ }).click()
+}
+
+test.describe('PR Review view', () => {
+    test('opens from the PR detail and renders the review toolbar + breadcrumbs', async ({ page }) => {
+        await mockApi(page)
+        await openPRReview(page)
+
+        // Breadcrumb shows repo name + Pull Requests + PR title (generous timeout
+        // because PRReviewView is lazy-loaded).
+        await expect(page.getByRole('navigation', { name: /breadcrumb/i })).toBeVisible({ timeout: 15000 })
+        await expect(page.getByText(MOCK_PR.title).first()).toBeVisible()
+        await expect(page.getByText(`#${PR_NUMBER}`, { exact: false }).first()).toBeVisible()
+    })
+
+    test('shows the split/unified toggle and submit review control', async ({ page }) => {
+        await mockApi(page)
+        await openPRReview(page)
+
+        // Split/Unified buttons from ReviewToolbar
+        await expect(page.getByRole('button', { name: /split view/i })).toBeVisible({ timeout: 15000 })
+        await expect(page.getByRole('button', { name: /unified view/i })).toBeVisible()
+
+        // Submit review dropdown trigger — has aria-haspopup=menu and visible label "Review"
+        const submitBtn = page.getByRole('button', { name: /^review$/i, exact: false })
+            .filter({ has: page.locator('[aria-haspopup="menu"]') })
+        await expect(submitBtn.first()).toBeVisible()
+    })
+
+    test('shows the file list and the review progress status bar', async ({ page }) => {
+        await mockApi(page)
+        await openPRReview(page)
+
+        // File tree shows the mock filenames
+        await expect(page.getByText('rate-limit.js', { exact: false }).first()).toBeVisible({ timeout: 15000 })
+        await expect(page.getByText('auth.js', { exact: false }).first()).toBeVisible()
+
+        // Status bar progressbar ("X of Y files reviewed")
+        await expect(
+            page.getByRole('progressbar', { name: /files reviewed/i })
+        ).toBeVisible()
+    })
+
+    test('pressing Escape returns to the repo detail view', async ({ page }) => {
+        await mockApi(page)
+        await openPRReview(page)
+
+        // Wait until we're definitely inside PRReviewView
+        await expect(page.getByRole('navigation', { name: /breadcrumb/i }))
+            .toBeVisible({ timeout: 15000 })
+
+        // Escape calls onBack -> setReviewingPR(null), setActiveView('repo-detail')
+        await page.keyboard.press('Escape')
+
+        // The Pull Requests tab of RepoDetail should be visible again
+        await expect(page.getByRole('tab', { name: /pull requests/i }))
+            .toBeVisible({ timeout: 10000 })
+    })
+
+    test('breadcrumb back link returns to the repo detail view', async ({ page }) => {
+        await mockApi(page)
+        await openPRReview(page)
+
+        await expect(page.getByRole('navigation', { name: /breadcrumb/i }))
+            .toBeVisible({ timeout: 15000 })
+
+        // Click the "Pull Requests" crumb — it's a button with onClick=onBack
+        await page.getByRole('button', { name: /^pull requests$/i }).first().click()
+
+        await expect(page.getByRole('tab', { name: /pull requests/i }))
+            .toBeVisible({ timeout: 10000 })
+    })
+})
