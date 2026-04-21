@@ -197,6 +197,8 @@ the filter bar).
 
 ## Keyboard shortcuts
 
+![Keyboard shortcuts modal](images/34_work_board_keyboard_help_hd.png)
+
 The `?` help modal (`src/components/WorkBoard/KeyboardHelpModal.jsx`)
 documents the full keyboard surface:
 
@@ -204,7 +206,7 @@ documents the full keyboard surface:
 |-----|--------|
 | `j` / `↓` | Next row |
 | `k` / `↑` | Previous row |
-| `g` then `r` / `s` / `i` / `l` / `t` / `d` | Go to tab (Reviews / Stale / Issues / Load / tech-deBt / DORA) |
+| Click a tab | Switch section (tabs are URL-synced via `?tab=<id>`; ⌘K command palette also lists every tab) |
 | `Enter` | Open the active row on GitHub |
 | `.` | Approve the active PR |
 | `x` | Request changes on the active PR (requires body) |
@@ -215,6 +217,8 @@ documents the full keyboard surface:
 | `/` | Focus the filter search input (when present) |
 | `?` | Open this keyboard help modal |
 | `⌘K` / `Ctrl+K` | Open the command palette |
+
+> A `g`-prefix tab chord was considered but `g` is already bound globally to "Open Dev Toolkit" in `useKeyboardShortcuts`. Tabs remain fully accessible via click, URL, and the palette.
 
 ## Inline actions and `scope_required`
 

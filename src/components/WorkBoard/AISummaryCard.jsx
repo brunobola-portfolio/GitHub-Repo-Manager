@@ -51,7 +51,10 @@ export function AISummaryCard() {
             })
             const json = await res.json().catch(() => ({}))
             if (!res.ok) {
-                if (res.status === 404 && json.code === 'ai_not_configured') {
+                // 401/403/404 → silently hide: the endpoint isn't reachable for
+                // this user (no BYOK, no session, or route not mounted). A noisy
+                // error banner helps no one here.
+                if (res.status === 401 || res.status === 403 || res.status === 404) {
                     setState({ status: 'hidden', data: null, error: null })
                     return
                 }

@@ -135,7 +135,20 @@ Organize, filter, and manage your repositories with powerful tools built for sca
 
 ### Cross-Repo Work Board
 
-A single board across all your repositories — no context switching.
+A single cockpit across all your repositories — no context switching.
+
+![Work Board — KPI row, filter bar, inline actions](docs/images/33_work_board_dark_hd.png)
+
+- **Zero-config data** — live-fetches PRs and issues from GitHub when no webhook is configured; ETag-revalidated with a 5-minute cache.
+- **Auto-refresh** — polls every 60 s, pauses when the tab is hidden, shows "updated N ago".
+- **Filters + URL sync** — multi-select by repo / author / label, single-select age bucket (24 h / 7 d / 30 d), hide snoozed toggle. Selection reflected in the URL and saveable as a server-side preset.
+- **Inline actions** — approve / request-changes / snooze a PR directly on the row (falls back to a re-auth prompt if the OAuth scope is missing).
+- **AI summary** (BYOK) — Anthropic, OpenAI, Gemini, OpenRouter or Local Ollama / LMStudio generate a headline + urgency gauge + actionable bullets; silently hidden when no provider is configured.
+- **Command Palette group** — `⌘K` surfaces a Work Board section with one-shortcut navigation to every tab plus AI regenerate.
+
+  ![Command Palette — Work Board group](docs/images/35_work_board_command_palette_hd.png)
+
+Tabs on offer:
 
 - **My Reviews** — every PR where you are a requested reviewer, sorted by age
 - **My Issues** — every open issue assigned to you across all tracked repos
