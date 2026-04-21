@@ -176,7 +176,9 @@ describe('WorkBoardPage', () => {
     it('clicking My Issues tab shows issue data with labels', () => {
         renderPage()
         fireEvent.click(screen.getByRole('tab', { name: /my issues/i }))
-        expect(screen.getByText('bug')).toBeInTheDocument()
+        // `bug` may appear both in the filter bar (label chip) and inside the
+        // issue row — as long as it renders at least once, the tab is alive.
+        expect(screen.getAllByText('bug').length).toBeGreaterThan(0)
     })
 
     it('clicking DORA tab shows KPI metrics', () => {

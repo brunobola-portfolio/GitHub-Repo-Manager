@@ -24,6 +24,8 @@ import {
     useReviewLoad,
 } from '../../hooks/useWorkBoard'
 import { useRelativeTime } from '../../hooks/useRelativeTime'
+import { useUrlParams } from '../../hooks/useUrlParams'
+import { WorkBoardFilterBar } from './filters/WorkBoardFilterBar'
 import { MOCK_MODE, API_BASE_URL } from '../../config'
 
 // ---------------------------------------------------------------------------
@@ -880,12 +882,31 @@ function KpiRow({ activeTab, setActiveTab, reviews, stale, issues, debt }) {
 // ---------------------------------------------------------------------------
 
 export function WorkBoardPage({ repoCount = 0 }) {
-    const [activeTab, setActiveTab] = useState('reviews')
+    const [params, setParams] = useUrlParams(['tab', 'repos', 'authors', 'labels', 'age', 'snoozed'])
+    const activeTab = params.tab || 'reviews'
+    const setActiveTab = (tab) => setParams({ tab: tab === 'reviews' ? '' : tab })
 
     const reviews = useMyPendingReviews()
     const stale = useStalePRs({ staleAfterDays: 7 })
     const issues = useMyOpenIssues()
     const debt = useTechDebt()
+
+    // Aggregate filter options from the data loaded by all primary tabs.
+    const allItems = [
+        ...(Array.isArray(reviews.data) ? reviews.data : []),
+        ...(Array.isArray(stale.data) ? stale.data : []),
+        ...(Array.isArray(issues.data) ? issues.data : []),
+        ...((debt.data?.items) || []),
+    ]
+    const availableRepos = Array.from(new Set(allItems.map(i => i.repoFullName).filter(Boolean))).sort()
+    const availableAuthors = Array.from(new Set(allItems.map(i => i.authorLogin).filter(Boolean))).sort()
+    const availableLabels = Array.from(new Set(allItems.flatMap(i => i.labels || []).filter(Boolean))).sort()
+
+    /* TODO(task 15 follow-up): plumb filters into each tab — currently the filter
+       bar syncs to the URL and renders chips for visibility, but the tab components
+       fetch their own data internally and don't yet honour `params.repos/authors/
+       labels/age/snoozed`. This requires lifting data-fetching up or threading a
+       filter context through each tab. */
 
     const earliest = (() => {
         const times = [reviews.lastFetchedAt, stale.lastFetchedAt, issues.lastFetchedAt, debt.lastFetchedAt]
@@ -958,6 +979,15 @@ export function WorkBoardPage({ repoCount = 0 }) {
                 stale={stale}
                 issues={issues}
                 debt={debt}
+            />
+
+            {/* Filter bar (URL-synced) */}
+            <WorkBoardFilterBar
+                filters={params}
+                setFilters={setParams}
+                availableRepos={availableRepos}
+                availableAuthors={availableAuthors}
+                availableLabels={availableLabels}
             />
 
             {/* Main card */}
