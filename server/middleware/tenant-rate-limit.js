@@ -82,3 +82,40 @@ export const globalLimiter = rateLimit({
     legacyHeaders: false,
     message: { error: 'Too many requests, please try again later.' },
 });
+
+/**
+ * S2 — Per-IP limiter for unauthenticated OAuth endpoints (/login, /callback).
+ *
+ * Brute-forcing OAuth state tokens or replaying authorization codes is an IP-level
+ * attack — there is no session yet to key off of. This limiter caps each client IP
+ * to 20 requests / 15 minutes on the OAuth initiation + return routes.
+ *
+ * Kept intentionally separate from createTenantLimiters('auth') because:
+ *   - that limiter keys on session userId when present (useless pre-login)
+ *   - its budget (10/15min prod, 200/15min dev) differs from the OAuth target
+ *   - we want a hard per-IP ceiling that cannot be lifted by the "free" tier map
+ *
+ * In dev/test the limit is raised to 200 to avoid tripping React Strict Mode
+ * double-invokes and Playwright fixture churn.
+ */
+export function createAuthRouteLimiter() {
+    return rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutes
+        max: isDev() ? 200 : 20,
+        keyGenerator: (req) => `rl:authroute:${ipKeyGenerator(req)}`,
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { error: 'Too many authentication attempts. Please try again later.' },
+        handler: (req, res, _next, opts) => {
+            const retryAfterSec = Math.ceil(opts.windowMs / 1000);
+            res.set('Retry-After', String(retryAfterSec));
+            if (req.accepts(['json', 'html']) === 'html') {
+                const frontend = (process.env.FRONTEND_URL || '').replace(/\/+$/, '');
+                return res.redirect(
+                    `${frontend}/?error=rate_limited&retry=${retryAfterSec}`
+                );
+            }
+            res.status(opts.statusCode).json(opts.message);
+        },
+    });
+}

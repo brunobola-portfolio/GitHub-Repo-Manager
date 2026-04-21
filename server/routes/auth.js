@@ -3,11 +3,16 @@ import crypto, { randomUUID } from 'crypto';
 import db from '../db.js';
 import { auditLog } from '../lib/audit.js';
 import { config } from '../config.js';
+import { createAuthRouteLimiter } from '../middleware/tenant-rate-limit.js';
 
 const router = express.Router();
 
+// S2 — Per-IP rate limit on OAuth endpoints to block brute-force on login
+// and replay of authorization codes. 20 req / 15 min per IP in prod.
+const authRouteLimiter = createAuthRouteLimiter();
+
 // Initiates the GitHub OAuth flow
-router.get('/login', (req, res) => {
+router.get('/login', authRouteLimiter, (req, res) => {
     const { GITHUB_CLIENT_ID } = process.env;
     // Scopes needed:
     // - repo: Full control of private repositories
@@ -24,7 +29,7 @@ router.get('/login', (req, res) => {
 });
 
 // Handles the callback from GitHub
-router.get('/callback', async (req, res) => {
+router.get('/callback', authRouteLimiter, async (req, res) => {
     const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, FRONTEND_URL = 'http://localhost:5173' } = process.env;
     const { code, state } = req.query;
 
