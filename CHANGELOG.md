@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-04-21
+
 ### Added
 
 - **Work Board — zero-config live data source**: read endpoints (`/my-reviews`, `/my-issues`, `/stale-prs`, `/tech-debt`) now fall back to live GitHub Search when webhook data is empty or stale, so the board is usable without registering a webhook first. Results cached for 5 minutes in `work_board_cache`; ETag revalidation handled internally by `githubApi`. Every response carries a `meta: { source, fetchedAt, cacheExpiresAt, liveFetchError, liveSkipReason, requiresWebhook }` envelope. `/review-load` and the DORA family remain webhook-only because they require deduplicated event history.
@@ -15,8 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Work Board — server-stored filter presets**: new `work_board_presets` table + CRUD under `/api/v1/work-board/presets`. `PresetDropdown` manages save / apply / delete. Duplicate names return `409 { code: 'preset_exists' }` and surface as a readable inline error.
 - **Work Board — server-side snooze (cross-device)**: new `work_board_snooze` table + `POST/DELETE/GET /api/v1/work-board/snooze(s)`. Snooze durations 1 / 4 / 8 / 24 / 72 / 168 / 720 hours. Snoozed items are filtered out of read endpoints unless `?includeSnoozed=1` is sent.
 - **Work Board — inline PR actions**: `POST /api/v1/work-board/review-action` (`approve` / `request_changes` / `comment`) with optimistic UI, body required for `request_changes` and `comment`. GitHub 403 surfaces as `403 { code: 'scope_required' }` and the UI prompts re-auth with the `repo` scope.
-- **Work Board — keyboard navigation**: `j` / `k` / `↑` / `↓` row nav, `g`-prefix tab switching (`gr` / `gs` / `gi` / `gl` / `gt` / `gd`), `Enter` to open, `.` approve, `x` request changes, `s` / `Shift+S` snooze 24 h / 7 d, `u` unsnooze, `r` re-request review, `/` focus filter, `?` help modal.
-- **Work Board — AI summary card (BYOK)**: `POST /api/v1/work-board/ai-summary` returns `{ headline, bullets[], urgencyScore, model, provider }` across Anthropic, OpenAI, Gemini, OpenRouter, and Local (LMStudio / Ollama). 5-minute per-user cooldown + 5-minute cache via `work_board_cache.query_type = 'ai_summary'`. Gracefully returns `404 { code: 'ai_not_configured' }` when no provider is set; the UI hides the card silently. System prompt + response schema exported from `server/lib/work-board-summary.js`.
+- **Work Board — keyboard navigation**: `j` / `k` / `↑` / `↓` row nav, `Enter` to open, `.` approve, `x` request changes, `s` / `Shift+S` snooze 24 h / 7 d, `u` unsnooze, `r` re-request review, `/` focus filter, `?` help modal. Tabs switch via click or the command palette (a `g`-prefix chord was dropped because `g` is globally bound to Open Dev Toolkit).
+- **Work Board — AI summary card (BYOK)**: `POST /api/v1/work-board/ai-summary` returns `{ headline, bullets[], urgencyScore, model, provider }` across Anthropic, OpenAI, Gemini, OpenRouter, and Local (LMStudio / Ollama). 5-minute per-user cooldown + 5-minute cache via `work_board_cache.query_type = 'ai_summary'`. Silently hidden for any 401/403/404 response (no noisy error banner). System prompt + response schema exported from `server/lib/work-board-summary.js`.
 - **Work Board — Command Palette group**: `⌘K` / `Ctrl+K` on `/work-board` surfaces six navigate-to-tab actions, Regenerate AI summary, and Save current filters as preset.
 - **Background sweeper** (`server/lib/work-board-sweeper.js`): runs every 10 minutes (idempotent start, `timer.unref()`ed for clean shutdown); deletes `work_board_cache` rows with `expires_at < NOW - 1 day` and `work_board_snooze` rows with `until_at < NOW - 1 day`.
 
@@ -534,7 +536,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.5.0...HEAD
+[3.5.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.4.0...v3.5.0
 [3.0.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.5.0...v3.0.0
 [2.5.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.3.1...v2.4.0
