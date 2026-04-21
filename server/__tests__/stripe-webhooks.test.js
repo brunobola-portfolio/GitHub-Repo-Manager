@@ -4,9 +4,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 // Mocks must be declared before importing the SUT
 vi.mock('../db.js', () => {
     const mockPrepare = vi.fn()
+    // better-sqlite3's db.transaction(fn) returns a function that runs `fn`
+    // inside a synchronous BEGIN/COMMIT. For the unit tests we don't exercise
+    // real rollback semantics — we just need the wrapper to invoke `fn` and
+    // propagate throws, which callers then catch and react to (e.g. by
+    // calling forgetIdempotency in the production code).
+    const mockTransaction = vi.fn((fn) => (...args) => fn(...args))
     return {
-        default: { prepare: mockPrepare },
+        default: { prepare: mockPrepare, transaction: mockTransaction },
         __mockPrepare: mockPrepare,
+        __mockTransaction: mockTransaction,
     }
 })
 
@@ -28,11 +35,20 @@ const mockStripeInstance = {
             listLineItems: vi.fn(),
         },
     },
+    customers: {
+        retrieve: vi.fn(async () => ({ email: 'billing@example.com' })),
+    },
 }
 
 vi.mock('../lib/stripe.js', () => ({
     getStripe: vi.fn(() => mockStripeInstance),
     isStripeEnabled: vi.fn(() => true),
+}))
+
+// B2: allow individual tests to override issueLicenseForCheckout behaviour
+// (including forcing it to throw) so we can verify idempotency rollback.
+vi.mock('../lib/license-issuer.js', () => ({
+    issueLicenseForCheckout: vi.fn(async () => ({ licenseKey: 'lic_fake', emailDelivered: true })),
 }))
 
 import { default as db, __mockPrepare as mockPrepare } from '../db.js'
@@ -69,6 +85,8 @@ describe('stripeWebhookHandler', () => {
         mockPrepare.mockReset()
         mockStripeInstance.webhooks.constructEvent.mockReset()
         mockStripeInstance.checkout.sessions.listLineItems.mockReset()
+        mockStripeInstance.customers.retrieve.mockReset()
+        mockStripeInstance.customers.retrieve.mockResolvedValue({ email: 'billing@example.com' })
     })
 
     afterEach(() => { vi.clearAllMocks() })
@@ -345,6 +363,119 @@ describe('stripeWebhookHandler', () => {
         await stripeWebhookHandler(req, res)
         expect(res.statusCode).toBe(200)
         expect(capturedSubId).toBe('sub_rec1')
+    })
+
+    // ------------------------------------------------------------------
+    // B2: idempotency rollback when async license issuance fails
+    // ------------------------------------------------------------------
+    it('B2: when issueLicenseForCheckout throws, the webhook_events row is rolled back (DELETE fires)', async () => {
+        const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+        issueLicenseForCheckout.mockReset()
+        issueLicenseForCheckout.mockRejectedValueOnce(new Error('resend outage + signing key broken'))
+
+        mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+            id: 'evt_license_fail',
+            type: 'checkout.session.completed',
+            data: {
+                object: {
+                    id: 'cs_fail',
+                    metadata: { userId: '99', tier: 'pro' },
+                    customer: 'cus_fail',
+                    subscription: 'sub_fail',
+                },
+            },
+        })
+        mockStripeInstance.checkout.sessions.listLineItems.mockResolvedValue({
+            data: [{ price: { metadata: { tier: 'pro' } } }],
+        })
+
+        let deleteCalledWith = null
+        mockPrepare.mockImplementation((sql) => {
+            if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) {
+                return { run: vi.fn(() => ({ changes: 1 })) }
+            }
+            if (/INSERT INTO user_subscriptions/.test(sql)) {
+                return { run: vi.fn(() => ({ changes: 1 })) }
+            }
+            if (/SELECT email FROM users/.test(sql)) {
+                return { get: vi.fn(() => ({ email: 'user@example.com' })) }
+            }
+            if (/DELETE FROM webhook_events/.test(sql)) {
+                return {
+                    run: vi.fn((...args) => {
+                        deleteCalledWith = args
+                        return { changes: 1 }
+                    }),
+                }
+            }
+            return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+        })
+
+        const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+        await stripeWebhookHandler(req, res)
+        // Endpoint signals failure so Stripe retries (our handler replies 500).
+        expect(res.statusCode).toBe(500)
+        expect(res.body).toEqual({ error: 'License issuance failed' })
+        // Idempotency row was explicitly removed.
+        expect(deleteCalledWith).not.toBeNull()
+        expect(deleteCalledWith[0]).toBe('evt_license_fail')
+        expect(deleteCalledWith[1]).toBe('stripe')
+    })
+
+    it('B2: when the idempotency+subscription transaction throws, the idempotency insert is rolled back by SQLite', async () => {
+        // Simulate a crash in the synchronous subscription upsert. The
+        // production code wraps it in db.transaction() so SQLite rolls back
+        // the INSERT on throw, and then calls forgetIdempotency() as a
+        // belt-and-braces DELETE. Our mock transaction propagates the throw
+        // verbatim; we assert the handler explicitly deletes the row AND
+        // returns 500 so Stripe's retry re-runs the event.
+        const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+        issueLicenseForCheckout.mockReset()
+
+        mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+            id: 'evt_sub_fail',
+            type: 'checkout.session.completed',
+            data: {
+                object: {
+                    id: 'cs_subfail',
+                    metadata: { userId: '11', tier: 'pro' },
+                    customer: 'cus_subfail',
+                    subscription: 'sub_subfail',
+                },
+            },
+        })
+        mockStripeInstance.checkout.sessions.listLineItems.mockResolvedValue({
+            data: [{ price: { metadata: { tier: 'pro' } } }],
+        })
+
+        let deleteCalledWith = null
+        mockPrepare.mockImplementation((sql) => {
+            if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) {
+                return { run: vi.fn(() => ({ changes: 1 })) }
+            }
+            if (/INSERT INTO user_subscriptions/.test(sql)) {
+                // Simulate DB outage on the subscription upsert.
+                return { run: vi.fn(() => { throw new Error('disk i/o error') }) }
+            }
+            if (/DELETE FROM webhook_events/.test(sql)) {
+                return {
+                    run: vi.fn((...args) => {
+                        deleteCalledWith = args
+                        return { changes: 1 }
+                    }),
+                }
+            }
+            return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+        })
+
+        const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+        await stripeWebhookHandler(req, res)
+        expect(res.statusCode).toBe(500)
+        expect(res.body).toEqual({ error: 'Subscription write failed' })
+        expect(deleteCalledWith).not.toBeNull()
+        expect(deleteCalledWith[0]).toBe('evt_sub_fail')
+        // License issuance must NOT have been attempted — we failed before it.
+        expect(issueLicenseForCheckout).not.toHaveBeenCalled()
     })
 
     it('unknown event types return 200 without side effects (forward-compat)', async () => {

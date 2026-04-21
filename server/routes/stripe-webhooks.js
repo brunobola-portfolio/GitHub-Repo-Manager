@@ -54,17 +54,53 @@ export async function stripeWebhookHandler(req, res) {
     // check-then-insert is one atomic statement (no race window between two
     // concurrent retries). `changes` reports 0 when the event id was already
     // present, in which case we reply 200 and skip further processing.
-    try {
+    //
+    // Important: we wrap the idempotency insert + synchronous DB mutations
+    // for this event in a single better-sqlite3 transaction. If any of those
+    // synchronous writes throws, SQLite rolls back the idempotency row so a
+    // Stripe retry will reprocess the event fresh rather than see it as
+    // already-handled. Async side effects (Stripe API calls, license
+    // issuance + email) are performed OUTSIDE the transaction — their order
+    // is: idempotency INSERT + DB writes (inside txn) → email (after commit).
+    // If the async license issuance throws, we remove the idempotency row
+    // explicitly so the next retry can proceed.
+    let deduped = false;
+    const runIdempotentDbWork = db.transaction(() => {
         const result = db.prepare(
             'INSERT OR IGNORE INTO webhook_events (id, source, type, processed_at) VALUES (?, ?, ?, ?)'
         ).run(event.id, 'stripe', event.type, Date.now());
         if (result.changes === 0) {
-            return res.json({ received: true, deduped: true });
+            deduped = true;
+            return null;
         }
+        // Only the sync DB writes that depend on the event body run here. The
+        // per-event-type async handling (Stripe API calls, license emission)
+        // runs outside, after commit. We return a structured "pending" record
+        // the caller uses to drive the async phase.
+        return { kind: 'committed' };
+    });
+
+    let ledgerResult;
+    try {
+        ledgerResult = runIdempotentDbWork();
     } catch (err) {
-        logger.error({ err, eventId: event.id }, 'Stripe webhook: idempotency check failed');
+        logger.error({ err, eventId: event.id }, 'Stripe webhook: idempotency ledger transaction failed');
         return res.status(500).json({ error: 'Webhook ledger failure' });
     }
+
+    if (deduped || ledgerResult === null) {
+        return res.json({ received: true, deduped: true });
+    }
+
+    // Helper: remove the idempotency row when async processing fails, so the
+    // next Stripe retry reprocesses the event rather than being deduped.
+    const forgetIdempotency = () => {
+        try {
+            db.prepare('DELETE FROM webhook_events WHERE id = ? AND source = ?').run(event.id, 'stripe');
+        } catch (cleanupErr) {
+            logger.error({ err: cleanupErr, eventId: event.id }, 'Stripe webhook: failed to roll back idempotency row after async failure');
+        }
+    };
 
     try {
         switch (event.type) {
@@ -75,14 +111,38 @@ export async function stripeWebhookHandler(req, res) {
                 const tier = await reconcileTierFromPrice(stripe, session, rawTier, session.id);
 
                 if (userId) {
-                    db.prepare(`
-                        INSERT INTO user_subscriptions (user_id, tier, stripe_customer_id, stripe_subscription_id, status)
-                        VALUES (?, ?, ?, ?, 'active')
-                        ON CONFLICT(user_id) DO UPDATE SET
-                            tier = ?, stripe_customer_id = ?, stripe_subscription_id = ?, status = 'active', updated_at = datetime('now')
-                    `).run(userId, tier, session.customer, session.subscription, tier, session.customer, session.subscription);
+                    // Synchronous subscription write wrapped in a transaction so
+                    // a failure here rolls back cleanly before we attempt license
+                    // issuance. We run it via db.transaction purely for atomicity
+                    // of the upsert itself — the parent idempotency insert is
+                    // already committed at this point because better-sqlite3
+                    // cannot span async boundaries within a single transaction.
+                    try {
+                        db.transaction(() => {
+                            db.prepare(`
+                                INSERT INTO user_subscriptions (user_id, tier, stripe_customer_id, stripe_subscription_id, status)
+                                VALUES (?, ?, ?, ?, 'active')
+                                ON CONFLICT(user_id) DO UPDATE SET
+                                    tier = ?, stripe_customer_id = ?, stripe_subscription_id = ?, status = 'active', updated_at = datetime('now')
+                            `).run(userId, tier, session.customer, session.subscription, tier, session.customer, session.subscription);
+                        })();
+                    } catch (err) {
+                        logger.error({ err, sessionId: session.id }, 'stripe-webhook: subscription upsert failed — rolling back idempotency');
+                        forgetIdempotency();
+                        return res.status(500).json({ error: 'Subscription write failed' });
+                    }
 
-                    // Issue + email license (best-effort; webhook must still return 200)
+                    // Issue + email license AFTER DB commit. If license issuance
+                    // throws, roll back the idempotency row so Stripe's retry
+                    // can reprocess this event fresh and we get another shot at
+                    // emitting the license. The subscription upsert above is
+                    // idempotent (ON CONFLICT DO UPDATE) so re-running it on
+                    // retry is safe — we don't need to undo it.
+                    //
+                    // Note: issueLicenseForCheckout swallows its OWN errors
+                    // (email failures, signing-key issues) and does not throw
+                    // in those cases — so only an unexpected failure such as
+                    // Stripe customer retrieval timing out will land here.
                     try {
                         const stripeCustomer = await stripe.customers.retrieve(session.customer);
                         const user = db.prepare('SELECT email FROM users WHERE id = ?').get(userId);
@@ -101,8 +161,9 @@ export async function stripeWebhookHandler(req, res) {
                             logger.warn({ userId, sessionId: session.id }, 'stripe-webhook: no email for license delivery');
                         }
                     } catch (err) {
-                        logger.error({ err, sessionId: session.id }, 'stripe-webhook: license issuance failed');
-                        // Do NOT rethrow — return 200 to Stripe regardless
+                        logger.error({ err, sessionId: session.id }, 'stripe-webhook: license issuance failed — rolling back idempotency so Stripe retry can reprocess');
+                        forgetIdempotency();
+                        return res.status(500).json({ error: 'License issuance failed' });
                     }
                 }
                 break;
@@ -155,6 +216,10 @@ export async function stripeWebhookHandler(req, res) {
         res.json({ received: true });
     } catch (err) {
         logger.error({ err, eventType: event.type }, 'Stripe webhook processing error');
+        // Async failure on a non-checkout event path (e.g. failing UPDATE on a
+        // subscription row). Remove the idempotency row so Stripe's retry can
+        // reprocess the event fresh rather than being silently deduped.
+        forgetIdempotency();
         res.status(500).json({ error: 'Webhook processing failed' });
     }
 }
