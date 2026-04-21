@@ -3,6 +3,7 @@ import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, safeError, errorResponse } from '../middleware/auth.js';
 import { validate, teamCreateSchema, teamMemberSchema, teamRepoSchema } from '../lib/validators.js';
+import { validateBody } from '../middleware/validate-request.js';
 import { auditLog } from '../lib/audit.js';
 import { getFeatures } from '../lib/feature-flags.js';
 
@@ -27,8 +28,8 @@ router.get('/', requireAuth, (req, res) => {
 });
 
 // Create a team
-router.post('/', requireAuth, validate(teamCreateSchema), (req, res) => {
-    const { name, description } = req.body;
+router.post('/', requireAuth, validateBody(teamCreateSchema), (req, res) => {
+    const { name, description } = req.validatedBody;
 
     try {
         const result = db.transaction(() => {
@@ -121,8 +122,8 @@ router.get('/:id', requireAuth, (req, res) => {
 });
 
 // Add Member (Simulated Invite by Username)
-router.post('/:id/members', requireAuth, validate(teamMemberSchema), async (req, res) => {
-    const { username } = req.body;
+router.post('/:id/members', requireAuth, validateBody(teamMemberSchema), async (req, res) => {
+    const { username } = req.validatedBody;
 
     try {
         // Check Admin/Owner permission

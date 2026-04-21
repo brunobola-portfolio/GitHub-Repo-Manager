@@ -28,6 +28,7 @@ import express from 'express';
 import db from '../../db.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, isValidGitHubUsername, safeError, errorResponse } from '../../middleware/auth.js';
+import { validateBody } from '../../middleware/validate-request.js';
 import {
     validate,
     createRepoSchema,
@@ -185,19 +186,20 @@ router.get('/:owner/:repo', requireAuth, async (req, res) => {
 });
 
 // Update repository settings
-router.patch('/:owner/:repo', requireAuth, validate(repoUpdateSchema), async (req, res) => {
+router.patch('/:owner/:repo', requireAuth, validateBody(repoUpdateSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
+        const body = req.validatedBody;
 
         const { data } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken, {
             method: 'PATCH',
-            body: JSON.stringify(req.body)
+            body: JSON.stringify(body)
         });
 
-        const action = req.body.archived === true ? 'repo.archive'
-            : req.body.archived === false ? 'repo.unarchive'
+        const action = body.archived === true ? 'repo.archive'
+            : body.archived === false ? 'repo.unarchive'
             : 'repo.update';
-        auditLog(req, action, 'repo', `${owner}/${repo}`, req.body);
+        auditLog(req, action, 'repo', `${owner}/${repo}`, body);
         res.json(data);
     } catch (error) {
         req.log.error({ err: error }, 'Update repo failed');

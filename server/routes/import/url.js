@@ -4,7 +4,8 @@ import db from '../../db.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
 import { githubApi } from '../../lib/github-api.js';
 import logger from '../../lib/logger.js';
-import { validate, importSchema } from '../../lib/validators.js';
+import { importSchema } from '../../lib/validators.js';
+import { validateBody } from '../../middleware/validate-request.js';
 import { assertSafeExternalUrl } from '../../lib/url-validator.js';
 import { updateJobProgress } from './_shared.js';
 
@@ -29,9 +30,9 @@ router.post('/import/validate-url', requireAuth, async (req, res) => {
     }
 });
 
-router.post('/import/url', requireAuth, validate(importSchema), async (req, res) => {
+router.post('/import/url', requireAuth, validateBody(importSchema), async (req, res) => {
     try {
-        const { sourceUrl, credentials, targetOrg, targetName, makePrivate, description } = req.body;
+        const { sourceUrl, credentials, targetOrg, targetName, makePrivate, description } = req.validatedBody;
 
         if (!sourceUrl) {
             return errorResponse(res, 400, 'Source URL is required', 'MISSING_URL');

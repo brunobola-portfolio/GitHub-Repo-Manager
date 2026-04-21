@@ -4,7 +4,9 @@
  * Split from work-board.js so read and write concerns live in focused files.
  */
 import express from 'express';
+import { z } from 'zod';
 import { requireAuth, errorResponse, safeError } from '../middleware/auth.js';
+import { validateBody, validateParams } from '../middleware/validate-request.js';
 import * as snoozeLib from '../lib/work-board-snooze.js';
 import * as presets from '../lib/work-board-presets.js';
 import { invalidate as invalidateCache, getCached as getCacheRow, putCached as putCacheRow } from '../lib/work-board-cache.js';
@@ -14,29 +16,69 @@ import * as aggregations from '../lib/event-aggregations.js';
 
 const router = express.Router();
 
-const VALID_SNOOZE_HOURS = new Set([1, 4, 8, 24, 72, 168, 720]);
-const VALID_ITEM_TYPES = new Set(['pr', 'issue']);
+const VALID_SNOOZE_HOURS = [1, 4, 8, 24, 72, 168, 720];
+const VALID_ITEM_TYPES = ['pr', 'issue'];
+const REPO_FULL_NAME_RE = /^[^/]+\/[^/]+$/;
 
-function validateSnoozeBody(body) {
-    const { repoFullName, itemType, itemNumber, hours } = body || {};
-    if (typeof repoFullName !== 'string' || !/^[^/]+\/[^/]+$/.test(repoFullName)) return 'invalid repoFullName';
-    if (!VALID_ITEM_TYPES.has(itemType)) return 'itemType must be "pr" or "issue"';
-    if (!Number.isInteger(itemNumber) || itemNumber <= 0) return 'itemNumber must be a positive integer';
-    if (hours !== undefined && !VALID_SNOOZE_HOURS.has(Number(hours))) {
-        return `hours must be one of ${[...VALID_SNOOZE_HOURS].join(', ')}`;
+// --- Zod schemas ---
+
+const repoFullNameSchema = z.string().min(1).max(200).regex(REPO_FULL_NAME_RE, 'must be "owner/repo"');
+const itemTypeSchema = z.enum(VALID_ITEM_TYPES);
+const positiveIntSchema = z.number().int().positive();
+
+const snoozeBodySchema = z.object({
+    repoFullName: repoFullNameSchema,
+    itemType: itemTypeSchema,
+    itemNumber: positiveIntSchema,
+    hours: z.union([z.number(), z.string()]).optional().transform(v => v === undefined ? undefined : Number(v))
+        .refine(v => v === undefined || VALID_SNOOZE_HOURS.includes(v), {
+            message: `must be one of ${VALID_SNOOZE_HOURS.join(', ')}`,
+        }),
+});
+
+const unsnoozeBodySchema = z.object({
+    repoFullName: repoFullNameSchema,
+    itemType: itemTypeSchema,
+    itemNumber: positiveIntSchema,
+});
+
+const reviewActionBodySchema = z.object({
+    repoFullName: repoFullNameSchema,
+    prNumber: positiveIntSchema,
+    action: z.enum(['approve', 'request_changes', 'comment']),
+    body: z.string().max(65536).optional(),
+}).superRefine((val, ctx) => {
+    if ((val.action === 'request_changes' || val.action === 'comment')
+        && (typeof val.body !== 'string' || val.body.trim().length === 0)) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['body'],
+            message: `action "${val.action}" requires a body`,
+        });
     }
-    return null;
-}
+});
+
+const presetCreateBodySchema = z.object({
+    name: z.string().trim().min(1, 'name required').max(100, 'name must be at most 100 chars'),
+    filters: z.record(z.string(), z.unknown()).optional().default({}),
+});
+
+const presetUpdateBodySchema = z.object({
+    name: z.string().trim().min(1, 'name required').max(100, 'name must be at most 100 chars').optional(),
+    filters: z.record(z.string(), z.unknown()).optional(),
+});
+
+const presetIdParamsSchema = z.object({
+    id: z.coerce.number().int().positive(),
+});
 
 function cacheKeyForItemType(itemType) {
     return itemType === 'pr' ? 'my_reviews' : 'my_issues';
 }
 
-router.post('/snooze', requireAuth, (req, res) => {
+router.post('/snooze', requireAuth, validateBody(snoozeBodySchema), (req, res) => {
     try {
-        const err = validateSnoozeBody(req.body);
-        if (err) return errorResponse(res, 400, err);
-        const { repoFullName, itemType, itemNumber, hours = 24 } = req.body;
+        const { repoFullName, itemType, itemNumber, hours = 24 } = req.validatedBody;
         const result = snoozeLib.snooze({
             userId: req.session.userId, repoFullName, itemType, itemNumber, hours: Number(hours),
         });
@@ -47,12 +89,9 @@ router.post('/snooze', requireAuth, (req, res) => {
     }
 });
 
-router.delete('/snooze', requireAuth, (req, res) => {
+router.delete('/snooze', requireAuth, validateBody(unsnoozeBodySchema), (req, res) => {
     try {
-        const { repoFullName, itemType, itemNumber } = req.body || {};
-        if (typeof repoFullName !== 'string' || !/^[^/]+\/[^/]+$/.test(repoFullName)) return errorResponse(res, 400, 'invalid repoFullName');
-        if (!VALID_ITEM_TYPES.has(itemType)) return errorResponse(res, 400, 'itemType must be "pr" or "issue"');
-        if (!Number.isInteger(itemNumber) || itemNumber <= 0) return errorResponse(res, 400, 'itemNumber must be a positive integer');
+        const { repoFullName, itemType, itemNumber } = req.validatedBody;
         const removed = snoozeLib.unsnooze({
             userId: req.session.userId, repoFullName, itemType, itemNumber,
         });
@@ -74,21 +113,10 @@ router.get('/snoozes', requireAuth, (req, res) => {
 
 const EVENT_MAP = { approve: 'APPROVE', request_changes: 'REQUEST_CHANGES', comment: 'COMMENT' };
 
-router.post('/review-action', requireAuth, async (req, res) => {
+router.post('/review-action', requireAuth, validateBody(reviewActionBodySchema), async (req, res) => {
     try {
-        const { repoFullName, prNumber, action, body } = req.body || {};
-        if (typeof repoFullName !== 'string' || !/^[^/]+\/[^/]+$/.test(repoFullName)) {
-            return errorResponse(res, 400, 'invalid repoFullName');
-        }
-        if (!Number.isInteger(prNumber) || prNumber <= 0) {
-            return errorResponse(res, 400, 'prNumber must be a positive integer');
-        }
+        const { repoFullName, prNumber, action, body } = req.validatedBody;
         const event = EVENT_MAP[action];
-        if (!event) return errorResponse(res, 400, 'action must be approve | request_changes | comment');
-        if ((event === 'REQUEST_CHANGES' || event === 'COMMENT')
-            && (typeof body !== 'string' || body.trim().length === 0)) {
-            return errorResponse(res, 400, `action "${action}" requires a body`);
-        }
 
         const payload = { event };
         if (typeof body === 'string' && body.trim().length > 0) payload.body = body.trim();
@@ -123,9 +151,9 @@ router.get('/presets', requireAuth, (req, res) => {
     catch (e) { errorResponse(res, 500, safeError(e, 'Failed to list presets')); }
 });
 
-router.post('/presets', requireAuth, (req, res) => {
+router.post('/presets', requireAuth, validateBody(presetCreateBodySchema), (req, res) => {
     try {
-        const { name, filters } = req.body || {};
+        const { name, filters } = req.validatedBody;
         const result = presets.createPreset({ userId: req.session.userId, name, filters });
         res.json({ data: result });
     } catch (e) {
@@ -134,21 +162,25 @@ router.post('/presets', requireAuth, (req, res) => {
     }
 });
 
-router.patch('/presets/:id', requireAuth, (req, res) => {
-    try {
-        const id = Number.parseInt(req.params.id, 10);
-        if (!Number.isInteger(id) || id <= 0) return errorResponse(res, 400, 'invalid id');
-        const { name, filters } = req.body || {};
-        const changed = presets.updatePreset({ userId: req.session.userId, id, name, filters });
-        if (!changed) return errorResponse(res, 404, 'preset not found');
-        res.json({ data: { updated: changed } });
-    } catch (e) { errorResponse(res, 400, e.message); }
-});
+router.patch(
+    '/presets/:id',
+    requireAuth,
+    validateParams(presetIdParamsSchema),
+    validateBody(presetUpdateBodySchema),
+    (req, res) => {
+        try {
+            const { id } = req.validatedParams;
+            const { name, filters } = req.validatedBody;
+            const changed = presets.updatePreset({ userId: req.session.userId, id, name, filters });
+            if (!changed) return errorResponse(res, 404, 'preset not found');
+            res.json({ data: { updated: changed } });
+        } catch (e) { errorResponse(res, 400, e.message); }
+    },
+);
 
-router.delete('/presets/:id', requireAuth, (req, res) => {
+router.delete('/presets/:id', requireAuth, validateParams(presetIdParamsSchema), (req, res) => {
     try {
-        const id = Number.parseInt(req.params.id, 10);
-        if (!Number.isInteger(id) || id <= 0) return errorResponse(res, 400, 'invalid id');
+        const { id } = req.validatedParams;
         const removed = presets.deletePreset({ userId: req.session.userId, id });
         if (!removed) return errorResponse(res, 404, 'preset not found');
         res.json({ data: { removed } });

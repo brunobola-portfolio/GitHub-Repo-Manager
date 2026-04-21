@@ -82,18 +82,25 @@ vi.mock('../db.js', () => ({
 }))
 
 // lib/validators is used by the teams router
-vi.mock('../lib/validators.js', () => ({
-    validate: () => (req, res, next) => next(),
-    teamCreateSchema: {},
-    teamMemberSchema: {},
-    teamRepoSchema: {},
-    aiChatSchema: {},
-    aiSuggestSchema: {},
-    aiIndexSchema: {},
-    aiIssueToPlanSchema: {},
-    migrationSizeStrategySchema: {},
-    migrationDescriptionSchema: {},
-}))
+// teams.js migrated to the new validateBody middleware, which calls
+// schema.safeParse(); stub the handful of schemas it consumes with a
+// permissive Zod schema so validation is a no-op in these tests.
+vi.mock('../lib/validators.js', async () => {
+    const { z } = await import('zod')
+    const permissive = z.any()
+    return {
+        validate: () => (req, res, next) => next(),
+        teamCreateSchema: permissive,
+        teamMemberSchema: permissive,
+        teamRepoSchema: permissive,
+        aiChatSchema: {},
+        aiSuggestSchema: {},
+        aiIndexSchema: {},
+        aiIssueToPlanSchema: {},
+        migrationSizeStrategySchema: {},
+        migrationDescriptionSchema: {},
+    }
+})
 
 // ---------------------------------------------------------------------------
 // Helpers
