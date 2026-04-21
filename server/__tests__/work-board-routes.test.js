@@ -18,6 +18,14 @@ const mockMeanTimeToRecovery = vi.fn(() => ({ sampleSize: 0, medianHours: null, 
 const mockListTechDebtIssues = vi.fn(() => [])
 const mockTechDebtHotspots = vi.fn(() => [])
 
+// Cache + live-fetch mocks (Task 4 additions)
+const mockGetCached = vi.fn(() => null)
+const mockPutCached = vi.fn()
+const mockFetchMyPendingReviews = vi.fn(async () => ({ items: [], totalCount: 0 }))
+const mockFetchStalePRs = vi.fn(async () => ({ items: [], totalCount: 0 }))
+const mockFetchMyOpenIssues = vi.fn(async () => ({ items: [], totalCount: 0 }))
+const mockFetchTechDebtIssues = vi.fn(async () => ({ items: [], totalCount: 0 }))
+
 vi.mock('../lib/event-aggregations.js', () => ({
     listMyPendingReviews: (...a) => mockListMyPendingReviews(...a),
     listStalePRs: (...a) => mockListStalePRs(...a),
@@ -29,6 +37,21 @@ vi.mock('../lib/event-aggregations.js', () => ({
     meanTimeToRecovery: (...a) => mockMeanTimeToRecovery(...a),
     listTechDebtIssues: (...a) => mockListTechDebtIssues(...a),
     techDebtHotspots: (...a) => mockTechDebtHotspots(...a),
+}))
+
+vi.mock('../lib/work-board-cache.js', () => ({
+    getCached: (...a) => mockGetCached(...a),
+    putCached: (...a) => mockPutCached(...a),
+    invalidate: vi.fn(),
+    purgeExpired: vi.fn(),
+}))
+
+vi.mock('../lib/work-board-github.js', () => ({
+    fetchMyPendingReviews: (...a) => mockFetchMyPendingReviews(...a),
+    fetchStalePRs: (...a) => mockFetchStalePRs(...a),
+    fetchMyOpenIssues: (...a) => mockFetchMyOpenIssues(...a),
+    fetchTechDebtIssues: (...a) => mockFetchTechDebtIssues(...a),
+    DEFAULT_DEBT_LABELS: [],
 }))
 
 vi.mock('../middleware/auth.js', () => ({
@@ -108,6 +131,12 @@ beforeEach(() => {
     mockMeanTimeToRecovery.mockReturnValue({ sampleSize: 0, medianHours: null, p50: null, p90: null, unresolved: 0 })
     mockListTechDebtIssues.mockReturnValue([])
     mockTechDebtHotspots.mockReturnValue([])
+    mockGetCached.mockReturnValue(null)
+    mockPutCached.mockReset()
+    mockFetchMyPendingReviews.mockResolvedValue({ items: [], totalCount: 0 })
+    mockFetchStalePRs.mockResolvedValue({ items: [], totalCount: 0 })
+    mockFetchMyOpenIssues.mockResolvedValue({ items: [], totalCount: 0 })
+    mockFetchTechDebtIssues.mockResolvedValue({ items: [], totalCount: 0 })
 })
 
 // ---------------------------------------------------------------------------
@@ -382,5 +411,109 @@ describe('GET /api/v1/work-board/tech-debt', () => {
         await request(makeApp('pro')).get('/api/v1/work-board/tech-debt?labels=debt,slop,cleanup')
         const firstArg = mockListTechDebtIssues.mock.calls[0][0]
         expect(firstArg.labels).toEqual(['debt', 'slop', 'cleanup'])
+    })
+})
+
+// ---------------------------------------------------------------------------
+// live fallback — applied to /my-reviews as representative endpoint.
+// Other read endpoints inherit the behaviour via the shared resolveTabData()
+// helper; integration-level coverage here keeps the regression surface tight.
+// ---------------------------------------------------------------------------
+
+describe('live fallback (/my-reviews)', () => {
+    it('cache hit short-circuits live fetcher', async () => {
+        const payload = [
+            { repoFullName: 'org/repo', prNumber: 42, title: 'Cached', authorLogin: 'alice', requestedAt: new Date().toISOString(), ageHours: 1 },
+        ]
+        const fetchedAt = new Date(Date.now() - 60_000)
+        const expiresAt = new Date(Date.now() + 240_000)
+        mockGetCached.mockReturnValue({ payload, etag: null, fetchedAt, expiresAt, isFresh: true })
+
+        const res = await request(makeApp('free')).get('/api/v1/work-board/my-reviews')
+        expect(res.status).toBe(200)
+        expect(res.body.data).toEqual(payload)
+        expect(res.body.meta.source).toBe('cache')
+        expect(mockFetchMyPendingReviews).not.toHaveBeenCalled()
+        expect(mockPutCached).not.toHaveBeenCalled()
+    })
+
+    it('cache miss + empty webhook → calls live fetcher and caches result', async () => {
+        mockListMyPendingReviews.mockReturnValue([])
+        const liveItems = [
+            { repoFullName: 'org/repo', prNumber: 7, title: 'Live', authorLogin: 'bob', requestedAt: new Date().toISOString(), ageHours: 3 },
+        ]
+        mockFetchMyPendingReviews.mockResolvedValue({ items: liveItems, totalCount: 1 })
+
+        const res = await request(makeApp('free')).get('/api/v1/work-board/my-reviews')
+        expect(res.status).toBe(200)
+        expect(res.body.data).toEqual(liveItems)
+        expect(res.body.meta.source).toBe('live')
+        expect(mockFetchMyPendingReviews).toHaveBeenCalledTimes(1)
+        expect(mockPutCached).toHaveBeenCalledTimes(1)
+        // First positional: userId=1 (from makeApp session)
+        expect(mockPutCached.mock.calls[0][0]).toBe(1)
+        expect(mockPutCached.mock.calls[0][1]).toBe('my_reviews')
+    })
+
+    it('cache miss + non-empty webhook → returns webhook data with source=merged', async () => {
+        const webhookItems = [
+            { repoFullName: 'org/repo', prNumber: 1, title: 'Webhook', authorLogin: 'alice', requestedAt: new Date().toISOString(), ageHours: 2 },
+        ]
+        mockListMyPendingReviews.mockReturnValue(webhookItems)
+        mockFetchMyPendingReviews.mockResolvedValue({
+            items: [{ repoFullName: 'org/repo', prNumber: 2, title: 'Live', authorLogin: 'bob', requestedAt: new Date().toISOString(), ageHours: 5 }],
+            totalCount: 1,
+        })
+
+        const res = await request(makeApp('free')).get('/api/v1/work-board/my-reviews')
+        expect(res.status).toBe(200)
+        expect(res.body.data).toEqual(webhookItems)
+        expect(res.body.meta.source).toBe('merged')
+        expect(mockFetchMyPendingReviews).toHaveBeenCalledTimes(1)
+    })
+
+    it('fetcher throws → returns webhook data with source=webhook and liveFetchError', async () => {
+        const webhookItems = [
+            { repoFullName: 'org/repo', prNumber: 9, title: 'WH', authorLogin: 'carol', requestedAt: new Date().toISOString(), ageHours: 1 },
+        ]
+        mockListMyPendingReviews.mockReturnValue(webhookItems)
+        mockFetchMyPendingReviews.mockRejectedValue(new Error('rate_limit_exceeded'))
+
+        const res = await request(makeApp('free')).get('/api/v1/work-board/my-reviews')
+        expect(res.status).toBe(200)
+        expect(res.body.data).toEqual(webhookItems)
+        expect(res.body.meta.source).toBe('webhook')
+        expect(res.body.meta.liveFetchError).toBe('rate_limit_exceeded')
+        expect(mockPutCached).not.toHaveBeenCalled()
+    })
+})
+
+// ---------------------------------------------------------------------------
+// webhook-only envelope — /review-load and /dora expose requiresWebhook.
+// ---------------------------------------------------------------------------
+
+describe('webhook-only envelope', () => {
+    it('/review-load sets requiresWebhook=true when data is empty', async () => {
+        mockReviewLoadByReviewer.mockReturnValue([])
+        const res = await request(makeApp('pro')).get('/api/v1/work-board/review-load')
+        expect(res.status).toBe(200)
+        expect(res.body.meta.source).toBe('webhook')
+        expect(res.body.meta.requiresWebhook).toBe(true)
+    })
+
+    it('/review-load sets requiresWebhook=false when data is present', async () => {
+        mockReviewLoadByReviewer.mockReturnValue([
+            { reviewerLogin: 'alice', reviewsSubmitted: 5, reviewsPending: 1 },
+        ])
+        const res = await request(makeApp('pro')).get('/api/v1/work-board/review-load')
+        expect(res.status).toBe(200)
+        expect(res.body.meta.requiresWebhook).toBe(false)
+    })
+
+    it('/dora sets requiresWebhook=true when all metrics are empty', async () => {
+        const res = await request(makeApp('enterprise')).get('/api/v1/work-board/dora')
+        expect(res.status).toBe(200)
+        expect(res.body.meta.source).toBe('webhook')
+        expect(res.body.meta.requiresWebhook).toBe(true)
     })
 })
