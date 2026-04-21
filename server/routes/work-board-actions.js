@@ -6,6 +6,7 @@
 import express from 'express';
 import { requireAuth, errorResponse, safeError } from '../middleware/auth.js';
 import * as snoozeLib from '../lib/work-board-snooze.js';
+import * as presets from '../lib/work-board-presets.js';
 import { invalidate as invalidateCache } from '../lib/work-board-cache.js';
 import { githubApi } from '../lib/github-api.js';
 
@@ -113,6 +114,43 @@ router.post('/review-action', requireAuth, async (req, res) => {
     } catch (e) {
         return errorResponse(res, 500, safeError(e, 'Failed to submit review'));
     }
+});
+
+router.get('/presets', requireAuth, (req, res) => {
+    try { res.json({ data: presets.listPresets(req.session.userId) }); }
+    catch (e) { errorResponse(res, 500, safeError(e, 'Failed to list presets')); }
+});
+
+router.post('/presets', requireAuth, (req, res) => {
+    try {
+        const { name, filters } = req.body || {};
+        const result = presets.createPreset({ userId: req.session.userId, name, filters });
+        res.json({ data: result });
+    } catch (e) {
+        if (/UNIQUE|constraint/i.test(e.message)) return errorResponse(res, 409, 'Preset name already exists', 'preset_exists');
+        return errorResponse(res, 400, e.message);
+    }
+});
+
+router.patch('/presets/:id', requireAuth, (req, res) => {
+    try {
+        const id = Number.parseInt(req.params.id, 10);
+        if (!Number.isInteger(id) || id <= 0) return errorResponse(res, 400, 'invalid id');
+        const { name, filters } = req.body || {};
+        const changed = presets.updatePreset({ userId: req.session.userId, id, name, filters });
+        if (!changed) return errorResponse(res, 404, 'preset not found');
+        res.json({ data: { updated: changed } });
+    } catch (e) { errorResponse(res, 400, e.message); }
+});
+
+router.delete('/presets/:id', requireAuth, (req, res) => {
+    try {
+        const id = Number.parseInt(req.params.id, 10);
+        if (!Number.isInteger(id) || id <= 0) return errorResponse(res, 400, 'invalid id');
+        const removed = presets.deletePreset({ userId: req.session.userId, id });
+        if (!removed) return errorResponse(res, 404, 'preset not found');
+        res.json({ data: { removed } });
+    } catch (e) { errorResponse(res, 500, safeError(e, 'Failed to delete preset')); }
 });
 
 export default router;

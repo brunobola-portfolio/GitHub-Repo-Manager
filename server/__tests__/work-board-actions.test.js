@@ -218,3 +218,69 @@ describe('POST /api/v1/work-board/review-action', () => {
         expect(res.status).toBe(400);
     });
 });
+
+vi.mock('../lib/work-board-presets.js', () => ({
+    createPreset: vi.fn(() => ({ id: 1 })),
+    listPresets: vi.fn(() => []),
+    updatePreset: vi.fn(() => 1),
+    deletePreset: vi.fn(() => 1),
+}));
+const presetsLib = await import('../lib/work-board-presets.js');
+
+describe('Presets CRUD', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('GET /presets returns the list', async () => {
+        presetsLib.listPresets.mockReturnValueOnce([{ id: 1, name: 'A', filters: {} }]);
+        const res = await request(makeApp()).get('/api/v1/work-board/presets');
+        expect(res.status).toBe(200);
+        expect(res.body.data).toHaveLength(1);
+        expect(presetsLib.listPresets).toHaveBeenCalledWith(1);
+    });
+
+    it('POST /presets creates a preset and returns id', async () => {
+        const res = await request(makeApp()).post('/api/v1/work-board/presets')
+            .send({ name: 'My team', filters: { repos: ['a'] } });
+        expect(res.status).toBe(200);
+        expect(res.body.data.id).toBe(1);
+        expect(presetsLib.createPreset).toHaveBeenCalledWith({ userId: 1, name: 'My team', filters: { repos: ['a'] } });
+    });
+
+    it('POST /presets returns 409 on duplicate name', async () => {
+        presetsLib.createPreset.mockImplementationOnce(() => { throw new Error('UNIQUE constraint failed: work_board_presets.user_id, work_board_presets.name'); });
+        const res = await request(makeApp()).post('/api/v1/work-board/presets').send({ name: 'dup', filters: {} });
+        expect(res.status).toBe(409);
+        expect(res.body.code).toBe('preset_exists');
+    });
+
+    it('POST /presets returns 400 on validation error', async () => {
+        presetsLib.createPreset.mockImplementationOnce(() => { throw new Error('name required'); });
+        const res = await request(makeApp()).post('/api/v1/work-board/presets').send({ name: '', filters: {} });
+        expect(res.status).toBe(400);
+    });
+
+    it('PATCH /presets/:id updates and returns { updated }', async () => {
+        const res = await request(makeApp()).patch('/api/v1/work-board/presets/7').send({ name: 'B' });
+        expect(res.status).toBe(200);
+        expect(res.body.data.updated).toBe(1);
+        expect(presetsLib.updatePreset).toHaveBeenCalledWith({ userId: 1, id: 7, name: 'B', filters: undefined });
+    });
+
+    it('PATCH /presets/:id returns 404 when nothing updated', async () => {
+        presetsLib.updatePreset.mockReturnValueOnce(0);
+        const res = await request(makeApp()).patch('/api/v1/work-board/presets/7').send({ name: 'B' });
+        expect(res.status).toBe(404);
+    });
+
+    it('DELETE /presets/:id removes and returns { removed }', async () => {
+        const res = await request(makeApp()).delete('/api/v1/work-board/presets/7');
+        expect(res.status).toBe(200);
+        expect(res.body.data.removed).toBe(1);
+    });
+
+    it('DELETE /presets/:id returns 404 when nothing removed', async () => {
+        presetsLib.deletePreset.mockReturnValueOnce(0);
+        const res = await request(makeApp()).delete('/api/v1/work-board/presets/7');
+        expect(res.status).toBe(404);
+    });
+});
