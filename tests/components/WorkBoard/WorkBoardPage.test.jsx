@@ -107,6 +107,12 @@ function renderPage(props = {}) {
 
 beforeEach(() => {
     vi.clearAllMocks()
+    // Mock fetch so AISummaryCard (which POSTs on mount) renders as null silently
+    global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({ code: 'ai_not_configured' }),
+    })
     mockUseMyPendingReviews.mockReturnValue({ data: MOCK_REVIEWS, loading: false, error: null, refresh: vi.fn() })
     mockUseStalePRs.mockReturnValue({ data: MOCK_STALE, loading: false, error: null, refresh: vi.fn() })
     mockUseMyOpenIssues.mockReturnValue({ data: MOCK_ISSUES, loading: false, error: null, refresh: vi.fn() })

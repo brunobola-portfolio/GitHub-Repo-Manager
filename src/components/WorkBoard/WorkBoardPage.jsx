@@ -33,6 +33,7 @@ import { useReviewAction } from '../../hooks/useReviewAction'
 import { useContextShortcut } from '../../hooks/useKeyboardShortcuts'
 import { useModal } from '../../hooks/useModal'
 import { KeyboardHelpModal } from './KeyboardHelpModal'
+import { AISummaryCard } from './AISummaryCard'
 import { MOCK_MODE, API_BASE_URL } from '../../config'
 
 // ---------------------------------------------------------------------------
@@ -1069,6 +1070,9 @@ export function WorkBoardPage({ repoCount = 0 }) {
                     </button>
                 </div>
             </div>
+
+            {/* AI summary card — silently hides when ai_not_configured */}
+            <AISummaryCard />
 
             {/* KPI row */}
             <KpiRow
