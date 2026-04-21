@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Work Board — zero-config live data source**: read endpoints (`/my-reviews`, `/my-issues`, `/stale-prs`, `/tech-debt`) now fall back to live GitHub Search when webhook data is empty or stale, so the board is usable without registering a webhook first. Results cached for 5 minutes in `work_board_cache`; ETag revalidation handled internally by `githubApi`. Every response carries a `meta: { source, fetchedAt, cacheExpiresAt, liveFetchError, liveSkipReason, requiresWebhook }` envelope. `/review-load` and the DORA family remain webhook-only because they require deduplicated event history.
+- **Work Board — auto-refresh**: 60-second polling across the four KPI hooks with a Page Visibility guard (pauses when the tab is hidden, re-fetches immediately on re-visibility). Manual **Refresh** button in the header, "Updated N s ago" indicator reflecting the oldest `lastFetchedAt`, and `refreshIntervalMs: 0` to disable polling.
+- **Work Board — filter bar with URL sync**: repo / author / label multi-selects, age-bucket single-select (`24h` / `7d` / `30d`), and Hide-snoozed toggle, all round-trip through the URL (`?tab=…&repos=…&authors=…&labels=…&age=…&snoozed=…`) so views are shareable and bookmarkable.
+- **Work Board — server-stored filter presets**: new `work_board_presets` table + CRUD under `/api/v1/work-board/presets`. `PresetDropdown` manages save / apply / delete. Duplicate names return `409 { code: 'preset_exists' }` and surface as a readable inline error.
+- **Work Board — server-side snooze (cross-device)**: new `work_board_snooze` table + `POST/DELETE/GET /api/v1/work-board/snooze(s)`. Snooze durations 1 / 4 / 8 / 24 / 72 / 168 / 720 hours. Snoozed items are filtered out of read endpoints unless `?includeSnoozed=1` is sent.
+- **Work Board — inline PR actions**: `POST /api/v1/work-board/review-action` (`approve` / `request_changes` / `comment`) with optimistic UI, body required for `request_changes` and `comment`. GitHub 403 surfaces as `403 { code: 'scope_required' }` and the UI prompts re-auth with the `repo` scope.
+- **Work Board — keyboard navigation**: `j` / `k` / `↑` / `↓` row nav, `g`-prefix tab switching (`gr` / `gs` / `gi` / `gl` / `gt` / `gd`), `Enter` to open, `.` approve, `x` request changes, `s` / `Shift+S` snooze 24 h / 7 d, `u` unsnooze, `r` re-request review, `/` focus filter, `?` help modal.
+- **Work Board — AI summary card (BYOK)**: `POST /api/v1/work-board/ai-summary` returns `{ headline, bullets[], urgencyScore, model, provider }` across Anthropic, OpenAI, Gemini, OpenRouter, and Local (LMStudio / Ollama). 5-minute per-user cooldown + 5-minute cache via `work_board_cache.query_type = 'ai_summary'`. Gracefully returns `404 { code: 'ai_not_configured' }` when no provider is set; the UI hides the card silently. System prompt + response schema exported from `server/lib/work-board-summary.js`.
+- **Work Board — Command Palette group**: `⌘K` / `Ctrl+K` on `/work-board` surfaces six navigate-to-tab actions, Regenerate AI summary, and Save current filters as preset.
+- **Background sweeper** (`server/lib/work-board-sweeper.js`): runs every 10 minutes (idempotent start, `timer.unref()`ed for clean shutdown); deletes `work_board_cache` rows with `expires_at < NOW - 1 day` and `work_board_snooze` rows with `until_at < NOW - 1 day`.
+
+### Fixed
+
+- `/api/v1/work-board/tech-debt` now handles empty webhook data gracefully by falling back to a live GitHub Search (previously returned an empty list and left users guessing whether the query matched).
+- `issue_events` table now persists `title` (migration 009) so Work Board rows no longer need a second round-trip to GitHub to render.
+
 ## [3.4.0] - 2026-04-20
 
 ### Added
