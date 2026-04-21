@@ -30,6 +30,7 @@ export function getCached(userId, queryType) {
 }
 
 export function putCached(userId, queryType, payload, etag, ttlSeconds = 300) {
+    if (payload === undefined) throw new TypeError('putCached: payload must not be undefined');
     const now = new Date();
     const expires = new Date(now.getTime() + ttlSeconds * 1000);
     db.prepare(`
@@ -44,7 +45,7 @@ export function putCached(userId, queryType, payload, etag, ttlSeconds = 300) {
 }
 
 export function invalidate(userId, queryType) {
-    if (queryType) {
+    if (queryType !== undefined && queryType !== null) {
         db.prepare('DELETE FROM work_board_cache WHERE user_id = ? AND query_type = ?').run(userId, queryType);
     } else {
         db.prepare('DELETE FROM work_board_cache WHERE user_id = ?').run(userId);

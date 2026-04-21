@@ -75,4 +75,27 @@ describe('work-board-cache', () => {
         expect(deleted).toBe(1);
         expect(testDb.prepare('SELECT COUNT(*) as n FROM work_board_cache').get().n).toBe(1);
     });
+
+    it('isFresh reflects expires_at vs. now (both sides of boundary)', () => {
+        const future = new Date(Date.now() + 60_000).toISOString();
+        const past = new Date(Date.now() - 60_000).toISOString();
+        testDb.prepare(`INSERT INTO work_board_cache (user_id, query_type, payload, etag, fetched_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)`)
+            .run(1, 'future', '[]', null, new Date().toISOString(), future);
+        testDb.prepare(`INSERT INTO work_board_cache (user_id, query_type, payload, etag, fetched_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)`)
+            .run(1, 'past', '[]', null, new Date().toISOString(), past);
+        expect(getCached(1, 'future').isFresh).toBe(true);
+        expect(getCached(1, 'past').isFresh).toBe(false);
+    });
+
+    it('invalidate with empty string queryType does not mass-delete', () => {
+        putCached(1, 'my_reviews', [], null, 300);
+        putCached(1, 'my_issues', [], null, 300);
+        invalidate(1, '');
+        expect(getCached(1, 'my_reviews')).not.toBeNull();
+        expect(getCached(1, 'my_issues')).not.toBeNull();
+    });
+
+    it('putCached throws TypeError when payload is undefined', () => {
+        expect(() => putCached(1, 'x', undefined, null, 300)).toThrow(TypeError);
+    });
 });
