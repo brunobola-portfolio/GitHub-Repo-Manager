@@ -26,6 +26,7 @@ import {
 import { useRelativeTime } from '../../hooks/useRelativeTime'
 import { useUrlParams } from '../../hooks/useUrlParams'
 import { WorkBoardFilterBar } from './filters/WorkBoardFilterBar'
+import { FilterProvider, useWorkBoardFilters, applyFilters } from './filters/filter-context'
 import { MOCK_MODE, API_BASE_URL } from '../../config'
 
 // ---------------------------------------------------------------------------
@@ -138,6 +139,7 @@ function UpsellCard({ tier }) {
 
 function MyReviewsTab() {
     const { data, loading, error, refresh } = useMyPendingReviews()
+    const { params } = useWorkBoardFilters()
 
     if (loading) return <SkeletonList count={5} />
     if (error) {
@@ -149,7 +151,7 @@ function MyReviewsTab() {
         )
     }
 
-    const reviews = data || []
+    const reviews = applyFilters(data || [], params)
     if (reviews.length === 0) {
         return (
             <>
@@ -207,6 +209,7 @@ function MyReviewsTab() {
 function StalePRsTab() {
     const [staleAfterDays, setStaleAfterDays] = useState(7)
     const { data, loading, error, refresh } = useStalePRs({ staleAfterDays })
+    const { params } = useWorkBoardFilters()
 
     if (loading) return <SkeletonList count={6} />
     if (error) {
@@ -218,7 +221,7 @@ function StalePRsTab() {
         )
     }
 
-    const prs = data || []
+    const prs = applyFilters(data || [], params)
 
     return (
         <>
@@ -292,6 +295,7 @@ function StalePRsTab() {
 
 function MyIssuesTab() {
     const { data, loading, error, refresh } = useMyOpenIssues()
+    const { params } = useWorkBoardFilters()
 
     if (loading) return <SkeletonList count={4} />
     if (error) {
@@ -303,7 +307,7 @@ function MyIssuesTab() {
         )
     }
 
-    const issues = data || []
+    const issues = applyFilters(data || [], params)
     if (issues.length === 0) {
         return (
             <>
@@ -653,6 +657,7 @@ function ReviewLoadTab() {
 
 function TechDebtTab() {
     const { data, loading, error, refresh } = useTechDebt()
+    const { params } = useWorkBoardFilters()
 
     if (loading) return <SkeletonList count={5} />
     if (error) {
@@ -664,7 +669,7 @@ function TechDebtTab() {
         )
     }
 
-    const items = data?.items || []
+    const items = applyFilters(data?.items || [], params)
     const hotspots = data?.hotspots || []
 
     if (items.length === 0) {
@@ -902,12 +907,6 @@ export function WorkBoardPage({ repoCount = 0 }) {
     const availableAuthors = Array.from(new Set(allItems.map(i => i.authorLogin).filter(Boolean))).sort()
     const availableLabels = Array.from(new Set(allItems.flatMap(i => i.labels || []).filter(Boolean))).sort()
 
-    /* TODO(task 15 follow-up): plumb filters into each tab — currently the filter
-       bar syncs to the URL and renders chips for visibility, but the tab components
-       fetch their own data internally and don't yet honour `params.repos/authors/
-       labels/age/snoozed`. This requires lifting data-fetching up or threading a
-       filter context through each tab. */
-
     const earliest = (() => {
         const times = [reviews.lastFetchedAt, stale.lastFetchedAt, issues.lastFetchedAt, debt.lastFetchedAt]
             .filter(Boolean)
@@ -981,6 +980,12 @@ export function WorkBoardPage({ repoCount = 0 }) {
                 debt={debt}
             />
 
+            <FilterProvider
+                params={params}
+                availableRepos={availableRepos}
+                availableAuthors={availableAuthors}
+                availableLabels={availableLabels}
+            >
             {/* Filter bar (URL-synced) */}
             <WorkBoardFilterBar
                 filters={params}
@@ -1043,6 +1048,7 @@ export function WorkBoardPage({ repoCount = 0 }) {
                     </motion.div>
                 </AnimatePresence>
             </div>
+            </FilterProvider>
         </div>
     )
 }
