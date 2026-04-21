@@ -30,6 +30,7 @@ import { RateLimitNotice } from './components/ui/RateLimitNotice'
 import { LandingPage } from './components/Landing/LandingPage'
 import { LegalFooter } from './components/LegalFooter'
 import { RouteFallback } from './components/ui/RouteFallback'
+import { ViewErrorFallback } from './components/ui/ViewErrorFallback'
 
 // Lazy load Pricing page
 const PricingPage = lazy(() => import('./components/Pricing/PricingPage').then(m => ({ default: m.PricingPage })))
@@ -154,6 +155,20 @@ function AppContent() {
     })
     return unsubscribe
   }, [toast])
+
+  // ViewErrorFallback dispatches this event when the user clicks
+  // "Go to Dashboard" on a per-view error boundary. Keeping the fallback
+  // decoupled from App state (it lives in ui/) lets us reuse it anywhere
+  // without passing navigation callbacks through every tree.
+  useEffect(() => {
+    const handleNavigateDashboard = () => {
+      setSelectedRepoDetail(null)
+      setReviewingPR(null)
+      setActiveView('dashboard')
+    }
+    window.addEventListener('app:navigate-dashboard', handleNavigateDashboard)
+    return () => window.removeEventListener('app:navigate-dashboard', handleNavigateDashboard)
+  }, [])
 
   // Rate-limit toasts — one at a time, auto-dismisses after the countdown ends.
   const rateLimitToastIdRef = useRef(null)
@@ -567,12 +582,14 @@ function AppContent() {
 
   if (systemInitialized === false) {
     return (
-      <Suspense fallback={<LoadingFallback />}>
-        <SystemSetup onComplete={() => {
-          setSystemInitialized(true)
-          checkAuth()
-        }} />
-      </Suspense>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="System Setup" />}>
+        <Suspense fallback={<LoadingFallback />}>
+          <SystemSetup onComplete={() => {
+            setSystemInitialized(true)
+            checkAuth()
+          }} />
+        </Suspense>
+      </ErrorBoundary>
     )
   }
 
@@ -674,7 +691,7 @@ function AppContent() {
       <main id="main-content" className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 pt-3 md:pt-4 lg:pt-5 pb-20 md:pb-6 transition-all duration-300 relative z-[1]">
         {activeView === 'pricing' && (
           <div className="animate-in fade-in duration-500">
-            <ErrorBoundary>
+            <ErrorBoundary fallback={<ViewErrorFallback viewName="Pricing" />}>
               <Suspense fallback={<LoadingFallback />}>
                 <PricingPage onGetStarted={(dest) => setActiveView(dest === 'roadmap' ? 'roadmap' : 'dashboard')} />
               </Suspense>
@@ -684,7 +701,7 @@ function AppContent() {
 
         {activeView === 'roadmap' && (
           <div className="animate-in fade-in duration-500">
-            <ErrorBoundary>
+            <ErrorBoundary fallback={<ViewErrorFallback viewName="Roadmap" />}>
               <Suspense fallback={<LoadingFallback />}>
                 <RoadmapPage onNavigatePricing={() => setActiveView('pricing')} />
               </Suspense>
@@ -694,7 +711,7 @@ function AppContent() {
 
         {activeView === 'dashboard' && user && (
           <div className="animate-in fade-in duration-500">
-            <ErrorBoundary>
+            <ErrorBoundary fallback={<ViewErrorFallback viewName="Dashboard" />}>
               <Suspense fallback={<LoadingFallback />}>
                 <DashboardPremium
                   stats={stats}
@@ -738,7 +755,7 @@ function AppContent() {
               )}
 
               <div className="flex-1 min-w-0">
-                <ErrorBoundary>
+                <ErrorBoundary fallback={<ViewErrorFallback viewName="Repositories" />}>
                   <RepoList
                     repos={displayRepos}
                     loading={loading || isSwitchingOrg}
@@ -814,7 +831,7 @@ function AppContent() {
 
         {activeView === 'repo-detail' && user && selectedRepoDetail && (
           <div className="animate-in fade-in duration-500">
-            <ErrorBoundary>
+            <ErrorBoundary fallback={<ViewErrorFallback viewName="Repository Detail" onGoHome={() => { setSelectedRepoDetail(null); setActiveView('dashboard') }} />}>
               <Suspense fallback={<LoadingFallback />}>
                 <RepoDetail
                   repo={selectedRepoDetail}
@@ -841,7 +858,7 @@ function AppContent() {
 
         {activeView === 'pr-review' && user && reviewingPR && selectedRepoDetail && (
           <div className="animate-in fade-in duration-300">
-            <ErrorBoundary>
+            <ErrorBoundary fallback={<ViewErrorFallback viewName="PR Review" onGoHome={() => { setReviewingPR(null); setActiveView('repo-detail') }} />}>
               <Suspense fallback={<LoadingFallback />}>
                 <PRReviewView
                   owner={selectedRepoDetail.owner?.login || selectedRepoDetail.owner}
@@ -860,7 +877,7 @@ function AppContent() {
 
         {activeView === 'teams' && user && (
           <div className="animate-in fade-in duration-500">
-            <ErrorBoundary>
+            <ErrorBoundary fallback={<ViewErrorFallback viewName="Teams" onGoHome={() => { setSelectedTeam(null); setActiveView('dashboard') }} />}>
               <Suspense fallback={<LoadingFallback />}>
                 {selectedTeam ? (
                   <TeamDetails
@@ -883,7 +900,7 @@ function AppContent() {
 
         {activeView === 'work-board' && user && (
           <div className="animate-in fade-in duration-500">
-            <ErrorBoundary>
+            <ErrorBoundary fallback={<ViewErrorFallback viewName="Work Board" />}>
               <Suspense fallback={<LoadingFallback />}>
                 <WorkBoardPage repoCount={displayRepos.length} />
               </Suspense>
@@ -892,17 +909,20 @@ function AppContent() {
         )}
       </main>
 
-      <Suspense fallback={null}>
-        <CreateRepoModal
-          isOpen={modalStates.showCreateRepo}
-          onClose={() => closeModal('showCreateRepo')}
-          onCreate={createRepo}
-          orgs={orgs}
-          isPerforming={isPerforming}
-          askAI={askAI}
-        />
-      </Suspense>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Create Repository" onGoHome={() => closeModal('showCreateRepo')} />}>
+        <Suspense fallback={null}>
+          <CreateRepoModal
+            isOpen={modalStates.showCreateRepo}
+            onClose={() => closeModal('showCreateRepo')}
+            onCreate={createRepo}
+            orgs={orgs}
+            isPerforming={isPerforming}
+            askAI={askAI}
+          />
+        </Suspense>
+      </ErrorBoundary>
 
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Transfer" onGoHome={() => closeModal('showTransfer')} />}>
       <Suspense fallback={null}>
         <TransferModal
           isOpen={modalStates.showTransfer}
@@ -943,6 +963,7 @@ function AppContent() {
           isPerforming={isPerforming}
         />
       </Suspense>
+      </ErrorBoundary>
 
       <ConfirmModal
         isOpen={modalStates.showConfirm}
@@ -956,39 +977,45 @@ function AppContent() {
         isLoading={isPerforming}
       />
 
-      <Suspense fallback={null}>
-        <OrgManagerModal
-          isOpen={modalStates.showOrgManager}
-          onClose={() => closeModal('showOrgManager')}
-          org={getModalData('showOrgManager')}
-          onUpdateOrg={(updated) => {
-            toast.success(`Organization ${updated.login} updated`)
-            handleRefreshOrgs()
-          }}
-        />
-      </Suspense>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Organization Manager" onGoHome={() => closeModal('showOrgManager')} />}>
+        <Suspense fallback={null}>
+          <OrgManagerModal
+            isOpen={modalStates.showOrgManager}
+            onClose={() => closeModal('showOrgManager')}
+            org={getModalData('showOrgManager')}
+            onUpdateOrg={(updated) => {
+              toast.success(`Organization ${updated.login} updated`)
+              handleRefreshOrgs()
+            }}
+          />
+        </Suspense>
+      </ErrorBoundary>
 
-      <Suspense fallback={null}>
-        <DevToolkitPanel
-          isOpen={modalStates.showDevToolkit}
-          onClose={() => closeModal('showDevToolkit')}
-          modalData={getModalData('showDevToolkit')}
-          repos={repos}
-          onStartReview={(pr) => {
-            closeModal('showDevToolkit')
-            setReviewingPR(pr)
-            setActiveView('pr-review')
-          }}
-        />
-      </Suspense>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Dev Toolkit" onGoHome={() => closeModal('showDevToolkit')} />}>
+        <Suspense fallback={null}>
+          <DevToolkitPanel
+            isOpen={modalStates.showDevToolkit}
+            onClose={() => closeModal('showDevToolkit')}
+            modalData={getModalData('showDevToolkit')}
+            repos={repos}
+            onStartReview={(pr) => {
+              closeModal('showDevToolkit')
+              setReviewingPR(pr)
+              setActiveView('pr-review')
+            }}
+          />
+        </Suspense>
+      </ErrorBoundary>
 
-      <Suspense fallback={null}>
-        <SettingsModal
-          isOpen={modalStates.showSettings}
-          onClose={() => closeModal('showSettings')}
-          initialTab={getModalData('showSettings')?.initialTab}
-        />
-      </Suspense>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Settings" onGoHome={() => closeModal('showSettings')} />}>
+        <Suspense fallback={null}>
+          <SettingsModal
+            isOpen={modalStates.showSettings}
+            onClose={() => closeModal('showSettings')}
+            initialTab={getModalData('showSettings')?.initialTab}
+          />
+        </Suspense>
+      </ErrorBoundary>
 
       {(() => {
         // `showRepoInsights` accepts either a raw repo object (legacy) or
@@ -998,84 +1025,102 @@ function AppContent() {
         const insightsRepo = insightsPayload?.repo ?? insightsPayload
         const insightsInitialTab = insightsPayload?.initialTab
         return (
-          <Suspense fallback={null}>
-            <RepoInsightsModal
-              isOpen={modalStates.showRepoInsights}
-              onClose={() => closeModal('showRepoInsights')}
-              repo={insightsRepo}
-              initialTab={insightsInitialTab}
-            />
-          </Suspense>
+          <ErrorBoundary fallback={<ViewErrorFallback viewName="Repository Insights" onGoHome={() => closeModal('showRepoInsights')} />}>
+            <Suspense fallback={null}>
+              <RepoInsightsModal
+                isOpen={modalStates.showRepoInsights}
+                onClose={() => closeModal('showRepoInsights')}
+                repo={insightsRepo}
+                initialTab={insightsInitialTab}
+              />
+            </Suspense>
+          </ErrorBoundary>
         )
       })()}
 
       {modalStates.showCommunityHealth && (
-        <Suspense fallback={null}>
-          <CommunityHealthDashboard
-            repo={getModalData('showCommunityHealth')}
-            onClose={() => closeModal('showCommunityHealth')}
-          />
-        </Suspense>
+        <ErrorBoundary fallback={<ViewErrorFallback viewName="Community Health" onGoHome={() => closeModal('showCommunityHealth')} />}>
+          <Suspense fallback={null}>
+            <CommunityHealthDashboard
+              repo={getModalData('showCommunityHealth')}
+              onClose={() => closeModal('showCommunityHealth')}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
-      <Suspense fallback={null}>
-        <MigrationHistory
-          isOpen={modalStates.showMigrationHistory}
-          onClose={() => closeModal('showMigrationHistory')}
-        />
-      </Suspense>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Migration History" onGoHome={() => closeModal('showMigrationHistory')} />}>
+        <Suspense fallback={null}>
+          <MigrationHistory
+            isOpen={modalStates.showMigrationHistory}
+            onClose={() => closeModal('showMigrationHistory')}
+          />
+        </Suspense>
+      </ErrorBoundary>
 
       {modalStates.showMigrationWizard && (
-        <Suspense fallback={null}>
-          <MigrationWizard
-            onClose={() => closeModal('showMigrationWizard')}
-            orgs={orgs}
-            initialDryRun={getModalData('showMigrationWizard')?.initialDryRun}
-            initialSource={getModalData('showMigrationWizard')?.initialSource}
-            initialRepos={getModalData('showMigrationWizard')?.initialRepos}
-            initialStep={getModalData('showMigrationWizard')?.initialStep}
-          />
-        </Suspense>
+        <ErrorBoundary fallback={<ViewErrorFallback viewName="Migration Wizard" onGoHome={() => closeModal('showMigrationWizard')} />}>
+          <Suspense fallback={null}>
+            <MigrationWizard
+              onClose={() => closeModal('showMigrationWizard')}
+              orgs={orgs}
+              initialDryRun={getModalData('showMigrationWizard')?.initialDryRun}
+              initialSource={getModalData('showMigrationWizard')?.initialSource}
+              initialRepos={getModalData('showMigrationWizard')?.initialRepos}
+              initialStep={getModalData('showMigrationWizard')?.initialStep}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
-      <Suspense fallback={null}>
-        <KeyboardShortcutsHelp
-          isOpen={showHelp}
-          onClose={() => setShowHelp(false)}
-          shortcuts={shortcuts}
-        />
-      </Suspense>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Keyboard Shortcuts" onGoHome={() => setShowHelp(false)} />}>
+        <Suspense fallback={null}>
+          <KeyboardShortcutsHelp
+            isOpen={showHelp}
+            onClose={() => setShowHelp(false)}
+            shortcuts={shortcuts}
+          />
+        </Suspense>
+      </ErrorBoundary>
 
-      <Suspense fallback={null}>
-        <BatchIndexProgressModal
-          isOpen={modalStates.showBatchIndex}
-          onClose={() => closeModal('showBatchIndex')}
-          repos={getModalData('showBatchIndex')?.repos || []}
-        />
-      </Suspense>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Batch Index" onGoHome={() => closeModal('showBatchIndex')} />}>
+        <Suspense fallback={null}>
+          <BatchIndexProgressModal
+            isOpen={modalStates.showBatchIndex}
+            onClose={() => closeModal('showBatchIndex')}
+            repos={getModalData('showBatchIndex')?.repos || []}
+          />
+        </Suspense>
+      </ErrorBoundary>
 
-      <Suspense fallback={null}>
-        <CompareSimilarDrawer
-          isOpen={modalStates.showCompare}
-          onClose={() => closeModal('showCompare')}
-          repo={getModalData('showCompare')?.repo}
-        />
-      </Suspense>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Compare Repositories" onGoHome={() => closeModal('showCompare')} />}>
+        <Suspense fallback={null}>
+          <CompareSimilarDrawer
+            isOpen={modalStates.showCompare}
+            onClose={() => closeModal('showCompare')}
+            repo={getModalData('showCompare')?.repo}
+          />
+        </Suspense>
+      </ErrorBoundary>
 
-      <Suspense fallback={null}>
-        <SecurityScanModal
-          isOpen={modalStates.showSecurityScan}
-          onClose={() => closeModal('showSecurityScan')}
-          repo={getModalData('showSecurityScan')?.repo}
-        />
-      </Suspense>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Security Scan" onGoHome={() => closeModal('showSecurityScan')} />}>
+        <Suspense fallback={null}>
+          <SecurityScanModal
+            isOpen={modalStates.showSecurityScan}
+            onClose={() => closeModal('showSecurityScan')}
+            repo={getModalData('showSecurityScan')?.repo}
+          />
+        </Suspense>
+      </ErrorBoundary>
 
-      <Suspense fallback={null}>
-        <LicenseActivationModal
-          isOpen={modalStates.showLicenseActivation}
-          onClose={() => closeModal('showLicenseActivation')}
-        />
-      </Suspense>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="License Activation" onGoHome={() => closeModal('showLicenseActivation')} />}>
+        <Suspense fallback={null}>
+          <LicenseActivationModal
+            isOpen={modalStates.showLicenseActivation}
+            onClose={() => closeModal('showLicenseActivation')}
+          />
+        </Suspense>
+      </ErrorBoundary>
 
       <CommandPalette
         isOpen={commandPalette.isOpen}
@@ -1088,9 +1133,11 @@ function AppContent() {
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-      <Suspense fallback={null}>
-        <AIAssistant askAI={askAI} user={user} checkAIStatus={checkAIStatus} />
-      </Suspense>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="AI Assistant" />}>
+        <Suspense fallback={null}>
+          <AIAssistant askAI={askAI} user={user} checkAIStatus={checkAIStatus} />
+        </Suspense>
+      </ErrorBoundary>
 
       {/* Mobile Drawer */}
       {user && (

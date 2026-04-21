@@ -1,4 +1,4 @@
-import { Component } from 'react'
+import { Component, cloneElement, isValidElement } from 'react'
 import { AlertTriangle, RefreshCw, RotateCcw } from 'lucide-react'
 
 class ErrorBoundary extends Component {
@@ -36,6 +36,25 @@ class ErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
+      // Caller-supplied fallback takes precedence. It can be either a plain
+      // ReactElement (e.g. <ViewErrorFallback viewName="Foo" />) or a render
+      // function ({ error, retry }) => ReactNode. When a ReactElement is
+      // passed and it doesn't already have an onRetry prop, we wire our
+      // handleRetry in so the user can recover without reloading.
+      if (this.props.fallback) {
+        const { fallback } = this.props
+        if (typeof fallback === 'function') {
+          return fallback({ error: this.state.error, retry: this.handleRetry })
+        }
+        if (isValidElement(fallback) && fallback.props.onRetry === undefined) {
+          return cloneElement(fallback, {
+            error: fallback.props.error ?? this.state.error,
+            onRetry: this.handleRetry,
+          })
+        }
+        return fallback
+      }
+
       return (
         <div className="min-h-[400px] flex items-center justify-center bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-6">
           <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-black/30 p-8 text-center">
