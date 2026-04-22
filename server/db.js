@@ -747,6 +747,18 @@ export function initDB(targetDb = db) {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_wbs_user_until
              ON work_board_snooze(user_id, until_at)`);
 
+    // Migration 016 (DLQ operator API): add is_admin flag to users so operators
+    // can be granted access to /api/v1/admin/dlq/* endpoints. Enterprise tier
+    // alone is NOT sufficient — an Enterprise customer shouldn't be able to
+    // read other users' DLQ'd emails. Operators self-bootstrap by manually
+    // running `UPDATE users SET is_admin = 1 WHERE id = ?` on their own row
+    // (see docs/security-hardening.md → "Admin bootstrap").
+    try {
+        db.exec(`ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0`);
+    } catch (err) {
+        if (!err.message?.includes('duplicate column')) throw err;
+    }
+
     logger.info('SQLite Database initialized successfully');
 }
 
