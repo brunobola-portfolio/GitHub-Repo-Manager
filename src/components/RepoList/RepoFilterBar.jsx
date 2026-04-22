@@ -97,10 +97,13 @@ export function RepoFilterBar({
 						</div>
 						<div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1"></div>
 						<button
+							type="button"
+							aria-label="Open selection menu"
+							aria-expanded={showSelectionMenu}
 							onClick={(e) => { e.stopPropagation(); setShowSelectionMenu(!showSelectionMenu) }}
 							className="w-6 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
 						>
-							<ChevronDown className="w-3.5 h-3.5" />
+							<ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
 						</button>
 					</div>
 
@@ -219,9 +222,10 @@ export function RepoFilterBar({
 					size="sm"
 					onClick={onRefresh}
 					disabled={loading}
+					aria-label="Refresh repositories"
 					className="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
 				>
-					<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+					<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
 				</Button>
 			</div>
 		</div>

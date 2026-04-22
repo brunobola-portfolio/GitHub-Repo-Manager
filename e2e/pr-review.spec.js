@@ -125,9 +125,12 @@ async function openPRReview(page) {
     await page.goto('/')
     await expect(page.getByAltText('dev-user')).toBeVisible({ timeout: 15000 })
 
-    // Repositories -> first repo with matching name
+    // Repositories -> first repo with matching name.
+    // exact:true targets the inner repo-name button (which navigates).
+    // Without exact the locator also matches the outer card (role="button",
+    // aria-label="fintech-dashboard (private)") whose click only toggles selection.
     await page.getByRole('button', { name: 'Repositories' }).click()
-    await page.getByRole('button', { name: REPO_NAME }).first().click()
+    await page.getByRole('button', { name: REPO_NAME, exact: true }).first().click()
 
     // Pull Requests tab (RepoDetail uses TabBar with role=tab)
     await page.getByRole('tab', { name: /pull requests/i }).click()

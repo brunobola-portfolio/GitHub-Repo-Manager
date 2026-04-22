@@ -134,8 +134,12 @@ export function OrgPanel({
 					</div>
 					<DropdownMenu.Root>
 						<DropdownMenu.Trigger asChild>
-							<button className="p-2.5 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all duration-200 hover:scale-105">
-								<Settings size={18} />
+							<button
+								type="button"
+								aria-label="Open user settings menu"
+								className="p-2.5 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all duration-200 hover:scale-105"
+							>
+								<Settings size={18} aria-hidden="true" />
 							</button>
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Portal>
