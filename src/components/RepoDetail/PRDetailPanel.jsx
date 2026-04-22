@@ -10,6 +10,7 @@ import {
     ArrowLeft, FileText, FilePlus, FileMinus, FileEdit,
     Eye, ShieldCheck, ShieldAlert, MessageCircle, GitBranch, Wand2
 } from 'lucide-react'
+import { useToast } from '../../hooks/useToast'
 
 const REVIEW_STATES = {
     APPROVED: { label: 'Approved', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', icon: ShieldCheck },
@@ -29,6 +30,7 @@ function getFileIcon(status) {
 }
 
 export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGenerateDescription }) {
+    const { toast } = useToast()
     const [detail, setDetail] = useState(null)
     const [reviews, setReviews] = useState([])
     const [files, setFiles] = useState([])
@@ -79,10 +81,12 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
             await api.commentOnIssue(pr.number, newComment) // PRs use issues API for comments
             setNewComment('')
             setMessage({ type: 'success', text: 'Comment added' })
+            toast.success('Comment posted')
             const data = await api.fetchIssueComments(pr.number)
             setComments(Array.isArray(data) ? data : [])
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
+            toast.error(`Failed to post comment — ${e.message || 'try again'}`)
         } finally {
             setSubmitting(false)
         }
@@ -94,12 +98,14 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
         try {
             await api.mergePull(pr.number, { merge_method: mergeMethod })
             setMessage({ type: 'success', text: 'Pull request merged!' })
+            toast.success('Merged')
             // Reload detail
             const data = await api.fetchPull(pr.number)
             setDetail(data)
             onUpdate?.()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
+            toast.error(`Failed to merge PR — ${e.message || 'try again'}`)
         } finally {
             setMerging(false)
         }
@@ -109,10 +115,12 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
         try {
             await api.updatePull(pr.number, { state: 'closed' })
             setMessage({ type: 'success', text: 'Pull request closed' })
+            toast.success('Pull request closed')
             if (detail) setDetail({ ...detail, state: 'closed' })
             onUpdate?.()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
+            toast.error(`Failed to close PR — ${e.message || 'try again'}`)
         }
     }
 

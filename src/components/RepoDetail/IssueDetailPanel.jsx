@@ -8,8 +8,10 @@ import {
     Loader2, Send, CheckCircle2, XCircle, ArrowLeft, Tag, Sparkles
 } from 'lucide-react'
 import { AIIssuePlanner } from './AIIssuePlanner'
+import { useToast } from '../../hooks/useToast'
 
 export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }) {
+    const { toast } = useToast()
     const [showPlanner, setShowPlanner] = useState(false)
     const [detail, setDetail] = useState(null)
     const [comments, setComments] = useState([])
@@ -52,11 +54,13 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
             await api.commentOnIssue(issue.number, newComment)
             setNewComment('')
             setMessage({ type: 'success', text: 'Comment added' })
+            toast.success('Comment posted')
             // Reload comments
             const data = await api.fetchIssueComments(issue.number)
             setComments(Array.isArray(data) ? data : [])
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
+            toast.error(`Failed to post comment — ${e.message || 'try again'}`)
         } finally {
             setSubmitting(false)
         }
@@ -67,10 +71,12 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
         try {
             await api.updateIssue(issue.number, { state: newState })
             setMessage({ type: 'success', text: `Issue ${newState === 'closed' ? 'closed' : 'reopened'}` })
+            toast.success(newState === 'closed' ? 'Issue closed' : 'Issue reopened')
             if (detail) setDetail({ ...detail, state: newState })
             onUpdate?.()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
+            toast.error(`Failed to ${newState === 'closed' ? 'close' : 'reopen'} issue — ${e.message || 'try again'}`)
         }
     }
 
