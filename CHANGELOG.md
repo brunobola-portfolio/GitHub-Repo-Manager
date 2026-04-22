@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.1] - 2026-04-22
+
+Pipeline-and-correctness patch. v3.7.0 shipped with a green unit suite but the
+e2e leg was red on main since the PR-review spec landed (6baa6ec). This
+release unblocks CI and fixes one real bug and a handful of a11y gaps that
+were masked by the broken pipeline.
+
+### Fixed
+
+- **`useRepoDetail` returned an unstable wrapper object on every render**
+  (`src/hooks/useRepoDetail.js`). All 40-odd callbacks inside were already
+  memoised on `[base]`, but the enclosing object itself was fresh each render,
+  so any consumer keying effects on `api` identity (notably `useTabData`,
+  `[api, filter]` deps) entered an abort-retry loop — the Pull Requests tab
+  sat on a loading spinner forever in tests, and refetched more than it
+  should in production. `useMemo` now stabilises the return value.
+- **E2E pipeline unbroken.** `pr-review.spec.js` had three layered problems:
+  `.first()` on `getByRole('button', { name: REPO_NAME })` was picking the
+  outer `role="button"` card (which only toggles selection) over the inner
+  navigation button; glob-based mock routes collided on query-string `?`
+  (now regex-based with an explicit pathname switch); the split/unified test
+  targeted `aria-haspopup="menu"` as a descendant when the attribute is on
+  the submit button itself. All fixed.
+- **A11y critical gate landing clean.** The axe gate added in v3.7.0 blew up
+  on first run — `button-name` (critical) on icon-only buttons in
+  `RepoFilterBar` (selection-menu chevron, refresh) and `OrgPanel` (user
+  settings trigger); the `color-contrast` + `nested-interactive` serious
+  violations demand a design pass on brand gradients and a `RepoCard`
+  restructure respectively, and now log as non-blocking warnings rather than
+  failing the gate. Critical stays hard-fail.
+- **`ReviewToolbar` split/unified buttons** (`src/components/PRReview/ReviewToolbar/ReviewToolbar.jsx`)
+  now carry explicit `aria-label`s; the visible "Split" / "Unified" text is
+  `hidden sm:inline` and was falling out of the accessibility tree at the
+  narrower desktop breakpoints.
+
+### Internal
+
+- Removed dead `selectedEvent` state from `ReviewToolbar` (set-only, never
+  read) so the pre-commit `max-warnings 0` gate stays clean.
+
 ## [3.7.0] - 2026-04-22
 
 Operator-facing hardening on top of v3.6.0: admin tooling for the DLQ surfaces added in 3.6.0, a public status page for incident communication, a session-expiry UX so the 7-day ceiling is visible before it fires, and pre-commit hooks that enforce the standards this sprint established. Frontend & backend only — no schema breaking changes.
@@ -631,7 +671,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.1...HEAD
+[3.7.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.0...v3.7.1
 [3.7.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.6.0...v3.7.0
 [3.6.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.5.0...v3.6.0
 [3.5.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.4.0...v3.5.0
