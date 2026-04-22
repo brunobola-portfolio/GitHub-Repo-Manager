@@ -43,12 +43,52 @@ export function resetSessionExpired() {
     sessionExpired = false
 }
 
-function notifySessionExpired() {
+// Paths under the OAuth / login flow — 401s from these are expected while
+// the user is logging in and MUST NOT trigger the session-expired redirect.
+// Matching is prefix-based on same-origin /api/auth/* URLs. The probe
+// endpoints (/api/auth/session and /api/auth/session-info) are included
+// so the app can poll them without self-logging-out on a fresh browser.
+const AUTH_FLOW_PREFIXES = [
+    '/api/auth/',
+    '/api/v1/auth/',
+]
+
+function isAuthFlowUrl(url) {
+    if (typeof url !== 'string') return false
+    const path = url.split('?')[0]
+    return AUTH_FLOW_PREFIXES.some(prefix => path.startsWith(prefix))
+}
+
+// Hook point for tests: override the "hard reload to /" behaviour. Default
+// uses window.location so production behaviour is unchanged.
+let sessionExpiredRedirector = () => {
+    try {
+        if (typeof window !== 'undefined') {
+            window.location.href = '/?error=session_expired'
+        }
+    } catch { /* jsdom/happy-dom sometimes throws on href assignment */ }
+}
+
+export function _setSessionExpiredRedirectorForTests(fn) {
+    sessionExpiredRedirector = typeof fn === 'function'
+        ? fn
+        : () => { if (typeof window !== 'undefined') window.location.href = '/?error=session_expired' }
+}
+
+function notifySessionExpired({ url } = {}) {
     if (sessionExpired) return // already notified
     sessionExpired = true
     authListeners.forEach(cb => {
         try { cb() } catch (e) { console.error('Auth listener error', e) }
     })
+    // Graceful 401 redirect — but never during the login flow itself,
+    // where a 401 from /api/auth/session is the expected "not logged in"
+    // signal and redirecting would cause a loop.
+    if (!isAuthFlowUrl(url)) {
+        try {
+            sessionExpiredRedirector()
+        } catch (e) { console.error('Session-expired redirect failed', e) }
+    }
 }
 
 // ============ CSRF Token Cache + Interceptor ============
@@ -162,7 +202,7 @@ export class ApiError extends Error {
 }
 
 // Categorize error based on status code
-export function categorizeError(status, error = null) {
+export function categorizeError(status, error = null, url = null) {
     if (!navigator.onLine) {
         return new ApiError(ErrorType.OFFLINE)
     }
@@ -184,7 +224,7 @@ export function categorizeError(status, error = null) {
 
     switch (status) {
         case 401:
-            notifySessionExpired()
+            notifySessionExpired({ url })
             return new ApiError(ErrorType.AUTHENTICATION, null, status)
         case 403:
             return new ApiError(ErrorType.AUTHORIZATION, null, status)
@@ -320,7 +360,7 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
             }
 
             // Categorize the error
-            const apiError = categorizeError(response.status)
+            const apiError = categorizeError(response.status, null, typeof url === 'string' ? url : null)
             apiError.data = errorData
 
             // Drop a Sentry breadcrumb on every non-2xx response so the

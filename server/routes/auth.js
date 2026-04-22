@@ -5,6 +5,7 @@ import { auditLog } from '../lib/audit.js';
 import { config } from '../config.js';
 import { createAuthRouteLimiter } from '../middleware/tenant-rate-limit.js';
 import { ensureCsrfToken } from '../middleware/csrf.js';
+import { ABSOLUTE_TIMEOUT_MS } from '../middleware/session-absolute-timeout.js';
 
 const router = express.Router();
 
@@ -196,6 +197,81 @@ router.post('/mock', (req, res) => {
     req.session.accessToken = 'mock_token';
     req.session.createdAt = Date.now();
     req.session.save(() => res.json({ success: true, user: mockUser }));
+});
+
+// Lightweight session-info endpoint.
+//
+// Returns the absolute expiry of the current session so the frontend can
+// surface a warning toast before the 7-day ceiling trips and produces a
+// sudden 401. Unauthenticated callers get a 200 with { authenticated: false }
+// rather than a 401 — this endpoint is polled and must not look like a
+// real auth error.
+//
+// CSRF-bypassed (GET, non-mutation) and cheap enough to poll every 5 min.
+router.get('/session-info', (req, res) => {
+    if (!req.session?.accessToken) {
+        return res.json({ authenticated: false });
+    }
+
+    const createdAt = typeof req.session.createdAt === 'number'
+        ? req.session.createdAt
+        : null;
+
+    // Sessions created before the absolute-timeout feature shipped have no
+    // createdAt stamp. Report a null expiry so the frontend skips the
+    // expiry warning rather than showing an inaccurate countdown.
+    const expiresAt = createdAt !== null
+        ? new Date(createdAt + ABSOLUTE_TIMEOUT_MS).toISOString()
+        : null;
+    const expiresInSeconds = createdAt !== null
+        ? Math.max(0, Math.floor((createdAt + ABSOLUTE_TIMEOUT_MS - Date.now()) / 1000))
+        : null;
+
+    res.json({
+        authenticated: true,
+        userId: req.session.userId,
+        userLogin: req.session.userLogin,
+        expiresAt,
+        expiresInSeconds,
+        createdAt: createdAt !== null ? new Date(createdAt).toISOString() : null,
+    });
+});
+
+// Refresh-session endpoint.
+//
+// Any authenticated request already resets the rolling session cookie
+// (express-session `rolling: true`), so from a behaviour standpoint this
+// endpoint is equivalent to "touch the session". It exists as a semantic
+// clarifier: callers that explicitly want to bump the rolling expiry (e.g.
+// the session-expiry hook on a close-to-expiry warning) can POST here
+// without issuing a cosmetic request to some other endpoint.
+//
+// NOTE: The 7-day absolute ceiling (createdAt-anchored) is NOT extended by
+// this endpoint — the sessionAbsoluteTimeout middleware still enforces it.
+router.post('/refresh-session', (req, res) => {
+    if (!req.session?.accessToken) {
+        return res.status(401).json({ error: 'Not authenticated', authenticated: false });
+    }
+    // Touching the session is enough — express-session will re-emit a
+    // Set-Cookie with a fresh maxAge on the way out. Explicit save() makes
+    // stores that buffer writes (Redis pipelines, etc.) flush immediately.
+    req.session.touch();
+    req.session.save((err) => {
+        if (err) {
+            req.log?.error?.({ err }, 'refresh-session save failed');
+            return res.status(500).json({ error: 'Failed to refresh session' });
+        }
+        const createdAt = typeof req.session.createdAt === 'number'
+            ? req.session.createdAt
+            : null;
+        const expiresInSeconds = createdAt !== null
+            ? Math.max(0, Math.floor((createdAt + ABSOLUTE_TIMEOUT_MS - Date.now()) / 1000))
+            : null;
+        res.json({
+            success: true,
+            expiresInSeconds,
+        });
+    });
 });
 
 // Issue (or retrieve) a CSRF token bound to the current session.

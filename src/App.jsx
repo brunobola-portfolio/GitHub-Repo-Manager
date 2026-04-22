@@ -18,6 +18,7 @@ import { ModalProvider } from './contexts/ModalContext'
 import { useSelection } from './hooks/useSelection'
 import { useModal } from './hooks/useModal'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { useSessionExpiry } from './hooks/useSessionExpiry'
 import { useCommandPalette } from './hooks/useCommandPalette'
 import { CommandPalette } from './components/CommandPalette'
 import { useResponsiveLayout } from './hooks/useResponsiveLayout'
@@ -138,6 +139,10 @@ function AppContent() {
   } = useGitHub()
 
   const anyModalOpen = Object.values(modalStates).some(Boolean)
+
+  // Poll session expiry and surface a warning toast before the 7-day
+  // absolute ceiling trips. Silent when unauthenticated or in mock mode.
+  useSessionExpiry({ enabled: !!user && !MOCK_MODE })
 
   const { showHelp, setShowHelp, shortcuts } = useKeyboardShortcuts({
     onSearch: () => {
