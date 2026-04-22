@@ -5,8 +5,10 @@ import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
 import { GitBranch, Shield, Trash2, Plus, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { useTabData } from '../../hooks/useTabData'
+import { useToast } from '../../hooks/useToast'
 
 export function BranchesTab({ api }) {
+    const { toast } = useToast()
     const { data, loading, reload: loadBranches } = useTabData(
         async () => {
             const result = await api.fetchBranches()
@@ -32,17 +34,20 @@ export function BranchesTab({ api }) {
             const sha = baseSha || branches[0]?.commit?.sha
             if (!sha) {
                 setMessage({ type: 'error', text: 'No base SHA available. Enter a commit SHA.' })
+                toast.error('No base SHA available — enter a commit SHA')
                 setCreating(false)
                 return
             }
             await api.createBranch(newBranch, sha)
             setMessage({ type: 'success', text: `Branch "${newBranch}" created` })
+            toast.success('Branch created')
             setNewBranch('')
             setBaseSha('')
             setShowCreate(false)
             loadBranches()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
+            toast.error(`Failed to create branch — ${e.message || 'try again'}`)
         } finally {
             setCreating(false)
         }
@@ -57,9 +62,11 @@ export function BranchesTab({ api }) {
                 try {
                     await api.deleteBranch(branch)
                     setMessage({ type: 'success', text: `Branch "${branch}" deleted` })
+                    toast.success('Branch deleted')
                     loadBranches()
                 } catch (e) {
                     setMessage({ type: 'error', text: e.message })
+                    toast.error(`Failed to delete branch — ${e.message || 'try again'}`)
                 }
             }
         })

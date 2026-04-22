@@ -7,8 +7,10 @@ import { EmptyState } from '../ui/EmptyState'
 import { GitPullRequest, Plus, Loader2, CheckCircle2, XCircle, GitMerge, ExternalLink, ChevronDown } from 'lucide-react'
 import { PRDetailPanel } from './PRDetailPanel'
 import { useTabData } from '../../hooks/useTabData'
+import { useToast } from '../../hooks/useToast'
 
 export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
+    const { toast } = useToast()
     const [filter, setFilter] = useState('open')
     const { data, loading, reload: loadPulls } = useTabData(
         async () => {
@@ -44,11 +46,13 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
         try {
             await api.createPull(form)
             setMessage({ type: 'success', text: `Pull request "${form.title}" created` })
+            toast.success(form.draft ? 'Draft pull request created' : 'Pull request created')
             setForm({ title: '', body: '', head: '', base: 'main', draft: false })
             setShowCreate(false)
             loadPulls()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
+            toast.error(`Failed to create pull request — ${e.message || 'try again'}`)
         } finally {
             setCreating(false)
         }
@@ -64,9 +68,11 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                 try {
                     await api.mergePull(pr.number)
                     setMessage({ type: 'success', text: `PR #${pr.number} merged` })
+                    toast.success('Merged')
                     loadPulls()
                 } catch (e) {
                     setMessage({ type: 'error', text: e.message })
+                    toast.error(`Failed to merge PR — ${e.message || 'try again'}`)
                 }
             }
         })
@@ -76,9 +82,11 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
         try {
             await api.updatePull(pr.number, { state: 'closed' })
             setMessage({ type: 'success', text: `PR #${pr.number} closed` })
+            toast.success('Pull request closed')
             loadPulls()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
+            toast.error(`Failed to close PR — ${e.message || 'try again'}`)
         }
     }
 

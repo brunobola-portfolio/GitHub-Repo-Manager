@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, cleanup, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ReleasesTab } from '@/components/RepoDetail/ReleasesTab'
+import { renderWithProviders } from '../../helpers/render-with-providers'
 
 // Focus trap uses real DOM APIs we don't need in this test
 vi.mock('@/hooks/useFocusTrap', () => ({
@@ -198,6 +199,23 @@ describe('ReleasesTab — create release flow', () => {
     await waitFor(() =>
       expect(screen.getByText('Tag already exists')).toBeInTheDocument()
     )
+  })
+
+  it('fires a success toast when a release is published', async () => {
+    const user = userEvent.setup()
+    const api = makeApi()
+    renderWithProviders(<ReleasesTab owner="owner" repo="repo" api={api} />)
+
+    await waitFor(() =>
+      expect(screen.getByText(/3 Releases/)).toBeInTheDocument()
+    )
+    await user.click(screen.getByRole('button', { name: /New Release/i }))
+    await user.type(screen.getByPlaceholderText('v1.0.0'), 'v3.0.0')
+    await user.click(screen.getByRole('button', { name: /Publish/i }))
+
+    await waitFor(() => expect(api.createRelease).toHaveBeenCalled())
+    // Toast text lands in the <ToastContainer>
+    expect(await screen.findByText('Release published')).toBeInTheDocument()
   })
 
   it('toggles draft and pre-release flags before publishing', async () => {

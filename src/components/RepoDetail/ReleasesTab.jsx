@@ -5,8 +5,10 @@ import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
 import { Tag, Plus, Trash2, Loader2, ExternalLink, CheckCircle2, XCircle, Package } from 'lucide-react'
 import { useTabData } from '../../hooks/useTabData'
+import { useToast } from '../../hooks/useToast'
 
 export function ReleasesTab({ api }) {
+    const { toast } = useToast()
     const { data, loading, reload: loadReleases } = useTabData(
         async () => {
             const result = await api.fetchReleases()
@@ -29,11 +31,13 @@ export function ReleasesTab({ api }) {
         try {
             await api.createRelease(form)
             setMessage({ type: 'success', text: `Release "${form.tag_name}" created` })
+            toast.success(form.draft ? 'Draft release saved' : 'Release published')
             setForm({ tag_name: '', name: '', body: '', draft: false, prerelease: false })
             setShowCreate(false)
             loadReleases()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
+            toast.error(`Failed to publish release — ${e.message || 'try again'}`)
         } finally {
             setCreating(false)
         }
@@ -48,9 +52,11 @@ export function ReleasesTab({ api }) {
                 try {
                     await api.deleteRelease(release.id)
                     setMessage({ type: 'success', text: 'Release deleted' })
+                    toast.success('Release deleted')
                     loadReleases()
                 } catch (e) {
                     setMessage({ type: 'error', text: e.message })
+                    toast.error(`Failed to delete release — ${e.message || 'try again'}`)
                 }
             }
         })

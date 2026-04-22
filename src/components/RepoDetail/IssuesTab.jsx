@@ -6,8 +6,10 @@ import { EmptyState } from '../ui/EmptyState'
 import { CircleDot, Plus, Loader2, CheckCircle2, XCircle, MessageSquare, ExternalLink } from 'lucide-react'
 import { IssueDetailPanel } from './IssueDetailPanel'
 import { useTabData } from '../../hooks/useTabData'
+import { useToast } from '../../hooks/useToast'
 
 export function IssuesTab({ api, repoFullName }) {
+    const { toast } = useToast()
     const [filter, setFilter] = useState('open')
     const { data, loading, reload: loadIssues } = useTabData(
         async () => {
@@ -33,11 +35,13 @@ export function IssuesTab({ api, repoFullName }) {
         try {
             await api.createIssue(form)
             setMessage({ type: 'success', text: `Issue "${form.title}" created` })
+            toast.success('Issue created')
             setForm({ title: '', body: '' })
             setShowCreate(false)
             loadIssues()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
+            toast.error(`Failed to create issue — ${e.message || 'try again'}`)
         } finally {
             setCreating(false)
         }
@@ -47,9 +51,11 @@ export function IssuesTab({ api, repoFullName }) {
         try {
             await api.updateIssue(issue.number, { state: 'closed' })
             setMessage({ type: 'success', text: `Issue #${issue.number} closed` })
+            toast.success('Issue closed')
             loadIssues()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
+            toast.error(`Failed to close issue — ${e.message || 'try again'}`)
         }
     }
 
@@ -57,9 +63,11 @@ export function IssuesTab({ api, repoFullName }) {
         try {
             await api.updateIssue(issue.number, { state: 'open' })
             setMessage({ type: 'success', text: `Issue #${issue.number} reopened` })
+            toast.success('Issue reopened')
             loadIssues()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
+            toast.error(`Failed to reopen issue — ${e.message || 'try again'}`)
         }
     }
 
