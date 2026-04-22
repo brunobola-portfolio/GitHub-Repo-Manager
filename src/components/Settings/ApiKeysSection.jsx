@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Key, Plus, Copy, Check, Trash2, AlertTriangle, Shield } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
+import { useToast } from '../../hooks/useToast'
 import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
 import { formatDate as formatDateBase } from '../../utils/format'
@@ -332,6 +333,7 @@ function KeyRow({ apiKey, onRevoke }) {
 }
 
 export function ApiKeysSection() {
+    const { toast } = useToast()
     const [keys, setKeys] = useState([])
     const [limits, setLimits] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -366,8 +368,9 @@ export function ApiKeysSection() {
     const handleCreated = useCallback((data) => {
         setNewKeyData(data)
         setShowForm(false)
+        toast.success('API key created')
         fetchKeys()
-    }, [fetchKeys])
+    }, [fetchKeys, toast])
 
     const handleRevoke = useCallback(async (id) => {
         const res = await fetch(`${API_BASE_URL}/api/v1/api-keys/${id}`, {
@@ -376,10 +379,13 @@ export function ApiKeysSection() {
         })
         if (!res.ok) {
             const data = await res.json().catch(() => ({}))
-            throw new Error(data.error || data.message || 'Failed to revoke key')
+            const msg = data.error || data.message || 'Failed to revoke key'
+            toast.error(msg)
+            throw new Error(msg)
         }
+        toast.success('API key revoked')
         fetchKeys()
-    }, [fetchKeys])
+    }, [fetchKeys, toast])
 
     const atLimit = limits && limits.max !== undefined && limits.max !== Infinity && limits.current >= limits.max
 

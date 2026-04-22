@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { RefreshCw, GitPullRequest, Copy, Check, Rocket, Info, CheckCircle2, FileText } from 'lucide-react'
 import { useStreaming } from '../../../hooks/useStreaming'
+import { useToast } from '../../../hooks/useToast'
 import { BranchSelector } from '../shared/BranchSelector'
 import { DiffSummary } from '../shared/DiffSummary'
 import { RefinementZone } from '../shared/RefinementZone'
@@ -8,6 +9,7 @@ import { PRSections } from './PRSections'
 import { CreatePRConfirm } from './CreatePRConfirm'
 
 export function PRTab({ toolkit }) {
+    const { toast } = useToast()
     const { selectedRepo, headBranch, baseBranch, branches, compareData, compareLoading, handleBranchChange, getDiffText, repoOwner, prContext, generatedCommit, setHeadBranch, setBaseBranch, fetchCompare } = toolkit
     const { isStreaming, error: streamError, startStream } = useStreaming()
 
@@ -166,6 +168,7 @@ export function PRTab({ toolkit }) {
                 const prUrlValue = `https://github.com/${owner}/${repo}/pull/${prContext.number}`
                 setPrUrl(prUrlValue)
                 toolkit.setGeneratedPR?.({ number: prContext.number, url: prUrlValue, title: sections.title })
+                toast.success(`PR #${prContext.number} updated`)
             } else {
                 const res = await fetch(`/api/repos/${owner}/${repo}/pulls`, {
                     method: 'POST',
@@ -182,14 +185,16 @@ export function PRTab({ toolkit }) {
                 const data = await res.json()
                 setPrUrl(data.pull_request?.html_url || `https://github.com/${owner}/${repo}/pulls`)
                 toolkit.setGeneratedPR?.({ number: data.pull_request?.number, url: data.pull_request?.html_url, title: sections.title })
+                toast.success(`PR #${data.pull_request?.number || ''} created`.trim())
             }
         } catch {
             setLocalError('Failed to create/update PR. Check your permissions and try again.')
+            toast.error('Failed to create/update PR — check permissions and try again')
         } finally {
             setActionLoading(false)
             setConfirmAction(null)
         }
-    }, [sections, selectedRepo, prContext, headBranch, baseBranch, buildBody, repoOwner, toolkit])
+    }, [sections, selectedRepo, prContext, headBranch, baseBranch, buildBody, repoOwner, toolkit, toast])
 
     const canGenerate = compareData && compareData.files?.length > 0
     const displayError = localError || streamError

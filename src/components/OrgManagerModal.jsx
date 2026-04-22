@@ -7,6 +7,7 @@ import {
 import { Button } from './ui/Button'
 import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
+import { useToast } from '../hooks/useToast'
 
 const ORG_TABS = [
     { id: 'overview', label: 'Overview' },
@@ -20,6 +21,7 @@ export function OrgManagerModal({
     org,
     onUpdateOrg
 }) {
+    const { toast } = useToast()
     const [loading, setLoading] = useState(false)
     const [orgDetails, setOrgDetails] = useState(null)
     const [members, setMembers] = useState([])
@@ -88,9 +90,16 @@ export function OrgManagerModal({
                 setOrgDetails(updated)
                 setEditing(false)
                 onUpdateOrg?.(updated)
+                toast.success('Organization settings saved')
+            } else {
+                const body = await res.json().catch(() => ({}))
+                const msg = body?.error || body?.message || 'Failed to update organization'
+                setError(msg)
+                toast.error(msg)
             }
         } catch (e) {
             setError(e?.message || 'Failed to update organization')
+            toast.error(`Failed to update organization — ${e?.message || 'try again'}`)
         } finally {
             setLoading(false)
         }

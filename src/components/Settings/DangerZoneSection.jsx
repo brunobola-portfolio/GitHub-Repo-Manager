@@ -3,6 +3,7 @@ import { Download, AlertTriangle, Trash2, Loader2, CheckCircle2, XCircle } from 
 import { InsightCard } from '../ui/InsightCard'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { API_BASE_URL, MOCK_MODE } from '../../config'
+import { useToast } from '../../hooks/useToast'
 
 /**
  * Settings — Danger Zone section.
@@ -17,6 +18,7 @@ import { API_BASE_URL, MOCK_MODE } from '../../config'
  * confirmString ("ERASE MY DATA") via ConfirmModal's `requiresInput` prop.
  */
 export function DangerZoneSection({ onErased }) {
+    const { toast } = useToast()
     const [exporting, setExporting] = useState(false)
     const [exportMsg, setExportMsg] = useState(null)
     const [confirmOpen, setConfirmOpen] = useState(false)
@@ -48,8 +50,10 @@ export function DangerZoneSection({ onErased }) {
             a.remove()
             URL.revokeObjectURL(url)
             setExportMsg({ type: 'success', text: `Download started: ${filename}` })
+            toast.success('Data export downloaded')
         } catch (err) {
             setExportMsg({ type: 'error', text: err.message || 'Export failed' })
+            toast.error(`Failed to export data — ${err.message || 'try again'}`)
         } finally {
             setExporting(false)
         }

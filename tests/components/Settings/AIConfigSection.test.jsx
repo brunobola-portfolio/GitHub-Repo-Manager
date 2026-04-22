@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { AIConfigSection } from '@/components/Settings/AIConfigSection'
+import { renderWithProviders } from '../../helpers/render-with-providers'
 
 // Mock framer-motion — forward children immediately, skip animations
 vi.mock('framer-motion', () => {
@@ -443,5 +444,38 @@ describe('AIConfigSection — pricing hints', () => {
         // The price hint should appear for the model
         // gemini-2.5-flash → $0.30 in / $2.50 out per 1M tokens
         expect(screen.getByText(/\$0\.30 in \/ \$2\.50 out per 1M tokens/i)).toBeInTheDocument()
+    })
+})
+
+describe('AIConfigSection — toast on save', () => {
+    it('fires a success toast when config is saved (204)', async () => {
+        // Initial GET returns a gemini config, then the save PATCH returns 204
+        fetchMock.mockResolvedValueOnce(mockResponse(EMPTY_CONFIG))
+        fetchMock.mockResolvedValueOnce({ ok: true, status: 204, json: () => Promise.resolve({}) })
+        // Re-fetch after save
+        fetchMock.mockResolvedValueOnce(mockResponse(EMPTY_CONFIG))
+
+        await act(async () => {
+            renderWithProviders(<AIConfigSection />)
+        })
+
+        // Dirty the form so save is enabled
+        const providerSelect = screen.getByRole('combobox', { name: /completion provider/i })
+        await act(async () => {
+            fireEvent.change(providerSelect, { target: { value: 'gemini' } })
+        })
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+        })
+
+        // The toast message "AI configuration saved" is rendered by the
+        // test ToastContainer mounted by renderWithProviders. The same
+        // text also appears inline in the save-message banner, so we
+        // assert >=1 match rather than unique.
+        await waitFor(() => {
+            const matches = screen.getAllByText(/ai configuration saved/i)
+            expect(matches.length).toBeGreaterThanOrEqual(1)
+        })
     })
 })

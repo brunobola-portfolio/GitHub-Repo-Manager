@@ -5,6 +5,7 @@ import {
     Info,
 } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
+import { useToast } from '../../hooks/useToast'
 import { InsightCard } from '../ui/InsightCard'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { PROVIDER_DEFAULTS } from '../../utils/providerCapabilities'
@@ -38,6 +39,7 @@ const EMPTY_FORM = {
 }
 
 export function AIConfigSection() {
+    const { toast } = useToast()
     const [form, setForm] = useState(EMPTY_FORM)
     const [saved, setSaved] = useState(EMPTY_FORM)
     const [loading, setLoading] = useState(true)
@@ -160,6 +162,7 @@ export function AIConfigSection() {
 
             if (res.status === 204) {
                 setSaveMessage({ type: 'success', text: 'AI configuration saved.' })
+                toast.success('AI configuration saved')
                 await fetchConfig()
                 return
             }
@@ -176,6 +179,7 @@ export function AIConfigSection() {
                 }
                 if (Object.keys(fieldErrors).length > 0) {
                     setErrors(fieldErrors)
+                    toast.error('Fix the highlighted fields and try again')
                     return
                 }
             }
@@ -183,10 +187,11 @@ export function AIConfigSection() {
             throw new Error(data.error || data.message || 'Save failed')
         } catch (err) {
             setSaveMessage({ type: 'error', text: err.message || 'Something went wrong.' })
+            toast.error(`Failed to save AI configuration — ${err.message || 'try again'}`)
         } finally {
             setSaving(false)
         }
-    }, [form, saved, fetchConfig])
+    }, [form, saved, fetchConfig, toast])
 
     // ---------------------------------------------------------------------------
     // Remove
@@ -213,6 +218,7 @@ export function AIConfigSection() {
             })
             if (!res.ok) throw new Error('Failed to remove configuration')
             setSaveMessage({ type: 'success', text: 'AI configuration removed.' })
+            toast.success('AI configuration removed')
             // Only close the modal on success. On failure, the rethrown error
             // keeps the modal open via ConfirmModal's catch path.
             setConfirmRemove(false)
@@ -220,7 +226,7 @@ export function AIConfigSection() {
         } finally {
             setRemoving(false)
         }
-    }, [fetchConfig])
+    }, [fetchConfig, toast])
 
     // ---------------------------------------------------------------------------
     // Test connection
@@ -259,18 +265,25 @@ export function AIConfigSection() {
                 const data = await res.json().catch(() => ({}))
                 startCountdown()
                 setTestResult({ ok: false, error: data.error || 'Rate limited. Please wait.' })
+                toast.warning('Rate limited — please wait before retrying')
                 return
             }
 
             const data = await res.json()
             setTestResult(data)
             startCountdown()
+            if (data?.ok) {
+                toast.success('Provider responded successfully')
+            } else if (data?.error) {
+                toast.error(`Test failed — ${data.error}`)
+            }
         } catch {
             setTestResult({ ok: false, error: 'Network error. Please try again.' })
+            toast.error('Network error — try again')
         } finally {
             setTesting(false)
         }
-    }, [startCountdown])
+    }, [startCountdown, toast])
 
     // ---------------------------------------------------------------------------
     // Render

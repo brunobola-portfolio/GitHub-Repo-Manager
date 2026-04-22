@@ -6,6 +6,7 @@ import { ConfirmModal } from '../ui/ConfirmModal'
 import { useMigrationWizard } from '../../hooks/useMigrationWizard'
 import { useAzureOAuth } from '../../hooks/useAzureOAuth'
 import { useAzureOrganizations } from '../../hooks/useAzureOrganizations'
+import { useToast } from '../../hooks/useToast'
 import { migrationApi } from '../../api/migration'
 import SourceTypeStep from './steps/SourceTypeStep'
 import SourceStep from './steps/SourceStep'
@@ -406,6 +407,7 @@ export default function MigrationWizard({
 
   const oauthHook = useAzureOAuth()
   const orgsHook = useAzureOrganizations()
+  const { toast } = useToast()
   const selectedRepos = repos.filter((r) => r.selected)
   const totalWarnings = selectedRepos.reduce(
     (sum, r) => sum + (r.risk?.flags || []).filter((f) => f.severity === 'warning').length,
@@ -490,12 +492,14 @@ export default function MigrationWizard({
 
       if (data.success) {
         updateImportJobs({ jobId: data.jobId })
+        toast.success('Import queued')
         nextStep()
       } else {
         updateImportJobs({
           importing: false,
           jobStatus: { status: 'failed', errorMessage: data.error, progressPct: 0 },
         })
+        toast.error(`Failed to start import — ${data.error || 'try again'}`)
         nextStep()
       }
     } catch (e) {
@@ -503,9 +507,10 @@ export default function MigrationWizard({
         importing: false,
         jobStatus: { status: 'failed', errorMessage: e.message, progressPct: 0 },
       })
+      toast.error(`Failed to start import — ${e.message || 'try again'}`)
       nextStep()
     }
-  }, [source, updateImportJobs, nextStep])
+  }, [source, updateImportJobs, nextStep, toast])
 
   // Close with dirty-state confirmation. React 19's compiler handles
   // memoization automatically; manual useCallback was tripping the

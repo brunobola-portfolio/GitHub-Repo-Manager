@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { WizardPanel } from './ui/WizardPanel'
 import { InsightCard } from './ui/InsightCard'
 import { useMobileBreakpoint } from '../hooks/useMobileBreakpoint'
+import { useToast } from '../hooks/useToast'
 import { Select } from './ui/Select'
 import { Plus, Sparkles, Loader2, CheckCircle2, XCircle, Lock, Globe } from 'lucide-react'
 
@@ -16,6 +17,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
     const [nameStatus, setNameStatus] = useState(null)
     const [isMaximized, setIsMaximized] = useState(false)
     const isMobile = useMobileBreakpoint()
+    const { toast } = useToast()
 
     const handleToggleMaximize = useCallback(() => setIsMaximized((v) => !v), [])
 
@@ -90,13 +92,20 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
     const handleSubmit = async (e) => {
         if (e) e.preventDefault()
         if (!name || isPerforming || nameStatus === 'taken') return
-        const result = await onCreate(name, {
-            description,
-            org: targetOrg || undefined,
-            private: isPrivate
-        })
-        if (result?.success) {
-            onClose()
+        try {
+            const result = await onCreate(name, {
+                description,
+                org: targetOrg || undefined,
+                private: isPrivate
+            })
+            if (result?.success) {
+                toast.success(`Created ${result.repo?.full_name || (targetOrg ? targetOrg + '/' : '') + name}`)
+                onClose()
+            } else {
+                toast.error(result?.message || result?.error || 'Failed to create repository')
+            }
+        } catch (err) {
+            toast.error(err?.message || 'Failed to create repository')
         }
     }
 

@@ -3,9 +3,11 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { CodeownersSuggestModal } from '../CodeownersSuggestModal'
+import { useToast } from '../../hooks/useToast'
 import { Settings, Save, Loader2, CheckCircle2, XCircle, AlertTriangle, Lock, Globe, Webhook, Trash2, Plus, RefreshCw, Users } from 'lucide-react'
 
 export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
+    const { toast } = useToast()
     const [codeownersOpen, setCodeownersOpen] = useState(false)
     const [saving, setSaving] = useState(false)
     const [message, setMessage] = useState(null)
@@ -36,8 +38,10 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
             const updated = result.data || result
             onUpdate(prev => ({ ...prev, ...updated }))
             setMessage({ type: 'success', text: 'Settings saved' })
+            toast.success('Repository settings saved')
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
+            toast.error(`Failed to save settings — ${e.message || 'try again'}`)
         } finally {
             setSaving(false)
         }
@@ -62,11 +66,13 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                 active: true
             })
             setMessage({ type: 'success', text: 'Webhook created' })
+            toast.success('Webhook created')
             setShowNewHook(false)
             setHookForm({ url: '', content_type: 'json', events: ['push'] })
             loadWebhooks()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
+            toast.error(`Failed to create webhook — ${e.message || 'try again'}`)
         }
     }
 
@@ -79,9 +85,11 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                 try {
                     await api.deleteWebhook(hookId)
                     setMessage({ type: 'success', text: 'Webhook deleted' })
+                    toast.success('Webhook deleted')
                     loadWebhooks()
                 } catch (e) {
                     setMessage({ type: 'error', text: e.message })
+                    toast.error(`Failed to delete webhook — ${e.message || 'try again'}`)
                 }
             }
         })
@@ -91,8 +99,10 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
         try {
             await api.pingWebhook(hookId)
             setMessage({ type: 'success', text: 'Ping sent' })
+            toast.success('Webhook ping sent')
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
+            toast.error(`Failed to ping webhook — ${e.message || 'try again'}`)
         }
     }
 

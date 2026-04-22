@@ -5,6 +5,7 @@ import {
   AlertCircle, Loader2, Info, Flag, HardDrive, AlertTriangle,
 } from 'lucide-react'
 import { migrationApi } from '../../../api/migration'
+import { useToast } from '../../../hooks/useToast'
 import { StatCard } from '../ui/repo/StatCard'
 import { formatFileSize } from '../../../utils/format'
 
@@ -39,6 +40,7 @@ function SummaryCard({ wizard }) {
 }
 
 export default function ScheduleStep({ schedule, onUpdate, wizard }) {
+  const { toast } = useToast()
   const [executing, setExecuting] = useState(false)
   const [execError, setExecError] = useState(null)
   const [scheduled, setScheduled] = useState(false)
@@ -126,15 +128,18 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
         // For scheduled migrations, show success inline
         if (wizard.setPlanId) wizard.setPlanId(planId)
         setScheduled(true)
+        toast.success('Migration scheduled')
       } else {
         // Execute immediately and go to progress
         await migrationApi.executePlan(planId, { azurePat: wizard.source?.pat || null })
         if (wizard.setPlanId) wizard.setPlanId(planId)
         if (wizard.nextStep) wizard.nextStep()
+        toast.success('Migration queued')
       }
     } catch (err) {
       console.error('[ScheduleStep] Migration error:', err)
       setExecError(err.message || 'Failed to start migration')
+      toast.error(`Failed to start migration — ${err.message || 'try again'}`)
     } finally {
       setExecuting(false)
     }

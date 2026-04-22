@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
+import { useToast } from '../hooks/useToast'
 import { API_BASE_URL } from '../config'
 import { ApiKeysSection } from './Settings/ApiKeysSection'
 import { AuditLogSection } from './Settings/AuditLogSection'
@@ -39,6 +40,7 @@ const TABS = [
 
 export function SettingsModal({ isOpen, onClose, initialTab }) {
     const { theme, setTheme } = useTheme()
+    const { toast } = useToast()
     const [activeTab, setActiveTab] = useState('general')
 
     // Load cache settings from localStorage
@@ -62,6 +64,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }) {
     const handleSave = () => {
         localStorage.setItem('cache-settings', JSON.stringify(cacheSettings))
         localStorage.setItem('migration-settings', JSON.stringify(migrationSettings))
+        toast.success('Settings saved')
         onClose()
     }
 
@@ -76,9 +79,14 @@ export function SettingsModal({ isOpen, onClose, initialTab }) {
             if (response.ok) {
                 const data = await response.json()
                 setCacheMessage({ type: 'success', text: `Cache cleared! (${data.cleared} entries removed)` })
+                toast.success(`Cache cleared — ${data.cleared} entries removed`)
+            } else {
+                setCacheMessage({ type: 'error', text: 'Failed to clear cache. Please try again.' })
+                toast.error('Failed to clear cache')
             }
         } catch {
             setCacheMessage({ type: 'error', text: 'Failed to clear cache. Please try again.' })
+            toast.error('Failed to clear cache')
         } finally {
             setClearing(false)
         }

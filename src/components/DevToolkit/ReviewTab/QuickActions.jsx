@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { ThumbsUp, MessageSquare } from 'lucide-react'
+import { useToast } from '../../../hooks/useToast'
 
 export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
+    const { toast } = useToast()
     const [action, setAction] = useState(null)
     const [comment, setComment] = useState('')
     const [loading, setLoading] = useState(false)
@@ -18,11 +20,13 @@ export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
                 body: JSON.stringify({ event, body: comment || undefined, comments: [] }),
             })
             if (!res.ok) throw new Error('Failed to submit review')
+            toast.success(event === 'APPROVE' ? 'PR approved' : 'Comment posted')
             setAction(null)
             setComment('')
             onSubmitted?.()
         } catch (err) {
             setError(err.message || 'Failed to submit review')
+            toast.error(`Failed to submit review — ${err.message || 'try again'}`)
         } finally { setLoading(false) }
     }
 
