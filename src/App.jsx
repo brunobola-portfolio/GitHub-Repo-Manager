@@ -30,6 +30,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { SessionBanner } from './components/SessionBanner'
 import { BYOKUpgradeBanner } from './components/BYOKUpgradeBanner'
 import { RateLimitNotice } from './components/ui/RateLimitNotice'
+import { OfflineBanner } from './components/ui/OfflineBanner'
+import { onRetryQueueEvent } from './utils/retry-queue'
 import { LandingPage } from './components/Landing/LandingPage'
 import { LegalFooter } from './components/LegalFooter'
 import { RouteFallback } from './components/ui/RouteFallback'
@@ -228,6 +230,24 @@ function AppContent() {
     return unsubscribe
   }, [toast, dismissToast])
 
+  // Offline retry-queue toasts — one "queued" per enqueue, one
+  // "retried successfully" per replay batch (not per request), and a
+  // regular error on final give-up.
+  useEffect(() => {
+    const unsubscribe = onRetryQueueEvent((event) => {
+      if (event.type === 'enqueued') {
+        toast.info('Queued — will retry when back online')
+      } else if (event.type === 'replay-success') {
+        toast.success(event.count > 1
+          ? `${event.count} requests retried successfully`
+          : 'Request retried successfully')
+      } else if (event.type === 'replay-failed') {
+        toast.error('A queued request failed to retry')
+      }
+    })
+    return unsubscribe
+  }, [toast])
+
   // Direct-navigation rate-limit case — the backend redirected us here with
   // ?error=rate_limited&retry=N when the /api/auth/* limiter tripped for a browser.
   useEffect(() => {
@@ -235,6 +255,7 @@ function AppContent() {
     if (params.get('error') !== 'rate_limited') return
     const retry = Number.parseInt(params.get('retry') || '60', 10)
     const retryAt = Date.now() + (Number.isFinite(retry) ? retry : 60) * 1000
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot banner state from URL param, tracked in deferred cleanup pass
     setRateLimitBanner({ retryAt })
     // Strip the query params so a refresh doesn't re-show a stale banner.
     params.delete('error')
@@ -247,6 +268,7 @@ function AppContent() {
     if (!initCalled.current) {
       initCalled.current = true
       mark('app:mount')
+      // eslint-disable-next-line react-hooks/immutability -- function hoisted below, rule mis-reports, tracked in deferred cleanup pass
       checkSystemStatus()
     }
     return () => { initCalled.current = false }
@@ -326,6 +348,7 @@ function AppContent() {
 
   // Fetch teams when user becomes available
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data-load on auth transition, tracked in deferred cleanup pass
     if (user) fetchTeams()
   }, [user, fetchTeams])
 
@@ -1179,6 +1202,7 @@ function AppContent() {
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      <OfflineBanner />
       <ErrorBoundary fallback={<ViewErrorFallback viewName="AI Assistant" />}>
         <Suspense fallback={null}>
           <AIAssistant askAI={askAI} user={user} checkAIStatus={checkAIStatus} />

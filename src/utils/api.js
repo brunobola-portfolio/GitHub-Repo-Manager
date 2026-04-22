@@ -7,6 +7,7 @@
  */
 
 import { trackBreadcrumb } from '../lib/observability'
+import { enqueueMutation, replayQueue } from './retry-queue'
 
 // ============ Error Types ============
 
@@ -248,6 +249,50 @@ export function categorizeError(status, error = null, url = null) {
     }
 }
 
+// ============ Offline Retry Queue Wiring ============
+// When a mutation fails with a network error AND the browser is offline,
+// we hand the request off to the retry queue instead of rejecting. The
+// caller's promise then resolves with the replayed response on reconnect
+// (or rejects after MAX_AGE_MS / MAX_REPLAY_ROUNDS). Only browser
+// environments install the `online` listener — server-side / test envs
+// without `window` are pure-functional.
+
+function isNetworkErrorInstance(err) {
+    if (err instanceof ApiError) {
+        return err.type === ErrorType.NETWORK
+            || err.type === ErrorType.OFFLINE
+            || err.type === ErrorType.BACKEND_UNAVAILABLE
+            || err.type === ErrorType.TIMEOUT
+    }
+    if (err?.name === 'AbortError') return true
+    if (err?.name === 'TypeError' && typeof err?.message === 'string' && err.message.includes('fetch')) return true
+    return false
+}
+
+// Low-level fetch used by the retry queue on replay. We deliberately do
+// NOT route replays back through fetchWithRetry, which would re-enqueue
+// on another failure and risk infinite loops. retry-queue.js manages
+// bounded re-queueing via MAX_REPLAY_ROUNDS.
+async function replayFetch(url, options) {
+    const res = await fetch(url, options)
+    if (!res.ok && res.status >= 400) {
+        // Non-network failure on replay — surface a real ApiError so the
+        // queue treats it as "give up" (isNetworkError returns false).
+        const apiError = categorizeError(res.status, null, typeof url === 'string' ? url : null)
+        apiError.status = res.status
+        throw apiError
+    }
+    return res
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('online', () => {
+        // Fire-and-forget. Errors are surfaced through each entry's reject.
+        replayQueue({ fetchFn: replayFetch, isNetworkError: isNetworkErrorInstance })
+            .catch(e => console.error('retry-queue replay failed', e))
+    })
+}
+
 // ============ Retry Logic ============
 
 const DEFAULT_RETRY_OPTIONS = {
@@ -300,6 +345,13 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
         // Check if offline before attempting
         if (!navigator.onLine) {
+            // For mutations on same-origin /api/* we queue for retry on
+            // reconnect rather than rejecting. GETs and cross-origin
+            // calls still throw OFFLINE synchronously — the UI can show
+            // the banner and the caller can decide what to do.
+            if (mutation && !isCsrfFetch) {
+                return enqueueMutation({ url, options })
+            }
             throw new ApiError(ErrorType.OFFLINE)
         }
 
@@ -384,6 +436,17 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
             // If it's already an ApiError, use it
             if (error instanceof ApiError) {
                 if (!error.isRetryable || attempt === maxRetries) {
+                    // Offline + mutation → queue for retry on `online`
+                    // event rather than rejecting. The caller's promise
+                    // stays pending until reconnect succeeds, expires,
+                    // or a non-network error fires on replay.
+                    if (
+                        mutation && !isCsrfFetch
+                        && typeof navigator !== 'undefined' && !navigator.onLine
+                        && isNetworkErrorInstance(error)
+                    ) {
+                        return enqueueMutation({ url, options })
+                    }
                     throw error
                 }
                 lastError = error
@@ -391,6 +454,13 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
                 // Categorize native errors
                 lastError = categorizeError(null, error)
                 if (!lastError.isRetryable || attempt === maxRetries) {
+                    if (
+                        mutation && !isCsrfFetch
+                        && typeof navigator !== 'undefined' && !navigator.onLine
+                        && isNetworkErrorInstance(lastError)
+                    ) {
+                        return enqueueMutation({ url, options })
+                    }
                     throw lastError
                 }
             }
