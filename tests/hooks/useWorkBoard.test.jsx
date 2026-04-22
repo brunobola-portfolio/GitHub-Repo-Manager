@@ -31,8 +31,12 @@ function makeErrorResponse(status, body = {}) {
     })
 }
 
-beforeEach(() => {
+beforeEach(async () => {
     vi.clearAllMocks()
+    // Reset the SWR cache so warm-mount seeding doesn't leak state
+    // across tests and change the observable loading flag.
+    const mod = await import('@/hooks/utils/swrCache')
+    mod.clearCache()
 })
 
 afterEach(() => {

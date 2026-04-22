@@ -9,6 +9,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { MOCK_MODE } from '../config'
+import { getCached, setCached } from './utils/swrCache'
+
+export { getCached, setCached, invalidateCached, clearCache } from './utils/swrCache'
 
 // ---------------------------------------------------------------------------
 // Shared fetch helper
@@ -27,17 +30,31 @@ async function apiFetch(url) {
 }
 
 function useWorkBoardFetch(url, mockData, { refreshIntervalMs = 60_000 } = {}) {
-    const [data, setData] = useState(null)
-    const [meta, setMeta] = useState(null)
-    const [loading, setLoading] = useState(true)
+    // Seed from SWR cache on mount so repeat views render instantly.
+    // MOCK_MODE path keeps its legacy "brief delay, then data" behaviour
+    // unchanged — caching there adds no value and complicates tests.
+    const cached = !MOCK_MODE ? getCached(url) : null
+
+    const [data, setData] = useState(cached ? cached.data : null)
+    const [meta, setMeta] = useState(cached ? cached.meta : null)
+    const [loading, setLoading] = useState(!cached)
+    const [validating, setValidating] = useState(false)
     const [error, setError] = useState(null)
-    const [lastFetchedAt, setLastFetchedAt] = useState(null)
+    const [lastFetchedAt, setLastFetchedAt] = useState(cached ? cached.fetchedAt : null)
     const mountedRef = useRef(true)
     const intervalRef = useRef(null)
+    const hasDataRef = useRef(Boolean(cached))
 
     const fetchOnce = useCallback(async () => {
         if (!mountedRef.current) return
-        setLoading(true)
+        // If we already have data (from cache, a previous fetch, or a
+        // prior refresh), flip the subtle `validating` flag instead of
+        // wiping the UI with a full-page skeleton.
+        if (hasDataRef.current) {
+            setValidating(true)
+        } else {
+            setLoading(true)
+        }
         setError(null)
         try {
             if (MOCK_MODE) {
@@ -47,17 +64,28 @@ function useWorkBoardFetch(url, mockData, { refreshIntervalMs = 60_000 } = {}) {
                 setData(mockData)
                 setMeta(null)
                 setLastFetchedAt(new Date())
+                hasDataRef.current = true
                 return
             }
             const json = await apiFetch(url)
             if (!mountedRef.current) return
-            setData(json.data ?? json)
-            setMeta(json.meta || null)
-            setLastFetchedAt(json.meta?.fetchedAt ? new Date(json.meta.fetchedAt) : new Date())
+            const nextData = json.data ?? json
+            const nextMeta = json.meta || null
+            const nextFetchedAt = json.meta?.fetchedAt ? new Date(json.meta.fetchedAt) : new Date()
+            setData(nextData)
+            setMeta(nextMeta)
+            setLastFetchedAt(nextFetchedAt)
+            setCached(url, { data: nextData, meta: nextMeta, fetchedAt: nextFetchedAt })
+            hasDataRef.current = true
         } catch (err) {
+            // On error, keep any previously-visible data so the UI does
+            // not flash to empty. Consumers see `error` alongside stale data.
             if (mountedRef.current) setError(err)
         } finally {
-            if (mountedRef.current) setLoading(false)
+            if (mountedRef.current) {
+                setLoading(false)
+                setValidating(false)
+            }
         }
     }, [url, mockData])
 
@@ -96,7 +124,7 @@ function useWorkBoardFetch(url, mockData, { refreshIntervalMs = 60_000 } = {}) {
         }
     }, [fetchOnce, refreshIntervalMs])
 
-    return { data, meta, loading, error, lastFetchedAt, refresh: fetchOnce }
+    return { data, meta, loading, validating, error, lastFetchedAt, refresh: fetchOnce }
 }
 
 // ---------------------------------------------------------------------------
