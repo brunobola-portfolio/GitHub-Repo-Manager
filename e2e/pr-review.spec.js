@@ -81,40 +81,42 @@ const MOCK_PR_FILES = [
 ]
 
 async function mockApi(page) {
-    // Repo detail fetch
-    await page.route(`**/api/repos/${REPO_OWNER}/${REPO_NAME}`, (route) =>
-        route.fulfill({ contentType: 'application/json', body: JSON.stringify(MOCK_REPO) })
-    )
-    // Pull requests list (state=open, etc.)
-    await page.route(`**/api/repos/${REPO_OWNER}/${REPO_NAME}/pulls*`, (route) => {
-        const url = route.request().url()
-        // Only intercept the list endpoint (not /pulls/42 or /pulls/42/files).
-        // The list URL has `/pulls?...` or `/pulls` exactly.
-        if (/\/pulls(\?|$)/.test(url)) {
-            return route.fulfill({
-                contentType: 'application/json',
-                body: JSON.stringify([MOCK_PR]),
-            })
+
+    // One regex-based route dispatches to specific fixtures by URL pathname.
+    // Glob-based routes were unreliable here because Playwright globs treat `?`
+    // as a single-char wildcard, which collided with query strings like
+    // `/pulls?state=open`. Regex is unambiguous.
+    const basePath = `/api/repos/${REPO_OWNER}/${REPO_NAME}`
+
+    await page.route(new RegExp(`${basePath.replace(/\//g, '\\/')}(\\b|/|\\?|$)`), (route) => {
+        const url = new URL(route.request().url())
+        const path = url.pathname
+
+        if (path === basePath) {
+            return route.fulfill({ contentType: 'application/json', body: JSON.stringify(MOCK_REPO) })
+        }
+        if (path === `${basePath}/pulls`) {
+            return route.fulfill({ contentType: 'application/json', body: JSON.stringify([MOCK_PR]) })
+        }
+        // /pulls/42
+        if (path === `${basePath}/pulls/${PR_NUMBER}`) {
+            return route.fulfill({ contentType: 'application/json', body: JSON.stringify(MOCK_PR) })
+        }
+        if (path === `${basePath}/pulls/${PR_NUMBER}/reviews`) {
+            return route.fulfill({ contentType: 'application/json', body: JSON.stringify([]) })
+        }
+        if (path === `${basePath}/pulls/${PR_NUMBER}/files`) {
+            return route.fulfill({ contentType: 'application/json', body: JSON.stringify(MOCK_PR_FILES) })
+        }
+        if (path === `${basePath}/pulls/${PR_NUMBER}/comments`) {
+            return route.fulfill({ contentType: 'application/json', body: JSON.stringify([]) })
+        }
+        if (path === `${basePath}/issues/${PR_NUMBER}/comments`) {
+            return route.fulfill({ contentType: 'application/json', body: JSON.stringify([]) })
         }
         return route.fallback()
     })
-    // Single PR
-    await page.route(`**/api/repos/${REPO_OWNER}/${REPO_NAME}/pulls/${PR_NUMBER}`, (route) =>
-        route.fulfill({ contentType: 'application/json', body: JSON.stringify(MOCK_PR) })
-    )
-    await page.route(`**/api/repos/${REPO_OWNER}/${REPO_NAME}/pulls/${PR_NUMBER}/reviews`, (route) =>
-        route.fulfill({ contentType: 'application/json', body: JSON.stringify([]) })
-    )
-    await page.route(`**/api/repos/${REPO_OWNER}/${REPO_NAME}/pulls/${PR_NUMBER}/files`, (route) =>
-        route.fulfill({ contentType: 'application/json', body: JSON.stringify(MOCK_PR_FILES) })
-    )
-    await page.route(`**/api/repos/${REPO_OWNER}/${REPO_NAME}/pulls/${PR_NUMBER}/comments`, (route) =>
-        route.fulfill({ contentType: 'application/json', body: JSON.stringify([]) })
-    )
-    // PR comments via issues API (PRDetailPanel uses this)
-    await page.route(`**/api/repos/${REPO_OWNER}/${REPO_NAME}/issues/${PR_NUMBER}/comments`, (route) =>
-        route.fulfill({ contentType: 'application/json', body: JSON.stringify([]) })
-    )
+
     // AI review summary — keep quiet, test doesn't depend on it
     await page.route('**/api/ai/review-summary', (route) =>
         route.fulfill({ status: 204, body: '' })
@@ -162,9 +164,10 @@ test.describe('PR Review view', () => {
         await expect(page.getByRole('button', { name: /split view/i })).toBeVisible({ timeout: 15000 })
         await expect(page.getByRole('button', { name: /unified view/i })).toBeVisible()
 
-        // Submit review dropdown trigger — has aria-haspopup=menu and visible label "Review"
-        const submitBtn = page.getByRole('button', { name: /^review$/i, exact: false })
-            .filter({ has: page.locator('[aria-haspopup="menu"]') })
+        // Submit review dropdown trigger — the button itself carries
+        // aria-haspopup="menu", so match with `[aria-haspopup="menu"]` + visible
+        // "Review" text directly rather than filtering for a descendant.
+        const submitBtn = page.locator('button[aria-haspopup="menu"]').filter({ hasText: /review/i })
         await expect(submitBtn.first()).toBeVisible()
     })
 

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 
 const API_BASE = '/api/repos'
 
@@ -233,7 +233,12 @@ export function useRepoDetail(owner, repo) {
         withLoading(() => apiFetch(`${base}/forks`, { method: 'POST', body: JSON.stringify(data) })),
         [base, withLoading])
 
-    return {
+    // Stabilise the returned object across renders. Every callback inside is
+    // already memoised on [base]; without useMemo the wrapper object itself is
+    // new on each render, which churns `useTabData` (deps include `api`) into
+    // an abort-retry loop that never lets any tab settle. Downstream consumers
+    // rely on referential stability — treat this as part of the public contract.
+    return useMemo(() => ({
         loading, error,
         // Repo
         fetchRepo, updateRepo, updateTopics,
@@ -265,5 +270,23 @@ export function useRepoDetail(owner, repo) {
         fetchCommunityHealth,
         // Fork
         forkRepo
-    }
+    }), [
+        loading, error,
+        fetchRepo, updateRepo, updateTopics,
+        fetchReadme,
+        fetchBranches, fetchBranch, createBranch, deleteBranch,
+        fetchBranchProtection, updateBranchProtection, deleteBranchProtection,
+        fetchReleases, createRelease, deleteRelease,
+        fetchIssues, fetchIssue, fetchIssueComments, createIssue, updateIssue, commentOnIssue,
+        fetchPulls, fetchPull, fetchPullReviews, fetchPullFiles, fetchPullComments, fetchPullDiff,
+        createPull, mergePull, updatePull,
+        fetchWebhooks, createWebhook, updateWebhook, deleteWebhook, pingWebhook,
+        fetchLabels, createLabel, deleteLabel,
+        fetchCommits, compareBranches,
+        fetchContents,
+        fetchCollaborators, addCollaborator,
+        fetchWorkflows, fetchRuns,
+        fetchCommunityHealth,
+        forkRepo
+    ])
 }

@@ -79,7 +79,6 @@ function Crumb({ label, onClick, isLast }) {
 export function ReviewToolbar({ pr, repoName, viewMode, onToggleViewMode, onBack, onSubmitReview, pendingCount = 0, submitting = false }) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [reviewBody, setReviewBody] = useState('')
-  const [selectedEvent, setSelectedEvent] = useState(null)
   const dropdownRef = useRef(null)
   const buttonRef = useRef(null)
 
@@ -112,7 +111,6 @@ export function ReviewToolbar({ pr, repoName, viewMode, onToggleViewMode, onBack
     onSubmitReview?.({ event, body: reviewBody.trim() })
     setDropdownOpen(false)
     setReviewBody('')
-    setSelectedEvent(null)
   }, [onSubmitReview, reviewBody])
 
   const prTitle = pr?.title ?? 'Pull Request'
@@ -140,9 +138,10 @@ export function ReviewToolbar({ pr, repoName, viewMode, onToggleViewMode, onBack
               : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
           }`}
           aria-pressed={viewMode === 'split'}
+          aria-label="Split view"
           title="Split view"
         >
-          <Columns2 size={13} />
+          <Columns2 size={13} aria-hidden="true" />
           <span className="hidden sm:inline">Split</span>
         </button>
         <button
@@ -153,9 +152,10 @@ export function ReviewToolbar({ pr, repoName, viewMode, onToggleViewMode, onBack
               : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
           }`}
           aria-pressed={viewMode === 'unified'}
+          aria-label="Unified view"
           title="Unified view"
         >
-          <AlignJustify size={13} />
+          <AlignJustify size={13} aria-hidden="true" />
           <span className="hidden sm:inline">Unified</span>
         </button>
       </div>
