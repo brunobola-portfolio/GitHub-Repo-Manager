@@ -751,6 +751,7 @@ We welcome contributions! Whether it's bug fixes, new features, or documentation
 - **Testing**: Add tests for new features — run `npm test` to verify
 - **Files**: `.jsx` only (no TypeScript), Tailwind CSS utilities
 - **Documentation**: Update README and docs when adding features
+- **Bundle analysis**: Run `npm run build:analyze` to open an interactive treemap showing what's inside each bundle chunk.
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for detailed guidelines.
 

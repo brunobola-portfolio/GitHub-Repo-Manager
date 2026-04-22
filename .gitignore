@@ -13,6 +13,7 @@ lint_log*.txt
 node_modules
 dist
 dist-ssr
+dist/bundle-analysis.html
 *.local
 .augment/
 .agent/

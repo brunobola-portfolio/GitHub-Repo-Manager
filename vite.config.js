@@ -1,10 +1,23 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
 import path from 'path'
+
+// Opt-in bundle analyzer — enabled via `npm run build:analyze`
+// (sets ANALYZE=true). Pure observer: does not alter chunk contents.
+const analyzePlugins = process.env.ANALYZE === 'true'
+  ? [visualizer({
+      filename: 'dist/bundle-analysis.html',
+      open: true,
+      gzipSize: true,
+      brotliSize: true,
+      template: 'treemap',
+    })]
+  : []
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), ...analyzePlugins],
   server: {
     proxy: {
       // Proxy API requests to the Express backend
