@@ -324,3 +324,71 @@ Use `isEmailDeliveryConfigured()` from `server/lib/email.js` to check at runtime
 1. Leave `EMAIL_PROVIDER` unset (console mode).
 2. Trigger a Stripe webhook or run `npm run retention:dry`.
 3. Check server stdout for `[email:dev] would send` lines confirming subject and recipient.
+
+---
+
+## G5 — Rolling session + 7-day absolute timeout (SOC 2 CC6.1)
+
+### Threat
+
+`express-session` is configured with `rolling: true` so active users stay logged in indefinitely — every request bumps the cookie's expiry. That is the right UX default for a daily-use dashboard, but it also means a cookie exfiltrated once (via XSS, malware, a stolen session dump, or a shared device that was never signed out) can be kept alive forever by issuing periodic keepalive requests. Without an absolute ceiling there is no guaranteed window after which a stolen credential stops working.
+
+### Mitigation
+
+A dedicated middleware, [`server/middleware/session-absolute-timeout.js`](../server/middleware/session-absolute-timeout.js), enforces a hard 7-day ceiling on every session regardless of activity. `ABSOLUTE_TIMEOUT_MS` is exported as `7 * 24 * 3600 * 1000` ([line 22](../server/middleware/session-absolute-timeout.js#L22)). On login / mock-login the callback stamps `req.session.createdAt = Date.now()`; on every subsequent request the middleware computes `age = Date.now() - createdAt` ([lines 37-41](../server/middleware/session-absolute-timeout.js#L37)) and when the ceiling is exceeded the session is destroyed and the response is `401 { code: 'session_absolute_timeout' }` ([lines 44-52](../server/middleware/session-absolute-timeout.js#L44)). Legacy sessions missing `createdAt` are accepted without enforcement and stamped on the next login, so deploying the middleware does not sign everyone out at once.
+
+---
+
+## G6 — CSRF double-submit tokens (SOC 2 CC6.1)
+
+### Threat
+
+Session cookies are set with `sameSite: 'lax'`, which blocks most naive cross-site POSTs — but not all of them. Image-tag `GET` mutations, Firefox's weaker "Lax-by-default" implementation, and cross-origin POSTs from a compromised subdomain can still ride a logged-in user's cookie. An attacker who lands JavaScript on any user-controlled origin sharing the parent domain (a sibling marketing site, a GitHub Pages fork, an unsanitised comment on a help-desk product) could trigger destructive app actions without ever reading the session cookie.
+
+### Mitigation
+
+A double-submit-cookie CSRF gate is applied globally in [`server/middleware/csrf.js`](../server/middleware/csrf.js). After login, the client calls `GET /api/auth/csrf-token`, which runs `ensureCsrfToken(req)` to generate a 32-byte base64url token via `crypto.randomBytes(32).toString('base64url')` and stores it in `req.session.csrfToken` ([lines 65-85](../server/middleware/csrf.js#L65)). Every `POST`/`PUT`/`PATCH`/`DELETE` must carry the same token in the `X-CSRF-Token` header; `requireCsrfToken` performs a length-check + `crypto.timingSafeEqual` comparison against the session value and returns `403 { code: 'csrf_invalid' }` on mismatch ([lines 114-132](../server/middleware/csrf.js#L114)). The bypass list is intentionally narrow — only OAuth flow paths (which have no session yet) and the signature-verified webhook mounts (`/api/webhooks/*`, `/api/v1/webhooks/*`) skip the check ([lines 37-42](../server/middleware/csrf.js#L37)). The frontend interceptor in [`src/utils/api.js`](../src/utils/api.js) fetches the token once per session and attaches it to every mutation automatically.
+
+---
+
+## G7 — SSRF guard on import-from-URL (SOC 2 CC6.6)
+
+### Threat
+
+`POST /api/import/url` takes an arbitrary Git URL and hands it to `simple-git` for a `clone --bare` on the server. Without validation, a caller can aim that clone at `http://169.254.169.254/latest/meta-data/` (AWS/GCP/Azure instance-metadata endpoint), `http://localhost:3001/api/admin/...` (loopback to our own admin surface), a `10.0.0.0/8` / `192.168.0.0/16` host on the deployment VPC, or even an IPv4-mapped IPv6 literal like `::ffff:7f00:1` to bypass naive IPv4-only blockers. Any of these would let an unauthenticated or low-privilege user pivot the server into their attack tool.
+
+### Mitigation
+
+[`server/lib/url-validator.js#assertSafeExternalUrl`](../server/lib/url-validator.js#L28) runs a synchronous, defence-in-depth check before the URL ever reaches `simple-git`:
+
+- **Scheme allowlist** ([lines 42-46](../server/lib/url-validator.js#L42)) — `https:` only by default; callers must explicitly pass `allowHttp: true`.
+- **Embedded-credentials block** ([lines 48-51](../server/lib/url-validator.js#L48)) — rejects `user:pass@host` URLs that would smuggle credentials into server logs.
+- **Localhost / mDNS aliases** ([lines 64-73](../server/lib/url-validator.js#L64)) — rejects `localhost`, `0.0.0.0`, `::`, `::1`, `*.local`, `*.localhost`.
+- **IPv4 private / reserved ranges** ([lines 76-99](../server/lib/url-validator.js#L76)) — blocks `0.0.0.0/8`, `127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16` (explicitly catching `169.254.169.254`, the cloud-metadata IP).
+- **IPv6 reserved ranges** ([lines 101-137](../server/lib/url-validator.js#L101)) — blocks loopback / unspecified, `fe80::/10` link-local, `fc00::/7` unique-local, and IPv4-mapped IPv6 in both dotted and hex forms (`::ffff:127.0.0.1` and `::ffff:7f00:1` are caught identically).
+
+For DNS-rebinding defence in depth, the same file exports `resolveAndValidateHost` which re-checks the resolved address against the same ranges after `dns.lookup` ([lines 185-211](../server/lib/url-validator.js#L185)).
+
+---
+
+## G8 — Auth-endpoint rate-limiting (SOC 2 CC6.1)
+
+### Threat
+
+OAuth state-token brute-forcing and authorization-code replay are IP-level attacks — they happen *before* any session exists, so the standard tenant-aware limiter (which keys on `session.userId`) has nothing to bucket by. An attacker can hammer `/api/auth/callback` with guessed codes / forged states as fast as the upstream can respond, and a permissive or unkeyed limiter effectively rate-limits nobody.
+
+### Mitigation
+
+[`server/middleware/tenant-rate-limit.js#createAuthRouteLimiter`](../server/middleware/tenant-rate-limit.js#L101) creates a dedicated per-IP `express-rate-limit` instance applied only to `/api/auth/login` and `/api/auth/callback`. Budget is 20 requests per 15-minute window in production, raised to 200 in dev/test to avoid tripping React Strict Mode double-invokes and Playwright fixture churn ([line 104](../server/middleware/tenant-rate-limit.js#L104)). The key generator is explicitly `rl:authroute:${ipKeyGenerator(req)}` ([line 105](../server/middleware/tenant-rate-limit.js#L105)) — kept intentionally separate from `createTenantLimiters('auth')` because that limiter keys on a session user that does not yet exist and uses a different budget. Over-limit responses include a `Retry-After` header and, when the request accepts HTML, redirect to the frontend with a friendly error code so the browser flow stays legible.
+
+---
+
+## G9 — Encryption key mandatory in production (SOC 2 CC6.1)
+
+### Threat
+
+User BYOK AI credentials and Azure DevOps PATs are encrypted at rest with AES-256-GCM. Prior to this release, the encryption key could silently fall back to `SESSION_SECRET` if `CREDENTIAL_ENCRYPTION_KEY` was not configured. That folds two very different blast radii into one secret: a leaked `.env`, a dumped session store, or an accidental secret commit would then expose every stored credential alongside every active session. Rotating `SESSION_SECRET` (an operationally common action — it signs out all users) would also invalidate every stored credential, which operators were understandably reluctant to do.
+
+### Mitigation
+
+[`server/lib/startup-secrets-check.js#verifySecretsAtStartup`](../server/lib/startup-secrets-check.js#L19) now includes `CREDENTIAL_ENCRYPTION_KEY` in the production-required list alongside `SESSION_SECRET` and `WEBHOOK_SECRET` ([line 27](../server/lib/startup-secrets-check.js#L27)). In `NODE_ENV=production` the check aborts with `process.exit(1)` if the key is absent or shorter than 32 bytes ([lines 29-37](../server/lib/startup-secrets-check.js#L29)). The verifier runs before `initDB()` and before the Express app binds to a port, so a misconfigured deploy fails fast at boot rather than starting up and then silently persisting credentials encrypted under the session signing key. Weak-keyword detection (`change`, `secret`, `password`, `default`, `test`) is applied to all three required secrets in every environment ([lines 98-106](../server/lib/startup-secrets-check.js#L98)) to catch copy-paste mistakes during setup.

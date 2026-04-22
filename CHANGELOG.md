@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.6.0] - 2026-04-22
+
+A hardening sprint focused on closing P0–P4 audit findings: security depth (CSRF, SSRF, rolling-session ceiling, auth-endpoint throttling, mandatory encryption key), resilience (GitHub API circuit breaker, email + webhook DLQs, AI retry taxonomy), performance (route-level lazy splits, vendor-icons chunk, SWR, composite indexes), observability (request timing, Sentry breadcrumbs, perf marks), and a large internal-refactor pass that halves several oversized files. No user-facing feature additions — product surface is unchanged from 3.5.0.
+
+### Security
+
+- **`CREDENTIAL_ENCRYPTION_KEY` is now mandatory in production** (`server/lib/startup-secrets-check.js`). A dedicated key means a leaked `SESSION_SECRET` alone no longer decrypts stored BYOK / Azure PAT credentials. Startup aborts if the key is missing or shorter than 32 bytes.
+- **Per-IP rate limit on OAuth login + callback** (`server/middleware/tenant-rate-limit.js#createAuthRouteLimiter`): 20 req / 15 min in prod (200 in dev) so authorisation-code replay and state-token brute-forcing are capped before a session exists.
+- **SSRF guard on `POST /api/import/url`** (`server/lib/url-validator.js#assertSafeExternalUrl`): rejects non-HTTPS, embedded credentials, `localhost` / `*.local`, RFC1918 + link-local IPv4, IPv6 loopback / link-local / unique-local, and IPv4-mapped IPv6 pointing at private ranges (including the 169.254.169.254 cloud-metadata address).
+- **CSRF double-submit tokens** (`server/middleware/csrf.js`, `src/utils/api.js`): 32-byte base64url token issued by `GET /api/auth/csrf-token`, stored in the session, and required on every `POST`/`PUT`/`PATCH`/`DELETE` via the `X-CSRF-Token` header. Bypass list is limited to pre-session OAuth and signature-verified webhook paths. Timing-safe comparison.
+- **Rolling session + 7-day absolute timeout** (`server/middleware/session-absolute-timeout.js`): `express-session` keeps the UX of indefinite keepalive for active users, but every session is hard-destroyed 7 days after `createdAt` regardless of activity — so a stolen cookie cannot be kept alive forever with periodic refreshes.
+
+### Resilience
+
+- **GitHub API exponential backoff + Retry-After honouring + circuit breaker** added around the shared client — transient 5xx and secondary-rate-limit responses are retried with jitter, and a short open-circuit window prevents thundering-herd retries when GitHub is degraded.
+- **Email retry + dead-letter queue** (`server/lib/email.js` + new DLQ table): transient Resend failures are retried with backoff; terminal failures land in a DLQ with payload + error for operator replay.
+- **Webhook DLQ** for failed GitHub webhook events — persistence failures no longer silently drop; events land in `webhook_dlq` with a structured error for redelivery analysis.
+- **AI provider retry + error taxonomy expanded** so transient upstream failures (429, 5xx, connection reset) are classified and retried, while user-facing config errors (401, 403, 404) fail fast.
+- **Migration engine robustness** — `fix(migration-engine)` collects task promises so one crashed task no longer stalls the whole plan (B1); scheduler + credential-cleanup loops now supervise their own promises (B3); Stripe webhook rolls back its idempotency record when license issuance fails so retries actually mint the license (B2).
+
+### Performance
+
+- **Route-level lazy splitting** — `PRReviewView`'s shiki-backed `DiffRenderer` and `ReadmeEnhanceDiffPanel` are now user-gesture-loaded, keeping shiki's ~600 KB out of the initial bundle.
+- **Vendor-icons chunk** — `lucide-react` split into its own chunk, removing ~35 KB gzipped from the main vendor bundle (`vite.config.js` `manualChunks`).
+- **Stale-while-revalidate on Work Board hooks** — last-known-good data is served immediately while the background refetch runs, so tab-switches feel instant.
+- **Composite DB indexes** on hot Work Board / PR-event query paths, cutting the N-row scans that showed up in slow-query traces.
+
+### Observability
+
+- **Request-timing middleware** — every response gets a `Server-Timing` header and a structured log line with method, path, status, and duration.
+- **Sentry breadcrumbs** on client navigation, mutation starts/ends, and API calls — so a production error ticket arrives with the last ~30 user actions pre-loaded.
+- **`performance.mark()` boundary events** at key client transitions (route mount, first paint, AI response received) to make real-user traces diff-able in DevTools.
+
+### Accessibility
+
+- **WCAG 2.1 AA pass** on form surfaces: every input now has an associated label, every icon-only button now carries an `aria-label`, and role/tabIndex semantics were cleaned up across the key forms flagged by axe.
+
+### UX
+
+- **Toast coverage expanded** from 8 → 19 mutation surfaces so every create/update/delete gives the user a visible acknowledgement.
+- **Inline actions on the Work Board** (approve / request-changes / snooze) — already shipped in 3.5.0, now wired through the new toast coverage so the result is legible without opening the PR.
+- **AI summary card on the Work Board** — already in 3.5.0; this release adds cross-provider parity so the BYOK provider choice no longer affects which summary format you get.
+
+### Quality
+
+- **Zod validation middleware** (`validate-request`) rolled out across 14 additional routes for a uniform 400 error envelope.
+- **3 new integration-test files** exercising a real SQLite database (Work Board, Teams, Repos) — catches drift the unit suite missed.
+- **9 new E2E specs** covering PR Review + Settings / API-keys flows.
+- **Shell smoke tests** for `App`, `Header`, and `Sidebar`.
+- Unit test count: **1998 passing** (up from 1764 at v3.5.0).
+
+### Internal / refactor
+
+- `src/components/RepoList.jsx`: 859 → 280 lines + 6 focused children.
+- `src/pages/WorkBoardPage.jsx`: 1160 → 271 lines + 9 children.
+- `src/components/MigrationWizard/steps/SourceStep.jsx`: 912 → 196 lines.
+- `server/services/ai-service.js`: 550 → 138 lines + 6 per-feature modules.
+- Migration credential lifecycle extracted into its own module.
+- Brand + chart colours centralised via CSS variables (no behaviour change).
+- Two long-standing lint warnings cleared.
+
 ## [3.5.0] - 2026-04-21
 
 ### Added
@@ -536,7 +597,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.5.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.6.0...HEAD
+[3.6.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.5.0...v3.6.0
 [3.5.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.4.0...v3.5.0
 [3.0.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.5.0...v3.0.0
 [2.5.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.4.0...v2.5.0

@@ -21,13 +21,15 @@
 ![LM Studio](https://img.shields.io/badge/LM_Studio-4B2DDC?style=for-the-badge)
 
 <!-- Quality -->
-![Tests](https://img.shields.io/badge/Tests-1764_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-1998_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
 ![License](https://img.shields.io/badge/License-AGPL_v3-blue?style=for-the-badge&logo=gnu&logoColor=white)
 ![Release](https://img.shields.io/github/v/release/brunobola-portfolio/GitHub-Repo-Manager?style=for-the-badge&logo=github&logoColor=white)
 
 **A full-stack AI-powered dashboard for managing repositories, teams, CI/CD, and migrating from Azure DevOps — all in one beautiful interface.**
 
-[Try Demo Mode](#quick-start-demo-mode) | [Features](#features-overview) | [Installation](#installation) | [Documentation](docs/) | [What's new in v3.5.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v3.5.0)
+[Try Demo Mode](#quick-start-demo-mode) | [Features](#features-overview) | [Installation](#installation) | [Documentation](docs/) | [What's new in v3.6.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v3.6.0)
+
+**Production-hardened** — AES-256-GCM BYOK, rolling sessions + CSRF double-submit, GitHub API circuit breaker, SSRF guard on import-from-URL.
 
 </div>
 
