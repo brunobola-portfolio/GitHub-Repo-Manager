@@ -196,10 +196,11 @@ export function ReviewToolbar({ pr, repoName, viewMode, onToggleViewMode, onBack
             >
               {/* Review body textarea */}
               <div className="px-4 pt-3 pb-2 border-b border-gray-100 dark:border-gray-800">
-                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
+                <label htmlFor="review-summary-body" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
                   Review summary <span className="font-normal text-gray-400">(optional)</span>
                 </label>
                 <textarea
+                  id="review-summary-body"
                   value={reviewBody}
                   onChange={e => setReviewBody(e.target.value)}
                   rows={3}

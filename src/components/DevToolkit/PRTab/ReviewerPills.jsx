@@ -32,6 +32,7 @@ export function ReviewerPills({ reviewers = [], onRemove, onAdd }) {
                     onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') setAdding(false) }}
                     onBlur={() => { if (!input) setAdding(false) }}
                     placeholder="@username..."
+                    aria-label="Add reviewer username"
                     className="w-24 px-2 py-0.5 text-xs rounded-full border border-slate-300 dark:border-slate-700 bg-transparent outline-none"
                     autoFocus
                 />

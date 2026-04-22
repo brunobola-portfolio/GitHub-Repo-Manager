@@ -37,6 +37,7 @@ export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     placeholder={action === 'APPROVE' ? 'Optional comment...' : 'Your comment...'}
+                    aria-label="Review comment"
                     className="w-full h-20 px-3 py-2 text-sm bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-lg resize-none outline-none"
                 />
                 {error && (

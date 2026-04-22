@@ -47,10 +47,11 @@ export function StalePRsTab() {
         <>
             {/* Controls */}
             <div className="flex items-center gap-3 p-4 border-b border-slate-100 dark:border-slate-800/60">
-                <label className="text-xs font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                <label htmlFor="stale-prs-after-days" className="text-xs font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
                     Stale after
                 </label>
                 <select
+                    id="stale-prs-after-days"
                     value={staleAfterDays}
                     onChange={e => setStaleAfterDays(Number(e.target.value))}
                     className="text-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"

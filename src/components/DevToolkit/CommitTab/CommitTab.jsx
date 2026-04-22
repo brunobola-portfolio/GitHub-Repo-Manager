@@ -206,6 +206,7 @@ export function CommitTab({ toolkit }) {
                         value={manualDiff}
                         onChange={(e) => setManualDiff(e.target.value)}
                         placeholder="Paste a git diff, file changes, or describe what you changed in plain text..."
+                        aria-label="Manual diff or change description"
                         className="w-full h-40 px-4 py-3 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 resize-none font-mono placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors leading-relaxed"
                     />
                 </div>

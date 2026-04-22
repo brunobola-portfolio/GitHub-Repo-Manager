@@ -99,10 +99,11 @@ export function AuditLogSection() {
             {/* Filters */}
             <div className="flex flex-wrap gap-3 items-end">
                 <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                    <label htmlFor="audit-log-action" className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
                         <Filter className="w-3 h-3" /> Action
                     </label>
                     <select
+                        id="audit-log-action"
                         value={action}
                         onChange={(e) => setAction(e.target.value)}
                         className="px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
@@ -114,8 +115,9 @@ export function AuditLogSection() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">From</label>
+                    <label htmlFor="audit-log-date-from" className="text-xs font-medium text-slate-600 dark:text-slate-400">From</label>
                     <input
+                        id="audit-log-date-from"
                         type="date"
                         value={dateFrom}
                         onChange={(e) => setDateFrom(e.target.value)}
@@ -124,8 +126,9 @@ export function AuditLogSection() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-slate-600 dark:text-slate-400">To</label>
+                    <label htmlFor="audit-log-date-to" className="text-xs font-medium text-slate-600 dark:text-slate-400">To</label>
                     <input
+                        id="audit-log-date-to"
                         type="date"
                         value={dateTo}
                         onChange={(e) => setDateTo(e.target.value)}

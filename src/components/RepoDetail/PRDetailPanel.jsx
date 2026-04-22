@@ -388,6 +388,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                     onChange={e => setNewComment(e.target.value)}
                                     rows={3}
                                     placeholder="Write a comment... (Markdown supported)"
+                                    aria-label="Pull request comment"
                                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm resize-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all"
                                 />
                                 <div className="flex justify-end mt-3">

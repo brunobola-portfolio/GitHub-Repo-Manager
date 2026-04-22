@@ -132,6 +132,7 @@ export function RepoFilterBar({
 						placeholder={isAISearch ? "Ask AI (e.g., 'React apps with auth')..." : "Search repositories..."}
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
+						aria-label={isAISearch ? "AI semantic repository search" : "Search repositories"}
 						className={`w-full pl-10 pr-12 py-2.5 rounded-xl border outline-none text-sm transition-all shadow-sm
 							${isAISearch
 								? 'bg-purple-50/80 dark:bg-purple-900/20 backdrop-blur-sm border-purple-200/80 dark:border-purple-700/60 focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 text-purple-900 dark:text-purple-100 placeholder:text-purple-600 dark:placeholder:text-purple-300'

@@ -123,19 +123,19 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                     <Settings className="w-5 h-5 text-indigo-500" /> General
                 </h3>
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
-                    <input type="text" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                    <label htmlFor="repo-settings-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
+                    <input id="repo-settings-description" type="text" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Website</label>
-                    <input type="url" value={form.homepage} onChange={e => setForm(f => ({ ...f, homepage: e.target.value }))}
+                    <label htmlFor="repo-settings-homepage" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Website</label>
+                    <input id="repo-settings-homepage" type="url" value={form.homepage} onChange={e => setForm(f => ({ ...f, homepage: e.target.value }))}
                         placeholder="https://example.com"
                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Default Branch</label>
-                    <input type="text" value={form.default_branch} onChange={e => setForm(f => ({ ...f, default_branch: e.target.value }))}
+                    <label htmlFor="repo-settings-default-branch" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Default Branch</label>
+                    <input id="repo-settings-default-branch" type="text" value={form.default_branch} onChange={e => setForm(f => ({ ...f, default_branch: e.target.value }))}
                         className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
                 </div>
 
@@ -185,8 +185,8 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                 {showNewHook && (
                     <div className="space-y-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Payload URL *</label>
-                            <input type="url" value={hookForm.url} onChange={e => setHookForm(f => ({ ...f, url: e.target.value }))}
+                            <label htmlFor="webhook-payload-url" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Payload URL *</label>
+                            <input id="webhook-payload-url" type="url" value={hookForm.url} onChange={e => setHookForm(f => ({ ...f, url: e.target.value }))}
                                 placeholder="https://example.com/webhook"
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
                         </div>

@@ -169,6 +169,7 @@ export default function OrgField({
                 value={source.org}
                 onChange={handleOrgInputChange}
                 placeholder="my-organization"
+                aria-label="Azure DevOps organization"
                 className={`w-full pl-9 pr-44 py-2.5 border rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-colors ${
                   isAccessError ? 'border-amber-400 dark:border-amber-500' : 'border-slate-300 dark:border-slate-600'
                 }`}

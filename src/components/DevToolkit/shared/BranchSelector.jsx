@@ -58,6 +58,7 @@ export function BranchSelector({ branches = [], selected, onSelect, label, defau
                                     value={query}
                                     onChange={(e) => setQuery(e.target.value)}
                                     placeholder="Search branches..."
+                                    aria-label="Search branches"
                                     className="w-full px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 text-sm outline-none placeholder:text-slate-400"
                                     autoFocus
                                 />

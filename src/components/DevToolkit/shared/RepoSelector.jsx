@@ -51,6 +51,7 @@ export function RepoSelector({ repos = [], selected, onSelect }) {
                                     value={query}
                                     onChange={(e) => setQuery(e.target.value)}
                                     placeholder="Search repos..."
+                                    aria-label="Search repositories"
                                     className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                     autoFocus
                                 />

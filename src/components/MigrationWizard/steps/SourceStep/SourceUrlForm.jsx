@@ -20,12 +20,13 @@ export default function SourceUrlForm({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+      <label htmlFor="source-azure-url" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
         Paste Azure DevOps URL <span className="text-slate-400 font-normal">(optional)</span>
       </label>
       <div className="relative">
         <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
+          id="source-azure-url"
           type="text"
           value={smartPasteValue}
           onChange={(e) => onInput(e.target.value)}

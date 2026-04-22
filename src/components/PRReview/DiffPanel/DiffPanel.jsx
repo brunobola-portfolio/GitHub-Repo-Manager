@@ -258,6 +258,7 @@ export function DiffPanel({ file, viewMode, comments, pendingComments, resolvedC
             onKeyDown={handleTextareaKeyDown}
             rows={4}
             placeholder="Leave a comment… (Ctrl+Enter to submit, Esc to cancel)"
+            aria-label="Inline diff comment"
             className="w-full resize-y rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <div className="flex gap-2 mt-2 justify-end">

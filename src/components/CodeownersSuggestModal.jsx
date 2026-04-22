@@ -256,6 +256,7 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
                             readOnly
                             value={data.preview}
                             rows={Math.min(12, Math.max(4, data.preview.split('\n').length + 1))}
+                            aria-label="CODEOWNERS preview"
                             className="w-full font-mono text-xs p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/40 bg-slate-50 dark:bg-slate-900/60 text-slate-800 dark:text-slate-200"
                             onFocus={(e) => e.target.select()}
                         />

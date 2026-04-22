@@ -71,11 +71,12 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
     <div className="space-y-5">
       {/* Owner dropdown */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+        <label htmlFor="target-config-owner" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
           Owner
         </label>
         <div className="relative">
           <select
+            id="target-config-owner"
             value={source.targetOrg || ''}
             onChange={(e) => onChange({ targetOrg: e.target.value })}
             className="w-full appearance-none px-3 py-2.5 pr-9 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
@@ -91,12 +92,13 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
 
       {/* Repository name */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+        <label htmlFor="target-config-repo-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
           Repository name
         </label>
         <div className="relative">
           <FolderGit2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
+            id="target-config-repo-name"
             type="text"
             value={source.targetName || ''}
             onChange={handleNameChange}
@@ -150,10 +152,11 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+        <label htmlFor="target-config-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
           Description (optional)
         </label>
         <textarea
+          id="target-config-description"
           value={source.description || ''}
           onChange={(e) => onChange({ description: e.target.value })}
           placeholder="Repository description..."

@@ -136,8 +136,9 @@ export function TeamHub({ onTeamSelect }) {
                         </h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Team Name</label>
+                                <label htmlFor="team-form-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Team Name</label>
                                 <input
+                                    id="team-form-name"
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -147,8 +148,9 @@ export function TeamHub({ onTeamSelect }) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Description</label>
+                                <label htmlFor="team-form-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Description</label>
                                 <input
+                                    id="team-form-description"
                                     type="text"
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}

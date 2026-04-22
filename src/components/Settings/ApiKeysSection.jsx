@@ -109,10 +109,11 @@ function NewKeyForm({ onCreated, onCancel }) {
                 </h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        <label htmlFor="api-key-name" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                             Key Name
                         </label>
                         <input
+                            id="api-key-name"
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
@@ -151,10 +152,11 @@ function NewKeyForm({ onCreated, onCancel }) {
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                        <label htmlFor="api-key-expiry" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                             Expiry Date <span className="text-slate-400">(optional)</span>
                         </label>
                         <input
+                            id="api-key-expiry"
                             type="date"
                             value={expiry}
                             onChange={(e) => setExpiry(e.target.value)}

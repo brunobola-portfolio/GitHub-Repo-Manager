@@ -125,12 +125,13 @@ export default function UrlInputStep({ source, onChange }) {
       {/* Conditional auth fields */}
       {source.authType === 'token' && (
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+          <label htmlFor="url-auth-token" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
             Access Token
           </label>
           <div className="relative">
             <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
+              id="url-auth-token"
               type="password"
               value={source.authToken}
               onChange={(e) => onChange({ authToken: e.target.value })}
@@ -144,12 +145,13 @@ export default function UrlInputStep({ source, onChange }) {
       {source.authType === 'basic' && (
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+            <label htmlFor="url-auth-username" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
               Username
             </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
+                id="url-auth-username"
                 type="text"
                 value={source.authUsername}
                 onChange={(e) => onChange({ authUsername: e.target.value })}
@@ -159,12 +161,13 @@ export default function UrlInputStep({ source, onChange }) {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+            <label htmlFor="url-auth-password" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
               Password
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
+                id="url-auth-password"
                 type="password"
                 value={source.authPassword}
                 onChange={(e) => onChange({ authPassword: e.target.value })}

@@ -95,6 +95,7 @@ export function PresetDropdown({ currentFilters, onApply }) {
                                 onChange={e => setName(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Enter') handleSave() }}
                                 placeholder="Save current as…"
+                                aria-label="Preset name"
                                 className="flex-1 px-2 py-1 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/50 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 disabled={saving}
                             />

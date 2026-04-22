@@ -333,6 +333,7 @@ export function Select({
                                             setFocusedIndex(0)
                                         }}
                                         placeholder="Filter..."
+                                        aria-label={`Filter ${label || 'options'}`}
                                         className="w-full pl-8 pr-3 py-1.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors"
                                     />
                                 </div>

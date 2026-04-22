@@ -100,14 +100,14 @@ export function BranchesTab({ api }) {
             {showCreate && (
                 <Card className="p-4 space-y-3">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Branch Name *</label>
-                        <input type="text" value={newBranch} onChange={e => setNewBranch(e.target.value)}
+                        <label htmlFor="new-branch-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Branch Name *</label>
+                        <input id="new-branch-name" type="text" value={newBranch} onChange={e => setNewBranch(e.target.value)}
                             placeholder="feature/my-branch"
                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Base SHA (optional, defaults to default branch)</label>
-                        <input type="text" value={baseSha} onChange={e => setBaseSha(e.target.value)}
+                        <label htmlFor="new-branch-base-sha" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Base SHA (optional, defaults to default branch)</label>
+                        <input id="new-branch-base-sha" type="text" value={baseSha} onChange={e => setBaseSha(e.target.value)}
                             placeholder="abc123..."
                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-mono" />
                     </div>

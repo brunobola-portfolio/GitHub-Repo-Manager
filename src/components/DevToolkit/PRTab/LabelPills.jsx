@@ -30,6 +30,7 @@ export function LabelPills({ labels = [], onRemove, onAdd }) {
                     onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') setAdding(false) }}
                     onBlur={() => { if (!input) setAdding(false) }}
                     placeholder="label..."
+                    aria-label="Add label"
                     className="w-20 px-2 py-0.5 text-xs rounded-full border border-indigo-300 dark:border-indigo-700 bg-transparent outline-none"
                     autoFocus
                 />

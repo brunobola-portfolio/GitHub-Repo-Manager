@@ -290,6 +290,7 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
                           type="text"
                           value={(workItems.labelMapping || {})[type] || ''}
                           onChange={(e) => handleLabelChange(type, e.target.value)}
+                          aria-label={`GitHub label for ${type}`}
                           className="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                           placeholder={type.toLowerCase().replace(/\s+/g, '-')}
                         />

@@ -39,6 +39,7 @@ export function SectionCard({ title, content, onContentChange, chips, onRefine, 
                     <textarea
                         value={content || ''}
                         onChange={(e) => onContentChange?.(e.target.value)}
+                        aria-label="Section content"
                         className="w-full min-h-[60px] bg-transparent text-sm text-slate-700 dark:text-slate-300 resize-y outline-none font-mono"
                         autoFocus
                     />

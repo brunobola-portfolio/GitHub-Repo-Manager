@@ -91,21 +91,21 @@ export function ReleasesTab({ api }) {
                 <Card className="p-4 space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tag *</label>
-                            <input type="text" value={form.tag_name} onChange={e => setForm(f => ({ ...f, tag_name: e.target.value }))}
+                            <label htmlFor="release-tag-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tag *</label>
+                            <input id="release-tag-name" type="text" value={form.tag_name} onChange={e => setForm(f => ({ ...f, tag_name: e.target.value }))}
                                 placeholder="v1.0.0"
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title</label>
-                            <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                            <label htmlFor="release-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title</label>
+                            <input id="release-name" type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                                 placeholder="Release title"
                                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Release Notes</label>
-                        <textarea value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+                        <label htmlFor="release-body" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Release Notes</label>
+                        <textarea id="release-body" value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
                             rows={4} placeholder="Describe this release..."
                             className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm resize-none" />
                     </div>

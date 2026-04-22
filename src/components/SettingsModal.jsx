@@ -205,6 +205,7 @@ function GeneralTabContent({
                                 max="60"
                                 value={cacheSettings.ttl}
                                 onChange={(e) => setCacheSettings({ ...cacheSettings, ttl: parseInt(e.target.value) })}
+                                aria-label="Cache duration in minutes"
                                 className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                             />
                             <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
@@ -281,6 +282,7 @@ function GeneralTabContent({
                                 const val = Math.min(5, Math.max(1, parseInt(e.target.value) || 1))
                                 setMigrationSettings({ ...migrationSettings, maxRetries: val })
                             }}
+                            aria-label="Max retries for failed tasks"
                             className="w-16 px-2 py-1 text-sm text-center border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>

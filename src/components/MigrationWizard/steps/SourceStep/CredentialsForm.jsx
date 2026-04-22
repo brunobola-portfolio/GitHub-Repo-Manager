@@ -74,6 +74,7 @@ export default function CredentialsForm({
                   value={source.pat}
                   onChange={(e) => onChange({ pat: e.target.value, validated: false })}
                   placeholder="Paste your Personal Access Token"
+                  aria-label="Personal Access Token"
                   className="w-full pr-10 pl-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 text-sm transition-colors"
                 />
                 <button
