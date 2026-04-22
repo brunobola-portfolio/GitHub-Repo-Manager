@@ -1,20 +1,35 @@
 import db from './db.js';
 import logger from './lib/logger.js';
-import { GeminiProvider, AIError, AI_ERROR_CODE } from './lib/ai-provider.js';
+import { GeminiProvider } from './lib/ai-provider.js';
+import { sanitizeForPrompt } from './lib/ai-features/sanitize.js';
+import {
+    detectPatterns,
+    calculateQualityMetrics,
+    getScoreSummary,
+    generateQualityReport,
+} from './lib/ai-features/quality-metrics.js';
+import { analyzeRepo } from './lib/ai-features/repo-analysis.js';
+import { enhanceReadme } from './lib/ai-features/readme-enhance.js';
+import { reviewPullRequest } from './lib/ai-features/pr-review.js';
+import {
+    cosineSimilarity,
+    embedText,
+    findSimilarById,
+    semanticSearch,
+} from './lib/ai-features/semantic-search.js';
+
+export { sanitizeForPrompt };
 
 /**
- * Sanitize user-controlled text before interpolation into AI prompts.
- * Truncates to maxLen, strips null bytes, and returns empty string for falsy input.
- * @param {string} text
- * @param {number} maxLen
- * @returns {string}
+ * AI service façade.
+ *
+ * State it still owns: the provider handle (initialized via .initialize()).
+ * All per-feature logic lives in ./lib/ai-features/* and is composed here so
+ * the public method surface (analyzeRepo, enhanceReadme, reviewPullRequest,
+ * embedText, semanticSearch, findSimilarById, generateQualityReport,
+ * detectPatterns, calculateQualityMetrics, cosineSimilarity) is preserved
+ * for all existing route / worker consumers and tests.
  */
-export function sanitizeForPrompt(text, maxLen = 5000) {
-    if (!text) return '';
-    const cleaned = String(text).replace(/\0/g, '');
-    return cleaned.slice(0, maxLen);
-}
-
 class AIService {
     constructor() {
         this.provider = null;
@@ -72,478 +87,51 @@ class AIService {
         }
     }
 
-    /**
-     * Detect README sections and project characteristics
-     * @param {string} readmeContent - Raw README markdown
-     * @param {Array} fileStructure - Top-level files/dirs
-     * @returns {object} Detected patterns
-     */
+    // ── pattern / quality (pure) ──────────────────────────────────────────
     detectPatterns(readmeContent, fileStructure) {
-        const readme = (readmeContent || '').toLowerCase();
-        const files = (fileStructure || []).map(f => f.name?.toLowerCase() || '');
-        const dirs = fileStructure?.filter(f => f.type === 'dir').map(f => f.name?.toLowerCase()) || [];
-
-        return {
-            // README sections
-            hasInstallation: /## install|## setup|npm install|yarn add|pip install/.test(readme),
-            hasUsage: /## usage|## getting started|## how to use/.test(readme),
-            hasExamples: /## example|```/.test(readme),
-            hasContributing: /## contribut|contributing\.md/.test(readme) || files.includes('contributing.md'),
-            hasLicense: /## license|license\.md|mit license|apache/.test(readme) || files.includes('license') || files.includes('license.md'),
-            hasAPI: /## api|## endpoints|## methods/.test(readme),
-            hasBadges: /\[!\[|shields\.io|badge/.test(readme),
-            hasTableOfContents: /## table of contents|\* \[/.test(readme),
-
-            // Project characteristics
-            hasCI: files.some(f => f.includes('workflow') || f === '.travis.yml' || f === '.circleci') || dirs.includes('.github'),
-            hasTests: dirs.some(d => ['test', 'tests', '__tests__', 'spec'].includes(d)) || files.some(f => f.includes('.test.') || f.includes('.spec.')),
-            hasDocs: dirs.includes('docs') || dirs.includes('documentation'),
-            hasDocker: files.includes('dockerfile') || files.includes('docker-compose.yml') || files.includes('docker-compose.yaml'),
-            hasConfig: files.some(f => f.includes('config') || f.endsWith('.json') || f.endsWith('.yaml') || f.endsWith('.yml')),
-
-            // Project type hints
-            isNodeProject: files.includes('package.json'),
-            isPythonProject: files.includes('requirements.txt') || files.includes('setup.py') || files.includes('pyproject.toml'),
-            isRustProject: files.includes('cargo.toml'),
-            isGoProject: files.includes('go.mod'),
-            isJavaProject: files.includes('pom.xml') || files.includes('build.gradle'),
-        };
+        return detectPatterns(readmeContent, fileStructure);
     }
 
-    /**
-     * Calculate quality metrics from detected patterns
-     * @param {object} patterns - Output from detectPatterns
-     * @param {object} repoData - GitHub repo metadata
-     * @returns {object} Quality metrics
-     */
     calculateQualityMetrics(patterns, repoData) {
-        let score = 50; // Base score
-        const breakdown = {};
-
-        // Documentation (30 points max)
-        let docScore = 0;
-        if (patterns.hasInstallation) docScore += 8;
-        if (patterns.hasUsage) docScore += 8;
-        if (patterns.hasExamples) docScore += 7;
-        if (patterns.hasAPI) docScore += 7;
-        breakdown.documentation = Math.min(docScore, 30);
-        score += breakdown.documentation;
-
-        // Community Standards (20 points max)
-        let communityScore = 0;
-        if (patterns.hasContributing) communityScore += 7;
-        if (patterns.hasLicense) communityScore += 7;
-        if (repoData?.description) communityScore += 6;
-        breakdown.community = Math.min(communityScore, 20);
-        score += breakdown.community - 10; // Adjust base
-
-        // Engineering (20 points max)
-        let engScore = 0;
-        if (patterns.hasCI) engScore += 10;
-        if (patterns.hasTests) engScore += 10;
-        breakdown.engineering = Math.min(engScore, 20);
-        score += breakdown.engineering;
-
-        // Polish (10 points max)
-        let polishScore = 0;
-        if (patterns.hasBadges) polishScore += 5;
-        if (patterns.hasTableOfContents) polishScore += 5;
-        breakdown.polish = Math.min(polishScore, 10);
-        score += breakdown.polish;
-
-        return {
-            overall: Math.max(0, Math.min(100, score)),
-            breakdown,
-            patterns
-        };
-    }
-
-    /**
-     * Generate an embedding for a given text.
-     * @param {string} text
-     * @returns {Promise<number[]>} Vector array
-     */
-    async embedText(text) {
-        if (!this.provider?.embeddingModel) {
-            throw new Error('AI embedding model not initialized. Please check GEMINI_API_KEY configuration.');
-        }
-
-        try {
-            return await this.provider.embed(text);
-        } catch (error) {
-            logger.error({ err: error }, 'Embedding generation failed');
-            // Preserve the existing human-friendly message for NOT_FOUND
-            if (error instanceof AIError && error.code === AI_ERROR_CODE.NOT_FOUND) {
-                const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
-                throw new Error(`Embedding model "${embeddingModel}" is not available. Please verify your API access and GEMINI_EMBEDDING_MODEL configuration.`);
-            }
-            throw error;
-        }
-    }
-
-    /**
-     * Calculate Cosine Similarity between two vectors
-     * @param {number[]} vecA 
-     * @param {number[]} vecB 
-     * @returns {number} similarity score (-1 to 1)
-     */
-    cosineSimilarity(vecA, vecB) {
-        let dotProduct = 0;
-        let normA = 0;
-        let normB = 0;
-        for (let i = 0; i < vecA.length; i++) {
-            dotProduct += vecA[i] * vecB[i];
-            normA += vecA[i] * vecA[i];
-            normB += vecB[i] * vecB[i];
-        }
-        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-    }
-
-    /**
-     * Find repositories semantically similar to a given repo by its ID.
-     * Queries only repos belonging to the same user (multi-tenancy).
-     *
-     * @param {number|string} repoId - The numeric GitHub repo ID
-     * @param {object} opts
-     * @param {number} opts.topK - Number of results to return (default 5)
-     * @param {boolean} opts.excludeSelf - Exclude the target repo itself (default true)
-     * @param {number} [opts.userId] - Scope to a specific user ID
-     * @returns {Promise<Array|null>} Scored results, or null if repo is not indexed
-     */
-    async findSimilarById(repoId, { topK = 5, excludeSelf = true, userId } = {}) {
-        let row
-        if (userId !== undefined && userId !== null) {
-            row = db.prepare('SELECT embedding FROM repo_embeddings WHERE repo_id = ? AND user_id = ?').get(repoId, userId)
-        } else {
-            row = db.prepare('SELECT embedding FROM repo_embeddings WHERE repo_id = ?').get(repoId)
-        }
-        if (!row) return null
-
-        const targetVec = JSON.parse(row.embedding)
-
-        let others
-        if (userId !== undefined && userId !== null) {
-            others = excludeSelf
-                ? db.prepare('SELECT re.repo_id, re.embedding, rm.topics, rm.summary FROM repo_embeddings re LEFT JOIN repo_metadata rm ON re.repo_id = rm.repo_id AND re.user_id = rm.user_id WHERE re.user_id = ? AND re.repo_id != ?').all(userId, repoId)
-                : db.prepare('SELECT re.repo_id, re.embedding, rm.topics, rm.summary FROM repo_embeddings re LEFT JOIN repo_metadata rm ON re.repo_id = rm.repo_id AND re.user_id = rm.user_id WHERE re.user_id = ?').all(userId)
-        } else {
-            others = excludeSelf
-                ? db.prepare('SELECT re.repo_id, re.embedding, rm.topics, rm.summary FROM repo_embeddings re LEFT JOIN repo_metadata rm ON re.repo_id = rm.repo_id WHERE re.repo_id != ?').all(repoId)
-                : db.prepare('SELECT re.repo_id, re.embedding, rm.topics, rm.summary FROM repo_embeddings re LEFT JOIN repo_metadata rm ON re.repo_id = rm.repo_id').all()
-        }
-
-        const scored = others.map(o => {
-            const vec = JSON.parse(o.embedding)
-            return {
-                repoId: o.repo_id,
-                score: this.cosineSimilarity(targetVec, vec),
-                description: o.summary || ''
-            }
-        })
-
-        return scored.sort((a, b) => b.score - a.score).slice(0, topK)
-    }
-
-    /**
-     * Search usage natural language
-     * @param {string} query
-     * @param {number} limit
-     * @param {number} [userId] - Tenant user ID to scope results (omit for all)
-     */
-    async semanticSearch(query, limit = 5, userId) {
-        if (!this.embeddingModel) return [];
-
-        // 1. Embed the query
-        const queryEmbedding = await this.embedText(query);
-
-        // 2. Fetch repo embeddings scoped by user (multi-tenancy)
-        // Note: For large datasets, this is inefficient. optimize with FAISS or vector DB.
-        let rows;
-        if (userId !== undefined && userId !== null) {
-            rows = db.prepare('SELECT repo_id, embedding FROM repo_embeddings WHERE user_id = ?').all(userId);
-        } else {
-            rows = db.prepare('SELECT repo_id, embedding FROM repo_embeddings').all();
-        }
-
-        // 3. Rank by similarity
-        const results = rows.map(row => {
-            const embedding = JSON.parse(row.embedding);
-            const score = this.cosineSimilarity(queryEmbedding, embedding);
-            return { repo_id: row.repo_id, score };
-        });
-
-        return results
-            .sort((a, b) => b.score - a.score)
-            .slice(0, limit);
-    }
-
-    /**
-     * Generate a summary and insights for a repository (enhanced version)
-     * @param {object} repoData - GitHub repo object
-     * @param {string} readmeContent - Raw README text
-     * @param {object} fileStructure - truncated file tree
-     */
-    async analyzeRepo(repoData, readmeContent, fileStructure) {
-        if (!this.provider?.model) {
-            throw new Error('AI model not initialized. Please check GEMINI_API_KEY and GEMINI_MODEL configuration.');
-        }
-
-        // Detect patterns first
-        const patterns = this.detectPatterns(readmeContent, fileStructure);
-        const quality = this.calculateQualityMetrics(patterns, repoData);
-
-        const prompt = `
-            Analyze this GitHub repository and provide insights.
-
-            Name: ${sanitizeForPrompt(repoData.name, 200)}
-            Description: ${sanitizeForPrompt(repoData.description, 500) || 'None'}
-            Language: ${sanitizeForPrompt(repoData.language, 100) || 'Not specified'}
-            Topics: ${sanitizeForPrompt(repoData.topics?.join(', '), 500) || 'None'}
-            Stars: ${repoData.stargazers_count || 0}
-            Forks: ${repoData.forks_count || 0}
-            Open Issues: ${repoData.open_issues_count || 0}
-
-            README (Excerpt):
-            ${sanitizeForPrompt(readmeContent, 2500) || 'No README found'}
-
-            File Structure:
-            ${sanitizeForPrompt(JSON.stringify(fileStructure || [], null, 2), 3000)}
-
-            Detected Patterns:
-            - Has installation docs: ${patterns.hasInstallation}
-            - Has usage examples: ${patterns.hasUsage}
-            - Has CI/CD: ${patterns.hasCI}
-            - Has tests: ${patterns.hasTests}
-            - Has contributing guide: ${patterns.hasContributing}
-            - Has license: ${patterns.hasLicense}
-
-            Provide a JSON response with:
-            1. "summary": TL;DR (2 sentences max, focus on what it does and who it's for)
-            2. "project_type": One of [library, framework, application, tool, template, documentation, other]
-            3. "suggested_topics": Array of 3-5 relevant tags not already in topics
-            4. "improvements": Array of 3-4 specific, actionable improvements based on what's missing
-            5. "readme_suggestions": Array of specific README sections to add (if any are missing)
-            6. "highlights": Array of 2-3 positive aspects of the project
-
-            Return ONLY valid JSON (no markdown, no explanation):
-        `;
-
-        try {
-            // Provider handles markdown-fence stripping centrally
-            const { text } = await this.provider.generate({ prompt });
-            const aiAnalysis = JSON.parse(text);
-
-            // Merge AI analysis with computed metrics
-            return {
-                ...aiAnalysis,
-                health_score: quality.overall,
-                quality_breakdown: quality.breakdown,
-                patterns: quality.patterns
-            };
-        } catch (error) {
-            logger.error({ err: error }, 'Repository analysis failed');
-            if (error instanceof AIError && error.code === AI_ERROR_CODE.NOT_FOUND) {
-                throw new Error(`AI model not available. Please verify GEMINI_MODEL configuration in .env file.`);
-            }
-            throw error;
-        }
-    }
-
-    /**
-     * Enhance an existing README with AI suggestions
-     * @param {string} currentReadme - Current README content
-     * @param {object} repoData - Repository metadata
-     * @param {object} fileStructure - File tree
-     */
-    async enhanceReadme(currentReadme, repoData, fileStructure) {
-        if (!this.provider?.model) {
-            throw new Error('AI model not initialized. Please check GEMINI_API_KEY and GEMINI_MODEL configuration.');
-        }
-
-        const patterns = this.detectPatterns(currentReadme, fileStructure);
-        const missingSections = [];
-        if (!patterns.hasInstallation) missingSections.push('Installation');
-        if (!patterns.hasUsage) missingSections.push('Usage');
-        if (!patterns.hasExamples) missingSections.push('Examples');
-        if (!patterns.hasContributing) missingSections.push('Contributing');
-        if (!patterns.hasLicense) missingSections.push('License');
-        if (!patterns.hasAPI && repoData.language) missingSections.push('API Reference');
-
-        const prompt = `
-            You are a technical writer improving a GitHub README.
-
-            Project: ${sanitizeForPrompt(repoData.name, 200)}
-            Language: ${sanitizeForPrompt(repoData.language, 100) || 'Not specified'}
-            Description: ${sanitizeForPrompt(repoData.description, 500) || 'None provided'}
-
-            Current README:
-            ${sanitizeForPrompt(currentReadme, 3000) || 'Empty README'}
-
-            Missing Sections: ${missingSections.join(', ') || 'None detected'}
-
-            Task: Generate ONLY the missing sections as markdown.
-            - Use professional, clear language
-            - Include placeholder examples where appropriate
-            - Make installation instructions specific to ${sanitizeForPrompt(repoData.language, 100) || 'the project'}
-            - Each section should start with ## heading
-
-            Return ONLY the markdown for missing sections (no existing content, no JSON wrapper).
-        `;
-
-        try {
-            // Note: enhanceReadme returns raw markdown, so we use the raw text (not fence-stripped)
-            // from the provider. The provider strips fences from JSON-looking output but markdown
-            // is returned verbatim — for pure markdown we want the original text() anyway.
-            const { text } = await this.provider.generate({ prompt });
-            return {
-                enhancement: text,
-                missingSections,
-                patterns
-            };
-        } catch (error) {
-            logger.error({ err: error }, 'README enhancement failed');
-            if (error instanceof AIError && error.code === AI_ERROR_CODE.NOT_FOUND) {
-                throw new Error(`AI model not available. Please verify GEMINI_MODEL configuration in .env file.`);
-            }
-            throw error;
-        }
-    }
-
-    /**
-     * Generate a comprehensive quality report
-     * @param {object} repoData - Repository data with extended info
-     * @param {string} readmeContent - README content
-     * @param {Array} fileStructure - File tree
-     * @param {object} extraData - CI status, issues, etc.
-     */
-    async generateQualityReport(repoData, readmeContent, fileStructure, _extraData = {}) {
-        const patterns = this.detectPatterns(readmeContent, fileStructure);
-        const quality = this.calculateQualityMetrics(patterns, repoData);
-
-        // Build recommendations based on what's missing
-        const recommendations = [];
-        if (!patterns.hasInstallation) recommendations.push({ priority: 'high', action: 'Add installation instructions to README' });
-        if (!patterns.hasUsage) recommendations.push({ priority: 'high', action: 'Add usage examples to README' });
-        if (!patterns.hasTests) recommendations.push({ priority: 'high', action: 'Add unit tests to improve reliability' });
-        if (!patterns.hasCI) recommendations.push({ priority: 'medium', action: 'Set up CI/CD with GitHub Actions' });
-        if (!patterns.hasContributing) recommendations.push({ priority: 'medium', action: 'Add CONTRIBUTING.md for community guidelines' });
-        if (!patterns.hasLicense) recommendations.push({ priority: 'high', action: 'Add a LICENSE file' });
-        if (!patterns.hasBadges) recommendations.push({ priority: 'low', action: 'Add status badges to README' });
-        if (!repoData.description) recommendations.push({ priority: 'high', action: 'Add a repository description' });
-        if (!repoData.topics?.length) recommendations.push({ priority: 'medium', action: 'Add topics/tags for discoverability' });
-
-        return {
-            score: quality.overall,
-            breakdown: quality.breakdown,
-            patterns,
-            recommendations: recommendations.sort((a, b) => {
-                const order = { high: 0, medium: 1, low: 2 };
-                return order[a.priority] - order[b.priority];
-            }),
-            summary: this.getScoreSummary(quality.overall)
-        };
+        return calculateQualityMetrics(patterns, repoData);
     }
 
     getScoreSummary(score) {
-        if (score >= 90) return 'Excellent! This repository follows best practices.';
-        if (score >= 75) return 'Good quality. A few improvements would make it great.';
-        if (score >= 50) return 'Decent foundation. Consider adding documentation and tests.';
-        return 'Needs attention. Focus on documentation and community standards.';
+        return getScoreSummary(score);
     }
 
-    /**
-     * Generate an AI-powered review summary for a pull request.
-     * @param {Array} fileManifest - Array of file change objects from GitHub /files API
-     * @param {string} topFilePatches - Raw diff patch text for the most relevant files
-     * @param {object} prMetadata - PR metadata (title, body, base, head, author, etc.)
-     * @returns {Promise<object|null>} Structured review summary, or null if AI review is disabled
-     */
+    generateQualityReport(repoData, readmeContent, fileStructure, extraData) {
+        return generateQualityReport(repoData, readmeContent, fileStructure, extraData);
+    }
+
+    // ── embeddings / similarity ───────────────────────────────────────────
+    cosineSimilarity(vecA, vecB) {
+        return cosineSimilarity(vecA, vecB);
+    }
+
+    async embedText(text) {
+        return embedText({ provider: this.provider }, text);
+    }
+
+    async findSimilarById(repoId, opts = {}) {
+        return findSimilarById({ db }, repoId, opts);
+    }
+
+    async semanticSearch(query, limit = 5, userId) {
+        return semanticSearch({ provider: this.provider, db }, query, limit, userId);
+    }
+
+    // ── feature methods (provider-backed) ─────────────────────────────────
+    async analyzeRepo(repoData, readmeContent, fileStructure) {
+        return analyzeRepo({ provider: this.provider }, repoData, readmeContent, fileStructure);
+    }
+
+    async enhanceReadme(currentReadme, repoData, fileStructure) {
+        return enhanceReadme({ provider: this.provider }, currentReadme, repoData, fileStructure);
+    }
+
     async reviewPullRequest(fileManifest, topFilePatches, prMetadata) {
-        if (process.env.DISABLE_AI_REVIEW === 'true') {
-            return null;
-        }
-
-        if (!this.provider?.model) {
-            throw new Error('AI model not initialized. Please check GEMINI_API_KEY and GEMINI_MODEL configuration.');
-        }
-
-        const responseSchema = {
-            type: 'object',
-            properties: {
-                overview: { type: 'string' },
-                riskLevel: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
-                keyChanges: {
-                    type: 'array',
-                    items: { type: 'string' },
-                    maxItems: 5
-                },
-                fileRisks: {
-                    type: 'array',
-                    maxItems: 30,
-                    items: {
-                        type: 'object',
-                        properties: {
-                            file: { type: 'string' },
-                            risk: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
-                            reason: { type: 'string' }
-                        },
-                        required: ['file', 'risk', 'reason']
-                    }
-                },
-                suggestedReviewOrder: {
-                    type: 'array',
-                    items: { type: 'string' },
-                    maxItems: 15
-                },
-                estimatedReviewTime: { type: 'string' }
-            },
-            required: ['overview', 'riskLevel', 'keyChanges', 'fileRisks', 'suggestedReviewOrder', 'estimatedReviewTime']
-        };
-
-        const systemPrompt = `You are an expert code reviewer analyzing a GitHub pull request.
-Provide a structured review summary to help reviewers understand the scope, risk, and focus areas of this PR.
-Be concise and actionable. Focus on architectural impact, potential bugs, and review priority.`;
-
-        const prContext = `PR Title: ${sanitizeForPrompt(prMetadata.title, 200)}
-Author: ${sanitizeForPrompt(prMetadata.author || prMetadata.user?.login, 100)}
-Base branch: ${sanitizeForPrompt(prMetadata.base?.ref || prMetadata.base, 100)}
-Head branch: ${sanitizeForPrompt(prMetadata.head?.ref || prMetadata.head, 100)}
-Description: ${sanitizeForPrompt(prMetadata.body, 1000) || 'No description provided.'}
-Files changed: ${fileManifest?.length || 0}
-Additions: ${prMetadata.additions || 'unknown'}
-Deletions: ${prMetadata.deletions || 'unknown'}
-
-File manifest (name, status, changes):
-${sanitizeForPrompt(JSON.stringify(
-    (fileManifest || []).map(f => ({
-        filename: f.filename,
-        status: f.status,
-        additions: f.additions,
-        deletions: f.deletions,
-        changes: f.changes
-    })),
-    null, 2
-), 3000)}`;
-
-        // Two-part contents preserves anti-injection partitioning.
-        // We pass parts + generationConfig directly to keep the Gemini-structured
-        // response path; the schema triggers JSON parsing in the provider.
-        const parts = [
-            { text: systemPrompt + '\n\n' + prContext },
-            // Diff content is a separate part to mitigate prompt injection
-            { text: 'Diff patches for key files:\n```diff\n' + sanitizeForPrompt(topFilePatches, 80000) + '\n```' }
-        ];
-
-        const { parsed } = await this.provider.generate({
-            parts,
-            schema: responseSchema,
-            generationConfig: {
-                responseMimeType: 'application/json',
-                responseSchema,
-            },
-        });
-
-        return parsed;
+        return reviewPullRequest({ provider: this.provider }, fileManifest, topFilePatches, prMetadata);
     }
 }
 
