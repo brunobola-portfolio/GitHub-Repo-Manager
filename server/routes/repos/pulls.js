@@ -23,7 +23,8 @@ import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
 import { requireTier } from '../../middleware/require-tier.js';
-import { validate, prCreateSchema } from '../../lib/validators.js';
+import { prCreateSchema } from '../../lib/validators.js';
+import { validateBody } from '../../middleware/validate-request.js';
 
 const router = express.Router();
 
@@ -89,14 +90,14 @@ router.get('/:owner/:repo/pulls', requireAuth, async (req, res) => {
 });
 
 // Create pull request
-router.post('/:owner/:repo/pulls', requireAuth, validate(prCreateSchema), async (req, res) => {
+router.post('/:owner/:repo/pulls', requireAuth, validateBody(prCreateSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { title, body, head, base, draft, maintainer_can_modify } = req.body;
+        const { title, body, head, base, draft } = req.validatedBody;
 
         const { data } = await githubApi(`/repos/${owner}/${repo}/pulls`, req.session.accessToken, {
             method: 'POST',
-            body: JSON.stringify({ title, body, head, base, draft, maintainer_can_modify })
+            body: JSON.stringify({ title, body, head, base, draft })
         });
         res.json({ success: true, pull_request: data });
     } catch (error) {

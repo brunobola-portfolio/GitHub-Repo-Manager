@@ -18,6 +18,7 @@
 import express from 'express';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, safeError } from '../middleware/auth.js';
+import { validateQuery } from '../middleware/validate-request.js';
 import { z } from 'zod';
 
 const router = express.Router();
@@ -77,20 +78,8 @@ async function searchRepos(q, token, limit) {
     return (data?.items || []).map(mapRepo);
 }
 
-router.get('/github', requireAuth, async (req, res) => {
-    const parsed = querySchema.safeParse(req.query);
-    if (!parsed.success) {
-        return res.status(400).json({
-            error: 'Invalid query',
-            code: 'VALIDATION_ERROR',
-            details: parsed.error.issues.map((i) => ({
-                field: i.path.join('.'),
-                message: i.message,
-            })),
-        });
-    }
-
-    const { q, type, limit } = parsed.data;
+router.get('/github', requireAuth, validateQuery(querySchema), async (req, res) => {
+    const { q, type, limit } = req.validatedQuery;
     const token = req.session.accessToken;
 
     try {

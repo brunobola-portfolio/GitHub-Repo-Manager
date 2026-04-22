@@ -65,6 +65,11 @@ vi.mock('../db.js', () => ({
 
 vi.mock('../lib/github-api.js', () => ({ githubApi: vi.fn(() => Promise.resolve({ data: {} })) }))
 vi.mock('../lib/utils.js', () => ({ safeJsonParse: (v) => { try { return JSON.parse(v) } catch { return null } } }))
+vi.mock('../middleware/validate-request.js', () => ({
+    validateBody: () => (req, _res, next) => { req.validatedBody = req.body; next(); },
+    validateQuery: () => (req, _res, next) => { req.validatedQuery = req.query; next(); },
+    validateParams: () => (req, _res, next) => { req.validatedParams = req.params; next(); },
+}))
 vi.mock('../lib/validators.js', () => ({
     validate: () => (req, res, next) => next(),
     aiChatSchema: {},

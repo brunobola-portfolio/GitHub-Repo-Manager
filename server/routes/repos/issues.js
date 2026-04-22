@@ -15,7 +15,8 @@
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
-import { validate, issueCreateSchema } from '../../lib/validators.js';
+import { issueCreateSchema } from '../../lib/validators.js';
+import { validateBody } from '../../middleware/validate-request.js';
 
 const router = express.Router();
 
@@ -69,10 +70,10 @@ router.get('/:owner/:repo/issues', requireAuth, async (req, res) => {
 });
 
 // Create issue
-router.post('/:owner/:repo/issues', requireAuth, validate(issueCreateSchema), async (req, res) => {
+router.post('/:owner/:repo/issues', requireAuth, validateBody(issueCreateSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { title, body, labels, assignees, milestone } = req.body;
+        const { title, body, labels, assignees, milestone } = req.validatedBody;
 
         const { data } = await githubApi(`/repos/${owner}/${repo}/issues`, req.session.accessToken, {
             method: 'POST',

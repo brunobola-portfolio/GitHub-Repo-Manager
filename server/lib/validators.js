@@ -308,30 +308,10 @@ export const testAIConfigSchema = z.object({
 });
 
 // --- Middleware factory ---
-
-/**
- * Creates Express middleware that validates request body against a Zod schema.
- * On success, replaces req.body with the parsed (and sanitized) data.
- * On failure, returns 400 with structured validation errors.
- *
- * @param {z.ZodSchema} schema - The Zod schema to validate against
- * @returns {import('express').RequestHandler}
- */
-export function validate(schema) {
-    return (req, res, next) => {
-        const result = schema.safeParse(req.body);
-        if (!result.success) {
-            const errors = result.error.issues.map(issue => ({
-                field: issue.path.join('.'),
-                message: issue.message
-            }));
-            return res.status(400).json({
-                error: 'Validation failed',
-                code: 'VALIDATION_ERROR',
-                details: errors
-            });
-        }
-        req.body = result.data;
-        next();
-    };
-}
+//
+// The legacy `validate()` helper was removed in the P1-F / P3-Q validation
+// migration. All routes now use `validateBody` / `validateQuery` /
+// `validateParams` from `../middleware/validate-request.js`, which emit the
+// standardised `{ error, code: 'validation_failed' }` envelope and attach
+// parsed data at `req.validatedBody` etc. This module continues to export
+// the shared Zod schemas only.

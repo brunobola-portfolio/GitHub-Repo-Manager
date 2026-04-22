@@ -14,7 +14,8 @@
 
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { validate, userAIConfigSchema, testAIConfigSchema } from '../lib/validators.js';
+import { userAIConfigSchema, testAIConfigSchema } from '../lib/validators.js';
+import { validateBody } from '../middleware/validate-request.js';
 import {
     getUserAIConfig,
     setUserAIConfig,
@@ -91,7 +92,7 @@ router.get('/', requireAuth, (req, res) => {
 // POST /api/user/ai-config
 // ---------------------------------------------------------------------------
 
-router.post('/', requireAuth, validate(userAIConfigSchema), (req, res) => {
+router.post('/', requireAuth, validateBody(userAIConfigSchema), (req, res) => {
     const {
         completionProvider,
         completionModel,
@@ -102,7 +103,7 @@ router.post('/', requireAuth, validate(userAIConfigSchema), (req, res) => {
         embeddingApiKey,
         embeddingEndpointUrl,
         featureOverrides,
-    } = req.body;
+    } = req.validatedBody;
 
     // Build credential objects from individual fields.
     // undefined fields are left as-is (partial update semantics).
@@ -161,8 +162,8 @@ router.delete('/', requireAuth, (req, res) => {
 // POST /api/user/ai-config/test
 // ---------------------------------------------------------------------------
 
-router.post('/test', requireAuth, testRateLimiter, validate(testAIConfigSchema), async (req, res) => {
-    const { kind } = req.body;
+router.post('/test', requireAuth, testRateLimiter, validateBody(testAIConfigSchema), async (req, res) => {
+    const { kind } = req.validatedBody;
     const userId = req.session.userId;
 
     let provider;

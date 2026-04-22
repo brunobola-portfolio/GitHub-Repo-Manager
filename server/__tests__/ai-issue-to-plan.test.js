@@ -30,15 +30,36 @@ vi.mock('../middleware/auth.js', () => ({
     isValidGitHubFullName: (s) => /^[A-Za-z0-9][A-Za-z0-9-]*\/[A-Za-z0-9_.-]+$/.test(s || ''),
 }))
 
-vi.mock('../lib/validators.js', () => ({
-    validate: () => (req, _res, next) => next(),
-    aiChatSchema: {},
-    aiSuggestSchema: {},
-    aiIndexSchema: {},
-    aiIssueToPlanSchema: {},
-    migrationSizeStrategySchema: {},
-    migrationDescriptionSchema: {},
+// The ai/migration route uses the real `aiIssueToPlanSchema` through the new
+// `validateBody` middleware. To keep the "malformed repoFullName" test giving
+// a 400, we pass schemas through but use the real Zod `.safeParse`. The
+// new-middleware envelope is `{ code: 'validation_failed' }`.
+vi.mock('../middleware/validate-request.js', () => ({
+    validateBody: (schema) => (req, res, next) => {
+        if (schema && typeof schema.safeParse === 'function') {
+            const result = schema.safeParse(req.body)
+            if (!result.success) {
+                return res.status(400).json({ error: 'Validation failed', code: 'validation_failed' })
+            }
+            req.validatedBody = result.data
+            return next()
+        }
+        req.validatedBody = req.body
+        next()
+    },
+    validateQuery: () => (req, _res, next) => { req.validatedQuery = req.query; next(); },
+    validateParams: () => (req, _res, next) => { req.validatedParams = req.params; next(); },
 }))
+
+vi.mock('../lib/validators.js', async () => {
+    const actual = await vi.importActual('../lib/validators.js')
+    return {
+        ...actual,
+        // Keep legacy `validate()` stub in case some code path still references
+        // it (it shouldn't post-migration, but we guard against resurrections).
+        validate: () => (req, _res, next) => next(),
+    }
+})
 
 vi.mock('../lib/usage-meter.js', () => ({
     checkUsageLimit: (...a) => mockCheckUsageLimit(...a),
@@ -143,8 +164,9 @@ describe('POST /api/ai/issue-to-plan', () => {
             .post('/api/ai/issue-to-plan')
             .send({ repoFullName: '../../etc/passwd', issueNumber: 1 })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('VALIDATION_ERROR')
+        expect(res.body.code).toBe('validation_failed')
     })
+
 
     it('returns 429 when usage quota is hit', async () => {
         mockCheckUsageLimit.mockReturnValue({ allowed: false, current: 100, limit: 100, remaining: 0 })

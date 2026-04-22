@@ -113,6 +113,7 @@ vi.mock('../middleware/auth.js', () => ({
         next();
     },
     safeError: (err, fallback) => err?.message || fallback,
+    errorResponse: (res, status, message, code) => res.status(status).json({ error: message, code }),
 }));
 
 // ---------------------------------------------------------------------------

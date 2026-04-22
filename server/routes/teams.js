@@ -2,7 +2,7 @@ import express from 'express';
 import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, safeError, errorResponse } from '../middleware/auth.js';
-import { validate, teamCreateSchema, teamMemberSchema, teamRepoSchema } from '../lib/validators.js';
+import { teamCreateSchema, teamMemberSchema, teamRepoSchema } from '../lib/validators.js';
 import { validateBody } from '../middleware/validate-request.js';
 import { auditLog } from '../lib/audit.js';
 import { getFeatures } from '../lib/feature-flags.js';
@@ -50,8 +50,8 @@ router.post('/', requireAuth, validateBody(teamCreateSchema), (req, res) => {
 });
 
 // Update a team
-router.put('/:id', requireAuth, validate(teamCreateSchema), (req, res) => {
-    const { name, description } = req.body;
+router.put('/:id', requireAuth, validateBody(teamCreateSchema), (req, res) => {
+    const { name, description } = req.validatedBody;
     const { id } = req.params;
 
     try {
@@ -227,8 +227,8 @@ router.delete('/:id/members/:userId', requireAuth, (req, res) => {
 });
 
 // Assign Repo to Team
-router.post('/:id/repos', requireAuth, validate(teamRepoSchema), (req, res) => {
-    const { repoFullName, repoId } = req.body;
+router.post('/:id/repos', requireAuth, validateBody(teamRepoSchema), (req, res) => {
+    const { repoFullName, repoId } = req.validatedBody;
     try {
         // Verify membership and admin/owner role
         const membership = db.prepare('SELECT role FROM team_members WHERE team_id = ? AND user_id = ?').get(req.params.id, req.session.userId);

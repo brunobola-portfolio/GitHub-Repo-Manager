@@ -24,7 +24,8 @@ import db from '../db.js';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, isValidGitHubUsername, safeError, errorResponse } from '../middleware/auth.js';
 import { requireTier } from '../middleware/require-tier.js';
-import { validate, bulkVisibilitySchema, bulkArchiveSchema, bulkDeleteSchema, bulkTransferSchema, bulkMirrorSchema, checkConflictsSchema } from '../lib/validators.js';
+import { bulkVisibilitySchema, bulkArchiveSchema, bulkDeleteSchema, bulkTransferSchema, bulkMirrorSchema, checkConflictsSchema } from '../lib/validators.js';
+import { validateBody } from '../middleware/validate-request.js';
 import { auditLog } from '../lib/audit.js';
 import { performBulk } from '../lib/bulk-helpers.js';
 
@@ -34,8 +35,8 @@ const router = express.Router();
 // POST /visibility — Change visibility for multiple repos
 // Previously unguarded; now requires Pro + dry-run/confirmation
 // ---------------------------------------------------------------------------
-router.post('/visibility', requireAuth, requireTier('pro'), validate(bulkVisibilitySchema), async (req, res) => {
-    const { repos, makePublic, dryRun } = req.body;
+router.post('/visibility', requireAuth, requireTier('pro'), validateBody(bulkVisibilitySchema), async (req, res) => {
+    const { repos, makePublic, dryRun } = req.validatedBody;
 
     if (!repos?.length) return errorResponse(res, 400, 'No repositories specified', 'MISSING_REPOS');
     if (!Array.isArray(repos) || repos.some(r => typeof r !== 'string' || !r.includes('/')))
@@ -66,8 +67,8 @@ router.post('/visibility', requireAuth, requireTier('pro'), validate(bulkVisibil
 // ---------------------------------------------------------------------------
 // POST /transfer/check-conflicts — Read-only, Pro-gated. No token required.
 // ---------------------------------------------------------------------------
-router.post('/transfer/check-conflicts', requireAuth, requireTier('pro'), validate(checkConflictsSchema), async (req, res) => {
-    const { repos, targetOrg } = req.body
+router.post('/transfer/check-conflicts', requireAuth, requireTier('pro'), validateBody(checkConflictsSchema), async (req, res) => {
+    const { repos, targetOrg } = req.validatedBody
 
     if (!isValidGitHubUsername(targetOrg))
         return errorResponse(res, 400, 'Invalid target organization name', 'INVALID_ORG')
@@ -128,8 +129,8 @@ router.post('/transfer/check-conflicts', requireAuth, requireTier('pro'), valida
 // POST /transfer — Transfer multiple repos to an organization (Pro+)
 // Now requires dry-run → confirmation-token; toOrg + strategies locked in token
 // ---------------------------------------------------------------------------
-router.post('/transfer', requireAuth, requireTier('pro'), validate(bulkTransferSchema), async (req, res) => {
-    const { repos, toOrg, strategies, dryRun } = req.body;
+router.post('/transfer', requireAuth, requireTier('pro'), validateBody(bulkTransferSchema), async (req, res) => {
+    const { repos, toOrg, strategies, dryRun } = req.validatedBody;
 
     if (!repos?.length || !toOrg) return errorResponse(res, 400, 'Missing repositories or target organization', 'MISSING_PARAMS');
     if (!isValidGitHubUsername(toOrg)) return errorResponse(res, 400, 'Invalid target organization name', 'INVALID_ORG');
@@ -187,8 +188,8 @@ router.post('/transfer', requireAuth, requireTier('pro'), validate(bulkTransferS
 // POST /mirror — Mirror (fork) multiple repos to an org (Pro+)
 // Now requires dry-run → confirmation-token; toOrg locked in token
 // ---------------------------------------------------------------------------
-router.post('/mirror', requireAuth, requireTier('pro'), validate(bulkMirrorSchema), async (req, res) => {
-    const { repos, toOrg, dryRun } = req.body;
+router.post('/mirror', requireAuth, requireTier('pro'), validateBody(bulkMirrorSchema), async (req, res) => {
+    const { repos, toOrg, dryRun } = req.validatedBody;
 
     if (!repos?.length || !toOrg) return errorResponse(res, 400, 'Missing repositories or target organization', 'MISSING_PARAMS');
     if (!isValidGitHubUsername(toOrg)) return errorResponse(res, 400, 'Invalid target organization name', 'INVALID_ORG');
@@ -234,8 +235,8 @@ router.post('/mirror', requireAuth, requireTier('pro'), validate(bulkMirrorSchem
 // POST /archive — Archive/unarchive multiple repos
 // Previously unguarded; now requires Pro + dry-run/confirmation
 // ---------------------------------------------------------------------------
-router.post('/archive', requireAuth, requireTier('pro'), validate(bulkArchiveSchema), async (req, res) => {
-    const { repos, archive = true, dryRun } = req.body;
+router.post('/archive', requireAuth, requireTier('pro'), validateBody(bulkArchiveSchema), async (req, res) => {
+    const { repos, archive = true, dryRun } = req.validatedBody;
 
     if (!repos?.length) return errorResponse(res, 400, 'No repositories specified', 'MISSING_REPOS');
     if (!Array.isArray(repos) || repos.some(r => typeof r !== 'string' || !r.includes('/')))
@@ -264,8 +265,8 @@ router.post('/archive', requireAuth, requireTier('pro'), validate(bulkArchiveSch
 // POST /delete — Delete multiple repos (HIGHEST RISK)
 // Previously unguarded; now requires Pro + dry-run/confirmation
 // ---------------------------------------------------------------------------
-router.post('/delete', requireAuth, requireTier('pro'), validate(bulkDeleteSchema), async (req, res) => {
-    const { repos, dryRun } = req.body;
+router.post('/delete', requireAuth, requireTier('pro'), validateBody(bulkDeleteSchema), async (req, res) => {
+    const { repos, dryRun } = req.validatedBody;
 
     if (!repos?.length) return errorResponse(res, 400, 'No repositories specified', 'MISSING_REPOS');
     if (!Array.isArray(repos) || repos.some(r => typeof r !== 'string' || !r.includes('/')))

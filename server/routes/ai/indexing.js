@@ -12,7 +12,8 @@ import express from 'express';
 import db from '../../db.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError } from '../../middleware/auth.js';
-import { validate, aiIndexSchema } from '../../lib/validators.js';
+import { aiIndexSchema } from '../../lib/validators.js';
+import { validateBody } from '../../middleware/validate-request.js';
 import { aiService } from '../../ai-service.js';
 import { checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
@@ -25,8 +26,8 @@ const router = express.Router();
 // ------------------------------------------------------------------
 
 // Trigger Indexing (Summarize + Embed)
-router.post('/ai/index', requireAuth, validate(aiIndexSchema), requireAI, async (req, res) => {
-    const { repo } = req.body; // Full repo object from GitHub
+router.post('/ai/index', requireAuth, validateBody(aiIndexSchema), requireAI, async (req, res) => {
+    const { repo } = req.validatedBody; // Full repo object from GitHub
     if (!repo) return res.status(400).json({ error: 'Repo data required' });
 
     const userId = req.session.userId;

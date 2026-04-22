@@ -12,7 +12,8 @@
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError } from '../../middleware/auth.js';
-import { validate, aiChatSchema } from '../../lib/validators.js';
+import { aiChatSchema } from '../../lib/validators.js';
+import { validateBody } from '../../middleware/validate-request.js';
 import { aiService, sanitizeForPrompt } from '../../ai-service.js';
 import { safeJsonParse } from '../../lib/utils.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
@@ -36,7 +37,7 @@ router.get('/config/ai-status', (req, res) => {
 // AI Chat
 // ------------------------------------------------------------------
 
-router.post('/ai/chat', requireAuth, validate(aiChatSchema), requireAI, async (req, res) => {
+router.post('/ai/chat', requireAuth, validateBody(aiChatSchema), requireAI, async (req, res) => {
     try {
         // Check usage limits
         const usage = checkUsageLimit(req.session.userId, 'ai_queries');
@@ -48,7 +49,7 @@ router.post('/ai/chat', requireAuth, validate(aiChatSchema), requireAI, async (r
             });
         }
 
-        const { message, context } = req.body;
+        const { message, context } = req.validatedBody;
 
         if (!message || message.trim().length === 0) {
             return res.status(400).json({

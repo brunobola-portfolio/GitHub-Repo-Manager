@@ -36,7 +36,8 @@ import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js'
 import { actionsService } from '../../actions-service.js';
 import { communityHealthService } from '../../community-health-service.js';
 import { safeJsonParse } from '../../lib/utils.js';
-import { validate, webhookCreateSchema } from '../../lib/validators.js';
+import { webhookCreateSchema } from '../../lib/validators.js';
+import { validateBody } from '../../middleware/validate-request.js';
 import { auditLog } from '../../lib/audit.js';
 
 const router = express.Router();
@@ -75,10 +76,10 @@ router.get('/:owner/:repo/hooks', requireAuth, async (req, res) => {
 });
 
 // Create webhook
-router.post('/:owner/:repo/hooks', requireAuth, validate(webhookCreateSchema), async (req, res) => {
+router.post('/:owner/:repo/hooks', requireAuth, validateBody(webhookCreateSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { config, events, active = true } = req.body;
+        const { config, events, active = true } = req.validatedBody;
 
         const { data } = await githubApi(`/repos/${owner}/${repo}/hooks`, req.session.accessToken, {
             method: 'POST',

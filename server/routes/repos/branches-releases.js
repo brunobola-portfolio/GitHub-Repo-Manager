@@ -20,7 +20,8 @@
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
-import { validate, releaseCreateSchema } from '../../lib/validators.js';
+import { releaseCreateSchema } from '../../lib/validators.js';
+import { validateBody } from '../../middleware/validate-request.js';
 
 const router = express.Router();
 
@@ -195,14 +196,14 @@ router.get('/:owner/:repo/releases', requireAuth, async (req, res) => {
 });
 
 // Create release
-router.post('/:owner/:repo/releases', requireAuth, validate(releaseCreateSchema), async (req, res) => {
+router.post('/:owner/:repo/releases', requireAuth, validateBody(releaseCreateSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { tag_name, target_commitish, name, body, draft, prerelease, generate_release_notes } = req.body;
+        const { tag_name, target_commitish, name, body, draft, prerelease } = req.validatedBody;
 
         const { data } = await githubApi(`/repos/${owner}/${repo}/releases`, req.session.accessToken, {
             method: 'POST',
-            body: JSON.stringify({ tag_name, target_commitish, name, body, draft, prerelease, generate_release_notes })
+            body: JSON.stringify({ tag_name, target_commitish, name, body, draft, prerelease })
         });
         res.json({ success: true, release: data });
     } catch (error) {

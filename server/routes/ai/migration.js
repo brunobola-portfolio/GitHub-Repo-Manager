@@ -11,7 +11,8 @@
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, isValidGitHubFullName } from '../../middleware/auth.js';
-import { validate, aiIssueToPlanSchema, migrationSizeStrategySchema, migrationDescriptionSchema } from '../../lib/validators.js';
+import { aiIssueToPlanSchema, migrationSizeStrategySchema, migrationDescriptionSchema } from '../../lib/validators.js';
+import { validateBody } from '../../middleware/validate-request.js';
 import { REPO_DESCRIPTION_MAX } from '../../lib/repo-description.js';
 import { sanitizeForPrompt } from '../../ai-service.js';
 import { safeJsonParse } from '../../lib/utils.js';
@@ -60,7 +61,7 @@ function normaliseIssuePlan(raw) {
 router.post(
     '/ai/issue-to-plan',
     requireAuth,
-    validate(aiIssueToPlanSchema),
+    validateBody(aiIssueToPlanSchema),
     requireAI,
     async (req, res) => {
         const userId = req.session.userId;
@@ -73,7 +74,7 @@ router.post(
             });
         }
 
-        const { repoFullName, issueNumber, extraContext } = req.body;
+        const { repoFullName, issueNumber, extraContext } = req.validatedBody;
         if (!isValidGitHubFullName(repoFullName)) {
             return res.status(400).json({
                 error: 'Invalid repoFullName',

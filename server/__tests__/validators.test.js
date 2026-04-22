@@ -14,7 +14,6 @@ import {
     azureImportSchema,
     aiChatSchema,
     aiIndexSchema,
-    validate
 } from '../lib/validators.js'
 
 describe('createRepoSchema', () => {
@@ -320,45 +319,7 @@ describe('aiIndexSchema', () => {
     })
 })
 
-describe('validate middleware', () => {
-    it('passes validated data to next', () => {
-        const middleware = validate(createRepoSchema)
-        const req = { body: { name: 'test-repo' } }
-        const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
-        const next = vi.fn()
-
-        middleware(req, res, next)
-        expect(next).toHaveBeenCalled()
-        expect(req.body.name).toBe('test-repo')
-        expect(req.body.autoInit).toBe(true) // default applied
-    })
-
-    it('returns 400 on validation failure', () => {
-        const middleware = validate(createRepoSchema)
-        const req = { body: { name: '' } }
-        const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
-        const next = vi.fn()
-
-        middleware(req, res, next)
-        expect(next).not.toHaveBeenCalled()
-        expect(res.status).toHaveBeenCalledWith(400)
-        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-            error: 'Validation failed',
-            code: 'VALIDATION_ERROR'
-        }))
-    })
-
-    it('includes field-level error details', () => {
-        const middleware = validate(createRepoSchema)
-        const req = { body: { name: 'invalid name!' } }
-        const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
-        const next = vi.fn()
-
-        middleware(req, res, next)
-        const response = res.json.mock.calls[0][0]
-        expect(response.details).toBeDefined()
-        expect(response.details.length).toBeGreaterThan(0)
-        expect(response.details[0]).toHaveProperty('field')
-        expect(response.details[0]).toHaveProperty('message')
-    })
-})
+// The legacy `validate()` middleware helper was removed when all routes
+// migrated to `validateBody` / `validateQuery` / `validateParams` from
+// `server/middleware/validate-request.js`. Coverage for that middleware
+// lives in `validate-request.test.js`.

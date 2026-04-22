@@ -50,6 +50,11 @@ vi.mock('../middleware/require-tier.js', () => ({
 vi.mock('../actions-service.js', () => ({ actionsService: {} }))
 vi.mock('../community-health-service.js', () => ({ communityHealthService: {} }))
 vi.mock('../lib/audit.js', () => ({ auditLog: vi.fn() }))
+vi.mock('../middleware/validate-request.js', () => ({
+    validateBody: () => (req, _res, next) => { req.validatedBody = req.body; next(); },
+    validateQuery: () => (req, _res, next) => { req.validatedQuery = req.query; next(); },
+    validateParams: () => (req, _res, next) => { req.validatedParams = req.params; next(); },
+}))
 vi.mock('../lib/validators.js', () => ({
     validate: () => (_req, _res, next) => next(),
     createRepoSchema: {},

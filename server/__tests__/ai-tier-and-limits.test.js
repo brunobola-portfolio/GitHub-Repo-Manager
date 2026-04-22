@@ -81,6 +81,15 @@ vi.mock('../db.js', () => ({
     },
 }))
 
+// Stub the new request-validation middleware used by migrated routes so
+// tests exercising routes (teams, ai/chat, ai/issue-to-plan, etc.) aren't
+// gated by the real Zod schemas imported from lib/validators.
+vi.mock('../middleware/validate-request.js', () => ({
+    validateBody: () => (req, _res, next) => { req.validatedBody = req.body; next(); },
+    validateQuery: () => (req, _res, next) => { req.validatedQuery = req.query; next(); },
+    validateParams: () => (req, _res, next) => { req.validatedParams = req.params; next(); },
+}))
+
 // lib/validators is used by the teams router
 // teams.js migrated to the new validateBody middleware, which calls
 // schema.safeParse(); stub the handful of schemas it consumes with a

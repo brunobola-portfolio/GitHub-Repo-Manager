@@ -19,6 +19,7 @@ vi.mock('../middleware/auth.js', () => ({
         next()
     },
     safeError: (_err, fallback) => fallback,
+    errorResponse: (res, status, message, code) => res.status(status).json({ error: message, code }),
 }))
 
 const { default: searchRouter } = await import('../routes/search.js')
@@ -43,7 +44,7 @@ describe('GET /api/v1/search/github', () => {
         const app = makeApp()
         const res = await request(app).get('/api/v1/search/github')
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('VALIDATION_ERROR')
+        expect(res.body.code).toBe('validation_failed')
     })
 
     it('rejects q longer than 256 chars', async () => {

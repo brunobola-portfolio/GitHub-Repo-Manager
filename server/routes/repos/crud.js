@@ -30,7 +30,6 @@ import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, isValidGitHubUsername, safeError, errorResponse } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import {
-    validate,
     createRepoSchema,
     repoUpdateSchema,
     topicsSchema,
@@ -134,9 +133,9 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // Create repo (personal or org)
-router.post('/', requireAuth, validate(createRepoSchema), async (req, res) => {
+router.post('/', requireAuth, validateBody(createRepoSchema), async (req, res) => {
     try {
-        const { name, description, org, isPrivate, autoInit, license } = req.body;
+        const { name, description, org, isPrivate, autoInit, license } = req.validatedBody;
 
         const endpoint = org ? `/orgs/${org}/repos` : '/user/repos';
         const { data } = await githubApi(endpoint, req.session.accessToken, {
@@ -157,9 +156,9 @@ router.post('/', requireAuth, validate(createRepoSchema), async (req, res) => {
 });
 
 // Create repository from template
-router.post('/generate', requireAuth, validate(templateGenerateSchema), async (req, res) => {
+router.post('/generate', requireAuth, validateBody(templateGenerateSchema), async (req, res) => {
     try {
-        const { template_owner, template_repo, owner, name, description, include_all_branches, private: isPrivate } = req.body;
+        const { template_owner, template_repo, owner, name, description, include_all_branches, private: isPrivate } = req.validatedBody;
 
         const { data } = await githubApi(`/repos/${template_owner}/${template_repo}/generate`, req.session.accessToken, {
             method: 'POST',
@@ -208,10 +207,10 @@ router.patch('/:owner/:repo', requireAuth, validateBody(repoUpdateSchema), async
 });
 
 // Update repository topics
-router.put('/:owner/:repo/topics', requireAuth, validate(topicsSchema), async (req, res) => {
+router.put('/:owner/:repo/topics', requireAuth, validateBody(topicsSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { names } = req.body;
+        const { names } = req.validatedBody;
 
         const { data } = await githubApi(`/repos/${owner}/${repo}/topics`, req.session.accessToken, {
             method: 'PUT',
@@ -227,10 +226,10 @@ router.put('/:owner/:repo/topics', requireAuth, validate(topicsSchema), async (r
 });
 
 // Fork a repository
-router.post('/:owner/:repo/forks', requireAuth, validate(forkSchema), async (req, res) => {
+router.post('/:owner/:repo/forks', requireAuth, validateBody(forkSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { organization, name, default_branch_only } = req.body;
+        const { organization, name, default_branch_only } = req.validatedBody;
 
         const { data } = await githubApi(`/repos/${owner}/${repo}/forks`, req.session.accessToken, {
             method: 'POST',

@@ -49,6 +49,12 @@ vi.mock('../lib/utils.js', () => ({
     safeJsonParse: (v) => { try { return JSON.parse(v) } catch { return null } },
 }))
 
+vi.mock('../middleware/validate-request.js', () => ({
+    validateBody: () => (req, _res, next) => { req.validatedBody = req.body; next(); },
+    validateQuery: () => (req, _res, next) => { req.validatedQuery = req.query; next(); },
+    validateParams: () => (req, _res, next) => { req.validatedParams = req.params; next(); },
+}))
+
 vi.mock('../lib/validators.js', async () => {
     const actual = await vi.importActual('../lib/validators.js')
     return { ...actual }
