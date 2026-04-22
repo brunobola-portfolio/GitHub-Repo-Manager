@@ -28,6 +28,17 @@ vi.mock('@/hooks/useTheme', () => ({
     ThemeProvider: ({ children }) => children,
 }))
 
+// Mock useSystemHealth so tests control the reported status without
+// triggering real fetches. Per-test overrides via systemHealthMock.mockReturnValue().
+const systemHealthMock = vi.fn(() => ({
+    status: 'ready',
+    checks: { db: 'ok', session: 'ok' },
+    lastCheckedAt: null,
+}))
+vi.mock('@/hooks/useSystemHealth', () => ({
+    useSystemHealth: () => systemHealthMock(),
+}))
+
 // ---------------------------------------------------------------------------
 // Import after mocks
 // ---------------------------------------------------------------------------
@@ -66,6 +77,11 @@ function renderHeader(props = {}) {
 
 beforeEach(() => {
     vi.clearAllMocks()
+    systemHealthMock.mockReturnValue({
+        status: 'ready',
+        checks: { db: 'ok', session: 'ok' },
+        lastCheckedAt: null,
+    })
 })
 
 describe('Header', () => {
@@ -114,6 +130,27 @@ describe('Header', () => {
         expect(screen.getByText('Logout')).toBeInTheDocument()
         expect(screen.getByText('View Profile')).toBeInTheDocument()
         expect(screen.getByText('Settings')).toBeInTheDocument()
+    })
+
+    it('hides the system-health indicator when status is ready', () => {
+        renderHeader()
+        expect(screen.queryByTestId('system-health-indicator')).not.toBeInTheDocument()
+    })
+
+    it('renders an amber dot when status is degraded', () => {
+        systemHealthMock.mockReturnValue({
+            status: 'degraded',
+            checks: { db: 'error: connection timeout', session: 'ok' },
+            lastCheckedAt: new Date(),
+        })
+        renderHeader()
+        const indicator = screen.getByTestId('system-health-indicator')
+        expect(indicator).toBeInTheDocument()
+        expect(indicator).toHaveAttribute('data-status', 'degraded')
+        expect(indicator).toHaveAttribute('aria-label', 'System degraded')
+        // Amber dot — the inner span has bg-amber-500
+        const dot = indicator.querySelector('span')
+        expect(dot).toHaveClass('bg-amber-500')
     })
 
     it('theme toggle button has an aria-label', () => {

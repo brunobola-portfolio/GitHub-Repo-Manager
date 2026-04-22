@@ -10,6 +10,8 @@ import { Github } from './icons/GithubIcon'
 import { AppLogoIcon } from './AppLogo'
 import LicenseBadge from './LicenseBadge'
 import { useTheme } from '../hooks/useTheme.jsx'
+import { useSystemHealth } from '../hooks/useSystemHealth.js'
+import { useRelativeTime } from '../hooks/useRelativeTime.js'
 
 export function Header({
     user,
@@ -144,6 +146,9 @@ export function Header({
 
                             {/* Utility Container */}
                             <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
+                                {/* System Health Indicator (hidden when ready) */}
+                                <SystemHealthIndicator />
+
                                 {/* Theme Toggle */}
                                 <ThemeToggleButton isDark={isDark} toggleTheme={toggleTheme} />
 
@@ -474,6 +479,102 @@ function NotificationsDropdown({ syncStatus, orgs }) {
                     desc="Use Re-authorize to grant access to new organizations"
                 />
             </div>
+        </div>
+    )
+}
+
+// System Health Indicator — small dot next to the theme toggle that reveals
+// itself only when the server readiness probe reports degradation or the
+// status is unknown (e.g. network blip). Clicking the dot opens a popover
+// listing which checks failed.
+function SystemHealthIndicator() {
+    const { status, checks, lastCheckedAt } = useSystemHealth()
+    const [open, setOpen] = useState(false)
+    const popRef = useRef(null)
+    const relative = useRelativeTime(lastCheckedAt)
+
+    useEffect(() => {
+        if (!open) return undefined
+        const onClick = (e) => {
+            if (popRef.current && !popRef.current.contains(e.target)) setOpen(false)
+        }
+        document.addEventListener('mousedown', onClick)
+        return () => document.removeEventListener('mousedown', onClick)
+    }, [open])
+
+    if (status === 'ready') return null
+
+    const isDegraded = status === 'degraded'
+    const dotClass = isDegraded
+        ? 'bg-amber-500 ring-amber-500/30'
+        : 'bg-slate-400 ring-slate-400/30'
+    const tooltip = isDegraded ? 'System degraded' : 'Status unknown'
+
+    return (
+        <div className="relative" ref={popRef}>
+            <button
+                type="button"
+                onClick={() => setOpen(v => !v)}
+                aria-label={tooltip}
+                aria-haspopup="dialog"
+                aria-expanded={open}
+                title={tooltip}
+                data-testid="system-health-indicator"
+                data-status={status}
+                className="relative w-[34px] h-[34px] rounded-[9px] flex items-center justify-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 hover:bg-white/80 dark:hover:bg-slate-700"
+            >
+                <span
+                    className={`w-2.5 h-2.5 rounded-full ring-4 ${dotClass}`}
+                    aria-hidden="true"
+                />
+            </button>
+
+            {open && (
+                <div
+                    role="dialog"
+                    aria-label={tooltip}
+                    className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-40 ds-animate-scale-in"
+                >
+                    <div className="p-3 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
+                        <AlertCircle className={`w-4 h-4 ${isDegraded ? 'text-amber-500 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`} />
+                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
+                            {isDegraded ? 'System degraded' : 'Status unknown'}
+                        </h3>
+                    </div>
+                    <div className="p-3 space-y-1.5">
+                        {isDegraded && Object.keys(checks).length > 0 ? (
+                            Object.entries(checks).map(([name, result]) => {
+                                const ok = result === 'ok'
+                                return (
+                                    <div key={name} className="flex items-start gap-2 text-xs">
+                                        <span
+                                            className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${ok ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                            aria-hidden="true"
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <span className="font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                                                {name}
+                                            </span>
+                                            <span className="text-slate-500 dark:text-slate-400">: {result}</span>
+                                        </div>
+                                    </div>
+                                )
+                            })
+                        ) : (
+                            <div className="text-xs text-slate-500 dark:text-slate-400">
+                                {isDegraded
+                                    ? 'One or more dependencies reported an error.'
+                                    : 'Unable to reach the readiness probe. The server may be unreachable or the network is offline.'}
+                            </div>
+                        )}
+                        {lastCheckedAt && (
+                            <div className="pt-2 mt-2 border-t border-slate-100 dark:border-slate-700 text-[11px] text-slate-400 dark:text-slate-500">
+                                Last checked: {relative || 'just now'}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
