@@ -32,6 +32,11 @@ export function useWorkBoardPresets() {
         }
     }, [])
 
+    // Fetch-on-mount. The setState updates inside `refresh()` are asynchronous
+    // (wrapped in a Promise), so this does NOT cascade synchronous renders —
+    // the `react-hooks/set-state-in-effect` rule flags the call shape but the
+    // actual behaviour is safe.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { refresh() }, [refresh])
 
     const create = useCallback(async ({ name, filters }) => {

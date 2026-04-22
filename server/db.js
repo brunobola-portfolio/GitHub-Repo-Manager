@@ -1,4 +1,4 @@
-import { join, dirname } from 'path';
+import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createDatabaseAdapter } from './lib/db-adapter.js';
 import logger from './lib/logger.js';
