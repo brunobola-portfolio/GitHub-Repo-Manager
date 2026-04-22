@@ -178,11 +178,15 @@ const sessionConfig = {
     secret: config.sessionSecret,
     resave: false,
     saveUninitialized: false,
+    // rolling: re-set the cookie expiry on every response that touches the
+    // session, so an active user stays logged in indefinitely. The absolute
+    // ceiling is enforced separately by sessionAbsoluteTimeout middleware.
+    rolling: true,
     cookie: {
         secure: config.nodeEnv === 'production',
         httpOnly: true,
         sameSite: 'lax',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours — refreshed on every request
     }
 };
 
@@ -201,6 +205,11 @@ if (config.redisUrl) {
 }
 
 app.use(session(sessionConfig));
+
+// Absolute session timeout (7 days from initial login) — runs right after
+// the session middleware so expired sessions never reach any route handler.
+import { sessionAbsoluteTimeout } from './middleware/session-absolute-timeout.js';
+app.use('/api/', sessionAbsoluteTimeout);
 
 // Attach user tier after session (for rate limiting and feature gating)
 import { attachTier } from './middleware/require-tier.js';

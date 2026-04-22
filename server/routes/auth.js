@@ -115,6 +115,9 @@ router.get('/callback', authRouteLimiter, async (req, res) => {
             req.session.userId = newUserId;
             req.session.userLogin = newUserLogin;
             req.session.accessToken = tokenData.access_token;
+            // Absolute-timeout anchor — sessionAbsoluteTimeout middleware
+            // destroys any session older than 7 days from this stamp.
+            req.session.createdAt = Date.now();
 
             req.session.save((err) => {
                 if (err) {
@@ -190,6 +193,7 @@ router.post('/mock', (req, res) => {
     req.session.userId = mockUser.id;
     req.session.userLogin = mockUser.username;
     req.session.accessToken = 'mock_token';
+    req.session.createdAt = Date.now();
     req.session.save(() => res.json({ success: true, user: mockUser }));
 });
 
