@@ -227,10 +227,26 @@ router.get('/session-info', (req, res) => {
         ? Math.max(0, Math.floor((createdAt + ABSOLUTE_TIMEOUT_MS - Date.now()) / 1000))
         : null;
 
+    // isAdmin — read the users.is_admin flag (Migration 016). The DLQ
+    // operator UI gates an admin-only navigation item on this flag so
+    // non-admins don't see (or attempt to hit) /api/v1/admin/dlq/*.
+    // Fail-closed: any DB error returns false rather than exposing the
+    // admin UI to a user we couldn't verify.
+    let isAdmin = false;
+    if (typeof req.session.userId === 'number') {
+        try {
+            const row = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(req.session.userId);
+            isAdmin = !!row?.is_admin;
+        } catch {
+            /* swallow — treat as non-admin */
+        }
+    }
+
     res.json({
         authenticated: true,
         userId: req.session.userId,
         userLogin: req.session.userLogin,
+        isAdmin,
         expiresAt,
         expiresInSeconds,
         createdAt: createdAt !== null ? new Date(createdAt).toISOString() : null,

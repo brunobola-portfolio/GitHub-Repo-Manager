@@ -3,7 +3,7 @@ import { Command } from 'cmdk'
 import {
   GitFork, LayoutDashboard, Users, Tag, Map, Wand2, History, Plus,
   ArrowRightLeft, Settings, Kanban, GitPullRequest, CircleDot, Loader2,
-  AlertTriangle, Wrench, BarChart3, Sparkles, Bookmark,
+  AlertTriangle, Wrench, BarChart3, Sparkles, Bookmark, ShieldAlert,
 } from 'lucide-react'
 import { searchApi } from '../api/search'
 import { MOCK_MODE } from '../config'
@@ -29,6 +29,14 @@ const ACTION_ITEMS = [
 // Items dispatch CustomEvents on `window`; WorkBoardPage/AISummaryCard
 // listen and react. Keeping the coupling loose (via events) avoids threading
 // refs/callbacks through many layers just for palette wiring.
+// Admin group — only rendered when the current session has the admin
+// flag. Items are navigation into views gated on `users.is_admin` at the
+// API layer, so the worst case of a stale flag here is a 403 → the
+// AdminDLQPage itself renders the bootstrap instructions.
+const ADMIN_ITEMS = [
+  { id: 'admin-dlq', label: 'Open DLQ Admin', view: 'admin-dlq', icon: ShieldAlert },
+]
+
 const WORK_BOARD_ITEMS = [
   { id: 'wb-reviews',    label: 'Open My Reviews',                event: 'workboard:go-tab',        detail: 'reviews',    icon: GitPullRequest },
   { id: 'wb-stale',      label: 'Open Stale PRs',                 event: 'workboard:go-tab',        detail: 'stale',      icon: AlertTriangle },
@@ -100,7 +108,7 @@ function useDebouncedGitHubSearch(query, enabled) {
   return { data, loading, error }
 }
 
-export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChange, onOpenModal, onSelectRepo }) {
+export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChange, onOpenModal, onSelectRepo, isAdmin = false }) {
   const [input, setInput] = useState('')
   const displayRepos = repos.slice(0, 10)
   const liveEnabled = isOpen && !MOCK_MODE
@@ -181,6 +189,25 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
               )
             })}
           </Command.Group>
+
+          {isAdmin && (
+            <Command.Group heading="Admin" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+              {ADMIN_ITEMS.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Command.Item
+                    key={item.id}
+                    value={item.label}
+                    onSelect={() => { onViewChange(item.view); onClose() }}
+                    className={ITEM_CLASSES}
+                  >
+                    <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />
+                    {item.label}
+                  </Command.Item>
+                )
+              })}
+            </Command.Group>
+          )}
 
           {activeView === 'work-board' && (
             <Command.Group heading="Work Board" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>

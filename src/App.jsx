@@ -19,6 +19,7 @@ import { useSelection } from './hooks/useSelection'
 import { useModal } from './hooks/useModal'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useSessionExpiry } from './hooks/useSessionExpiry'
+import { useIsAdmin } from './hooks/useIsAdmin'
 import { useCommandPalette } from './hooks/useCommandPalette'
 import { CommandPalette } from './components/CommandPalette'
 import { useResponsiveLayout } from './hooks/useResponsiveLayout'
@@ -64,6 +65,7 @@ const BatchIndexProgressModal = lazy(() => import('./components/AI/BatchIndexPro
 const CompareSimilarDrawer = lazy(() => import('./components/AI/CompareSimilarDrawer').then(m => ({ default: m.CompareSimilarDrawer })))
 const SecurityScanModal = lazy(() => import('./components/security/SecurityScanModal').then(m => ({ default: m.SecurityScanModal })))
 const LicenseActivationModal = lazy(() => import('./components/Settings/LicenseActivationModal').then(m => ({ default: m.LicenseActivationModal })))
+const AdminDLQPage = lazy(() => import('./components/Admin/AdminDLQPage').then(m => ({ default: m.AdminDLQPage })))
 
 // Loading fallback component (kept as local alias for legacy callsites below)
 const LoadingFallback = RouteFallback
@@ -143,6 +145,10 @@ function AppContent() {
   // Poll session expiry and surface a warning toast before the 7-day
   // absolute ceiling trips. Silent when unauthenticated or in mock mode.
   useSessionExpiry({ enabled: !!user && !MOCK_MODE })
+
+  // One-shot check for the operator-admin flag. Used to conditionally
+  // expose the DLQ admin UI in the command palette + user menu.
+  const { isAdmin } = useIsAdmin()
 
   const { showHelp, setShowHelp, shortcuts } = useKeyboardShortcuts({
     onSearch: () => {
@@ -688,6 +694,8 @@ function AppContent() {
         onImport={() => openModal('showMigrationWizard')}
         onMigrationHistory={() => openModal('showMigrationHistory')}
         onToggleOrgDrawer={() => setOrgDrawerOpen(true)}
+        isAdmin={isAdmin}
+        onOpenAdminDLQ={() => setActiveView('admin-dlq')}
       />
 
       {rateLimitBanner && (
@@ -934,6 +942,16 @@ function AppContent() {
             </ErrorBoundary>
           </div>
         )}
+
+        {activeView === 'admin-dlq' && user && (
+          <div className="animate-in fade-in duration-500">
+            <ErrorBoundary fallback={<ViewErrorFallback viewName="DLQ Admin" onGoHome={() => setActiveView('dashboard')} />}>
+              <Suspense fallback={<LoadingFallback />}>
+                <AdminDLQPage />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        )}
       </main>
 
       <ErrorBoundary fallback={<ViewErrorFallback viewName="Create Repository" onGoHome={() => closeModal('showCreateRepo')} />}>
@@ -1157,6 +1175,7 @@ function AppContent() {
         onViewChange={setActiveView}
         onOpenModal={openModal}
         onSelectRepo={handleOpenRepo}
+        isAdmin={isAdmin}
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />

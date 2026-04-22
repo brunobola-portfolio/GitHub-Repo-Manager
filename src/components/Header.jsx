@@ -4,7 +4,7 @@ import {
     LogOut, RefreshCw, LayoutDashboard, FolderGit2, Plus,
     Bell, Settings, User, ChevronDown, Building2, Shield, Users,
     CheckCircle2, AlertCircle, Sparkles, Moon, Sun, Wand2, Download, History, Menu, CreditCard,
-    Kanban
+    Kanban, ShieldAlert
 } from 'lucide-react'
 import { Github } from './icons/GithubIcon'
 import { AppLogoIcon } from './AppLogo'
@@ -32,7 +32,9 @@ export function Header({
     onOpenSettings,
     onImport,
     onMigrationHistory,
-    onToggleOrgDrawer
+    onToggleOrgDrawer,
+    isAdmin = false,
+    onOpenAdminDLQ
 }) {
     const [showUserMenu, setShowUserMenu] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
@@ -212,6 +214,8 @@ export function Header({
                                             onOpenSettings={onOpenSettings}
                                             onMigrationHistory={onMigrationHistory}
                                             onClose={() => setShowUserMenu(false)}
+                                            isAdmin={isAdmin}
+                                            onOpenAdminDLQ={onOpenAdminDLQ}
                                         />
                                     )}
                                 </div>
@@ -349,7 +353,7 @@ function NavButton({ active, onClick, icon, label }) {
 }
 
 // User Dropdown Menu
-function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, onOpenSettings, onMigrationHistory, onClose }) {
+function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, onOpenSettings, onMigrationHistory, onClose, isAdmin = false, onOpenAdminDLQ }) {
     return (
         <div className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-40 ds-animate-scale-in">
             {/* User Info */}
@@ -409,6 +413,16 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
                 <MenuButton icon={History} onClick={() => { onMigrationHistory?.(); onClose() }}>
                     Migration History
                 </MenuButton>
+                {isAdmin && onOpenAdminDLQ && (
+                    <div className="border-t border-slate-100 dark:border-slate-700 mt-2 pt-2">
+                        <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            Admin
+                        </div>
+                        <MenuButton icon={ShieldAlert} onClick={() => { onOpenAdminDLQ?.(); onClose() }}>
+                            DLQ Admin
+                        </MenuButton>
+                    </div>
+                )}
                 <div className="border-t border-slate-100 dark:border-slate-700 mt-2 pt-2">
                     <MenuButton icon={LogOut} onClick={onLogout} danger>
                         Logout
