@@ -83,6 +83,10 @@ npm run lint
 
 Test files go in `tests/` (unit) or `e2e/` (Playwright) — never alongside source files in `src/`.
 
+### Accessibility
+
+Automated a11y checks run via `e2e/a11y-smoke.spec.js` using axe-core. Add `await checkA11y(page)` at the end of any new e2e journey that lands on a new view. Known violations are listed with TODO comments in `e2e/a11y-smoke.spec.js`; address them rather than extending the allowlist when possible.
+
 ## Git Hooks
 
 A pre-commit hook runs [lint-staged](https://github.com/lint-staged/lint-staged) on staged JS/JSX files:
