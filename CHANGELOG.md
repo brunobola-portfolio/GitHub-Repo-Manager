@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-04-22
+
+Operator-facing hardening on top of v3.6.0: admin tooling for the DLQ surfaces added in 3.6.0, a public status page for incident communication, a session-expiry UX so the 7-day ceiling is visible before it fires, and pre-commit hooks that enforce the standards this sprint established. Frontend & backend only — no schema breaking changes.
+
+### Admin / operability
+
+- **DLQ operator UI** (`src/components/Admin/AdminDLQPage.jsx`): tabs for Email / Webhook DLQs with filter (All / Unresolved / Resolved), per-row Retry + Resolve, side-panel detail view with full payload. Lazy-loaded chunk (4.5 KB gzip). Gated behind `requireAdmin` + `useIsAdmin()` (fail-closed when `users.is_admin !== 1`).
+- **DLQ operator API** (`server/routes/admin-dlq.js`): 8 endpoints under `/api/v1/admin/dlq/{email,webhook}/...` — list, view, retry, soft-delete. All mutations audit-logged in the G1 hash chain under category `dlq.*`. M016 adds `users.is_admin` (default 0).
+- **CLI operator scripts** (`server/scripts/`): `admin:grant`, `admin:revoke`, `admin:dlq` (summary / list / retry / resolve), `admin:dlq:sweep` (hard-delete resolved rows older than N days, dry-run default). Zero runtime deps, Windows-portable. Shared `_cli-utils.mjs` with parseArgs / printTable / askConfirm.
+
+### Health & status
+
+- **Public status page** at `/status` (`src/components/PublicStatus/StatusPage.jsx`): unauthenticated, polls `/api/health/ready`, shows large status pill + per-check table + last-checked timestamp + manual refresh. Split into its own 2 KB gzip chunk. Footer link in `LegalFooter`.
+- **System status indicator in header** (`src/hooks/useSystemHealth.js` + `src/components/Header.jsx`): hidden on `ready`, amber dot on `degraded` (with popover listing failed checks), grey on `unknown`. 60 s poll with Page Visibility pause.
+
+### Session UX
+
+- **Session-expiry hook** (`src/hooks/useSessionExpiry.js`): polls `/api/auth/session-info` every 5 min, soft-warns via toast < 1 h before the 7-day ceiling (once per page-load via `sessionStorage`), harder warn < 5 min. Wired into `App.jsx`.
+- **Graceful 401 handling** (`src/utils/api.js`): non-auth 401s now toast + hard-redirect to `/?error=session_expired` instead of leaving the UI in a broken state. Auth-flow paths bypassed so OAuth doesn't self-logout.
+- **`GET /api/auth/session-info`**: returns `{ authenticated, userId, userLogin, isAdmin, expiresAt, expiresInSeconds, createdAt }` so the frontend can surface the expiry without guessing.
+
+### Developer experience
+
+- **Husky v9 pre-commit hook** + **lint-staged v16**: every commit runs `eslint --fix --max-warnings 0` on staged JS/JSX files and rejects `console.log` / `debugger` via a cross-platform Node check. Bypass with `--no-verify`. Setup via `npm install` (husky's `prepare` script).
+- **CLI stdout cleanup**: replaced 19 `console.log` calls in `check-native-modules.js`, `retention.js`, `evals/run.js` with `process.stdout.write` so the pre-commit hook doesn't block future edits. Output byte-identical.
+
+### UX
+
+- **Toast coverage** extended to `IssueDetailPanel` + `PRDetailPanel` for comment / state-toggle / merge / close mutations. `useToast` now in 25 components.
+
+### Documentation
+
+- **`docs/security-hardening.md` G4 table**: `CREDENTIAL_ENCRYPTION_KEY` row updated to reflect v3.6.0 enforcement (required in production; fallback to `SESSION_SECRET` only in dev/test). Cross-linked to G9.
+
 ## [3.6.0] - 2026-04-22
 
 A hardening sprint focused on closing P0–P4 audit findings: security depth (CSRF, SSRF, rolling-session ceiling, auth-endpoint throttling, mandatory encryption key), resilience (GitHub API circuit breaker, email + webhook DLQs, AI retry taxonomy), performance (route-level lazy splits, vendor-icons chunk, SWR, composite indexes), observability (request timing, Sentry breadcrumbs, perf marks), and a large internal-refactor pass that halves several oversized files. No user-facing feature additions — product surface is unchanged from 3.5.0.
@@ -597,7 +631,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.6.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.0...HEAD
+[3.7.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.6.0...v3.7.0
 [3.6.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.5.0...v3.6.0
 [3.5.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.4.0...v3.5.0
 [3.0.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v2.5.0...v3.0.0
