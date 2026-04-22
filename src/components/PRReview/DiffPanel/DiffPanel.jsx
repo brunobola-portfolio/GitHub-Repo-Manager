@@ -1,6 +1,31 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { DiffRenderer } from './DiffRenderer'
+import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react'
 import { InlineComment } from './InlineComment'
+
+// DiffRenderer pulls in @git-diff-view/react + shiki (~1 MB / ~332 KB gzipped).
+// Lazy-load so mounting the PR Review view itself doesn't trigger that download —
+// the chunk is only fetched once the user actually lands on a file's diff.
+// Module-level lazy() means the promise is shared across files: download once,
+// render many times as the user navigates between files in the same PR.
+const DiffRenderer = lazy(() =>
+  import('./DiffRenderer').then((m) => ({ default: m.DiffRenderer }))
+)
+
+/**
+ * Lightweight skeleton shown while the diff renderer chunk loads. Pure Tailwind,
+ * no heavy deps, so it stays in the main entry bundle and paints instantly.
+ */
+function DiffLoadingSkeleton() {
+  return (
+    <div className="p-4 space-y-2" role="status" aria-live="polite" aria-label="Loading diff">
+      <div className="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+      <div className="h-4 w-5/6 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+      <div className="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+      <div className="h-4 w-4/5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+      <div className="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+      <span className="sr-only">Loading diff viewer…</span>
+    </div>
+  )
+}
 
 /**
  * Group a flat list of GitHub review comments into top-level threads with
@@ -176,13 +201,15 @@ export function DiffPanel({ file, viewMode, comments, pendingComments, resolvedC
 
       {/* Diff content */}
       <div className="flex-1 overflow-auto">
-        <DiffRenderer
-          filename={filename}
-          patch={patch}
-          viewMode={viewMode}
-          onAddComment={handleAddComment}
-          highlightLanguage={lang}
-        />
+        <Suspense fallback={<DiffLoadingSkeleton />}>
+          <DiffRenderer
+            filename={filename}
+            patch={patch}
+            viewMode={viewMode}
+            onAddComment={handleAddComment}
+            highlightLanguage={lang}
+          />
+        </Suspense>
       </div>
 
       {/* Submitted comment threads */}
