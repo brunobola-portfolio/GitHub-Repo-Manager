@@ -6,6 +6,8 @@
  * Licensed under the MIT License. See LICENSE in the project root.
  */
 
+import { trackBreadcrumb } from '../lib/observability'
+
 // ============ Error Types ============
 
 export const ErrorType = {
@@ -320,6 +322,16 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
             // Categorize the error
             const apiError = categorizeError(response.status)
             apiError.data = errorData
+
+            // Drop a Sentry breadcrumb on every non-2xx response so the
+            // request chain is visible when a later error fires. Level
+            // follows the HTTP class: 5xx → error, else warning.
+            trackBreadcrumb(
+                'api',
+                typeof url === 'string' ? url : 'request',
+                { status: response.status, code: errorData?.code },
+                response.status >= 500 ? 'error' : 'warning',
+            )
 
             // Don't retry auth errors or not found
             if (!apiError.isRetryable) {

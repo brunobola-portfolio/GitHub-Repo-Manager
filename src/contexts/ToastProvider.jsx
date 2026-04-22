@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { ToastContext } from './contexts'
+import { trackBreadcrumb } from '../lib/observability'
 
 const MAX_TOASTS = 5
 
@@ -60,7 +61,15 @@ export function ToastProvider({ children }) {
     }, [addToastRecord])
 
     const toast = useMemo(() => ({
-        success: (msg, dur) => addToast('success', msg, dur),
+        success: (msg, dur) => {
+            // Every successful mutation fires a success toast — use that
+            // as the boundary to drop a Sentry breadcrumb. When Sentry
+            // isn't initialised this is a silent no-op.
+            if (typeof msg === 'string' && msg.length > 0) {
+                trackBreadcrumb('mutation', msg)
+            }
+            return addToast('success', msg, dur)
+        },
         error:   (msg, dur) => addToast('error', msg, dur),
         info:    (msg, dur) => addToast('info', msg, dur),
         warning: (msg, dur) => addToast('warning', msg, dur),

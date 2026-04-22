@@ -12,6 +12,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
 import { listTeams } from './api/teams'
 import { onSessionExpired, onRateLimit, resetSessionExpired, fetchWithRetry, safeParseJson } from './utils/api'
+import { trackBreadcrumb, mark } from './lib/observability'
 import { SelectionProvider } from './contexts/SelectionContext'
 import { ModalProvider } from './contexts/ModalContext'
 import { useSelection } from './hooks/useSelection'
@@ -69,7 +70,21 @@ const LoadingFallback = RouteFallback
 function AppContent() {
   const [_session, setSession] = useState(null)
   const [appLoading, setAppLoading] = useState(true)
-  const [activeView, setActiveView] = useState('dashboard')
+  const [activeView, _setActiveView] = useState('dashboard')
+
+  // Wrap setActiveView so every route/view change drops a Sentry
+  // breadcrumb + a performance mark. When Sentry isn't initialised or
+  // the Performance API isn't available these are cheap no-ops.
+  const setActiveView = useCallback((next) => {
+    _setActiveView((prev) => {
+      const resolved = typeof next === 'function' ? next(prev) : next
+      if (resolved !== prev) {
+        trackBreadcrumb('nav', `view:${resolved}`)
+        mark(`nav:${resolved}`)
+      }
+      return resolved
+    })
+  }, [])
   const [selectedTeam, setSelectedTeam] = useState(null)
   const [systemInitialized, setSystemInitialized] = useState(null)
   const [org, setOrg] = useState('')
@@ -142,7 +157,7 @@ function AppContent() {
   const handleOpenRepo = useCallback((repo) => {
     setSelectedRepoDetail(repo)
     setActiveView('repo-detail')
-  }, [])
+  }, [setActiveView])
 
   const loading = appLoading || githubLoading
   const initCalled = useRef(false)
@@ -168,7 +183,7 @@ function AppContent() {
     }
     window.addEventListener('app:navigate-dashboard', handleNavigateDashboard)
     return () => window.removeEventListener('app:navigate-dashboard', handleNavigateDashboard)
-  }, [])
+  }, [setActiveView])
 
   // Rate-limit toasts — one at a time, auto-dismisses after the countdown ends.
   const rateLimitToastIdRef = useRef(null)
@@ -220,11 +235,18 @@ function AppContent() {
   useEffect(() => {
     if (!initCalled.current) {
       initCalled.current = true
+      mark('app:mount')
       checkSystemStatus()
     }
     return () => { initCalled.current = false }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Mark when authentication is confirmed — useful for measuring the
+  // user-perceived login → first-paint window.
+  useEffect(() => {
+    if (user) mark('app:authed')
+  }, [user])
 
   const checkSystemStatus = async () => {
     // Mock mode bypasses the first-run setup ceremony entirely. The setup

@@ -10,6 +10,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { MOCK_MODE } from '../config'
 import { getCached, setCached } from './utils/swrCache'
+import { mark } from '../lib/observability'
 
 export { getCached, setCached, invalidateCached, clearCache } from './utils/swrCache'
 
@@ -67,7 +68,9 @@ function useWorkBoardFetch(url, mockData, { refreshIntervalMs = 60_000 } = {}) {
                 hasDataRef.current = true
                 return
             }
+            mark(`wb:fetch-start:${url}`)
             const json = await apiFetch(url)
+            mark(`wb:fetch-end:${url}`)
             if (!mountedRef.current) return
             const nextData = json.data ?? json
             const nextMeta = json.meta || null

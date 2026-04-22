@@ -33,6 +33,7 @@ import { aiService } from './ai-service.js';
 import { safeError } from './middleware/auth.js';
 import { createSQLiteStore } from './lib/session-store.js';
 import logger, { requestLoggerMiddleware } from './lib/logger.js';
+import { requestTiming } from './middleware/request-timing.js';
 import { verifySecretsAtStartup } from './lib/startup-secrets-check.js';
 import { startWorkBoardSweeper, stopWorkBoardSweeper } from './lib/work-board-sweeper.js';
 import { startEmailRetryWorker, stopEmailRetryWorker } from './lib/email-retry-worker.js';
@@ -131,6 +132,9 @@ app.use(cors({
     origin: config.nodeEnv === 'production' ? config.frontendUrl : true,
     credentials: true,
 }));
+// Per-request timing — mounted before session so we time the full request
+// lifecycle including session hydration, rate limiting, and the handler.
+app.use(requestTiming);
 // Stripe webhooks need raw body (must be before express.json())
 import { stripeWebhookHandler } from './routes/stripe-webhooks.js';
 app.post('/api/v1/webhooks/stripe', express.raw({ type: 'application/json' }), stripeWebhookHandler);
