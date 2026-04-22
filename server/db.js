@@ -19,7 +19,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // ---------------------------------------------------------------------------
 const db = await createDatabaseAdapter();
 
-export function initDB() {
+export function initDB(targetDb = db) {
+    // Allow tests to apply the full schema against a throw-away in-memory
+    // SQLite handle. Callers can pass any better-sqlite3-compatible connection.
+    const db = targetDb;
     const transactions = db.transaction(() => {
         // Multi-tenancy migration: add user_id to tables that need it
         // If tables exist without user_id, drop and recreate them
