@@ -4,6 +4,7 @@ import db from '../db.js';
 import { auditLog } from '../lib/audit.js';
 import { config } from '../config.js';
 import { createAuthRouteLimiter } from '../middleware/tenant-rate-limit.js';
+import { ensureCsrfToken } from '../middleware/csrf.js';
 
 const router = express.Router();
 
@@ -195,6 +196,25 @@ router.post('/mock', (req, res) => {
     req.session.accessToken = 'mock_token';
     req.session.createdAt = Date.now();
     req.session.save(() => res.json({ success: true, user: mockUser }));
+});
+
+// Issue (or retrieve) a CSRF token bound to the current session.
+// Called by the SPA after login; token is then sent back on every
+// mutating request as the X-CSRF-Token header.
+router.get('/csrf-token', (req, res) => {
+    try {
+        const token = ensureCsrfToken(req);
+        req.session.save((err) => {
+            if (err) {
+                req.log?.error?.({ err }, 'Session save failed while issuing CSRF token');
+                return res.status(500).json({ error: 'Failed to issue CSRF token' });
+            }
+            res.json({ token });
+        });
+    } catch (err) {
+        req.log?.error?.({ err }, 'CSRF token issuance failed');
+        res.status(500).json({ error: 'Failed to issue CSRF token' });
+    }
 });
 
 export default router;

@@ -211,6 +211,11 @@ app.use(session(sessionConfig));
 import { sessionAbsoluteTimeout } from './middleware/session-absolute-timeout.js';
 app.use('/api/', sessionAbsoluteTimeout);
 
+// CSRF enforcement on all /api/* mutations. Skips GET/HEAD/OPTIONS and
+// bypasses the OAuth flow + signature-verified webhooks (see csrf.js).
+import { requireCsrfToken } from './middleware/csrf.js';
+app.use('/api/', requireCsrfToken);
+
 // Attach user tier after session (for rate limiting and feature gating)
 import { attachTier } from './middleware/require-tier.js';
 app.use('/api/', attachTier);

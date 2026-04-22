@@ -49,6 +49,69 @@ function notifySessionExpired() {
     })
 }
 
+// ============ CSRF Token Cache + Interceptor ============
+// The backend requires an X-CSRF-Token header on every state-changing
+// request (POST/PUT/PATCH/DELETE). We fetch the token once per session
+// from /api/auth/csrf-token, cache it in memory, and inject it on all
+// mutations. If the server rejects with 403 { code: 'csrf_invalid' }
+// (e.g. after a logout + re-login rotated the token), we invalidate the
+// cache and retry once.
+
+const CSRF_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+let csrfToken = null
+let csrfTokenPromise = null
+
+export function _resetCsrfTokenForTests() {
+    csrfToken = null
+    csrfTokenPromise = null
+}
+
+async function fetchCsrfToken() {
+    // Coalesce concurrent callers onto a single in-flight request so a
+    // burst of parallel mutations doesn't fire N token fetches.
+    if (csrfTokenPromise) return csrfTokenPromise
+    csrfTokenPromise = (async () => {
+        try {
+            const res = await fetch('/api/auth/csrf-token', {
+                method: 'GET',
+                credentials: 'include',
+            })
+            if (!res.ok) throw new Error(`CSRF token fetch failed: ${res.status}`)
+            const data = await res.json()
+            if (!data?.token) throw new Error('CSRF token fetch returned empty body')
+            csrfToken = data.token
+            return csrfToken
+        } finally {
+            csrfTokenPromise = null
+        }
+    })()
+    return csrfTokenPromise
+}
+
+/**
+ * Ensure a CSRF token is cached and return it. Callers should inject it
+ * into the `X-CSRF-Token` header on any mutating request.
+ *
+ * @returns {Promise<string>}
+ */
+export async function getCsrfToken() {
+    if (csrfToken) return csrfToken
+    return fetchCsrfToken()
+}
+
+function isMutation(options) {
+    const method = (options?.method || 'GET').toUpperCase()
+    return CSRF_METHODS.has(method)
+}
+
+// Only same-origin /api/* URLs need the CSRF header. Cross-origin calls
+// (e.g. direct GitHub API requests in tests or tooling) must not leak the
+// token and don't need the protection.
+function isSameOriginApi(url) {
+    if (typeof url !== 'string') return false
+    return url.startsWith('/api/')
+}
+
 // ============ Rate Limit Event Bus ============
 // Fires whenever a 429 is encountered, regardless of call site. App.jsx
 // subscribes once and surfaces a toast; individual call sites don't need
@@ -171,7 +234,26 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
         throw new ApiError(ErrorType.AUTHENTICATION, null, 401)
     }
 
+    // Inject CSRF header on same-origin /api/* mutations. The
+    // /api/auth/csrf-token endpoint itself must NOT recurse into this
+    // logic (it's a GET anyway, but the extra check documents the invariant).
+    const mutation = isMutation(options) && isSameOriginApi(url)
+    const isCsrfFetch = typeof url === 'string' && url.includes('/api/auth/csrf-token')
+    if (mutation && !isCsrfFetch) {
+        try {
+            const token = await getCsrfToken()
+            options = {
+                ...options,
+                headers: { ...(options.headers || {}), 'X-CSRF-Token': token },
+            }
+        } catch (_e) {
+            // If token fetch fails we still try the request — the server will
+            // reject with 403 csrf_invalid and we'll surface a VALIDATION error.
+        }
+    }
+
     let lastError = null
+    let csrfRetried = false
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
         // Check if offline before attempting
@@ -199,6 +281,30 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
             // Parse error response body to preserve server-provided details
             let errorData = null
             try { errorData = await response.json() } catch (_e) { /* ignore parse error */ }
+
+            // 403 csrf_invalid → invalidate cached token, fetch fresh, retry once.
+            // This handles the race where a rotated/expired session produced a
+            // stale cached token between calls.
+            if (
+                response.status === 403 &&
+                errorData?.code === 'csrf_invalid' &&
+                mutation && !isCsrfFetch && !csrfRetried
+            ) {
+                csrfRetried = true
+                csrfToken = null
+                try {
+                    const fresh = await fetchCsrfToken()
+                    options = {
+                        ...options,
+                        headers: { ...(options.headers || {}), 'X-CSRF-Token': fresh },
+                    }
+                    // Skip backoff and re-enter loop immediately with fresh token.
+                    attempt -= 1
+                    continue
+                } catch (_e) {
+                    // fall through to normal error path
+                }
+            }
 
             // Parse Retry-After header (in seconds). Falls back to 60 if unparseable.
             if (response.status === 429) {
