@@ -18,6 +18,8 @@ const rootDir = join(__dirname, '..');
 // Native modules that need version compatibility checks
 const NATIVE_MODULES = ['better-sqlite3'];
 
+function out(msg) { process.stdout.write(msg + '\n'); }
+
 /**
  * Get the Node.js ABI version from the module
  */
@@ -52,14 +54,14 @@ function checkNativeModules() {
     const nodeVersion = process.version;
     const issues = [];
 
-    console.log(`\n🔍 Checking native module compatibility...`);
-    console.log(`   Node.js version: ${nodeVersion} (ABI ${currentABI})\n`);
+    out(`\n🔍 Checking native module compatibility...`);
+    out(`   Node.js version: ${nodeVersion} (ABI ${currentABI})\n`);
 
     for (const moduleName of NATIVE_MODULES) {
         const modulePath = join(rootDir, 'node_modules', moduleName);
-        
+
         if (!existsSync(modulePath)) {
-            console.log(`   ⚠️  ${moduleName}: Not installed`);
+            out(`   ⚠️  ${moduleName}: Not installed`);
             issues.push({ module: moduleName, type: 'missing' });
             continue;
         }
@@ -71,20 +73,20 @@ function checkNativeModules() {
                 encoding: 'utf-8',
                 cwd: rootDir
             });
-            console.log(`   ✅ ${moduleName}: Compatible`);
+            out(`   ✅ ${moduleName}: Compatible`);
         } catch (error) {
             const errorMsg = error.stderr || error.message || '';
-            
+
             if (errorMsg.includes('NODE_MODULE_VERSION')) {
                 const match = errorMsg.match(/NODE_MODULE_VERSION (\d+).*NODE_MODULE_VERSION (\d+)/);
                 const compiledFor = match ? match[1] : 'unknown';
                 const required = match ? match[2] : currentABI;
-                
-                console.log(`   ❌ ${moduleName}: Version mismatch`);
-                console.log(`      Compiled for ABI ${compiledFor}, but Node.js requires ABI ${required}`);
+
+                out(`   ❌ ${moduleName}: Version mismatch`);
+                out(`      Compiled for ABI ${compiledFor}, but Node.js requires ABI ${required}`);
                 issues.push({ module: moduleName, type: 'version_mismatch', compiledFor, required });
             } else {
-                console.log(`   ❌ ${moduleName}: Load error`);
+                out(`   ❌ ${moduleName}: Load error`);
                 issues.push({ module: moduleName, type: 'error', message: errorMsg });
             }
         }
@@ -97,16 +99,16 @@ function checkNativeModules() {
  * Attempt to rebuild native modules
  */
 function rebuildModules(modules) {
-    console.log(`\n🔧 Attempting to rebuild native modules...\n`);
-    
+    out(`\n🔧 Attempting to rebuild native modules...\n`);
+
     for (const moduleName of modules) {
-        console.log(`   Rebuilding ${moduleName}...`);
+        out(`   Rebuilding ${moduleName}...`);
         try {
             execSync(`npm rebuild ${moduleName}`, {
                 stdio: 'inherit',
                 cwd: rootDir
             });
-            console.log(`   ✅ ${moduleName} rebuilt successfully\n`);
+            out(`   ✅ ${moduleName} rebuilt successfully\n`);
         } catch (error) {
             console.error(`   ❌ Failed to rebuild ${moduleName}`);
             console.error(`      Try running: npm rebuild ${moduleName}`);
@@ -124,22 +126,22 @@ if (issues.length > 0) {
     const versionMismatches = issues.filter(i => i.type === 'version_mismatch').map(i => i.module);
     
     if (versionMismatches.length > 0) {
-        console.log(`\n⚠️  Native module version mismatch detected!`);
-        console.log(`   This usually happens after updating Node.js.\n`);
-        
+        out(`\n⚠️  Native module version mismatch detected!`);
+        out(`   This usually happens after updating Node.js.\n`);
+
         // Check if --fix flag is passed
         if (process.argv.includes('--fix')) {
             const success = rebuildModules(versionMismatches);
             process.exit(success ? 0 : 1);
         } else {
-            console.log(`   To fix automatically, run:`);
-            console.log(`   $ node server/check-native-modules.js --fix\n`);
-            console.log(`   Or manually rebuild:`);
-            console.log(`   $ npm rebuild better-sqlite3\n`);
+            out(`   To fix automatically, run:`);
+            out(`   $ node server/check-native-modules.js --fix\n`);
+            out(`   Or manually rebuild:`);
+            out(`   $ npm rebuild better-sqlite3\n`);
             process.exit(1);
         }
     }
 } else {
-    console.log(`\n✅ All native modules are compatible!\n`);
+    out(`\n✅ All native modules are compatible!\n`);
 }
 

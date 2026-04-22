@@ -22,7 +22,7 @@
 
 import { readFileSync, readdirSync, writeFileSync, existsSync } from 'fs';
 import { fileURLToPath, pathToFileURL } from 'url';
-import { join, dirname, basename } from 'path';
+import { join, dirname } from 'path';
 import { runEval, diffAgainstBaseline } from '../lib/ai-evals.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -248,7 +248,7 @@ async function runAll() {
     // ---------------------------------------------------------------------------
 
     // JSON report to stdout
-    console.log(JSON.stringify(report, null, 2));
+    process.stdout.write(JSON.stringify(report, null, 2) + '\n');
 
     // Markdown summary file (optional)
     if (outputMd) {
@@ -266,7 +266,7 @@ async function runAll() {
 // Markdown summary builder
 // ---------------------------------------------------------------------------
 
-function buildMarkdownSummary(report, featureResults, baselineDiff, verbose) {
+function buildMarkdownSummary(report, featureResults, baselineDiff, _verbose) {
     const lines = [];
     const status = report.failed === 0 ? 'PASS' : 'FAIL';
     lines.push(`# Eval Run — ${status}`);
