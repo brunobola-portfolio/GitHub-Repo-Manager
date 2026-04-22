@@ -28,6 +28,7 @@
     "dev:all": "concurrently \"npm run dev:server\" \"npm run dev\"",
     "dev:kill": "node scripts/kill-dev-ports.js",
     "build": "vite build",
+    "check:bundle-size": "node scripts/check-bundle-size.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "eslint . --fix",
