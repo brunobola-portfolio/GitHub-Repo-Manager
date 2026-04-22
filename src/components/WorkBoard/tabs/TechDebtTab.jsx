@@ -1,0 +1,114 @@
+import { motion } from 'framer-motion'
+import { ExternalLink, Clock, Wrench, Flame } from 'lucide-react'
+import { useTechDebt } from '../../../hooks/useWorkBoard'
+import { useWorkBoardFilters, applyFilters } from '../filters/filter-context-helpers'
+import { SkeletonList, EmptyState, WebhookHint, UpsellCard } from '../shared/shared-ui'
+import { dayLabel } from '../shared/formatters'
+
+export function TechDebtTab() {
+    const { data, loading, error, refresh } = useTechDebt()
+    const { params } = useWorkBoardFilters()
+
+    if (loading) return <SkeletonList count={5} />
+    if (error) {
+        if (error.status === 403) return <UpsellCard tier="pro" />
+        return (
+            <div className="p-4 text-sm text-rose-600 dark:text-rose-400">
+                Failed to load tech debt. <button onClick={refresh} className="underline">Retry</button>
+            </div>
+        )
+    }
+
+    const items = applyFilters(data?.items || [], params)
+    const hotspots = data?.hotspots || []
+
+    if (items.length === 0) {
+        return (
+            <>
+                <EmptyState
+                    icon={Wrench}
+                    title="No tech debt tracked"
+                    subtitle="Label issues with tech-debt, refactor, debt or cleanup and they'll appear here across all repos."
+                />
+                <WebhookHint />
+            </>
+        )
+    }
+
+    return (
+        <div className="space-y-4 p-4">
+            {/* Hotspots */}
+            {hotspots.length > 0 && (
+                <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Flame className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
+                            Hotspots
+                        </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {hotspots.slice(0, 6).map(h => (
+                            <span
+                                key={h.repoFullName}
+                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/80 dark:bg-slate-900/60 text-xs font-medium text-slate-700 dark:text-slate-200"
+                            >
+                                <span className="font-mono text-indigo-600 dark:text-indigo-400">{h.repoFullName}</span>
+                                <span className="text-amber-600 dark:text-amber-400 font-semibold">{h.count}</span>
+                                {h.oldestAgeDays > 0 && (
+                                    <span className="text-slate-400 text-[10px]">· oldest {Math.round(h.oldestAgeDays)}d</span>
+                                )}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Issues */}
+            <div className="divide-y divide-slate-100 dark:divide-slate-800/60 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 overflow-hidden">
+                {items.map((issue, i) => (
+                    <motion.a
+                        key={`${issue.repoFullName}-${issue.issueNumber}`}
+                        href={`https://github.com/${issue.repoFullName}/issues/${issue.issueNumber}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(i * 0.02, 0.3) }}
+                        className="flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group bg-white/60 dark:bg-slate-900/40"
+                    >
+                        <div className="mt-0.5 p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex-shrink-0">
+                            <Wrench className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                {issue.title || `Issue #${issue.issueNumber}`}
+                            </div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
+                                <span className="font-mono text-indigo-600 dark:text-indigo-400">{issue.repoFullName}</span>
+                                #{issue.issueNumber}
+                                {(issue.labels || []).slice(0, 3).map(label => (
+                                    <span
+                                        key={label}
+                                        className="px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-medium"
+                                    >
+                                        {label}
+                                    </span>
+                                ))}
+                                {issue.assignees?.length > 0 && (
+                                    <span className="text-[10px] text-slate-400">
+                                        → {issue.assignees.slice(0, 2).join(', ')}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap flex-shrink-0">
+                            <Clock className="w-3 h-3" />
+                            {dayLabel(issue.ageDays)}
+                            <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                    </motion.a>
+                ))}
+            </div>
+        </div>
+    )
+}
