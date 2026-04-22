@@ -179,6 +179,8 @@ A repeat call from the same session (or a new session for the same `user_id`) re
 
 ## G4 — Startup secrets verification (SOC 2 CC6.1)
 
+> **v3.6.0 update**: `CREDENTIAL_ENCRYPTION_KEY` is now **required** in production. See [G9](#g9--encryption-key-mandatory-in-production-soc-2-cc61) for the rationale and enforcement details.
+
 ### What it enforces
 
 `server/lib/startup-secrets-check.js` — `verifySecretsAtStartup({ nodeEnv })` is called in `server/index.js` **before** `initDB()` and before the Express app binds to a port.
@@ -210,7 +212,7 @@ Absence of `SESSION_SECRET` or `WEBHOOK_SECRET` is only a warning (already handl
 |---|---|---|---|
 | `SESSION_SECRET` | Yes | 32 bytes | Used for session signing and credential-encryption fallback |
 | `WEBHOOK_SECRET` | Yes | 32 bytes | Used for GitHub webhook HMAC verification |
-| `CREDENTIAL_ENCRYPTION_KEY` | Recommended | — | Preferred key for encrypting user BYOK credentials; falls back to `SESSION_SECRET` |
+| `CREDENTIAL_ENCRYPTION_KEY` | Required (production) | 32 bytes | Encrypts user BYOK credentials at rest. Fallback to `SESSION_SECRET` is only permitted in dev/test — production boot aborts if missing. See [G9](#g9--encryption-key-mandatory-in-production-soc-2-cc61). |
 | `DISABLE_HTTPS_ENFORCEMENT` | No | — | Set to `true` only in controlled network environments; generates a warning |
 
 ### Generating strong secrets
