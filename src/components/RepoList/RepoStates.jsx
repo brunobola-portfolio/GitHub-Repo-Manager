@@ -1,0 +1,114 @@
+import { memo } from 'react'
+import { AlertCircle, Archive, Lock, RefreshCw, Search, Plus, Download } from 'lucide-react'
+import { Button } from '../ui/Button'
+
+/** Full-bleed overlay shown while the page is refreshing the repo list. */
+export function LoadingState() {
+	return (
+		<div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl transition-all duration-300">
+			<div className="relative">
+				<div className="w-16 h-16 rounded-full border-4 border-indigo-100 dark:border-indigo-900/30 animate-pulse"></div>
+				<div className="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+				<div className="absolute inset-0 flex items-center justify-center">
+					<RefreshCw className="w-6 h-6 text-indigo-500 animate-spin-slow" />
+				</div>
+			</div>
+			<p className="mt-4 text-slate-600 dark:text-slate-300 font-medium animate-pulse">
+				Loading repositories...
+			</p>
+		</div>
+	)
+}
+
+/**
+ * Auth-expired and generic error states share the same slot. The auth
+ * variant gets its own visual (amber lock + copy); `BACKEND_UNAVAILABLE`
+ * also appends the "how to fix" hint block.
+ */
+export function ErrorState({ error, errorInfo, onRefresh }) {
+	if (errorInfo?.type === 'AUTHENTICATION') {
+		return (
+			<div className="flex flex-col items-center justify-center py-20">
+				<div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4">
+					<Lock className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+				</div>
+				<p className="text-slate-700 dark:text-slate-300 font-medium text-center mb-2">Session Expired</p>
+				<p className="text-slate-500 dark:text-slate-400 text-sm text-center max-w-md mb-4">
+					Your session has expired. Please login again to access your repositories.
+				</p>
+			</div>
+		)
+	}
+
+	return (
+		<div className="flex flex-col items-center justify-center py-20">
+			<AlertCircle className="w-10 h-10 mb-4 text-red-500 dark:text-red-400" />
+			<p className="text-center max-w-md text-red-500 dark:text-red-400">{error}</p>
+			{errorInfo?.type === 'BACKEND_UNAVAILABLE' && (
+				<div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg max-w-lg">
+					<p className="text-amber-800 dark:text-amber-200 text-sm font-medium mb-2">
+						How to fix this:
+					</p>
+					<ol className="text-amber-700 dark:text-amber-300 text-sm list-decimal list-inside space-y-1">
+						<li>Open a terminal in the project root</li>
+						<li>Run <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">npm run dev:server</code> to start the backend</li>
+						<li>Or run <code className="bg-amber-100 dark:bg-amber-800 px-1 rounded">npm run dev:all</code> to start both frontend and backend</li>
+					</ol>
+				</div>
+			)}
+			<Button variant="secondary" className="mt-4" onClick={onRefresh}>Try Again</Button>
+		</div>
+	)
+}
+
+/**
+ * Two empty states: "no repos at all" (pitch the create/import CTAs)
+ * versus "filters hide everything" (pitch clearing filters).
+ */
+export function EmptyState({ hasRepos, onCreateRepo, onImport, onClearFilters }) {
+	if (!hasRepos) {
+		return (
+			<div className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
+				<div className="w-16 h-16 mb-5 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/15 dark:to-purple-500/15 flex items-center justify-center">
+					<Archive className="w-8 h-8 text-indigo-500 dark:text-indigo-400" />
+				</div>
+				<h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">No repositories yet</h2>
+				<p className="text-sm opacity-80 mb-6 text-center max-w-md">
+					Create a new repository on GitHub, or import one from Azure DevOps — both take under a minute.
+				</p>
+				<div className="flex flex-col sm:flex-row gap-2.5">
+					<Button variant="primary" onClick={onCreateRepo}>
+						<Plus className="w-4 h-4 mr-1.5" />
+						Create your first repo
+					</Button>
+					<Button variant="secondary" onClick={onImport}>
+						<Download className="w-4 h-4 mr-1.5" />
+						Import from Azure DevOps
+					</Button>
+				</div>
+			</div>
+		)
+	}
+
+	return (
+		<div className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
+			<Search className="w-12 h-12 mb-4 opacity-20" />
+			<p>No repositories match your current filters.</p>
+			<Button variant="ghost" className="mt-2" onClick={onClearFilters}>
+				Clear Filters
+			</Button>
+		</div>
+	)
+}
+
+export const TooltipButton = memo(function TooltipButton({ icon: IconComp, label, onClick, className = "" }) {
+	return (
+		<button
+			onClick={onClick}
+			className={`p-2 rounded-full hover:bg-white/10 dark:hover:bg-slate-900/10 transition-colors ${className}`}
+			title={label}
+		>
+			<IconComp className="w-4 h-4" />
+		</button>
+	)
+})
