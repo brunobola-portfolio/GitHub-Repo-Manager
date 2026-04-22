@@ -83,6 +83,15 @@ npm run lint
 
 Test files go in `tests/` (unit) or `e2e/` (Playwright) — never alongside source files in `src/`.
 
+## Git Hooks
+
+A pre-commit hook runs [lint-staged](https://github.com/lint-staged/lint-staged) on staged JS/JSX files:
+
+- `eslint --fix --max-warnings 0` on staged files in `src/`, `server/`, `tests/`, and `e2e/` — any warning or error on a touched file blocks the commit. Existing warnings in files you don't touch are unaffected.
+- A `console.log(...)` / `debugger` guard on staged files in `src/` and `server/` (see `scripts/check-debug-statements.mjs`).
+
+The hook is installed automatically by `npm install` via the `prepare` script ([Husky](https://typicode.github.io/husky/)). Bypass with `git commit --no-verify` for hotfixes only.
+
 ## Making Changes
 
 1. **Fork** the repo and create a branch from `main`:
