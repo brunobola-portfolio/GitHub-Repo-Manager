@@ -29,14 +29,24 @@ export function LegalFooter() {
             Source code (AGPL v3)
           </a>
         </span>
-        <a
-          href={COMMERCIAL_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline hover:text-indigo-600 dark:hover:text-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 rounded"
-        >
-          Commercial license
-        </a>
+        <div className="flex items-center gap-3">
+          <a
+            href="/status"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-indigo-600 dark:hover:text-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 rounded"
+          >
+            Status
+          </a>
+          <a
+            href={COMMERCIAL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-indigo-600 dark:hover:text-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 rounded"
+          >
+            Commercial license
+          </a>
+        </div>
       </div>
     </footer>
   )
