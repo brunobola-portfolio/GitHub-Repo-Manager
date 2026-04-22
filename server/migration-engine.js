@@ -4,7 +4,8 @@ import { defaultRepoDescription } from './lib/repo-description.js'
 import { migrateWorkItems } from './work-item-service.js'
 import { migrateWiki } from './wiki-service.js'
 import * as azureService from './azure-service.js'
-import { encryptCredentials, decryptCredentials, isSchedulingEnabled } from './lib/credential-encryption.js'
+import { isSchedulingEnabled } from './lib/credential-encryption.js'
+import { createMigrationCredentialManager } from './lib/migration-credential-manager.js'
 import { githubApi } from './lib/github-api.js'
 import logger from './lib/logger.js'
 
@@ -15,8 +16,9 @@ export class MigrationEngine extends EventEmitter {
     this._cancelledPlans = new Set()
     this._pausedPlans = new Set()
     this._lastProgressWrite = new Map() // taskId -> timestamp
+    this.credentials = createMigrationCredentialManager({ db, logger })
     this._startScheduler()
-    this._startCredentialCleanup()
+    this.credentials.startCleanupTimer()
   }
 
   /**
@@ -692,10 +694,14 @@ export class MigrationEngine extends EventEmitter {
     if (!isSchedulingEnabled()) {
       throw new Error('Scheduling not available: SESSION_SECRET is not configured')
     }
-    const encrypted = encryptCredentials(credentials)
+    // Delegate encryption/persistence to the credential manager, then flip
+    // the plan status. Two statements (not one) keeps the credential manager
+    // focused on credential lifecycle only — status transitions remain an
+    // engine-level concern.
+    this.credentials.store(planId, credentials)
     this.db.prepare(
-      `UPDATE migration_plans SET status = 'scheduled', scheduled_at = ?, credentials_enc = ?, updated_at = datetime('now') WHERE id = ?`
-    ).run(scheduledAt, encrypted, planId)
+      `UPDATE migration_plans SET status = 'scheduled', scheduled_at = ?, updated_at = datetime('now') WHERE id = ?`
+    ).run(scheduledAt, planId)
     this.emit('plan-status', { planId, status: 'scheduled' })
   }
 
@@ -706,13 +712,15 @@ export class MigrationEngine extends EventEmitter {
    */
   _schedulerTick() {
     const duePlans = this.db.prepare(
-      `SELECT id, credentials_enc FROM migration_plans WHERE status = 'scheduled' AND scheduled_at <= datetime('now')`
+      `SELECT id FROM migration_plans WHERE status = 'scheduled' AND scheduled_at <= datetime('now')`
     ).all()
 
     for (const plan of duePlans) {
-      const credentials = plan.credentials_enc ? decryptCredentials(plan.credentials_enc) : null
-      // Clear credentials immediately after reading
-      this.db.prepare('UPDATE migration_plans SET credentials_enc = NULL WHERE id = ?').run(plan.id)
+      // Read credentials through the manager, then clear immediately so a
+      // crash in executePlan cannot leave a plan with a decryptable blob
+      // sitting around longer than necessary.
+      const credentials = this.credentials.retrieve(plan.id)
+      this.credentials.forget(plan.id)
       this.executePlan(plan.id, credentials).catch(err => {
         logger.error({ err, planId: plan.id }, 'Scheduled plan failed')
       })
@@ -736,27 +744,12 @@ export class MigrationEngine extends EventEmitter {
   }
 
   /**
-   * Starts the credential cleanup interval that runs hourly.
-   * Wrapped in try/catch for the same supervision reasons as the scheduler —
-   * a single failed cleanup should not silently kill the loop.
-   */
-  _startCredentialCleanup() {
-    this._cleanupInterval = setInterval(() => {
-      try {
-        this._runCredentialCleanup()
-      } catch (err) {
-        logger.error({ err }, 'migration-engine credential cleanup iteration failed; will retry next tick')
-      }
-    }, 3600000)
-  }
-
-  /**
-   * Clears encrypted credentials older than 48 hours to limit exposure.
+   * Thin delegate kept for backwards-compatibility with callers and tests
+   * that expect `engine._runCredentialCleanup()` on the engine instance.
+   * The real implementation lives in `this.credentials._purgeExpired`.
    */
   _runCredentialCleanup() {
-    this.db.prepare(
-      `UPDATE migration_plans SET credentials_enc = NULL WHERE credentials_enc IS NOT NULL AND created_at < datetime('now', '-48 hours')`
-    ).run()
+    return this.credentials._purgeExpired({ gracePeriodHours: 48 })
   }
 
   /**
@@ -764,7 +757,7 @@ export class MigrationEngine extends EventEmitter {
    */
   destroy() {
     if (this._schedulerInterval) clearInterval(this._schedulerInterval)
-    if (this._cleanupInterval) clearInterval(this._cleanupInterval)
+    this.credentials.stopCleanupTimer()
   }
 
   /**
