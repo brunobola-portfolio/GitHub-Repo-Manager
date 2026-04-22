@@ -27,6 +27,32 @@
   --ds-transition-standard: 0.2s var(--ds-ease-out-expo);
   --ds-transition-fast: 0.12s var(--ds-ease-out-expo);
   --ds-transition-slow: 0.35s var(--ds-ease-spring);
+
+  /* Brand identity (logo) — intentionally static, not theme-aware */
+  --ds-logo-bg-start: #312e81;
+  --ds-logo-bg-mid: #4c1d95;
+  --ds-logo-bg-end: #1e1b4b;
+  --ds-logo-accent-light: #a5b4fc;
+  --ds-logo-accent: #818cf8;
+  --ds-logo-accent-bold: #6366f1;
+  --ds-logo-secondary: #22d3ee;
+  --ds-logo-secondary-deep: #06b6d4;
+  --ds-logo-tertiary: #a78bfa;
+  --ds-logo-tertiary-soft: #c084fc;
+
+  /* Chart chrome — theme-aware (light defaults) */
+  --ds-chart-axis: #94a3b8;                      /* slate-400 — matches original */
+  --ds-chart-grid: #334155;                      /* slate-700 — matches original (used at low opacity) */
+  --ds-chart-tooltip-bg: rgba(15, 23, 42, 0.95); /* slate-900/95 — matches original */
+  --ds-chart-tooltip-border: rgba(148, 163, 184, 0.2);
+  --ds-chart-tooltip-text: #f8fafc;              /* slate-50 — matches original */
+  --ds-chart-tooltip-label: #94a3b8;             /* slate-400 — matches original */
+  --ds-chart-tooltip-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+
+  /* Chart data series — shared across light/dark (intentionally bright in both) */
+  --ds-chart-series-1: #6366f1; /* indigo-500 */
+  --ds-chart-series-2: #ec4899; /* pink-500 */
+  --ds-chart-series-3: #14b8a6; /* teal-500 */
 }
 
 /* ===== TRANSITION UTILITIES ===== */

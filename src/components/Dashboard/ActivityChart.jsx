@@ -100,53 +100,53 @@ export function ActivityChart({ activity = [], timeRange, onTimeRangeChange, loa
                             initialDimension={{ width: 320, height: chartHeight }}
                         >
                         <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.1} vertical={false} />
-                            <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} dy={10} />
-                            <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} dx={-10} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--ds-chart-grid)" opacity={0.1} vertical={false} />
+                            <XAxis dataKey="name" stroke="var(--ds-chart-axis)" fontSize={12} tickLine={false} axisLine={false} dy={10} />
+                            <YAxis stroke="var(--ds-chart-axis)" fontSize={12} tickLine={false} axisLine={false} dx={-10} />
                             <Tooltip
                                 contentStyle={{
-                                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                    backgroundColor: 'var(--ds-chart-tooltip-bg)',
                                     backdropFilter: 'blur(16px)',
-                                    border: '1px solid rgba(148, 163, 184, 0.2)',
+                                    border: '1px solid var(--ds-chart-tooltip-border)',
                                     borderRadius: '16px',
-                                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                                    boxShadow: 'var(--ds-chart-tooltip-shadow)',
                                     padding: '12px 16px',
                                 }}
                                 itemStyle={{
-                                    color: '#f8fafc',
+                                    color: 'var(--ds-chart-tooltip-text)',
                                     fontSize: '13px',
                                     fontWeight: '500',
                                 }}
                                 labelStyle={{
-                                    color: '#94a3b8',
+                                    color: 'var(--ds-chart-tooltip-label)',
                                     fontSize: '11px',
                                     fontWeight: '600',
                                     textTransform: 'uppercase',
                                 }}
-                                cursor={{ stroke: '#6366f1', strokeWidth: 2, strokeDasharray: '5 5' }}
+                                cursor={{ stroke: 'var(--ds-chart-series-1)', strokeWidth: 2, strokeDasharray: '5 5' }}
                             />
                             <Line
                                 type="monotone"
                                 dataKey="commits"
-                                stroke="#6366f1"
+                                stroke="var(--ds-chart-series-1)"
                                 strokeWidth={4}
-                                dot={{ fill: '#6366f1', strokeWidth: 0, r: 4 }}
+                                dot={{ fill: 'var(--ds-chart-series-1)', strokeWidth: 0, r: 4 }}
                                 activeDot={{ r: 8, strokeWidth: 0 }}
                             />
                             <Line
                                 type="monotone"
                                 dataKey="pulls"
-                                stroke="#ec4899"
+                                stroke="var(--ds-chart-series-2)"
                                 strokeWidth={4}
-                                dot={{ fill: '#ec4899', strokeWidth: 0, r: 4 }}
+                                dot={{ fill: 'var(--ds-chart-series-2)', strokeWidth: 0, r: 4 }}
                                 activeDot={{ r: 8, strokeWidth: 0 }}
                             />
                             <Line
                                 type="monotone"
                                 dataKey="issues"
-                                stroke="#14b8a6"
+                                stroke="var(--ds-chart-series-3)"
                                 strokeWidth={4}
-                                dot={{ fill: '#14b8a6', strokeWidth: 0, r: 4 }}
+                                dot={{ fill: 'var(--ds-chart-series-3)', strokeWidth: 0, r: 4 }}
                                 activeDot={{ r: 8, strokeWidth: 0 }}
                             />
                         </LineChart>

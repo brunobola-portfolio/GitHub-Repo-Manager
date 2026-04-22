@@ -136,15 +136,15 @@ export function LanguageChart({ data = [], loading }) {
                                     </Pie>
                                 <Tooltip
                                     contentStyle={{
-                                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                        backgroundColor: 'var(--ds-chart-tooltip-bg)',
                                         backdropFilter: 'blur(16px)',
-                                        border: '1px solid rgba(148, 163, 184, 0.2)',
+                                        border: '1px solid var(--ds-chart-tooltip-border)',
                                         borderRadius: '16px',
-                                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                                        boxShadow: 'var(--ds-chart-tooltip-shadow)',
                                         padding: '12px 16px',
                                     }}
                                     itemStyle={{
-                                        color: '#f8fafc',
+                                        color: 'var(--ds-chart-tooltip-text)',
                                         fontSize: '13px',
                                         fontWeight: '500',
                                     }}
