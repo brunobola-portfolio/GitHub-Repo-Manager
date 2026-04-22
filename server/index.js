@@ -159,6 +159,14 @@ app.use('/api/', (req, _res, next) => {
     next();
 });
 
+// Health probes must be mounted BEFORE rate limiters, session, CSRF, etc.
+// K8s-style probes fire frequently and must succeed even under load; they
+// must not require auth, must not be rate-limited, and must keep working
+// while the rest of the stack is degraded (Redis down, session store
+// unavailable, etc.). Legacy GET /api/health below is preserved separately.
+import healthRouter from './routes/health.js';
+app.use('/api/health', healthRouter);
+
 // Rate limiting for API endpoints
 // Per-tenant limits (free / pro / enterprise) backed by Redis when REDIS_URL is set.
 // Falls back to in-process MemoryStore for self-hosted / development.
@@ -335,6 +343,11 @@ server.on('error', (e) => {
 
 function gracefulShutdown(signal) {
     logger.info({ signal }, 'Shutting down gracefully...');
+
+    // Flip the liveness probe to "shutting_down" immediately so orchestrators
+    // drain traffic before we close the listening socket. Imported lazily to
+    // avoid a second top-level import line for a single-use hook.
+    import('./routes/health.js').then(({ markShuttingDown }) => markShuttingDown()).catch(() => {});
 
     server.close(async () => {
         try {
