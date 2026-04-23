@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 
 // ---------------------------------------------------------------------------
 // Mock MOCK_MODE=true so no real fetches happen during component tests
@@ -89,6 +89,7 @@ vi.mock('@/hooks/useWorkBoard', () => ({
     useDORASummary: (opts) => mockUseDORASummary(opts),
     useTechDebt: (opts) => mockUseTechDebt(opts),
     useReviewLoad: (opts) => mockUseReviewLoad(opts),
+    useKpiSnapshots: () => ({ data: [], loading: false, error: null }),
 }))
 
 // ---------------------------------------------------------------------------
