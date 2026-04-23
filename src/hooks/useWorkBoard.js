@@ -278,7 +278,7 @@ export function useReviewLoad({ repoIds, ...opts } = {}) {
 
 const MOCK_KPI_SNAPSHOTS = Array.from({ length: 7 }, (_, i) => ({
     snappedAt: new Date(Date.now() - (6 - i) * 24 * 3600 * 1000).toISOString(),
-    reviews: 2 + Math.round(Math.random() * 2),
+    reviews: [3, 2, 4, 3, 2, 3, 2][i],
     stalePRs: 8 + i,
     issues: 4,
     techDebt: 12 + i,
