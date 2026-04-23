@@ -41,13 +41,14 @@ export function writeSnapshot(db, userId) {
  * @returns {Array<{ snappedAt: string, reviews: number, stalePRs: number, issues: number, techDebt: number }>}
  */
 export function getSnapshots(db, userId, days = 7) {
+    const safeDays = Math.max(1, Math.trunc(Number(days)));
     const rows = db.prepare(
         `SELECT snapped_at, reviews, stale_prs, issues, tech_debt
          FROM work_board_kpi_snapshots
          WHERE user_id = ?
            AND snapped_at >= datetime('now', ? || ' days')
          ORDER BY snapped_at ASC`
-    ).all(userId, `-${days}`);
+    ).all(userId, `-${safeDays}`);
 
     return rows.map(r => ({
         snappedAt: r.snapped_at,
@@ -63,9 +64,10 @@ export function getSnapshots(db, userId, days = 7) {
  * @returns {number} rows deleted
  */
 export function pruneSnapshots(db, retentionDays = 90) {
+    const safeRetention = Math.max(1, Math.trunc(Number(retentionDays)));
     const result = db.prepare(
         `DELETE FROM work_board_kpi_snapshots
          WHERE snapped_at < datetime('now', ? || ' days')`
-    ).run(`-${retentionDays}`);
+    ).run(`-${safeRetention}`);
     return result.changes;
 }
