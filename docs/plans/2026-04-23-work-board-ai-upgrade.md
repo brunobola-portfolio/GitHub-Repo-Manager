@@ -987,9 +987,24 @@
   });
   ```
 
-  Add this route before `export default router`:
+  Add a per-user rate limiter near the top of the file, after the existing `import` block. `express-rate-limit` is already a project dependency:
   ```js
-  router.post('/draft-comment', requireAuth, validateBody(draftCommentBodySchema), async (req, res) => {
+  import { rateLimit } from 'express-rate-limit';
+
+  const draftCommentLimiter = rateLimit({
+      windowMs: 60 * 60 * 1000, // 1 hour
+      max: 10,
+      keyGenerator: (req) => `draft-comment:${req.session?.userId ?? req.ip}`,
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: { error: 'Too many draft requests — try again in an hour', code: 'rate_limited' },
+      skip: (req) => !req.session?.userId,
+  });
+  ```
+
+  Add this route before `export default router` (note `draftCommentLimiter` inserted after `requireAuth`):
+  ```js
+  router.post('/draft-comment', requireAuth, draftCommentLimiter, validateBody(draftCommentBodySchema), async (req, res) => {
       const userId = req.session.userId;
       const { repoFullName, prNumber, intent } = req.validatedBody;
 
@@ -1637,14 +1652,32 @@
 
   Add this `ChipStrip` component (local to the file):
   ```jsx
+  // Module-level 30-min suggest cache — mirrors server-side cooldown.
+  // Key: `${repoFullName}/${itemType}/${itemNumber}` → { suggestions, expiresAt }
+  const _suggestCache = new Map();
+
   function ChipStrip({ review, hasAI, onSnooze, onPing }) {
       const [pingState, setPingState] = useState('idle'); // 'idle' | 'loading' | 'ready' | 'error'
       const [pingBody, setPingBody] = useState('');
       const [popoverOpen, setPopoverOpen] = useState(false);
+      const [editing, setEditing] = useState(false);
       const githubUrl = `https://github.com/${review.repoFullName}/pull/${review.prNumber}`;
+
+      const cacheKey = `${review.repoFullName}/pr/${review.prNumber}`;
 
       async function handlePing() {
           if (pingState === 'ready') { setPopoverOpen(true); return; }
+
+          // Check 30-min client-side cache before hitting the server
+          const cached = _suggestCache.get(cacheKey);
+          if (cached && Date.now() < cached.expiresAt) {
+              const ping = cached.suggestions?.find(s => s.action === 'comment');
+              setPingBody(ping?.body || '');
+              setPingState('ready');
+              setPopoverOpen(true);
+              return;
+          }
+
           setPingState('loading');
           try {
               const res = await fetch('/api/v1/work-board/suggest-action', {
@@ -1662,6 +1695,7 @@
               });
               if (!res.ok) throw new Error('suggest-action failed');
               const { suggestions } = await res.json();
+              _suggestCache.set(cacheKey, { suggestions, expiresAt: Date.now() + 30 * 60 * 1000 });
               const ping = suggestions?.find(s => s.action === 'comment');
               setPingBody(ping?.body || '');
               setPingState('ready');
@@ -1718,6 +1752,9 @@
                           />
                           <div className="mt-2 flex gap-2 justify-end">
                               <button onClick={() => setPopoverOpen(false)} className="px-2 py-1 text-xs text-slate-400 hover:text-slate-200">Cancel</button>
+                              {!editing && (
+                                  <button onClick={() => setEditing(true)} className="px-2 py-1 text-xs text-slate-400 hover:text-slate-200">Edit first</button>
+                              )}
                               <button onClick={handleSend} className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg">Send</button>
                           </div>
                           <Popover.Arrow className="fill-slate-900" />
@@ -1856,9 +1893,9 @@
       const [text, setText] = useState('');
       const [draftLoading, setDraftLoading] = useState(true);
       const intervalRef = useRef(null);
+      const fullTextRef = useRef(''); // holds the complete draft for instant-reveal
 
       useEffect(() => {
-          let fullText = '';
           // Fire draft-comment request
           fetch('/api/v1/work-board/draft-comment', {
               method: 'POST',
@@ -1868,14 +1905,14 @@
           })
               .then(r => r.json())
               .then(({ draft }) => {
-                  fullText = draft || '';
+                  fullTextRef.current = draft || '';
                   setDraftLoading(false);
                   // Typewriter at 40 chars/s → 1 char every 25ms
                   let idx = 0;
                   intervalRef.current = setInterval(() => {
                       idx++;
-                      setText(fullText.slice(0, idx));
-                      if (idx >= fullText.length) clearInterval(intervalRef.current);
+                      setText(fullTextRef.current.slice(0, idx));
+                      if (idx >= fullTextRef.current.length) clearInterval(intervalRef.current);
                   }, 25);
               })
               .catch(() => {
@@ -1886,9 +1923,11 @@
       }, [review, intent]);
 
       function handleTextareaClick() {
+          // If typewriter is still running, reveal full text immediately
           if (intervalRef.current) {
               clearInterval(intervalRef.current);
-              // Reveal full text immediately (need to read fullText — lift it to ref)
+              intervalRef.current = null;
+              setText(fullTextRef.current);
           }
       }
 
@@ -2040,22 +2079,29 @@
   }
   ```
 
-  In the `WorkBoardPage` main render, before the tabs content add:
+  In the `WorkBoardPage` main render, add these two derived values near the top of the component body:
   ```jsx
   const allZero = !reviews?.length && !stalePRs?.length && !issues?.length && !techDebt?.items?.length;
   const showEmptyState = allZero && reviewsMeta?.source === 'live';
-
-  if (showEmptyState) {
-      return (
-          <div className="...existing page wrapper...">
-              <EmptyState
-                  webhookConnected={!!reviewsMeta?.webhookConnected}
-                  onRefresh={refreshReviews}
-              />
-          </div>
-      );
-  }
   ```
+
+  Then, **inside** the existing `return (...)`, wrap the tab-bar + tab-content area with a conditional. Do **not** change any wrapper `<div>` class names — the empty state card renders inside the same page shell. Find the JSX that renders the tab bar (the `<div>` containing the tab buttons) and replace it with:
+  ```jsx
+  {showEmptyState ? (
+      <EmptyState
+          webhookConnected={!!reviewsMeta?.webhookConnected}
+          onRefresh={refreshReviews}
+      />
+  ) : (
+      /* existing tab bar + tab content JSX — unchanged */
+      <>
+          {/* tab bar */}
+          {/* tab content */}
+      </>
+  )}
+  ```
+
+  Preserve every other element in the page (the KPI row, the AI summary card, any header).
 
 - [ ] **Step 2: Replace locked-tab modal with Radix Popover tooltip**
 

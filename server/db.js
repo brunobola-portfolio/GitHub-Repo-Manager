@@ -759,6 +759,24 @@ export function initDB(targetDb = db) {
         if (!err.message?.includes('duplicate column')) throw err;
     }
 
+    // Migration 017 (Work Board AI Upgrade): daily KPI snapshots for trend sparklines.
+    // One row per user per UTC day; de-duplicated by the snapshot job.
+    // Retention controlled by WORK_BOARD_SNAPSHOT_RETENTION_DAYS env var (default 90).
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS work_board_kpi_snapshots (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id     INTEGER NOT NULL,
+            snapped_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            reviews     INTEGER NOT NULL DEFAULT 0,
+            stale_prs   INTEGER NOT NULL DEFAULT 0,
+            issues      INTEGER NOT NULL DEFAULT 0,
+            tech_debt   INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_wbks_user_time
+             ON work_board_kpi_snapshots(user_id, snapped_at DESC)`);
+
     logger.info('SQLite Database initialized successfully');
 }
 
