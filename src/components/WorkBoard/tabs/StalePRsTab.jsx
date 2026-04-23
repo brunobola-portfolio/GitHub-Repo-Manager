@@ -21,7 +21,7 @@ const _suggestCache = new Map()
 // ChipStrip (stale PR variant)
 // ---------------------------------------------------------------------------
 
-function ChipStrip({ pr, hasAI, onSnooze }) {
+function ChipStrip({ pr, hasAI, onSnooze, onPing }) {
     const [pingState, setPingState] = useState('idle')
     const [pingBody, setPingBody] = useState('')
     const [popoverOpen, setPopoverOpen] = useState(false)
@@ -112,10 +112,7 @@ function ChipStrip({ pr, hasAI, onSnooze }) {
                                 <button onClick={() => setEditing(true)} className="px-2 py-1 text-xs text-slate-400 hover:text-slate-200">Edit first</button>
                             )}
                             <button
-                                onClick={() => {
-                                    setPopoverOpen(false)
-                                    // Ping is informational for stale PRs — log or future action hook
-                                }}
+                                onClick={() => { setPopoverOpen(false); onPing?.(pingBody) }}
                                 className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg"
                             >
                                 Send
@@ -151,7 +148,7 @@ function ChipStrip({ pr, hasAI, onSnooze }) {
 // StalePRRow
 // ---------------------------------------------------------------------------
 
-function StalePRRow({ pr, idx, isFocused, onFocus, hasAI, onSnooze }) {
+function StalePRRow({ pr, idx, isFocused, onFocus, hasAI, onSnooze, onPing }) {
     const [hovered, setHovered] = useState(false)
     const hoverTimer = useRef(null)
     const showChips = hovered || isFocused
@@ -214,6 +211,7 @@ function StalePRRow({ pr, idx, isFocused, onFocus, hasAI, onSnooze }) {
                         pr={pr}
                         hasAI={hasAI}
                         onSnooze={onSnooze}
+                        onPing={(body) => onPing(pr, body)}
                     />
                 )}
             </AnimatePresence>
@@ -300,6 +298,7 @@ export function StalePRsTab({ hasAI = false }) {
                             onFocus={() => setFocusedIndex(idx)}
                             hasAI={hasAI}
                             onSnooze={(p, hours) => actions.snooze({ repoFullName: p.repoFullName, prNumber: p.prNumber, hours })}
+                            onPing={(p, body) => actions.comment({ repoFullName: p.repoFullName, prNumber: p.prNumber, body })}
                         />
                     ))}
                 </div>
