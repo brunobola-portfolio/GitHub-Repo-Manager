@@ -110,16 +110,19 @@ describe('GET /api/v1/work-board/kpi-snapshots', () => {
         expect(res.body.data[0]).toHaveProperty('reviews')
     })
 
-    it('clamps days to 30 maximum', async () => {
+    it('clamps days to 30 maximum and returns all 3 rows (all within 30 days)', async () => {
         const res = await request(app)
             .get('/api/v1/work-board/kpi-snapshots?days=999')
         expect(res.status).toBe(200)
+        expect(Array.isArray(res.body.data)).toBe(true)
+        expect(res.body.data).toHaveLength(3)
     })
 
-    it('defaults to 7 days when days param is missing', async () => {
+    it('defaults to 7 days when days param is missing and returns all 3 seeded rows', async () => {
         const res = await request(app)
             .get('/api/v1/work-board/kpi-snapshots')
         expect(res.status).toBe(200)
         expect(Array.isArray(res.body.data)).toBe(true)
+        expect(res.body.data).toHaveLength(3)
     })
 })
