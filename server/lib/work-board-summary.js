@@ -18,6 +18,7 @@ Rules:
 - Severity: "high" only if it blocks others or is past SLA; "medium" for old-but-not-blocking; "info" for observations.
 - urgencyScore 0..1: 0.0 = quiet day, 1.0 = drop everything.
 - Never invent items. If the input has no urgent work, say so and propose one quick win.
+- If trend data is present, lead the headline with the single most significant week-over-week change (e.g. "Stale PRs up 50% — 3 in org/api untouched for 14+ days"). Do not mention trend if no snapshots provided.
 - Output ONLY valid JSON matching the provided schema. No prose.`;
 
 export const SUMMARY_SCHEMA = {
@@ -50,7 +51,7 @@ export const SUMMARY_SCHEMA = {
 
 function topN(arr, n = 5) { return Array.isArray(arr) ? arr.slice(0, n) : []; }
 
-export function buildFactSheet({ reviews = [], stalePRs = [], issues = [], techDebt = { items: [], hotspots: [] } } = {}) {
+export function buildFactSheet({ reviews = [], stalePRs = [], issues = [], techDebt = { items: [], hotspots: [] }, trend7d } = {}) {
     const lines = [];
     lines.push(`pending reviews: ${reviews.length}`);
     topN(reviews).forEach(r => lines.push(`  ${r.repoFullName}#${r.prNumber} "${r.title || ''}" by ${r.authorLogin || '?'} age=${r.ageHours ?? '?'}h`));
@@ -65,6 +66,26 @@ export function buildFactSheet({ reviews = [], stalePRs = [], issues = [], techD
     if (hotspots.length > 0) {
         lines.push(`debt hotspots: ${hotspots.slice(0, 3).map(h => `${h.repoFullName}(${h.count})`).join(', ')}`);
     }
+
+    if (Array.isArray(trend7d) && trend7d.length >= 2) {
+        lines.push('');
+        lines.push('trend 7d (daily snapshots, oldest first):');
+        trend7d.forEach(s => {
+            const d = s.snappedAt.slice(0, 10);
+            lines.push(`  ${d}: reviews=${s.reviews} stale=${s.stalePRs} issues=${s.issues} debt=${s.techDebt}`);
+        });
+        const first = trend7d[0];
+        const last = trend7d[trend7d.length - 1];
+        const delta = (fKey) => {
+            const a = first[fKey];
+            const b = last[fKey];
+            if (a === 0) return b === 0 ? '+0%' : '+∞';
+            const pct = Math.round(((b - a) / a) * 100);
+            return pct >= 0 ? `+${pct}%` : `${pct}%`;
+        };
+        lines.push(`delta vs 7d ago: reviews=${delta('reviews')} stale_prs=${delta('stalePRs')} issues=${delta('issues')} tech_debt=${delta('techDebt')}`);
+    }
+
     return lines.join('\n');
 }
 
