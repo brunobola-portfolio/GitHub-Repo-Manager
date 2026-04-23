@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.2] - 2026-04-23
+
+Docs pass — no code changes.
+
+### Changed
+
+- **`docs/index.md`** rewritten around reader intent ("I want to..." jump
+  table, recent-releases summary, clearer section split: architecture,
+  feature guides, operations, API, specs/plans). Removed a 30-entry spec
+  dump that was mixing active / shipped / archived work.
+- **`docs/architecture/overview.md`** refreshed to match the v3.6/v3.7
+  surface: route count updated (~200 handlers across 25+ modules), BYOK
+  multi-provider AI replaces the stale "Gemini-powered" wording, admin /
+  health / work-board / license routes documented, circuit breaker + email
+  DLQ listed in key infrastructure, and a new "Hardening (v3.6+)" section
+  cross-links to G1–G9 in `security-hardening.md`. System diagram updated
+  to show BYOK, Stripe, Resend instead of Gemini-only.
+
+### Added
+
+- **`docs/operations.md`** — first-class operator runbook covering release
+  flow, DLQ, public status page, bundle budget, audit chain, admin access,
+  and common incidents (RepoDetail spinner / CSRF 403 / Stripe retry /
+  GitHub breaker / DLQ fill).
+- **`docs/guides/admin-dlq.md`** — deep dive for the email + webhook DLQ:
+  row shapes, every CLI subcommand with output example, UI walkthrough,
+  audit-trail notes, troubleshooting.
+
 ## [3.7.1] - 2026-04-22
 
 Pipeline-and-correctness patch. v3.7.0 shipped with a green unit suite but the
@@ -671,7 +699,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.1...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.2...HEAD
+[3.7.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.1...v3.7.2
 [3.7.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.0...v3.7.1
 [3.7.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.6.0...v3.7.0
 [3.6.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.5.0...v3.6.0

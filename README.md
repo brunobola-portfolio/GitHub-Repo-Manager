@@ -27,7 +27,7 @@
 
 **A full-stack AI-powered dashboard for managing repositories, teams, CI/CD, and migrating from Azure DevOps — all in one beautiful interface.**
 
-[Try Demo Mode](#quick-start-demo-mode) | [Features](#features-overview) | [Installation](#installation) | [Documentation](docs/) | [What's new in v3.7.1](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v3.7.1)
+[Try Demo Mode](#quick-start-demo-mode) | [Features](#features-overview) | [Installation](#installation) | [Documentation](docs/) | [What's new in v3.7.2](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v3.7.2)
 
 **Production-hardened** — AES-256-GCM BYOK, rolling sessions + CSRF double-submit, GitHub API circuit breaker, SSRF guard on import-from-URL.
 

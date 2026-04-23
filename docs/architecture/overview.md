@@ -1,14 +1,31 @@
 # Architecture Overview
 
-GitHub Repo Manager is a full-stack JavaScript application composed of a React + Vite frontend
-and an Express backend that talks to the GitHub REST API.
+GitHub Repo Manager is a full-stack JavaScript application — a React + Vite SPA
+plus an Express backend that brokers GitHub, Azure DevOps, and BYOK AI
+providers. SQLite is the default store; PostgreSQL is supported via a single
+adapter seam.
+
+> Looking for a feature guide instead? Start at [`docs/index.md`](../index.md).
+> For operator runbooks (DLQ, status page, release flow), see
+> [`docs/operations.md`](../operations.md).
 
 ## High-Level Design
 
-- **Frontend**: React 19 single-page app built with Vite and Tailwind CSS 4.
-- **Backend**: Express 5 server exposing a small REST API and handling GitHub OAuth.
-- **Auth**: GitHub OAuth App with session-based storage of the access token.
-- **Styling**: Tailwind with a global dark/light theme toggle using the `dark` class.
+- **Frontend**: React 19 + Vite 8 + Tailwind CSS 4 single-page app, heavy
+  route-level lazy splits (WorkBoard, PRReview, Admin) kept under explicit
+  gzip budgets (see [`scripts/check-bundle-size.mjs`](../../scripts/check-bundle-size.mjs)).
+- **Backend**: Express 5 with ~200 route handlers across 25+ modules under
+  `server/routes/`. CSRF double-submit, SSRF guard on import-from-URL,
+  per-IP auth rate-limit, rolling session + 7-day absolute timeout.
+- **Auth**: GitHub OAuth App, session-based token storage, CSRF-protected
+  mutations. Admin tooling keys off a distinct `users.is_admin` flag
+  (stricter than subscription tier).
+- **BYOK AI**: Anthropic, OpenAI, Gemini, OpenRouter, and local (Ollama /
+  LMStudio) providers — selected per feature with per-user credentials
+  encrypted with AES-256-GCM + PBKDF2.
+- **Styling**: Tailwind with a global dark/light theme toggle via the `dark`
+  class; opt-in `ds-*` utility classes for the design system (no global
+  element selectors).
 
 ## Frontend
 
@@ -47,25 +64,63 @@ Entry point: `server/index.js`
 - Loads configuration from environment variables (see `.env.example`).
 - Configures CORS, JSON parsing, `express-session` (backed by Redis when `REDIS_URL` is set), Helmet, and rate limiting.
 - Validates the presence of GitHub OAuth credentials at startup.
-- Uses a **modular route structure** with 18 route files under `server/routes/` (plus a `v1/` sub-router for versioned endpoints). Each domain area has its own route module:
-  - **Auth** (`routes/auth.js`): login, callback, logout, user session.
-  - **Repositories** (`routes/repos.js`): listing, creating, visibility, transfer, mirror, archive, delete.
-  - **Organizations** (`routes/orgs.js`): list orgs, get org details, list org repos.
-  - **Teams** (`routes/teams.js`): team CRUD, member management, repo assignments.
-  - **Azure Import** (`routes/azure.js`, `routes/import.js`): Git repo imports, TFVC-to-Git conversion, batch imports.
-  - **Migration** (`routes/migration.js`): plan-based migrations with work items, wikis, and scheduling.
-  - **Billing & Stripe** (`routes/billing.js`, `routes/stripe-webhooks.js`): subscription management and payment webhooks.
-  - **AI** (`routes/ai.js`): Gemini-powered analysis endpoints.
-  - **Stats, Audit, Usage, System** (`routes/stats.js`, `routes/audit.js`, `routes/usage.js`, `routes/system.js`): aggregate statistics, audit trails, usage metering, and health checks.
-  - **Bulk, Webhooks, API Keys, User** (`routes/bulk.js`, `routes/webhooks.js`, `routes/api-keys.js`, `routes/user.js`): bulk operations, webhook handling, API key management, and user profile.
+- Uses a **modular route structure** with 25+ route files under
+  `server/routes/` (plus a `v1/` sub-router for versioned endpoints). Each
+  domain area has its own route module:
+  - **Auth** (`routes/auth.js`): login, callback, logout, user session,
+    `session-info` (authenticated + isAdmin + expiresAt for the frontend
+    session-expiry warning).
+  - **Repositories** (`routes/repos.js`, `routes/repos/*`): listing, CRUD,
+    visibility, transfer, mirror, archive, delete, issues, pulls, releases,
+    branches, actions, community health.
+  - **Organizations** (`routes/orgs.js`): list orgs, get org details, list
+    org repos.
+  - **Teams** (`routes/teams.js`): team CRUD, member management, repo
+    assignments.
+  - **Azure Import** (`routes/azure.js`, `routes/import.js`): Git repo
+    imports (SSRF-guarded for URL imports), TFVC-to-Git conversion, batch
+    imports.
+  - **Migration** (`routes/migration.js`): plan-based migrations with work
+    items, wikis, scheduling, and supervised credential cleanup loops.
+  - **Billing & Stripe** (`routes/billing.js`, `routes/stripe-webhooks.js`):
+    subscription management; Stripe webhook uses synchronous better-sqlite3
+    transactions + explicit `forgetIdempotency()` on async failure so retries
+    actually re-process.
+  - **AI** (`routes/ai.js` + `server/lib/ai-features/*`): BYOK multi-provider
+    completions, per-feature overrides, cost hints, retry taxonomy.
+  - **Admin DLQ** (`routes/admin-dlq.js`): 8 endpoints under
+    `/api/v1/admin/dlq/{email,webhook}/...` — list, detail, retry, resolve.
+    All mutations audit-logged in the G1 hash chain under `dlq.*`.
+  - **Work Board** (`routes/work-board.js`, `routes/work-board-actions.js`):
+    cross-repo review load, stale PRs, DORA metrics, presets, snooze, cache.
+  - **License** (`routes/v1/license.js`): Ed25519-signed JWT validation,
+    per-file kid resolver, 12 h license cache.
+  - **Stats, Audit, Usage, System, Health** (`routes/stats.js`,
+    `routes/audit.js`, `routes/usage.js`, `routes/system.js`,
+    `routes/health.js`): aggregate stats, SOC 2 CC7.2 hash-chained audit
+    trail, usage metering, and `/api/health/ready` behind the public
+    `/status` page.
+  - **Bulk, Webhooks, API Keys, User** (`routes/bulk.js`, `routes/webhooks.js`,
+    `routes/api-keys.js`, `routes/user.js`): bulk ops, webhook handling with
+    DLQ, API key management, user profile.
 
 Key infrastructure:
 
-- **Redis** (`ioredis`): session storage (`connect-redis`), rate-limit counters (`rate-limit-redis`), and BullMQ job queue streams.
-- **BullMQ**: background job queue for long-running Git imports and migration plan execution.
-- **Stripe**: payment collection and subscription lifecycle via webhooks.
-- **Sentry** (`@sentry/node`): error tracking and performance monitoring, initialized before route registration.
-- **Pino**: structured JSON logging with request-level context via `pino-http`.
+- **Redis** (`ioredis`): session storage (`connect-redis`), rate-limit counters
+  (`rate-limit-redis`), and BullMQ job queue streams.
+- **BullMQ**: background job queue for long-running Git imports and migration
+  plan execution.
+- **Stripe**: payment collection and subscription lifecycle via webhooks
+  (signature-verified, sync-transaction idempotency).
+- **Sentry** (`@sentry/node`, `@sentry/react`): error tracking + breadcrumbs on
+  client navigation, mutation starts/ends, and API calls.
+- **Pino**: structured JSON logging with request-level context via
+  `pino-http`; every response carries a `Server-Timing` header.
+- **GitHub API client** (`server/lib/github-api.js`): exponential backoff +
+  `Retry-After` honouring + circuit breaker (5 failures / 60 s → 30 s open)
+  so GitHub degradations don't cascade into a retry storm.
+- **Email delivery** (`server/lib/email.js`): Resend with retry + dead-letter
+  queue for terminal failures (replayable via `npm run admin:dlq`).
 
 The full modular route structure is documented in detail in `docs/architecture/backend.md`.
 
@@ -168,6 +223,35 @@ Error tracking uses `@sentry/node` on the backend and `@sentry/react` on the fro
 
 All REST endpoints are namespaced under `/api/v1/` to allow non-breaking evolution of the API surface. The version prefix is enforced at the Express router level. Legacy unversioned routes (e.g. `/api/auth/*`) remain for backward compatibility with the OAuth flow and will be migrated in a future release.
 
+## Hardening (v3.6+)
+
+The v3.6/v3.7 sprint closed the P0–P4 audit findings. The short list:
+
+- **Security depth**. CSRF double-submit tokens on mutating routes;
+  `assertSafeExternalUrl()` SSRF guard on `/api/import/url` (blocks
+  localhost, RFC1918, 169.254.169.254 cloud metadata, IPv4-mapped IPv6 into
+  private ranges, embedded creds); per-IP auth-route rate limiter; rolling
+  session + 7-day absolute timeout; `CREDENTIAL_ENCRYPTION_KEY` mandatory in
+  production.
+- **Resilience**. GitHub API circuit breaker; email retry + DLQ; webhook
+  DLQ; AI provider retry taxonomy; migration engine scheduler + credential
+  cleanup loops supervised (crash in one task no longer stalls the plan).
+- **Performance**. Route-level lazy splits (shiki kept out of initial
+  bundle); vendor-icons chunked out; stale-while-revalidate on Work Board
+  hooks; composite DB indexes; bundle-budget gate (`scripts/check-bundle-size.mjs`)
+  rejects regressions.
+- **Observability**. Request-timing middleware (`Server-Timing` header,
+  structured log line per request); Sentry breadcrumbs; `performance.mark()`
+  at client transitions; `/api/health/ready` backing the public status page.
+- **Operator tooling**. `users.is_admin` flag + `requireAdmin` middleware
+  (stricter than tier); admin DLQ UI + `npm run admin:{dlq,dlq:sweep,grant,revoke}` CLIs; public `/status` page.
+- **Quality gates**. Husky v9 pre-commit running `eslint --fix
+  --max-warnings 0` + a cross-platform Node-based `console.log` /
+  `debugger` reject; axe-core/playwright a11y smoke gate (critical fails
+  hard, serious logs as warnings).
+
+Full detail: [`docs/security-hardening.md`](../security-hardening.md) (G1–G9).
+
 ## System Architecture Diagram
 
 ```mermaid
@@ -196,8 +280,10 @@ graph TB
 
     subgraph External["External Services"]
         GH["GitHub REST API<br/>OAuth + Repos + Actions"]
-        Gemini["Google Gemini AI<br/>Analysis + Planning"]
+        BYOK["BYOK AI Providers<br/>Anthropic, OpenAI, Gemini,<br/>OpenRouter, Ollama, LMStudio"]
         ADO["Azure DevOps API<br/>Git, TFVC, Work Items, Wikis"]
+        Stripe["Stripe<br/>Billing + webhooks"]
+        Resend["Resend<br/>Email (retry + DLQ)"]
     end
 
     UI --> Hooks
@@ -219,8 +305,10 @@ graph TB
     Sessions --> DB
 
     Routes --> GH
-    AI --> Gemini
+    AI --> BYOK
     Azure --> ADO
+    Routes --> Stripe
+    Routes --> Resend
     Import -->|"simple-git"| GH
 ```
 
