@@ -35,7 +35,7 @@ import { createSQLiteStore } from './lib/session-store.js';
 import logger, { requestLoggerMiddleware } from './lib/logger.js';
 import { requestTiming } from './middleware/request-timing.js';
 import { verifySecretsAtStartup } from './lib/startup-secrets-check.js';
-import { startWorkBoardSweeper, stopWorkBoardSweeper } from './lib/work-board-sweeper.js';
+import { startWorkBoardSweeper, stopWorkBoardSweeper, startKpiSnapshotJob, stopKpiSnapshotJob } from './lib/work-board-sweeper.js';
 import { startEmailRetryWorker, stopEmailRetryWorker } from './lib/email-retry-worker.js';
 import { startWebhookRetryWorker, stopWebhookRetryWorker } from './lib/webhook-retry-worker.js';
 
@@ -321,6 +321,7 @@ const server = app.listen(config.port, () => {
 
 // Start background sweeper for Work Board cache + snooze TTL cleanup
 startWorkBoardSweeper();
+startKpiSnapshotJob();
 
 // Start background worker that re-drives the email dead-letter queue
 startEmailRetryWorker();
@@ -372,6 +373,12 @@ function gracefulShutdown(signal) {
             stopWorkBoardSweeper();
         } catch (e) {
             logger.warn({ err: e }, 'Could not stop work-board sweeper');
+        }
+
+        try {
+            stopKpiSnapshotJob();
+        } catch (e) {
+            logger.warn({ err: e }, 'Could not stop KPI snapshot job');
         }
 
         try {
