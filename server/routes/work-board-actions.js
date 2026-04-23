@@ -280,7 +280,7 @@ const SUGGEST_PING_PROMPT = (item) =>
 const SUGGEST_PING_SCHEMA = {
     type: 'object',
     required: ['pingComment'],
-    properties: { pingComment: { type: 'string', maxLength: 300 } },
+    properties: { pingComment: { type: 'string', maxLength: 280 } },
 };
 
 router.post('/suggest-action', requireAuth, validateBody(suggestActionBodySchema), async (req, res) => {
