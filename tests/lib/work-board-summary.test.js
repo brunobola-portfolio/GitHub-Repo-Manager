@@ -38,4 +38,9 @@ describe('buildFactSheet — with trend7d', () => {
         const sheet = buildFactSheet(EMPTY_SOURCES)
         expect(sheet).not.toContain('trend 7d')
     })
+
+    it('does not append trend when trend7d has only 1 snapshot (needs 2+ for a delta)', () => {
+        const sheet = buildFactSheet({ ...EMPTY_SOURCES, trend7d: [trend7d[0]] })
+        expect(sheet).not.toContain('trend 7d')
+    })
 })
