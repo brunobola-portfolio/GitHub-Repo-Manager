@@ -62,6 +62,14 @@ export function WorkBoardPage({ repoCount = 0 }) {
     const activeTab = params.tab || 'reviews'
     const setActiveTab = (tab) => setParams({ tab: tab === 'reviews' ? '' : tab })
 
+    const [hasAI, setHasAI] = useState(false)
+    useEffect(() => {
+        fetch('/api/user/ai-config', { credentials: 'include' })
+            .then(r => r.json())
+            .then(d => setHasAI(!!(d.hasCompletionKey || d.serverFallbackAvailable)))
+            .catch(() => {})
+    }, [])
+
     // Help modal state (from centralized ModalContext)
     const { modalStates, openModal, closeModal } = useModal()
     const helpOpen = modalStates.workBoardHelp || false
@@ -271,7 +279,9 @@ export function WorkBoardPage({ repoCount = 0 }) {
                         transition={{ duration: 0.18 }}
                         className="min-h-[380px]"
                     >
-                        <ActiveComponent />
+                        <ActiveComponent
+                            {...(activeTab === 'reviews' || activeTab === 'stale' ? { hasAI } : {})}
+                        />
                     </motion.div>
                 </AnimatePresence>
             </div>

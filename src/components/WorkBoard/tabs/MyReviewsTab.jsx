@@ -1,14 +1,228 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { GitPullRequest, ExternalLink, Clock } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { GitPullRequest, ExternalLink, Clock, MessageSquare, Loader2, Sparkles } from 'lucide-react'
+import * as Popover from '@radix-ui/react-popover'
+import { clsx } from 'clsx'
 import { useMyPendingReviews } from '../../../hooks/useWorkBoard'
 import { useWorkBoardFilters, applyFilters } from '../filters/filter-context-helpers'
 import { useReviewAction } from '../../../hooks/useReviewAction'
+import { useFocusedRow } from '../../../hooks/useFocusedRow'
 import { InlineActions } from '../InlineActions'
 import { SkeletonList, EmptyState, WebhookHint, UpsellCard } from '../shared/shared-ui'
 import { ageLabel } from '../shared/formatters'
 
-export function MyReviewsTab() {
+// ---------------------------------------------------------------------------
+// Module-level suggestion cache (expires after 30 min)
+// ---------------------------------------------------------------------------
+
+const _suggestCache = new Map()
+
+// ---------------------------------------------------------------------------
+// ChipStrip
+// ---------------------------------------------------------------------------
+
+function ChipStrip({ review, hasAI, onSnooze, onPing }) {
+    const [pingState, setPingState] = useState('idle')
+    const [pingBody, setPingBody] = useState('')
+    const [popoverOpen, setPopoverOpen] = useState(false)
+    const [editing, setEditing] = useState(false)
+    const cacheKey = `${review.repoFullName}/pr/${review.prNumber}`
+
+    async function handlePing() {
+        if (pingState === 'ready') { setPopoverOpen(true); return }
+
+        const cached = _suggestCache.get(cacheKey)
+        if (cached && Date.now() < cached.expiresAt) {
+            const ping = cached.suggestions?.find(s => s.action === 'comment')
+            setPingBody(ping?.body || '')
+            setPingState('ready')
+            setPopoverOpen(true)
+            return
+        }
+
+        setPingState('loading')
+        try {
+            const res = await fetch('/api/v1/work-board/suggest-action', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__csrfToken },
+                body: JSON.stringify({
+                    repoFullName: review.repoFullName,
+                    itemType: 'pr',
+                    itemNumber: review.prNumber,
+                    title: review.title || '',
+                    ageDays: Math.round((review.ageHours || 0) / 24),
+                    authorLogin: review.authorLogin || '',
+                }),
+            })
+            if (!res.ok) throw new Error('suggest-action failed')
+            const { suggestions } = await res.json()
+            _suggestCache.set(cacheKey, { suggestions, expiresAt: Date.now() + 30 * 60 * 1000 })
+            const ping = suggestions?.find(s => s.action === 'comment')
+            setPingBody(ping?.body || '')
+            setPingState('ready')
+            setPopoverOpen(true)
+        } catch {
+            setPingState('error')
+        }
+    }
+
+    return (
+        <motion.div
+            className="flex items-center gap-2 px-3 pb-2 pt-0"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+        >
+            {hasAI && (
+                <Popover.Root open={popoverOpen} onOpenChange={setPopoverOpen}>
+                    <Popover.Trigger asChild>
+                        <button
+                            onClick={handlePing}
+                            className={clsx(
+                                'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                                pingState === 'error'
+                                    ? 'border-rose-500/50 text-rose-400'
+                                    : 'border-indigo-500/50 text-indigo-300 hover:bg-indigo-500/10',
+                            )}
+                        >
+                            {pingState === 'loading'
+                                ? <Loader2 className="w-3 h-3 animate-spin" />
+                                : <MessageSquare className="w-3 h-3" />}
+                            {pingState === 'error' ? 'Try again' : 'Ping author'}
+                        </button>
+                    </Popover.Trigger>
+                    <Popover.Content
+                        side="bottom"
+                        align="start"
+                        avoidCollisions
+                        className="z-50 w-72 rounded-xl border border-white/10 bg-slate-900 p-3 shadow-xl"
+                    >
+                        <p className="mb-2 text-[11px] text-slate-400">AI draft — edit before sending</p>
+                        <textarea
+                            defaultValue={pingBody}
+                            onChange={e => setPingBody(e.target.value)}
+                            rows={3}
+                            className="w-full resize-none rounded-lg bg-slate-800 px-2 py-1.5 text-xs text-slate-200 outline-none focus:ring-1 focus:ring-indigo-500"
+                        />
+                        <div className="mt-2 flex gap-2 justify-end">
+                            <button onClick={() => setPopoverOpen(false)} className="px-2 py-1 text-xs text-slate-400 hover:text-slate-200">Cancel</button>
+                            {!editing && (
+                                <button onClick={() => setEditing(true)} className="px-2 py-1 text-xs text-slate-400 hover:text-slate-200">Edit first</button>
+                            )}
+                            <button onClick={() => { setPopoverOpen(false); onPing(pingBody) }} className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg">Send</button>
+                        </div>
+                        <Popover.Arrow className="fill-slate-900" />
+                    </Popover.Content>
+                </Popover.Root>
+            )}
+
+            <button
+                onClick={() => onSnooze(review, 168)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-colors"
+            >
+                <Clock className="w-3 h-3" />
+                Snooze 7d
+            </button>
+
+            <a
+                href={`https://github.com/${review.repoFullName}/pull/${review.prNumber}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20 transition-colors"
+            >
+                <ExternalLink className="w-3 h-3" />
+                View on GitHub
+            </a>
+        </motion.div>
+    )
+}
+
+// ---------------------------------------------------------------------------
+// ReviewRow
+// ---------------------------------------------------------------------------
+
+function ReviewRow({ review, isFocused, onFocus, hasAI, onSnooze, onRequestChanges }) {
+    const [hovered, setHovered] = useState(false)
+    const hoverTimer = useRef(null)
+    const showChips = hovered || isFocused
+    const githubUrl = `https://github.com/${review.repoFullName}/pull/${review.prNumber}`
+
+    function handleMouseEnter() {
+        hoverTimer.current = setTimeout(() => setHovered(true), 300)
+        onFocus()
+    }
+    function handleMouseLeave() {
+        clearTimeout(hoverTimer.current)
+        setHovered(false)
+    }
+
+    return (
+        <div
+            data-testid="review-row"
+            role="presentation"
+            className={clsx('relative', isFocused && 'ring-2 ring-indigo-500/40 rounded-xl')}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+        >
+            {hasAI && showChips && (
+                <Sparkles className="absolute top-2 right-2 w-3 h-3 text-slate-500 pointer-events-none" />
+            )}
+            <a
+                href={githubUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+            >
+                <div className="mt-0.5 p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex-shrink-0">
+                    <GitPullRequest className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        {review.title || `PR #${review.prNumber}`}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        <span className="font-mono text-indigo-600 dark:text-indigo-400">{review.repoFullName}</span>
+                        {' '}#{review.prNumber}
+                        {review.authorLogin && <> by <strong>{review.authorLogin}</strong></>}
+                    </div>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-slate-400 whitespace-nowrap flex-shrink-0">
+                    <Clock className="w-3 h-3" />
+                    {ageLabel(review.ageHours)}
+                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <InlineActions
+                    onApprove={() => {}}
+                    onRequestChanges={() => {
+                        const body = window.prompt('What needs changing?')
+                        if (body && body.trim()) {
+                            onRequestChanges(review, body)
+                        }
+                    }}
+                    onSnooze={(hours) => onSnooze(review, hours)}
+                />
+            </a>
+            <AnimatePresence>
+                {showChips && (
+                    <ChipStrip
+                        review={review}
+                        hasAI={hasAI}
+                        onSnooze={onSnooze}
+                        onPing={(body) => onRequestChanges(review, body)}
+                    />
+                )}
+            </AnimatePresence>
+        </div>
+    )
+}
+
+// ---------------------------------------------------------------------------
+// MyReviewsTab
+// ---------------------------------------------------------------------------
+
+export function MyReviewsTab({ hasAI = false }) {
     const { data, loading, error, refresh } = useMyPendingReviews()
     const { params } = useWorkBoardFilters()
     const [optimisticallyRemoved, setOptimisticallyRemoved] = useState(() => new Set())
@@ -29,6 +243,10 @@ export function MyReviewsTab() {
         },
     })
 
+    const filtered = applyFilters(data || [], params)
+    const reviews = filtered.filter(r => !optimisticallyRemoved.has(`${r.repoFullName}#${r.prNumber}`))
+    const { focusedIndex, setFocusedIndex } = useFocusedRow(reviews)
+
     if (loading) return <SkeletonList count={5} />
     if (error) {
         if (error.status === 403) return <UpsellCard tier="pro" />
@@ -39,8 +257,6 @@ export function MyReviewsTab() {
         )
     }
 
-    const filtered = applyFilters(data || [], params)
-    const reviews = filtered.filter(r => !optimisticallyRemoved.has(`${r.repoFullName}#${r.prNumber}`))
     if (reviews.length === 0) {
         return (
             <>
@@ -56,46 +272,16 @@ export function MyReviewsTab() {
 
     return (
         <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
-            {reviews.map((r, i) => (
-                <motion.a
+            {reviews.map((r, idx) => (
+                <ReviewRow
                     key={`${r.repoFullName}-${r.prNumber}`}
-                    href={`https://github.com/${r.repoFullName}/pull/${r.prNumber}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.03 }}
-                    className="flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
-                >
-                    <div className="mt-0.5 p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex-shrink-0">
-                        <GitPullRequest className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                            {r.title || `PR #${r.prNumber}`}
-                        </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            <span className="font-mono text-indigo-600 dark:text-indigo-400">{r.repoFullName}</span>
-                            {' '}#{r.prNumber}
-                            {r.authorLogin && <> by <strong>{r.authorLogin}</strong></>}
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400 whitespace-nowrap flex-shrink-0">
-                        <Clock className="w-3 h-3" />
-                        {ageLabel(r.ageHours)}
-                        <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                    <InlineActions
-                        onApprove={() => actions.approve({ repoFullName: r.repoFullName, prNumber: r.prNumber })}
-                        onRequestChanges={() => {
-                            const body = window.prompt('What needs changing?')
-                            if (body && body.trim()) {
-                                actions.requestChanges({ repoFullName: r.repoFullName, prNumber: r.prNumber, body })
-                            }
-                        }}
-                        onSnooze={(hours) => actions.snooze({ repoFullName: r.repoFullName, prNumber: r.prNumber, hours })}
-                    />
-                </motion.a>
+                    review={r}
+                    isFocused={focusedIndex === idx}
+                    onFocus={() => setFocusedIndex(idx)}
+                    hasAI={hasAI}
+                    onSnooze={(review, hours) => actions.snooze({ repoFullName: review.repoFullName, prNumber: review.prNumber, hours })}
+                    onRequestChanges={(review, body) => actions.requestChanges({ repoFullName: review.repoFullName, prNumber: review.prNumber, body })}
+                />
             ))}
         </div>
     )
