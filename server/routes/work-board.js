@@ -162,7 +162,11 @@ router.get('/my-reviews', requireAuth, async (req, res) => {
         const finalData = (includeSnoozed || !req.session?.userId)
             ? data
             : filterOutSnoozed({ userId: req.session.userId, items: data, itemType: 'pr' });
-        res.json({ data: finalData, meta });
+        let webhookConnected = false;
+        try {
+            webhookConnected = !!db.prepare('SELECT 1 FROM webhook_events LIMIT 1').get();
+        } catch { /* table may not exist in older deploys */ }
+        res.json({ data: finalData, meta: { ...meta, webhookConnected } });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch pending reviews'));
     }
