@@ -5,6 +5,7 @@
  */
 import express from 'express';
 import { z } from 'zod';
+import { rateLimit } from 'express-rate-limit';
 import { requireAuth, errorResponse, safeError } from '../middleware/auth.js';
 import { validateBody, validateParams } from '../middleware/validate-request.js';
 import * as snoozeLib from '../lib/work-board-snooze.js';
@@ -72,6 +73,31 @@ const presetUpdateBodySchema = z.object({
 
 const presetIdParamsSchema = z.object({
     id: z.coerce.number().int().positive(),
+});
+
+const suggestActionBodySchema = z.object({
+    repoFullName: repoFullNameSchema,
+    itemType: itemTypeSchema,
+    itemNumber: positiveIntSchema,
+    title: z.string().max(500).optional().default(''),
+    ageDays: z.number().int().min(0).optional().default(0),
+    authorLogin: z.string().max(200).optional().default(''),
+});
+
+const draftCommentBodySchema = z.object({
+    repoFullName: repoFullNameSchema,
+    prNumber: positiveIntSchema,
+    intent: z.enum(['request_changes', 'comment']),
+});
+
+const draftCommentLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 10,
+    keyGenerator: (req) => `draft-comment:${req.session?.userId ?? req.ip}`,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many draft requests — try again in an hour', code: 'rate_limited' },
+    skip: (req) => !req.session?.userId,
 });
 
 function cacheKeyForItemType(itemType) {
@@ -242,6 +268,99 @@ router.post('/ai-summary', requireAuth, async (req, res) => {
             return errorResponse(res, 502, 'AI provider returned an invalid response', 'ai_invalid_response');
         }
         errorResponse(res, 500, safeError(e, 'Failed to generate AI summary'));
+    }
+});
+
+const SUGGEST_PING_PROMPT = (item) =>
+    `Draft a short, professional ping comment (≤ 280 chars) for a ${item.itemType} titled "${item.title}" ` +
+    `by @${item.authorLogin} that has been open for ${item.ageDays} days. ` +
+    `Reference the title and author. Active voice. No filler. ` +
+    `Output JSON: { "pingComment": "..." }`;
+
+const SUGGEST_PING_SCHEMA = {
+    type: 'object',
+    required: ['pingComment'],
+    properties: { pingComment: { type: 'string', maxLength: 300 } },
+};
+
+router.post('/suggest-action', requireAuth, validateBody(suggestActionBodySchema), async (req, res) => {
+    const userId = req.session.userId;
+    const { repoFullName, itemType, itemNumber, title, ageDays, authorLogin } = req.validatedBody;
+
+    try {
+        const { createProviderForUser } = await import('../lib/ai-provider.js');
+        const provider = await createProviderForUser(userId, 'completion', { featureKey: 'WORK_BOARD_SUGGEST' });
+        if (!provider) {
+            return errorResponse(res, 403, 'AI not configured — add a provider in Settings', 'ai_not_configured');
+        }
+
+        // Check 30-min cache
+        const cacheKey = `suggest:${repoFullName}/${itemType}/${itemNumber}`;
+        const cached = getCacheRow(userId, cacheKey);
+        if (cached?.isFresh) return res.json({ suggestions: cached.payload });
+
+        // AI ping comment
+        let pingComment = `Hey @${authorLogin}, any update on this?`;
+        try {
+            const result = await provider.generate({
+                prompt: SUGGEST_PING_PROMPT({ itemType, title, authorLogin, ageDays }),
+                schema: SUGGEST_PING_SCHEMA,
+            });
+            const parsed = result?.parsed || null;
+            if (typeof parsed?.pingComment === 'string' && parsed.pingComment.trim()) {
+                pingComment = parsed.pingComment.trim().slice(0, 280);
+            }
+        } catch { /* fall back to default ping */ }
+
+        const itemPath = itemType === 'pr' ? 'pull' : 'issues';
+        const suggestions = [
+            { label: 'Ping author',    action: 'comment', body: pingComment },
+            { label: 'Snooze 7d',      action: 'snooze',  hours: 168 },
+            { label: 'View on GitHub', action: 'open',    url: `https://github.com/${repoFullName}/${itemPath}/${itemNumber}` },
+        ];
+
+        putCacheRow(userId, cacheKey, suggestions, null, 30 * 60);
+        res.json({ suggestions });
+    } catch (e) {
+        errorResponse(res, 500, safeError(e, 'Failed to generate suggestions'));
+    }
+});
+
+router.post('/draft-comment', requireAuth, draftCommentLimiter, validateBody(draftCommentBodySchema), async (req, res) => {
+    const userId = req.session.userId;
+    const { repoFullName, prNumber, intent } = req.validatedBody;
+
+    try {
+        const { createProviderForUser } = await import('../lib/ai-provider.js');
+        const provider = await createProviderForUser(userId, 'completion', { featureKey: 'WORK_BOARD_DRAFT' });
+        if (!provider) {
+            return errorResponse(res, 403, 'AI not configured — add a provider in Settings', 'ai_not_configured');
+        }
+
+        // Fetch PR diff from GitHub (first 4 KB)
+        let diffContext = '(diff unavailable)';
+        try {
+            const { data: files } = await githubApi(
+                `/repos/${repoFullName}/pulls/${prNumber}/files`,
+                req.session.accessToken,
+            );
+            if (Array.isArray(files)) {
+                const combined = files.map(f => f.patch || '').join('\n');
+                diffContext = combined.slice(0, 4096);
+            }
+        } catch { /* degrade to no diff */ }
+
+        const prompt =
+            `Draft a code review ${intent === 'request_changes' ? 'request-changes' : 'comment'} ` +
+            `for PR #${prNumber} in ${repoFullName}. ` +
+            `Diff (first 4 KB):\n${diffContext}\n` +
+            `Requirements: ≤ 300 chars. Direct, specific, professional. Plain text only.`;
+
+        const result = await provider.generate({ prompt });
+        const draft = (result?.text || result?.parsed?.text || '').trim().slice(0, 300);
+        res.json({ draft });
+    } catch (e) {
+        errorResponse(res, 500, safeError(e, 'Failed to draft comment'));
     }
 });
 
