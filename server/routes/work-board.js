@@ -45,6 +45,8 @@ import {
     fetchTechDebtIssues,
 } from '../lib/work-board-github.js';
 import { filterOutSnoozed } from '../lib/work-board-snooze.js';
+import { getSnapshots } from '../lib/work-board-kpi-snapshots.js';
+import db from '../db.js';
 
 const router = express.Router();
 
@@ -440,6 +442,20 @@ router.get('/tech-debt', requireAuth, requireTier('pro'), async (req, res) => {
         res.json({ data: { items: filteredItems, hotspots }, meta });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch tech debt'));
+    }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/work-board/kpi-snapshots  (Free+)
+// ---------------------------------------------------------------------------
+router.get('/kpi-snapshots', requireAuth, (req, res) => {
+    try {
+        const raw = parseInt(req.query.days, 10);
+        const days = Number.isFinite(raw) && raw >= 1 ? Math.min(raw, 30) : 7;
+        const data = getSnapshots(db, req.session.userId, days);
+        res.json({ data });
+    } catch (e) {
+        errorResponse(res, 500, safeError(e, 'Failed to fetch KPI snapshots'));
     }
 });
 
