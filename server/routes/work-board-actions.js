@@ -13,6 +13,8 @@ import { invalidate as invalidateCache, getCached as getCacheRow, putCached as p
 import { githubApi } from '../lib/github-api.js';
 import { generateSummary } from '../lib/work-board-summary.js';
 import * as aggregations from '../lib/event-aggregations.js';
+import db from '../db.js';
+import { getSnapshots } from '../lib/work-board-kpi-snapshots.js';
 
 const router = express.Router();
 
@@ -226,7 +228,9 @@ router.post('/ai-summary', requireAuth, async (req, res) => {
         }
 
         const dataSources = loadDataSources(userId, req.session.userLogin);
-        const summary = await generateSummary({ userId, dataSources });
+        let trend7d = [];
+        try { trend7d = getSnapshots(db, userId, 7); } catch { /* degrade cleanly */ }
+        const summary = await generateSummary({ userId, dataSources: { ...dataSources, trend7d } });
         putCacheRow(userId, 'ai_summary', summary, null, AI_SUMMARY_CACHE_TTL_SEC);
         aiSummaryLastCall.set(userId, now);
         res.json({ data: summary, meta: { cached: false, generatedAt: new Date() } });
