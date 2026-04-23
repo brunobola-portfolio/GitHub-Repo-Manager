@@ -14,8 +14,10 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import {
     GitPullRequest, CircleDot, BarChart3,
-    AlertTriangle, Wrench, Users, RefreshCw,
+    AlertTriangle, Wrench, Users, RefreshCw, Lock,
 } from 'lucide-react'
+import * as Popover from '@radix-ui/react-popover'
+import { clsx } from 'clsx'
 import {
     useMyPendingReviews,
     useStalePRs,
@@ -52,6 +54,106 @@ const TABS = [
     { id: 'techdebt',    label: 'Tech Debt',   icon: Wrench,         component: TechDebtTab, badge: 'Pro', accent: 'amber' },
     { id: 'dora',        label: 'DORA',        icon: BarChart3,      component: DORATab, badge: 'Enterprise', accent: 'indigo' },
 ]
+
+// ---------------------------------------------------------------------------
+// EmptyState — shown when live data has no activity yet
+// ---------------------------------------------------------------------------
+
+function EmptyState({ webhookConnected, onRefresh }) {
+    return (
+        <div className="flex flex-col items-center justify-center mt-16 mx-auto max-w-md text-center px-4">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" className="mb-6 opacity-40" aria-hidden="true">
+                <rect x="8" y="16" width="64" height="48" rx="6" stroke="#94a3b8" strokeWidth="2" />
+                <path d="M24 40h32M32 48h16" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+                <path d="M40 16V8M32 8h16" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <h2 className="ds-font-display text-[18px] font-semibold text-slate-800 dark:text-white mb-2">Your Work Board is ready</h2>
+            <p className="text-[14px] text-slate-500 dark:text-slate-400 mb-6">Connect a webhook to see your real-time engineering data.</p>
+
+            <div className="w-full space-y-2 mb-6">
+                <div className={clsx(
+                    'flex items-center gap-3 rounded-xl border p-3 text-left text-sm',
+                    webhookConnected
+                        ? 'border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                        : 'border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5 text-slate-500 dark:text-slate-400',
+                )}>
+                    <span className={clsx('h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0',
+                        webhookConnected ? 'border-emerald-400 bg-emerald-400' : 'border-slate-300 dark:border-slate-600')}>
+                        {webhookConnected && <span className="text-white text-[8px] font-bold">✓</span>}
+                    </span>
+                    <span>
+                        Connect GitHub webhook
+                        {!webhookConnected && (
+                            <a
+                                href="/docs/guides/github-webhook-setup"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-2 underline text-indigo-500 hover:text-indigo-400"
+                            >
+                                Setup guide →
+                            </a>
+                        )}
+                    </span>
+                </div>
+                <div className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5 p-3 text-left text-sm text-slate-400 dark:text-slate-400">
+                    <span className="h-4 w-4 rounded-full border-2 border-slate-300 dark:border-slate-600 shrink-0" />
+                    Open a PR or issue
+                </div>
+            </div>
+
+            <button
+                onClick={onRefresh}
+                className="text-sm text-indigo-500 hover:text-indigo-400 underline"
+            >
+                Already connected? Pull fresh data →
+            </button>
+        </div>
+    )
+}
+
+// ---------------------------------------------------------------------------
+// LockedTabButton — hover tooltip for tier-gated tabs
+// ---------------------------------------------------------------------------
+
+function LockedTabButton({ tab }) {
+    const [hovered, setHovered] = useState(false)
+    const Icon = tab.icon
+    return (
+        <Popover.Root open={hovered}>
+            <Popover.Trigger
+                asChild
+                onMouseEnter={() => setHovered(true)}
+                onMouseLeave={() => setHovered(false)}
+            >
+                <button
+                    role="tab"
+                    aria-selected={false}
+                    aria-disabled="true"
+                    tabIndex={-1}
+                    className="relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-60"
+                >
+                    <Icon className="w-4 h-4" />
+                    {tab.label}
+                    {tab.badge && (
+                        <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                            <Lock className="w-2.5 h-2.5" />
+                            {tab.badge}
+                        </span>
+                    )}
+                </button>
+            </Popover.Trigger>
+            <Popover.Portal>
+                <Popover.Content
+                    side="bottom"
+                    className="z-50 px-3 py-1.5 text-xs rounded-lg bg-slate-900 text-slate-100 shadow-lg pointer-events-none border border-white/10"
+                >
+                    Upgrade to {tab.badge} to unlock {tab.label}
+                    <Popover.Arrow className="fill-slate-900" />
+                </Popover.Content>
+            </Popover.Portal>
+        </Popover.Root>
+    )
+}
 
 // ---------------------------------------------------------------------------
 // WorkBoardPage
@@ -152,6 +254,9 @@ export function WorkBoardPage({ repoCount = 0 }) {
 
     const ActiveComponent = TABS.find(t => t.id === activeTab)?.component || MyReviewsTab
 
+    const allZero = !reviews?.data?.length && !stale?.data?.length && !issues?.data?.length && !debt?.data?.items?.length
+    const showEmptyState = allZero && reviews?.meta?.source === 'live'
+
     return (
         <div className="max-w-6xl mx-auto space-y-7 animate-in fade-in duration-500 px-1">
             {/* Header */}
@@ -221,7 +326,13 @@ export function WorkBoardPage({ repoCount = 0 }) {
                 <PresetDropdown currentFilters={params} onApply={setParams} />
             </WorkBoardFilterBar>
 
-            {/* Main card */}
+            {showEmptyState ? (
+                <EmptyState
+                    webhookConnected={!!reviews?.meta?.webhookConnected}
+                    onRefresh={refreshAll}
+                />
+            ) : (
+            /* Main card */
             <div className="relative rounded-3xl border border-slate-200/60 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-xl shadow-slate-300/20 dark:shadow-black/40 overflow-hidden">
                 <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[520px] h-[220px] rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-transparent blur-3xl" />
 
@@ -285,6 +396,7 @@ export function WorkBoardPage({ repoCount = 0 }) {
                     </motion.div>
                 </AnimatePresence>
             </div>
+            )}
             </FilterProvider>
 
             <KeyboardHelpModal open={helpOpen} onClose={() => closeModal('workBoardHelp')} />
