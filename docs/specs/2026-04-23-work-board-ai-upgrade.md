@@ -71,7 +71,7 @@ degrade cleanly (trend section simply absent).
 **AI Actions Layer:** Two new mutation endpoints in `work-board-actions.js`,
 following the existing Zod-validated, `requireAuth`-gated pattern. Suggestion
 generation is partly rule-based (snooze always offered for items ≥ 14 days
-old, no AI call needed) and partly AI-driven (comment body, close rationale).
+old, no AI call needed) and partly AI-driven (ping comment body).
 Draft comment fetches the first 4 KB of PR diff from GitHub, passes it with
 intent context to the BYOK provider, and returns a draft string. Both
 endpoints are BYOK-gated — return 403 if no provider configured.
@@ -142,7 +142,7 @@ Called from `server/index.js` alongside `startWorkBoardSweeper`.
 
 ### `GET /api/v1/work-board/kpi-snapshots` (new, `work-board.js`)
 
-```
+```http
 Auth: requireAuth (Free+)
 Query: ?days=7  (integer 1–30, default 7)
 Response: { data: [ { snappedAt, reviews, stalePRs, issues, techDebt } ] }
@@ -152,7 +152,7 @@ Response: { data: [ { snappedAt, reviews, stalePRs, issues, techDebt } ] }
 
 Accepts optional `trend7d` array. When present, appends:
 
-```
+```text
 trend 7d (daily snapshots, oldest first):
   2026-04-16: reviews=3 stale=8 issues=5 debt=12
   ...
@@ -164,7 +164,7 @@ delta vs 7d ago: stale_prs=+50% reviews=-33% issues=-20% tech_debt=+25%
 
 One new rule appended to `SYSTEM_PROMPT`:
 
-```
+```text
 - If trend data is present, lead the headline with the single most
   significant week-over-week change (e.g. "Stale PRs up 50% — 3 in org/api
   untouched for 14+ days"). Do not mention trend if no snapshots provided.
@@ -177,7 +177,7 @@ pass as `trend7d`. No other changes to the endpoint contract.
 
 ### `POST /api/v1/work-board/suggest-action` (new, `work-board-actions.js`)
 
-```
+```http
 Auth: requireAuth + BYOK check (403 if no provider)
 Body (Zod):
   { repoFullName, itemType: "pr"|"issue",
@@ -191,7 +191,7 @@ Logic:
      (≤ 280 chars). Active voice. Reference item title and author.
   3. Return up to 3 suggestions ordered: ping → snooze → view on GitHub.
 
-Per-item cooldown: 30 min keyed by `userId:repo:number:suggest`
+Per-item cooldown: 30 min keyed by "userId:repo:number:suggest"
   in work_board_cache (reuse existing put/get).
 
 Response:
@@ -211,7 +211,7 @@ zero server scope, avoids accidental destructive action from the board).
 
 ### `POST /api/v1/work-board/draft-comment` (new, `work-board-actions.js`)
 
-```
+```http
 Auth: requireAuth + BYOK check (403 if no provider)
 Body (Zod): { repoFullName, prNumber, intent: "request_changes"|"comment" }
 
@@ -270,16 +270,16 @@ Tile vertical height grows by ~28 px. Grid layout unchanged.
 Two-column flex layout (gap-6), breakpoint-aware (stacks on mobile):
 
 **Left column (min-w-[160px]):**
+
 - Urgency gauge SVG (existing, kept as-is)
 - Large urgency percentage below gauge (`ds-font-display`, 28 px)
 - Severity label: "Critical" (rose) / "Elevated" (amber) / "Nominal" (indigo)
-- Model + provider pill (`claude-opus-4-5 · Anthropic`, slate-700 bg,
-  10 px, rounded-full)
+- Model + provider pill (`claude-opus-4-5 · Anthropic`, slate-700 bg, 10 px, rounded-full)
 
 **Right column (flex-1):**
+
 - Headline (`ds-font-display`, 15 px, font-semibold)
-- Trend line (when available): muted slate-400 text, 12 px.
-  Example: `↑ Stale PRs +50% vs last week`
+- Trend line (when available): muted slate-400 text, 12 px. Example: `↑ Stale PRs +50% vs last week`
 - Bullet list (existing severity dots + text)
 - Freshness timestamp bottom-right (`Generated 3 min ago`, slate-400, 11 px)
 
@@ -313,32 +313,27 @@ container that tracks hover state (`useState(false)`) and whether it is the
 focused row (from `useFocusedRow`).
 
 When `hovered || focused`:
-- After 300 ms debounce, show chip strip below item content via
-  `AnimatePresence` height animation (0 → auto, 200 ms ease-out).
+
+- After 300 ms debounce, show chip strip below item content via `AnimatePresence` height animation (0 → auto, 200 ms ease-out).
 - Chip strip is rendered lazily — no AI fetch triggered by hover alone.
-- A `Sparkles` icon (12 px, slate-400) appears top-right of the row to signal
-  AI availability. **Only rendered when user has BYOK configured** (check
-  `session.aiConfigured` flag already returned by `/api/v1/auth/me`).
+- A `Sparkles` icon (12 px, slate-400) appears top-right of the row to signal AI availability. **Only rendered when AI is available** — check `hasCompletionKey || serverFallbackAvailable` from `GET /api/user/ai-config` (already called at app load; pass result down as a prop or context value).
 
 **Chips:**
 
-| Label | Style | Trigger |
-|-------|-------|---------|
-| Ping author | indigo outline pill + `MessageSquare` icon | Fetches `/suggest-action` on first click, then shows popover |
-| Snooze 7d | amber filled pill | Fires immediately (no AI), same as `Shift+S` |
-| View on GitHub | slate outline pill + `ExternalLink` icon | Opens item URL in new tab immediately, no AI call |
+| Label           | Style                                          | Trigger                                                      |
+| --------------- | ---------------------------------------------- | ------------------------------------------------------------ |
+| Ping author     | indigo outline pill + `MessageSquare` icon     | Fetches `/suggest-action` on first click, then shows popover |
+| Snooze 7d       | amber filled pill                              | Fires immediately (no AI), same as `Shift+S`                 |
+| View on GitHub  | slate outline pill + `ExternalLink` icon       | Opens item URL in new tab immediately, no AI call            |
 
 **Suggestion popover** (Radix Popover, `avoidCollisions` enabled):
+
 - Shows AI-drafted text in a read-only textarea (gray bg)
-- Three buttons: "Send" (fires review-action), "Edit first" (makes textarea
-  editable), "Cancel"
+- Three buttons: "Send" (fires review-action), "Edit first" (makes textarea editable), "Cancel"
 - Loading state: chip shows `Loader2` spin icon for up to 2 s while fetching
 - Error state: chip shows "Try again" in rose text, no popover
 
-**First-click fetch:** `suggest-action` is called when the user clicks Ping
-or Close, not on hover. After the first successful fetch for an item, results
-are cached in component state for 30 min (matches server cooldown) — clicking
-again reuses cached suggestions without re-fetching.
+**First-click fetch:** `suggest-action` is called when the user clicks "Ping author", not on hover. After the first successful fetch for an item, results are cached in component state for 30 min (matches server cooldown) — clicking again reuses cached suggestions without re-fetching.
 
 ### Draft comment — typewriter fill
 
@@ -359,20 +354,14 @@ In the review action flow, when "Request Changes" or "Comment" is clicked:
 When all four KPI counts are zero and data source is `live` (no webhook):
 
 Centered card (max-w-md, mx-auto, mt-16):
+
 - SVG illustration: inbox with empty tray, monochrome, 80 × 80 px, slate-300
 - Headline: "Your Work Board is ready" (`ds-font-display`, 18 px)
-- Subtext: "Connect a webhook to see your real-time engineering data."
-  (slate-400, 14 px)
+- Subtext: "Connect a webhook to see your real-time engineering data." (slate-400, 14 px)
 - Two-step checklist tiles:
-  1. "Connect GitHub webhook" — pre-checked (emerald) if any webhook is
-     registered (detected via `meta.webhookConnected` boolean added to the existing `meta`
-     object returned by `/api/v1/work-board/my-reviews`. Server-side: set
-     `webhookConnected = true` when the `webhook_events` table has at least
-     one row for the current user's tracked repos). Links to the webhook
-     setup guide.
+  1. "Connect GitHub webhook" — pre-checked (emerald) if `meta.webhookConnected` is true. This boolean is added to the existing `meta` object returned by `GET /api/v1/work-board/my-reviews`; server sets it to `true` when the `webhook_events` table has at least one row for the current user's tracked repos. Links to the webhook setup guide.
   2. "Open a PR or issue" — always unchecked until first real data arrives.
-- Below checklist: "Already connected? [Pull fresh data →]" button that
-  triggers full refresh (existing `refresh()` from hook).
+- Below checklist: "Already connected? Pull fresh data →" button that triggers full refresh (existing `refresh()` from hook).
 
 This state is only shown when all four counts are zero AND source is `live`.
 If source is `webhook` with zero data, the existing "No data yet" hint is
@@ -459,25 +448,25 @@ operator-facing knob.
 
 ## File map
 
-| Action | Path |
-|--------|------|
-| Create | `server/lib/work-board-kpi-snapshots.js` |
-| Modify | `server/lib/work-board-sweeper.js` |
-| Modify | `server/lib/work-board-summary.js` |
-| Modify | `server/routes/work-board.js` |
-| Modify | `server/routes/work-board-actions.js` |
-| Modify | `server/db.js` (migration 015) |
-| Create | `src/hooks/useFocusedRow.js` |
-| Modify | `src/hooks/useWorkBoard.js` (add `useKpiSnapshots`) |
-| Modify | `src/components/WorkBoard/KpiRow.jsx` |
-| Modify | `src/components/WorkBoard/AISummaryCard.jsx` |
-| Modify | `src/components/WorkBoard/WorkBoardPage.jsx` |
-| Modify | `src/components/WorkBoard/tabs/MyReviewsTab.jsx` |
-| Modify | `src/components/WorkBoard/tabs/StalePRsTab.jsx` |
-| Create | `tests/lib/work-board-kpi-snapshots.test.js` |
-| Modify | `tests/lib/work-board-summary.test.js` |
-| Create | `server/__tests__/work-board-kpi-snapshots.test.js` |
-| Create | `server/__tests__/work-board-suggest-action.test.js` |
-| Create | `server/__tests__/work-board-draft-comment.test.js` |
-| Create | `e2e/work-board-trends.spec.js` |
-| Create | `e2e/work-board-suggestions.spec.js` |
+| Action  | Path                                                    |
+| ------- | ------------------------------------------------------- |
+| Create  | `server/lib/work-board-kpi-snapshots.js`                |
+| Modify  | `server/lib/work-board-sweeper.js`                      |
+| Modify  | `server/lib/work-board-summary.js`                      |
+| Modify  | `server/routes/work-board.js`                           |
+| Modify  | `server/routes/work-board-actions.js`                   |
+| Modify  | `server/db.js` (migration 015)                          |
+| Create  | `src/hooks/useFocusedRow.js`                            |
+| Modify  | `src/hooks/useWorkBoard.js` (add `useKpiSnapshots`)     |
+| Modify  | `src/components/WorkBoard/KpiRow.jsx`                   |
+| Modify  | `src/components/WorkBoard/AISummaryCard.jsx`            |
+| Modify  | `src/components/WorkBoard/WorkBoardPage.jsx`            |
+| Modify  | `src/components/WorkBoard/tabs/MyReviewsTab.jsx`        |
+| Modify  | `src/components/WorkBoard/tabs/StalePRsTab.jsx`         |
+| Create  | `tests/lib/work-board-kpi-snapshots.test.js`            |
+| Modify  | `tests/lib/work-board-summary.test.js`                  |
+| Create  | `server/__tests__/work-board-kpi-snapshots.test.js`     |
+| Create  | `server/__tests__/work-board-suggest-action.test.js`    |
+| Create  | `server/__tests__/work-board-draft-comment.test.js`     |
+| Create  | `e2e/work-board-trends.spec.js`                         |
+| Create  | `e2e/work-board-suggestions.spec.js`                    |
