@@ -8,7 +8,7 @@ vi.mock('framer-motion', () => {
     const React = require('react')
     function passthrough({ children, ...rest }) {
         // drop animation props to avoid React prop warnings
-        const { initial, animate, exit, variants, transition, layout, whileHover, whileTap, ...clean } = rest
+        const { initial, animate, exit, variants, transition, layout, whileHover, whileTap, ..._clean } = rest
         return React.createElement(React.Fragment, null, children)
     }
     const motion = new Proxy({}, {
@@ -477,5 +477,104 @@ describe('AIConfigSection — toast on save', () => {
             const matches = screen.getAllByText(/ai configuration saved/i)
             expect(matches.length).toBeGreaterThanOrEqual(1)
         })
+    })
+})
+
+describe('AIConfigSection — CSRF token sent on mutations', () => {
+    it('sends X-CSRF-Token header when saving config', async () => {
+        // Stub getCsrfToken (called by fetchWithRetry)
+        const { getCsrfToken } = await import('@/utils/api')
+        vi.spyOn({ getCsrfToken }, 'getCsrfToken').mockResolvedValue('test-csrf-token')
+
+        fetchMock.mockResolvedValueOnce(mockResponse(EMPTY_CONFIG)) // GET
+        fetchMock.mockResolvedValueOnce({ ok: true, status: 204, json: () => Promise.resolve({}) }) // POST save
+        fetchMock.mockResolvedValueOnce(mockResponse(EMPTY_CONFIG)) // refetch
+
+        await act(async () => {
+            renderWithProviders(<AIConfigSection />)
+        })
+
+        const select = screen.getByRole('combobox', { name: /completion provider/i })
+        await act(async () => {
+            fireEvent.change(select, { target: { value: 'gemini' } })
+        })
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+        })
+
+        await waitFor(() => {
+            const saveCall = fetchMock.mock.calls.find(
+                ([url, opts]) => url?.includes('/api/user/ai-config') && opts?.method === 'POST'
+            )
+            expect(saveCall).toBeDefined()
+            expect(saveCall[1].headers?.['X-CSRF-Token']).toBeDefined()
+        })
+    })
+})
+
+describe('AIConfigSection — Test Connection hidden with no provider', () => {
+    it('does not show Test Connection card when no provider is selected', async () => {
+        await renderSection()
+        expect(screen.queryByRole('button', { name: /test connection/i })).not.toBeInTheDocument()
+    })
+
+    it('shows Test Connection card after selecting a provider', async () => {
+        await renderSection()
+        const select = screen.getByRole('combobox', { name: /completion provider/i })
+        await act(async () => {
+            fireEvent.change(select, { target: { value: 'gemini' } })
+        })
+        expect(screen.getByRole('button', { name: /test connection/i })).toBeInTheDocument()
+    })
+})
+
+describe('AIConfigSection — Remove Config visibility', () => {
+    it('hides Remove Config button when no keys are saved', async () => {
+        await renderSection({ hasCompletionKey: false, hasEmbeddingKey: false })
+        expect(screen.queryByRole('button', { name: /remove config/i })).not.toBeInTheDocument()
+    })
+
+    it('shows Remove Config button when a completion key is saved', async () => {
+        await renderSection({ completionProvider: 'gemini', hasCompletionKey: true })
+        expect(screen.getByRole('button', { name: /remove config/i })).toBeInTheDocument()
+    })
+
+    it('shows Remove Config button when an embedding key is saved', async () => {
+        await renderSection({ hasCompletionKey: false, hasEmbeddingKey: true })
+        expect(screen.getByRole('button', { name: /remove config/i })).toBeInTheDocument()
+    })
+})
+
+describe('AIConfigSection — isDirty hint passed to TestButton', () => {
+    it('shows unsaved-changes hint in TestButton after form is dirtied', async () => {
+        await renderSection({ completionProvider: 'gemini' })
+        // Form initially clean — no hint
+        expect(screen.queryByText(/save your changes first/i)).not.toBeInTheDocument()
+
+        // Dirty the form
+        const keyInput = screen.getByLabelText(/api key/i)
+        await act(async () => {
+            fireEvent.change(keyInput, { target: { value: 'new-key' } })
+        })
+
+        expect(screen.getByText(/save your changes first/i)).toBeInTheDocument()
+    })
+
+    it('hides unsaved-changes hint once form matches saved state', async () => {
+        await renderSection({ completionProvider: 'gemini' })
+        const keyInput = screen.getByLabelText(/api key/i)
+
+        // Dirty
+        await act(async () => {
+            fireEvent.change(keyInput, { target: { value: 'new-key' } })
+        })
+        expect(screen.getByText(/save your changes first/i)).toBeInTheDocument()
+
+        // Undo — completionApiKey starts as '' so clearing it restores clean state
+        await act(async () => {
+            fireEvent.change(keyInput, { target: { value: '' } })
+        })
+        expect(screen.queryByText(/save your changes first/i)).not.toBeInTheDocument()
     })
 })
