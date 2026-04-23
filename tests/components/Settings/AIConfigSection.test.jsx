@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { AIConfigSection } from '@/components/Settings/AIConfigSection'
 import { renderWithProviders } from '../../helpers/render-with-providers'
+import { _resetCsrfTokenForTests } from '@/utils/api'
 
 // Mock framer-motion — forward children immediately, skip animations
 vi.mock('framer-motion', () => {
@@ -73,6 +74,8 @@ beforeEach(() => {
     fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
     vi.stubGlobal('confirm', vi.fn(() => true))
+    // Reset the module-level CSRF token cache so each test controls its own mocks
+    _resetCsrfTokenForTests()
 })
 
 afterEach(() => {
@@ -174,11 +177,15 @@ describe('AIConfigSection — hasCompletionKey placeholder', () => {
     })
 })
 
+/** CSRF token GET stub — consumed by fetchWithRetry before each mutation */
+function mockCsrf() {
+    fetchMock.mockResolvedValueOnce(mockResponse({ token: 'test-csrf-token' }))
+}
+
 describe('AIConfigSection — Test Connection button', () => {
     it('posts { kind: "completion" } when Test Connection is clicked', async () => {
-        // GET /api/user/ai-config
-        fetchMock.mockResolvedValueOnce(mockResponse(EMPTY_CONFIG))
-        // POST /api/user/ai-config/test
+        fetchMock.mockResolvedValueOnce(mockResponse(GEMINI_CONFIG))
+        mockCsrf()
         fetchMock.mockResolvedValueOnce(mockResponse({ ok: true, latencyMs: 123, modelUsed: 'gemini-2.5-flash' }))
 
         await act(async () => {
@@ -202,7 +209,8 @@ describe('AIConfigSection — Test Connection button', () => {
     })
 
     it('shows success result after a successful test', async () => {
-        fetchMock.mockResolvedValueOnce(mockResponse(EMPTY_CONFIG))
+        fetchMock.mockResolvedValueOnce(mockResponse(GEMINI_CONFIG))
+        mockCsrf()
         fetchMock.mockResolvedValueOnce(mockResponse({ ok: true, latencyMs: 80 }))
 
         await act(async () => {
@@ -219,7 +227,8 @@ describe('AIConfigSection — Test Connection button', () => {
     })
 
     it('shows error message on failed test', async () => {
-        fetchMock.mockResolvedValueOnce(mockResponse(EMPTY_CONFIG))
+        fetchMock.mockResolvedValueOnce(mockResponse(GEMINI_CONFIG))
+        mockCsrf()
         fetchMock.mockResolvedValueOnce(mockResponse({ ok: false, error: 'Invalid API key' }))
 
         await act(async () => {
@@ -236,19 +245,20 @@ describe('AIConfigSection — Test Connection button', () => {
     })
 
     it('calls /test with countdown on 429 response', async () => {
-        // renderSection handles initial GET
-        await renderSection()
+        await renderSection(GEMINI_CONFIG)
 
-        // After render, queue the 429 response for the test call
-        fetchMock.mockResolvedValueOnce(
-            mockResponse({ error: 'Rate limited. Please wait.', code: 'RATE_LIMITED' }, { status: 429 })
-        )
+        mockCsrf()
+        fetchMock.mockResolvedValueOnce({
+            ok: false,
+            status: 429,
+            headers: { get: () => null },
+            json: () => Promise.resolve({ error: 'Rate limited. Please wait.', code: 'RATE_LIMITED' }),
+        })
 
         await act(async () => {
             fireEvent.click(screen.getByRole('button', { name: /test connection/i }))
         })
 
-        // The test endpoint was called
         await waitFor(() => {
             const testCall = fetchMock.mock.calls.find(
                 ([url, opts]) => url?.includes('/api/user/ai-config/test') && opts?.method === 'POST'
@@ -256,7 +266,6 @@ describe('AIConfigSection — Test Connection button', () => {
             expect(testCall).toBeDefined()
         })
 
-        // Rate-limited error message appears
         await waitFor(() => {
             expect(screen.getByText(/rate limited/i)).toBeInTheDocument()
         })
@@ -297,7 +306,8 @@ describe('AIConfigSection — 400 validation error', () => {
         // Queue GET first, then POST(400) second
         await renderSection()
 
-        // After renderSection, the GET has been consumed. Queue the POST 400 mock now.
+        // After renderSection, the GET has been consumed. Queue the CSRF + POST 400 mocks now.
+        mockCsrf()
         fetchMock.mockResolvedValueOnce(
             mockResponse(
                 { error: 'Validation failed', code: 'VALIDATION', details: [{ field: 'completionApiKey', message: 'API key is required' }] },
@@ -359,7 +369,8 @@ describe('AIConfigSection — Remove Config', () => {
         ).toBeUndefined()
         const confirmButton = await screen.findByRole('button', { name: /^remove configuration$/i })
 
-        // Queue the DELETE and refetch responses that fire on confirm.
+        // Queue the CSRF token GET, then the DELETE and refetch responses that fire on confirm.
+        mockCsrf()
         fetchMock.mockResolvedValueOnce({
             ok: true,
             status: 204,
@@ -449,8 +460,9 @@ describe('AIConfigSection — pricing hints', () => {
 
 describe('AIConfigSection — toast on save', () => {
     it('fires a success toast when config is saved (204)', async () => {
-        // Initial GET returns a gemini config, then the save PATCH returns 204
+        // Initial GET, then CSRF token GET, then the save POST returns 204, then re-fetch
         fetchMock.mockResolvedValueOnce(mockResponse(EMPTY_CONFIG))
+        mockCsrf()
         fetchMock.mockResolvedValueOnce({ ok: true, status: 204, json: () => Promise.resolve({}) })
         // Re-fetch after save
         fetchMock.mockResolvedValueOnce(mockResponse(EMPTY_CONFIG))
@@ -482,11 +494,8 @@ describe('AIConfigSection — toast on save', () => {
 
 describe('AIConfigSection — CSRF token sent on mutations', () => {
     it('sends X-CSRF-Token header when saving config', async () => {
-        // Stub getCsrfToken (called by fetchWithRetry)
-        const { getCsrfToken } = await import('@/utils/api')
-        vi.spyOn({ getCsrfToken }, 'getCsrfToken').mockResolvedValue('test-csrf-token')
-
         fetchMock.mockResolvedValueOnce(mockResponse(EMPTY_CONFIG)) // GET
+        mockCsrf() // CSRF token GET — fetchWithRetry injects the token into the POST header
         fetchMock.mockResolvedValueOnce({ ok: true, status: 204, json: () => Promise.resolve({}) }) // POST save
         fetchMock.mockResolvedValueOnce(mockResponse(EMPTY_CONFIG)) // refetch
 

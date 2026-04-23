@@ -5,6 +5,7 @@ import {
     Info,
 } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
+import { fetchWithRetry } from '../../utils/api'
 import { useToast } from '../../hooks/useToast'
 import { InsightCard } from '../ui/InsightCard'
 import { ConfirmModal } from '../ui/ConfirmModal'
@@ -91,6 +92,7 @@ export function AIConfigSection() {
         }
     }, [])
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => { fetchConfig() }, [fetchConfig])
 
     // ---------------------------------------------------------------------------
@@ -153,26 +155,22 @@ export function AIConfigSection() {
         }
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/user/ai-config`, {
+            // fetchWithRetry returns the Response on 2xx; throws ApiError on non-2xx.
+            await fetchWithRetry(`${API_BASE_URL}/api/user/ai-config`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify(body),
             })
 
-            if (res.status === 204) {
-                setSaveMessage({ type: 'success', text: 'AI configuration saved.' })
-                toast.success('AI configuration saved')
-                await fetchConfig()
-                return
-            }
-
-            const data = await res.json().catch(() => ({}))
-
-            if (res.status === 400 && Array.isArray(data?.details)) {
-                // Field-level validation errors from server's { details: [{ field, message }] } shape
+            setSaveMessage({ type: 'success', text: 'AI configuration saved.' })
+            toast.success('AI configuration saved')
+            await fetchConfig()
+        } catch (err) {
+            // Field-level validation errors — ApiError.data holds the JSON body
+            if (err?.type === 'VALIDATION' && Array.isArray(err?.data?.details)) {
                 const fieldErrors = {}
-                for (const item of data.details) {
+                for (const item of err.data.details) {
                     if (item?.field && item?.message) {
                         fieldErrors[item.field] = item.message
                     }
@@ -183,11 +181,8 @@ export function AIConfigSection() {
                     return
                 }
             }
-
-            throw new Error(data.error || data.message || 'Save failed')
-        } catch (err) {
-            setSaveMessage({ type: 'error', text: err.message || 'Something went wrong.' })
-            toast.error(`Failed to save AI configuration — ${err.message || 'try again'}`)
+            setSaveMessage({ type: 'error', text: err?.userMessage || err?.message || 'Something went wrong.' })
+            toast.error(`Failed to save AI configuration — ${err?.message || 'try again'}`)
         } finally {
             setSaving(false)
         }
@@ -212,11 +207,11 @@ export function AIConfigSection() {
         // The `try/finally` (no catch) below makes sure setRemoving(false)
         // still fires on the error path without a useless catch clause.
         try {
-            const res = await fetch(`${API_BASE_URL}/api/user/ai-config`, {
+            await fetchWithRetry(`${API_BASE_URL}/api/user/ai-config`, {
                 method: 'DELETE',
                 credentials: 'include',
             })
-            if (!res.ok) throw new Error('Failed to remove configuration')
+            // fetchWithRetry throws ApiError on non-2xx — reaching here means success.
             setSaveMessage({ type: 'success', text: 'AI configuration removed.' })
             toast.success('AI configuration removed')
             // Only close the modal on success. On failure, the rethrown error
@@ -254,20 +249,12 @@ export function AIConfigSection() {
         setTesting(true)
         setTestResult(null)
         try {
-            const res = await fetch(`${API_BASE_URL}/api/user/ai-config/test`, {
+            const res = await fetchWithRetry(`${API_BASE_URL}/api/user/ai-config/test`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({ kind: 'completion' }),
             })
-
-            if (res.status === 429) {
-                const data = await res.json().catch(() => ({}))
-                startCountdown()
-                setTestResult({ ok: false, error: data.error || 'Rate limited. Please wait.' })
-                toast.warning('Rate limited — please wait before retrying')
-                return
-            }
 
             const data = await res.json()
             setTestResult(data)
@@ -277,9 +264,18 @@ export function AIConfigSection() {
             } else if (data?.error) {
                 toast.error(`Test failed — ${data.error}`)
             }
-        } catch {
-            setTestResult({ ok: false, error: 'Network error. Please try again.' })
-            toast.error('Network error — try again')
+        } catch (err) {
+            // fetchWithRetry throws ApiError for non-2xx responses (e.g. 429 RATE_LIMIT).
+            // Detect rate-limit specifically so we can show the countdown UI.
+            if (err?.type === 'RATE_LIMIT') {
+                startCountdown()
+                const message = err?.data?.error || 'Rate limited. Please wait.'
+                setTestResult({ ok: false, error: message })
+                toast.warning('Rate limited — please wait before retrying')
+            } else {
+                setTestResult({ ok: false, error: 'Network error. Please try again.' })
+                toast.error('Network error — try again')
+            }
         } finally {
             setTesting(false)
         }
@@ -327,9 +323,9 @@ export function AIConfigSection() {
             {/* Completion Provider */}
             <InsightCard tone="ai" hover={false}>
                 <div className="space-y-4">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
                         Completion Provider
-                    </label>
+                    </p>
 
                     <ProviderSelect
                         value={form.completionProvider}
@@ -403,23 +399,35 @@ export function AIConfigSection() {
                 )}
             </AnimatePresence>
 
-            {/* Test Connection */}
-            <InsightCard tone="default" hover={false}>
-                <div className="space-y-3">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Test Connection
-                    </label>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Verify your API key is valid and the provider responds correctly.
-                    </p>
-                    <TestButton
-                        onTest={handleTest}
-                        disabled={testing}
-                        result={testResult}
-                        countdown={testCountdown}
-                    />
-                </div>
-            </InsightCard>
+            {/* Test Connection — only shown when a provider is selected */}
+            <AnimatePresence>
+                {form.completionProvider && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <InsightCard tone="default" hover={false}>
+                            <div className="space-y-3">
+                                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Test Connection
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Verify your API key is valid and the provider responds correctly.
+                                </p>
+                                <TestButton
+                                    onTest={handleTest}
+                                    disabled={testing}
+                                    result={testResult}
+                                    countdown={testCountdown}
+                                    isDirty={isDirty}
+                                />
+                            </div>
+                        </InsightCard>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Save message */}
             <AnimatePresence>
@@ -445,14 +453,16 @@ export function AIConfigSection() {
 
             {/* Action Buttons */}
             <div className="flex items-center justify-between pt-1">
-                <button
-                    onClick={handleRemove}
-                    disabled={removing}
-                    className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors"
-                >
-                    <X className="w-4 h-4" />
-                    {removing ? 'Removing...' : 'Remove Config'}
-                </button>
+                {(form.hasCompletionKey || form.hasEmbeddingKey) && (
+                    <button
+                        onClick={handleRemove}
+                        disabled={removing}
+                        className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors"
+                    >
+                        <X className="w-4 h-4" />
+                        {removing ? 'Removing...' : 'Remove Config'}
+                    </button>
+                )}
 
                 <button
                     onClick={handleSave}
