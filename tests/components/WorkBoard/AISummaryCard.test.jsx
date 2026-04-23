@@ -6,6 +6,12 @@ vi.mock('framer-motion', async (importOriginal) => {
     return { ...actual, motion: new Proxy(actual.motion, { get: (t, k) => t[k] ?? t.div }), AnimatePresence: ({ children }) => children }
 })
 
+// getCsrfToken is injected into every mutation by AISummaryCard. Stub it so
+// the component's fetch mock only needs to handle the ai-summary POST.
+vi.mock('@/utils/api', () => ({
+    getCsrfToken: vi.fn(async () => 'test-csrf-token'),
+}))
+
 const { AISummaryCard } = await import('@/components/WorkBoard/AISummaryCard')
 
 beforeEach(() => { global.fetch = vi.fn() })

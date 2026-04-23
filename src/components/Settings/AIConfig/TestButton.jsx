@@ -6,11 +6,16 @@ import { Sparkles, Check, AlertTriangle, Loader2, Info } from 'lucide-react'
 // ---------------------------------------------------------------------------
 
 export function TestButton({ onTest, disabled, result, countdown, isDirty }) {
+    // Disable when dirty — /test hits the DB-stored config, so running it
+    // against unsaved form state would produce misleading results (either a
+    // false "ok" against an old provider, or a fall-through failure).
+    const isDisabled = disabled || countdown > 0 || isDirty
+
     return (
         <div className="space-y-2">
             <button
                 onClick={onTest}
-                disabled={disabled || countdown > 0}
+                disabled={isDisabled}
                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-700/50 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 {disabled && !countdown ? (

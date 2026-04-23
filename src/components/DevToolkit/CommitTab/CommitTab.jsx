@@ -8,6 +8,7 @@ import { RefinementZone } from '../shared/RefinementZone'
 import { FormatSelector } from './FormatSelector'
 import { SessionHistory } from './SessionHistory'
 import { MultiCommitSplit } from './MultiCommitSplit'
+import { getCsrfToken } from '../../../utils/api'
 
 const INPUT_MODES = [
     { id: 'auto', label: 'Auto-fetch' },
@@ -143,9 +144,10 @@ export function CommitTab({ toolkit }) {
         setSplitLoading(true)
         setLocalError(null)
         try {
+            const csrf = await getCsrfToken()
             const res = await fetch('/api/ai/generate-commit', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
                 credentials: 'include',
                 body: JSON.stringify({
                     diff,

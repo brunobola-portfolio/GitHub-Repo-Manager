@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { defaultRepoDescription, sanitizeRepoDescription } from '../utils/migrationDescription'
+import { getCsrfToken } from '../utils/api'
 
 /**
  * Produces a description suggestion for a migration repo, either via Gemini
@@ -48,10 +49,11 @@ export function useRepoDescriptionSuggestion({ aiAvailable } = {}) {
 
         setIsLoading(true)
         try {
+            const csrf = await getCsrfToken()
             const res = await fetch('/api/ai/migration-description', {
                 method: 'POST',
                 credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
                 body: JSON.stringify(buildBody(repo, source)),
             })
             if (res.status === 429) return { ...fallback(), quotaExceeded: true }

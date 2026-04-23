@@ -1,10 +1,20 @@
 import { API_BASE, MOCK_MODE } from '../config';
+import { getCsrfToken } from '../utils/api';
 
 const getHeaders = () => {
     return {
         'Content-Type': 'application/json'
     };
 };
+
+// CSRF-protected POST/PUT/PATCH/DELETE helper. The server rejects mutations
+// without a valid X-CSRF-Token (see server/middleware/csrf.js). fetchWithRetry
+// does this automatically but we keep explicit status-code handling here
+// (e.g. 503, 429, 403) so callers can branch on result codes.
+async function mutationHeaders() {
+    const token = await getCsrfToken();
+    return { 'Content-Type': 'application/json', 'X-CSRF-Token': token };
+}
 
 /**
  * Unified response handler for AI endpoints.
@@ -104,7 +114,7 @@ export const aiApi = {
 
         const res = await fetch(`${API_BASE}/ai/index`, {
             method: 'POST',
-            headers: getHeaders(),
+            headers: await mutationHeaders(),
             credentials: 'include',
             body: JSON.stringify({ repo })
         });
@@ -170,7 +180,7 @@ export const aiApi = {
 
         const res = await fetch(`${API_BASE}/ai/suggest`, {
             method: 'POST',
-            headers: getHeaders(),
+            headers: await mutationHeaders(),
             credentials: 'include',
             body: JSON.stringify({ repo })
         });
@@ -197,7 +207,7 @@ export const aiApi = {
 
         const res = await fetch(`${API_BASE}/ai/readme/enhance`, {
             method: 'POST',
-            headers: getHeaders(),
+            headers: await mutationHeaders(),
             credentials: 'include',
             body: JSON.stringify({ repo })
         });
@@ -217,7 +227,7 @@ export const aiApi = {
 
         const res = await fetch(`${API_BASE}/ai/quality-report`, {
             method: 'POST',
-            headers: getHeaders(),
+            headers: await mutationHeaders(),
             credentials: 'include',
             body: JSON.stringify({ repo })
         });
@@ -242,7 +252,7 @@ export const aiApi = {
 
         const res = await fetch(`${API_BASE}/ai/batch-index`, {
             method: 'POST',
-            headers: getHeaders(),
+            headers: await mutationHeaders(),
             credentials: 'include',
             body: JSON.stringify({ repos })
         });
@@ -300,7 +310,7 @@ export const aiApi = {
 
         const res = await fetch(`${API_BASE}/ai/issue-to-plan`, {
             method: 'POST',
-            headers: getHeaders(),
+            headers: await mutationHeaders(),
             credentials: 'include',
             body: JSON.stringify({ repoFullName, issueNumber, extraContext }),
         })

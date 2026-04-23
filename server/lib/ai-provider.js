@@ -580,12 +580,16 @@ const PROVIDER_REGISTRY = {
  * @param {'completion'|'embedding'} [kind='completion']
  * @param {object} [opts]
  * @param {string} [opts.featureKey]  — UPPER_SNAKE key e.g. 'CHAT', 'PR_REVIEW'
+ * @param {boolean} [opts.noServerFallback=false] — when true, skip the
+ *   GEMINI_API_KEY env fallback and return null if the user has no valid
+ *   BYOK config. Used by /api/user/ai-config/test so the user tests THEIR
+ *   credentials, not the server's shared key.
  * @returns {Promise<import('./providers/openai.js').OpenAIProvider|GeminiProvider|null>}
  */
 export async function createProviderForUser(userId, kind = 'completion', opts = {}) {
     await _loadProviders();
 
-    const { featureKey } = opts;
+    const { featureKey, noServerFallback = false } = opts;
 
     // Lazy import to avoid circular dependency at module load time.
     const { getDecryptedConfig } = await import('./user-ai-config.js');
@@ -645,6 +649,12 @@ export async function createProviderForUser(userId, kind = 'completion', opts = 
     }
 
     // --- Server-wide env fallback ---
+    // Caller opted out of server fallback (e.g. /test endpoint — the user
+    // must test their OWN credentials, not the server's shared key).
+    if (noServerFallback) {
+        return null;
+    }
+
     // When AI_REQUIRE_USER_CONFIG=true, skip the fallback entirely so every
     // user must bring their own key (multi-tenant mode).
     if (process.env.AI_REQUIRE_USER_CONFIG === 'true') {

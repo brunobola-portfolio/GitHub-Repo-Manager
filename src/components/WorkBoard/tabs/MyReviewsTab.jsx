@@ -10,6 +10,7 @@ import { useFocusedRow } from '../../../hooks/useFocusedRow'
 import { InlineActions } from '../InlineActions'
 import { SkeletonList, EmptyState, WebhookHint, UpsellCard } from '../shared/shared-ui'
 import { ageLabel } from '../shared/formatters'
+import { getCsrfToken } from '../../../utils/api'
 
 // ---------------------------------------------------------------------------
 // Module-level suggestion cache (expires after 30 min)
@@ -42,10 +43,11 @@ function ChipStrip({ review, hasAI, onSnooze, onPing }) {
 
         setPingState('loading')
         try {
+            const csrf = await getCsrfToken()
             const res = await fetch('/api/v1/work-board/suggest-action', {
                 method: 'POST',
                 credentials: 'include',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__csrfToken },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
                 body: JSON.stringify({
                     repoFullName: review.repoFullName,
                     itemType: 'pr',
@@ -224,12 +226,15 @@ function DraftCommentModal({ review, intent, onConfirm, onClose }) {
     const fullTextRef = useRef('')
 
     useEffect(() => {
-        fetch('/api/v1/work-board/draft-comment', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__csrfToken },
-            body: JSON.stringify({ repoFullName: review.repoFullName, prNumber: review.prNumber, intent }),
-        })
+        (async () => {
+            const csrf = await getCsrfToken()
+            return fetch('/api/v1/work-board/draft-comment', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+                body: JSON.stringify({ repoFullName: review.repoFullName, prNumber: review.prNumber, intent }),
+            })
+        })()
             .then(r => r.json())
             .then(({ draft }) => {
                 fullTextRef.current = draft || ''

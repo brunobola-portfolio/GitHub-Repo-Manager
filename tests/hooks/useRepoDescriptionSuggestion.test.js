@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useRepoDescriptionSuggestion } from '../../src/hooks/useRepoDescriptionSuggestion'
+
+// Stub CSRF fetch so tests only need to mock the AI endpoint response.
+vi.mock('../../src/utils/api', () => ({
+    getCsrfToken: vi.fn(async () => 'test-csrf-token'),
+}))
+
+const { useRepoDescriptionSuggestion } = await import('../../src/hooks/useRepoDescriptionSuggestion')
 
 const baseRepo = {
     id: 'r1',

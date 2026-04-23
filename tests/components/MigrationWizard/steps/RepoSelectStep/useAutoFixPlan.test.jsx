@@ -1,8 +1,14 @@
 // tests/components/MigrationWizard/steps/RepoSelectStep/useAutoFixPlan.test.jsx
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { useAutoFixPlan } from '../../../../../src/components/MigrationWizard/steps/RepoSelectStep/useAutoFixPlan.js'
 import { makeRepo } from './fixtures.js'
+
+// Stub CSRF token fetch so mockFetchImpl only needs to match the AI endpoint.
+vi.mock('../../../../../src/utils/api', () => ({
+    getCsrfToken: vi.fn(async () => 'test-csrf-token'),
+}))
+
+const { useAutoFixPlan } = await import('../../../../../src/components/MigrationWizard/steps/RepoSelectStep/useAutoFixPlan.js')
 
 beforeEach(() => {
   global.fetch = vi.fn()

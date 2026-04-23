@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { clsx } from 'clsx'
 import { Sparkles, RefreshCw, X, AlertTriangle } from 'lucide-react'
+import { getCsrfToken } from '../../utils/api'
 
 function bulletHref(link) {
     if (!link || !link.repo || !link.number) return null
@@ -47,10 +48,11 @@ export function AISummaryCard({ meta: metaProp } = {}) {
     const fetchSummary = useCallback(async () => {
         setState(s => ({ ...s, status: 'loading', error: null }))
         try {
+            const csrf = await getCsrfToken()
             const res = await fetch('/api/v1/work-board/ai-summary', {
                 method: 'POST',
                 credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
                 body: '{}',
             })
             const json = await res.json().catch(() => ({}))

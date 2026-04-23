@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { buildDeterministicPlan } from './autoFixRules.js'
 import { SIZE_CRITICAL_KB } from './riskRules.js'
+import { getCsrfToken } from '../../../../utils/api'
 
 // Fix 2: priority-aware error setter (auth > ai-quota)
 const ERROR_RANK = { auth: 2, 'ai-quota': 1 }
@@ -49,6 +50,7 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAva
     const controller = new AbortController()
 
     if (plan.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag around a network request; setState is guarded by plan.length and the AbortController pattern below.
       setIsValidating(true)
       const names = plan.map((p) => p.to)
       fetch('/api/import/check-duplicates', {
@@ -115,10 +117,11 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAva
       setIsAILoading(true)
       Promise.allSettled(
         sizeCritical.map(async (repo) => {
+          const csrf = await getCsrfToken()
           const res = await fetch('/api/ai/migration-size-strategy', {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
             body: JSON.stringify({
               repoId: repo.id,
               size: repo.size,

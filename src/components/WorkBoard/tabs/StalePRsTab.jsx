@@ -10,6 +10,7 @@ import { useFocusedRow } from '../../../hooks/useFocusedRow'
 import { InlineActions } from '../InlineActions'
 import { SkeletonList, EmptyState, WebhookHint, UpsellCard } from '../shared/shared-ui'
 import { dayLabel } from '../shared/formatters'
+import { getCsrfToken } from '../../../utils/api'
 
 // ---------------------------------------------------------------------------
 // Module-level suggestion cache (expires after 30 min)
@@ -42,10 +43,11 @@ function ChipStrip({ pr, hasAI, onSnooze, onPing }) {
 
         setPingState('loading')
         try {
+            const csrf = await getCsrfToken()
             const res = await fetch('/api/v1/work-board/suggest-action', {
                 method: 'POST',
                 credentials: 'include',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__csrfToken },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
                 body: JSON.stringify({
                     repoFullName: pr.repoFullName,
                     itemType: 'pr',

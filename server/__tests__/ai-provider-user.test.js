@@ -58,7 +58,7 @@ vi.mock('../lib/providers/local.js', () => ({
 let _mockDecryptedConfig = null;
 
 vi.mock('../lib/user-ai-config.js', () => ({
-    getDecryptedConfig: vi.fn((userId) => _mockDecryptedConfig),
+    getDecryptedConfig: vi.fn(() => _mockDecryptedConfig),
     getUserAIConfig: vi.fn(),
     setUserAIConfig: vi.fn(),
     deleteUserAIConfig: vi.fn(),
@@ -308,5 +308,57 @@ describe('createProviderForUser()', () => {
 
         expect(provider).toBeInstanceOf(MockOpenAIProvider);
         expect(provider._modelName).toBe('gpt-4o-mini');
+    });
+
+    // ----- noServerFallback -----
+
+    it('noServerFallback: returns null when user has no config (ignores GEMINI_API_KEY)', async () => {
+        _mockDecryptedConfig = null;
+        process.env.GEMINI_API_KEY = 'server-key';
+
+        const provider = await createProviderForUser(1, 'completion', { noServerFallback: true });
+
+        expect(provider).toBeNull();
+    });
+
+    it('noServerFallback: returns null when user selected a provider but has no credentials', async () => {
+        // Simulates the UI state where the user picked "openrouter" but hasn't
+        // saved an API key yet. Without noServerFallback we used to silently
+        // fall through to GEMINI_API_KEY — making the /test endpoint hit
+        // Gemini instead of OpenRouter. That was the bug.
+        _mockDecryptedConfig = {
+            userId: 1,
+            completionProvider: 'openrouter',
+            completionModel: 'anthropic/claude-sonnet-4-6',
+            completionCredentials: null,
+            embeddingProvider: null,
+            embeddingModel: null,
+            embeddingCredentials: null,
+            featureOverrides: {},
+        };
+        process.env.GEMINI_API_KEY = 'server-key';
+
+        const provider = await createProviderForUser(1, 'completion', { noServerFallback: true });
+
+        expect(provider).toBeNull();
+    });
+
+    it('noServerFallback: still returns user provider when fully configured (openrouter)', async () => {
+        _mockDecryptedConfig = {
+            userId: 1,
+            completionProvider: 'openrouter',
+            completionModel: 'anthropic/claude-sonnet-4-6',
+            completionCredentials: { apiKey: 'sk-or-user' },
+            embeddingProvider: null,
+            embeddingModel: null,
+            embeddingCredentials: null,
+            featureOverrides: {},
+        };
+        process.env.GEMINI_API_KEY = 'server-key';
+
+        const provider = await createProviderForUser(1, 'completion', { noServerFallback: true });
+
+        expect(provider).toBeInstanceOf(MockOpenRouterProvider);
+        expect(provider._opts.apiKey).toBe('sk-or-user');
     });
 });

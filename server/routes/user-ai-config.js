@@ -168,7 +168,11 @@ router.post('/test', requireAuth, testRateLimiter, validateBody(testAIConfigSche
 
     let provider;
     try {
-        provider = await createProviderForUser(userId, kind);
+        // noServerFallback: the user is testing THEIR credentials. Never
+        // silently fall back to the server's GEMINI_API_KEY — that would
+        // hide a misconfigured BYOK and show a misleading success/error
+        // for the wrong provider.
+        provider = await createProviderForUser(userId, kind, { noServerFallback: true });
     } catch (err) {
         logger.warn({ err, userId, kind }, 'createProviderForUser threw during /test');
         return res.json({ ok: false, error: 'Failed to build provider', code: 'PROVIDER_ERROR' });
@@ -177,7 +181,7 @@ router.post('/test', requireAuth, testRateLimiter, validateBody(testAIConfigSche
     if (!provider) {
         return res.json({
             ok: false,
-            error: 'No AI provider configured for this user.',
+            error: 'No AI provider configured for this user. Save your API key first, then retry.',
             code: 'NOT_CONFIGURED',
         });
     }

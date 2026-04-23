@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { getCsrfToken } from '../../../utils/api'
 
 const AI_CACHE_TTL_MS = 60 * 60 * 1000 // 1 hour
 
@@ -113,10 +114,11 @@ export function useReviewAI(owner, repo, pullNumber, headSha, files) {
             const totalAdditions = files.reduce((sum, f) => sum + (f.additions || 0), 0)
             const totalDeletions = files.reduce((sum, f) => sum + (f.deletions || 0), 0)
 
+            const csrf = await getCsrfToken()
             const res = await fetch('/api/ai/review-summary', {
                 method: 'POST',
                 credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
                 body: JSON.stringify({
                     fileManifest,
                     topFilePatches,
@@ -147,8 +149,10 @@ export function useReviewAI(owner, repo, pullNumber, headSha, files) {
         }
     }, [owner, repo, pullNumber, headSha, files])
 
-    // Fetch on mount / when headSha/files change
+    // Fetch on mount / when headSha/files change.
+    // fetchSummary is stable (useCallback) and only sets state after awaited fetch resolves.
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- see note above.
         fetchSummary()
     }, [fetchSummary])
 
