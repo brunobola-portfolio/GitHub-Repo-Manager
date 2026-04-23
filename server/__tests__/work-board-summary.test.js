@@ -128,3 +128,17 @@ describe('generateSummary', () => {
         ).rejects.toThrow(/ai_invalid_response/);
     });
 });
+
+describe('SUMMARY_SCHEMA', () => {
+    // Regression guard: Gemini rejects `enum` unless the property also declares
+    // `type: 'string'`. An earlier revision omitted `type` on severity and
+    // link.type and the /work-board/ai-summary endpoint responded 500 for any
+    // user whose provider was Gemini (including the server fallback key).
+    it('declares type: "string" on every enum property', () => {
+        const bulletProps = SUMMARY_SCHEMA.properties.bullets.items.properties;
+        expect(bulletProps.severity).toEqual(expect.objectContaining({ type: 'string' }));
+        expect(bulletProps.severity.enum).toEqual(['high', 'medium', 'info']);
+        expect(bulletProps.link.properties.type).toEqual(expect.objectContaining({ type: 'string' }));
+        expect(bulletProps.link.properties.type.enum).toEqual(['pr', 'issue']);
+    });
+});

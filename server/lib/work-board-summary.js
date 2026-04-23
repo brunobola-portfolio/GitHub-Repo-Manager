@@ -33,11 +33,14 @@ export const SUMMARY_SCHEMA = {
                 required: ['text', 'severity'],
                 properties: {
                     text: { type: 'string', maxLength: 240 },
-                    severity: { enum: ['high', 'medium', 'info'] },
+                    // Gemini requires `type: 'string'` alongside `enum` — a bare enum
+                    // is rejected with "only allowed for STRING type". Anthropic /
+                    // OpenAI ignore the redundant hint.
+                    severity: { type: 'string', enum: ['high', 'medium', 'info'] },
                     link: {
                         type: 'object',
                         properties: {
-                            type: { enum: ['pr', 'issue'] },
+                            type: { type: 'string', enum: ['pr', 'issue'] },
                             repo: { type: 'string' },
                             number: { type: 'integer' },
                         },
