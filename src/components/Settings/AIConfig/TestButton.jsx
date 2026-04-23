@@ -1,11 +1,11 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, Check, AlertTriangle, Loader2 } from 'lucide-react'
+import { Sparkles, Check, AlertTriangle, Loader2, Info } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
 // Sub-component: TestButton
 // ---------------------------------------------------------------------------
 
-export function TestButton({ onTest, disabled, result, countdown }) {
+export function TestButton({ onTest, disabled, result, countdown, isDirty }) {
     return (
         <div className="space-y-2">
             <button
@@ -22,6 +22,13 @@ export function TestButton({ onTest, disabled, result, countdown }) {
                     ? `Test Connection (${countdown}s)`
                     : 'Test Connection'}
             </button>
+
+            {isDirty && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                    <Info className="w-3.5 h-3.5 shrink-0" />
+                    Save your changes first to test the current configuration.
+                </p>
+            )}
 
             <AnimatePresence>
                 {result && (
