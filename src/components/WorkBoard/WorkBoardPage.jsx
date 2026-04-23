@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import {
     GitPullRequest, CircleDot, BarChart3,
     AlertTriangle, Wrench, Users, RefreshCw,
@@ -21,6 +21,7 @@ import {
     useStalePRs,
     useMyOpenIssues,
     useTechDebt,
+    useKpiSnapshots,
 } from '../../hooks/useWorkBoard'
 import { useRelativeTime } from '../../hooks/useRelativeTime'
 import { useUrlParams } from '../../hooks/useUrlParams'
@@ -105,6 +106,7 @@ export function WorkBoardPage({ repoCount = 0 }) {
     const stale = useStalePRs({ staleAfterDays: 7 })
     const issues = useMyOpenIssues()
     const debt = useTechDebt()
+    const { data: kpiSnapshots } = useKpiSnapshots({ days: 7 })
 
     // Aggregate filter options from the data loaded by all primary tabs.
     const allItems = [
@@ -191,6 +193,7 @@ export function WorkBoardPage({ repoCount = 0 }) {
                 stale={stale}
                 issues={issues}
                 debt={debt}
+                snapshots={kpiSnapshots ?? []}
             />
 
             <FilterProvider
@@ -215,6 +218,7 @@ export function WorkBoardPage({ repoCount = 0 }) {
                 <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[520px] h-[220px] rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-transparent blur-3xl" />
 
                 {/* Tab bar */}
+                <LayoutGroup>
                 <div role="tablist" aria-label="Work Board sections" className="relative flex items-center gap-1 p-2.5 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/60 dark:bg-slate-800/30 overflow-x-auto">
                     {TABS.map(tab => {
                         const Icon = tab.icon
@@ -226,9 +230,9 @@ export function WorkBoardPage({ repoCount = 0 }) {
                                 aria-selected={isActive}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`
-                                    relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200
+                                    relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors duration-200
                                     ${isActive
-                                        ? 'bg-gradient-to-br from-white to-slate-50 dark:from-slate-700 dark:to-slate-800 text-indigo-600 dark:text-indigo-300 shadow-md shadow-indigo-500/10 ring-1 ring-indigo-500/20'
+                                        ? 'text-indigo-600 dark:text-indigo-300'
                                         : 'text-slate-500 dark:text-slate-400 hover:bg-white/70 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200'
                                     }
                                 `}
@@ -244,10 +248,18 @@ export function WorkBoardPage({ repoCount = 0 }) {
                                         {tab.badge}
                                     </span>
                                 )}
+                                {isActive && (
+                                    <motion.div
+                                        layoutId="work-board-tab-indicator"
+                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full"
+                                        transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                                    />
+                                )}
                             </button>
                         )
                     })}
                 </div>
+                </LayoutGroup>
 
                 {/* Tab content */}
                 <AnimatePresence mode="wait">

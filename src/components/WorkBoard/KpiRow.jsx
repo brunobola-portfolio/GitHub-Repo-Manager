@@ -1,15 +1,96 @@
+import { useEffect, useState } from 'react'
+import { motion, useMotionValue, useSpring } from 'framer-motion'
+import { clsx } from 'clsx'
 import { GitPullRequest, AlertTriangle, CircleDot, Wrench } from 'lucide-react'
 import { ageLabel, dayLabel } from './shared/formatters'
 
-const KPI_ACCENTS = {
-    purple:  { ring: 'from-purple-500/20',  dot: 'bg-purple-500',  text: 'text-purple-600 dark:text-purple-300' },
-    amber:   { ring: 'from-amber-500/20',   dot: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-300' },
-    emerald: { ring: 'from-emerald-500/20', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-300' },
-    indigo:  { ring: 'from-indigo-500/20',  dot: 'bg-indigo-500',  text: 'text-indigo-600 dark:text-indigo-300' },
+function computeDelta(history) {
+    if (!Array.isArray(history) || history.length < 2) return null
+    const first = history[0]
+    const last = history[history.length - 1]
+    if (first === 0) return null
+    return Math.round(((last - first) / first) * 100)
 }
 
-function KpiTile({ icon: Icon, label, value, hint, loading, accent = 'indigo', onClick, active }) {
+function Sparkline({ history, accent }) {
+    if (!Array.isArray(history) || history.length < 3) return null
+    const W = 40, H = 16
+    const min = Math.min(...history)
+    const max = Math.max(...history)
+    const range = max - min || 1
+    const points = history.map((v, i) => {
+        const x = (i / (history.length - 1)) * W
+        const y = H - ((v - min) / range) * (H - 2) - 1
+        return `${x.toFixed(1)},${y.toFixed(1)}`
+    }).join(' ')
+
+    return (
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="overflow-visible" aria-hidden="true">
+            <motion.polyline
+                points={points}
+                fill="none"
+                stroke={accent}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+            />
+        </svg>
+    )
+}
+
+function DeltaBadge({ pct }) {
+    if (pct === null) return null
+    const flat = Math.abs(pct) < 5
+    const up = pct > 0
+    const label = flat ? '—' : (up ? `+${pct}%` : `${pct}%`)
+    const color = flat ? 'text-slate-400' : up ? 'text-amber-400' : 'text-emerald-400'
+    return (
+        <motion.span
+            className={clsx('text-[10px] font-medium tabular-nums', color)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.35, duration: 0.3 }}
+        >
+            {label}
+        </motion.span>
+    )
+}
+
+function CountUp({ target, className }) {
+    const motionVal = useMotionValue(0)
+    const spring = useSpring(motionVal, { stiffness: 80, damping: 20 })
+    const [display, setDisplay] = useState(0)
+
+    useEffect(() => {
+        motionVal.set(target)
+    }, [target, motionVal])
+
+    useEffect(() => {
+        const unsub = spring.on('change', v => setDisplay(Math.round(v)))
+        return unsub
+    }, [spring])
+
+    return (
+        <span className={className}>
+            {display > 999 ? '999+' : display}
+        </span>
+    )
+}
+
+const KPI_ACCENTS = {
+    purple:  { ring: 'from-purple-500/20',  dot: 'bg-purple-500',  text: 'text-purple-600 dark:text-purple-300',  sparkColor: '#a78bfa' },
+    amber:   { ring: 'from-amber-500/20',   dot: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-300',    sparkColor: '#fbbf24' },
+    emerald: { ring: 'from-emerald-500/20', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-300', sparkColor: '#34d399' },
+    indigo:  { ring: 'from-indigo-500/20',  dot: 'bg-indigo-500',  text: 'text-indigo-600 dark:text-indigo-300',  sparkColor: '#818cf8' },
+}
+
+function KpiTile({ icon: Icon, label, value, hint, loading, accent = 'indigo', onClick, active, history }) {
     const a = KPI_ACCENTS[accent] || KPI_ACCENTS.indigo
+    const delta = computeDelta(history)
+
     return (
         <button
             type="button"
@@ -31,8 +112,18 @@ function KpiTile({ icon: Icon, label, value, hint, loading, accent = 'indigo', o
                 <span className={`w-1.5 h-1.5 rounded-full ${a.dot} mt-2 opacity-70`} />
             </div>
             <div className="relative mt-4">
-                <div className="text-3xl font-bold tabular-nums text-slate-900 dark:text-slate-50 ds-font-display leading-none">
-                    {loading ? <span className="inline-block w-10 h-7 rounded-md bg-slate-200 dark:bg-slate-700 animate-pulse" /> : (value ?? 0)}
+                <div className="flex items-end gap-2">
+                    <CountUp
+                        target={loading ? 0 : (value ?? 0)}
+                        className="text-3xl font-bold tabular-nums text-slate-900 dark:text-slate-50 ds-font-display leading-none"
+                    />
+                    {loading && (
+                        <span className="inline-block w-10 h-7 rounded-md bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                    )}
+                    <div className="flex flex-col items-start gap-0.5 pb-0.5">
+                        <DeltaBadge pct={delta} />
+                        <Sparkline history={history} accent={a.sparkColor} />
+                    </div>
                 </div>
                 <div className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     {label}
@@ -43,7 +134,7 @@ function KpiTile({ icon: Icon, label, value, hint, loading, accent = 'indigo', o
     )
 }
 
-export function KpiRow({ activeTab, setActiveTab, reviews, stale, issues, debt }) {
+export function KpiRow({ activeTab, setActiveTab, reviews, stale, issues, debt, snapshots = [] }) {
     const reviewsCount = Array.isArray(reviews.data) ? reviews.data.length : 0
     const staleCount = Array.isArray(stale.data) ? stale.data.length : 0
     const issuesCount = Array.isArray(issues.data) ? issues.data.length : 0
@@ -57,6 +148,11 @@ export function KpiRow({ activeTab, setActiveTab, reviews, stale, issues, debt }
         : 0
     const hotspotRepo = debt.data?.hotspots?.[0]?.repoFullName || null
 
+    const reviewsHistory  = snapshots.map(s => s.reviews)
+    const stalePRsHistory = snapshots.map(s => s.stalePRs)
+    const issuesHistory   = snapshots.map(s => s.issues)
+    const techDebtHistory = snapshots.map(s => s.techDebt)
+
     return (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <KpiTile
@@ -68,6 +164,7 @@ export function KpiRow({ activeTab, setActiveTab, reviews, stale, issues, debt }
                 accent="purple"
                 active={activeTab === 'reviews'}
                 onClick={() => setActiveTab('reviews')}
+                history={reviewsHistory}
             />
             <KpiTile
                 icon={AlertTriangle}
@@ -78,6 +175,7 @@ export function KpiRow({ activeTab, setActiveTab, reviews, stale, issues, debt }
                 accent="amber"
                 active={activeTab === 'stale'}
                 onClick={() => setActiveTab('stale')}
+                history={stalePRsHistory}
             />
             <KpiTile
                 icon={CircleDot}
@@ -88,6 +186,7 @@ export function KpiRow({ activeTab, setActiveTab, reviews, stale, issues, debt }
                 accent="emerald"
                 active={activeTab === 'issues'}
                 onClick={() => setActiveTab('issues')}
+                history={issuesHistory}
             />
             <KpiTile
                 icon={Wrench}
@@ -98,6 +197,7 @@ export function KpiRow({ activeTab, setActiveTab, reviews, stale, issues, debt }
                 accent="indigo"
                 active={activeTab === 'techdebt'}
                 onClick={() => setActiveTab('techdebt')}
+                history={techDebtHistory}
             />
         </div>
     )
