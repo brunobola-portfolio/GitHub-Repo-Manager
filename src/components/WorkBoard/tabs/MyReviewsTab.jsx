@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { GitPullRequest, ExternalLink, Clock, MessageSquare, Loader2, Sparkles } from 'lucide-react'
 import * as Popover from '@radix-ui/react-popover'
@@ -143,7 +143,7 @@ function ChipStrip({ review, hasAI, onSnooze, onPing }) {
 // ReviewRow
 // ---------------------------------------------------------------------------
 
-function ReviewRow({ review, isFocused, onFocus, hasAI, onSnooze, onRequestChanges }) {
+function ReviewRow({ review, isFocused, onFocus, hasAI, onSnooze, onRequestChanges, onOpenDraftModal }) {
     const [hovered, setHovered] = useState(false)
     const hoverTimer = useRef(null)
     const showChips = hovered || isFocused
@@ -195,12 +195,7 @@ function ReviewRow({ review, isFocused, onFocus, hasAI, onSnooze, onRequestChang
                 </div>
                 <InlineActions
                     onApprove={() => {}}
-                    onRequestChanges={() => {
-                        const body = window.prompt('What needs changing?')
-                        if (body && body.trim()) {
-                            onRequestChanges(review, body)
-                        }
-                    }}
+                    onRequestChanges={() => onOpenDraftModal(review)}
                     onSnooze={(hours) => onSnooze(review, hours)}
                 />
             </a>
@@ -219,6 +214,94 @@ function ReviewRow({ review, isFocused, onFocus, hasAI, onSnooze, onRequestChang
 }
 
 // ---------------------------------------------------------------------------
+// DraftCommentModal
+// ---------------------------------------------------------------------------
+
+function DraftCommentModal({ review, intent, onConfirm, onClose }) {
+    const [text, setText] = useState('')
+    const [draftLoading, setDraftLoading] = useState(true)
+    const intervalRef = useRef(null)
+    const fullTextRef = useRef('')
+
+    useEffect(() => {
+        fetch('/api/v1/work-board/draft-comment', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.__csrfToken },
+            body: JSON.stringify({ repoFullName: review.repoFullName, prNumber: review.prNumber, intent }),
+        })
+            .then(r => r.json())
+            .then(({ draft }) => {
+                fullTextRef.current = draft || ''
+                setDraftLoading(false)
+                let idx = 0
+                intervalRef.current = setInterval(() => {
+                    idx++
+                    setText(fullTextRef.current.slice(0, idx))
+                    if (idx >= fullTextRef.current.length) clearInterval(intervalRef.current)
+                }, 25)
+            })
+            .catch(() => {
+                setDraftLoading(false)
+            })
+
+        return () => clearInterval(intervalRef.current)
+    }, [review, intent])
+
+    function handleTextareaClick() {
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current)
+            intervalRef.current = null
+            setText(fullTextRef.current)
+        }
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="w-full max-w-md rounded-2xl border border-slate-200/60 dark:border-white/10 bg-white dark:bg-slate-900 p-5 shadow-2xl"
+            >
+                <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-white">
+                    {intent === 'request_changes' ? 'Request Changes' : 'Comment'}
+                </h3>
+                <div className="relative">
+                    {draftLoading && (
+                        <div className="absolute top-2 right-2">
+                            <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                        </div>
+                    )}
+                    <textarea
+                        value={text}
+                        onChange={e => setText(e.target.value)}
+                        onClick={handleTextareaClick}
+                        placeholder={draftLoading ? 'Drafting review comment…' : ''}
+                        rows={5}
+                        className="w-full resize-none rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-1 focus:ring-indigo-500"
+                    />
+                </div>
+                {!draftLoading && (
+                    <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
+                        <Sparkles className="w-3 h-3" /> AI draft — edit before sending
+                    </p>
+                )}
+                <div className="mt-4 flex gap-2 justify-end">
+                    <button onClick={onClose} className="px-3 py-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">Cancel</button>
+                    <button
+                        onClick={() => { onConfirm(text); onClose() }}
+                        disabled={!text.trim()}
+                        className="px-4 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-lg"
+                    >
+                        Send
+                    </button>
+                </div>
+            </motion.div>
+        </div>
+    )
+}
+
+// ---------------------------------------------------------------------------
 // MyReviewsTab
 // ---------------------------------------------------------------------------
 
@@ -226,6 +309,7 @@ export function MyReviewsTab({ hasAI = false }) {
     const { data, loading, error, refresh } = useMyPendingReviews()
     const { params } = useWorkBoardFilters()
     const [optimisticallyRemoved, setOptimisticallyRemoved] = useState(() => new Set())
+    const [draftModal, setDraftModal] = useState(null)
     const actions = useReviewAction({
         onOptimistic: (_action, args) => {
             setOptimisticallyRemoved(prev => {
@@ -271,18 +355,31 @@ export function MyReviewsTab({ hasAI = false }) {
     }
 
     return (
-        <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
-            {reviews.map((r, idx) => (
-                <ReviewRow
-                    key={`${r.repoFullName}-${r.prNumber}`}
-                    review={r}
-                    isFocused={focusedIndex === idx}
-                    onFocus={() => setFocusedIndex(idx)}
-                    hasAI={hasAI}
-                    onSnooze={(review, hours) => actions.snooze({ repoFullName: review.repoFullName, prNumber: review.prNumber, hours })}
-                    onRequestChanges={(review, body) => actions.requestChanges({ repoFullName: review.repoFullName, prNumber: review.prNumber, body })}
+        <>
+            <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                {reviews.map((r, idx) => (
+                    <ReviewRow
+                        key={`${r.repoFullName}-${r.prNumber}`}
+                        review={r}
+                        isFocused={focusedIndex === idx}
+                        onFocus={() => setFocusedIndex(idx)}
+                        hasAI={hasAI}
+                        onSnooze={(review, hours) => actions.snooze({ repoFullName: review.repoFullName, prNumber: review.prNumber, hours })}
+                        onRequestChanges={(review, body) => actions.requestChanges({ repoFullName: review.repoFullName, prNumber: review.prNumber, body })}
+                        onOpenDraftModal={(review) => setDraftModal({ review, intent: 'request_changes' })}
+                    />
+                ))}
+            </div>
+            {draftModal && (
+                <DraftCommentModal
+                    review={draftModal.review}
+                    intent={draftModal.intent}
+                    onConfirm={(body) => {
+                        if (body.trim()) actions.requestChanges({ repoFullName: draftModal.review.repoFullName, prNumber: draftModal.review.prNumber, body })
+                    }}
+                    onClose={() => setDraftModal(null)}
                 />
-            ))}
-        </div>
+            )}
+        </>
     )
 }
