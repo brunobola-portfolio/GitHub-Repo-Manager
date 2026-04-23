@@ -92,7 +92,7 @@ export function AIConfigSection() {
         }
     }, [])
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time config load on mount; fetchConfig is stable (useCallback, [] deps)
     useEffect(() => { fetchConfig() }, [fetchConfig])
 
     // ---------------------------------------------------------------------------
