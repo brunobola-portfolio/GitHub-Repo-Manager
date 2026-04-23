@@ -26,7 +26,7 @@ describe('TestButton — isDirty hint', () => {
         expect(screen.getByText(/save your changes first/i)).toBeInTheDocument()
     })
 
-    it('does not show hint when isDirty is true but result is already showing', () => {
+    it('shows hint when isDirty is true even if a test result is visible', () => {
         render(
             <TestButton
                 onTest={vi.fn()}
