@@ -94,7 +94,7 @@ function useWorkBoardFetch(url, mockData, { refreshIntervalMs = 60_000 } = {}) {
 
     useEffect(() => {
         mountedRef.current = true
-        fetchOnce()
+        fetchOnce() // eslint-disable-line react-hooks/set-state-in-effect
 
         const startInterval = () => {
             if (refreshIntervalMs > 0 && !intervalRef.current) {
@@ -274,4 +274,17 @@ export function useTechDebt({ repoIds, ...opts } = {}) {
 export function useReviewLoad({ repoIds, ...opts } = {}) {
     const qs = repoIds && repoIds.length > 0 ? `?repoIds=${repoIds.join(',')}` : ''
     return useWorkBoardFetch(`/api/v1/work-board/review-load${qs}`, MOCK_REVIEW_LOAD, opts)
+}
+
+const MOCK_KPI_SNAPSHOTS = Array.from({ length: 7 }, (_, i) => ({
+    snappedAt: new Date(Date.now() - (6 - i) * 24 * 3600 * 1000).toISOString(),
+    reviews: 2 + Math.round(Math.random() * 2),
+    stalePRs: 8 + i,
+    issues: 4,
+    techDebt: 12 + i,
+}));
+
+export function useKpiSnapshots({ days = 7 } = {}) {
+    const url = `/api/v1/work-board/kpi-snapshots?days=${days}`;
+    return useWorkBoardFetch(url, MOCK_KPI_SNAPSHOTS, { refreshIntervalMs: 5 * 60 * 1000 });
 }
