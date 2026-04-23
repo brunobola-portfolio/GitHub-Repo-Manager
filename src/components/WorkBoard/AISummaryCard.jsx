@@ -40,7 +40,7 @@ function timeAgo(isoString) {
     return `${Math.round(mins / 60)} hr ago`
 }
 
-export function AISummaryCard() {
+export function AISummaryCard({ meta: metaProp } = {}) {
     const [state, setState] = useState({ status: 'loading', data: null, error: null })
     const [dismissed, setDismissed] = useState(false)
 
@@ -106,7 +106,9 @@ export function AISummaryCard() {
         )
     }
 
-    const { headline, bullets = [], urgencyScore = 0, provider, model, generatedAt } = state.data || {}
+    const { headline, bullets = [], urgencyScore = 0, provider: fetchedProvider, model: fetchedModel, generatedAt } = state.data || {}
+    const provider = metaProp?.provider ?? fetchedProvider
+    const model = metaProp?.model ?? fetchedModel
     const urgency = urgencyScore
     const isHigh = urgency > 0.8
 
