@@ -14,6 +14,7 @@ import {
     FileText, Star, Eye, GitFork, ExternalLink, Lock, Globe, Loader2, Zap
 } from 'lucide-react'
 import { TabBar } from '../ui/TabBar'
+import { TrackedChip } from '../WorkBoard/TrackedChip'
 
 const TABS = [
     { id: 'overview', label: 'Overview', icon: FileText },
@@ -51,6 +52,7 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription 
     }, [api])
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         loadRepo()
     }, [loadRepo])
 
@@ -74,6 +76,7 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription 
                         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 ds-font-display truncate">
                             {r.full_name || `${owner}/${repoName}`}
                         </h1>
+                        <TrackedChip repoFullName={r.full_name || `${owner}/${repoName}`} />
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                             r.private
                                 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
