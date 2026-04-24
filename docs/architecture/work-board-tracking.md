@@ -452,3 +452,45 @@ Prompts live under `server/lib/ai-features/work-board-assistant/prompts/<version
 ### Cost accounting
 
 `work_board_ai_spend(user_id, month, cents)` — one row per user per month. `recordSpend()` upserts. `/interpret` records a flat 1 cent per call as MVP estimate.
+
+## Phase 7 AI Assistant Frontend (shipped)
+
+Completes the AI Assistant end-to-end. Frontend consumes the Phase 6
+backend via `useWorkBoardAI` and a fresh `src/api/workBoardAI.js` client.
+
+### Settings → Work Board → AI Assistant
+
+Composed at `src/components/Settings/WorkBoard/ai/WorkBoardAISection.jsx`:
+
+- **AIAssistantToggle** — on/off + monthly cap selector (`$1 / $5 / $20 / Unlimited`). Writes through `useTrackedRepos().updatePrefs`.
+- **AIActivityCard** — current-month spend + cap + progress bar. Hidden when AI is disabled.
+- **SuggestionsPanel** — lists `computeSuggestions()` results with Apply / Dismiss. Apply mutes the suggested repos via `bulkUpdate` with undo toast. Dismiss writes to `work_board_ai_dismissed`.
+- **ConversationalEdit** — textarea → "Preview" calls `/ai/interpret` → renders diff summary + action count → "Apply" calls `/ai/apply` with the HMAC validity token. Every mutation surfaces an undo toast.
+
+### Command palette
+
+New "AI Assistant" group (one command in MVP: "AI: Open conversational edit") — gated on `ai_assistant_enabled=1`. Selecting routes the user to Settings → Work Board via the `app:open-settings` event.
+
+### Hook contract
+
+```javascript
+const {
+    suggestions,   // from /ai/suggestions
+    activity,      // from /ai/activity
+    enabled,       // false on 403/404 from backend
+    isLoading,
+    error,
+    interpret,     // (prompt) → { summary, actions, validity_token, skipped }
+    apply,         // (validity_token) → { applied, operation_id }
+    dismiss,       // (pattern_key, repo_full_name_or_key) → void
+    reload,        // re-fetch suggestions + activity
+} = useWorkBoardAI()
+```
+
+### Defer list (Phase 7.1+)
+
+- `/ai/plan-my-day` with SSE streaming
+- Per-command palette endpoints: summarize, suggest-reviewer, draft-comment, find-similar
+- Token-count-based cost estimates (still flat cent/call)
+- i18n via `ai_response_locale`
+- Dry-run onboarding (3 free preview calls before full enable)
