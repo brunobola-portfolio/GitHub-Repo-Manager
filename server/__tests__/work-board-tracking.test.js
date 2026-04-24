@@ -83,8 +83,8 @@ describe('upsertTrackedRepo', () => {
         const undoRow = testDb.prepare('SELECT * FROM work_board_undo_log WHERE operation_id = ?').get(result.operationId);
         expect(undoRow).toBeDefined();
         expect(undoRow.operation_type).toBe('mute');
-        expect(JSON.parse(undoRow.before_state)).toEqual([{ repo_full_name: 'acme/backend', is_pinned: 1, is_muted: 0 }]);
-        expect(JSON.parse(undoRow.after_state)).toEqual([{ repo_full_name: 'acme/backend', is_pinned: 1, is_muted: 1 }]);
+        expect(JSON.parse(undoRow.before_state)).toEqual([{ repo_full_name: 'acme/backend', is_pinned: 1, is_muted: 0, source_signal: 'pinned' }]);
+        expect(JSON.parse(undoRow.after_state)).toEqual([{ repo_full_name: 'acme/backend', is_pinned: 1, is_muted: 1, source_signal: 'pinned' }]);
     });
 
     it('unpin clears is_pinned without touching is_muted', () => {

@@ -17,6 +17,7 @@ function snapshotForUndo(row) {
         repo_full_name: row.repo_full_name,
         is_pinned: row.is_pinned,
         is_muted: row.is_muted,
+        source_signal: row.source_signal,
     };
 }
 
@@ -209,7 +210,7 @@ export function bulkUpdate(userId, repoFullNames, action) {
                 continue;
             }
 
-            const before = snapshotRow(existing);
+            const before = snapshotForUndo(existing);
             if (before) beforeStates.push(before);
 
             if (action === 'untrack') {
