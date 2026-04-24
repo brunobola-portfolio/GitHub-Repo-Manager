@@ -415,56 +415,56 @@ export function initDB(targetDb = db) {
         // -----------------------------------------------------------------------
 
         db.exec(`
-    CREATE TABLE IF NOT EXISTS work_board_tracked_repos (
-        user_id              INTEGER NOT NULL,
-        repo_full_name       TEXT NOT NULL,
-        repo_id              INTEGER,
-        source_signal        TEXT NOT NULL,
-        is_pinned            INTEGER NOT NULL DEFAULT 0,
-        is_muted             INTEGER NOT NULL DEFAULT 0,
-        last_activity_at     DATETIME,
-        discovered_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        last_synced_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (user_id, repo_full_name),
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    );
-    CREATE INDEX IF NOT EXISTS idx_wbtr_user_active
-        ON work_board_tracked_repos(user_id, is_muted, last_activity_at DESC);
+            CREATE TABLE IF NOT EXISTS work_board_tracked_repos (
+                user_id              INTEGER NOT NULL,
+                repo_full_name       TEXT NOT NULL,
+                repo_id              INTEGER,
+                source_signal        TEXT NOT NULL,
+                is_pinned            INTEGER NOT NULL DEFAULT 0,
+                is_muted             INTEGER NOT NULL DEFAULT 0,
+                last_activity_at     DATETIME,
+                discovered_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                last_synced_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, repo_full_name),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_wbtr_user_active
+                ON work_board_tracked_repos(user_id, is_muted, last_activity_at DESC);
 
-    CREATE TABLE IF NOT EXISTS work_board_prefs (
-        user_id                 INTEGER PRIMARY KEY,
-        discovery_window_days   INTEGER NOT NULL DEFAULT 60,
-        max_auto_repos          INTEGER NOT NULL DEFAULT 50,
-        auto_mute_bots          INTEGER NOT NULL DEFAULT 0,
-        ai_assistant_enabled    INTEGER NOT NULL DEFAULT 0,
-        ai_monthly_cap_cents    INTEGER NOT NULL DEFAULT 500,
-        ai_response_locale      TEXT,
-        last_discovery_at       DATETIME,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    );
+            CREATE TABLE IF NOT EXISTS work_board_prefs (
+                user_id                 INTEGER PRIMARY KEY,
+                discovery_window_days   INTEGER NOT NULL DEFAULT 60,
+                max_auto_repos          INTEGER NOT NULL DEFAULT 50,
+                auto_mute_bots          INTEGER NOT NULL DEFAULT 0,
+                ai_assistant_enabled    INTEGER NOT NULL DEFAULT 0,
+                ai_monthly_cap_cents    INTEGER NOT NULL DEFAULT 500,
+                ai_response_locale      TEXT,
+                last_discovery_at       DATETIME,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
 
-    CREATE TABLE IF NOT EXISTS work_board_ai_dismissed (
-        user_id        INTEGER NOT NULL,
-        pattern_key    TEXT NOT NULL,
-        repo_full_name TEXT NOT NULL DEFAULT '',
-        dismissed_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (user_id, pattern_key, repo_full_name),
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    );
+            CREATE TABLE IF NOT EXISTS work_board_ai_dismissed (
+                user_id        INTEGER NOT NULL,
+                pattern_key    TEXT NOT NULL,
+                repo_full_name TEXT NOT NULL DEFAULT '',
+                dismissed_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, pattern_key, repo_full_name),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
 
-    CREATE TABLE IF NOT EXISTS work_board_undo_log (
-        operation_id     TEXT PRIMARY KEY,
-        user_id          INTEGER NOT NULL,
-        operation_type   TEXT NOT NULL,
-        before_state     TEXT NOT NULL,
-        after_state      TEXT NOT NULL,
-        created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        expires_at       DATETIME NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    );
-    CREATE INDEX IF NOT EXISTS idx_undo_user_expires
-        ON work_board_undo_log(user_id, expires_at);
-`);
+            CREATE TABLE IF NOT EXISTS work_board_undo_log (
+                operation_id     TEXT PRIMARY KEY,
+                user_id          INTEGER NOT NULL,
+                operation_type   TEXT NOT NULL,
+                before_state     TEXT NOT NULL,
+                after_state      TEXT NOT NULL,
+                created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                expires_at       DATETIME NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_undo_user_expires
+                ON work_board_undo_log(user_id, expires_at);
+        `);
 
         // -----------------------------------------------------------------------
         // GitHub Event Ingestion Pipeline (Phase E1)
