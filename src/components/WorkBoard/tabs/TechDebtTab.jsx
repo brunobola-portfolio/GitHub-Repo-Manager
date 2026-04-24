@@ -2,8 +2,10 @@ import { motion } from 'framer-motion'
 import { ExternalLink, Clock, Wrench, Flame } from 'lucide-react'
 import { useTechDebt } from '../../../hooks/useWorkBoard'
 import { useWorkBoardFilters, applyFilters } from '../filters/filter-context-helpers'
-import { SkeletonList, EmptyState, WebhookHint, UpsellCard } from '../shared/shared-ui'
+import { SkeletonList, UpsellCard } from '../shared/shared-ui'
 import { dayLabel } from '../shared/formatters'
+import { WorkBoardRowMenu } from '../WorkBoardRowMenu'
+import { EmptyStateDiscovery } from '../EmptyStateDiscovery'
 
 export function TechDebtTab() {
     const { data, loading, error, refresh } = useTechDebt()
@@ -24,14 +26,11 @@ export function TechDebtTab() {
 
     if (items.length === 0) {
         return (
-            <>
-                <EmptyState
-                    icon={Wrench}
-                    title="No tech debt tracked"
-                    subtitle="Label issues with tech-debt, refactor, debt or cleanup and they'll appear here across all repos."
-                />
-                <WebhookHint />
-            </>
+            <EmptyStateDiscovery
+                icon={Wrench}
+                plainTitle="No tech debt tracked"
+                plainSubtitle="Label issues with tech-debt, refactor, debt or cleanup and they'll appear here across all repos."
+            />
         )
     }
 
@@ -105,6 +104,10 @@ export function TechDebtTab() {
                             <Clock className="w-3 h-3" />
                             {dayLabel(issue.ageDays)}
                             <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <WorkBoardRowMenu
+                                repoFullName={issue.repoFullName}
+                                itemUrl={`https://github.com/${issue.repoFullName}/issues/${issue.issueNumber}`}
+                            />
                         </div>
                     </motion.a>
                 ))}
