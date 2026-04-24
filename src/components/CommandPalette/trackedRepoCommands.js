@@ -17,6 +17,7 @@
  */
 export function buildTrackedRepoCommands(repos) {
     const items = []
+    if (!Array.isArray(repos)) return items
     for (const r of repos) {
         const name = r.repo_full_name
 
