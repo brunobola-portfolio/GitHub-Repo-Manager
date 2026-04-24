@@ -98,10 +98,6 @@ describe('upsertTrackedRepo', () => {
 });
 
 describe('stub exports throw "not implemented"', () => {
-    it('getTrackedRepos throws', () => {
-        expect(() => getTrackedRepos()).toThrow('not implemented');
-    });
-
     it('bulkUpdate throws', () => {
         expect(() => bulkUpdate()).toThrow('not implemented');
     });
@@ -116,5 +112,78 @@ describe('stub exports throw "not implemented"', () => {
 
     it('patchPrefs throws', () => {
         expect(() => patchPrefs()).toThrow('not implemented');
+    });
+});
+
+describe('getTrackedRepos', () => {
+    beforeEach(() => {
+        // seed fixture: 5 repos with varied signals/flags
+        const fixtures = [
+            ['acme/backend',  'review_requested', 0, 0, '2026-04-20'],
+            ['acme/frontend', 'authored_pr',      1, 0, '2026-04-22'],
+            ['acme/infra',    'owned',            0, 1, '2026-04-10'],
+            ['tesla/mobile',  'recent_commit',    0, 0, '2026-04-18'],
+            ['tesla/data',    'owned',            1, 0, '2026-04-15'],
+        ];
+        for (const [name, sig, pin, mute, activity] of fixtures) {
+            testDb.prepare(`
+                INSERT INTO work_board_tracked_repos
+                    (user_id, repo_full_name, source_signal, is_pinned, is_muted, last_activity_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `).run(USER_ID, name, sig, pin, mute, activity);
+        }
+    });
+
+    it('returns all tracked repos ordered by last_activity_at DESC by default', () => {
+        const result = getTrackedRepos(USER_ID, {});
+        expect(result.items.map(r => r.repo_full_name)).toEqual([
+            'acme/frontend', 'acme/backend', 'tesla/mobile', 'tesla/data', 'acme/infra',
+        ]);
+        expect(result.total).toBe(5);
+    });
+
+    it('filters by muted=true', () => {
+        const result = getTrackedRepos(USER_ID, { muted: true });
+        expect(result.items.map(r => r.repo_full_name)).toEqual(['acme/infra']);
+    });
+
+    it('filters by muted=false (default view)', () => {
+        const result = getTrackedRepos(USER_ID, { muted: false });
+        expect(result.items.map(r => r.repo_full_name)).toEqual([
+            'acme/frontend', 'acme/backend', 'tesla/mobile', 'tesla/data',
+        ]);
+    });
+
+    it('filters by signal', () => {
+        const result = getTrackedRepos(USER_ID, { signal: 'owned' });
+        expect(result.items.map(r => r.repo_full_name).sort()).toEqual(['acme/infra', 'tesla/data']);
+    });
+
+    it('filters by org prefix', () => {
+        const result = getTrackedRepos(USER_ID, { org: 'tesla' });
+        expect(result.items.map(r => r.repo_full_name).sort()).toEqual(['tesla/data', 'tesla/mobile']);
+    });
+
+    it('search matches partial repo name (case-insensitive)', () => {
+        const result = getTrackedRepos(USER_ID, { search: 'front' });
+        expect(result.items.map(r => r.repo_full_name)).toEqual(['acme/frontend']);
+    });
+
+    it('returns counts_by_signal aggregate', () => {
+        const result = getTrackedRepos(USER_ID, {});
+        expect(result.countsBySignal).toEqual({
+            review_requested: 1,
+            authored_pr: 1,
+            owned: 2,
+            recent_commit: 1,
+        });
+    });
+
+    it('paginates with limit + offset', () => {
+        const page1 = getTrackedRepos(USER_ID, { limit: 2, offset: 0 });
+        const page2 = getTrackedRepos(USER_ID, { limit: 2, offset: 2 });
+        expect(page1.items).toHaveLength(2);
+        expect(page2.items).toHaveLength(2);
+        expect(page1.items[0].repo_full_name).not.toBe(page2.items[0].repo_full_name);
     });
 });

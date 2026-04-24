@@ -113,8 +113,66 @@ export function upsertTrackedRepo(userId, repoFullName, action) {
     return { operationId: opId, newState: snapshotRow(base) };
 }
 
-// Stubs for Tasks 4-6
-export function getTrackedRepos() { throw new Error('not implemented'); }
+/**
+ * @param {number} userId
+ * @param {object} filters
+ * @param {string} [filters.search] — substring match on repo_full_name (case-insensitive)
+ * @param {string} [filters.signal] — exact source_signal match
+ * @param {string} [filters.org] — owner prefix match (e.g. "tesla" matches "tesla/foo")
+ * @param {boolean} [filters.muted] — if true returns only muted; if false only non-muted; if undefined returns all
+ * @param {boolean} [filters.pinned] — same semantics as muted
+ * @param {number} [filters.limit=500]
+ * @param {number} [filters.offset=0]
+ * @returns {{ items: object[], total: number, countsBySignal: Record<string, number> }}
+ */
+export function getTrackedRepos(userId, filters = {}) {
+    const conds = ['user_id = ?'];
+    const params = [userId];
+
+    if (filters.search) {
+        conds.push('LOWER(repo_full_name) LIKE ?');
+        params.push(`%${filters.search.toLowerCase()}%`);
+    }
+    if (filters.signal) {
+        conds.push('source_signal = ?');
+        params.push(filters.signal);
+    }
+    if (filters.org) {
+        conds.push('repo_full_name LIKE ?');
+        params.push(`${filters.org}/%`);
+    }
+    if (filters.muted === true) conds.push('is_muted = 1');
+    if (filters.muted === false) conds.push('is_muted = 0');
+    if (filters.pinned === true) conds.push('is_pinned = 1');
+    if (filters.pinned === false) conds.push('is_pinned = 0');
+
+    const where = conds.join(' AND ');
+    const limit = Math.min(Math.max(1, filters.limit ?? 500), 500);
+    const offset = Math.max(0, filters.offset ?? 0);
+
+    const items = db.prepare(`
+        SELECT repo_full_name, repo_id, source_signal, is_pinned, is_muted,
+               last_activity_at, discovered_at, last_synced_at
+        FROM work_board_tracked_repos
+        WHERE ${where}
+        ORDER BY last_activity_at DESC
+        LIMIT ? OFFSET ?
+    `).all(...params, limit, offset);
+
+    const total = db.prepare(`SELECT COUNT(*) AS c FROM work_board_tracked_repos WHERE ${where}`)
+        .get(...params).c;
+
+    const countsRows = db.prepare(`
+        SELECT source_signal, COUNT(*) AS c
+        FROM work_board_tracked_repos
+        WHERE user_id = ?
+        GROUP BY source_signal
+    `).all(userId);
+    const countsBySignal = Object.fromEntries(countsRows.map(r => [r.source_signal, r.c]));
+
+    return { items, total, countsBySignal };
+}
+
 export function bulkUpdate() { throw new Error('not implemented'); }
 export function deleteTrackedRepo() { throw new Error('not implemented'); }
 export function getPrefs() { throw new Error('not implemented'); }
