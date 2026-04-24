@@ -30,6 +30,7 @@ import userAIConfigRoutes from '../user-ai-config.js';
 import userDataRoutes from '../user-data.js';
 import workBoardRoutes from '../work-board.js';
 import workBoardActionsRoutes from '../work-board-actions.js';
+import workBoardTrackingRoutes from '../work-board-tracking.js';
 import searchRoutes from '../search.js';
 import adminDlqRoutes from '../admin-dlq.js';
 import { requireTier } from '../../middleware/require-tier.js';
@@ -65,6 +66,7 @@ router.use('/user/ai-config', userAIConfigRoutes);
 router.use('/user/data', userDataRoutes);
 router.use('/work-board', workBoardRoutes);
 router.use('/work-board', workBoardActionsRoutes);
+router.use('/work-board', workBoardTrackingRoutes);
 router.use('/search', searchRoutes);
 // Admin DLQ operator API — gated internally with requireAuth + requireTier('enterprise') + requireAdmin
 router.use('/admin/dlq', adminDlqRoutes);
