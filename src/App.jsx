@@ -721,6 +721,7 @@ function AppContent() {
         onToggleOrgDrawer={() => setOrgDrawerOpen(true)}
         isAdmin={isAdmin}
         onOpenAdminDLQ={() => setActiveView('admin-dlq')}
+        onOpenCommandPalette={commandPalette.open}
       />
 
       {rateLimitBanner && (

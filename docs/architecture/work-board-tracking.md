@@ -378,3 +378,42 @@ the Phase 2 `useTrackedRepos` context.
 - `RepoCard` context menu does not yet include pin/mute/untrack items
   (the menu lives outside `RepoCard` in the list container; a follow-up
   can extend it).
+
+## Phase 5 Command Palette (shipped)
+
+The ⌘K palette (existing `src/components/CommandPalette.jsx`) now includes
+two new command groups that let power users do tracking operations
+keyboard-first from anywhere in the app.
+
+### New command groups
+
+- **Work Board Actions** (global — always visible):
+  - Refresh discovery
+  - Refresh Work Board (dispatches `workboard:refresh-all`)
+  - Toggle muted repos in Work Board (dispatches `workboard:toggle-muted`)
+  - Clear Work Board filters (dispatches `workboard:clear-filters`)
+
+- **Tracked Repositories** (rendered only when `useTrackedRepos().repos.length > 0`):
+  - `Pin <repo>` / `Unpin <repo>`
+  - `Mute <repo>` / `Unmute <repo>`
+  - `Stop tracking <repo>`
+
+### Discovery chip
+
+A small `⌘K` pill lives in the Header next to the logo (hidden on
+mobile). Clicking it opens the palette via the existing ModalContext
+flow.
+
+### Architecture
+
+Commands come from two pure builders:
+
+- `buildTrackedRepoCommands(repos)` in `src/components/CommandPalette/trackedRepoCommands.js`
+- `WORK_BOARD_GLOBAL_COMMANDS` in `src/components/CommandPalette/workBoardGlobalCommands.js`
+
+Both are framework-free and unit-tested in isolation. `CommandPalette.jsx`
+resolves lucide icons from string names and wires handlers via a single
+`runWorkBoardCommand(item)` dispatcher that calls `useTrackedRepos` for
+repo-scoped actions and `window.dispatchEvent` for view-scoped ones.
+
+Every mutation surfaces an undo toast, matching the Phase 2/3 UX.

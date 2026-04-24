@@ -35,7 +35,8 @@ export function Header({
     onMigrationHistory,
     onToggleOrgDrawer,
     isAdmin = false,
-    onOpenAdminDLQ
+    onOpenAdminDLQ,
+    onOpenCommandPalette = () => {},
 }) {
     const [showUserMenu, setShowUserMenu] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
@@ -92,6 +93,17 @@ export function Header({
                         </div>
                     </div>
                 </div>
+
+                {/* ⌘K command palette chip */}
+                <button
+                    type="button"
+                    onClick={onOpenCommandPalette}
+                    aria-label="Open command palette (Ctrl+K)"
+                    title="Open command palette (Ctrl+K)"
+                    className="hidden md:inline-flex items-center gap-1.5 px-2 h-[28px] rounded-lg text-[11px] font-medium text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/50 bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
+                >
+                    <kbd className="font-mono">⌘K</kbd>
+                </button>
 
                 {/* Center: Navigation (desktop) */}
                 <div className="flex-1 flex justify-center min-w-0">

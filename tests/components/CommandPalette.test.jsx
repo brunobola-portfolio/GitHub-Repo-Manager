@@ -1,10 +1,33 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, within } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { CommandPalette } from '@/components/CommandPalette'
 
 // cmdk uses Radix Dialog which uses portals - happy-dom supports this
 // We need to mock some things for the dialog environment
+
+vi.mock('@/hooks/useTrackedRepos', () => ({
+  useTrackedRepos: () => ({
+    repos: [],
+    pin: vi.fn(),
+    unpin: vi.fn(),
+    mute: vi.fn(),
+    unmute: vi.fn(),
+    untrack: vi.fn(),
+    discover: vi.fn(),
+    refresh: vi.fn(),
+    undo: vi.fn(),
+  }),
+}))
+
+vi.mock('@/hooks/useToast', () => ({
+  useToast: () => ({ toast: { success: vi.fn(), error: vi.fn() } }),
+}))
+
+vi.mock('@/api/search', () => ({
+  searchApi: { github: vi.fn().mockResolvedValue({ prs: [], issues: [], repos: [] }) },
+}))
+
+const { CommandPalette } = await import('@/components/CommandPalette')
 
 const makeRepos = (count) =>
   Array.from({ length: count }, (_, i) => ({
@@ -88,8 +111,7 @@ describe('CommandPalette', () => {
     expect(screen.queryByText('Teams')).toBeNull()
   })
 
-  it('selecting Dashboard calls onViewChange("dashboard") and onClose', async () => {
-    const user = userEvent.setup()
+  it('selecting Dashboard calls onViewChange("dashboard") and onClose', () => {
     const { props } = renderPalette()
     // Find the Dashboard item and click it
     const dashboardItem = screen.getByText('Dashboard').closest('[cmdk-item]') ||
