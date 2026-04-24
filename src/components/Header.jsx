@@ -12,6 +12,7 @@ import LicenseBadge from './LicenseBadge'
 import { useTheme } from '../hooks/useTheme.jsx'
 import { useSystemHealth } from '../hooks/useSystemHealth.js'
 import { useRelativeTime } from '../hooks/useRelativeTime.js'
+import { useWorkBoardBadgeCounts } from '../hooks/useWorkBoardBadgeCounts'
 
 export function Header({
     user,
@@ -42,6 +43,7 @@ export function Header({
     const menuRef = useRef(null)
     const notifRef = useRef(null)
     const { isDark, toggleTheme } = useTheme()
+    const { count: workBoardCount } = useWorkBoardBadgeCounts()
 
     // Close menus on outside click
     useEffect(() => {
@@ -118,6 +120,7 @@ export function Header({
                                 onClick={() => onViewChange?.('work-board')}
                                 icon={Kanban}
                                 label="Work Board"
+                                badge={workBoardCount}
                             />
                             <NavButton
                                 active={activeView === 'pricing'}
@@ -334,20 +337,28 @@ function HeaderIconButton({ onClick, label, title, children, disabled, active, .
 }
 
 // Navigation Button Component
-function NavButton({ active, onClick, icon, label }) {
+function NavButton({ active, onClick, icon, label, badge }) {
     const IconComponent = icon
     return (
         <button
             type="button"
             onClick={onClick}
             aria-current={active ? 'page' : undefined}
-            className={`flex items-center gap-1.5 px-3.5 h-[34px] rounded-[9px] text-[13px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ds-font-display ${active
+            className={`relative flex items-center gap-1.5 px-3.5 h-[34px] rounded-[9px] text-[13px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ds-font-display ${active
                 ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-600/40'
                 }`}
         >
             {IconComponent && <IconComponent className="w-[15px] h-[15px]" />}
             {label}
+            {badge > 0 && (
+                <span
+                    aria-label={`${badge} items need attention`}
+                    className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold rounded-full bg-indigo-500 text-white"
+                >
+                    {badge > 9 ? '9+' : badge}
+                </span>
+            )}
         </button>
     )
 }

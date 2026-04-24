@@ -39,6 +39,11 @@ vi.mock('@/hooks/useSystemHealth', () => ({
     useSystemHealth: () => systemHealthMock(),
 }))
 
+// Mock useWorkBoardBadgeCounts so Header tests don't make fetch calls.
+vi.mock('@/hooks/useWorkBoardBadgeCounts', () => ({
+    useWorkBoardBadgeCounts: () => ({ count: 0, isLoading: false, refresh: vi.fn() }),
+}))
+
 // ---------------------------------------------------------------------------
 // Import after mocks
 // ---------------------------------------------------------------------------
