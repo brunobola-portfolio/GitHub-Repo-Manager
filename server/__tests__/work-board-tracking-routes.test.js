@@ -143,3 +143,84 @@ describe('POST /api/v1/work-board/tracked-repos', () => {
         expect(res.status).toBe(400);
     });
 });
+
+describe('POST /api/v1/work-board/tracked-repos/bulk', () => {
+    beforeEach(() => {
+        for (const name of ['x/a', 'x/b', 'x/c']) {
+            testDb.prepare(`
+                INSERT INTO work_board_tracked_repos (user_id, repo_full_name, source_signal, is_pinned, is_muted)
+                VALUES (?, ?, 'owned', 0, 0)
+            `).run(USER_ID, name);
+        }
+    });
+
+    it('mutes 3 repos and returns operation_id', async () => {
+        const res = await request(app)
+            .post('/api/v1/work-board/tracked-repos/bulk')
+            .send({ repos: ['x/a', 'x/b', 'x/c'], action: 'mute' });
+        expect(res.status).toBe(200);
+        expect(res.body.updated).toBe(3);
+        expect(res.body.skipped).toEqual([]);
+        expect(res.body.operation_id).toMatch(/^[0-9a-f-]{36}$/);
+    });
+
+    it('rejects bulk > 200 with 400', async () => {
+        const repos = Array.from({ length: 201 }, (_, i) => `o/r${i}`);
+        const res = await request(app)
+            .post('/api/v1/work-board/tracked-repos/bulk')
+            .send({ repos, action: 'mute' });
+        expect(res.status).toBe(400);
+    });
+
+    it('rejects non-array repos with 400', async () => {
+        const res = await request(app)
+            .post('/api/v1/work-board/tracked-repos/bulk')
+            .send({ repos: 'x/a', action: 'mute' });
+        expect(res.status).toBe(400);
+    });
+
+    it('filters out invalid repo names silently', async () => {
+        const res = await request(app)
+            .post('/api/v1/work-board/tracked-repos/bulk')
+            .send({ repos: ['x/a', 'invalid name with spaces'], action: 'mute' });
+        expect(res.status).toBe(200);
+        expect(res.body.updated).toBe(1);
+    });
+});
+
+describe('GET/PATCH /api/v1/work-board/prefs', () => {
+    it('GET returns defaults for new user', async () => {
+        const res = await request(app).get('/api/v1/work-board/prefs');
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual(expect.objectContaining({
+            discovery_window_days: 60,
+            max_auto_repos: 50,
+            ai_assistant_enabled: 0,
+        }));
+    });
+
+    it('PATCH persists changes', async () => {
+        const res = await request(app)
+            .patch('/api/v1/work-board/prefs')
+            .send({ discovery_window_days: 90 });
+        expect(res.status).toBe(200);
+        expect(res.body.discovery_window_days).toBe(90);
+
+        const check = await request(app).get('/api/v1/work-board/prefs');
+        expect(check.body.discovery_window_days).toBe(90);
+    });
+
+    it('PATCH rejects invalid values with 400', async () => {
+        const res = await request(app)
+            .patch('/api/v1/work-board/prefs')
+            .send({ discovery_window_days: 9999 });
+        expect(res.status).toBe(400);
+    });
+
+    it('PATCH rejects unknown keys with 400', async () => {
+        const res = await request(app)
+            .patch('/api/v1/work-board/prefs')
+            .send({ rogue_key: true });
+        expect(res.status).toBe(400);
+    });
+});

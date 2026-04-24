@@ -9,6 +9,9 @@ import { requireAuth } from '../middleware/auth.js';
 import {
     getTrackedRepos,
     upsertTrackedRepo,
+    bulkUpdate,
+    getPrefs,
+    patchPrefs,
 } from '../lib/work-board-tracking.js';
 
 const router = express.Router();
@@ -47,6 +50,49 @@ router.post('/tracked-repos', requireAuth, (req, res) => {
         res.json({ operation_id: result.operationId, new_state: result.newState });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /tracked-repos/bulk
+router.post('/tracked-repos/bulk', requireAuth, (req, res) => {
+    const { repos, action } = req.body ?? {};
+    if (!Array.isArray(repos)) {
+        return res.status(400).json({ error: 'repos must be an array' });
+    }
+    if (repos.length > 200) {
+        return res.status(400).json({ error: 'Bulk size exceeds 200' });
+    }
+    if (!VALID_ACTIONS_SET.has(action)) {
+        return res.status(400).json({ error: 'Invalid action' });
+    }
+
+    const valid = repos.filter(r => typeof r === 'string' && REPO_FULL_NAME_RE.test(r));
+
+    try {
+        const result = bulkUpdate(req.session.userId, valid, action);
+        res.json({
+            operation_id: result.operationId,
+            updated: result.updated,
+            skipped: result.skipped,
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /prefs
+router.get('/prefs', requireAuth, (req, res) => {
+    const prefs = getPrefs(req.session.userId);
+    res.json(prefs);
+});
+
+// PATCH /prefs
+router.patch('/prefs', requireAuth, (req, res) => {
+    try {
+        const merged = patchPrefs(req.session.userId, req.body ?? {});
+        res.json(merged);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
     }
 });
 
