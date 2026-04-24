@@ -8,6 +8,7 @@ import { TrackedReposList } from './TrackedReposList'
 import { AddRepoInput } from './AddRepoInput'
 import { WebhookConnectPanel } from './WebhookConnectPanel'
 import { DangerZoneCard } from './DangerZoneCard'
+import { WorkBoardAISection } from './ai/WorkBoardAISection'
 import { InsightCard } from '../../ui/InsightCard'
 
 const ACTION_LABELS = {
@@ -171,6 +172,7 @@ export function WorkBoardSettingsSection() {
             </InsightCard>
 
             <WebhookConnectPanel tier={tier} />
+            <WorkBoardAISection />
             <DangerZoneCard onResetDiscovery={handleResetDiscovery} onClearAll={handleClearAll} />
         </div>
     )
