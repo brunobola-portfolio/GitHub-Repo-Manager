@@ -464,6 +464,16 @@ export function initDB(targetDb = db) {
             );
             CREATE INDEX IF NOT EXISTS idx_undo_user_expires
                 ON work_board_undo_log(user_id, expires_at);
+
+            CREATE TABLE IF NOT EXISTS work_board_ai_spend (
+                user_id  INTEGER NOT NULL,
+                month    TEXT NOT NULL,
+                cents    INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (user_id, month),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_wbai_spend_user_month
+                ON work_board_ai_spend(user_id, month);
         `);
 
         // -----------------------------------------------------------------------
