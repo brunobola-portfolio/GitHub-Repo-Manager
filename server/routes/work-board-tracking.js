@@ -15,6 +15,7 @@ import {
 } from '../lib/work-board-tracking.js';
 import { undoOperation } from '../lib/work-board-undo-log.js';
 import { runDiscovery } from '../lib/work-board-discovery.js';
+import logger from '../lib/logger.js';
 import db from '../db.js';
 
 const router = express.Router();
@@ -145,6 +146,28 @@ router.post('/undo/:operation_id', requireAuth, (req, res) => {
         }
         res.status(500).json({ error: err.message });
     }
+});
+
+// GET /ping — first-visit auto-migration + stale-while-revalidate discovery trigger
+const TWENTY_FOUR_HOURS_MS = 24 * 3600 * 1000;
+
+router.get('/ping', requireAuth, (req, res) => {
+    // Ensure prefs row exists — patchPrefs with empty object is a cheap upsert
+    patchPrefs(req.session.userId, {});
+    const prefs = getPrefs(req.session.userId);
+
+    const lastMs = prefs.last_discovery_at ? new Date(prefs.last_discovery_at).getTime() : 0;
+    const isStale = (Date.now() - lastMs) > TWENTY_FOUR_HOURS_MS;
+    let discoveryInFlight = false;
+
+    if (isStale && req.session.accessToken) {
+        discoveryInFlight = true;
+        // fire-and-forget
+        runDiscovery(req.session.userId, req.session.accessToken, prefs)
+            .catch(err => logger.warn({ err, userId: req.session.userId }, 'background discovery failed'));
+    }
+
+    res.json({ prefs, discovery_in_flight: discoveryInFlight });
 });
 
 // POST /discover

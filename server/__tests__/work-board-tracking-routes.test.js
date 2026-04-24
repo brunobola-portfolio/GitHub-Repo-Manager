@@ -15,6 +15,12 @@ vi.mock('../middleware/auth.js', async (importOriginal) => {
     };
 });
 
+// Mock runDiscovery so ping doesn't try to hit GitHub
+const mockRunDiscovery = vi.fn(async () => ({ discovered: 0, added: 0, removed: 0, duration_ms: 1 }));
+vi.mock('../lib/work-board-discovery.js', () => ({
+    runDiscovery: mockRunDiscovery,
+}));
+
 // Use in-memory SQLite for full stack
 import Database from 'better-sqlite3';
 const testDb = new Database(':memory:');
@@ -254,5 +260,31 @@ describe('POST /api/v1/work-board/undo/:operation_id', () => {
 
         const res = await request(app).post('/api/v1/work-board/undo/11111111-1111-1111-1111-111111111111');
         expect(res.status).toBe(404);
+    });
+});
+
+describe('GET /api/v1/work-board/ping', () => {
+    beforeEach(() => {
+        mockRunDiscovery.mockClear();
+    });
+
+    it('creates prefs row if missing and triggers discovery', async () => {
+        const res = await request(app).get('/api/v1/work-board/ping');
+        expect(res.status).toBe(200);
+        expect(res.body.prefs).toBeDefined();
+        expect(res.body.discovery_in_flight).toBe(true);
+
+        const row = testDb.prepare('SELECT * FROM work_board_prefs WHERE user_id = ?').get(USER_ID);
+        expect(row).toBeDefined();
+    });
+
+    it('does not retrigger if discovery is fresh', async () => {
+        testDb.prepare(`
+            INSERT INTO work_board_prefs (user_id, last_discovery_at)
+            VALUES (?, CURRENT_TIMESTAMP)
+        `).run(USER_ID);
+
+        const res = await request(app).get('/api/v1/work-board/ping');
+        expect(res.body.discovery_in_flight).toBe(false);
     });
 });
