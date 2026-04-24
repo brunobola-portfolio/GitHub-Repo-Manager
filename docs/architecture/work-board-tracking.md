@@ -305,3 +305,38 @@ exposes optimistic mutations with rollback and matches existing
 `tests/hooks/useTrackedRepos.test.jsx`, and
 `tests/components/Settings/WorkBoard/*.test.jsx`. E2E happy-path deferred
 until dev-server seeding is set up.
+
+## Phase 3 Inline Actions (shipped)
+
+The Work Board page now has tracking operations inline on every row, plus a
+compact management popover in the header. No backend changes — all mutations
+go through the existing Phase 1 endpoints via the Phase 2 `useTrackedRepos`
+hook with optimistic UI + undo toasts.
+
+### Surfaces
+
+- **WorkBoardRowMenu** (`src/components/WorkBoard/WorkBoardRowMenu.jsx`) —
+  `⋯` button injected into every row across MyIssuesTab, MyReviewsTab,
+  StalePRsTab, TechDebtTab. Actions: copy link, open GitHub, pin/unpin
+  repo, mute/unmute repo, stop tracking.
+
+- **ManageReposButton** (`src/components/WorkBoard/ManageReposButton.jsx`) —
+  header popover (320px) with search + top 10 recent tracked repos with
+  quick pin/mute toggles + "See all in Settings" link (uses ModalContext
+  `openModalWithData` with `initialTab: 'work-board'`).
+
+- **EmptyStateDiscovery** (`src/components/WorkBoard/EmptyStateDiscovery.jsx`) —
+  replaces the sparse "no data" fallback with a "Let's find your work"
+  CTA that triggers `discover()`. Shows a plain empty state once the user
+  has tracked repos (not a first-visit case).
+
+### UX contract
+
+- ChipStrips/InlineActions (per-item actions: snooze, ping, draft comment)
+  coexist with the new menu (per-repo actions). Different semantics,
+  different visual weight.
+- Menu button's `opacity-0 group-hover:opacity-100` keeps rows clean at
+  rest; on hover the ⋯ becomes visible.
+- Undo toast on every mutation, matches Phase 2 Settings behaviour.
+- Click propagation: menu trigger uses `stopPropagation` so clicking it on
+  a link-wrapped row does not navigate.
