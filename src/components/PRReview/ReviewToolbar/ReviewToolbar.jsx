@@ -9,6 +9,7 @@ import {
   CheckCircle,
   XCircle,
 } from 'lucide-react'
+import { TrackedChip } from '../../WorkBoard/TrackedChip'
 
 const REVIEW_OPTIONS = [
   {
@@ -69,6 +70,7 @@ function Crumb({ label, onClick, isLast }) {
  * @param {object}   props
  * @param {object}   [props.pr]               - PR object { number, title }
  * @param {string}   [props.repoName]          - Repository name
+ * @param {string}   [props.repoFullName]      - Full "owner/repo" name for TrackedChip
  * @param {'split'|'unified'} props.viewMode   - Current diff view mode
  * @param {Function} props.onToggleViewMode    - Toggle between split and unified
  * @param {Function} props.onBack              - Navigate back (called with no args)
@@ -76,7 +78,7 @@ function Crumb({ label, onClick, isLast }) {
  * @param {number}   [props.pendingCount]      - Number of pending (unsaved) comments
  * @param {boolean}  [props.submitting]        - True while a review is being submitted
  */
-export function ReviewToolbar({ pr, repoName, viewMode, onToggleViewMode, onBack, onSubmitReview, pendingCount = 0, submitting = false }) {
+export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleViewMode, onBack, onSubmitReview, pendingCount = 0, submitting = false }) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [reviewBody, setReviewBody] = useState('')
   const dropdownRef = useRef(null)
@@ -127,6 +129,9 @@ export function ReviewToolbar({ pr, repoName, viewMode, onToggleViewMode, onBack
           isLast
         />
       </nav>
+
+      {/* Tracked chip */}
+      {repoFullName && <TrackedChip repoFullName={repoFullName} />}
 
       {/* View mode toggle */}
       <div className="shrink-0 flex items-center gap-1 rounded-md border border-gray-200 dark:border-gray-700 p-0.5">

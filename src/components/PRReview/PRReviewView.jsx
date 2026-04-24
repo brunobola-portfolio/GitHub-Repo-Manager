@@ -218,6 +218,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
       <ReviewToolbar
         pr={state.pr}
         repoName={repoName}
+        repoFullName={`${owner}/${repo}`}
         viewMode={state.viewMode}
         onToggleViewMode={() => dispatch({ type: 'TOGGLE_VIEW_MODE' })}
         onBack={onBack}
