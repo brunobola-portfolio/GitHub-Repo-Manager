@@ -170,6 +170,27 @@ router.get('/ping', requireAuth, (req, res) => {
     res.json({ prefs, discovery_in_flight: discoveryInFlight });
 });
 
+// GET /repo-search?q=<query>
+router.get('/repo-search', requireAuth, (req, res) => {
+    const q = (req.query.q ?? '').toString().trim();
+    if (!q) return res.json({ tracked: [], untracked: [] });
+
+    const like = `%${q.toLowerCase()}%`;
+    const prefixLike = `${q.toLowerCase()}%`;
+
+    const tracked = db.prepare(`
+        SELECT repo_full_name, source_signal, is_pinned, is_muted, last_activity_at
+        FROM work_board_tracked_repos
+        WHERE user_id = ? AND LOWER(repo_full_name) LIKE ?
+        ORDER BY
+            CASE WHEN LOWER(repo_full_name) LIKE ? THEN 0 ELSE 1 END,
+            last_activity_at DESC
+        LIMIT 20
+    `).all(req.session.userId, like, prefixLike);
+
+    res.json({ tracked, untracked: [] });
+});
+
 // POST /discover
 router.post('/discover', requireAuth, async (req, res) => {
     const prefs = getPrefs(req.session.userId);

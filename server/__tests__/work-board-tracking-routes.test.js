@@ -263,6 +263,38 @@ describe('POST /api/v1/work-board/undo/:operation_id', () => {
     });
 });
 
+describe('GET /api/v1/work-board/repo-search', () => {
+    beforeEach(() => {
+        testDb.prepare(`
+            INSERT INTO work_board_tracked_repos (user_id, repo_full_name, source_signal, is_pinned, is_muted)
+            VALUES (?, 'acme/tracked-one', 'owned', 0, 0),
+                   (?, 'acme/tracked-two', 'owned', 1, 0)
+        `).run(USER_ID, USER_ID);
+    });
+
+    it('returns tracked matches for prefix query', async () => {
+        const res = await request(app).get('/api/v1/work-board/repo-search?q=acme');
+        expect(res.status).toBe(200);
+        expect(res.body.tracked.map(r => r.repo_full_name).sort()).toEqual(['acme/tracked-one', 'acme/tracked-two']);
+    });
+
+    it('returns empty tracked for no-match query', async () => {
+        const res = await request(app).get('/api/v1/work-board/repo-search?q=nope');
+        expect(res.body.tracked).toEqual([]);
+    });
+
+    it('returns empty result for missing/empty q', async () => {
+        const res = await request(app).get('/api/v1/work-board/repo-search');
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ tracked: [], untracked: [] });
+    });
+
+    it('untracked is empty in Phase 1', async () => {
+        const res = await request(app).get('/api/v1/work-board/repo-search?q=acme');
+        expect(res.body.untracked).toEqual([]);
+    });
+});
+
 describe('GET /api/v1/work-board/ping', () => {
     beforeEach(() => {
         mockRunDiscovery.mockClear();
