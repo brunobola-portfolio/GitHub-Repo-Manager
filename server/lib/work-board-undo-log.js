@@ -1,3 +1,11 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+/**
+ * Undo log for Work Board mutations (pin, mute, bulk ops, AI-applied changes).
+ * Entries live for UNDO_TTL_HOURS then are eligible for cleanup. Before/after
+ * state is stored as compact JSON (only the columns that changed per repo —
+ * not full table snapshots) so bulk ops on 200 repos still serialize to ~6KB.
+ */
+
 import { randomUUID } from 'crypto';
 import db from '../db.js';
 
