@@ -782,6 +782,7 @@ function AppContent() {
                   onSelectOrg={handleOrgSelect}
                   loading={loading || isSwitchingOrg}
                   activity={activity}
+                  onViewChange={setActiveView}
                   onOrgClick={(orgLogin) => {
                     handleOrgSelect(orgLogin)
                     setActiveView('repos')

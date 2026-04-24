@@ -5,6 +5,7 @@ import {
     Code2, Folder, Archive, Star, GitFork, CheckCircle2, XCircle,
     Download, Sparkles, MessageCircle, ArrowRight
 } from 'lucide-react'
+import { YourWorkCard } from './YourWorkCard'
 import { CategorySection } from './CategorySection'
 import { StatCard } from './StatCard'
 import { ActivityChart } from './ActivityChart'
@@ -29,7 +30,8 @@ export function DashboardPremium({
     onSelectOrg,
     loading,
     activity = [],
-    onOrgClick
+    onOrgClick,
+    onViewChange
 }) {
     const [timeRange, setTimeRange] = useState('7d')
     const [licenseTier, setLicenseTier] = useState('free')
@@ -119,9 +121,9 @@ export function DashboardPremium({
                 {/* Organization Selector */}
                 <div className="lg:self-start">
                     <div className="mb-2">
-                        <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                             Filter by Organization
-                        </label>
+                        </p>
                     </div>
                     <OrganizationSelector
                         orgs={orgs}
@@ -131,6 +133,9 @@ export function DashboardPremium({
                     />
                 </div>
             </div>
+
+            {/* Your Work Card — live counts of reviews/stale-PRs/issues */}
+            <YourWorkCard onOpenBoard={() => onViewChange?.('work-board')} />
 
             {/* AI Quick-Start CTA — surfaces the free-tier AI product so new users
                 discover Assistant + Insights without having to click into a repo.
