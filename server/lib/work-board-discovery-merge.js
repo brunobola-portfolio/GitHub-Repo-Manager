@@ -44,7 +44,7 @@ export function mergeCandidates(existing, candidates, prefs) {
     const add = [];
 
     for (const row of existing) {
-        const isProtected = row.is_pinned === 1 || row.is_muted === 1;
+        const isProtected = row.is_pinned === 1 || row.is_muted === 1 || row.source_signal === 'webhook';
         const inCandidates = byRepo.has(row.repo_full_name);
         if (isProtected || inCandidates) {
             keep.push(row);

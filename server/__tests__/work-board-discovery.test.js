@@ -183,6 +183,14 @@ describe('mergeCandidates', () => {
         expect(xy.last_activity_at).toBe('2026-04-22');
     });
 
+    it('preserves webhook-sourced rows even when not in candidates', () => {
+        const result = mergeCandidates([
+            { repo_full_name: 'auto/from-webhook', is_pinned: 0, is_muted: 0, source_signal: 'webhook' },
+        ], [], { max_auto_repos: 50 });
+        expect(result.keep.find(r => r.repo_full_name === 'auto/from-webhook')).toBeDefined();
+        expect(result.remove.find(r => r.repo_full_name === 'auto/from-webhook')).toBeUndefined();
+    });
+
     it('caps total (pinned always kept, non-pinned trimmed by last_activity_at DESC)', () => {
         const candidates = Array.from({ length: 10 }, (_, i) => ({
             repo_full_name: `new/r${i}`,
