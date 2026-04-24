@@ -31,6 +31,17 @@ testDb.exec(`
         expires_at DATETIME NOT NULL
     );
     CREATE INDEX idx_undo_user_expires ON work_board_undo_log(user_id, expires_at);
+    CREATE TABLE work_board_prefs (
+        user_id                 INTEGER PRIMARY KEY,
+        discovery_window_days   INTEGER NOT NULL DEFAULT 60,
+        max_auto_repos          INTEGER NOT NULL DEFAULT 50,
+        auto_mute_bots          INTEGER NOT NULL DEFAULT 0,
+        ai_assistant_enabled    INTEGER NOT NULL DEFAULT 0,
+        ai_monthly_cap_cents    INTEGER NOT NULL DEFAULT 500,
+        ai_response_locale      TEXT,
+        last_discovery_at       DATETIME,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
 `);
 
 vi.mock('../db.js', () => ({ default: testDb }));
@@ -41,6 +52,7 @@ const { upsertTrackedRepo, getTrackedRepos, bulkUpdate, deleteTrackedRepo, getPr
 const USER_ID = 999002;
 
 beforeEach(() => {
+    testDb.exec(`DELETE FROM work_board_prefs WHERE user_id = ${USER_ID}`);
     testDb.exec(`DELETE FROM work_board_undo_log WHERE user_id = ${USER_ID}`);
     testDb.exec(`DELETE FROM work_board_tracked_repos WHERE user_id = ${USER_ID}`);
     testDb.exec(`DELETE FROM users WHERE id = ${USER_ID}`);
@@ -100,14 +112,6 @@ describe('upsertTrackedRepo', () => {
 describe('stub exports throw "not implemented"', () => {
     it('deleteTrackedRepo throws', () => {
         expect(() => deleteTrackedRepo()).toThrow('not implemented');
-    });
-
-    it('getPrefs throws', () => {
-        expect(() => getPrefs()).toThrow('not implemented');
-    });
-
-    it('patchPrefs throws', () => {
-        expect(() => patchPrefs()).toThrow('not implemented');
     });
 });
 
@@ -222,5 +226,40 @@ describe('getTrackedRepos', () => {
         expect(page1.items).toHaveLength(2);
         expect(page2.items).toHaveLength(2);
         expect(page1.items[0].repo_full_name).not.toBe(page2.items[0].repo_full_name);
+    });
+});
+
+describe('getPrefs / patchPrefs', () => {
+    it('getPrefs returns defaults when no row exists', () => {
+        const prefs = getPrefs(USER_ID);
+        expect(prefs).toEqual({
+            discovery_window_days: 60,
+            max_auto_repos: 50,
+            auto_mute_bots: 0,
+            ai_assistant_enabled: 0,
+            ai_monthly_cap_cents: 500,
+            ai_response_locale: null,
+            last_discovery_at: null,
+        });
+    });
+
+    it('patchPrefs creates row if missing and returns merged', () => {
+        const updated = patchPrefs(USER_ID, { discovery_window_days: 30 });
+        expect(updated.discovery_window_days).toBe(30);
+        expect(updated.max_auto_repos).toBe(50);
+    });
+
+    it('patchPrefs rejects unknown keys', () => {
+        expect(() => patchPrefs(USER_ID, { foobar: 'x' })).toThrow(/unknown pref/i);
+    });
+
+    it('patchPrefs validates discovery_window_days range', () => {
+        expect(() => patchPrefs(USER_ID, { discovery_window_days: 500 })).toThrow(/range/i);
+        expect(() => patchPrefs(USER_ID, { discovery_window_days: 5 })).toThrow(/range/i);
+    });
+
+    it('patchPrefs validates max_auto_repos range', () => {
+        expect(() => patchPrefs(USER_ID, { max_auto_repos: 5 })).toThrow(/range/i);
+        expect(() => patchPrefs(USER_ID, { max_auto_repos: 500 })).toThrow(/range/i);
     });
 });

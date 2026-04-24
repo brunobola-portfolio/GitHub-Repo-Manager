@@ -258,5 +258,87 @@ export function bulkUpdate(userId, repoFullNames, action) {
     };
 }
 export function deleteTrackedRepo() { throw new Error('not implemented'); }
-export function getPrefs() { throw new Error('not implemented'); }
-export function patchPrefs() { throw new Error('not implemented'); }
+
+const PREF_DEFAULTS = {
+    discovery_window_days: 60,
+    max_auto_repos: 50,
+    auto_mute_bots: 0,
+    ai_assistant_enabled: 0,
+    ai_monthly_cap_cents: 500,
+    ai_response_locale: null,
+    last_discovery_at: null,
+};
+
+const PREF_VALIDATORS = {
+    discovery_window_days: (v) => {
+        if (!Number.isInteger(v) || v < 30 || v > 180) throw new Error('discovery_window_days out of range (30-180)');
+    },
+    max_auto_repos: (v) => {
+        if (!Number.isInteger(v) || v < 20 || v > 200) throw new Error('max_auto_repos out of range (20-200)');
+    },
+    auto_mute_bots: (v) => {
+        if (v !== 0 && v !== 1) throw new Error('auto_mute_bots must be 0 or 1');
+    },
+    ai_assistant_enabled: (v) => {
+        if (v !== 0 && v !== 1) throw new Error('ai_assistant_enabled must be 0 or 1');
+    },
+    ai_monthly_cap_cents: (v) => {
+        if (!Number.isInteger(v) || v < 0 || v > 100000) throw new Error('ai_monthly_cap_cents out of range (0-100000)');
+    },
+    ai_response_locale: (v) => {
+        if (v !== null && (typeof v !== 'string' || v.length > 10)) throw new Error('ai_response_locale must be short string or null');
+    },
+};
+
+/**
+ * @returns {object} merged prefs (defaults + user overrides)
+ */
+export function getPrefs(userId) {
+    const row = db.prepare('SELECT * FROM work_board_prefs WHERE user_id = ?').get(userId);
+    if (!row) return { ...PREF_DEFAULTS };
+    const { user_id, ...rest } = row;
+    return { ...PREF_DEFAULTS, ...rest };
+}
+
+/**
+ * @param {number} userId
+ * @param {object} patch — partial prefs
+ * @returns {object} merged prefs after patch
+ */
+export function patchPrefs(userId, patch) {
+    for (const key of Object.keys(patch)) {
+        if (!(key in PREF_VALIDATORS)) {
+            throw new Error(`Unknown pref key: ${key}`);
+        }
+        PREF_VALIDATORS[key](patch[key]);
+    }
+
+    const current = getPrefs(userId);
+    const merged = { ...current, ...patch };
+
+    db.prepare(`
+        INSERT INTO work_board_prefs
+            (user_id, discovery_window_days, max_auto_repos, auto_mute_bots,
+             ai_assistant_enabled, ai_monthly_cap_cents, ai_response_locale, last_discovery_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+            discovery_window_days = excluded.discovery_window_days,
+            max_auto_repos        = excluded.max_auto_repos,
+            auto_mute_bots        = excluded.auto_mute_bots,
+            ai_assistant_enabled  = excluded.ai_assistant_enabled,
+            ai_monthly_cap_cents  = excluded.ai_monthly_cap_cents,
+            ai_response_locale    = excluded.ai_response_locale,
+            last_discovery_at     = excluded.last_discovery_at
+    `).run(
+        userId,
+        merged.discovery_window_days,
+        merged.max_auto_repos,
+        merged.auto_mute_bots,
+        merged.ai_assistant_enabled,
+        merged.ai_monthly_cap_cents,
+        merged.ai_response_locale,
+        merged.last_discovery_at,
+    );
+
+    return merged;
+}
