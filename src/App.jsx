@@ -15,6 +15,7 @@ import { onSessionExpired, onRateLimit, resetSessionExpired, fetchWithRetry, saf
 import { trackBreadcrumb, mark } from './lib/observability'
 import { SelectionProvider } from './contexts/SelectionContext'
 import { ModalProvider } from './contexts/ModalContext'
+import { TrackedReposProvider } from './contexts/TrackedReposContext'
 import { useSelection } from './hooks/useSelection'
 import { useModal } from './hooks/useModal'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
@@ -681,6 +682,7 @@ function AppContent() {
   }
 
   return (
+    <TrackedReposProvider>
     <>
       {/* Skip Links - WCAG 2.1 requirement */}
       <a
@@ -1246,6 +1248,7 @@ function AppContent() {
       <LegalFooter />
       </div>
     </>
+    </TrackedReposProvider>
   )
 }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles } from 'lucide-react'
+import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles, Kanban } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
 import { useToast } from '../hooks/useToast'
 import { API_BASE_URL } from '../config'
@@ -7,6 +7,7 @@ import { ApiKeysSection } from './Settings/ApiKeysSection'
 import { AuditLogSection } from './Settings/AuditLogSection'
 import { LicensePlanSection } from './Settings/LicensePlanSection'
 import { AIConfigSection } from './Settings/AIConfigSection'
+import { WorkBoardSettingsSection } from './Settings/WorkBoard/WorkBoardSettingsSection'
 import { DangerZoneSection } from './Settings/DangerZoneSection'
 import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
@@ -34,6 +35,7 @@ const TABS = [
     { id: 'general', label: 'General', icon: SettingsIcon },
     { id: 'api-keys', label: 'API Keys', icon: Key },
     { id: 'ai', label: 'AI Configuration', icon: Sparkles },
+    { id: 'work-board', label: 'Work Board', icon: Kanban },
     { id: 'license', label: 'License & Plan', icon: BadgeCheck },
     { id: 'audit', label: 'Audit Log', icon: Shield },
 ]
@@ -58,6 +60,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }) {
 
     // Reset tab when modal opens — honour initialTab if provided
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot tab reset on open, not a cascading render concern
         if (isOpen) setActiveTab(initialTab ?? 'general')
     }, [isOpen, initialTab])
 
@@ -138,6 +141,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }) {
             )}
             {activeTab === 'api-keys' && <div><ApiKeysSection /></div>}
             {activeTab === 'ai' && <div><AIConfigSection /></div>}
+            {activeTab === 'work-board' && <div><WorkBoardSettingsSection /></div>}
             {activeTab === 'license' && <div><LicensePlanSection /></div>}
             {activeTab === 'audit' && <div><AuditLogSection /></div>}
         </Modal>
@@ -157,6 +161,7 @@ function GeneralTabContent({
             {/* Appearance */}
             <InsightCard tone="default" hover={false}>
                 <div className="space-y-3">
+                    {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- visual grouping label, not a form input label */}
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                         Appearance
                     </label>
@@ -171,6 +176,7 @@ function GeneralTabContent({
             {/* Performance Cache */}
             <InsightCard tone="default" hover={false}>
                 <div className="space-y-3">
+                    {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- visual grouping label, not a form input label */}
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
                         <Zap size={16} className="text-amber-500" />
                         Performance Cache
@@ -238,6 +244,7 @@ function GeneralTabContent({
             {/* Migration Settings */}
             <InsightCard tone="default" hover={false}>
                 <div className="space-y-3">
+                    {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- visual grouping label, not a form input label */}
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
                         <GitBranch size={16} className="text-indigo-500" />
                         Migration
