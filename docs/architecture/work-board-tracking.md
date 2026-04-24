@@ -417,3 +417,38 @@ resolves lucide icons from string names and wires handlers via a single
 repo-scoped actions and `window.dispatchEvent` for view-scoped ones.
 
 Every mutation surfaces an undo toast, matching the Phase 2/3 UX.
+
+## Phase 6 AI Assistant Backend (shipped)
+
+The first slice of AI Assistant — all backend infrastructure. Frontend
+lands in Phase 7.
+
+### Feature gate
+
+Three layers (in order):
+
+1. `WORK_BOARD_AI_ENABLED=true` env var — global kill switch. Off = 404.
+2. `work_board_prefs.ai_assistant_enabled = 1` — per-user opt-in. Off = 403.
+3. `ai_monthly_cap_cents` vs `work_board_ai_spend.cents` — 429 when cap reached. Cap of 0 means unlimited.
+
+Enforcement: `requireWorkBoardAI` middleware (`server/middleware/work-board-ai-gate.js`).
+
+### Endpoints (`/api/v1/work-board/ai/*`)
+
+- `GET /suggestions` — heuristic pattern suggestions (no LLM). Patterns: `BotPrefix` (≥3 muted with common prefix), `StaleNoActivity` (90+ days inactive).
+- `POST /dismiss-suggestion` — records a dismissal in `work_board_ai_dismissed`.
+- `POST /interpret { prompt }` — calls user's LLM. Returns actions + summary + HMAC-signed validity token (5 min TTL). Invalid repos filtered out. Spend recorded.
+- `POST /apply { validity_token }` — verifies HMAC, groups actions by type, executes via `bulkUpdate`. Returns `operation_id` for undo.
+- `GET /activity` — privacy dashboard data: month, spent cents, cap.
+
+### HMAC validity tokens
+
+Stateless. Format: `<b64url(payload)>.<b64url(hmac)>`. Signing key from `AI_DIFF_SIGNING_KEY` env var, or derived from `SESSION_SECRET`. TTL 5 min.
+
+### Prompts versioning
+
+Prompts live under `server/lib/ai-features/work-board-assistant/prompts/<version>/<name>.md`. Current version: `v1`. Loader (`prompts/index.js`) exports `CURRENT_VERSION` and `loadPrompt(name)`.
+
+### Cost accounting
+
+`work_board_ai_spend(user_id, month, cents)` — one row per user per month. `recordSpend()` upserts. `/interpret` records a flat 1 cent per call as MVP estimate.
