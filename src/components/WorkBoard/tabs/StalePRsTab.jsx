@@ -8,9 +8,11 @@ import { useWorkBoardFilters, applyFilters } from '../filters/filter-context-hel
 import { useReviewAction } from '../../../hooks/useReviewAction'
 import { useFocusedRow } from '../../../hooks/useFocusedRow'
 import { InlineActions } from '../InlineActions'
-import { SkeletonList, EmptyState, WebhookHint, UpsellCard } from '../shared/shared-ui'
+import { SkeletonList, UpsellCard } from '../shared/shared-ui'
 import { dayLabel } from '../shared/formatters'
 import { getCsrfToken } from '../../../utils/api'
+import { WorkBoardRowMenu } from '../WorkBoardRowMenu'
+import { EmptyStateDiscovery } from '../EmptyStateDiscovery'
 
 // ---------------------------------------------------------------------------
 // Module-level suggestion cache (expires after 30 min)
@@ -206,6 +208,10 @@ function StalePRRow({ pr, idx, isFocused, onFocus, hasAI, onSnooze, onPing }) {
                 <InlineActions
                     onSnooze={(hours) => onSnooze(pr, hours)}
                 />
+                <WorkBoardRowMenu
+                    repoFullName={pr.repoFullName}
+                    itemUrl={githubUrl}
+                />
             </motion.a>
             <AnimatePresence>
                 {showChips && (
@@ -281,14 +287,11 @@ export function StalePRsTab({ hasAI = false }) {
             </div>
 
             {prs.length === 0 ? (
-                <>
-                    <EmptyState
-                        icon={GitPullRequest}
-                        title={`No PRs open for more than ${staleAfterDays} days`}
-                        subtitle="Your team is on top of it!"
-                    />
-                    <WebhookHint />
-                </>
+                <EmptyStateDiscovery
+                    icon={GitPullRequest}
+                    plainTitle={`No PRs open for more than ${staleAfterDays} days`}
+                    plainSubtitle="Your team is on top of it!"
+                />
             ) : (
                 <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
                     {prs.map((pr, idx) => (
