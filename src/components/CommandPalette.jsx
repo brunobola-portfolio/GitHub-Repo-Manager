@@ -12,6 +12,7 @@ import { useTrackedRepos } from '../hooks/useTrackedRepos'
 import { useToast } from '../hooks/useToast'
 import { buildTrackedRepoCommands } from './CommandPalette/trackedRepoCommands'
 import { WORK_BOARD_GLOBAL_COMMANDS } from './CommandPalette/workBoardGlobalCommands'
+import { buildAICommands } from './CommandPalette/aiCommands'
 
 const NAVIGATE_ITEMS = [
   { id: 'nav-dashboard', label: 'Dashboard', view: 'dashboard', icon: LayoutDashboard },
@@ -54,7 +55,7 @@ const WORK_BOARD_ITEMS = [
 ]
 
 const WORK_BOARD_CMD_ICONS = {
-    Pin, PinOff, Bell, BellOff, X, RefreshCw, RotateCw, Eraser,
+    Pin, PinOff, Bell, BellOff, X, RefreshCw, RotateCw, Eraser, Sparkles,
 }
 
 const GROUP_HEADING_CLASSES = '[&>[cmdk-group-heading]]:px-2 [&>[cmdk-group-heading]]:py-1.5 [&>[cmdk-group-heading]]:text-xs [&>[cmdk-group-heading]]:font-semibold [&>[cmdk-group-heading]]:text-slate-500 [&>[cmdk-group-heading]]:dark:text-slate-400 [&>[cmdk-group-heading]]:uppercase [&>[cmdk-group-heading]]:tracking-wider'
@@ -121,6 +122,7 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
   const trackedHook = useTrackedRepos()
   const { toast } = useToast()
   const trackedRepoCommands = buildTrackedRepoCommands(trackedHook.repos)
+  const aiCommands = buildAICommands({ enabled: trackedHook.prefs?.ai_assistant_enabled === 1 })
 
   async function runWorkBoardCommand(item) {
     try {
@@ -135,6 +137,7 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
         case 'refresh-board': window.dispatchEvent(new CustomEvent('workboard:refresh-all')); break
         case 'toggle-muted': window.dispatchEvent(new CustomEvent('workboard:toggle-muted')); break
         case 'clear-filters': window.dispatchEvent(new CustomEvent('workboard:clear-filters')); break
+        case 'ai-open-settings': window.dispatchEvent(new CustomEvent('app:open-settings', { detail: { tab: 'work-board' } })); break
         default: return
       }
       if (result?.operation_id) {
@@ -270,6 +273,25 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
             <Command.Group heading="Tracked Repositories" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
               {trackedRepoCommands.map((item) => {
                 const Icon = WORK_BOARD_CMD_ICONS[item.icon]
+                return (
+                  <Command.Item
+                    key={item.id}
+                    value={item.searchValue}
+                    onSelect={() => { runWorkBoardCommand(item); onClose() }}
+                    className={ITEM_CLASSES}
+                  >
+                    {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
+                    {item.label}
+                  </Command.Item>
+                )
+              })}
+            </Command.Group>
+          )}
+
+          {aiCommands.length > 0 && (
+            <Command.Group heading="AI Assistant" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+              {aiCommands.map((item) => {
+                const Icon = WORK_BOARD_CMD_ICONS[item.icon] ?? null
                 return (
                   <Command.Item
                     key={item.id}

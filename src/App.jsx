@@ -199,6 +199,15 @@ function AppContent() {
     return () => window.removeEventListener('app:navigate-dashboard', handleNavigateDashboard)
   }, [setActiveView])
 
+  // Open Settings modal to a specific tab via custom event (e.g. from CommandPalette AI commands)
+  useEffect(() => {
+    const handler = (ev) => {
+      openModalWithData('showSettings', { initialTab: ev.detail?.tab ?? 'general' })
+    }
+    window.addEventListener('app:open-settings', handler)
+    return () => window.removeEventListener('app:open-settings', handler)
+  }, [openModalWithData])
+
   // Rate-limit toasts — one at a time, auto-dismisses after the countdown ends.
   const rateLimitToastIdRef = useRef(null)
   useEffect(() => {
