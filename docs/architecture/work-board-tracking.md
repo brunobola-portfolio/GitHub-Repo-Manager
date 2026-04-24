@@ -340,3 +340,41 @@ hook with optimistic UI + undo toasts.
 - Undo toast on every mutation, matches Phase 2 Settings behaviour.
 - Click propagation: menu trigger uses `stopPropagation` so clicking it on
   a link-wrapped row does not navigate.
+
+## Phase 4 Cross-App Integration (shipped)
+
+Tracked-repos state is now visible and actionable across the app — not only
+inside Work Board and Settings. No backend changes; every surface consumes
+the Phase 2 `useTrackedRepos` context.
+
+### New surfaces
+
+- **TrackedDot** (`src/components/WorkBoard/TrackedDot.jsx`) — tiny (6 px)
+  dot shown inline on `RepoCard` title rows. Indigo filled when tracked
+  and not muted; hollow slate when muted; renders nothing otherwise.
+
+- **TrackedChip** (`src/components/WorkBoard/TrackedChip.jsx`) — pill for
+  modal/page headers. Placed in `RepoDetail` header and in `ReviewToolbar`
+  of `PRReviewView`. Tracked → indigo `Tracked` chip opening a popover
+  with pin/mute/untrack. Not tracked → ghost `Track` button calling
+  `hook.track()` directly.
+
+- **Dashboard `YourWorkCard`** (`src/components/Dashboard/YourWorkCard.jsx`) —
+  counts card showing `reviews waiting · stale PRs · issues` with an
+  "Open board →" button that routes to the Work Board page. Silently
+  hides on 401/403/404 so the Dashboard doesn't break for unauthenticated
+  or tier-gated users.
+
+- **Header nav badge** — `NavButton` extended with optional `badge` prop.
+  `useWorkBoardBadgeCounts` hook provides the count (reviews + stale PRs);
+  hidden when 0, rendered as `9+` when > 9. Cached in `localStorage` to
+  avoid flicker on navigation.
+
+### Known limitations (Phase 4.1 follow-ups)
+
+- `YourWorkCard` is NOT org-scoped — counts are user-wide. Adding
+  `?org=` filtering on `/my-reviews`, `/stale-prs`, `/my-issues`
+  endpoints will close this gap.
+- `RepoCard` context menu does not yet include pin/mute/untrack items
+  (the menu lives outside `RepoCard` in the list container; a follow-up
+  can extend it).
