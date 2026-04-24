@@ -269,3 +269,39 @@ module.
 The net effect: Phase 1 is a zero-regression drop-in for all existing users.
 Mute filtering only activates after the user has a `work_board_prefs` row,
 which only happens after their first Work Board page load.
+
+---
+
+## Phase 2 UI (shipped)
+
+Settings → Work Board provides:
+
+- **Discovery panel** (refresh, activity-window select, auto-mute bots toggle)
+- **Virtualized tracked-repos list** with search, signal filters, bulk selection
+- **Per-row menu** (pin / mute / untrack with undo toast)
+- **Add-repo autocomplete** (cmdk + /repo-search endpoint)
+- **Webhook connect panel** (tier-gated via useLicense)
+- **Danger zone** (reset discovery, clear all)
+
+State is shared via `TrackedReposContext` mounted at the App root under the
+authenticated tree. The hook `useTrackedRepos` (src/hooks/useTrackedRepos.js)
+exposes optimistic mutations with rollback and matches existing
+`ModalContext`/`SelectionContext` patterns.
+
+### Files
+
+| Layer | Path |
+| --- | --- |
+| API wrappers | src/api/workBoardTracking.js |
+| Context | src/contexts/TrackedReposContext.jsx + src/contexts/contexts.js |
+| Hook | src/hooks/useTrackedRepos.js |
+| License tier hook | src/hooks/useLicense.js |
+| Section | src/components/Settings/WorkBoard/WorkBoardSettingsSection.jsx |
+| Leaf components | src/components/Settings/WorkBoard/{DiscoveryPanel,TrackedReposList,RepoRow,SearchFilterBar,BulkActionsBar,AddRepoInput,WebhookConnectPanel,DangerZoneCard}.jsx |
+
+### Tests
+
+~40 new unit/integration tests in `tests/api/workBoardTracking.test.js`,
+`tests/hooks/useTrackedRepos.test.jsx`, and
+`tests/components/Settings/WorkBoard/*.test.jsx`. E2E happy-path deferred
+until dev-server seeding is set up.
