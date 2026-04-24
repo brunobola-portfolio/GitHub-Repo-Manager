@@ -260,6 +260,30 @@ export function bulkUpdate(userId, repoFullNames, action) {
 }
 export function deleteTrackedRepo() { throw new Error('not implemented'); }
 
+/**
+ * Auto-insert a tracked_repos row when a webhook delivery references a repo
+ * not yet tracked. Uses source_signal='webhook'. Updates last_activity_at on
+ * subsequent events. No undo-log entry (system action, not user action).
+ *
+ * Safe to call on every webhook delivery — the ON CONFLICT clause makes it
+ * idempotent.
+ *
+ * @param {number|null|undefined} userId
+ * @param {string} repoFullName
+ * @param {number|null|undefined} repoId
+ */
+export function upsertTrackedRepoFromWebhook(userId, repoFullName, repoId) {
+    if (!userId || !repoFullName) return;
+    db.prepare(`
+        INSERT INTO work_board_tracked_repos
+            (user_id, repo_full_name, repo_id, source_signal, is_pinned, is_muted, last_activity_at, last_synced_at)
+        VALUES (?, ?, ?, 'webhook', 0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, repo_full_name) DO UPDATE SET
+            last_activity_at = CURRENT_TIMESTAMP,
+            last_synced_at = CURRENT_TIMESTAMP
+    `).run(userId, repoFullName, repoId ?? null);
+}
+
 const PREF_DEFAULTS = {
     discovery_window_days: 60,
     max_auto_repos: 50,

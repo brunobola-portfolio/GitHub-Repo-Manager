@@ -18,6 +18,7 @@ import * as pullRequestHandler from '../lib/github-events/pull_request.js';
 import * as pullRequestReviewHandler from '../lib/github-events/pull_request_review.js';
 import * as issuesHandler from '../lib/github-events/issues.js';
 import * as deploymentStatusHandler from '../lib/github-events/deployment_status.js';
+import { upsertTrackedRepoFromWebhook } from '../lib/work-board-tracking.js';
 
 export const HANDLERS = {
     pull_request: pullRequestHandler,
@@ -60,6 +61,24 @@ export async function githubEventsWebhookHandler(req, res) {
 
         try {
             await handler.handle(payload, deliveryId);
+
+            // Auto-track the repo for the local user who owns it (if known).
+            // payload.repository.owner.login matches users.username (GitHub login).
+            // This is a best-effort, fire-and-forget side-effect — failures are
+            // logged but must not re-route the event to the DLQ.
+            try {
+                const ownerLogin = payload?.repository?.owner?.login;
+                const repoFullName = payload?.repository?.full_name;
+                const repoId = payload?.repository?.id;
+                if (ownerLogin && repoFullName) {
+                    const userRow = db.prepare('SELECT id FROM users WHERE username = ?').get(ownerLogin);
+                    if (userRow) {
+                        upsertTrackedRepoFromWebhook(userRow.id, repoFullName, repoId);
+                    }
+                }
+            } catch (trackErr) {
+                logger.warn({ trackErr, eventType }, 'github-events: upsertTrackedRepoFromWebhook failed (non-fatal)');
+            }
         } catch (err) {
             // Fast-ack pattern: we already returned 200 to GitHub, so a
             // handler failure here will NOT be retried by GitHub. Route the

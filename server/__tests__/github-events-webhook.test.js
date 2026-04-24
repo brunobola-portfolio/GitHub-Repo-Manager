@@ -40,6 +40,18 @@ vi.mock('../lib/github-events/deployment_status.js', () => ({
     handle: (...args) => mockDeploymentHandle(...args),
 }));
 
+// Mock work-board-tracking so its transitive DB imports don't run
+vi.mock('../lib/work-board-tracking.js', () => ({
+    upsertTrackedRepoFromWebhook: vi.fn(),
+}));
+
+// Mock db — the router uses it directly for the owner-user lookup
+vi.mock('../db.js', () => ({
+    default: {
+        prepare: vi.fn(() => ({ get: vi.fn(() => null), run: vi.fn() })),
+    },
+}));
+
 import { githubEventsWebhookHandler } from '../routes/github-events-webhook.js';
 
 // ---------------------------------------------------------------------------
