@@ -55,6 +55,11 @@ vi.mock('../lib/work-board-github.js', () => ({
 }))
 
 const mockFilterOutSnoozed = vi.fn(({ items }) => items)
+const mockApplyTrackedFilter = vi.fn((_userId, items) => items)
+
+vi.mock('../lib/work-board-filter.js', () => ({
+    applyTrackedFilter: (...a) => mockApplyTrackedFilter(...a),
+}))
 
 vi.mock('../lib/work-board-snooze.js', () => ({
     filterOutSnoozed: (...a) => mockFilterOutSnoozed(...a),
@@ -149,6 +154,7 @@ beforeEach(() => {
     mockFetchMyOpenIssues.mockResolvedValue({ items: [], totalCount: 0 })
     mockFetchTechDebtIssues.mockResolvedValue({ items: [], totalCount: 0 })
     mockFilterOutSnoozed.mockImplementation(({ items }) => items)
+    mockApplyTrackedFilter.mockImplementation((_userId, items) => items)
 })
 
 // ---------------------------------------------------------------------------

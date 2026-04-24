@@ -45,6 +45,7 @@ import {
     fetchTechDebtIssues,
 } from '../lib/work-board-github.js';
 import { filterOutSnoozed } from '../lib/work-board-snooze.js';
+import { applyTrackedFilter } from '../lib/work-board-filter.js';
 import { getSnapshots } from '../lib/work-board-kpi-snapshots.js';
 import db from '../db.js';
 
@@ -159,9 +160,10 @@ router.get('/my-reviews', requireAuth, async (req, res) => {
             fetchArgs: { login: reviewerLogin, limit },
         });
         const includeSnoozed = req.query.includeSnoozed === '1';
-        const finalData = (includeSnoozed || !req.session?.userId)
+        const snoozeFiltered = (includeSnoozed || !req.session?.userId)
             ? data
             : filterOutSnoozed({ userId: req.session.userId, items: data, itemType: 'pr' });
+        const finalData = applyTrackedFilter(req.session?.userId, snoozeFiltered);
         let webhookConnected = false;
         try {
             webhookConnected = !!db.prepare('SELECT 1 FROM webhook_events LIMIT 1').get();
@@ -192,9 +194,10 @@ router.get('/my-issues', requireAuth, async (req, res) => {
             fetchArgs: { login: assigneeLogin, limit },
         });
         const includeSnoozed = req.query.includeSnoozed === '1';
-        const finalData = (includeSnoozed || !req.session?.userId)
+        const snoozeFiltered = (includeSnoozed || !req.session?.userId)
             ? data
             : filterOutSnoozed({ userId: req.session.userId, items: data, itemType: 'issue' });
+        const finalData = applyTrackedFilter(req.session?.userId, snoozeFiltered);
         res.json({ data: finalData, meta });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch open issues'));
@@ -228,9 +231,10 @@ router.get('/stale-prs', requireAuth, requireTier('pro'), async (req, res) => {
             liveSkipReason: repoIds ? 'repo_ids_filter' : undefined,
         });
         const includeSnoozed = req.query.includeSnoozed === '1';
-        const finalData = (includeSnoozed || !req.session?.userId)
+        const snoozeFiltered = (includeSnoozed || !req.session?.userId)
             ? data
             : filterOutSnoozed({ userId: req.session.userId, items: data, itemType: 'pr' });
+        const finalData = applyTrackedFilter(req.session?.userId, snoozeFiltered);
         res.json({ data: finalData, meta });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch stale PRs'));
@@ -440,9 +444,10 @@ router.get('/tech-debt', requireAuth, requireTier('pro'), async (req, res) => {
         // hotspots stay webhook-sourced even when items come from live —
         // they're a summary of stored event history, not a reproducible search.
         const includeSnoozed = req.query.includeSnoozed === '1';
-        const filteredItems = (includeSnoozed || !req.session?.userId)
+        const snoozeFiltered = (includeSnoozed || !req.session?.userId)
             ? items
             : filterOutSnoozed({ userId: req.session.userId, items, itemType: 'issue' });
+        const filteredItems = applyTrackedFilter(req.session?.userId, snoozeFiltered);
         res.json({ data: { items: filteredItems, hotspots }, meta });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch tech debt'));
