@@ -41,6 +41,7 @@ import { MyIssuesTab } from './tabs/MyIssuesTab'
 import { ReviewLoadTab } from './tabs/ReviewLoadTab'
 import { TechDebtTab } from './tabs/TechDebtTab'
 import { DORATab } from './tabs/DORATab'
+import { ManageReposButton } from './ManageReposButton'
 
 // ---------------------------------------------------------------------------
 // Tab definitions
@@ -159,7 +160,7 @@ function LockedTabButton({ tab }) {
 // WorkBoardPage
 // ---------------------------------------------------------------------------
 
-export function WorkBoardPage({ repoCount = 0 }) {
+export function WorkBoardPage({ repoCount = 0, onOpenSettings }) {
     const [params, setParams] = useUrlParams(['tab', 'repos', 'authors', 'labels', 'age', 'snoozed'])
     const activeTab = params.tab || 'reviews'
     const setActiveTab = (tab) => setParams({ tab: tab === 'reviews' ? '' : tab })
@@ -281,6 +282,7 @@ export function WorkBoardPage({ repoCount = 0 }) {
                             updated {earliestLabel}
                         </span>
                     )}
+                    <ManageReposButton onOpenSettings={onOpenSettings} />
                     <button
                         type="button"
                         onClick={refreshAll}

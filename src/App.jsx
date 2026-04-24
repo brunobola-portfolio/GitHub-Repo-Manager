@@ -962,7 +962,10 @@ function AppContent() {
           <div className="animate-in fade-in duration-500">
             <ErrorBoundary fallback={<ViewErrorFallback viewName="Work Board" />}>
               <Suspense fallback={<LoadingFallback />}>
-                <WorkBoardPage repoCount={displayRepos.length} />
+                <WorkBoardPage
+                    repoCount={displayRepos.length}
+                    onOpenSettings={() => openModalWithData('showSettings', { initialTab: 'work-board' })}
+                />
               </Suspense>
             </ErrorBoundary>
           </div>
