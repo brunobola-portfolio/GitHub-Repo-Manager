@@ -4,9 +4,14 @@ import {
   GitFork, LayoutDashboard, Users, Tag, Map, Wand2, History, Plus,
   ArrowRightLeft, Settings, Kanban, GitPullRequest, CircleDot, Loader2,
   AlertTriangle, Wrench, BarChart3, Sparkles, Bookmark, ShieldAlert,
+  Pin, PinOff, Bell, BellOff, X, RefreshCw, RotateCw, Eraser,
 } from 'lucide-react'
 import { searchApi } from '../api/search'
 import { MOCK_MODE } from '../config'
+import { useTrackedRepos } from '../hooks/useTrackedRepos'
+import { useToast } from '../hooks/useToast'
+import { buildTrackedRepoCommands } from './CommandPalette/trackedRepoCommands'
+import { WORK_BOARD_GLOBAL_COMMANDS } from './CommandPalette/workBoardGlobalCommands'
 
 const NAVIGATE_ITEMS = [
   { id: 'nav-dashboard', label: 'Dashboard', view: 'dashboard', icon: LayoutDashboard },
@@ -48,54 +53,53 @@ const WORK_BOARD_ITEMS = [
   { id: 'wb-save-preset',label: 'Save current filters as preset', event: 'workboard:save-preset',                         icon: Bookmark },
 ]
 
+const WORK_BOARD_CMD_ICONS = {
+    Pin, PinOff, Bell, BellOff, X, RefreshCw, RotateCw, Eraser,
+}
+
 const GROUP_HEADING_CLASSES = '[&>[cmdk-group-heading]]:px-2 [&>[cmdk-group-heading]]:py-1.5 [&>[cmdk-group-heading]]:text-xs [&>[cmdk-group-heading]]:font-semibold [&>[cmdk-group-heading]]:text-slate-500 [&>[cmdk-group-heading]]:dark:text-slate-400 [&>[cmdk-group-heading]]:uppercase [&>[cmdk-group-heading]]:tracking-wider'
 const ITEM_CLASSES = 'group flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 cursor-pointer aria-selected:bg-indigo-50 aria-selected:dark:bg-indigo-950/50 aria-selected:text-indigo-600 aria-selected:dark:text-indigo-400 outline-none transition-colors'
 
 const DEBOUNCE_MS = 300
 const MIN_QUERY_LEN = 2
 
+const EMPTY_SEARCH = { prs: [], issues: [], repos: [] }
+
 function useDebouncedGitHubSearch(query, enabled) {
-  const [data, setData] = useState({ prs: [], issues: [], repos: [] })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
+  // Tracks the data returned by the last completed search. Reset to EMPTY_SEARCH
+  // by setting activeQuery to null (see below) rather than via effect setState.
+  const [result, setResult] = useState({ data: EMPTY_SEARCH, loading: false, error: null })
   const controllerRef = useRef(null)
+  const trimmed = (query || '').trim()
+  const shouldSearch = enabled && trimmed.length >= MIN_QUERY_LEN
 
   useEffect(() => {
-    if (!enabled) {
-      setData({ prs: [], issues: [], repos: [] })
-      setLoading(false)
-      setError(null)
-      return
-    }
-    const trimmed = (query || '').trim()
-    if (trimmed.length < MIN_QUERY_LEN) {
-      setData({ prs: [], issues: [], repos: [] })
-      setLoading(false)
-      setError(null)
-      return
+    // When conditions aren't met, abort any in-flight request and schedule a
+    // deferred reset so we don't call setState synchronously inside the effect.
+    if (!shouldSearch) {
+      controllerRef.current?.abort()
+      const id = setTimeout(() => setResult({ data: EMPTY_SEARCH, loading: false, error: null }), 0)
+      return () => clearTimeout(id)
     }
 
     const timer = setTimeout(() => {
       controllerRef.current?.abort()
       const controller = new AbortController()
       controllerRef.current = controller
-      setLoading(true)
-      setError(null)
+      setResult((prev) => ({ ...prev, loading: true, error: null }))
       searchApi
         .github(trimmed, { type: 'all', limit: 15, signal: controller.signal })
         .then((res) => {
           if (controller.signal.aborted) return
-          setData({
-            prs: res.prs || [],
-            issues: res.issues || [],
-            repos: res.repos || [],
+          setResult({
+            data: { prs: res.prs || [], issues: res.issues || [], repos: res.repos || [] },
+            loading: false,
+            error: null,
           })
-          setLoading(false)
         })
         .catch((err) => {
           if (err?.name === 'AbortError' || controller.signal.aborted) return
-          setError(err?.code || 'SEARCH_FAILED')
-          setLoading(false)
+          setResult((prev) => ({ ...prev, loading: false, error: err?.code || 'SEARCH_FAILED' }))
         })
     }, DEBOUNCE_MS)
 
@@ -103,9 +107,9 @@ function useDebouncedGitHubSearch(query, enabled) {
       clearTimeout(timer)
       controllerRef.current?.abort()
     }
-  }, [query, enabled])
+  }, [shouldSearch, trimmed])
 
-  return { data, loading, error }
+  return { data: result.data, loading: result.loading, error: result.error }
 }
 
 export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChange, onOpenModal, onSelectRepo, isAdmin = false }) {
@@ -114,9 +118,45 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
   const liveEnabled = isOpen && !MOCK_MODE
   const { data: live, loading, error } = useDebouncedGitHubSearch(input, liveEnabled)
 
-  // Reset input on close so a fresh open starts clean
+  const trackedHook = useTrackedRepos()
+  const { toast } = useToast()
+  const trackedRepoCommands = buildTrackedRepoCommands(trackedHook.repos)
+
+  async function runWorkBoardCommand(item) {
+    try {
+      let result = null
+      switch (item.actionType) {
+        case 'pin':    result = await trackedHook.pin(item.repoFullName); break
+        case 'unpin':  result = await trackedHook.unpin(item.repoFullName); break
+        case 'mute':   result = await trackedHook.mute(item.repoFullName); break
+        case 'unmute': result = await trackedHook.unmute(item.repoFullName); break
+        case 'untrack': result = await trackedHook.untrack(item.repoFullName); break
+        case 'refresh-discovery': result = await trackedHook.discover(); break
+        case 'refresh-board': window.dispatchEvent(new CustomEvent('workboard:refresh-all')); break
+        case 'toggle-muted': window.dispatchEvent(new CustomEvent('workboard:toggle-muted')); break
+        case 'clear-filters': window.dispatchEvent(new CustomEvent('workboard:clear-filters')); break
+        default: return
+      }
+      if (result?.operation_id) {
+        toast.success(`${item.label} ✓`, {
+          action: 'Undo',
+          onAction: async () => { await trackedHook.undo(result.operation_id); toast.success('Reverted') },
+        })
+      } else {
+        toast.success(`${item.label} ✓`)
+      }
+    } catch (e) {
+      toast.error(`${item.label} failed: ${e.message}`)
+    }
+  }
+
+  // Reset input on close so a fresh open starts clean.
+  // Deferred via setTimeout to avoid synchronous setState inside an effect.
   useEffect(() => {
-    if (!isOpen) setInput('')
+    if (!isOpen) {
+      const id = setTimeout(() => setInput(''), 0)
+      return () => clearTimeout(id)
+    }
   }, [isOpen])
 
   const openExternal = (url) => {
@@ -202,6 +242,42 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
                     className={ITEM_CLASSES}
                   >
                     <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />
+                    {item.label}
+                  </Command.Item>
+                )
+              })}
+            </Command.Group>
+          )}
+
+          <Command.Group heading="Work Board Actions" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+            {WORK_BOARD_GLOBAL_COMMANDS.map((item) => {
+              const Icon = WORK_BOARD_CMD_ICONS[item.icon]
+              return (
+                <Command.Item
+                  key={item.id}
+                  value={item.searchValue}
+                  onSelect={() => { runWorkBoardCommand(item); onClose() }}
+                  className={ITEM_CLASSES}
+                >
+                  {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
+                  {item.label}
+                </Command.Item>
+              )
+            })}
+          </Command.Group>
+
+          {trackedRepoCommands.length > 0 && (
+            <Command.Group heading="Tracked Repositories" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+              {trackedRepoCommands.map((item) => {
+                const Icon = WORK_BOARD_CMD_ICONS[item.icon]
+                return (
+                  <Command.Item
+                    key={item.id}
+                    value={item.searchValue}
+                    onSelect={() => { runWorkBoardCommand(item); onClose() }}
+                    className={ITEM_CLASSES}
+                  >
+                    {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
                     {item.label}
                   </Command.Item>
                 )
