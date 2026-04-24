@@ -10,6 +10,21 @@ vi.mock('@/config', () => ({
 }))
 
 // ---------------------------------------------------------------------------
+// Mock useTrackedRepos so WorkBoardRowMenu doesn't require TrackedReposProvider
+// ---------------------------------------------------------------------------
+vi.mock('@/hooks/useTrackedRepos', () => ({
+    useTrackedRepos: () => ({
+        repos: [],
+        pin: vi.fn(),
+        unpin: vi.fn(),
+        mute: vi.fn(),
+        unmute: vi.fn(),
+        untrack: vi.fn(),
+        undo: vi.fn(),
+    }),
+}))
+
+// ---------------------------------------------------------------------------
 // Mock useToast so inline action hooks used by tabs don't require a provider
 // ---------------------------------------------------------------------------
 vi.mock('@/hooks/useToast', () => ({
