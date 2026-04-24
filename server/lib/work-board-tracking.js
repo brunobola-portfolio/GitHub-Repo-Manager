@@ -173,7 +173,90 @@ export function getTrackedRepos(userId, filters = {}) {
     return { items, total, countsBySignal };
 }
 
-export function bulkUpdate() { throw new Error('not implemented'); }
+const BULK_MAX = 200;
+const EXISTING_REQUIRED = new Set(['pin', 'unpin', 'mute', 'unmute', 'untrack']);
+
+/**
+ * Apply an action to many repos in one atomic undo-unit.
+ * @param {number} userId
+ * @param {string[]} repoFullNames
+ * @param {'pin'|'unpin'|'mute'|'unmute'|'track'|'untrack'} action
+ * @returns {{ operationId: string|null, updated: number, skipped: string[] }}
+ */
+export function bulkUpdate(userId, repoFullNames, action) {
+    if (!VALID_ACTIONS.has(action)) {
+        throw new Error(`Invalid action: ${action}`);
+    }
+    if (repoFullNames.length > BULK_MAX) {
+        throw new Error(`Bulk size exceeds ${BULK_MAX}`);
+    }
+    if (repoFullNames.length === 0) {
+        return { operationId: null, updated: 0, skipped: [] };
+    }
+
+    const beforeStates = [];
+    const afterStates = [];
+    const skipped = [];
+
+    const tx = db.transaction(() => {
+        for (const repo of repoFullNames) {
+            const existing = db.prepare(
+                'SELECT * FROM work_board_tracked_repos WHERE user_id = ? AND repo_full_name = ?'
+            ).get(userId, repo);
+
+            if (EXISTING_REQUIRED.has(action) && !existing) {
+                skipped.push(repo);
+                continue;
+            }
+
+            const before = snapshotRow(existing);
+            if (before) beforeStates.push(before);
+
+            if (action === 'untrack') {
+                db.prepare('DELETE FROM work_board_tracked_repos WHERE user_id = ? AND repo_full_name = ?')
+                  .run(userId, repo);
+                afterStates.push({ repo_full_name: repo, is_pinned: 0, is_muted: 0, deleted: true });
+                continue;
+            }
+
+            const base = existing ?? { source_signal: 'pinned', is_pinned: 0, is_muted: 0 };
+            let is_pinned = base.is_pinned, is_muted = base.is_muted, source_signal = base.source_signal;
+
+            switch (action) {
+                case 'pin':    is_pinned = 1; if (!existing) source_signal = 'pinned'; break;
+                case 'unpin':  is_pinned = 0; break;
+                case 'mute':   is_muted = 1; break;
+                case 'unmute': is_muted = 0; break;
+                case 'track':  is_pinned = existing ? is_pinned : 1;
+                               if (!existing) source_signal = 'pinned';
+                               break;
+            }
+
+            db.prepare(`
+                INSERT INTO work_board_tracked_repos
+                    (user_id, repo_full_name, source_signal, is_pinned, is_muted, last_synced_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(user_id, repo_full_name) DO UPDATE SET
+                    is_pinned = excluded.is_pinned,
+                    is_muted = excluded.is_muted,
+                    last_synced_at = CURRENT_TIMESTAMP
+            `).run(userId, repo, source_signal, is_pinned, is_muted);
+
+            afterStates.push({ repo_full_name: repo, is_pinned, is_muted });
+        }
+    });
+    tx();
+
+    const opId = (beforeStates.length + afterStates.length) > 0
+        ? recordOperation(userId, 'bulk', beforeStates, afterStates)
+        : null;
+
+    return {
+        operationId: opId,
+        updated: afterStates.length,
+        skipped,
+    };
+}
 export function deleteTrackedRepo() { throw new Error('not implemented'); }
 export function getPrefs() { throw new Error('not implemented'); }
 export function patchPrefs() { throw new Error('not implemented'); }

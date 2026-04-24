@@ -98,10 +98,6 @@ describe('upsertTrackedRepo', () => {
 });
 
 describe('stub exports throw "not implemented"', () => {
-    it('bulkUpdate throws', () => {
-        expect(() => bulkUpdate()).toThrow('not implemented');
-    });
-
     it('deleteTrackedRepo throws', () => {
         expect(() => deleteTrackedRepo()).toThrow('not implemented');
     });
@@ -112,6 +108,47 @@ describe('stub exports throw "not implemented"', () => {
 
     it('patchPrefs throws', () => {
         expect(() => patchPrefs()).toThrow('not implemented');
+    });
+});
+
+describe('bulkUpdate', () => {
+    beforeEach(() => {
+        for (const name of ['a/b', 'a/c', 'a/d']) {
+            testDb.prepare(`
+                INSERT INTO work_board_tracked_repos
+                    (user_id, repo_full_name, source_signal, is_pinned, is_muted)
+                VALUES (?, ?, 'owned', 0, 0)
+            `).run(USER_ID, name);
+        }
+    });
+
+    it('mute applied to 3 repos in one operation_id', () => {
+        const result = bulkUpdate(USER_ID, ['a/b', 'a/c', 'a/d'], 'mute');
+
+        expect(result.operationId).toMatch(/^[0-9a-f-]{36}$/);
+        expect(result.updated).toBe(3);
+        expect(result.skipped).toEqual([]);
+
+        const muted = testDb.prepare('SELECT COUNT(*) AS c FROM work_board_tracked_repos WHERE user_id = ? AND is_muted = 1').get(USER_ID);
+        expect(muted.c).toBe(3);
+    });
+
+    it('rejects bulk size > 200', () => {
+        const manyRepos = Array.from({ length: 201 }, (_, i) => `org/repo${i}`);
+        expect(() => bulkUpdate(USER_ID, manyRepos, 'mute')).toThrow(/bulk size/i);
+    });
+
+    it('skips repos the user does not track (for actions that require existing row)', () => {
+        const result = bulkUpdate(USER_ID, ['a/b', 'nonexistent/repo'], 'mute');
+        expect(result.updated).toBe(1);
+        expect(result.skipped).toEqual(['nonexistent/repo']);
+    });
+
+    it('track action inserts new rows for non-existing repos', () => {
+        const result = bulkUpdate(USER_ID, ['new/one', 'new/two'], 'track');
+        expect(result.updated).toBe(2);
+        const rows = testDb.prepare(`SELECT repo_full_name FROM work_board_tracked_repos WHERE user_id = ? AND repo_full_name LIKE 'new/%'`).all(USER_ID);
+        expect(rows.map(r => r.repo_full_name).sort()).toEqual(['new/one', 'new/two']);
     });
 });
 
