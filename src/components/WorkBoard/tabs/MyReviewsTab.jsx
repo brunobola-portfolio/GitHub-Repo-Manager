@@ -8,9 +8,11 @@ import { useWorkBoardFilters, applyFilters } from '../filters/filter-context-hel
 import { useReviewAction } from '../../../hooks/useReviewAction'
 import { useFocusedRow } from '../../../hooks/useFocusedRow'
 import { InlineActions } from '../InlineActions'
-import { SkeletonList, EmptyState, WebhookHint, UpsellCard } from '../shared/shared-ui'
+import { SkeletonList, UpsellCard } from '../shared/shared-ui'
 import { ageLabel } from '../shared/formatters'
 import { getCsrfToken } from '../../../utils/api'
+import { WorkBoardRowMenu } from '../WorkBoardRowMenu'
+import { EmptyStateDiscovery } from '../EmptyStateDiscovery'
 
 // ---------------------------------------------------------------------------
 // Module-level suggestion cache (expires after 30 min)
@@ -200,6 +202,10 @@ function ReviewRow({ review, isFocused, onFocus, hasAI, onSnooze, onRequestChang
                     onRequestChanges={() => onOpenDraftModal(review)}
                     onSnooze={(hours) => onSnooze(review, hours)}
                 />
+                <WorkBoardRowMenu
+                    repoFullName={review.repoFullName}
+                    itemUrl={githubUrl}
+                />
             </a>
             <AnimatePresence>
                 {showChips && (
@@ -348,14 +354,11 @@ export function MyReviewsTab({ hasAI = false }) {
 
     if (reviews.length === 0) {
         return (
-            <>
-                <EmptyState
-                    icon={GitPullRequest}
-                    title="No pending reviews"
-                    subtitle="Great work! You have no open review requests right now."
-                />
-                <WebhookHint />
-            </>
+            <EmptyStateDiscovery
+                icon={GitPullRequest}
+                plainTitle="No pending reviews"
+                plainSubtitle="Great work! You have no open review requests right now."
+            />
         )
     }
 

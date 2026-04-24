@@ -196,7 +196,8 @@ describe('WorkBoardPage', () => {
     it('My Reviews: shows empty state when data is empty array', () => {
         mockUseMyPendingReviews.mockReturnValue({ data: [], loading: false, error: null, refresh: vi.fn() })
         renderPage()
-        expect(screen.getByText(/no pending reviews/i)).toBeInTheDocument()
+        // EmptyStateDiscovery with no tracked repos shows the first-run discovery CTA
+        expect(screen.getByText(/let's find your work/i)).toBeInTheDocument()
     })
 
     it('My Reviews: clicking PR link has correct GitHub URL', () => {
