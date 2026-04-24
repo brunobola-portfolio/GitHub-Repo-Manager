@@ -224,3 +224,35 @@ describe('GET/PATCH /api/v1/work-board/prefs', () => {
         expect(res.status).toBe(400);
     });
 });
+
+describe('POST /api/v1/work-board/undo/:operation_id', () => {
+    it('reverts a pin operation', async () => {
+        const pinRes = await request(app)
+            .post('/api/v1/work-board/tracked-repos')
+            .send({ repo: 'acme/x', action: 'pin' });
+        const opId = pinRes.body.operation_id;
+
+        const undoRes = await request(app).post(`/api/v1/work-board/undo/${opId}`);
+        expect(undoRes.status).toBe(200);
+        expect(undoRes.body.reverted).toBe(true);
+
+        const row = testDb.prepare('SELECT * FROM work_board_tracked_repos WHERE user_id = ? AND repo_full_name = ?').get(USER_ID, 'acme/x');
+        // Pin was applied to a non-existent row, so before_state was empty; undo means row should be gone.
+        expect(row).toBeUndefined();
+    });
+
+    it('returns 404 for unknown operation_id', async () => {
+        const res = await request(app).post('/api/v1/work-board/undo/00000000-0000-0000-0000-000000000000');
+        expect(res.status).toBe(404);
+    });
+
+    it('returns 404 when operation belongs to another user', async () => {
+        testDb.prepare(`
+            INSERT INTO work_board_undo_log (operation_id, user_id, operation_type, before_state, after_state, expires_at)
+            VALUES ('11111111-1111-1111-1111-111111111111', 999999, 'pin', '[]', '[]', datetime('now', '+1 hour'))
+        `).run();
+
+        const res = await request(app).post('/api/v1/work-board/undo/11111111-1111-1111-1111-111111111111');
+        expect(res.status).toBe(404);
+    });
+});

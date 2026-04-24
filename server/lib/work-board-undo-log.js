@@ -57,8 +57,9 @@ export function undoOperation(userId, operationId) {
         throw new Error('Operation not found or expired');
     }
     const beforeState = JSON.parse(row.before_state);
+    const afterState = JSON.parse(row.after_state);
     deleteStmt.run(operationId);
-    return { operationType: row.operation_type, beforeState };
+    return { operationType: row.operation_type, beforeState, afterState };
 }
 
 const cleanupStmt = db.prepare(`DELETE FROM work_board_undo_log WHERE expires_at <= ?`);

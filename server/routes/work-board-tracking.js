@@ -13,6 +13,9 @@ import {
     getPrefs,
     patchPrefs,
 } from '../lib/work-board-tracking.js';
+import { undoOperation } from '../lib/work-board-undo-log.js';
+import { runDiscovery } from '../lib/work-board-discovery.js';
+import db from '../db.js';
 
 const router = express.Router();
 
@@ -93,6 +96,69 @@ router.patch('/prefs', requireAuth, (req, res) => {
         res.json(merged);
     } catch (err) {
         res.status(400).json({ error: err.message });
+    }
+});
+
+// POST /undo/:operation_id
+router.post('/undo/:operation_id', requireAuth, (req, res) => {
+    const { operation_id } = req.params;
+    try {
+        const { operationType, beforeState, afterState } = undoOperation(req.session.userId, operation_id);
+
+        const applyTx = db.transaction(() => {
+            const beforeNames = new Set(beforeState.map(r => r.repo_full_name));
+
+            // Delete rows that were created by the original op
+            // (present in after_state but absent from before_state)
+            for (const a of afterState) {
+                if (!beforeNames.has(a.repo_full_name)) {
+                    db.prepare('DELETE FROM work_board_tracked_repos WHERE user_id = ? AND repo_full_name = ?')
+                      .run(req.session.userId, a.repo_full_name);
+                }
+            }
+
+            // Restore before_state rows
+            for (const row of beforeState) {
+                db.prepare(`
+                    INSERT INTO work_board_tracked_repos
+                        (user_id, repo_full_name, source_signal, is_pinned, is_muted, last_synced_at)
+                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(user_id, repo_full_name) DO UPDATE SET
+                        is_pinned = excluded.is_pinned,
+                        is_muted = excluded.is_muted,
+                        last_synced_at = CURRENT_TIMESTAMP
+                `).run(
+                    req.session.userId,
+                    row.repo_full_name,
+                    row.source_signal ?? 'pinned',
+                    row.is_pinned,
+                    row.is_muted,
+                );
+            }
+        });
+        applyTx();
+
+        res.json({ reverted: true, operation_type: operationType });
+    } catch (err) {
+        if (err.message.includes('not found') || err.message.includes('expired')) {
+            return res.status(404).json({ error: err.message });
+        }
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// POST /discover
+router.post('/discover', requireAuth, async (req, res) => {
+    const prefs = getPrefs(req.session.userId);
+    try {
+        const result = await runDiscovery(
+            req.session.userId,
+            req.session.accessToken,
+            prefs,
+        );
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
