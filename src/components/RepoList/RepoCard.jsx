@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { Badge } from '../ui/Badge'
 import { formatCompact } from '../../utils/format'
+import { TrackedDot } from '../WorkBoard/TrackedDot'
 
 /**
  * One repository row, rendered either as a grid card or a list row.
@@ -121,6 +122,7 @@ export const RepoCard = memo(function RepoCard({
 									{repo.name}
 								</button>
 							</h3>
+							<TrackedDot repoFullName={repo.full_name} size="sm" />
 							{repo.archived && (
 								<Badge variant="secondary" className="text-[10px] py-0 h-5">Archived</Badge>
 							)}
