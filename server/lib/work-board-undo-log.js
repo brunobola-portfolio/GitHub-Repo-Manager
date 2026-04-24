@@ -11,11 +11,31 @@ import db from '../db.js';
 
 export const UNDO_TTL_HOURS = 24;
 
-const insertStmt = db.prepare(`
-    INSERT INTO work_board_undo_log
-        (operation_id, user_id, operation_type, before_state, after_state, expires_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-`);
+// Statements are lazy-initialised on first use so importing this module
+// doesn't fail in tests that mock db.js with a partial schema (e.g. webhook
+// tests that only create their own table). In production the full schema
+// is bootstrapped in db.js before any route handler runs.
+let _stmts = null;
+function stmts() {
+    if (_stmts) return _stmts;
+    _stmts = {
+        insert: db.prepare(`
+            INSERT INTO work_board_undo_log
+                (operation_id, user_id, operation_type, before_state, after_state, expires_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `),
+        select: db.prepare(`
+            SELECT * FROM work_board_undo_log
+            WHERE operation_id = ? AND user_id = ? AND expires_at > ?
+        `),
+        del: db.prepare('DELETE FROM work_board_undo_log WHERE operation_id = ?'),
+        cleanup: db.prepare('DELETE FROM work_board_undo_log WHERE expires_at <= ?'),
+    };
+    return _stmts;
+}
+
+// Test-only hook: reset lazy statements when mocked db is swapped between suites.
+export function _resetStatementsForTests() { _stmts = null; }
 
 /**
  * Record a mutation so the user can undo it later.
@@ -28,7 +48,7 @@ const insertStmt = db.prepare(`
 export function recordOperation(userId, operationType, beforeState, afterState) {
     const opId = randomUUID();
     const expiresAt = new Date(Date.now() + UNDO_TTL_HOURS * 3_600_000).toISOString();
-    insertStmt.run(
+    stmts().insert.run(
         opId,
         userId,
         operationType,
@@ -39,12 +59,6 @@ export function recordOperation(userId, operationType, beforeState, afterState) 
     return opId;
 }
 
-const selectStmt = db.prepare(`
-    SELECT * FROM work_board_undo_log
-    WHERE operation_id = ? AND user_id = ? AND expires_at > ?
-`);
-const deleteStmt = db.prepare('DELETE FROM work_board_undo_log WHERE operation_id = ?');
-
 /**
  * Revert a previously recorded operation.
  * Returns the before_state so the caller can re-apply it.
@@ -52,17 +66,15 @@ const deleteStmt = db.prepare('DELETE FROM work_board_undo_log WHERE operation_i
  */
 export function undoOperation(userId, operationId) {
     const now = new Date().toISOString();
-    const row = selectStmt.get(operationId, userId, now);
+    const row = stmts().select.get(operationId, userId, now);
     if (!row) {
         throw new Error('Operation not found or expired');
     }
     const beforeState = JSON.parse(row.before_state);
     const afterState = JSON.parse(row.after_state);
-    deleteStmt.run(operationId);
+    stmts().del.run(operationId);
     return { operationType: row.operation_type, beforeState, afterState };
 }
-
-const cleanupStmt = db.prepare(`DELETE FROM work_board_undo_log WHERE expires_at <= ?`);
 
 /**
  * Called by nightly cron or opportunistically on write.
@@ -70,6 +82,6 @@ const cleanupStmt = db.prepare(`DELETE FROM work_board_undo_log WHERE expires_at
  */
 export function cleanupExpired() {
     const now = new Date().toISOString();
-    const result = cleanupStmt.run(now);
+    const result = stmts().cleanup.run(now);
     return result.changes;
 }
