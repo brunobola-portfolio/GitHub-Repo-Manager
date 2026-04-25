@@ -1216,6 +1216,7 @@ function AppContent() {
         onOpenModal={openModal}
         onSelectRepo={handleOpenRepo}
         isAdmin={isAdmin}
+        selectedRepoDetail={selectedRepoDetail}
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />

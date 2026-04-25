@@ -5,6 +5,7 @@ import {
   ArrowRightLeft, Settings, Kanban, GitPullRequest, CircleDot, Loader2,
   AlertTriangle, Wrench, BarChart3, Sparkles, Bookmark, ShieldAlert,
   Pin, PinOff, Bell, BellOff, X, RefreshCw, RotateCw, Eraser,
+  ExternalLink, Copy, FileText, GitBranch, Star, Clock, Archive, ArrowDownAZ,
 } from 'lucide-react'
 import { searchApi } from '../api/search'
 import { MOCK_MODE } from '../config'
@@ -13,6 +14,9 @@ import { useToast } from '../hooks/useToast'
 import { buildTrackedRepoCommands } from './CommandPalette/trackedRepoCommands'
 import { WORK_BOARD_GLOBAL_COMMANDS } from './CommandPalette/workBoardGlobalCommands'
 import { buildAICommands } from './CommandPalette/aiCommands'
+import { buildRepoDetailCommands } from './CommandPalette/repoDetailCommands'
+import { buildTeamsCommands } from './CommandPalette/teamsCommands'
+import { buildReposCommands } from './CommandPalette/reposCommands'
 
 const NAVIGATE_ITEMS = [
   { id: 'nav-dashboard', label: 'Dashboard', view: 'dashboard', icon: LayoutDashboard },
@@ -56,6 +60,13 @@ const WORK_BOARD_ITEMS = [
 
 const WORK_BOARD_CMD_ICONS = {
     Pin, PinOff, Bell, BellOff, X, RefreshCw, RotateCw, Eraser, Sparkles,
+}
+
+// Used by the contextual command groups (repo-detail / teams / repos).
+const CONTEXT_CMD_ICONS = {
+    ExternalLink, Copy, ShieldAlert, FileText, GitBranch, Tag, CircleDot,
+    GitPullRequest, Settings, Plus, RefreshCw, Pin, Archive, Eraser, Star,
+    Clock, ArrowDownAZ,
 }
 
 const GROUP_HEADING_CLASSES = '[&>[cmdk-group-heading]]:px-2 [&>[cmdk-group-heading]]:py-1.5 [&>[cmdk-group-heading]]:text-xs [&>[cmdk-group-heading]]:font-semibold [&>[cmdk-group-heading]]:text-slate-500 [&>[cmdk-group-heading]]:dark:text-slate-400 [&>[cmdk-group-heading]]:uppercase [&>[cmdk-group-heading]]:tracking-wider'
@@ -113,7 +124,7 @@ function useDebouncedGitHubSearch(query, enabled) {
   return { data: result.data, loading: result.loading, error: result.error }
 }
 
-export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChange, onOpenModal, onSelectRepo, isAdmin = false }) {
+export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChange, onOpenModal, onSelectRepo, isAdmin = false, selectedRepoDetail = null }) {
   const [input, setInput] = useState('')
   const displayRepos = repos.slice(0, 10)
   const liveEnabled = isOpen && !MOCK_MODE
@@ -123,6 +134,36 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
   const { toast } = useToast()
   const trackedRepoCommands = buildTrackedRepoCommands(trackedHook.repos)
   const aiCommands = buildAICommands({ enabled: trackedHook.prefs?.ai_assistant_enabled === 1 })
+  const repoDetailCommands = activeView === 'repo-detail' ? buildRepoDetailCommands(selectedRepoDetail) : []
+  const teamsCommands = activeView === 'teams' ? buildTeamsCommands() : []
+  const reposCommands = activeView === 'repos' ? buildReposCommands() : []
+
+  async function runContextCommand(item) {
+    try {
+      switch (item.kind) {
+        case 'open-external':
+          if (item.url) {
+            window.open(item.url, '_blank', 'noopener,noreferrer')
+          }
+          break
+        case 'copy':
+          if (item.text && navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(item.text)
+            toast.success('Copied to clipboard')
+          }
+          break
+        case 'event':
+          window.dispatchEvent(new CustomEvent(item.event, {
+            detail: item.tab ?? item.detail ?? null,
+          }))
+          break
+        default:
+          return
+      }
+    } catch (e) {
+      toast.error(`${item.label} failed: ${e.message}`)
+    }
+  }
 
   async function runWorkBoardCommand(item) {
     try {
@@ -297,6 +338,63 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
                     key={item.id}
                     value={item.searchValue}
                     onSelect={() => { runWorkBoardCommand(item); onClose() }}
+                    className={ITEM_CLASSES}
+                  >
+                    {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
+                    {item.label}
+                  </Command.Item>
+                )
+              })}
+            </Command.Group>
+          )}
+
+          {repoDetailCommands.length > 0 && (
+            <Command.Group heading={`Repo: ${selectedRepoDetail?.full_name ?? ''}`} className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+              {repoDetailCommands.map((item) => {
+                const Icon = CONTEXT_CMD_ICONS[item.icon]
+                return (
+                  <Command.Item
+                    key={item.id}
+                    value={item.searchValue}
+                    onSelect={() => { runContextCommand(item); onClose() }}
+                    className={ITEM_CLASSES}
+                  >
+                    {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
+                    {item.label}
+                  </Command.Item>
+                )
+              })}
+            </Command.Group>
+          )}
+
+          {teamsCommands.length > 0 && (
+            <Command.Group heading="Teams" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+              {teamsCommands.map((item) => {
+                const Icon = CONTEXT_CMD_ICONS[item.icon]
+                return (
+                  <Command.Item
+                    key={item.id}
+                    value={item.searchValue}
+                    onSelect={() => { runContextCommand(item); onClose() }}
+                    className={ITEM_CLASSES}
+                  >
+                    {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
+                    {item.label}
+                  </Command.Item>
+                )
+              })}
+            </Command.Group>
+          )}
+
+          {reposCommands.length > 0 && (
+            <Command.Group heading="Repositories" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+              {reposCommands.map((item) => {
+                const Icon = CONTEXT_CMD_ICONS[item.icon]
+                return (
+                  <Command.Item
+                    key={item.id}
+                    value={item.searchValue}
+                    onSelect={() => { runContextCommand(item); onClose() }}
                     className={ITEM_CLASSES}
                   >
                     {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
