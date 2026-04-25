@@ -3,6 +3,8 @@ import rateLimit from 'express-rate-limit';
 import logger from '../lib/logger.js';
 import db, { initDB } from '../db.js';
 import { safeError } from '../middleware/auth.js';
+import { validateBody } from '../middleware/validate-request.js';
+import { clientErrorSchema } from '../lib/validators.js';
 
 // Rate-limit setup so an unauthenticated endpoint can't be hammered.
 const setupLimiter = rateLimit({
@@ -79,20 +81,20 @@ router.get('/source', (req, res) => {
     });
 });
 
-// Client error reporting endpoint (no auth required - errors may occur before login)
-router.post('/client-error', clientErrorLimiter, (req, res) => {
-    try {
-        const { message, stack, url, timestamp } = req.body || {};
-        logger.error({
-            message: String(message || 'Unknown error').slice(0, 500),
-            url: String(url || '').slice(0, 200),
-            timestamp: timestamp || new Date().toISOString(),
-            stack: String(stack || '').slice(0, 1000)
-        }, 'Client error reported');
-        res.json({ received: true });
-    } catch {
-        res.status(200).json({ received: true });
-    }
+// Client error reporting endpoint (no auth required — errors may occur before
+// login). Schema rejects unknown keys so a malicious client can't flood pino
+// with arbitrary payloads, and the per-IP rate-limit caps volume.
+router.post('/client-error', clientErrorLimiter, validateBody(clientErrorSchema), (req, res) => {
+    const { message, stack, url, userAgent, componentStack } = req.validatedBody;
+    logger.error({
+        message,
+        url,
+        userAgent,
+        componentStack,
+        stack,
+        reportedAt: new Date().toISOString(),
+    }, 'Client error reported');
+    res.json({ received: true });
 });
 
 export default router;

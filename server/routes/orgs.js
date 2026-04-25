@@ -12,6 +12,9 @@
 import express from 'express';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, safeError, isValidGitHubUsername } from '../middleware/auth.js';
+import { orgRepoCreateSchema } from '../lib/validators.js';
+import { validateBody } from '../middleware/validate-request.js';
+import { auditLog } from '../lib/audit.js';
 
 const router = express.Router();
 
@@ -169,9 +172,9 @@ router.get('/:org/members', requireAuth, async (req, res) => {
 });
 
 // Create repo in organization
-router.post('/:org/repos', requireAuth, async (req, res) => {
+router.post('/:org/repos', requireAuth, validateBody(orgRepoCreateSchema), async (req, res) => {
     try {
-        const { name, description, private: isPrivate, auto_init } = req.body;
+        const { name, description, private: isPrivate, auto_init } = req.validatedBody;
 
         const { data } = await githubApi(`/orgs/${req.params.org}/repos`, req.session.accessToken, {
             method: 'POST',
@@ -179,8 +182,13 @@ router.post('/:org/repos', requireAuth, async (req, res) => {
                 name,
                 description: description || '',
                 private: isPrivate !== false,
-                auto_init: auto_init !== false
-            })
+                auto_init: auto_init !== false,
+            }),
+        });
+
+        auditLog(req, 'org.repo.create', 'repo', `${req.params.org}/${name}`, {
+            org: req.params.org,
+            visibility: isPrivate === false ? 'public' : 'private',
         });
 
         res.json({ success: true, repo: data });

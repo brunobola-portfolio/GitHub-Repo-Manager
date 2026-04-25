@@ -186,7 +186,13 @@ router.post('/presets', requireAuth, validateBody(presetCreateBodySchema), (req,
         res.json({ data: result });
     } catch (e) {
         if (/UNIQUE|constraint/i.test(e.message)) return errorResponse(res, 409, 'Preset name already exists', 'preset_exists');
-        return errorResponse(res, 400, e.message);
+        // Don't leak raw SQLite/internal errors. createPreset throws Error
+        // with safe user-facing messages for validation failures; for the
+        // catch-all use a generic message.
+        const userMsg = e?.message && e.message.length < 200 && !/SQLITE|database/i.test(e.message)
+            ? e.message
+            : 'Could not create preset';
+        return errorResponse(res, 400, userMsg, 'preset_create_failed');
     }
 });
 

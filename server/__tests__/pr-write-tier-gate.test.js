@@ -62,10 +62,17 @@ vi.mock('../lib/validators.js', () => ({
     topicsSchema: {},
     forkSchema: {},
     issueCreateSchema: {},
+    issueUpdateSchema: {},
+    issueCommentSchema: {},
     prCreateSchema: {},
+    prUpdateSchema: {},
     templateGenerateSchema: {},
     releaseCreateSchema: {},
     webhookCreateSchema: {},
+    branchCreateSchema: {},
+    branchProtectionSchema: {},
+    collaboratorAddSchema: {},
+    collaboratorPermissionEnum: {},
 }))
 vi.mock('../db.js', () => ({ default: { prepare: vi.fn(() => ({ get: vi.fn(), all: vi.fn(() => []), run: vi.fn() })) } }))
 

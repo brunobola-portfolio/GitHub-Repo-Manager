@@ -168,9 +168,17 @@ router.post('/logout', (req, res) => {
     });
 });
 
-// Mock Login for Dev Mode (disabled in production)
+// Mock Login for Dev Mode (disabled outside development).
+//
+// Allow-list rather than block-list: an ambiguous NODE_ENV (empty, "preview",
+// "staging") on an internet-exposed deploy must NOT pass this guard. Only
+// NODE_ENV === 'development' OR an explicit ALLOW_MOCK_AUTH=true opt-in
+// enables the route — everything else returns 404 as if the route didn't
+// exist.
 router.post('/mock', (req, res) => {
-    if (config.nodeEnv === 'production') {
+    const isDev = config.nodeEnv === 'development';
+    const isExplicitlyAllowed = process.env.ALLOW_MOCK_AUTH === 'true';
+    if (!isDev && !isExplicitlyAllowed) {
         return res.status(404).json({ error: 'Not found' });
     }
     // Upsert Mock User
@@ -237,8 +245,11 @@ router.get('/session-info', (req, res) => {
         try {
             const row = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(req.session.userId);
             isAdmin = !!row?.is_admin;
-        } catch {
-            /* swallow — treat as non-admin */
+        } catch (err) {
+            // Fail-closed: any DB error treats the caller as non-admin so we
+            // never expose the admin UI to someone we couldn't verify. Log so
+            // a real outage isn't invisible.
+            req.log?.warn({ err: err?.message, userId: req.session.userId }, 'Failed to read users.is_admin — treating as non-admin');
         }
     }
 

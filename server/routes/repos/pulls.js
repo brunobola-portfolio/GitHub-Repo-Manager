@@ -23,7 +23,7 @@ import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
 import { requireTier } from '../../middleware/require-tier.js';
-import { prCreateSchema } from '../../lib/validators.js';
+import { prCreateSchema, prUpdateSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 
 const router = express.Router();
@@ -125,14 +125,13 @@ router.put('/:owner/:repo/pulls/:pull_number/merge', requireAuth, requireTier('p
 });
 
 // Update pull request
-router.patch('/:owner/:repo/pulls/:pull_number', requireAuth, async (req, res) => {
+router.patch('/:owner/:repo/pulls/:pull_number', requireAuth, validateBody(prUpdateSchema), async (req, res) => {
     try {
         const { owner, repo, pull_number } = req.params;
-        const { title, body, state, base, maintainer_can_modify } = req.body;
 
         const { data } = await githubApi(`/repos/${owner}/${repo}/pulls/${pull_number}`, req.session.accessToken, {
             method: 'PATCH',
-            body: JSON.stringify({ title, body, state, base, maintainer_can_modify })
+            body: JSON.stringify(req.validatedBody)
         });
         res.json(data);
     } catch (error) {

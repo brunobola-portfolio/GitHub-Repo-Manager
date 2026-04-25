@@ -42,8 +42,11 @@ vi.mock('../middleware/validate-request.js', () => ({
 vi.mock('../lib/validators.js', () => ({
     validate: () => (_req, _res, next) => next(),
     createRepoSchema: {}, repoUpdateSchema: {}, topicsSchema: {}, forkSchema: {},
-    issueCreateSchema: {}, prCreateSchema: {}, templateGenerateSchema: {},
+    issueCreateSchema: {}, issueUpdateSchema: {}, issueCommentSchema: {},
+    prCreateSchema: {}, prUpdateSchema: {}, templateGenerateSchema: {},
     releaseCreateSchema: {}, webhookCreateSchema: {},
+    branchCreateSchema: {}, branchProtectionSchema: {},
+    collaboratorAddSchema: {}, collaboratorPermissionEnum: {},
 }))
 vi.mock('../db.js', () => ({ default: { prepare: vi.fn(() => ({ get: vi.fn(), all: vi.fn(() => []), run: vi.fn() })) } }))
 

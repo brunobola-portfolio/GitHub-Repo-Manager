@@ -5,7 +5,7 @@
  */
 
 import express from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, safeError } from '../middleware/auth.js';
 import {
     getTrackedRepos,
     upsertTrackedRepo,
@@ -53,7 +53,8 @@ router.post('/tracked-repos', requireAuth, (req, res) => {
         const result = upsertTrackedRepo(req.session.userId, repo, action);
         res.json({ operation_id: result.operationId, new_state: result.newState });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err, userId: req.session.userId, repo, action }, 'tracked-repos upsert failed');
+        res.status(500).json({ error: safeError(err, 'Failed to update tracked repo') });
     }
 });
 
@@ -80,7 +81,8 @@ router.post('/tracked-repos/bulk', requireAuth, (req, res) => {
             skipped: result.skipped,
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err, userId: req.session.userId, action, count: valid.length }, 'tracked-repos bulk update failed');
+        res.status(500).json({ error: safeError(err, 'Bulk update failed') });
     }
 });
 
@@ -96,7 +98,11 @@ router.patch('/prefs', requireAuth, (req, res) => {
         const merged = patchPrefs(req.session.userId, req.body ?? {});
         res.json(merged);
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        // patchPrefs throws Error with safe, user-facing messages for invalid
+        // shape (e.g. "discovery_window_days must be 30..180"). Surface them.
+        const userMsg = err?.message && err.message.length < 200 ? err.message : 'Invalid prefs payload';
+        logger.warn({ err: err?.message, userId: req.session.userId }, 'patchPrefs failed');
+        res.status(400).json({ error: userMsg, code: 'invalid_prefs' });
     }
 });
 
@@ -141,10 +147,16 @@ router.post('/undo/:operation_id', requireAuth, (req, res) => {
 
         res.json({ reverted: true, operation_type: operationType });
     } catch (err) {
-        if (err.message.includes('not found') || err.message.includes('expired')) {
-            return res.status(404).json({ error: err.message });
+        // undoOperation tags expected errors with `code` so we don't have to
+        // grep err.message for control flow. Fall back to message-match for
+        // legacy callers, but prefer the typed code.
+        const isNotFound = err?.code === 'undo_not_found' || err?.code === 'undo_expired'
+            || /not found|expired/i.test(err?.message || '');
+        if (isNotFound) {
+            return res.status(404).json({ error: safeError(err, 'Undo operation not found or expired'), code: 'undo_not_found' });
         }
-        res.status(500).json({ error: err.message });
+        logger.error({ err, userId: req.session.userId, operation_id }, 'undoOperation failed');
+        res.status(500).json({ error: safeError(err, 'Failed to undo operation') });
     }
 });
 
@@ -202,7 +214,8 @@ router.post('/discover', requireAuth, async (req, res) => {
         );
         res.json(result);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error({ err, userId: req.session.userId }, 'discovery failed');
+        res.status(500).json({ error: safeError(err, 'Discovery failed') });
     }
 });
 

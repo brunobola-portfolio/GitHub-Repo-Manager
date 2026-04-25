@@ -307,6 +307,131 @@ export const testAIConfigSchema = z.object({
     kind: z.enum(['completion', 'embedding']),
 });
 
+// --- GitHub issues / pulls / orgs / branches mutations (P1 hardening) ---
+//
+// These schemas whitelist what we accept on the proxy routes — anything
+// outside the allow-list is dropped before the call hits GitHub. We keep them
+// permissive on string-length so legitimate edits (e.g. 50 KB issue bodies)
+// still pass, but reject unknown keys to stop unintended fields from being
+// forwarded.
+
+const issueState = z.enum(['open', 'closed']);
+const stateReason = z.enum(['completed', 'not_planned', 'reopened']);
+
+export const issueUpdateSchema = z.object({
+    title: z.string().min(1).max(256).optional(),
+    body: z.string().max(65_536).nullable().optional(),
+    state: issueState.optional(),
+    state_reason: stateReason.nullable().optional(),
+    labels: z.array(z.string().min(1).max(50)).max(100).optional(),
+    assignees: z.array(z.string().min(1).max(39)).max(10).optional(),
+    milestone: z.number().int().positive().nullable().optional(),
+}).strict();
+
+export const issueCommentSchema = z.object({
+    body: z.string().min(1).max(65_536),
+}).strict();
+
+export const issueLabelsSchema = z.object({
+    labels: z.array(z.string().min(1).max(50)).min(1).max(100),
+}).strict();
+
+export const repoLabelCreateSchema = z.object({
+    name: z.string().min(1).max(50),
+    color: z.string().regex(/^[0-9a-fA-F]{6}$/, 'Color must be a 6-char hex without #').optional(),
+    description: z.string().max(100).optional(),
+}).strict();
+
+export const prUpdateSchema = z.object({
+    title: z.string().min(1).max(256).optional(),
+    body: z.string().max(65_536).nullable().optional(),
+    state: issueState.optional(),
+    base: z.string().min(1).max(255).optional(),
+    maintainer_can_modify: z.boolean().optional(),
+}).strict();
+
+export const branchCreateSchema = z.object({
+    // Git ref name rules (simplified subset of `git check-ref-format`):
+    //   - no leading '-' (would be parsed as a CLI flag downstream)
+    //   - no '..' (parent-dir escape)
+    //   - no '//' (consecutive slashes)
+    //   - no '@{' (reflog syntax)
+    //   - no whitespace, no control chars, none of `~ ^ : ? * \ [` (git-forbidden)
+    name: z.string()
+        .min(1).max(255)
+        .refine((v) => !v.startsWith('-'), 'Invalid git ref name')
+        .refine((v) => !v.includes('..'), 'Invalid git ref name')
+        .refine((v) => !v.includes('//'), 'Invalid git ref name')
+        .refine((v) => !v.includes('@{'), 'Invalid git ref name')
+        // No whitespace, no git-forbidden punctuation (~ ^ : ? * \ [).
+        .refine((v) => !/[\s~^:?*[]/.test(v), 'Invalid git ref name')
+        // No ASCII control chars / DEL — done char-by-char to avoid a
+        // regex literal containing control bytes.
+        .refine((v) => {
+            for (let i = 0; i < v.length; i++) {
+                const c = v.charCodeAt(i);
+                if (c < 0x20 || c === 0x7f) return false;
+            }
+            return true;
+        }, 'Invalid git ref name'),
+    from: z.string().min(1).max(255).optional(),
+}).strict();
+
+// `branch_protection` matches GitHub's API surface. We keep it permissive on
+// the deeply-nested fields because GitHub validates them server-side; the
+// outer object is whitelisted to stop unknown keys from being forwarded.
+export const branchProtectionSchema = z.object({
+    required_status_checks: z.object({
+        strict: z.boolean().optional(),
+        contexts: z.array(z.string()).optional(),
+        checks: z.array(z.object({
+            context: z.string(),
+            app_id: z.number().nullable().optional(),
+        })).optional(),
+    }).nullable().optional(),
+    enforce_admins: z.boolean().nullable().optional(),
+    required_pull_request_reviews: z.object({
+        required_approving_review_count: z.number().int().min(0).max(6).optional(),
+        dismiss_stale_reviews: z.boolean().optional(),
+        require_code_owner_reviews: z.boolean().optional(),
+        require_last_push_approval: z.boolean().optional(),
+        bypass_pull_request_allowances: z.unknown().optional(),
+        dismissal_restrictions: z.unknown().optional(),
+    }).nullable().optional(),
+    restrictions: z.unknown().nullable().optional(),
+    required_linear_history: z.boolean().optional(),
+    allow_force_pushes: z.boolean().nullable().optional(),
+    allow_deletions: z.boolean().optional(),
+    required_conversation_resolution: z.boolean().optional(),
+    lock_branch: z.boolean().optional(),
+    allow_fork_syncing: z.boolean().optional(),
+    block_creations: z.boolean().optional(),
+}).strict();
+
+export const orgRepoCreateSchema = z.object({
+    name: repoNameSchema,
+    description: z.string().max(500).optional(),
+    private: z.boolean().optional(),
+    auto_init: z.boolean().optional(),
+}).strict();
+
+// Permission allow-list shared by collaborator routes (single source of truth).
+export const collaboratorPermissionEnum = z.enum(['pull', 'triage', 'push', 'maintain', 'admin']);
+
+export const collaboratorAddSchema = z.object({
+    permission: collaboratorPermissionEnum.optional().default('push'),
+}).strict();
+
+// Client error reporter — bounded fields, drops unknown keys.
+export const clientErrorSchema = z.object({
+    message: z.string().max(1000),
+    stack: z.string().max(8000).optional(),
+    url: z.string().max(2000).optional(),
+    userAgent: z.string().max(500).optional(),
+    componentStack: z.string().max(8000).optional(),
+    context: z.record(z.string(), z.unknown()).optional(),
+}).strict();
+
 // --- Middleware factory ---
 //
 // The legacy `validate()` helper was removed in the P1-F / P3-Q validation

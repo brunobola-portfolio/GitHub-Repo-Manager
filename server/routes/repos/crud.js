@@ -35,6 +35,7 @@ import {
     topicsSchema,
     forkSchema,
     templateGenerateSchema,
+    collaboratorAddSchema,
 } from '../../lib/validators.js';
 import { auditLog } from '../../lib/audit.js';
 
@@ -253,33 +254,37 @@ router.get('/:owner/:repo/collaborators', requireAuth, async (req, res) => {
         const result = await githubApi(`/repos/${owner}/${repo}/collaborators`, req.session.accessToken);
         res.json(result.data || []);
     } catch (error) {
-        // 403 usually means you don't have permission to view collaborators (need push access)
+        // 403 means the caller can't view the list (no push access).
+        // Preserve the bare-array contract for backwards compat but log so a
+        // surge of forbidden responses surfaces in monitoring.
         if (error.status === 403) {
-            return res.json([]); // Fail gracefully by returning empty
+            req.log?.info({ owner: req.params.owner, repo: req.params.repo }, 'Collaborators 403 (insufficient permissions)');
+            return res.json([]);
         }
-        res.status(500).json({ error: 'Failed to fetch collaborators' });
+        req.log.error({ err: error }, 'List collaborators failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Failed to fetch collaborators') });
     }
 });
 
 // Add a Collaborator to a Repo
-router.put('/:owner/:repo/collaborators/:username', requireAuth, async (req, res) => {
+router.put('/:owner/:repo/collaborators/:username', requireAuth, validateBody(collaboratorAddSchema), async (req, res) => {
     try {
         const { owner, repo, username } = req.params;
         if (!isValidGitHubUsername(username)) return res.status(400).json({ error: 'Invalid username format' });
-        const { permission = 'push' } = req.body;
-        const allowedPermissions = ['pull', 'push', 'admin', 'maintain', 'triage'];
-        if (!allowedPermissions.includes(permission)) {
-            return res.status(400).json({ error: 'Invalid permission level' });
-        }
+        const { permission } = req.validatedBody;
 
         const result = await githubApi(`/repos/${owner}/${repo}/collaborators/${username}`, req.session.accessToken, {
             method: 'PUT',
-            body: JSON.stringify({ permission })
+            body: JSON.stringify({ permission }),
         });
+
+        // Granting permissions is security-relevant — audit it explicitly.
+        auditLog(req, 'repo.collaborator.add', 'collaborator', `${owner}/${repo}:${username}`, { permission });
 
         res.json({ success: true, invitation: result.data });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to add collaborator' });
+        req.log.error({ err: error }, 'Add collaborator failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Failed to add collaborator') });
     }
 });
 

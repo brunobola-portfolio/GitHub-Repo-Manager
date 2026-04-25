@@ -15,7 +15,7 @@
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
-import { issueCreateSchema } from '../../lib/validators.js';
+import { issueCreateSchema, issueUpdateSchema, issueCommentSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 
 const router = express.Router();
@@ -87,14 +87,13 @@ router.post('/:owner/:repo/issues', requireAuth, validateBody(issueCreateSchema)
 });
 
 // Update issue
-router.patch('/:owner/:repo/issues/:issue_number', requireAuth, async (req, res) => {
+router.patch('/:owner/:repo/issues/:issue_number', requireAuth, validateBody(issueUpdateSchema), async (req, res) => {
     try {
         const { owner, repo, issue_number } = req.params;
-        const { title, body, state, labels, assignees, milestone } = req.body;
 
         const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}`, req.session.accessToken, {
             method: 'PATCH',
-            body: JSON.stringify({ title, body, state, labels, assignees, milestone })
+            body: JSON.stringify(req.validatedBody)
         });
         res.json(data);
     } catch (error) {
@@ -104,10 +103,10 @@ router.patch('/:owner/:repo/issues/:issue_number', requireAuth, async (req, res)
 });
 
 // Add issue comment
-router.post('/:owner/:repo/issues/:issue_number/comments', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/issues/:issue_number/comments', requireAuth, validateBody(issueCommentSchema), async (req, res) => {
     try {
         const { owner, repo, issue_number } = req.params;
-        const { body } = req.body;
+        const { body } = req.validatedBody;
 
         const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}/comments`, req.session.accessToken, {
             method: 'POST',

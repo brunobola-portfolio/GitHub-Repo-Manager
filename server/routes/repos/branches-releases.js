@@ -20,8 +20,9 @@
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
-import { releaseCreateSchema } from '../../lib/validators.js';
+import { releaseCreateSchema, branchCreateSchema, branchProtectionSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
+import { auditLog } from '../../lib/audit.js';
 
 const router = express.Router();
 
@@ -80,20 +81,21 @@ router.get('/:owner/:repo/branches/:branch', requireAuth, async (req, res) => {
 });
 
 // Create branch (via Git refs)
-router.post('/:owner/:repo/branches', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/branches', requireAuth, validateBody(branchCreateSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { name, source_branch = 'main' } = req.body;
+        const { name, from = 'main' } = req.validatedBody;
 
         // First get the SHA of the source branch
-        const { data: refData } = await githubApi(`/repos/${owner}/${repo}/git/refs/heads/${encodeURIComponent(source_branch)}`, req.session.accessToken);
+        const { data: refData } = await githubApi(`/repos/${owner}/${repo}/git/refs/heads/${encodeURIComponent(from)}`, req.session.accessToken);
         const sha = refData.object.sha;
 
         // Create new branch
         const { data } = await githubApi(`/repos/${owner}/${repo}/git/refs`, req.session.accessToken, {
             method: 'POST',
-            body: JSON.stringify({ ref: `refs/heads/${name}`, sha })
+            body: JSON.stringify({ ref: `refs/heads/${name}`, sha }),
         });
+        auditLog(req, 'repo.branch.create', 'branch', `${owner}/${repo}@${name}`, { from });
         res.json({ success: true, ref: data });
     } catch (error) {
         req.log.error({ err: error }, 'Create branch failed');
@@ -132,19 +134,20 @@ router.get('/:owner/:repo/branches/:branch/protection', requireAuth, async (req,
 });
 
 // Update branch protection
-router.put('/:owner/:repo/branches/:branch/protection', requireAuth, async (req, res) => {
+router.put('/:owner/:repo/branches/:branch/protection', requireAuth, validateBody(branchProtectionSchema), async (req, res) => {
     try {
         const { owner, repo, branch } = req.params;
-        const { required_status_checks, enforce_admins, required_pull_request_reviews, restrictions } = req.body;
 
         const { data } = await githubApi(`/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}/protection`, req.session.accessToken, {
             method: 'PUT',
-            body: JSON.stringify({
-                required_status_checks,
-                enforce_admins,
-                required_pull_request_reviews,
-                restrictions
-            })
+            body: JSON.stringify(req.validatedBody),
+        });
+        // Branch protection is security-relevant — audit every change.
+        auditLog(req, 'repo.branch.protection.update', 'branch_protection', `${owner}/${repo}@${branch}`, {
+            required_review_count: req.validatedBody.required_pull_request_reviews?.required_approving_review_count,
+            enforce_admins: req.validatedBody.enforce_admins,
+            allow_force_pushes: req.validatedBody.allow_force_pushes,
+            allow_deletions: req.validatedBody.allow_deletions,
         });
         res.json(data);
     } catch (error) {
@@ -158,8 +161,10 @@ router.delete('/:owner/:repo/branches/:branch/protection', requireAuth, async (r
     try {
         const { owner, repo, branch } = req.params;
         await githubApi(`/repos/${owner}/${repo}/branches/${encodeURIComponent(branch)}/protection`, req.session.accessToken, {
-            method: 'DELETE'
+            method: 'DELETE',
         });
+        // Removing protection is the security-relevant action — audit it explicitly.
+        auditLog(req, 'repo.branch.protection.delete', 'branch_protection', `${owner}/${repo}@${branch}`, {});
         res.json({ success: true, message: 'Branch protection removed' });
     } catch (error) {
         req.log.error({ err: error }, 'Delete branch protection failed');
