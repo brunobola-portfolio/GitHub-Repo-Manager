@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
 import { clsx } from 'clsx'
+import { useDebounce } from '../../../hooks/useDebounce'
 
 const SEARCH_DEBOUNCE_MS = 150
 
@@ -17,18 +18,14 @@ const SIGNAL_LABELS = {
 
 export function SearchFilterBar({ filters, countsBySignal, onChange }) {
     const [searchInput, setSearchInput] = useState(filters.search ?? '')
-    const debounceRef = useRef()
+    const debouncedInput = useDebounce(searchInput, SEARCH_DEBOUNCE_MS)
 
     useEffect(() => {
-        clearTimeout(debounceRef.current)
-        debounceRef.current = setTimeout(() => {
-            if ((filters.search ?? '') !== searchInput) {
-                onChange({ ...filters, search: searchInput || undefined })
-            }
-        }, SEARCH_DEBOUNCE_MS)
-        return () => clearTimeout(debounceRef.current)
+        if ((filters.search ?? '') !== debouncedInput) {
+            onChange({ ...filters, search: debouncedInput || undefined })
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchInput])
+    }, [debouncedInput])
 
     const toggleSignal = (signal) => {
         onChange({ ...filters, signal: filters.signal === signal ? undefined : signal })
