@@ -5,6 +5,7 @@ export function useWorkBoardAI() {
     const [suggestions, setSuggestions] = useState([])
     const [activity, setActivity] = useState(null)
     const [enabled, setEnabled] = useState(true)   // assume on until API says otherwise
+    const [reason, setReason] = useState(null)     // 'AI_FEATURE_FLAG_OFF' | 'AI_ASSISTANT_DISABLED' | 'AI_COST_CAP_REACHED' | 'OK' | null
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState(null)
 
@@ -12,6 +13,18 @@ export function useWorkBoardAI() {
         setIsLoading(true)
         setError(null)
         try {
+            // Pre-check so we don't fire two gated requests when the feature
+            // flag is off or the user hasn't opted in — keeps the console
+            // clean instead of surfacing harmless 403/404s.
+            const status = await api.fetchStatus().catch(() => ({ enabled: false, reason: 'UNKNOWN' }))
+            setReason(status?.reason ?? null)
+            if (!status?.enabled) {
+                setEnabled(false)
+                setSuggestions([])
+                setActivity(null)
+                return
+            }
+
             const [s, a] = await Promise.all([api.fetchSuggestions(), api.fetchActivity()])
             setSuggestions(s.suggestions ?? [])
             setActivity(a)
@@ -48,7 +61,7 @@ export function useWorkBoardAI() {
     }, [reload])
 
     return {
-        suggestions, activity, enabled, isLoading, error,
+        suggestions, activity, enabled, reason, isLoading, error,
         interpret, apply, dismiss, reload,
     }
 }

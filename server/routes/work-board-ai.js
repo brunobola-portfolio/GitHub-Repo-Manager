@@ -33,6 +33,41 @@ function extractJsonBlob(text) {
     try { return JSON.parse(match[0]); } catch { return null; }
 }
 
+// GET /status — lightweight enablement probe used by the UI to avoid firing
+// gated endpoints when the feature is off. Never returns 403/404 itself; the
+// client reads `enabled` and decides.
+router.get('/status', requireAuth, (req, res) => {
+    const featureFlagEnabled = process.env.WORK_BOARD_AI_ENABLED === 'true';
+    if (!featureFlagEnabled) {
+        return res.json({ enabled: false, reason: 'AI_FEATURE_FLAG_OFF' });
+    }
+
+    const prefs = db.prepare(
+        'SELECT ai_assistant_enabled, ai_monthly_cap_cents FROM work_board_prefs WHERE user_id = ?'
+    ).get(req.session.userId);
+
+    const userEnabled = !!prefs && prefs.ai_assistant_enabled === 1;
+    if (!userEnabled) {
+        return res.json({ enabled: false, reason: 'AI_ASSISTANT_DISABLED' });
+    }
+
+    let capReached = false;
+    if (prefs.ai_monthly_cap_cents > 0) {
+        const month = new Date().toISOString().slice(0, 7);
+        const spendRow = db.prepare(
+            'SELECT cents FROM work_board_ai_spend WHERE user_id = ? AND month = ?'
+        ).get(req.session.userId, month);
+        const spent = spendRow?.cents ?? 0;
+        capReached = spent >= prefs.ai_monthly_cap_cents;
+    }
+
+    res.json({
+        enabled: !capReached,
+        reason: capReached ? 'AI_COST_CAP_REACHED' : 'OK',
+        capCents: prefs.ai_monthly_cap_cents || 0,
+    });
+});
+
 router.get('/suggestions', requireAuth, requireWorkBoardAI, (req, res) => {
     const suggestions = computeSuggestions(req.session.userId);
     res.json({ suggestions });

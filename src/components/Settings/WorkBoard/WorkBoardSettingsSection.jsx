@@ -9,7 +9,8 @@ import { AddRepoInput } from './AddRepoInput'
 import { WebhookConnectPanel } from './WebhookConnectPanel'
 import { DangerZoneCard } from './DangerZoneCard'
 import { WorkBoardAISection } from './ai/WorkBoardAISection'
-import { InsightCard } from '../../ui/InsightCard'
+import { WorkBoardSectionHeader } from './WorkBoardSectionHeader'
+import { WorkBoardSummary } from './WorkBoardSummary'
 
 const ACTION_LABELS = {
     pin: 'Pinned',
@@ -129,51 +130,111 @@ export function WorkBoardSettingsSection() {
     }
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-indigo-500" />
-                </div>
-                <div>
-                    <h2 className="text-base font-semibold text-slate-900 dark:text-white">Work Board</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Manage tracked repositories, discovery preferences, and webhooks.
+        <div className="space-y-5">
+            {/* Editorial header */}
+            <header className="relative flex items-start gap-4 pb-1">
+                <span
+                    aria-hidden="true"
+                    className="absolute -left-1 top-1 bottom-1 w-0.5 rounded-full bg-gradient-to-b from-indigo-500 via-violet-500 to-blue-500 opacity-80"
+                />
+                <div className="pl-3 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
+                        <Sparkles className="w-3 h-3" aria-hidden="true" />
+                        Work Board
+                    </div>
+                    <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-900 dark:text-white ds-font-display">
+                        Tracked repositories
+                    </h2>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 max-w-lg">
+                        Manage discovery, webhooks and the AI Assistant that keeps your board tidy.
                     </p>
                 </div>
-            </div>
+            </header>
 
-            <DiscoveryPanel
-                prefs={hook.prefs}
-                totalCount={hook.repos.length}
-                mutedCount={mutedCount}
-                pinnedCount={pinnedCount}
-                isRefreshing={hook.isRefreshing}
-                onRefresh={handleRefresh}
-                onUpdatePrefs={handleUpdatePrefs}
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_18rem] gap-5 lg:items-start">
+                {/* ─────────── Left column: configuration ─────────── */}
+                <div className="space-y-4 min-w-0">
+                    {/* 01 — Discovery */}
+                    <section className="rounded-2xl bg-gradient-to-br from-indigo-500/[0.03] via-violet-500/[0.02] to-transparent dark:from-indigo-500/[0.05] dark:via-violet-500/[0.03] ring-1 ring-inset ring-indigo-500/15 dark:ring-indigo-500/20 p-4">
+                        <WorkBoardSectionHeader
+                            step={1}
+                            title="Discovery"
+                            description="Automatically find repos you contribute to."
+                        />
+                        <DiscoveryPanel
+                            prefs={hook.prefs}
+                            totalCount={hook.repos.length}
+                            mutedCount={mutedCount}
+                            pinnedCount={pinnedCount}
+                            isRefreshing={hook.isRefreshing}
+                            onRefresh={handleRefresh}
+                            onUpdatePrefs={handleUpdatePrefs}
+                        />
+                    </section>
 
-            <InsightCard tone="default" hover={false}>
-                <TrackedReposList
-                    repos={filtered}
-                    countsBySignal={hook.countsBySignal}
-                    filters={filters}
-                    isLoading={hook.isLoading}
-                    onFilterChange={setFilters}
-                    onRowAction={handleRowAction}
-                    onBulkAction={handleBulkAction}
-                />
-            </InsightCard>
+                    {/* 02 — Tracked repositories */}
+                    <section className="rounded-2xl bg-white/60 dark:bg-slate-900/50 ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 p-4">
+                        <WorkBoardSectionHeader
+                            step={2}
+                            title="Tracked repositories"
+                            description="Pin, mute, or remove repos from your board."
+                        />
+                        <TrackedReposList
+                            repos={filtered}
+                            countsBySignal={hook.countsBySignal}
+                            filters={filters}
+                            isLoading={hook.isLoading}
+                            onFilterChange={setFilters}
+                            onRowAction={handleRowAction}
+                            onBulkAction={handleBulkAction}
+                        />
+                    </section>
 
-            <InsightCard tone="default" hover={false}>
-                <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Add a repository</p>
-                    <AddRepoInput onAdd={handleAdd} />
+                    {/* 03 — Add repository */}
+                    <section className="rounded-2xl bg-white/60 dark:bg-slate-900/50 ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 p-4">
+                        <WorkBoardSectionHeader
+                            step={3}
+                            title="Add a repository"
+                            description="Track any public or private repo by full name (owner/repo)."
+                        />
+                        <AddRepoInput onAdd={handleAdd} />
+                    </section>
+
+                    {/* 04 — Webhooks */}
+                    <section className="rounded-2xl bg-white/60 dark:bg-slate-900/50 ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 p-4">
+                        <WorkBoardSectionHeader
+                            step={4}
+                            title="Webhooks"
+                            description="Stream GitHub events in real time so your board is always fresh."
+                        />
+                        <WebhookConnectPanel tier={tier} />
+                    </section>
+
+                    {/* 05 — AI commands */}
+                    <section className="rounded-2xl bg-white/60 dark:bg-slate-900/50 ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 p-4">
+                        <WorkBoardSectionHeader
+                            step={5}
+                            title="AI commands"
+                            description="Natural-language actions and smart suggestions for your board."
+                        />
+                        <WorkBoardAISection />
+                    </section>
+
+                    {/* Danger zone — full-width, clearly separated */}
+                    <DangerZoneCard onResetDiscovery={handleResetDiscovery} onClearAll={handleClearAll} />
                 </div>
-            </InsightCard>
 
-            <WebhookConnectPanel tier={tier} />
-            <WorkBoardAISection />
-            <DangerZoneCard onResetDiscovery={handleResetDiscovery} onClearAll={handleClearAll} />
+                {/* ─────────── Right rail: summary ─────────── */}
+                <aside className="space-y-4 lg:sticky lg:top-2">
+                    <WorkBoardSummary
+                        prefs={hook.prefs}
+                        totalCount={hook.repos.length}
+                        mutedCount={mutedCount}
+                        pinnedCount={pinnedCount}
+                        tier={tier}
+                    />
+                </aside>
+            </div>
         </div>
     )
 }

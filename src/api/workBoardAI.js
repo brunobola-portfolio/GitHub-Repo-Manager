@@ -32,6 +32,9 @@ async function post(path, body) {
     return res.json()
 }
 
+export function fetchStatus() {
+    return get(`${BASE}/status`)
+}
 export function fetchSuggestions() {
     return get(`${BASE}/suggestions`)
 }

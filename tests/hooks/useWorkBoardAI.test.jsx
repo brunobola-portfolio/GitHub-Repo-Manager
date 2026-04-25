@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 
 const mockApi = {
+    fetchStatus: vi.fn().mockResolvedValue({ enabled: true }),
     fetchSuggestions: vi.fn().mockResolvedValue({ suggestions: [] }),
     dismissSuggestion: vi.fn().mockResolvedValue({ dismissed: true }),
     interpretPrompt: vi.fn(),
@@ -14,6 +15,7 @@ const { useWorkBoardAI } = await import('../../src/hooks/useWorkBoardAI')
 
 beforeEach(() => {
     for (const k of Object.keys(mockApi)) mockApi[k].mockClear?.()
+    mockApi.fetchStatus.mockResolvedValue({ enabled: true })
     mockApi.fetchSuggestions.mockResolvedValue({ suggestions: [] })
     mockApi.fetchActivity.mockResolvedValue({ month: '2026-04', spent_cents: 0, cap_cents: 500 })
 })
