@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Sparkles, ArrowRight, GitPullRequest, Clock, CircleDot } from 'lucide-react'
+import { Card } from '../ui/Card'
 
 async function fetchCount(url) {
     try {
@@ -36,7 +37,7 @@ export function YourWorkCard({ onOpenBoard }) {
     if (state.hidden) return null
 
     return (
-        <div className="rounded-2xl border border-slate-200/70 dark:border-slate-700/50 bg-gradient-to-br from-indigo-50/60 to-purple-50/40 dark:from-indigo-950/30 dark:to-purple-950/20 p-5 ds-card-shimmer">
+        <Card glass={false} className="bg-gradient-to-br from-indigo-50/60 to-purple-50/40 dark:from-indigo-950/30 dark:to-purple-950/20 p-5 ds-card-shimmer">
             <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center flex-shrink-0">
@@ -62,7 +63,7 @@ export function YourWorkCard({ onOpenBoard }) {
                 <Stat icon={Clock} label="stale PRs" value={state.stale} tone="amber" />
                 <Stat icon={CircleDot} label="issues" value={state.issues} tone="emerald" />
             </div>
-        </div>
+        </Card>
     )
 }
 

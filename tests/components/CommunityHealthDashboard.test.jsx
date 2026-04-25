@@ -112,14 +112,15 @@ describe('CommunityHealthDashboard', () => {
         expect(container).toBeTruthy();
     });
 
-    it('calls onClose when Close button is clicked', async () => {
+    it('calls onClose when the modal close button is clicked', async () => {
         global.fetch.mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve(mockHealthData)
         });
         const user = userEvent.setup();
         render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
-        const closeButton = screen.getByText('Close');
+        // Migrated to <Modal>, which uses an X icon button with aria-label="Close modal".
+        const closeButton = screen.getByRole('button', { name: /close modal/i });
         await user.click(closeButton);
         expect(onClose).toHaveBeenCalledTimes(1);
     });

@@ -27,6 +27,8 @@ import {
 } from '../../hooks/useWorkBoard'
 import { useRelativeTime } from '../../hooks/useRelativeTime'
 import { useUrlParams } from '../../hooks/useUrlParams'
+import { PageShell } from '../ui/PageShell'
+import { PageHeader } from '../ui/PageHeader'
 import { WorkBoardFilterBar } from './filters/WorkBoardFilterBar'
 import { PresetDropdown } from './filters/PresetDropdown'
 import { FilterProvider } from './filters/filter-context'
@@ -259,43 +261,37 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings }) {
     const showEmptyState = allZero && reviews?.meta?.source === 'live'
 
     return (
-        <div className="max-w-6xl mx-auto space-y-7 animate-in fade-in duration-500 px-1">
-            {/* Header */}
-            <div className="flex items-end justify-between gap-4 flex-wrap">
-                <div>
-                    <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-500 dark:text-indigo-400 mb-2">
-                        <span className="w-6 h-px bg-gradient-to-r from-transparent via-indigo-400 to-indigo-500" />
-                        Cross-Repo Activity
-                    </div>
-                    <h1 className="text-3xl md:text-4xl font-bold ds-font-display ds-gradient-text leading-tight">
-                        Work Board
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-                        {repoCount > 0
-                            ? `${repoCount} repos tracked · live signals across reviews, issues & delivery`
-                            : 'Live signals across reviews, issues & delivery'}
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    {earliest && (
-                        <span className="text-[11px] text-slate-400 dark:text-slate-500" aria-live="polite">
-                            updated {earliestLabel}
-                        </span>
-                    )}
-                    <ManageReposButton onOpenSettings={onOpenSettings} />
-                    <button
-                        type="button"
-                        onClick={refreshAll}
-                        disabled={refreshing}
-                        aria-label="Refresh work board"
-                        className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-                    >
-                        <motion.div animate={{ rotate: refreshing ? 360 : 0 }} transition={{ duration: 0.6, ease: 'easeInOut' }}>
-                            <RefreshCw className="w-4 h-4" />
-                        </motion.div>
-                    </button>
-                </div>
-            </div>
+        <PageShell maxWidth="2xl" padding="tight" className="space-y-7 animate-in fade-in duration-500">
+            <PageHeader
+                eyebrow="Cross-repo activity"
+                title="Work Board"
+                description={
+                    repoCount > 0
+                        ? `${repoCount} repos tracked · live signals across reviews, issues & delivery`
+                        : 'Live signals across reviews, issues & delivery'
+                }
+                actions={
+                    <>
+                        {earliest && (
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500" aria-live="polite">
+                                updated {earliestLabel}
+                            </span>
+                        )}
+                        <ManageReposButton onOpenSettings={onOpenSettings} />
+                        <button
+                            type="button"
+                            onClick={refreshAll}
+                            disabled={refreshing}
+                            aria-label="Refresh work board"
+                            className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                        >
+                            <motion.div animate={{ rotate: refreshing ? 360 : 0 }} transition={{ duration: 0.6, ease: 'easeInOut' }}>
+                                <RefreshCw className="w-4 h-4" />
+                            </motion.div>
+                        </button>
+                    </>
+                }
+            />
 
             {/* AI summary card — silently hides when ai_not_configured */}
             <AISummaryCard />
@@ -402,6 +398,6 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings }) {
             </FilterProvider>
 
             <KeyboardHelpModal open={helpOpen} onClose={() => closeModal('workBoardHelp')} />
-        </div>
+        </PageShell>
     )
 }

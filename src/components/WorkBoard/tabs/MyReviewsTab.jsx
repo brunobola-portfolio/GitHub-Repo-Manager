@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { GitPullRequest, ExternalLink, Clock, MessageSquare, Loader2, Sparkles } from 'lucide-react'
+import { Modal, ModalFooter } from '../../ui/Modal'
+import { Button } from '../../ui/Button'
 import * as Popover from '@radix-ui/react-popover'
 import { clsx } from 'clsx'
 import { useMyPendingReviews } from '../../../hooks/useWorkBoard'
@@ -267,48 +269,53 @@ function DraftCommentModal({ review, intent, onConfirm, onClose }) {
         }
     }
 
+    const title = intent === 'request_changes' ? 'Request Changes' : 'Comment'
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="w-full max-w-md rounded-2xl border border-slate-200/60 dark:border-white/10 bg-white dark:bg-slate-900 p-5 shadow-2xl"
-            >
-                <h3 className="mb-3 text-sm font-semibold text-slate-900 dark:text-white">
-                    {intent === 'request_changes' ? 'Request Changes' : 'Comment'}
-                </h3>
-                <div className="relative">
-                    {draftLoading && (
-                        <div className="absolute top-2 right-2">
-                            <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
-                        </div>
-                    )}
-                    <textarea
-                        value={text}
-                        onChange={e => setText(e.target.value)}
-                        onClick={handleTextareaClick}
-                        placeholder={draftLoading ? 'Drafting review comment…' : ''}
-                        rows={5}
-                        className="w-full resize-none rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-1 focus:ring-indigo-500"
-                    />
-                </div>
-                {!draftLoading && (
-                    <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
-                        <Sparkles className="w-3 h-3" /> AI draft — edit before sending
-                    </p>
-                )}
-                <div className="mt-4 flex gap-2 justify-end">
-                    <button onClick={onClose} className="px-3 py-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">Cancel</button>
-                    <button
+        <Modal
+            isOpen
+            onClose={onClose}
+            title={title}
+            icon={MessageSquare}
+            iconGradient="primary"
+            size="md"
+            isBusy={draftLoading}
+            footer={
+                <ModalFooter align="right">
+                    <Button variant="ghost" onClick={onClose}>Cancel</Button>
+                    <Button
+                        variant="primary"
                         onClick={() => { onConfirm(text); onClose() }}
                         disabled={!text.trim()}
-                        className="px-4 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-lg"
                     >
                         Send
-                    </button>
-                </div>
-            </motion.div>
-        </div>
+                    </Button>
+                </ModalFooter>
+            }
+        >
+            <div className="relative">
+                {draftLoading && (
+                    <div className="absolute top-2 right-2">
+                        <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                    </div>
+                )}
+                <label htmlFor="my-reviews-draft-comment" className="sr-only">{title} body</label>
+                <textarea
+                    id="my-reviews-draft-comment"
+                    value={text}
+                    onChange={e => setText(e.target.value)}
+                    onClick={handleTextareaClick}
+                    placeholder={draftLoading ? 'Drafting review comment…' : ''}
+                    rows={5}
+                    className="w-full resize-none rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+            </div>
+            {!draftLoading && (
+                <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
+                    <Sparkles className="w-3 h-3" /> AI draft — edit before sending
+                </p>
+            )}
+        </Modal>
     )
 }
 

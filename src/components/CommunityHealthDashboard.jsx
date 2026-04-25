@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useReducedMotion } from 'framer-motion';
 import {
     FileText, Users, Activity, CheckCircle,
-    XCircle, AlertCircle, TrendingUp, RefreshCw
+    XCircle, AlertCircle, TrendingUp, RefreshCw, Heart
 } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
-import { useFocusTrap } from '../hooks/useFocusTrap';
+import { Modal } from './ui/Modal';
+import { Button } from './ui/Button';
 import { TabBar } from './ui/TabBar';
 
 function useIsDesktop() {
@@ -88,12 +89,12 @@ export function CommunityHealthDashboard({ repo, onClose }) {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const { toast } = useToast();
-    const modalRef = useFocusTrap(true, onClose);
     const isDesktop = useIsDesktop();
     const [activeTab, setActiveTab] = useState('files');
 
     useEffect(() => {
         if (repo) {
+            // eslint-disable-next-line react-hooks/immutability -- fetchHealth is stable across the modal's lifetime
             fetchHealth(repo.full_name);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -128,44 +129,31 @@ export function CommunityHealthDashboard({ repo, onClose }) {
     const showContent = !loading && health;
 
     return (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-            role="dialog" aria-modal="true" aria-label="Community Health Dashboard"
+        <Modal
+            isOpen={!!repo}
+            onClose={onClose}
+            title="Community Health"
+            subtitle={repo?.full_name}
+            icon={Heart}
+            iconGradient="primary"
+            size="2xl"
+            isBusy={loading || refreshing}
         >
-            <motion.div
-                ref={modalRef}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-auto ds-scrollbar"
-            >
-                <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-white/10 dark:border-white/5 px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-3xl">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Community Health</h1>
-                            {showContent && <ScoreBadge score={health.score} />}
-                        </div>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{repo.full_name}</p>
-                    </div>
+            <div className="flex items-center justify-end mb-4 gap-2">
+                {showContent && <ScoreBadge score={health.score} />}
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                    aria-label="Refresh community health"
+                >
+                    <RefreshCw className={`w-4 h-4 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
+                    Refresh
+                </Button>
+            </div>
 
-                    <div className="flex gap-3">
-                        <button
-                            onClick={handleRefresh}
-                            disabled={refreshing}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                        >
-                            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                            Refresh
-                        </button>
-                        <button
-                            onClick={onClose}
-                            className="px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
-
-                <div className="p-6 space-y-6">
+            <div className="space-y-6">
                     <AnimatePresence mode="wait">
                         {showContent ? (
                             <motion.div
@@ -325,8 +313,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                         )}
                     </AnimatePresence>
                 </div>
-            </motion.div>
-        </div>
+        </Modal>
     );
 }
 
