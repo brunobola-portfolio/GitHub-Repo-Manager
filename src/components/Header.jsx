@@ -3,8 +3,8 @@ import { useState, useRef, useEffect } from 'react'
 import {
     LogOut, RefreshCw, LayoutDashboard, FolderGit2, Plus,
     Bell, Settings, User, ChevronDown, Building2, Shield, Users,
-    CheckCircle2, AlertCircle, Sparkles, Moon, Sun, Wand2, Download, History, Menu, CreditCard,
-    Kanban, ShieldAlert
+    AlertCircle, Sparkles, Moon, Sun, Wand2, Download, History, Menu, CreditCard,
+    Kanban, ShieldAlert, GitPullRequest, CircleDot, AlertTriangle, Pin, ExternalLink, Check
 } from 'lucide-react'
 import { Github } from './icons/GithubIcon'
 import { AppLogoIcon } from './AppLogo'
@@ -13,6 +13,7 @@ import { useTheme } from '../hooks/useTheme.jsx'
 import { useSystemHealth } from '../hooks/useSystemHealth.js'
 import { useRelativeTime } from '../hooks/useRelativeTime.js'
 import { useWorkBoardBadgeCounts } from '../hooks/useWorkBoardBadgeCounts'
+import { useNotificationsDigest } from '../hooks/useNotificationsDigest'
 
 export function Header({
     user,
@@ -26,7 +27,7 @@ export function Header({
     onViewChange,
     onRefreshOrgs,
     orgs = [],
-    syncStatus,
+    syncStatus: _syncStatus,
     onReauthorize,
     onOpenOrgManager,
     onOpenDevToolkit,
@@ -45,6 +46,7 @@ export function Header({
     const notifRef = useRef(null)
     const { isDark, toggleTheme } = useTheme()
     const { count: workBoardCount } = useWorkBoardBadgeCounts()
+    const notif = useNotificationsDigest({ enabled: !!user })
 
     // Close menus on outside click
     useEffect(() => {
@@ -177,22 +179,39 @@ export function Header({
                                 {/* Notifications */}
                                 <div className="relative" ref={notifRef}>
                                     <HeaderIconButton
-                                        onClick={() => setShowNotifications(!showNotifications)}
-                                        label={showNotifications ? 'Hide notifications' : 'Show notifications'}
+                                        onClick={() => {
+                                            const next = !showNotifications
+                                            setShowNotifications(next)
+                                            if (next) notif.refresh()
+                                        }}
+                                        label={showNotifications
+                                            ? 'Hide notifications'
+                                            : notif.totalCount > 0
+                                                ? `${notif.totalCount} notifications`
+                                                : 'Show notifications'}
                                         aria-expanded={showNotifications}
                                         aria-haspopup="true"
                                         active={showNotifications}
                                     >
                                         <Bell className="w-[15px] h-[15px]" />
-                                        {syncStatus?.hasUpdates && (
-                                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-indigo-500 rounded-full ring-2 ring-slate-100 dark:ring-slate-950" />
+                                        {notif.totalCount > 0 && (
+                                            <span
+                                                aria-hidden="true"
+                                                className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-indigo-500 text-white text-[10px] font-bold leading-[16px] text-center ring-2 ring-slate-100 dark:ring-slate-950"
+                                            >
+                                                {notif.totalCount > 99 ? '99+' : notif.totalCount}
+                                            </span>
                                         )}
                                     </HeaderIconButton>
 
                                     {showNotifications && (
                                         <NotificationsDropdown
-                                            syncStatus={syncStatus}
-                                            orgs={orgs}
+                                            digest={notif.digest}
+                                            loading={notif.loading}
+                                            error={notif.error}
+                                            totalCount={notif.totalCount}
+                                            onMarkSeen={notif.markSeen}
+                                            onClose={() => setShowNotifications(false)}
                                         />
                                     )}
                                 </div>
@@ -474,49 +493,149 @@ function MenuButton({ icon, onClick, children, danger }) {
     )
 }
 
-// Notifications Dropdown
-function NotificationsDropdown({ syncStatus, orgs }) {
+// Notifications Dropdown — categorised digest of activity since the user
+// last opened the bell. Reads from useNotificationsDigest in the Header
+// shell and renders four colour-coded categories with top-3 items each.
+const CATEGORY_ORDER = ['reviews', 'issues', 'failed_migrations', 'stale_pinned']
+const CATEGORY_META = {
+    reviews:           { label: 'Reviews waiting',  Icon: GitPullRequest, accent: 'text-emerald-500 dark:text-emerald-400', dot: 'bg-emerald-500' },
+    issues:            { label: 'Issues for you',   Icon: CircleDot,      accent: 'text-amber-500 dark:text-amber-400',     dot: 'bg-amber-500' },
+    failed_migrations: { label: 'Failed migrations',Icon: AlertTriangle,  accent: 'text-red-500 dark:text-red-400',         dot: 'bg-red-500' },
+    stale_pinned:      { label: 'Stale pinned',     Icon: Pin,            accent: 'text-slate-500 dark:text-slate-400',     dot: 'bg-slate-400' },
+}
+
+function relativeTimeShort(iso) {
+    if (!iso) return null
+    const ms = Date.now() - new Date(iso).getTime()
+    if (Number.isNaN(ms)) return null
+    if (ms < 60_000) return 'now'
+    const m = Math.floor(ms / 60_000)
+    if (m < 60) return `${m}m`
+    const h = Math.floor(m / 60)
+    if (h < 24) return `${h}h`
+    return `${Math.floor(h / 24)}d`
+}
+
+function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen, onClose }) {
+    const sinceLabel = relativeTimeShort(digest.since)
+
     return (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-40 ds-animate-scale-in">
-            <div className="p-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                <h3 className="font-semibold text-slate-900 dark:text-slate-100">Notifications</h3>
-                <span className="text-xs text-slate-400 dark:text-slate-500">Sync Status</span>
+        <div className="absolute right-0 top-full mt-2 w-96 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-40 ds-animate-scale-in">
+            <div className="px-4 pt-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
+                        {sinceLabel ? `Since ${sinceLabel} ago` : 'Activity digest'}
+                    </p>
+                    <h3 className="mt-0.5 text-sm font-bold text-slate-900 dark:text-slate-100 ds-font-display">
+                        {totalCount > 0 ? `${totalCount} new` : 'You\'re all caught up'}
+                    </h3>
+                </div>
+                {totalCount > 0 && (
+                    <button
+                        type="button"
+                        onClick={() => onMarkSeen?.()}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-300 transition-colors"
+                    >
+                        <Check className="w-3 h-3" aria-hidden="true" /> Mark as read
+                    </button>
+                )}
             </div>
 
-            <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
-                {syncStatus?.lastSync ? (
-                    <NotificationItem
-                        icon={CheckCircle2}
-                        iconColor="text-green-500 dark:text-green-400"
-                        title="Organizations synced"
-                        desc={`Last sync: ${new Date(syncStatus.lastSync).toLocaleTimeString()}`}
-                    />
+            <div className="max-h-[420px] overflow-y-auto">
+                {loading && totalCount === 0 ? (
+                    <div className="px-4 py-8 flex justify-center">
+                        <RefreshCw className="w-4 h-4 text-slate-400 animate-spin" />
+                    </div>
+                ) : totalCount === 0 ? (
+                    <div className="px-4 py-10 text-center">
+                        <Sparkles className="w-6 h-6 text-indigo-400/70 mx-auto mb-2" aria-hidden="true" />
+                        <p className="text-sm text-slate-600 dark:text-slate-400">Nothing pending right now.</p>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">We'll let you know when something needs you.</p>
+                    </div>
                 ) : (
-                    <NotificationItem
-                        icon={AlertCircle}
-                        iconColor="text-amber-500 dark:text-amber-400"
-                        title="Not synced yet"
-                        desc="Click refresh to sync organizations"
-                    />
+                    <ul className="py-1">
+                        {CATEGORY_ORDER.map((key) => (
+                            <DigestCategory
+                                key={key}
+                                kind={key}
+                                count={digest.totals[key]}
+                                items={digest.items[key]}
+                                onItemClick={onClose}
+                            />
+                        ))}
+                    </ul>
                 )}
-
-                {orgs.length > 0 && (
-                    <NotificationItem
-                        icon={Building2}
-                        iconColor="text-indigo-500 dark:text-indigo-400"
-                        title={`${orgs.length} organization${orgs.length > 1 ? 's' : ''} connected`}
-                        desc={orgs.map(o => o.login).join(', ')}
-                    />
+                {error && totalCount === 0 && (
+                    <p className="px-4 pb-3 text-[11px] text-amber-600 dark:text-amber-400">
+                        Couldn't load digest — we'll try again on next focus.
+                    </p>
                 )}
-
-                <NotificationItem
-                    icon={Sparkles}
-                    iconColor="text-purple-500 dark:text-purple-400"
-                    title="Tip"
-                    desc="Use Re-authorize to grant access to new organizations"
-                />
             </div>
         </div>
+    )
+}
+
+function DigestCategory({ kind, count, items, onItemClick }) {
+    if (!count) return null
+    const meta = CATEGORY_META[kind]
+    if (!meta) return null
+    const Icon = meta.Icon
+
+    return (
+        <li>
+            <div className="px-4 pt-3 pb-1.5 flex items-center gap-2">
+                <Icon className={`w-3.5 h-3.5 ${meta.accent}`} aria-hidden="true" />
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    {meta.label}
+                </span>
+                <span className={`ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white ${meta.dot}`}>
+                    {count}
+                </span>
+            </div>
+            <ul className="px-1 pb-1">
+                {items.map((item) => (
+                    <DigestItemRow key={`${kind}-${item.repo}-${item.prNumber ?? item.issueNumber ?? item.jobId ?? item.since}`} kind={kind} item={item} onClick={onItemClick} />
+                ))}
+                {count > items.length && (
+                    <li className="px-3 py-1 text-[11px] text-slate-400 dark:text-slate-500">
+                        +{count - items.length} more…
+                    </li>
+                )}
+            </ul>
+        </li>
+    )
+}
+
+function DigestItemRow({ kind, item, onClick }) {
+    const ago = relativeTimeShort(item.since)
+    const url = item.url
+        ?? (kind === 'failed_migrations' ? null : `https://github.com/${item.repo}`)
+
+    return (
+        <li>
+            <a
+                href={url ?? '#'}
+                target={url ? '_blank' : undefined}
+                rel={url ? 'noopener noreferrer' : undefined}
+                onClick={() => onClick?.()}
+                className="group flex items-start gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
+            >
+                <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">
+                        {item.title || item.reason || 'Update'}
+                    </p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                        {item.repo}
+                    </p>
+                </div>
+                <div className="shrink-0 flex flex-col items-end gap-0.5">
+                    {ago && <span className="text-[10px] text-slate-400 dark:text-slate-500">{ago}</span>}
+                    {url && (
+                        <ExternalLink className="w-3 h-3 text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 transition-colors" aria-hidden="true" />
+                    )}
+                </div>
+            </a>
+        </li>
     )
 }
 
@@ -612,20 +731,6 @@ function SystemHealthIndicator() {
                     </div>
                 </div>
             )}
-        </div>
-    )
-}
-
-// Notification Item Component
-function NotificationItem({ icon, iconColor, title, desc }) {
-    const IconComponent = icon
-    return (
-        <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700">
-            {IconComponent && <IconComponent className={`w-5 h-5 ${iconColor} mt-0.5`} />}
-            <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-slate-900 dark:text-slate-100">{title}</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{desc}</div>
-            </div>
         </div>
     )
 }
