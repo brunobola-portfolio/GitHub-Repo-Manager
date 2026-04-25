@@ -54,4 +54,25 @@ describe('Button', () => {
         expect(cls).toContain('bg-purple-500')
         expect(cls).not.toContain('bg-indigo-600')
     })
+
+    it('renders outline variant with transparent bg + slate border', () => {
+        render(<Button variant="outline">x</Button>)
+        const cls = screen.getByRole('button').className
+        expect(cls).toContain('bg-transparent')
+        expect(cls).toContain('border-slate-300')
+    })
+
+    it('renders outline-danger with red border + red text', () => {
+        render(<Button variant="outline-danger">x</Button>)
+        const cls = screen.getByRole('button').className
+        expect(cls).toContain('border-red-300')
+        expect(cls).toContain('text-red-600')
+    })
+
+    it('renders outline-primary with indigo border + indigo text', () => {
+        render(<Button variant="outline-primary">x</Button>)
+        const cls = screen.getByRole('button').className
+        expect(cls).toContain('border-indigo-300')
+        expect(cls).toContain('text-indigo-600')
+    })
 })

@@ -199,33 +199,25 @@ export function ConflictPanel({ conflict, repoName, onResolve, resolution }) {
                 ) : (
                     /* Default action buttons */
                     <div className="flex flex-wrap gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setPendingAction('replace')}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 text-xs font-medium hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                        >
+                        <Button variant="outline-danger" size="xs" onClick={() => setPendingAction('replace')}>
                             <Trash2 className="w-3.5 h-3.5" />
                             Replace
-                        </button>
-                        <button
-                            type="button"
+                        </Button>
+                        <Button
+                            variant="outline-primary"
+                            size="xs"
                             onClick={() => {
                                 setRenameValue(`${repoName}-2`)
                                 setPendingAction('rename')
                             }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 text-xs font-medium hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors"
                         >
                             <Edit3 className="w-3.5 h-3.5" />
                             Rename
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => onResolve({ action: 'skip' })}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                        >
+                        </Button>
+                        <Button variant="outline" size="xs" onClick={() => onResolve({ action: 'skip' })}>
                             <SkipForward className="w-3.5 h-3.5" />
                             Skip
-                        </button>
+                        </Button>
                     </div>
                 )}
             </div>

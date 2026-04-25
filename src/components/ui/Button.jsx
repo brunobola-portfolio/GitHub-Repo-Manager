@@ -8,6 +8,13 @@ const variants = {
     success: 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-200 dark:shadow-emerald-900/50 active:scale-[0.98] ds-focus-ring',
     info: 'bg-sky-500 text-white hover:bg-sky-600 shadow-sm shadow-sky-200 dark:shadow-sky-900/50 active:scale-[0.98] ds-focus-ring',
     ghost: 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 ds-focus-ring',
+    // Outline variants — transparent bg with coloured border + matching text.
+    // For tight CTAs that read as 'soft' actions (Replace / Rename / Skip in
+    // ConflictPanel, similar in BulkActions). Hover fills the bg lightly to
+    // match the existing call-sites' look.
+    outline: 'bg-transparent text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 ds-focus-ring',
+    'outline-danger': 'bg-transparent text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 ds-focus-ring',
+    'outline-primary': 'bg-transparent text-indigo-600 dark:text-indigo-400 border border-indigo-300 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 ds-focus-ring',
 }
 
 const sizes = {
