@@ -45,6 +45,34 @@ export function captureError(error, context = {}) {
     logger.error({ err: error, ...context }, error.message);
 }
 
+/**
+ * Record a non-error operational event. Used for things like AI key health
+ * probe outcomes — we want a breadcrumb trail to debug 'why is the bell
+ * showing my key as invalid' without raising it as a Sentry exception.
+ *
+ * Always logs at the requested level via the structured logger; when Sentry
+ * is configured, also emits as a breadcrumb so it shows up in any subsequent
+ * captured exception's context.
+ *
+ * @param {object} args
+ * @param {string} args.event       — short identifier, e.g. 'ai.probe_outcome'
+ * @param {string} [args.level]     — 'info' | 'warning' | 'error' (default 'info')
+ * @param {object} [args.data]      — structured fields
+ * @param {string} [args.message]   — human-readable summary
+ */
+export function captureBreadcrumb({ event, level = 'info', data = {}, message }) {
+    if (Sentry?.addBreadcrumb) {
+        Sentry.addBreadcrumb({
+            category: event,
+            level,
+            data,
+            message,
+        });
+    }
+    const logFn = logger[level === 'warning' ? 'warn' : level] || logger.info;
+    logFn.call(logger, { event, ...data }, message ?? event);
+}
+
 export function getSentryErrorHandler() {
     if (Sentry?.expressErrorHandler) {
         return Sentry.expressErrorHandler();

@@ -23,12 +23,69 @@
  */
 
 import logger from './logger.js';
+import { captureBreadcrumb } from './monitoring.js';
 
 const TTL_MS = 5 * 60 * 1000;
 const PROBE_TIMEOUT_MS = 5_000;
 
 // Map<cacheKey, { state, checkedAt, inflight }>
 const cache = new Map();
+
+// Cumulative probe outcome counters. Reset on process restart — designed
+// for short-window operational visibility, not long-term metrics. Use a
+// real metrics backend (Prom, StatsD) when those are wired up.
+const counters = {
+    ok: 0,
+    invalid: 0,
+    unreachable: 0,
+    unknown: 0,
+    total: 0,
+    lastOutcomeAt: null,
+};
+
+/**
+ * Record a probe outcome. Bumps counters, structured-logs the event, and
+ * (when Sentry is configured) emits a breadcrumb so any subsequent error
+ * has the recent probe trail attached.
+ *
+ * Severity policy:
+ *   - 'invalid' is a real config issue → warning
+ *   - 'unreachable' / 'unknown' are noisy; info-only to avoid alert fatigue
+ *   - 'ok' is info, mostly useful as a heartbeat
+ */
+function recordOutcome({ state, userId, durationMs, source }) {
+    counters[state] = (counters[state] ?? 0) + 1;
+    counters.total += 1;
+    counters.lastOutcomeAt = new Date().toISOString();
+    const level = state === 'invalid' ? 'warning' : 'info';
+    captureBreadcrumb({
+        event: 'ai.probe_outcome',
+        level,
+        data: { state, userId: userId ?? null, durationMs, source },
+        message: `AI key health probe → ${state}`,
+    });
+}
+
+/**
+ * Read-only snapshot of probe outcome counters. Exposed so an admin route
+ * (or operator REPL) can sanity-check key health distribution without
+ * touching the cache directly.
+ */
+export function getProbeStats() {
+    return { ...counters };
+}
+
+/**
+ * Reset counters (tests + a future admin endpoint).
+ */
+export function resetProbeStats() {
+    counters.ok = 0;
+    counters.invalid = 0;
+    counters.unreachable = 0;
+    counters.unknown = 0;
+    counters.total = 0;
+    counters.lastOutcomeAt = null;
+}
 
 /**
  * Cache key for a probe. Authenticated calls key by userId so each BYOK user
@@ -58,22 +115,31 @@ function classifyError(err) {
 /**
  * Run a tiny completion against the provider to verify the key works.
  * Returns one of: 'ok', 'invalid', 'unreachable', 'unknown'.
+ *
+ * Records the outcome via captureBreadcrumb / counters so operators can see
+ * the probe trail without spelunking through logs.
  */
-async function runProbe(provider) {
-    if (!provider) return 'unknown';
+async function runProbe(provider, { userId = null, source = 'getKeyHealth' } = {}) {
+    if (!provider) {
+        recordOutcome({ state: 'unknown', userId, durationMs: 0, source });
+        return 'unknown';
+    }
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+    const startedAt = Date.now();
 
     try {
         await provider.generate({
             prompt: 'ping',
             generationConfig: { maxOutputTokens: 1 },
         });
+        recordOutcome({ state: 'ok', userId, durationMs: Date.now() - startedAt, source });
         return 'ok';
     } catch (err) {
         const state = classifyError(err);
         logger.debug({ state, err: err?.message }, 'AI key health probe failed');
+        recordOutcome({ state, userId, durationMs: Date.now() - startedAt, source });
         return state;
     } finally {
         clearTimeout(timer);
@@ -102,10 +168,11 @@ export function getKeyHealth({ userId, resolveProvider }) {
         const inflight = (async () => {
             try {
                 const provider = await resolveProvider();
-                const state = await runProbe(provider);
+                const state = await runProbe(provider, { userId, source: 'getKeyHealth' });
                 cache.set(key, { state, checkedAt: Date.now(), inflight: null });
             } catch (err) {
                 logger.debug({ err: err?.message }, 'AI key health probe resolveProvider threw');
+                recordOutcome({ state: 'unknown', userId, durationMs: 0, source: 'getKeyHealth' });
                 cache.set(key, { state: 'unknown', checkedAt: Date.now(), inflight: null });
             }
         })();
@@ -134,7 +201,13 @@ export async function probeAndCache({ userId, resolveProvider }) {
     } catch (err) {
         logger.debug({ err: err?.message }, 'AI key health probe resolveProvider threw');
     }
-    const state = provider ? await runProbe(provider) : 'unknown';
+    let state;
+    if (provider) {
+        state = await runProbe(provider, { userId, source: 'probeAndCache' });
+    } else {
+        state = 'unknown';
+        recordOutcome({ state: 'unknown', userId, durationMs: 0, source: 'probeAndCache' });
+    }
     const checkedAt = Date.now();
     cache.set(key, { state, checkedAt, inflight: null });
     return { state, checkedAt: new Date(checkedAt).toISOString() };

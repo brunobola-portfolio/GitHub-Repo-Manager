@@ -17,15 +17,19 @@ const {
     probeAndCache,
     invalidate,
     recordState,
+    getProbeStats,
+    resetProbeStats,
     __TEST__,
 } = await import('../lib/ai-health-probe.js');
 
 beforeEach(() => {
     __TEST__.cache.clear();
+    resetProbeStats();
 });
 
 afterEach(() => {
     __TEST__.cache.clear();
+    resetProbeStats();
 });
 
 describe('ai-health-probe — getKeyHealth', () => {
@@ -127,5 +131,54 @@ describe('ai-health-probe — invalidate / recordState', () => {
         invalidate();
         expect(getKeyHealth({ userId: 11, resolveProvider: () => Promise.resolve(null) }).state).toBe('unknown');
         expect(getKeyHealth({ userId: 12, resolveProvider: () => Promise.resolve(null) }).state).toBe('unknown');
+    });
+});
+
+describe('ai-health-probe — outcome counters', () => {
+    it('starts at zero across all states', () => {
+        const stats = getProbeStats();
+        expect(stats).toEqual({ ok: 0, invalid: 0, unreachable: 0, unknown: 0, total: 0, lastOutcomeAt: null });
+    });
+
+    it('bumps ok on a successful probe', async () => {
+        const provider = { generate: vi.fn().mockResolvedValue({ text: 'ok' }) };
+        await probeAndCache({ userId: 100, resolveProvider: () => Promise.resolve(provider) });
+        const stats = getProbeStats();
+        expect(stats.ok).toBe(1);
+        expect(stats.total).toBe(1);
+        expect(stats.lastOutcomeAt).not.toBeNull();
+    });
+
+    it('bumps invalid when the provider rejects with 401', async () => {
+        const err = Object.assign(new Error('Invalid api key'), { status: 401 });
+        const provider = { generate: vi.fn().mockRejectedValue(err) };
+        await probeAndCache({ userId: 101, resolveProvider: () => Promise.resolve(provider) });
+        const stats = getProbeStats();
+        expect(stats.invalid).toBe(1);
+        expect(stats.ok).toBe(0);
+    });
+
+    it('bumps unknown when there is no provider at all', async () => {
+        await probeAndCache({ userId: 102, resolveProvider: () => Promise.resolve(null) });
+        expect(getProbeStats().unknown).toBe(1);
+    });
+
+    it('accumulates across mixed outcomes', async () => {
+        const okProvider = { generate: vi.fn().mockResolvedValue({ text: 'ok' }) };
+        const errProvider = { generate: vi.fn().mockRejectedValue(Object.assign(new Error('bad'), { status: 401 })) };
+        await probeAndCache({ userId: 200, resolveProvider: () => Promise.resolve(okProvider) });
+        await probeAndCache({ userId: 201, resolveProvider: () => Promise.resolve(okProvider) });
+        await probeAndCache({ userId: 202, resolveProvider: () => Promise.resolve(errProvider) });
+        const stats = getProbeStats();
+        expect(stats.total).toBe(3);
+        expect(stats.ok).toBe(2);
+        expect(stats.invalid).toBe(1);
+    });
+
+    it('resetProbeStats() zeroes everything', async () => {
+        const provider = { generate: vi.fn().mockResolvedValue({ text: 'ok' }) };
+        await probeAndCache({ userId: 300, resolveProvider: () => Promise.resolve(provider) });
+        resetProbeStats();
+        expect(getProbeStats()).toEqual({ ok: 0, invalid: 0, unreachable: 0, unknown: 0, total: 0, lastOutcomeAt: null });
     });
 });
