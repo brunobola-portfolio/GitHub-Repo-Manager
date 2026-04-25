@@ -78,6 +78,7 @@ vi.mock('../lib/validators.js', () => ({
     migrationSizeStrategySchema: {},
     migrationDescriptionSchema: {},
     attentionNarrativeSchema: {},
+    aiTranslateSearchSchema: {},
 }))
 
 async function buildApp() {

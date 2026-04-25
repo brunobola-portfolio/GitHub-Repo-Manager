@@ -12,7 +12,7 @@
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError } from '../../middleware/auth.js';
-import { aiChatSchema, attentionNarrativeSchema } from '../../lib/validators.js';
+import { aiChatSchema, attentionNarrativeSchema, aiTranslateSearchSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { aiService, sanitizeForPrompt } from '../../ai-service.js';
 import { safeJsonParse } from '../../lib/utils.js';
@@ -27,6 +27,13 @@ import {
     writeCachedNarrative,
     ATTENTION_NARRATIVE_LIMITS,
 } from '../../lib/attention-narrative.js';
+import {
+    buildPrompt as buildTranslatePrompt,
+    shapeTranslation,
+    readCachedTranslation,
+    writeCachedTranslation,
+    TRANSLATE_SEARCH_LIMITS,
+} from '../../lib/translate-search.js';
 
 const router = express.Router();
 
@@ -226,6 +233,66 @@ router.post('/ai/attention-narrative', requireAuth, validateBody(attentionNarrat
         res.json({ narrative, cached: false, model });
     } catch (error) {
         req.log.error({ err: error, repo, kind }, 'AI attention-narrative failed');
+        handleAIError(res, error);
+    }
+});
+
+// ------------------------------------------------------------------
+// AI Translate Search — turns natural language into GitHub search queries
+// the existing /search/github endpoint can run. 5min cache per (user, q).
+// ------------------------------------------------------------------
+
+const TRANSLATE_SEARCH_SCHEMA = {
+    type: 'object',
+    properties: {
+        summary: { type: 'string' },
+        queries: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    type:    { type: 'string' },
+                    ghQuery: { type: 'string' },
+                },
+                required: ['type', 'ghQuery'],
+            },
+        },
+    },
+    required: ['summary', 'queries'],
+};
+
+router.post('/ai/translate-search', requireAuth, validateBody(aiTranslateSearchSchema), requireAI, async (req, res) => {
+    const userId = req.session.userId;
+    const { q } = req.validatedBody;
+
+    const cached = readCachedTranslation({ userId, q });
+    if (cached) {
+        return res.json({ ...cached, cached: true });
+    }
+
+    const usage = checkUsageLimit(userId, 'ai_queries');
+    if (!usage.allowed) {
+        return res.status(429).json(quotaExceededResponse(usage));
+    }
+
+    try {
+        const prompt = buildTranslatePrompt({ q });
+        const { text, parsed } = await providerGenerateWithRetry(req.aiProvider, {
+            prompt,
+            schema: TRANSLATE_SEARCH_SCHEMA,
+            maxOutputTokens: TRANSLATE_SEARCH_LIMITS.maxOutputTokens,
+        });
+
+        const payload = parsed || safeJsonParse(text);
+        const shaped = shapeTranslation(payload);
+
+        writeCachedTranslation({ userId, q }, shaped);
+        incrementUsage(userId, 'ai_queries');
+        auditLog(req, 'ai.translate_search', 'ai', null, { qLength: q.length, queryCount: shaped.queries.length });
+
+        res.json({ ...shaped, cached: false });
+    } catch (error) {
+        req.log.error({ err: error, qLength: q.length }, 'AI translate-search failed');
         handleAIError(res, error);
     }
 });

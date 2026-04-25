@@ -109,6 +109,7 @@ vi.mock('../lib/validators.js', async () => {
         migrationSizeStrategySchema: {},
         migrationDescriptionSchema: {},
         attentionNarrativeSchema: {},
+        aiTranslateSearchSchema: {},
     }
 })
 

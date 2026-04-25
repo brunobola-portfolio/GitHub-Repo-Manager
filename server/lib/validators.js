@@ -111,6 +111,10 @@ export const attentionNarrativeSchema = z.object({
     signal: z.record(z.string(), z.unknown()).optional().default({}),
 });
 
+export const aiTranslateSearchSchema = z.object({
+    q: z.string().min(1).max(500),
+});
+
 export const aiIndexSchema = z.object({
     repo: z.object({
         full_name: z.string().min(1).max(200),
