@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Loader2, AlertCircle, BookOpen, AlertTriangle,
+  AlertCircle, BookOpen, AlertTriangle,
 } from 'lucide-react'
+import { SectionSpinner } from '../../ui/Spinner'
 
 /**
  * WikiStep - Configure wiki migration for the Migration Wizard.
@@ -100,12 +101,7 @@ export default function WikiStep({ wiki, onUpdate, source }) {
       )}
 
       {wiki.enabled && loading && (
-        <div className="flex flex-col items-center justify-center py-12 gap-3">
-          <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Loading wikis...
-          </p>
-        </div>
+        <SectionSpinner label="Loading wikis..." />
       )}
 
       {wiki.enabled && error && (

@@ -9,6 +9,7 @@ import { ConfirmModal } from '../ui/ConfirmModal';
 import { TabBar } from '../ui/TabBar';
 import { Card } from '../ui/Card';
 import { PageHeader } from '../ui/PageHeader';
+import { SectionSpinner } from '../ui/Spinner';
 
 const TEAM_TABS = [
     { id: 'activity', label: 'Activity', icon: Activity },
@@ -739,9 +740,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                         <p>Select a repository to manage its actions</p>
                     </div>
                 ) : loading ? (
-                    <div className="flex justify-center p-12">
-                        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                    </div>
+                    <SectionSpinner label="Loading workflows..." padding="p-12" />
                 ) : (
                     <div className="space-y-8">
                         {/* Workflows List */}

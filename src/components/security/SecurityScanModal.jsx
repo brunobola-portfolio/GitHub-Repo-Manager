@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Modal } from '../ui/Modal'
 import { reposApi } from '../../api/repos'
-import { Loader2, ShieldCheck, Lock } from 'lucide-react'
+import { ShieldCheck, Lock } from 'lucide-react'
 import { EmptyState } from '../ui/EmptyState'
+import { SectionSpinner } from '../ui/Spinner'
 
 function SeverityBadge({ level, count }) {
   const colors = {
@@ -70,10 +71,7 @@ export function SecurityScanModal({ isOpen, onClose, repo }) {
     <Modal isOpen={isOpen} onClose={onClose} title="Security & Secrets Scan" subtitle={repo?.full_name} data-testid="security-scan-modal">
       <div>
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-3">
-            <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-            <p className="text-sm">Scanning…</p>
-          </div>
+          <SectionSpinner label="Scanning…" />
         ) : error ? (() => {
           const isTierError = error.tierError || error.status === 403 || error.status === 429
           return isTierError ? (

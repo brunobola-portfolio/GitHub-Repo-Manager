@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { Spinner, PageSpinner } from '../../../src/components/ui/Spinner'
+import { Spinner, PageSpinner, SectionSpinner } from '../../../src/components/ui/Spinner'
 
 describe('Spinner', () => {
     it('renders with role="status" and the default loading label', () => {
@@ -41,5 +41,19 @@ describe('PageSpinner', () => {
         render(<PageSpinner label="Booting up…" />)
         expect(screen.getByText('Booting up…')).toBeInTheDocument()
         expect(screen.getByRole('status')).toBeInTheDocument()
+    })
+})
+
+describe('SectionSpinner', () => {
+    it('renders label + spinner with the default padding', () => {
+        const { container } = render(<SectionSpinner label="Loading items..." />)
+        expect(screen.getByText('Loading items...')).toBeInTheDocument()
+        expect(screen.getByRole('status')).toBeInTheDocument()
+        expect(container.firstChild.className).toContain('py-12')
+    })
+
+    it('honours a custom padding override', () => {
+        const { container } = render(<SectionSpinner padding="p-16" />)
+        expect(container.firstChild.className).toContain('p-16')
     })
 })

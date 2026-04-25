@@ -63,3 +63,18 @@ export function PageSpinner({ label = 'Loading…' }) {
         </div>
     )
 }
+
+/**
+ * Section-level spinner for panels, modals and wizard steps. Same visual
+ * contract as PageSpinner but padding-based instead of viewport-based, so it
+ * sits naturally inside a Modal body or a card section without forcing the
+ * surrounding layout to grow.
+ */
+export function SectionSpinner({ label = 'Loading…', padding = 'py-12' }) {
+    return (
+        <div className={`flex flex-col items-center justify-center gap-3 ${padding}`}>
+            <Spinner size="lg" tone="primary" label={label} />
+            <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
+        </div>
+    )
+}

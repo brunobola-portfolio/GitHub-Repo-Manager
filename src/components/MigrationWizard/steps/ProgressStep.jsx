@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useSSE } from '../../../hooks/useSSE'
 import { migrationApi } from '../../../api/migration'
+import { SectionSpinner } from '../../ui/Spinner'
 
 const STATUS_COLORS = {
   pending: 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
@@ -286,10 +287,7 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 p-12">
-        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-        <p className="text-sm text-slate-500 dark:text-slate-400">Loading migration tasks...</p>
-      </div>
+      <SectionSpinner label="Loading migration tasks..." padding="p-12" />
     )
   }
 

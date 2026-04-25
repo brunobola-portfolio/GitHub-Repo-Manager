@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Loader2, AlertCircle, ListChecks, MessageSquare,
+  AlertCircle, ListChecks, MessageSquare,
   Paperclip, History, LayoutGrid, Tag,
 } from 'lucide-react'
+import { SectionSpinner } from '../../ui/Spinner'
 
 const DEFAULT_LABEL_MAPPING = {
   Bug: 'bug',
@@ -148,12 +149,7 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
       )}
 
       {workItems.enabled && loading && (
-        <div className="flex flex-col items-center justify-center py-12 gap-3">
-          <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Loading work item counts...
-          </p>
-        </div>
+        <SectionSpinner label="Loading work item counts..." />
       )}
 
       {workItems.enabled && error && (
@@ -179,9 +175,9 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
         <>
           {/* Type Selection */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <p className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Work Item Types
-            </label>
+            </p>
             <div className="space-y-1.5">
               {Object.entries(typeCounts).map(([type, count]) => {
                 const isChecked = (workItems.types || []).includes(type)
@@ -221,9 +217,9 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
 
           {/* Options */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <p className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               Options
-            </label>
+            </p>
             <div className="space-y-2">
               {[
                 { key: 'includeComments', label: 'Include Comments', icon: MessageSquare },
@@ -263,10 +259,10 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
 
           {/* Label Mapping */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <p className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               <Tag className="w-4 h-4 inline mr-1.5 -mt-0.5" />
               Label Mapping
-            </label>
+            </p>
             <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
               <table className="w-full text-sm">
                 <thead>

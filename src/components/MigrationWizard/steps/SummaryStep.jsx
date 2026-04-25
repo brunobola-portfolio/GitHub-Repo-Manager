@@ -7,6 +7,7 @@ import {
   ArrowRight, Zap, Shield, ShieldCheck, BarChart3, Timer,
 } from 'lucide-react'
 import { migrationApi } from '../../../api/migration'
+import { SectionSpinner } from '../../ui/Spinner'
 
 /* ═══════════════════════════════════════════
    CONSTANTS & CONFIGURATION
@@ -426,12 +427,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, pre
 
   /* Loading state */
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 p-16">
-        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-        <p className="text-sm text-slate-500 dark:text-slate-400">Loading migration report...</p>
-      </div>
-    )
+    return <SectionSpinner label="Loading migration report..." padding="p-16" />
   }
 
   /* Error state */
