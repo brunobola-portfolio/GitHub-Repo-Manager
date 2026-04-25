@@ -16,6 +16,7 @@ import { aiApi } from '../../api/ai'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { InsightCard } from '../ui/InsightCard'
 import { StatBar } from '../ui/StatBar'
+import { Button } from '../ui/Button'
 import { AINotConfiguredBanner } from './AINotConfiguredBanner'
 import { AINotHealthyBanner } from './AINotHealthyBanner'
 import { useAIStatus } from '../../hooks/useAIStatus'
@@ -212,14 +213,10 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
             isBusy={loading}
             footer={
                 <ModalFooter align="right">
-                    <button
-                        onClick={reanalyze}
-                        disabled={loading}
-                        className="px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors inline-flex items-center gap-2 disabled:opacity-50"
-                    >
+                    <Button variant="ghost" onClick={reanalyze} disabled={loading}>
                         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                         Re-analyze
-                    </button>
+                    </Button>
                     <button
                         onClick={onClose}
                         className="ds-btn-shimmer px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-lg hover:from-indigo-400 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/25"
@@ -503,14 +500,10 @@ function ReadmeGrid({ data, repo }) {
     const [showEnhance, setShowEnhance] = useState(false)
 
     const enhanceButton = (
-        <button
-            onClick={() => setShowEnhance(true)}
-            disabled={showEnhance}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700 disabled:opacity-50 ds-btn-shimmer"
-        >
+        <Button variant="primary" onClick={() => setShowEnhance(true)} disabled={showEnhance}>
             <Sparkles className="w-4 h-4" />
             Enhance with AI
-        </button>
+        </Button>
     )
 
     if (suggestions.length === 0) {

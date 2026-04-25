@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { WizardPanel } from '../ui/WizardPanel'
+import { Button } from '../ui/Button'
 import { useMobileBreakpoint } from '../../hooks/useMobileBreakpoint'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { useMigrationWizard } from '../../hooks/useMigrationWizard'
@@ -652,20 +653,10 @@ export default function MigrationWizard({
   // Footer
   const footer = (
     <div className="flex items-center justify-between gap-4">
-      <button
-        type="button"
-        onClick={canGoBack ? handleBack : handleClose}
-        className="inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium rounded-lg
-          text-slate-600 dark:text-slate-300
-          bg-white dark:bg-slate-800
-          hover:bg-slate-50 dark:hover:bg-slate-700
-          border border-slate-200 dark:border-slate-700
-          shadow-sm hover:shadow
-          transition-all duration-200"
-      >
+      <Button variant="secondary" type="button" onClick={canGoBack ? handleBack : handleClose}>
         <ArrowLeft className="w-3.5 h-3.5" />
         {canGoBack ? 'Back' : 'Cancel'}
-      </button>
+      </Button>
 
       {canGoNext && !hideNextButton && (
         <button
