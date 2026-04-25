@@ -182,3 +182,47 @@ describe('ai-health-probe — outcome counters', () => {
         expect(getProbeStats()).toEqual({ ok: 0, invalid: 0, unreachable: 0, unknown: 0, total: 0, lastOutcomeAt: null });
     });
 });
+
+describe('ai-health-probe — per-feature isolation', () => {
+    it('caches completion and embedding states independently', async () => {
+        const ok = { generate: vi.fn().mockResolvedValue({ text: 'ok' }) };
+        const bad = { generate: vi.fn().mockRejectedValue(Object.assign(new Error('nope'), { status: 401 })) };
+        // Resolver returns ok for completion, bad for embedding.
+        const resolve = (kind) => Promise.resolve(kind === 'completion' ? ok : bad);
+
+        await probeAndCache({ userId: 500, resolveProvider: resolve, feature: 'completion' });
+        await probeAndCache({ userId: 500, resolveProvider: resolve, feature: 'embedding' });
+
+        const c = getKeyHealth({ userId: 500, resolveProvider: resolve, feature: 'completion' });
+        const e = getKeyHealth({ userId: 500, resolveProvider: resolve, feature: 'embedding' });
+        expect(c.state).toBe('ok');
+        expect(e.state).toBe('invalid');
+    });
+
+    it('probing completion does not touch the embedding cache entry', async () => {
+        const ok = { generate: vi.fn().mockResolvedValue({ text: 'ok' }) };
+        recordState(501, 'invalid', 'embedding');
+        await probeAndCache({ userId: 501, resolveProvider: () => Promise.resolve(ok), feature: 'completion' });
+        const e = getKeyHealth({ userId: 501, resolveProvider: () => Promise.resolve(null), feature: 'embedding' });
+        expect(e.state).toBe('invalid');
+    });
+
+    it('falls back to "completion" for an unknown feature', async () => {
+        const ok = { generate: vi.fn().mockResolvedValue({ text: 'ok' }) };
+        await probeAndCache({ userId: 502, resolveProvider: () => Promise.resolve(ok), feature: 'banana' });
+        // The bogus feature should land in the completion bucket.
+        const c = getKeyHealth({ userId: 502, resolveProvider: () => Promise.resolve(null), feature: 'completion' });
+        expect(c.state).toBe('ok');
+    });
+
+    it('invalidate(userId) clears every feature for that user', async () => {
+        const ok = { generate: vi.fn().mockResolvedValue({ text: 'ok' }) };
+        await probeAndCache({ userId: 503, resolveProvider: () => Promise.resolve(ok), feature: 'completion' });
+        await probeAndCache({ userId: 503, resolveProvider: () => Promise.resolve(ok), feature: 'embedding' });
+        invalidate(503);
+        const c = getKeyHealth({ userId: 503, resolveProvider: () => Promise.resolve(null), feature: 'completion' });
+        const e = getKeyHealth({ userId: 503, resolveProvider: () => Promise.resolve(null), feature: 'embedding' });
+        expect(c.state).toBe('unknown');
+        expect(e.state).toBe('unknown');
+    });
+});

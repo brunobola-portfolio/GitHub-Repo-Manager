@@ -53,7 +53,7 @@ const counters = {
  *   - 'unreachable' / 'unknown' are noisy; info-only to avoid alert fatigue
  *   - 'ok' is info, mostly useful as a heartbeat
  */
-function recordOutcome({ state, userId, durationMs, source }) {
+function recordOutcome({ state, userId, durationMs, source, feature = DEFAULT_FEATURE }) {
     counters[state] = (counters[state] ?? 0) + 1;
     counters.total += 1;
     counters.lastOutcomeAt = new Date().toISOString();
@@ -61,8 +61,8 @@ function recordOutcome({ state, userId, durationMs, source }) {
     captureBreadcrumb({
         event: 'ai.probe_outcome',
         level,
-        data: { state, userId: userId ?? null, durationMs, source },
-        message: `AI key health probe → ${state}`,
+        data: { state, userId: userId ?? null, feature, durationMs, source },
+        message: `AI key health probe (${feature}) → ${state}`,
     });
 }
 
@@ -88,12 +88,29 @@ export function resetProbeStats() {
 }
 
 /**
- * Cache key for a probe. Authenticated calls key by userId so each BYOK user
- * gets their own state. Unauthenticated reads use a constant key so the
- * server-fallback state is shared across anonymous probes.
+ * Allow-list of features the probe supports. The provider abstraction at
+ * server/lib/ai-provider.js already accepts these as `kind` arguments.
+ *
+ * Default is 'completion' so any caller that doesn't pass a feature stays
+ * on the same code path as before.
  */
-function makeCacheKey(userId) {
-    return userId == null ? 'server' : `user:${userId}`;
+const SUPPORTED_FEATURES = new Set(['completion', 'chat', 'embedding']);
+const DEFAULT_FEATURE = 'completion';
+
+function normaliseFeature(feature) {
+    if (!feature) return DEFAULT_FEATURE;
+    return SUPPORTED_FEATURES.has(feature) ? feature : DEFAULT_FEATURE;
+}
+
+/**
+ * Cache key for a probe. Authenticated calls key by (userId, feature) so
+ * each BYOK user gets independent state per feature — invalidating the
+ * embedding key doesn't poison the completion cache. Unauthenticated reads
+ * use a constant prefix so the server-fallback state is shared.
+ */
+function makeCacheKey(userId, feature = DEFAULT_FEATURE) {
+    const f = normaliseFeature(feature);
+    return userId == null ? `server:${f}` : `user:${userId}:${f}`;
 }
 
 /**
@@ -119,9 +136,10 @@ function classifyError(err) {
  * Records the outcome via captureBreadcrumb / counters so operators can see
  * the probe trail without spelunking through logs.
  */
-async function runProbe(provider, { userId = null, source = 'getKeyHealth' } = {}) {
+async function runProbe(provider, { userId = null, source = 'getKeyHealth', feature = DEFAULT_FEATURE } = {}) {
+    const f = normaliseFeature(feature);
     if (!provider) {
-        recordOutcome({ state: 'unknown', userId, durationMs: 0, source });
+        recordOutcome({ state: 'unknown', userId, durationMs: 0, source, feature: f });
         return 'unknown';
     }
 
@@ -134,12 +152,12 @@ async function runProbe(provider, { userId = null, source = 'getKeyHealth' } = {
             prompt: 'ping',
             generationConfig: { maxOutputTokens: 1 },
         });
-        recordOutcome({ state: 'ok', userId, durationMs: Date.now() - startedAt, source });
+        recordOutcome({ state: 'ok', userId, durationMs: Date.now() - startedAt, source, feature: f });
         return 'ok';
     } catch (err) {
         const state = classifyError(err);
-        logger.debug({ state, err: err?.message }, 'AI key health probe failed');
-        recordOutcome({ state, userId, durationMs: Date.now() - startedAt, source });
+        logger.debug({ state, err: err?.message, feature: f }, 'AI key health probe failed');
+        recordOutcome({ state, userId, durationMs: Date.now() - startedAt, source, feature: f });
         return state;
     } finally {
         clearTimeout(timer);
@@ -154,8 +172,9 @@ async function runProbe(provider, { userId = null, source = 'getKeyHealth' } = {
  * @param {() => Promise<object|null>} opts.resolveProvider — async factory that returns the provider to probe
  * @returns {{ state: 'ok'|'invalid'|'unreachable'|'unknown', checkedAt: string|null }}
  */
-export function getKeyHealth({ userId, resolveProvider }) {
-    const key = makeCacheKey(userId);
+export function getKeyHealth({ userId, resolveProvider, feature = DEFAULT_FEATURE }) {
+    const f = normaliseFeature(feature);
+    const key = makeCacheKey(userId, f);
     const entry = cache.get(key);
     const now = Date.now();
 
@@ -167,12 +186,12 @@ export function getKeyHealth({ userId, resolveProvider }) {
     if (!entry?.inflight) {
         const inflight = (async () => {
             try {
-                const provider = await resolveProvider();
-                const state = await runProbe(provider, { userId, source: 'getKeyHealth' });
+                const provider = await resolveProvider(f);
+                const state = await runProbe(provider, { userId, source: 'getKeyHealth', feature: f });
                 cache.set(key, { state, checkedAt: Date.now(), inflight: null });
             } catch (err) {
-                logger.debug({ err: err?.message }, 'AI key health probe resolveProvider threw');
-                recordOutcome({ state: 'unknown', userId, durationMs: 0, source: 'getKeyHealth' });
+                logger.debug({ err: err?.message, feature: f }, 'AI key health probe resolveProvider threw');
+                recordOutcome({ state: 'unknown', userId, durationMs: 0, source: 'getKeyHealth', feature: f });
                 cache.set(key, { state: 'unknown', checkedAt: Date.now(), inflight: null });
             }
         })();
@@ -193,20 +212,21 @@ export function getKeyHealth({ userId, resolveProvider }) {
  * @param {object} opts — same shape as getKeyHealth
  * @returns {Promise<{ state: string, checkedAt: string }>}
  */
-export async function probeAndCache({ userId, resolveProvider }) {
-    const key = makeCacheKey(userId);
+export async function probeAndCache({ userId, resolveProvider, feature = DEFAULT_FEATURE }) {
+    const f = normaliseFeature(feature);
+    const key = makeCacheKey(userId, f);
     let provider = null;
     try {
-        provider = await resolveProvider();
+        provider = await resolveProvider(f);
     } catch (err) {
-        logger.debug({ err: err?.message }, 'AI key health probe resolveProvider threw');
+        logger.debug({ err: err?.message, feature: f }, 'AI key health probe resolveProvider threw');
     }
     let state;
     if (provider) {
-        state = await runProbe(provider, { userId, source: 'probeAndCache' });
+        state = await runProbe(provider, { userId, source: 'probeAndCache', feature: f });
     } else {
         state = 'unknown';
-        recordOutcome({ state: 'unknown', userId, durationMs: 0, source: 'probeAndCache' });
+        recordOutcome({ state: 'unknown', userId, durationMs: 0, source: 'probeAndCache', feature: f });
     }
     const checkedAt = Date.now();
     cache.set(key, { state, checkedAt, inflight: null });
@@ -217,12 +237,19 @@ export async function probeAndCache({ userId, resolveProvider }) {
  * Clear the cache for a user (or the whole cache if userId is omitted).
  * Use after a config delete so the next read doesn't return stale "ok".
  */
-export function invalidate(userId) {
+export function invalidate(userId, feature) {
     if (userId === undefined) {
         cache.clear();
         return;
     }
-    cache.delete(makeCacheKey(userId));
+    if (feature === undefined) {
+        // Drop every entry for this user across all features.
+        for (const key of cache.keys()) {
+            if (key.startsWith(`user:${userId}:`)) cache.delete(key);
+        }
+        return;
+    }
+    cache.delete(makeCacheKey(userId, feature));
 }
 
 /**
@@ -230,9 +257,11 @@ export function invalidate(userId) {
  * Test Connection endpoint to record an "ok" result it just verified, so the
  * next status read returns immediately without billing a second completion.
  */
-export function recordState(userId, state) {
-    cache.set(makeCacheKey(userId), { state, checkedAt: Date.now(), inflight: null });
+export function recordState(userId, state, feature = DEFAULT_FEATURE) {
+    cache.set(makeCacheKey(userId, feature), { state, checkedAt: Date.now(), inflight: null });
 }
+
+export const SUPPORTED_PROBE_FEATURES = Object.freeze([...SUPPORTED_FEATURES]);
 
 // Exposed for tests only — never use from production code.
 export const __TEST__ = { cache, makeCacheKey };

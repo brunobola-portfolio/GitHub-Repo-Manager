@@ -55,6 +55,11 @@ const router = express.Router();
 // kicks off the background refresh; later calls within 5 min return cached
 // state. Pass `?probe=1` to wait for a fresh probe (used by the Settings UI
 // after a Test Connection success so the cache reflects the new state).
+//
+// Optional `?feature=` accepts 'completion' (default), 'chat', or
+// 'embedding' so a user with separate BYOK keys per feature can probe
+// each independently. Backwards compatible: omitting the param probes
+// the completion key, which is what the existing UI reads.
 router.get('/config/ai-status', async (req, res) => {
     const configured = !!process.env.GEMINI_API_KEY || !!aiService.model;
     if (!configured) {
@@ -62,12 +67,13 @@ router.get('/config/ai-status', async (req, res) => {
     }
 
     const userId = req.session?.userId ?? null;
-    const resolveProvider = async () => {
+    const feature = typeof req.query?.feature === 'string' ? req.query.feature : 'completion';
+    const resolveProvider = async (kind = feature) => {
         // Reuse the per-request resolver when available so BYOK paths probe
-        // the user's key. Otherwise fall back to the server-wide aiService
-        // (Gemini env key) as the thing to probe.
+        // the user's key (per-feature). Otherwise fall back to the server-wide
+        // aiService (Gemini env key) as the thing to probe.
         if (typeof req.getAIProvider === 'function') {
-            const p = await req.getAIProvider('completion').catch(() => null);
+            const p = await req.getAIProvider(kind).catch(() => null);
             if (p) return p;
         }
         return aiService?.provider ?? null;
@@ -75,8 +81,8 @@ router.get('/config/ai-status', async (req, res) => {
 
     const force = req.query?.probe === '1';
     const health = force
-        ? await probeAndCache({ userId, resolveProvider })
-        : getKeyHealth({ userId, resolveProvider });
+        ? await probeAndCache({ userId, resolveProvider, feature })
+        : getKeyHealth({ userId, resolveProvider, feature });
 
     res.json({
         configured: true,
