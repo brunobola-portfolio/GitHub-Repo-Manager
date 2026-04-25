@@ -73,7 +73,7 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription 
 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 flex-wrap">
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 ds-font-display truncate">
+                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 ds-font-display truncate">
                             {r.full_name || `${owner}/${repoName}`}
                         </h1>
                         <TrackedChip repoFullName={r.full_name || `${owner}/${repoName}`} />
