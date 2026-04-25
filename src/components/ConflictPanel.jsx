@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react'
 import { Trash2, Edit3, SkipForward } from 'lucide-react'
 import { formatFileSize, formatDate as formatDateBase } from '../utils/format'
+import { Button } from './ui/Button'
 
 // --- Helper functions ---
 
@@ -154,21 +155,13 @@ export function ConflictPanel({ conflict, repoName, onResolve, resolution }) {
                             This will overwrite the existing target repository. This cannot be undone.
                         </p>
                         <div className="flex gap-2">
-                            <button
-                                type="button"
-                                onClick={() => onResolve({ action: 'replace' })}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white text-xs font-medium transition-colors"
-                            >
+                            <Button variant="danger" size="xs" onClick={() => onResolve({ action: 'replace' })}>
                                 <Trash2 className="w-3.5 h-3.5" />
                                 Confirm Replace
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setPendingAction(null)}
-                                className="px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                            >
+                            </Button>
+                            <Button variant="ghost" size="xs" onClick={() => setPendingAction(null)}>
                                 Cancel
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 ) : pendingAction === 'rename' ? (
@@ -189,22 +182,18 @@ export function ConflictPanel({ conflict, repoName, onResolve, resolution }) {
                             className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                         <div className="flex gap-2">
-                            <button
-                                type="button"
+                            <Button
+                                variant="primary"
+                                size="xs"
                                 onClick={() => onResolve({ action: 'rename', newName: renameValue })}
                                 disabled={!renameValue.trim()}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-medium transition-colors"
                             >
                                 <Edit3 className="w-3.5 h-3.5" />
                                 Confirm Rename
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setPendingAction(null)}
-                                className="px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                            >
+                            </Button>
+                            <Button variant="ghost" size="xs" onClick={() => setPendingAction(null)}>
                                 Cancel
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 ) : (

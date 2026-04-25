@@ -11,16 +11,27 @@ const variants = {
 }
 
 const sizes = {
+    // xs is intentionally below the WCAG 44px tap-target floor — for tight
+    // inline chrome (toolbar pills, banner CTAs) where the surrounding
+    // layout already constrains the click area. Use sparingly; sm/md/lg
+    // should stay the default for primary CTAs.
+    xs: 'px-2 py-1 text-[11px] gap-1',
     sm: 'px-3 py-1.5 text-xs gap-1.5',
     md: 'px-4 py-2 text-sm gap-2',
     lg: 'px-6 py-3 text-base gap-2.5',
 }
 
+// Sizes that opt out of the 44px minimum target. Keep this list explicit so
+// adding another opt-out size is a deliberate accessibility decision.
+const SIZES_WITHOUT_MIN_TARGET = new Set(['xs'])
+
 export function Button({ className, variant = 'primary', size = 'md', children, ...props }) {
+    const enforcesMinTarget = !SIZES_WITHOUT_MIN_TARGET.has(size)
     return (
         <button
             className={twMerge(
-                'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 min-h-[44px] min-w-[44px]',
+                'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
+                enforcesMinTarget && 'min-h-[44px] min-w-[44px]',
                 variants[variant] || variants.primary,
                 sizes[size] || sizes.md,
                 className

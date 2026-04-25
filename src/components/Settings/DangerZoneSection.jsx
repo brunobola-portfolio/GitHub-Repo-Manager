@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Download, AlertTriangle, Trash2, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { InsightCard } from '../ui/InsightCard'
 import { ConfirmModal } from '../ui/ConfirmModal'
+import { Button } from '../ui/Button'
 import { API_BASE_URL, MOCK_MODE } from '../../config'
 import { useToast } from '../../hooks/useToast'
 
@@ -95,9 +96,9 @@ export function DangerZoneSection({ onErased }) {
                 <div className="flex items-start gap-2">
                     <AlertTriangle size={18} className="text-rose-500 flex-shrink-0 mt-0.5" />
                     <div>
-                        <label className="text-sm font-semibold text-rose-700 dark:text-rose-300 block">
+                        <p className="text-sm font-semibold text-rose-700 dark:text-rose-300 block">
                             Danger Zone
-                        </label>
+                        </p>
                         <p className="text-xs text-rose-600/80 dark:text-rose-400/70 mt-0.5">
                             Export your data or permanently erase your account. Both actions are audit-logged.
                         </p>
@@ -112,18 +113,10 @@ export function DangerZoneSection({ onErased }) {
                             Downloads a JSON file with your AI config, migration plans, events, and metadata (GDPR Art. 20).
                         </p>
                     </div>
-                    <button
-                        onClick={handleExport}
-                        disabled={exporting}
-                        className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
-                            bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700
-                            text-slate-700 dark:text-slate-200
-                            hover:bg-indigo-50 dark:hover:bg-slate-700 hover:border-indigo-300 dark:hover:border-indigo-800
-                            disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
+                    <Button variant="secondary" size="sm" onClick={handleExport} disabled={exporting} className="shrink-0">
                         {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                         {exporting ? 'Exporting…' : 'Export'}
-                    </button>
+                    </Button>
                 </div>
 
                 {exportMsg && (
@@ -145,16 +138,10 @@ export function DangerZoneSection({ onErased }) {
                             Permanently erases all personal data and tombstones your user record (GDPR Art. 17). Cancel any active subscription first.
                         </p>
                     </div>
-                    <button
-                        onClick={() => setConfirmOpen(true)}
-                        className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
-                            bg-rose-600 text-white shadow-md shadow-rose-500/20
-                            hover:bg-rose-500
-                            transition-colors"
-                    >
+                    <Button variant="danger" size="sm" onClick={() => setConfirmOpen(true)} className="shrink-0">
                         <Trash2 className="w-3.5 h-3.5" />
                         Delete account…
-                    </button>
+                    </Button>
                 </div>
             </div>
 
