@@ -843,6 +843,16 @@ export function initDB(targetDb = db) {
     db.exec(`CREATE INDEX IF NOT EXISTS idx_wbks_user_time
              ON work_board_kpi_snapshots(user_id, snapped_at DESC)`);
 
+    // Migration 018 (Notifications digest): per-user "last seen the bell"
+    // timestamp. Used by /notifications/digest to scope items to "since you
+    // last looked". Nullable on purpose — first read seeds it to NOW − 7d
+    // so the user gets a reasonable initial digest.
+    try {
+        db.exec(`ALTER TABLE users ADD COLUMN notifications_last_seen_at TEXT`);
+    } catch (err) {
+        if (!err.message?.includes('duplicate column')) throw err;
+    }
+
     logger.info('SQLite Database initialized successfully');
 }
 
