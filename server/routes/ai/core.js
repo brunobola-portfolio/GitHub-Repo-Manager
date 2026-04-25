@@ -19,6 +19,7 @@ import { safeJsonParse } from '../../lib/utils.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
 import { requireAI, handleAIError, providerGenerateWithRetry } from './shared.js';
+import { getKeyHealth, probeAndCache } from '../../lib/ai-health-probe.js';
 
 const router = express.Router();
 
@@ -28,9 +29,47 @@ const router = express.Router();
 
 // Check AI Configuration Status (mounted at /config/ai-status from index.js)
 // Note: This is also available via the router's own mount point
-router.get('/config/ai-status', (req, res) => {
+//
+// Returns:
+//   configured        — boolean — does any provider exist (BYOK or server fallback)
+//   provider          — string  — provider id when configured
+//   keyHealth         — string  — 'ok' | 'invalid' | 'unreachable' | 'unknown'
+//   lastCheckedAt     — ISO     — when keyHealth was last refreshed (null if never)
+//
+// keyHealth is updated via an in-memory probe (see lib/ai-health-probe.js).
+// The endpoint never blocks on the probe — first call returns 'unknown' and
+// kicks off the background refresh; later calls within 5 min return cached
+// state. Pass `?probe=1` to wait for a fresh probe (used by the Settings UI
+// after a Test Connection success so the cache reflects the new state).
+router.get('/config/ai-status', async (req, res) => {
     const configured = !!process.env.GEMINI_API_KEY || !!aiService.model;
-    res.json({ configured, provider: configured ? 'gemini' : null });
+    if (!configured) {
+        return res.json({ configured: false, provider: null, keyHealth: 'unknown', lastCheckedAt: null });
+    }
+
+    const userId = req.session?.userId ?? null;
+    const resolveProvider = async () => {
+        // Reuse the per-request resolver when available so BYOK paths probe
+        // the user's key. Otherwise fall back to the server-wide aiService
+        // (Gemini env key) as the thing to probe.
+        if (typeof req.getAIProvider === 'function') {
+            const p = await req.getAIProvider('completion').catch(() => null);
+            if (p) return p;
+        }
+        return aiService?.provider ?? null;
+    };
+
+    const force = req.query?.probe === '1';
+    const health = force
+        ? await probeAndCache({ userId, resolveProvider })
+        : getKeyHealth({ userId, resolveProvider });
+
+    res.json({
+        configured: true,
+        provider: 'gemini',
+        keyHealth: health.state,
+        lastCheckedAt: health.checkedAt,
+    });
 });
 
 // ------------------------------------------------------------------

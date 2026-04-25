@@ -1,0 +1,86 @@
+import { motion, useReducedMotion } from 'framer-motion'
+import { Wallet, ArrowRight, AlertTriangle } from 'lucide-react'
+
+const MOTION_VARIANTS = {
+    hidden: { opacity: 0, y: -8 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] } },
+}
+
+const REDUCED_VARIANTS = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.15 } },
+}
+
+function formatCents(cents) {
+    if (cents == null) return null
+    const dollars = cents / 100
+    return `$${dollars.toFixed(2)}`
+}
+
+/**
+ * WorkBoardCapReachedBanner — shown when the Work Board AI monthly cap has
+ * been reached. Tonally rose-amber to communicate "blocked but recoverable":
+ * the user just needs to raise the cap in Settings or wait for the new month.
+ */
+export function WorkBoardCapReachedBanner({ spentCents, capCents, className = '' }) {
+    const reduced = useReducedMotion()
+    const variants = reduced ? REDUCED_VARIANTS : MOTION_VARIANTS
+
+    return (
+        <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={variants}
+            role="alert"
+            aria-live="polite"
+            className={`relative overflow-hidden rounded-xl p-4 ring-1 ring-inset ring-rose-500/30 bg-gradient-to-br from-rose-500/[0.08] via-amber-500/[0.05] to-transparent dark:from-rose-500/[0.12] dark:via-amber-500/[0.08] ${className}`}
+        >
+            <div className="flex items-start gap-3">
+                <div className="shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500/25 to-amber-500/20 dark:from-rose-500/35 dark:to-amber-500/30 ring-1 ring-inset ring-rose-500/40 flex items-center justify-center">
+                    <Wallet className="w-5 h-5 text-rose-600 dark:text-rose-300" aria-hidden="true" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-semibold text-slate-900 dark:text-slate-100">AI monthly cap reached</h4>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-200 ring-1 ring-inset ring-rose-200 dark:ring-rose-800">
+                            <AlertTriangle className="w-2.5 h-2.5" aria-hidden="true" /> Blocked
+                        </span>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                        Work Board AI is paused for the rest of this month. Raise the cap below or wait for the next billing window.
+                    </p>
+                    {(spentCents != null && capCents != null) && (
+                        <div className="mt-3">
+                            <div className="flex items-center justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                                <span>Spent this month</span>
+                                <span className="text-slate-700 dark:text-slate-200">
+                                    {formatCents(spentCents)} <span className="text-slate-400">/ {formatCents(capCents)}</span>
+                                </span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-rose-100 dark:bg-rose-900/40 overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-rose-500 to-amber-500"
+                                    style={{ width: '100%' }}
+                                    aria-hidden="true"
+                                />
+                            </div>
+                        </div>
+                    )}
+                    <div className="mt-3 flex items-center gap-2">
+                        <a
+                            href="#ai-cap"
+                            onClick={(e) => {
+                                e.preventDefault()
+                                document.getElementById('ai-cap-input')?.focus()
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-rose-700 dark:text-rose-200 bg-rose-50 dark:bg-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 ring-1 ring-inset ring-rose-200 dark:ring-rose-800 rounded-lg transition-colors"
+                        >
+                            Adjust cap
+                            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+    )
+}

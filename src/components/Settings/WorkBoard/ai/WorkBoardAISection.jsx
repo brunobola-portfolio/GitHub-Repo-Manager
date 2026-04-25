@@ -5,6 +5,7 @@ import { AIAssistantToggle } from './AIAssistantToggle'
 import { AIActivityCard } from './AIActivityCard'
 import { SuggestionsPanel } from './SuggestionsPanel'
 import { ConversationalEdit } from './ConversationalEdit'
+import { WorkBoardCapReachedBanner } from './WorkBoardCapReachedBanner'
 
 export function WorkBoardAISection() {
     const ai = useWorkBoardAI()
@@ -60,10 +61,18 @@ export function WorkBoardAISection() {
         }
     }
 
+    const capReached = ai.reason === 'AI_COST_CAP_REACHED'
+
     return (
         <div className="space-y-3">
             <AIAssistantToggle />
-            {aiEnabled && (
+            {capReached && (
+                <WorkBoardCapReachedBanner
+                    spentCents={ai.activity?.spent_cents}
+                    capCents={ai.activity?.cap_cents}
+                />
+            )}
+            {aiEnabled && !capReached && (
                 <>
                     <AIActivityCard activity={ai.activity} />
                     <SuggestionsPanel

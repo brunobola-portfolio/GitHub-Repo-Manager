@@ -23,6 +23,7 @@ import {
     getDecryptedConfig,
 } from '../lib/user-ai-config.js';
 import { createProviderForUser } from '../lib/ai-provider.js';
+import { invalidate as invalidateAIHealth, recordState as recordAIHealth } from '../lib/ai-health-probe.js';
 import logger from '../lib/logger.js';
 import { redactSecrets } from '../lib/redact-secrets.js';
 
@@ -146,6 +147,10 @@ router.post('/', requireAuth, validateBody(userAIConfigSchema), (req, res) => {
         featureOverrides,
     });
 
+    // Bust the per-user keyHealth cache so the next /config/ai-status read
+    // probes the new credentials instead of returning a stale result.
+    invalidateAIHealth(req.session.userId);
+
     res.status(204).end();
 });
 
@@ -155,6 +160,7 @@ router.post('/', requireAuth, validateBody(userAIConfigSchema), (req, res) => {
 
 router.delete('/', requireAuth, (req, res) => {
     deleteUserAIConfig(req.session.userId);
+    invalidateAIHealth(req.session.userId);
     res.status(204).end();
 });
 
@@ -195,6 +201,9 @@ router.post('/test', requireAuth, testRateLimiter, validateBody(testAIConfigSche
                 generationConfig: { max_tokens: 10, maxOutputTokens: 10 },
             });
             const latencyMs = Date.now() - t0;
+            // Warm the keyHealth cache so the next /config/ai-status read
+            // returns 'ok' without needing a separate probe call.
+            recordAIHealth(userId, 'ok');
             return res.json({
                 ok: true,
                 latencyMs,
@@ -220,6 +229,15 @@ router.post('/test', requireAuth, testRateLimiter, validateBody(testAIConfigSche
 
         // Redact first — do NOT include the raw err object (may carry auth headers in err.cause)
         const safeMessage = redactSecrets(err?.message || 'Test call failed').slice(0, 200) || 'Test call failed';
+
+        // Record health state from the test failure so /config/ai-status
+        // reflects what we just learned without re-probing.
+        const status = err?.status ?? err?.cause?.status;
+        if (status === 401 || status === 403 || err?.code === 'AUTH') {
+            recordAIHealth(userId, 'invalid');
+        } else if (err?.code === 'NETWORK' || err?.code === 'TIMEOUT') {
+            recordAIHealth(userId, 'unreachable');
+        }
 
         logger.warn({
             code: err?.code,
