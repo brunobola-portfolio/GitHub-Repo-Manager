@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import {
     Building2, Settings, Globe, Lock, Users, GitFork,
     ExternalLink, RefreshCw, Edit3, Check, AlertTriangle,
-    Shield, Mail, MapPin, Link as LinkIcon
+    Shield, Mail, MapPin, Link as LinkIcon, User, Info
 } from 'lucide-react'
 import { Button } from './ui/Button'
 import { Modal, ModalFooter } from './ui/Modal'
@@ -13,6 +13,10 @@ const ORG_TABS = [
     { id: 'overview', label: 'Overview' },
     { id: 'members', label: 'Members' },
     { id: 'settings', label: 'Settings' },
+]
+
+const PERSONAL_TABS = [
+    { id: 'overview', label: 'Overview' },
 ]
 
 export function OrgManagerModal({
@@ -30,15 +34,23 @@ export function OrgManagerModal({
     const [activeTab, setActiveTab] = useState('overview')
     const [error, setError] = useState(null)
 
+    const isPersonal = !!org?.isPersonal
+    const tabs = isPersonal ? PERSONAL_TABS : ORG_TABS
+
     useEffect(() => {
         if (!isOpen || !org) return
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- normalise activeTab to a valid tab for personal accounts
+        if (activeTab !== 'overview' && isPersonal) setActiveTab('overview')
+        if (isPersonal) return
         const ctrl = new AbortController()
+        // eslint-disable-next-line react-hooks/immutability -- function reference is stable across renders
         fetchOrgDetails(ctrl.signal)
         return () => ctrl.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, org?.login])
+    }, [isOpen, org?.login, isPersonal])
 
     const fetchOrgDetails = async (signal) => {
+        if (isPersonal) return
         setLoading(true)
         setError(null)
         try {
@@ -111,12 +123,12 @@ export function OrgManagerModal({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title="Organization Manager"
+            title={isPersonal ? 'Personal Account' : 'Organization Manager'}
             subtitle={org?.login ? `@${org.login}` : undefined}
-            icon={Building2}
+            icon={isPersonal ? User : Building2}
             iconGradient="primary"
             size="lg"
-            tabs={ORG_TABS}
+            tabs={tabs}
             activeTab={activeTab}
             onTabChange={setActiveTab}
             tabsLayoutId="org-manager-tabs"
@@ -147,6 +159,7 @@ export function OrgManagerModal({
             ) : activeTab === 'overview' ? (
                 <OverviewTab
                     org={displayOrg}
+                    isPersonal={isPersonal}
                     editing={editing}
                     editForm={editForm}
                     setEditForm={setEditForm}
@@ -166,10 +179,14 @@ export function OrgManagerModal({
 }
 
 // Overview Tab Component
-function OverviewTab({ org, editing, editForm, setEditForm, onEdit, onSave, onCancel, loading, onRefresh }) {
+function OverviewTab({ org, isPersonal, editing, editForm, setEditForm, onEdit, onSave, onCancel, loading, onRefresh }) {
+    const githubSettingsUrl = isPersonal
+        ? 'https://github.com/settings/profile'
+        : `https://github.com/organizations/${org.login}/settings/profile`
+
     return (
         <div className="space-y-6">
-            {/* Org Avatar + Refresh */}
+            {/* Header: avatar, name, type badge, refresh */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <img
@@ -178,34 +195,46 @@ function OverviewTab({ org, editing, editForm, setEditForm, onEdit, onSave, onCa
                         className="w-12 h-12 rounded-xl ring-2 ring-slate-200 dark:ring-slate-700 shadow"
                     />
                     <div>
-                        <div className="font-semibold text-slate-900 dark:text-slate-100">{org.name || org.login}</div>
+                        <div className="flex items-center gap-2">
+                            <span className="font-semibold text-slate-900 dark:text-slate-100">{org.name || org.login}</span>
+                            <AccountTypeBadge isPersonal={isPersonal} />
+                        </div>
                         <div className="text-sm text-slate-500 dark:text-slate-400">@{org.login}</div>
                     </div>
                 </div>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onRefresh}
-                    disabled={loading}
-                    aria-label="Refresh organization details"
-                >
-                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                </Button>
+                {!isPersonal && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onRefresh}
+                        disabled={loading}
+                        aria-label="Refresh organization details"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </Button>
+                )}
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Capabilities info panel — explicit about what's possible */}
+            <CapabilitiesCard isPersonal={isPersonal} />
+
+            {/* Stats Grid — Members stat is org-only */}
+            <div className={`grid gap-4 ${isPersonal ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2 md:grid-cols-4'}`}>
                 <StatCard icon={Globe} label="Public Repos" value={org.public_repos || 0} color="blue" />
                 <StatCard icon={Lock} label="Private Repos" value={org.total_private_repos || 0} color="purple" />
                 <StatCard icon={GitFork} label="Forks" value={org.public_repos_forks || org.public_gists || 0} color="green" />
-                <StatCard icon={Users} label="Members" value={org.members_count || '—'} color="orange" />
+                {!isPersonal && (
+                    <StatCard icon={Users} label="Members" value={org.members_count || '—'} color="orange" />
+                )}
             </div>
 
             {/* Details */}
             <InsightCard tone="default">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Organization Details</h3>
-                    {!editing ? (
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+                        {isPersonal ? 'Account Details' : 'Organization Details'}
+                    </h3>
+                    {!isPersonal && (!editing ? (
                         <Button variant="ghost" size="sm" onClick={onEdit}>
                             <Edit3 className="w-4 h-4 mr-1" /> Edit
                         </Button>
@@ -216,10 +245,10 @@ function OverviewTab({ org, editing, editForm, setEditForm, onEdit, onSave, onCa
                                 <Check className="w-4 h-4 mr-1" /> Save
                             </Button>
                         </div>
-                    )}
+                    ))}
                 </div>
 
-                {editing ? (
+                {!isPersonal && editing ? (
                     <div className="grid gap-4">
                         <EditField label="Name" value={editForm.name} onChange={v => setEditForm(f => ({ ...f, name: v }))} />
                         <EditField label="Description" value={editForm.description} onChange={v => setEditForm(f => ({ ...f, description: v }))} multiline />
@@ -250,16 +279,83 @@ function OverviewTab({ org, editing, editForm, setEditForm, onEdit, onSave, onCa
                     View on GitHub
                 </a>
                 <a
-                    href={`https://github.com/organizations/${org.login}/settings/profile`}
+                    href={githubSettingsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                     <Settings className="w-4 h-4" />
-                    GitHub Settings
+                    {isPersonal ? 'Profile Settings' : 'GitHub Settings'}
                 </a>
             </div>
         </div>
+    )
+}
+
+function AccountTypeBadge({ isPersonal }) {
+    if (isPersonal) {
+        return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200 ring-1 ring-inset ring-indigo-200/60 dark:ring-indigo-800/60">
+                <User className="w-3 h-3" /> Personal
+            </span>
+        )
+    }
+    return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200 ring-1 ring-inset ring-purple-200/60 dark:ring-purple-800/60">
+            <Building2 className="w-3 h-3" /> Organization
+        </span>
+    )
+}
+
+function CapabilitiesCard({ isPersonal }) {
+    const available = isPersonal
+        ? ['Browse public & private repos', 'Create new repositories', 'View on GitHub']
+        : ['Browse org repos', 'View members', 'Edit org profile (name, description, email, location, website)', 'Open org Settings / Security on GitHub']
+    const unavailable = isPersonal
+        ? ['Members list (only for organizations)', 'Org Settings / Member Privileges', 'Edit profile in-app — use GitHub profile settings']
+        : []
+    return (
+        <InsightCard tone={isPersonal ? 'info' : 'default'} hover={false}>
+            <div className="flex items-start gap-3">
+                <Info className="w-5 h-5 text-indigo-600 dark:text-indigo-300 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-slate-900 dark:text-slate-100">
+                        {isPersonal ? 'This is your personal account' : 'Organization workspace'}
+                    </h4>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+                        {isPersonal
+                            ? 'Personal accounts don\'t expose the GitHub organization APIs, so members and org settings are not available here.'
+                            : 'You can manage org profile, members, and open GitHub for advanced settings.'}
+                    </p>
+                    <div className="mt-3 grid sm:grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Available</div>
+                            <ul className="space-y-1">
+                                {available.map(item => (
+                                    <li key={item} className="flex items-start gap-1.5 text-slate-700 dark:text-slate-200">
+                                        <Check className="w-3.5 h-3.5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                                        <span>{item}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                        {unavailable.length > 0 && (
+                            <div>
+                                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Not available</div>
+                                <ul className="space-y-1">
+                                    {unavailable.map(item => (
+                                        <li key={item} className="flex items-start gap-1.5 text-slate-500 dark:text-slate-400">
+                                            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
+                                            <span>{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </InsightCard>
     )
 }
 
