@@ -185,6 +185,25 @@ router.get('/ai/metadata/:repoId', requireAuth, (req, res) => {
     }
 });
 
+// Get All Cached Metadata for the User
+//
+// Bulk fetch for surfaces that render many repos at once (RepoList grid,
+// Dashboard cards) — one network round-trip instead of N. Returns an array
+// of { repo_id, health_score, summary, topics, last_indexed } limited to
+// repos the user has indexed (no row = repo never indexed).
+router.get('/ai/metadata', requireAuth, (req, res) => {
+    try {
+        const rows = db.prepare(`
+            SELECT repo_id, health_score, summary, topics, last_indexed
+            FROM repo_metadata
+            WHERE user_id = ?
+        `).all(req.session.userId);
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: safeError(error, 'Failed to fetch metadata index') });
+    }
+});
+
 // Batch Index - Index multiple repos at once
 router.post('/ai/batch-index', requireAuth, requireAI, async (req, res) => {
     const { repos } = req.body; // Array of repo objects

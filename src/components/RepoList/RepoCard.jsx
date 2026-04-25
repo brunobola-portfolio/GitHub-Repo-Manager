@@ -7,6 +7,8 @@ import {
 import { Badge } from '../ui/Badge'
 import { formatCompact } from '../../utils/format'
 import { TrackedDot } from '../WorkBoard/TrackedDot'
+import { RepoHealthBadge } from '../AI/RepoHealthBadge'
+import { useRepoMetadata } from '../../hooks/useRepoMetadata'
 
 /**
  * One repository row, rendered either as a grid card or a list row.
@@ -33,6 +35,10 @@ export const RepoCard = memo(function RepoCard({
 	onRepoClick,
 }) {
 	const isGrid = viewMode === 'grid'
+	// Pulls from a module-singleton cache (60s TTL) so 100 cards share one
+	// network round-trip. The `get()` lookup is O(1) on the indexed Map.
+	const { get: getRepoMeta } = useRepoMetadata()
+	const aiMeta = getRepoMeta(repo.id)
 
 	// Ring + border via inline style to guarantee visibility (Tailwind v4 class-order can't override inline)
 	const ringShadow = isContextTarget
@@ -123,6 +129,9 @@ export const RepoCard = memo(function RepoCard({
 								</button>
 							</h3>
 							<TrackedDot repoFullName={repo.full_name} size="sm" />
+							{aiMeta?.health_score != null && (
+								<RepoHealthBadge score={aiMeta.health_score} />
+							)}
 							{repo.archived && (
 								<Badge variant="secondary" className="text-[10px] py-0 h-5">Archived</Badge>
 							)}
