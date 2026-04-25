@@ -262,3 +262,33 @@ describe('GET /api/v1/work-board/ai/activity', () => {
         expect(res.body.spent_cents).toBe(0);
     });
 });
+
+describe('GET /api/v1/work-board/ai/status', () => {
+    it('reports enabled when feature flag + user opt-in are true and cap not reached', async () => {
+        const res = await request(app).get('/api/v1/work-board/ai/status');
+        expect(res.status).toBe(200);
+        expect(res.body).toMatchObject({ enabled: true, reason: 'OK' });
+    });
+
+    it('reports disabled with AI_FEATURE_FLAG_OFF when env flag is off', async () => {
+        process.env.WORK_BOARD_AI_ENABLED = 'false';
+        const res = await request(app).get('/api/v1/work-board/ai/status');
+        expect(res.status).toBe(200);   // status route never 404s
+        expect(res.body).toEqual({ enabled: false, reason: 'AI_FEATURE_FLAG_OFF' });
+    });
+
+    it('reports AI_ASSISTANT_DISABLED when the user has not opted in', async () => {
+        testDb.prepare('UPDATE work_board_prefs SET ai_assistant_enabled = 0 WHERE user_id = ?').run(USER_ID);
+        const res = await request(app).get('/api/v1/work-board/ai/status');
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ enabled: false, reason: 'AI_ASSISTANT_DISABLED' });
+    });
+
+    it('reports AI_COST_CAP_REACHED when the user has spent at or above the cap', async () => {
+        const month = new Date().toISOString().slice(0, 7);
+        testDb.prepare(`INSERT INTO work_board_ai_spend (user_id, month, cents) VALUES (?, ?, 600)`).run(USER_ID, month);
+        const res = await request(app).get('/api/v1/work-board/ai/status');
+        expect(res.status).toBe(200);
+        expect(res.body).toMatchObject({ enabled: false, reason: 'AI_COST_CAP_REACHED', capCents: 500 });
+    });
+});
