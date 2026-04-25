@@ -7,6 +7,7 @@ import { ConfirmModal } from '../ui/ConfirmModal';
 import { PageHeader } from '../ui/PageHeader';
 import { PageShell } from '../ui/PageShell';
 import { Card } from '../ui/Card';
+import { Skeleton } from '../ui/Skeleton';
 import { listTeams } from '../../api/teams';
 
 export function TeamHub({ onTeamSelect }) {
@@ -189,7 +190,7 @@ export function TeamHub({ onTeamSelect }) {
             {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[1, 2, 3].map(i => (
-                        <div key={i} className="h-48 bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse" />
+                        <Skeleton key={i} variant="card" className="h-48 rounded-2xl" />
                     ))}
                 </div>
             ) : (

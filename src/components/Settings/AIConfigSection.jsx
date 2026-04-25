@@ -8,6 +8,7 @@ import { API_BASE_URL } from '../../config'
 import { fetchWithRetry } from '../../utils/api'
 import { useToast } from '../../hooks/useToast'
 import { ConfirmModal } from '../ui/ConfirmModal'
+import { Skeleton } from '../ui/Skeleton'
 import { PROVIDER_DEFAULTS } from '../../utils/providerCapabilities'
 import { PRICING_LAST_UPDATED } from '../../utils/providerPricing'
 
@@ -292,7 +293,7 @@ export function AIConfigSection() {
         return (
             <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-28 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+                    <Skeleton key={i} variant="card" className="h-28" />
                 ))}
             </div>
         )

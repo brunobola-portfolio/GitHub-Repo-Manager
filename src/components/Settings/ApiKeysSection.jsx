@@ -5,6 +5,7 @@ import { API_BASE_URL } from '../../config'
 import { useToast } from '../../hooks/useToast'
 import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
+import { Skeleton } from '../ui/Skeleton'
 import { formatDate as formatDateBase } from '../../utils/format'
 
 const SCOPE_OPTIONS = [
@@ -123,13 +124,15 @@ function NewKeyForm({ onCreated, onCancel }) {
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
+                        <p className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
                             Scopes
-                        </label>
+                        </p>
                         <div className="grid grid-cols-2 gap-2">
                             {SCOPE_OPTIONS.map((scope) => (
                                 <label
                                     key={scope.id}
+                                    htmlFor={`scope-${scope.id}`}
+                                    aria-label={scope.label}
                                     className={`flex items-start gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${
                                         scopes.includes(scope.id)
                                             ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-400 dark:border-indigo-600'
@@ -137,6 +140,7 @@ function NewKeyForm({ onCreated, onCancel }) {
                                     }`}
                                 >
                                     <input
+                                        id={`scope-${scope.id}`}
                                         type="checkbox"
                                         checked={scopes.includes(scope.id)}
                                         onChange={() => toggleScope(scope.id)}
@@ -365,7 +369,9 @@ export function ApiKeysSection() {
         }
     }, [])
 
+    /* eslint-disable react-hooks/set-state-in-effect -- mount-time fetch + state seed */
     useEffect(() => { fetchKeys() }, [fetchKeys])
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const handleCreated = useCallback((data) => {
         setNewKeyData(data)
@@ -443,7 +449,7 @@ export function ApiKeysSection() {
             {loading ? (
                 <div className="space-y-3">
                     {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-24 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+                        <Skeleton key={i} variant="card" className="h-24" />
                     ))}
                 </div>
             ) : error ? (

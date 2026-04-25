@@ -4,6 +4,7 @@ import { CreditCard, Zap, Building2, Star, AlertTriangle, ExternalLink, RefreshC
 import { API_BASE_URL } from '../../config'
 import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
+import { Skeleton } from '../ui/Skeleton'
 import { useModal } from '../../hooks/useModal'
 import { UsageDashboard } from './UsageDashboard'
 import { formatDate as formatDateBase } from '../../utils/format'
@@ -364,8 +365,8 @@ export function LicensePlanSection() {
 
             {loading ? (
                 <div className="space-y-3">
-                    <div className="h-28 bg-slate-100 dark:bg-slate-800 rounded-2xl animate-pulse" />
-                    <div className="h-48 bg-slate-100 dark:bg-slate-800 rounded-2xl animate-pulse" />
+                    <Skeleton variant="card" className="h-28 rounded-2xl" />
+                    <Skeleton variant="card" className="h-48 rounded-2xl" />
                 </div>
             ) : billingUnavailable ? (
                 <Card className="p-8 text-center">

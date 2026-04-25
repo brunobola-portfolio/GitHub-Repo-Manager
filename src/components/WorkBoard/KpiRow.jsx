@@ -3,6 +3,7 @@ import { motion, useMotionValue, useSpring } from 'framer-motion'
 import { clsx } from 'clsx'
 import { GitPullRequest, AlertTriangle, CircleDot, Wrench } from 'lucide-react'
 import { ageLabel, dayLabel } from './shared/formatters'
+import { Skeleton } from '../ui/Skeleton'
 
 function computeDelta(history) {
     if (!Array.isArray(history) || history.length < 2) return null
@@ -118,7 +119,7 @@ function KpiTile({ icon: Icon, label, value, hint, loading, accent = 'indigo', o
                         className="text-3xl font-bold tabular-nums text-slate-900 dark:text-slate-50 ds-font-display leading-none"
                     />
                     {loading && (
-                        <span className="inline-block w-10 h-7 rounded-md bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                        <Skeleton className="inline-block w-10 h-7 rounded-md" />
                     )}
                     <div className="flex flex-col items-start gap-0.5 pb-0.5">
                         <DeltaBadge pct={delta} />

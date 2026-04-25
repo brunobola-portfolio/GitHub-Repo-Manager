@@ -4,6 +4,7 @@ import { Shield, ChevronLeft, ChevronRight, AlertTriangle, Filter, RefreshCw } f
 import { API_BASE_URL } from '../../config'
 import { formatDateTime as formatDateTimeBase } from '../../utils/format'
 import { Card } from '../ui/Card'
+import { Skeleton } from '../ui/Skeleton'
 
 const ACTION_OPTIONS = [
     { value: '', label: 'All Actions' },
@@ -158,7 +159,7 @@ export function AuditLogSection() {
             ) : loading && logs.length === 0 ? (
                 <div className="space-y-2">
                     {[...Array(5)].map((_, i) => (
-                        <div key={i} className="h-12 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+                        <Skeleton key={i} variant="card" className="h-12" />
                     ))}
                 </div>
             ) : (

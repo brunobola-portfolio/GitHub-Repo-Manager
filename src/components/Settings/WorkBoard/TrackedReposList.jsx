@@ -4,6 +4,7 @@ import { Inbox } from 'lucide-react'
 import { RepoRow } from './RepoRow'
 import { SearchFilterBar } from './SearchFilterBar'
 import { BulkActionsBar } from './BulkActionsBar'
+import { Skeleton } from '../../ui/Skeleton'
 
 const ROW_HEIGHT = 56
 
@@ -52,7 +53,7 @@ export function TrackedReposList({
         return (
             <div className="space-y-2 p-3">
                 {[0, 1, 2, 3, 4].map(i => (
-                    <div key={i} className="h-12 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
+                    <Skeleton key={i} className="h-12 rounded-lg" />
                 ))}
             </div>
         )
