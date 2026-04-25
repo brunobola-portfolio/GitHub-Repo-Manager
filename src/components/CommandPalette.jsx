@@ -17,6 +17,7 @@ import { buildAICommands } from './CommandPalette/aiCommands'
 import { buildRepoDetailCommands } from './CommandPalette/repoDetailCommands'
 import { buildTeamsCommands } from './CommandPalette/teamsCommands'
 import { buildReposCommands } from './CommandPalette/reposCommands'
+import { readRecents, bumpRecent } from './CommandPalette/recents'
 
 const NAVIGATE_ITEMS = [
   { id: 'nav-dashboard', label: 'Dashboard', view: 'dashboard', icon: LayoutDashboard },
@@ -203,6 +204,20 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
     }
   }, [isOpen])
 
+  // Recents — refreshed when the dialog opens so closing/reopening reflects
+  // bumps from the previous session. Local state (not derived) so we can
+  // re-render after a bump inside the same dialog open.
+  const [recents, setRecents] = useState(() => readRecents())
+  /* eslint-disable react-hooks/set-state-in-effect -- syncs cmdk recents from localStorage on dialog open */
+  useEffect(() => {
+    if (isOpen) setRecents(readRecents())
+  }, [isOpen])
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  function bumpAndSetRecents(entry) {
+    setRecents(bumpRecent(entry))
+  }
+
   const openExternal = (url) => {
     if (!url) return
     window.open(url, '_blank', 'noopener,noreferrer')
@@ -240,6 +255,43 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
                 : 'No results.'}
           </Command.Empty>
 
+          {recents.length > 0 && input.trim() === '' && (
+            <Command.Group heading="Recent" className={GROUP_HEADING_CLASSES}>
+              {recents.map((entry) => {
+                const navItem = entry.kind === 'view'
+                  ? NAVIGATE_ITEMS.find(n => n.view === entry.id)
+                  : null
+                const Icon = entry.kind === 'view' ? (navItem?.icon ?? Clock) : GitFork
+                return (
+                  <Command.Item
+                    key={`recent-${entry.kind}-${entry.id}`}
+                    value={`recent ${entry.label}`}
+                    onSelect={() => {
+                      if (entry.kind === 'view') {
+                        bumpAndSetRecents(entry)
+                        onViewChange(entry.id)
+                      } else if (entry.kind === 'repo') {
+                        const repo = repos.find(r => r.full_name === entry.id)
+                        if (repo) {
+                          bumpAndSetRecents(entry)
+                          onSelectRepo(repo)
+                        }
+                      }
+                      onClose()
+                    }}
+                    className={ITEM_CLASSES}
+                  >
+                    <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />
+                    {entry.label}
+                    <span className="ml-auto text-[10px] uppercase tracking-wide text-slate-400">
+                      {entry.kind}
+                    </span>
+                  </Command.Item>
+                )
+              })}
+            </Command.Group>
+          )}
+
           <Command.Group heading="Navigate" className={GROUP_HEADING_CLASSES}>
             {NAVIGATE_ITEMS.map((item) => {
               const Icon = item.icon
@@ -247,7 +299,11 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
                 <Command.Item
                   key={item.id}
                   value={item.label}
-                  onSelect={() => { onViewChange(item.view); onClose() }}
+                  onSelect={() => {
+                    bumpAndSetRecents({ kind: 'view', id: item.view, label: item.label })
+                    onViewChange(item.view)
+                    onClose()
+                  }}
                   className={ITEM_CLASSES}
                 >
                   <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />
@@ -433,7 +489,11 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
                 <Command.Item
                   key={repo.id}
                   value={repo.full_name}
-                  onSelect={() => { onSelectRepo(repo); onClose() }}
+                  onSelect={() => {
+                    bumpAndSetRecents({ kind: 'repo', id: repo.full_name, label: repo.full_name })
+                    onSelectRepo(repo)
+                    onClose()
+                  }}
                   className={ITEM_CLASSES}
                 >
                   <GitFork className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />
@@ -509,6 +569,20 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
             </Command.Group>
           )}
         </Command.List>
+        <div className="border-t border-slate-200 dark:border-slate-700 px-3 py-2 text-[11px] text-slate-400 dark:text-slate-500 flex items-center justify-between">
+          <span>
+            <kbd className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">↑</kbd>
+            <kbd className="ml-1 px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">↓</kbd>
+            <span className="ml-1.5">navigate</span>
+            <span className="mx-2 opacity-40">·</span>
+            <kbd className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">↵</kbd>
+            <span className="ml-1.5">select</span>
+            <span className="mx-2 opacity-40">·</span>
+            <kbd className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">esc</kbd>
+            <span className="ml-1.5">close</span>
+          </span>
+          <span className="opacity-50">{recents.length > 0 ? `${recents.length} recent` : ''}</span>
+        </div>
       </div>
     </Command.Dialog>
   )

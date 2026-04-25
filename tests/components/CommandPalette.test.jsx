@@ -58,6 +58,9 @@ function renderPalette(overrides = {}) {
 describe('CommandPalette', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Recents persist in localStorage; isolate per-test so prior bumps
+    // don't leak Recent rows into "no repos rendered" assertions.
+    window.localStorage?.clear?.()
   })
 
   it('renders nothing when isOpen is false', () => {
