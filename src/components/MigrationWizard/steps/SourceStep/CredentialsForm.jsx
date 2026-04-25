@@ -3,6 +3,7 @@ import {
   ExternalLink, Server, Globe, ShieldCheck,
 } from 'lucide-react'
 import CredCard from './CredCard'
+import { Button } from '../../../ui/Button'
 
 /**
  * Credential selection cards (Server PAT / Personal PAT / OAuth) with per-mode
@@ -121,7 +122,8 @@ export default function CredentialsForm({
           ) : source.credentialMode === 'oauth' ? (
             <div className="space-y-2">
               {oauthStatusValue === 'idle' && (
-                <button
+                <Button
+                  variant="primary"
                   type="button"
                   onClick={() => {
                     const popup = window.open('/api/azure/oauth/start', '_blank')
@@ -131,11 +133,10 @@ export default function CredentialsForm({
                     }
                     startOAuth()
                   }}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white transition-colors"
                 >
                   <Globe className="w-4 h-4" />
                   Open browser to authenticate
-                </button>
+                </Button>
               )}
               {oauthStatusValue === 'pending' && (
                 <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
