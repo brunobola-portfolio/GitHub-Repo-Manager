@@ -6,6 +6,7 @@ import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
 import { GitPullRequest, Plus, Loader2, CheckCircle2, XCircle, GitMerge, ExternalLink, ChevronDown } from 'lucide-react'
 import { PRDetailPanel } from './PRDetailPanel'
+import { PRRiskBadges } from './PRRiskBadges'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 
@@ -257,9 +258,10 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                             <div className="flex items-start gap-3">
                                 <div className="mt-0.5">{getPrIcon(pr)}</div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                         <span className="font-medium text-sm text-slate-900 dark:text-slate-100">{pr.title}</span>
                                         <span className="text-xs text-slate-400">#{pr.number}</span>
+                                        <PRRiskBadges pr={pr} className="ml-1" />
                                     </div>
                                     <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
                                         <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">{pr.head?.ref}</span>
