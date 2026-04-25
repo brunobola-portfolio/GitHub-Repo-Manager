@@ -3,6 +3,7 @@ import { useDORASummary } from '../../../hooks/useWorkBoard'
 import { EmptyState, WebhookHint, UpsellCard } from '../shared/shared-ui'
 import { hoursLabel } from '../shared/formatters'
 import { MOCK_MODE, API_BASE_URL } from '../../../config'
+import { Card } from '../../ui/Card'
 
 function SparkLine({ perDay }) {
     if (!perDay || perDay.length === 0) return null
@@ -32,11 +33,11 @@ function SparkLine({ perDay }) {
 
 function KPI({ label, value, sub }) {
     return (
-        <div className="flex-1 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/40 text-center">
+        <Card glass={false} shadow="none" className="flex-1 p-4 text-center bg-slate-50 dark:bg-slate-800/50">
             <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">{value ?? '—'}</div>
             <div className="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-0.5">{label}</div>
             {sub && <div className="text-[10px] text-slate-400 mt-0.5">{sub}</div>}
-        </div>
+        </Card>
     )
 }
 
@@ -152,7 +153,7 @@ export function DORATab() {
 
             {/* Sparkline */}
             {perDay.length > 0 ? (
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/40">
+                <Card glass={false} shadow="none" className="p-4 bg-slate-50 dark:bg-slate-800/50">
                     <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
                         Daily successful deploys (last 30 days)
                     </div>
@@ -161,7 +162,7 @@ export function DORATab() {
                         <span>{perDay[0]?.date}</span>
                         <span>{perDay[perDay.length - 1]?.date}</span>
                     </div>
-                </div>
+                </Card>
             ) : (
                 <>
                     <EmptyState

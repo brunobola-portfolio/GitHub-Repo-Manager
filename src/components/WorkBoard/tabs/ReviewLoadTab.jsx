@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { Users } from 'lucide-react'
 import { useReviewLoad } from '../../../hooks/useWorkBoard'
 import { SkeletonList, EmptyState, WebhookHint, UpsellCard } from '../shared/shared-ui'
+import { Card } from '../../ui/Card'
 
 export function ReviewLoadTab() {
     const { data, loading, error, refresh } = useReviewLoad()
@@ -51,7 +52,7 @@ export function ReviewLoadTab() {
                     </span>
                 </span>
             </div>
-            <div className="divide-y divide-slate-100 dark:divide-slate-800/60 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 overflow-hidden">
+            <Card glass={false} shadow="none" className="divide-y divide-slate-100 dark:divide-slate-800/60">
                 {reviewers.map((r, i) => {
                     const submitted = r.reviewsSubmitted || 0
                     const pending = r.reviewsPending || 0
@@ -97,7 +98,7 @@ export function ReviewLoadTab() {
                         </motion.div>
                     )
                 })}
-            </div>
+            </Card>
         </div>
     )
 }

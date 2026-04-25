@@ -1,5 +1,7 @@
 import { Sparkles, Check, X } from 'lucide-react'
 import { InsightCard } from '../../../ui/InsightCard'
+import { Card } from '../../../ui/Card'
+import { Button } from '../../../ui/Button'
 
 export function SuggestionsPanel({ suggestions, onApply, onDismiss }) {
     if (!suggestions || suggestions.length === 0) return null
@@ -15,9 +17,11 @@ export function SuggestionsPanel({ suggestions, onApply, onDismiss }) {
                     {suggestions.map(s => {
                         const dismissKey = s.dismiss_key ?? s.repos?.[0] ?? ''
                         return (
-                            <div
+                            <Card
                                 key={`${s.pattern_key}-${dismissKey}`}
-                                className="rounded-xl border border-slate-200/60 dark:border-slate-700/40 p-3 space-y-2"
+                                glass={false}
+                                shadow="none"
+                                className="rounded-xl p-3 space-y-2"
                             >
                                 <div>
                                     <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{s.title}</p>
@@ -29,22 +33,14 @@ export function SuggestionsPanel({ suggestions, onApply, onDismiss }) {
                                     </p>
                                 )}
                                 <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => onApply(s)}
-                                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
-                                    >
+                                    <Button variant="primary" size="xs" onClick={() => onApply(s)}>
                                         <Check className="w-3 h-3" /> Apply
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onDismiss(s.pattern_key, dismissKey)}
-                                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-                                    >
+                                    </Button>
+                                    <Button variant="ghost" size="xs" onClick={() => onDismiss(s.pattern_key, dismissKey)}>
                                         <X className="w-3 h-3" /> Dismiss
-                                    </button>
+                                    </Button>
                                 </div>
-                            </div>
+                            </Card>
                         )
                     })}
                 </div>
