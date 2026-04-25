@@ -1,6 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { Check, X } from 'lucide-react'
+import { Card } from '../ui/Card'
 
 const TIERS = ['Free', 'Pro', 'Enterprise']
 
@@ -175,9 +176,7 @@ export function FeatureComparison() {
       </div>
 
       {/* Horizontal scroll on mobile */}
-      <div className="overflow-x-auto rounded-2xl border border-slate-200/60 dark:border-white/[0.08]
-        bg-white/60 dark:bg-white/[0.03] backdrop-blur-xl shadow-xl shadow-slate-200/50 dark:shadow-black/30">
-
+      <Card className="overflow-x-auto shadow-xl shadow-slate-200/50 dark:shadow-black/30">
         <table className="w-full min-w-[600px] border-collapse">
           {/* Sticky header */}
           <thead>
@@ -246,7 +245,7 @@ export function FeatureComparison() {
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </motion.div>
   )
 }

@@ -4,6 +4,7 @@ import { GitCommit, GitPullRequest, CircleDot, Activity, Clock, FileCode, Star, 
 
 import { MOCK_MODE } from '../../config';
 import { EmptyState } from '../ui/EmptyState';
+import { Card } from '../ui/Card';
 
 export function ActivityTab({ teamId }) {
     const [events, setEvents] = useState([]);
@@ -155,11 +156,8 @@ function ActivityItem({ event }) {
     };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-start gap-4 p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-indigo-500/30 transition-all hover:shadow-sm group"
-        >
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        <Card glass={false} shadow="sm" className="flex items-start gap-4 p-4 hover:border-indigo-500/30 group">
             <div className="mt-1 p-2 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 group-hover:scale-110 transition-transform">
                 {getEventIcon(event.type)}
             </div>
@@ -180,6 +178,7 @@ function ActivityItem({ event }) {
                     </span>
                 </div>
             </div>
+        </Card>
         </motion.div>
     );
 }
