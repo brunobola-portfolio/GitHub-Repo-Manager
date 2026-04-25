@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 // cmdk uses Radix Dialog which uses portals - happy-dom supports this
@@ -25,6 +25,14 @@ vi.mock('@/hooks/useToast', () => ({
 
 vi.mock('@/api/search', () => ({
   searchApi: { github: vi.fn().mockResolvedValue({ prs: [], issues: [], repos: [] }) },
+}))
+
+// Disable MOCK_MODE so the live + ask paths aren't short-circuited.
+vi.mock('@/config', () => ({ MOCK_MODE: false }))
+
+const mockTranslate = vi.fn()
+vi.mock('@/api/translateSearch', () => ({
+  translateSearch: (...args) => mockTranslate(...args),
 }))
 
 const { CommandPalette } = await import('@/components/CommandPalette')
@@ -194,5 +202,57 @@ describe('CommandPalette', () => {
       bubbles: true,
     })
     expect(props.onClose).toHaveBeenCalled()
+  })
+
+  describe('Ask mode', () => {
+    beforeEach(() => {
+      mockTranslate.mockReset().mockResolvedValue({
+        summary: 'PRs you need to review.',
+        queries: [{ type: 'pr', ghQuery: 'is:pr review-requested:@me' }],
+        fallback: false,
+      })
+    })
+
+    it('shows the "Ask mode" footer label and Sparkles icon when input starts with ?', async () => {
+      const user = userEvent.setup()
+      renderPalette()
+      const input = screen.getByPlaceholderText(/Type a command/i)
+      await user.type(input, '?my')
+      expect(await screen.findByText('Ask mode')).toBeInTheDocument()
+    })
+
+    it('hides the Navigate group when in ask mode', async () => {
+      const user = userEvent.setup()
+      renderPalette()
+      const input = screen.getByPlaceholderText(/Type a command/i)
+      // Sanity: Navigate visible before ask mode.
+      expect(screen.getByText('Dashboard')).toBeInTheDocument()
+      await user.type(input, '?show me my open PRs')
+      // Wait for the debounce + render swap.
+      await screen.findByText('Ask mode')
+      expect(screen.queryByText('Dashboard')).toBeNull()
+    })
+
+    it('renders the AI summary once translateSearch resolves', async () => {
+      const user = userEvent.setup()
+      renderPalette()
+      const input = screen.getByPlaceholderText(/Type a command/i)
+      await user.type(input, '?show me my open PRs')
+      // Debounce 450ms + render swap; allow the test 2s headroom.
+      await waitFor(
+        () => expect(screen.getByText(/PRs you need to review/i)).toBeInTheDocument(),
+        { timeout: 2000 },
+      )
+    })
+
+    it('does not call translateSearch for queries shorter than ASK_MIN_LEN', async () => {
+      const user = userEvent.setup()
+      renderPalette()
+      const input = screen.getByPlaceholderText(/Type a command/i)
+      await user.type(input, '?ab')
+      // Wait past the debounce window.
+      await new Promise((r) => setTimeout(r, 600))
+      expect(mockTranslate).not.toHaveBeenCalled()
+    })
   })
 })

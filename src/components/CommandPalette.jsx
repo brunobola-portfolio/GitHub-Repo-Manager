@@ -8,6 +8,7 @@ import {
   ExternalLink, Copy, FileText, GitBranch, Star, Clock, Archive, ArrowDownAZ,
 } from 'lucide-react'
 import { searchApi } from '../api/search'
+import { translateSearch } from '../api/translateSearch'
 import { MOCK_MODE } from '../config'
 import { useTrackedRepos } from '../hooks/useTrackedRepos'
 import { useToast } from '../hooks/useToast'
@@ -125,11 +126,102 @@ function useDebouncedGitHubSearch(query, enabled) {
   return { data: result.data, loading: result.loading, error: result.error }
 }
 
+/**
+ * Detects "ask mode" — query starts with a literal `?`. The leading char
+ * is stripped before sending to the translator. Empty after strip → no fire.
+ */
+function parseAskMode(rawInput) {
+    const trimmed = (rawInput || '').trimStart()
+    if (!trimmed.startsWith('?')) return { askMode: false, askQuery: '' }
+    return { askMode: true, askQuery: trimmed.slice(1).trim() }
+}
+
+const ASK_DEBOUNCE_MS = 450
+const ASK_MIN_LEN = 4
+
+function useDebouncedTranslateSearch(askQuery, enabled) {
+    const [state, setState] = useState({ data: null, loading: false, error: null })
+    const ctrlRef = useRef(null)
+    const shouldFire = enabled && askQuery.length >= ASK_MIN_LEN
+
+    useEffect(() => {
+        if (!shouldFire) {
+            ctrlRef.current?.abort()
+            const id = setTimeout(() => setState({ data: null, loading: false, error: null }), 0)
+            return () => clearTimeout(id)
+        }
+        const timer = setTimeout(() => {
+            ctrlRef.current?.abort()
+            const ctrl = new AbortController()
+            ctrlRef.current = ctrl
+            setState((prev) => ({ ...prev, loading: true, error: null }))
+            translateSearch({ q: askQuery, signal: ctrl.signal }).then((data) => {
+                if (ctrl.signal.aborted) return
+                if (data) setState({ data, loading: false, error: null })
+                else setState({ data: null, loading: false, error: 'TRANSLATE_FAILED' })
+            })
+        }, ASK_DEBOUNCE_MS)
+        return () => {
+            clearTimeout(timer)
+            ctrlRef.current?.abort()
+        }
+    }, [shouldFire, askQuery])
+
+    return state
+}
+
+/**
+ * Once the translator returns queries, fire them in parallel against the
+ * existing /search/github endpoint and accumulate results per type. We
+ * only run when ask mode is active so non-ask palette use is unaffected.
+ */
+function useAskModeResults(translatedQueries, enabled) {
+    const [results, setResults] = useState({ pr: [], issue: [], repo: [] })
+    const [loading, setLoading] = useState(false)
+    /* eslint-disable react-hooks/set-state-in-effect -- input changes drive AI search fan-out */
+    useEffect(() => {
+        if (!enabled || !translatedQueries || translatedQueries.length === 0) {
+            setResults({ pr: [], issue: [], repo: [] })
+            setLoading(false)
+            return undefined
+        }
+        const ctrl = new AbortController()
+        let cancelled = false
+        setLoading(true)
+        const promises = translatedQueries.map((q) =>
+            searchApi.github(q.ghQuery, { type: q.type, limit: 10, signal: ctrl.signal })
+                .then((res) => ({ type: q.type, res }))
+                .catch(() => ({ type: q.type, res: null }))
+        )
+        Promise.all(promises).then((parts) => {
+            if (cancelled) return
+            const merged = { pr: [], issue: [], repo: [] }
+            for (const { type, res } of parts) {
+                if (!res) continue
+                if (type === 'pr' && Array.isArray(res.prs)) merged.pr.push(...res.prs)
+                if (type === 'issue' && Array.isArray(res.issues)) merged.issue.push(...res.issues)
+                if (type === 'repo' && Array.isArray(res.repos)) merged.repo.push(...res.repos)
+            }
+            setResults(merged)
+            setLoading(false)
+        })
+        return () => {
+            cancelled = true
+            ctrl.abort()
+        }
+    }, [enabled, translatedQueries])
+    /* eslint-enable react-hooks/set-state-in-effect */
+    return { results, loading }
+}
+
 export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChange, onOpenModal, onSelectRepo, isAdmin = false, selectedRepoDetail = null }) {
   const [input, setInput] = useState('')
+  const { askMode, askQuery } = parseAskMode(input)
   const displayRepos = repos.slice(0, 10)
-  const liveEnabled = isOpen && !MOCK_MODE
+  const liveEnabled = isOpen && !MOCK_MODE && !askMode
   const { data: live, loading, error } = useDebouncedGitHubSearch(input, liveEnabled)
+  const ask = useDebouncedTranslateSearch(askQuery, isOpen && !MOCK_MODE && askMode)
+  const askResults = useAskModeResults(ask.data?.queries, isOpen && askMode && !MOCK_MODE)
 
   const trackedHook = useTrackedRepos()
   const { toast } = useToast()
@@ -233,17 +325,33 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
       contentClassName="fixed left-1/2 top-[20%] z-[9999] -translate-x-1/2 w-full max-w-[640px] px-4"
       shouldFilter={true}
     >
-      <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl">
+      <div className={`overflow-hidden rounded-xl border bg-white dark:bg-slate-900 shadow-2xl transition-colors ${
+        askMode
+          ? 'border-indigo-400 dark:border-indigo-500 ring-1 ring-indigo-400/30'
+          : 'border-slate-200 dark:border-slate-700'
+      }`}>
         <div className="relative">
+          {askMode && (
+            <Sparkles
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500"
+              aria-hidden="true"
+            />
+          )}
           <Command.Input
             value={input}
             onValueChange={setInput}
-            placeholder="Type a command or search PRs, issues, repos..."
+            placeholder={askMode
+              ? 'Ask anything — e.g. PRs touching payment I haven\'t reviewed'
+              : 'Type a command or search PRs, issues, repos… (start with ? to ask)'}
             autoFocus
-            className="w-full px-4 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-transparent border-b border-slate-200 dark:border-slate-700 outline-none"
+            className={`w-full py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-transparent border-b outline-none ${
+              askMode
+                ? 'pl-10 pr-4 border-indigo-200 dark:border-indigo-800 placeholder:italic placeholder:text-indigo-400/80'
+                : 'px-4 border-slate-200 dark:border-slate-700'
+            }`}
           />
-          {loading && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 animate-spin" aria-label="Searching GitHub" />
+          {(loading || ask.loading || askResults.loading) && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 animate-spin" aria-label="Searching" />
           )}
         </div>
         <Command.List className="max-h-[400px] overflow-y-auto p-2">
@@ -255,7 +363,92 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
                 : 'No results.'}
           </Command.Empty>
 
-          {recents.length > 0 && input.trim() === '' && (
+          {askMode && (askQuery.length < ASK_MIN_LEN ? (
+            <div className="px-3 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+              Keep typing… ask a full question to get an interpretation.
+            </div>
+          ) : ask.loading && !ask.data ? (
+            <div className="px-3 py-3 space-y-2">
+              <div className="h-3 w-3/4 rounded bg-indigo-100/60 dark:bg-indigo-900/30 animate-pulse" />
+              <div className="h-2 w-1/2 rounded bg-indigo-100/40 dark:bg-indigo-900/20 animate-pulse" />
+            </div>
+          ) : ask.data ? (
+            <>
+              <div className="px-3 pt-3 pb-2 flex items-start gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-[2px]" aria-hidden="true" />
+                <p className="text-xs italic text-indigo-700 dark:text-indigo-300">
+                  {ask.data.summary}
+                </p>
+              </div>
+              {ask.data.queries.length === 0 && (
+                <div className="px-3 pb-3 text-[11px] text-slate-400 dark:text-slate-500">
+                  No GitHub query inferred. Try rephrasing or remove the leading "?".
+                </div>
+              )}
+              {askResults.results.pr.length > 0 && (
+                <Command.Group heading="Pull Requests" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+                  {askResults.results.pr.map((pr) => (
+                    <Command.Item
+                      key={`ask-pr-${pr.id}`}
+                      value={`ask pr ${pr.repoFullName} ${pr.title} ${pr.number}`}
+                      onSelect={() => openExternal(pr.url)}
+                      className={ITEM_CLASSES}
+                    >
+                      <GitPullRequest className={`w-4 h-4 shrink-0 ${pr.state === 'open' ? 'text-emerald-500' : 'text-purple-500'}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate font-medium">{pr.title}</div>
+                        <div className="text-[11px] text-slate-400 truncate">
+                          {pr.repoFullName} #{pr.number}
+                        </div>
+                      </div>
+                    </Command.Item>
+                  ))}
+                </Command.Group>
+              )}
+              {askResults.results.issue.length > 0 && (
+                <Command.Group heading="Issues" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+                  {askResults.results.issue.map((it) => (
+                    <Command.Item
+                      key={`ask-issue-${it.id}`}
+                      value={`ask issue ${it.repoFullName} ${it.title} ${it.number}`}
+                      onSelect={() => openExternal(it.url)}
+                      className={ITEM_CLASSES}
+                    >
+                      <CircleDot className={`w-4 h-4 shrink-0 ${it.state === 'open' ? 'text-emerald-500' : 'text-slate-400'}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate font-medium">{it.title}</div>
+                        <div className="text-[11px] text-slate-400 truncate">
+                          {it.repoFullName} #{it.number}
+                        </div>
+                      </div>
+                    </Command.Item>
+                  ))}
+                </Command.Group>
+              )}
+              {askResults.results.repo.length > 0 && (
+                <Command.Group heading="Repositories" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+                  {askResults.results.repo.map((repo) => (
+                    <Command.Item
+                      key={`ask-repo-${repo.id}`}
+                      value={`ask repo ${repo.fullName}`}
+                      onSelect={() => openExternal(repo.url)}
+                      className={ITEM_CLASSES}
+                    >
+                      <GitFork className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate font-medium">{repo.fullName}</div>
+                        {repo.description && (
+                          <div className="text-[11px] text-slate-400 truncate">{repo.description}</div>
+                        )}
+                      </div>
+                    </Command.Item>
+                  ))}
+                </Command.Group>
+              )}
+            </>
+          ) : null)}
+
+          {!askMode && recents.length > 0 && input.trim() === '' && (
             <Command.Group heading="Recent" className={GROUP_HEADING_CLASSES}>
               {recents.map((entry) => {
                 const navItem = entry.kind === 'view'
@@ -292,6 +485,7 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
             </Command.Group>
           )}
 
+          {!askMode && (<>
           <Command.Group heading="Navigate" className={GROUP_HEADING_CLASSES}>
             {NAVIGATE_ITEMS.map((item) => {
               const Icon = item.icon
@@ -568,20 +762,27 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
               ))}
             </Command.Group>
           )}
+          </>)}
         </Command.List>
-        <div className="border-t border-slate-200 dark:border-slate-700 px-3 py-2 text-[11px] text-slate-400 dark:text-slate-500 flex items-center justify-between">
+        <div className={`border-t px-3 py-2 text-[11px] flex items-center justify-between ${
+          askMode
+            ? 'border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-300 bg-indigo-50/40 dark:bg-indigo-950/20'
+            : 'border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'
+        }`}>
           <span>
             <kbd className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">↑</kbd>
             <kbd className="ml-1 px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">↓</kbd>
             <span className="ml-1.5">navigate</span>
             <span className="mx-2 opacity-40">·</span>
             <kbd className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">↵</kbd>
-            <span className="ml-1.5">select</span>
+            <span className="ml-1.5">{askMode ? 'open' : 'select'}</span>
             <span className="mx-2 opacity-40">·</span>
             <kbd className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">esc</kbd>
             <span className="ml-1.5">close</span>
           </span>
-          <span className="opacity-50">{recents.length > 0 ? `${recents.length} recent` : ''}</span>
+          <span className="opacity-70 font-medium">
+            {askMode ? 'Ask mode' : (recents.length > 0 ? `${recents.length} recent` : '')}
+          </span>
         </div>
       </div>
     </Command.Dialog>
