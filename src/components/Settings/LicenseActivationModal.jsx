@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Modal } from '../ui/Modal'
+import { Button } from '../ui/Button'
 import { Loader2, CheckCircle2, XCircle, Copy, Check } from 'lucide-react'
 
 export function LicenseActivationModal({ isOpen, onClose }) {
@@ -68,17 +69,13 @@ export function LicenseActivationModal({ isOpen, onClose }) {
             rows={4}
           />
         </div>
-        <button
-          onClick={handleValidate}
-          disabled={!keyInput.trim() || validating}
-          className="w-full px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 ds-btn-shimmer ds-focus-ring inline-flex items-center justify-center gap-2"
-        >
+        <Button variant="primary" onClick={handleValidate} disabled={!keyInput.trim() || validating} className="w-full">
           {validating ? (
             <><Loader2 className="w-4 h-4 animate-spin" /> Validating…</>
           ) : (
             'Validate License'
           )}
-        </button>
+        </Button>
         {error && (
           <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-900 dark:text-red-300 text-sm flex gap-2">
             <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />

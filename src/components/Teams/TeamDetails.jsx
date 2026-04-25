@@ -8,6 +8,7 @@ import { Select } from '../ui/Select';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { TabBar } from '../ui/TabBar';
 import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
 import { PageHeader } from '../ui/PageHeader';
 import { SectionSpinner } from '../ui/Spinner';
 
@@ -754,18 +755,15 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                                     <p className="text-slate-500 italic">No workflows found.</p>
                                 ) : (
                                     workflows.map(wf => (
-                                        <div key={wf.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                                        <Card key={wf.id} glass={false} shadow="none" className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50">
                                             <div>
                                                 <div className="font-semibold text-slate-900 dark:text-white">{wf.name}</div>
                                                 <div className="text-sm text-slate-500">{wf.path}</div>
                                             </div>
-                                            <button
-                                                onClick={() => handleRunWorkflow(wf.id, selectedRepo)}
-                                                className="px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 font-medium rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
-                                            >
+                                            <Button variant="soft-primary" size="sm" onClick={() => handleRunWorkflow(wf.id, selectedRepo)}>
                                                 Run Workflow
-                                            </button>
-                                        </div>
+                                            </Button>
+                                        </Card>
                                     ))
                                 )}
                             </div>
