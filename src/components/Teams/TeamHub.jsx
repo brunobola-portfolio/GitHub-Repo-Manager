@@ -4,6 +4,8 @@ import { Users, Plus, ChevronRight, MoreVertical, Trash2, Edit2, Lock, Sparkles 
 import { Github } from '../icons/GithubIcon';
 import { useToast } from '../../hooks/useToast';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { PageHeader } from '../ui/PageHeader';
+import { PageShell } from '../ui/PageShell';
 import { listTeams } from '../../api/teams';
 
 export function TeamHub({ onTeamSelect }) {
@@ -35,6 +37,7 @@ export function TeamHub({ onTeamSelect }) {
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot mount fetch
         fetchTeams();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -101,26 +104,28 @@ export function TeamHub({ onTeamSelect }) {
     };
 
     return (
-        <div className="max-w-7xl mx-auto p-6">
-            <header className="mb-8 flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Team Hub</h1>
-                    <p className="text-slate-500 dark:text-slate-400">Collaborate and manage repositories together.</p>
-                </div>
-                <button
-                    onClick={() => {
-                        setFormData({ name: '', description: '' });
-                        setIsEditing(false);
-                        setShowCreate(true);
-                    }}
-                    disabled={upgradeRequired}
-                    title={upgradeRequired ? 'Teams require the Pro plan' : undefined}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
-                >
-                    {upgradeRequired ? <Lock className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-                    <span>Create Team</span>
-                </button>
-            </header>
+        <PageShell maxWidth="3xl">
+            <PageHeader
+                eyebrow="Workspace"
+                title="Team Hub"
+                description="Collaborate and manage repositories together."
+                icon={Users}
+                actions={
+                    <button
+                        onClick={() => {
+                            setFormData({ name: '', description: '' });
+                            setIsEditing(false);
+                            setShowCreate(true);
+                        }}
+                        disabled={upgradeRequired}
+                        title={upgradeRequired ? 'Teams require the Pro plan' : undefined}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
+                    >
+                        {upgradeRequired ? <Lock className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                        <span>Create Team</span>
+                    </button>
+                }
+            />
 
             {/* Create/Edit Team Modal */}
             <AnimatePresence>
@@ -236,7 +241,7 @@ export function TeamHub({ onTeamSelect }) {
                 confirmText={confirmAction?.confirmText}
                 variant="danger"
             />
-        </div>
+        </PageShell>
     );
 }
 
@@ -280,9 +285,10 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
                                 </button>
                             </div>
                         )}
-                        {/* Overlay to close menu */}
+                        {/* Overlay to close menu — purely a click-catcher */}
                         {showMenu && (
                             <div
+                                role="presentation"
                                 className="fixed inset-0 z-0"
                                 onClick={(e) => { e.stopPropagation(); setShowMenu(false); }}
                             />

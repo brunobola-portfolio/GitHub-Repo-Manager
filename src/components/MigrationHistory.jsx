@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Card } from './ui/Card'
 import { Button } from './ui/Button'
+import { Modal } from './ui/Modal'
 import {
     History, CheckCircle2, XCircle, Loader2, ExternalLink,
     Clock, ArrowRight, RefreshCw, Cloud, Globe, GitBranch,
     ChevronDown, ChevronRight, RotateCcw, FileText, ListChecks
 } from 'lucide-react'
-import { useFocusTrap } from '../hooks/useFocusTrap'
 import { migrationApi } from '../api/migration'
-import { TabBar } from './ui/TabBar'
 
 const MIGRATION_TABS = [
     { id: 'plans', label: 'Plans', icon: ListChecks },
@@ -33,7 +31,6 @@ const STATUS_STYLES = {
 }
 
 export function MigrationHistory({ isOpen, onClose }) {
-    const modalRef = useFocusTrap(isOpen, onClose)
     const [jobs, setJobs] = useState([])
     const [plans, setPlans] = useState([])
     const [loading, setLoading] = useState(true)
@@ -101,39 +98,35 @@ export function MigrationHistory({ isOpen, onClose }) {
         else loadJobs()
     }, [isOpen, activeTab])
 
-    if (!isOpen) return null
-
     const filteredJobs = filter === 'all' ? jobs : jobs.filter(j => j.status === filter)
 
     return (
-        <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
-            <Card ref={modalRef} className="w-full max-w-2xl p-6 max-h-[85vh] flex flex-col" role="dialog" aria-modal="true" aria-labelledby="migration-history-title">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 id="migration-history-title" className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                        <History className="w-6 h-6 text-indigo-500" />
-                        Migration History
-                    </h2>
-                    <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" onClick={activeTab === 'plans' ? loadPlans : loadJobs} disabled={loading}>
-                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                        </Button>
-                        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 text-2xl leading-none">&times;</button>
-                    </div>
-                </div>
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Migration History"
+            icon={History}
+            iconGradient="primary"
+            size="lg"
+            tabs={MIGRATION_TABS}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            tabsLayoutId="migration-tabs"
+        >
+            <div className="flex items-center justify-end mb-3">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={activeTab === 'plans' ? loadPlans : loadJobs}
+                    disabled={loading}
+                    aria-label="Refresh migration history"
+                >
+                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    <span className="ml-1.5">Refresh</span>
+                </Button>
+            </div>
 
-                {/* Tab Toggle */}
-                <div className="mb-4 w-fit">
-                    <TabBar
-                        tabs={MIGRATION_TABS}
-                        activeTab={activeTab}
-                        onTabChange={setActiveTab}
-                        variant="segmented"
-                        layoutId="migration-tabs"
-                        size="sm"
-                    />
-                </div>
-
-                {activeTab === 'legacy' && (
+            {activeTab === 'legacy' && (
                     /* Filter for legacy jobs */
                     <div className="flex items-center gap-1 mb-4 rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 overflow-hidden w-fit">
                         {['all', 'complete', 'running', 'failed'].map(f => (
@@ -305,7 +298,6 @@ export function MigrationHistory({ isOpen, onClose }) {
                         )
                     )}
                 </div>
-            </Card>
-        </div>
+        </Modal>
     )
 }

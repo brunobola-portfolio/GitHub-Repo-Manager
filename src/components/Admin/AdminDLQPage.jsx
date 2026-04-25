@@ -20,6 +20,7 @@ import { motion } from 'framer-motion'
 import { Mail, Webhook, RefreshCw, ShieldAlert, Loader2 } from 'lucide-react'
 import { TabBar } from '../ui/TabBar'
 import { Button } from '../ui/Button'
+import { PageHeader } from '../ui/PageHeader'
 import { useToast } from '../../hooks/useToast'
 import { DLQTable } from './DLQTable'
 import { DLQDetailPanel } from './DLQDetailPanel'
@@ -95,6 +96,7 @@ export function AdminDLQPage() {
     // Re-load on tab or filter change. We intentionally clobber the old
     // list while the new one fetches — stale rows from the other tab
     // would be misleading.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- tab/filter sync fetch
     useEffect(() => { load() }, [load])
 
     const markBusy = useCallback((id, flag) => {
@@ -162,25 +164,22 @@ export function AdminDLQPage() {
             transition={{ duration: 0.2 }}
             className="space-y-5"
         >
-            <header className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white ds-font-display">
-                        Dead-letter Queue Admin
-                    </h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
-                        Triage failed email deliveries and webhook events. Retry force-schedules
-                        the next worker tick; resolve is a soft-delete that preserves the audit trail.
-                    </p>
-                </div>
-                <TabBar
-                    tabs={TABS}
-                    activeTab={activeTab}
-                    onTabChange={(id) => { setActiveTab(id); setOpenEntry(null) }}
-                    variant="pill"
-                    layoutId="admin-dlq-tabs"
-                    size="md"
-                />
-            </header>
+            <PageHeader
+                eyebrow="Admin"
+                title="Dead-letter Queue Admin"
+                description="Triage failed email deliveries and webhook events. Retry force-schedules the next worker tick; resolve is a soft-delete that preserves the audit trail."
+                icon={ShieldAlert}
+                actions={
+                    <TabBar
+                        tabs={TABS}
+                        activeTab={activeTab}
+                        onTabChange={(id) => { setActiveTab(id); setOpenEntry(null) }}
+                        variant="pill"
+                        layoutId="admin-dlq-tabs"
+                        size="md"
+                    />
+                }
+            />
 
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-1 p-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">

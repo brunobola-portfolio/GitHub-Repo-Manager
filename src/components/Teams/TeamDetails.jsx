@@ -7,6 +7,7 @@ import { ActivityTab } from './ActivityTab';
 import { Select } from '../ui/Select';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { TabBar } from '../ui/TabBar';
+import { Card } from '../ui/Card';
 
 const TEAM_TABS = [
     { id: 'activity', label: 'Activity', icon: Activity },
@@ -47,6 +48,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- mount/team-switch fetch
         fetchDetails();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [team.id]);
@@ -210,7 +212,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                         </div>
 
                         {showInvite && (
-                            <div className="mb-6 bg-white dark:bg-slate-800 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 p-4 animate-in fade-in slide-in-from-top-2">
+                            <Card glass={false} className="mb-6 p-4 animate-in fade-in slide-in-from-top-2">
                                 <h3 className="font-semibold text-slate-900 dark:text-white mb-3">Add Member</h3>
                                 <div className="relative">
                                     <div className="relative">
@@ -274,7 +276,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                            </Card>
                         )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -311,7 +313,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                         </div>
 
                         {showAssign && (
-                            <div className="mb-6 p-4 bg-white dark:bg-slate-800 rounded-2xl border border-pink-100 dark:border-pink-900/50 animate-in fade-in slide-in-from-top-2">
+                            <Card glass={false} className="mb-6 p-4 animate-in fade-in slide-in-from-top-2">
                                 <h3 className="font-semibold text-slate-900 dark:text-white mb-3">Assign Repository</h3>
                                 <div className="relative mb-4">
                                     <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
@@ -368,7 +370,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                         <p className="col-span-full text-center text-slate-500 text-sm py-4">No available repositories to assign.</p>
                                     )}
                                 </div>
-                            </div>
+                            </Card>
                         )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -421,7 +423,7 @@ function MemberCard({ member, currentUserRole, onUpdateRole, onRemove, isMe }) {
     const showRemoveButton = canLeave || canRemove;
 
     return (
-        <div className="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow group">
+        <Card glass={false} className="flex items-center gap-4 p-4 hover:shadow-md transition-shadow group">
             <img src={member.avatar_url} alt={member.username} className="w-12 h-12 rounded-full border-2 border-slate-100 dark:border-slate-700" />
             <div className="flex-1 min-w-0">
                 <h4 className="font-bold text-slate-900 dark:text-white truncate">{member.username}</h4>
@@ -466,7 +468,7 @@ function MemberCard({ member, currentUserRole, onUpdateRole, onRemove, isMe }) {
                     </button>
                 )}
             </div>
-        </div>
+        </Card>
     );
 }
 
@@ -497,6 +499,7 @@ function RepoCard({ repo, teamMembers }) {
 
     useEffect(() => {
         if (showCollaborators) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- on-toggle data fetch
             fetchCollaborators();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -533,7 +536,7 @@ function RepoCard({ repo, teamMembers }) {
     };
 
     return (
-        <div className="flex flex-col p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow group">
+        <Card glass={false} className="flex flex-col p-5 hover:shadow-md transition-shadow group">
             <div className="flex items-start justify-between mb-2">
                 <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
                     <Github className="w-5 h-5 text-slate-700 dark:text-slate-300" />
@@ -590,6 +593,7 @@ function RepoCard({ repo, teamMembers }) {
                                             <img
                                                 key={c.login}
                                                 src={c.avatar_url}
+                                                alt={c.login}
                                                 title={`${c.login} (${c.role_name || 'member'})`}
                                                 className="w-6 h-6 rounded-full border border-slate-200 dark:border-slate-600"
                                             />
@@ -607,7 +611,7 @@ function RepoCard({ repo, teamMembers }) {
                                         {missingMembers.map(m => (
                                             <div key={m.username} className="flex items-center justify-between text-xs bg-slate-50 dark:bg-slate-700/30 p-1.5 rounded-lg border border-slate-100 dark:border-slate-700">
                                                 <div className="flex items-center gap-2">
-                                                    <img src={m.avatar_url} className="w-5 h-5 rounded-full" />
+                                                    <img src={m.avatar_url} alt={m.username} className="w-5 h-5 rounded-full" />
                                                     <span className="truncate max-w-[80px]">{m.username}</span>
                                                 </div>
                                                 <button
@@ -626,7 +630,7 @@ function RepoCard({ repo, teamMembers }) {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </Card>
     );
 }
 
@@ -639,6 +643,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
 
     useEffect(() => {
         if (selectedRepo) {
+            // eslint-disable-next-line react-hooks/immutability -- fetchWorkflows is stable for the component's lifetime
             fetchWorkflows(selectedRepo);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps

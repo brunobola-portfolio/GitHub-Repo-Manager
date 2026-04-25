@@ -7,6 +7,7 @@ import { RepoList } from './components/RepoList'
 import { OrgPanel } from './components/OrgPanel'
 import { ConfirmModal } from './components/ui/ConfirmModal'
 import { ToastContainer } from './components/ui/Toast'
+import { Spinner } from './components/ui/Spinner'
 import { useToast } from './hooks/useToast'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
@@ -663,7 +664,7 @@ function AppContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <Spinner size="xl" tone="primary" label="Loading Workspace" className="mx-auto mb-4" />
           <p className="text-slate-500 dark:text-slate-400 animate-pulse">Loading Workspace...</p>
         </div>
       </div>
