@@ -36,6 +36,7 @@ import searchRoutes from '../search.js';
 import adminDlqRoutes from '../admin-dlq.js';
 import { requireTier } from '../../middleware/require-tier.js';
 import { createCache } from '../../lib/memory-cache.js';
+import { computeAttentionFeed } from '../../lib/attention-feed.js';
 
 const router = Router();
 
@@ -83,6 +84,21 @@ router.use('/admin/dlq', adminDlqRoutes);
 // gives us per-entry expiry, bounded memory growth, and active sweep so we
 // don't keep stale entries alive forever.
 const activityCache = createCache({ ttlMs: 60_000, maxSize: 100 });
+
+// Attention Feed — pure-DB aggregator over the user's tracked repos and
+// migration_jobs ledger. No GitHub round-trips so it's cheap to dashboard
+// and reliable when GitHub is rate-limited. Tier-free on purpose: this is
+// part of the "this app is faster than github.com" promise.
+router.get('/ai/attention-feed', requireAuth, (req, res) => {
+    const limit = Math.min(Math.max(parseInt(req.query?.limit ?? '5', 10) || 5, 1), 12);
+    try {
+        const feed = computeAttentionFeed(req.session.userId, { limit });
+        res.json(feed);
+    } catch (error) {
+        req.log.error({ err: error }, 'attention-feed failed');
+        res.status(500).json({ error: safeError(error, 'Failed to compute attention feed') });
+    }
+});
 
 // Team Activity Stream
 // Aggregates events from all repos assigned to the team

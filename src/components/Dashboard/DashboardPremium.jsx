@@ -6,6 +6,7 @@ import {
     Download, Sparkles, MessageCircle, ArrowRight
 } from 'lucide-react'
 import { YourWorkCard } from './YourWorkCard'
+import { AttentionFeed } from './AttentionFeed'
 import { CategorySection } from './CategorySection'
 import { StatCard } from './StatCard'
 import { ActivityChart } from './ActivityChart'
@@ -133,6 +134,15 @@ export function DashboardPremium({
                     />
                 </div>
             </div>
+
+            {/* Attention Feed — top of the dashboard, lists repos that need your eyes today.
+                Backed by a pure-DB endpoint so it loads even when the GitHub API is
+                rate-limited; collapses to nothing when there's nothing to show. */}
+            <AttentionFeed onSelectRepo={(repoFullName) => {
+                // Best-effort: switch to the repo list view so the user can find
+                // the row. A future iteration can deep-link straight to RepoDetail.
+                onViewChange?.('repos', { highlightRepoFullName: repoFullName })
+            }} />
 
             {/* Your Work Card — live counts of reviews/stale-PRs/issues */}
             <YourWorkCard onOpenBoard={() => onViewChange?.('work-board')} />
