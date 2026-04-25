@@ -9,6 +9,7 @@ import { fetchWithRetry } from '../../utils/api'
 import { useToast } from '../../hooks/useToast'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { Skeleton } from '../ui/Skeleton'
+import { Button } from '../ui/Button'
 import { PROVIDER_DEFAULTS } from '../../utils/providerCapabilities'
 import { PRICING_LAST_UPDATED } from '../../utils/providerPricing'
 
@@ -475,14 +476,10 @@ export function AIConfigSection() {
                     <div className="sticky bottom-0 -mx-4 px-4 pb-2 pt-3 bg-gradient-to-t from-white via-white/95 to-white/0 dark:from-slate-900 dark:via-slate-900/95 dark:to-slate-900/0 lg:static lg:mx-0 lg:px-0 lg:pt-2 lg:pb-0 lg:bg-none">
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                             {hasKeyStored ? (
-                                <button
-                                    onClick={handleRemove}
-                                    disabled={removing}
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors"
-                                >
+                                <Button variant="soft-danger" size="sm" onClick={handleRemove} disabled={removing}>
                                     <X className="w-4 h-4" />
                                     {removing ? 'Removing…' : 'Remove config'}
-                                </button>
+                                </Button>
                             ) : <span />}
 
                             <button

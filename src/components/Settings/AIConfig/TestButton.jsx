@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Check, AlertTriangle, Loader2, Info } from 'lucide-react'
+import { Button } from '../../ui/Button'
 
 // ---------------------------------------------------------------------------
 // Sub-component: TestButton
@@ -13,11 +14,7 @@ export function TestButton({ onTest, disabled, result, countdown, isDirty }) {
 
     return (
         <div className="space-y-2">
-            <button
-                onClick={onTest}
-                disabled={isDisabled}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-700/50 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <Button variant="soft-primary" onClick={onTest} disabled={isDisabled}>
                 {disabled && !countdown ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
@@ -26,7 +23,7 @@ export function TestButton({ onTest, disabled, result, countdown, isDirty }) {
                 {countdown > 0
                     ? `Test Connection (${countdown}s)`
                     : 'Test Connection'}
-            </button>
+            </Button>
 
             {isDirty && (
                 <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">

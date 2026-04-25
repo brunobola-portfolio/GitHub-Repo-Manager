@@ -225,14 +225,10 @@ function GeneralTabContent({
                     )}
 
                     {/* Clear Cache Button */}
-                    <button
-                        onClick={onClearCache}
-                        disabled={clearing}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
+                    <Button variant="soft-danger" onClick={onClearCache} disabled={clearing} className="w-full">
                         <Trash2 size={16} />
                         {clearing ? 'Clearing...' : 'Clear Cache Now'}
-                    </button>
+                    </Button>
                     {cacheMessage && (
                         <p role="status" className={`text-xs font-medium ${cacheMessage.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                             {cacheMessage.text}

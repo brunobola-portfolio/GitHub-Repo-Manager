@@ -75,4 +75,19 @@ describe('Button', () => {
         expect(cls).toContain('border-indigo-300')
         expect(cls).toContain('text-indigo-600')
     })
+
+    it('renders soft-danger with red-50 bg + red text and no border', () => {
+        render(<Button variant="soft-danger">x</Button>)
+        const cls = screen.getByRole('button').className
+        expect(cls).toContain('bg-red-50')
+        expect(cls).toContain('text-red-600')
+    })
+
+    it('renders soft-primary with indigo-50 bg + indigo text + indigo border', () => {
+        render(<Button variant="soft-primary">x</Button>)
+        const cls = screen.getByRole('button').className
+        expect(cls).toContain('bg-indigo-50')
+        expect(cls).toContain('text-indigo-700')
+        expect(cls).toContain('border-indigo-200')
+    })
 })

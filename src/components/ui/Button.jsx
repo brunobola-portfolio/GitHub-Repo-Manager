@@ -15,6 +15,12 @@ const variants = {
     outline: 'bg-transparent text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 ds-focus-ring',
     'outline-danger': 'bg-transparent text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 ds-focus-ring',
     'outline-primary': 'bg-transparent text-indigo-600 dark:text-indigo-400 border border-indigo-300 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 ds-focus-ring',
+    // Soft variants — tinted background with matching text, no border.
+    // For inline destructive / accent CTAs that should read as 'a step
+    // softer than danger' (AIConfigSection Remove key, soft-indigo Test
+    // Connection, etc).
+    'soft-danger': 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 ds-focus-ring',
+    'soft-primary': 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-700/50 ds-focus-ring',
 }
 
 const sizes = {
