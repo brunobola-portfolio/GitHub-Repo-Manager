@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { CreditCard, Zap, Building2, Star, AlertTriangle, ExternalLink, RefreshCw, ArrowRight, Shield, Key, ChevronDown, ChevronUp, Info } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
 import { Badge } from '../ui/Badge'
+import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
 import { useModal } from '../../hooks/useModal'
@@ -79,26 +80,19 @@ function PlanCard({ tier, status, renewalDate, onManage, onChangePlan, portalLoa
 
                 <div className="flex gap-2 shrink-0">
                     {tier !== 'free' && (
-                        <button
-                            onClick={onManage}
-                            disabled={portalLoading}
-                            className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors"
-                        >
+                        <Button variant="secondary" size="sm" onClick={onManage} disabled={portalLoading}>
                             {portalLoading ? (
                                 <RefreshCw className="w-4 h-4 animate-spin" />
                             ) : (
                                 <ExternalLink className="w-4 h-4" />
                             )}
                             {portalLoading ? 'Opening...' : 'Manage'}
-                        </button>
+                        </Button>
                     )}
-                    <button
-                        onClick={onChangePlan}
-                        className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm shadow-indigo-500/20 transition-all"
-                    >
+                    <Button variant="primary" size="sm" onClick={onChangePlan}>
                         <ArrowRight className="w-4 h-4" />
                         Change Plan
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -134,9 +128,9 @@ function UpgradePrompt({ onUpgradePro, onUpgradeEnterprise }) {
                             </li>
                         ))}
                     </ul>
-                    <button className="w-full py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors">
+                    <Button variant="primary" className="w-full">
                         Upgrade to Pro
-                    </button>
+                    </Button>
                 </Card>
             </motion.div>
 

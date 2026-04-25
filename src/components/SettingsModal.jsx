@@ -11,6 +11,7 @@ import { WorkBoardSettingsSection } from './Settings/WorkBoard/WorkBoardSettings
 import { DangerZoneSection } from './Settings/DangerZoneSection'
 import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
+import { Button } from './ui/Button'
 
 // SettingsIcon defined before TABS so it can be referenced in the array
 function SettingsIcon({ className }) {
@@ -111,18 +112,12 @@ export function SettingsModal({ isOpen, onClose, initialTab }) {
             mobileVariant="sheet"
             footer={activeTab === 'general' ? (
                 <ModalFooter align="right">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-                    >
+                    <Button variant="ghost" onClick={onClose}>
                         Cancel
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm shadow-indigo-500/20 transition-all"
-                    >
+                    </Button>
+                    <Button variant="primary" onClick={handleSave}>
                         Save Changes
-                    </button>
+                    </Button>
                 </ModalFooter>
             ) : null}
         >
