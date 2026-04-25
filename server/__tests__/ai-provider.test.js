@@ -247,6 +247,37 @@ describe('GeminiProvider', () => {
             mockGenerateContent.mockRejectedValue(aiErr)
             await expect(provider.generate({ prompt: 'test' })).rejects.toBe(aiErr)
         })
+
+        it('aliases OpenAI-style max_tokens to Gemini maxOutputTokens', async () => {
+            mockGenerateContent.mockResolvedValue({ response: { text: () => 'ok' } })
+            await provider.generate({ prompt: 'test', generationConfig: { max_tokens: 12 } })
+            const req = mockGenerateContent.mock.calls[0][0]
+            expect(req.generationConfig).toEqual({ maxOutputTokens: 12 })
+            expect(req.generationConfig).not.toHaveProperty('max_tokens')
+        })
+
+        it('strips unknown generationConfig keys so the REST API cannot 400 on them', async () => {
+            mockGenerateContent.mockResolvedValue({ response: { text: () => 'ok' } })
+            await provider.generate({
+                prompt: 'test',
+                generationConfig: { temperature: 0.3, bogusField: 'x', maxOutputTokens: 10 },
+            })
+            const req = mockGenerateContent.mock.calls[0][0]
+            expect(req.generationConfig).toEqual({ temperature: 0.3, maxOutputTokens: 10 })
+            expect(req.generationConfig).not.toHaveProperty('bogusField')
+        })
+
+        it('prefers explicit maxOutputTokens over aliased max_tokens when both present', async () => {
+            mockGenerateContent.mockResolvedValue({ response: { text: () => 'ok' } })
+            await provider.generate({
+                prompt: 'test',
+                generationConfig: { max_tokens: 5, maxOutputTokens: 20 },
+            })
+            const req = mockGenerateContent.mock.calls[0][0]
+            // Object.entries iterates in insertion order, so max_tokens is seen
+            // first and seeds maxOutputTokens, then the explicit one overwrites.
+            expect(req.generationConfig.maxOutputTokens).toBe(20)
+        })
     })
 
     describe('embed()', () => {

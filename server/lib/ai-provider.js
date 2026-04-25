@@ -271,6 +271,58 @@ function stripMarkdownFences(text) {
 }
 
 // ---------------------------------------------------------------------------
+// Gemini generationConfig normalizer
+// ---------------------------------------------------------------------------
+
+// Allow-list of fields Gemini's v1beta generateContent API accepts inside
+// `generationConfig`. Anything outside this list causes a 400 "Unknown name"
+// (e.g. OpenAI's `max_tokens`). Keep this conservative — adding newer fields
+// is safer than letting arbitrary caller-supplied keys hit the REST API.
+const GEMINI_GEN_CONFIG_FIELDS = new Set([
+    'temperature',
+    'topP',
+    'topK',
+    'candidateCount',
+    'maxOutputTokens',
+    'stopSequences',
+    'presencePenalty',
+    'frequencyPenalty',
+    'responseMimeType',
+    'responseSchema',
+    'responseLogprobs',
+    'logprobs',
+    'seed',
+    'thinkingConfig',
+]);
+
+/**
+ * Normalise a provider-neutral `generationConfig` into a Gemini-valid one.
+ *
+ * - Aliases `max_tokens` → `maxOutputTokens` (OpenAI/Anthropic-style callers).
+ * - Drops unknown keys so a 400 "Unknown name" can't slip through.
+ * - Returns `null` when the resulting object is empty, so callers can
+ *   omit `generationConfig` from the request body entirely.
+ *
+ * @param {object|null|undefined} cfg
+ * @returns {object|null}
+ */
+function normalizeGeminiGenerationConfig(cfg) {
+    if (!cfg || typeof cfg !== 'object') return null;
+    const out = {};
+    for (const [key, value] of Object.entries(cfg)) {
+        if (value === undefined || value === null) continue;
+        if (key === 'max_tokens' || key === 'maxTokens') {
+            if (out.maxOutputTokens == null) out.maxOutputTokens = value;
+            continue;
+        }
+        if (GEMINI_GEN_CONFIG_FIELDS.has(key)) {
+            out[key] = value;
+        }
+    }
+    return Object.keys(out).length > 0 ? out : null;
+}
+
+// ---------------------------------------------------------------------------
 // GeminiProvider
 // ---------------------------------------------------------------------------
 
@@ -340,13 +392,15 @@ export class GeminiProvider {
             });
         }
 
+        const normalizedConfig = normalizeGeminiGenerationConfig(generationConfig);
+
         let request;
 
         if (parts) {
             // Multi-part / structured contents path (preserves anti-injection partitioning)
             request = {
                 contents: [{ role: 'user', parts }],
-                ...(generationConfig ? { generationConfig } : {}),
+                ...(normalizedConfig ? { generationConfig: normalizedConfig } : {}),
             };
         } else if (schema) {
             // Structured response with schema
@@ -356,14 +410,14 @@ export class GeminiProvider {
                 generationConfig: {
                     responseMimeType: 'application/json',
                     responseSchema: schema,
-                    ...(generationConfig || {}),
+                    ...(normalizedConfig || {}),
                 },
             };
         } else {
             // Simple prompt path
             const fullPrompt = systemPrompt ? systemPrompt + '\n\n' + (prompt || '') : (prompt || '');
-            request = generationConfig
-                ? { contents: [{ role: 'user', parts: [{ text: fullPrompt }] }], generationConfig }
+            request = normalizedConfig
+                ? { contents: [{ role: 'user', parts: [{ text: fullPrompt }] }], generationConfig: normalizedConfig }
                 : fullPrompt;
         }
 
@@ -453,9 +507,10 @@ export class GeminiProvider {
             ? [{ role: 'user', parts }]
             : [{ role: 'user', parts: [{ text: prompt || '' }] }];
 
+        const normalizedConfig = normalizeGeminiGenerationConfig(generationConfig);
         const request = {
             contents,
-            ...(generationConfig ? { generationConfig } : {}),
+            ...(normalizedConfig ? { generationConfig: normalizedConfig } : {}),
         };
 
         let streamResult;
