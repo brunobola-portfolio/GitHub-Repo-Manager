@@ -95,10 +95,10 @@ export function MigrationHistory({ isOpen, onClose }) {
     }
 
     useEffect(() => {
-        if (isOpen) {
-            if (activeTab === 'plans') loadPlans()
-            else loadJobs()
-        }
+        if (!isOpen) return
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- modal-open data load; setLoading is guarded by isOpen
+        if (activeTab === 'plans') loadPlans()
+        else loadJobs()
     }, [isOpen, activeTab])
 
     if (!isOpen) return null
@@ -171,9 +171,18 @@ export function MigrationHistory({ isOpen, onClose }) {
 
                                 return (
                                     <div key={plan.id} className="rounded-xl border border-slate-200/60 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50 transition-colors">
-                                        <button
+                                        <div
+                                            role="button"
+                                            tabIndex={0}
+                                            aria-expanded={isExpanded}
                                             onClick={() => setExpandedPlan(isExpanded ? null : plan.id)}
-                                            className="w-full p-3 flex items-start gap-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault()
+                                                    setExpandedPlan(isExpanded ? null : plan.id)
+                                                }
+                                            }}
+                                            className="w-full p-3 flex items-start gap-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                                         >
                                             <div className={`p-1.5 rounded-lg ${status.bg}`}>
                                                 <StatusIcon className={`w-4 h-4 ${status.text} ${plan.status === 'running' || plan.status === 'executing' ? 'animate-spin' : ''}`} />
@@ -212,7 +221,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                 )}
                                                 {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
                                             </div>
-                                        </button>
+                                        </div>
                                         {isExpanded && tasks.length > 0 && (
                                             <div className="px-3 pb-3 space-y-1.5 border-t border-slate-100 dark:border-slate-700/50 pt-2 ml-10">
                                                 {tasks.map((task, idx) => {
