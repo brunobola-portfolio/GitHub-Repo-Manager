@@ -12,6 +12,7 @@ import { DangerZoneSection } from './Settings/DangerZoneSection'
 import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
 import { Button } from './ui/Button'
+import { ProbeStatsSection } from './Settings/ProbeStatsSection'
 
 // SettingsIcon defined before TABS so it can be referenced in the array
 function SettingsIcon({ className }) {
@@ -41,7 +42,13 @@ const TABS = [
     { id: 'audit', label: 'Audit Log', icon: Shield },
 ]
 
-export function SettingsModal({ isOpen, onClose, initialTab }) {
+// Admin-only tab appended at the end when the user has admin powers. Built
+// at render time so non-admins never see the entry.
+const ADMIN_TABS = [
+    { id: 'probe-stats', label: 'AI Probes', icon: BadgeCheck },
+]
+
+export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) {
     const { theme, setTheme } = useTheme()
     const { toast } = useToast()
     const [activeTab, setActiveTab] = useState('general')
@@ -104,7 +111,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }) {
             icon={SettingsIcon}
             iconGradient="primary"
             size="xl"
-            tabs={TABS}
+            tabs={isAdmin ? [...TABS, ...ADMIN_TABS] : TABS}
             activeTab={activeTab}
             onTabChange={setActiveTab}
             tabsLayoutId="settings-tabs"
@@ -139,6 +146,7 @@ export function SettingsModal({ isOpen, onClose, initialTab }) {
             {activeTab === 'work-board' && <div><WorkBoardSettingsSection /></div>}
             {activeTab === 'license' && <div><LicensePlanSection /></div>}
             {activeTab === 'audit' && <div><AuditLogSection /></div>}
+            {activeTab === 'probe-stats' && <div><ProbeStatsSection isAdmin={isAdmin} /></div>}
         </Modal>
     )
 }

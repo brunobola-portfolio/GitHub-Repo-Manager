@@ -1098,6 +1098,7 @@ function AppContent() {
             isOpen={modalStates.showSettings}
             onClose={() => closeModal('showSettings')}
             initialTab={getModalData('showSettings')?.initialTab}
+            isAdmin={isAdmin}
           />
         </Suspense>
       </ErrorBoundary>
