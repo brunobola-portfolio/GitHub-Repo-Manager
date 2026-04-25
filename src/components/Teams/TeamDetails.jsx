@@ -8,6 +8,7 @@ import { Select } from '../ui/Select';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { TabBar } from '../ui/TabBar';
 import { Card } from '../ui/Card';
+import { PageHeader } from '../ui/PageHeader';
 
 const TEAM_TABS = [
     { id: 'activity', label: 'Activity', icon: Activity },
@@ -161,8 +162,11 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                 <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
 
                 <div className="relative z-10">
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white ds-font-display mb-2">{team.name}</h1>
-                    <p className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl">{team.description}</p>
+                    <PageHeader
+                        title={team.name}
+                        description={team.description}
+                        className="mb-0"
+                    />
                 </div>
 
                 <div className="mt-8">

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { TabBar } from '../ui/TabBar'
 import { TrackedChip } from '../WorkBoard/TrackedChip'
+import { PageHeader } from '../ui/PageHeader'
 
 const TABS = [
     { id: 'overview', label: 'Overview', icon: FileText },
@@ -72,34 +73,34 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription 
                 </Button>
 
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 flex-wrap">
-                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 ds-font-display truncate">
-                            {r.full_name || `${owner}/${repoName}`}
-                        </h1>
-                        <TrackedChip repoFullName={r.full_name || `${owner}/${repoName}`} />
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                            r.private
-                                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                                : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                        }`}>
-                            {r.private ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
-                            {r.private ? 'Private' : 'Public'}
-                        </span>
-                        {r.archived && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                Archived
-                            </span>
-                        )}
-                        {r.fork && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
-                                <GitFork className="w-3 h-3" /> Fork
-                            </span>
-                        )}
-                    </div>
-
-                    {r.description && (
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl">{r.description}</p>
-                    )}
+                    <PageHeader
+                        title={r.full_name || `${owner}/${repoName}`}
+                        description={r.description || undefined}
+                        className="mb-0"
+                        titleAccessory={
+                            <>
+                                <TrackedChip repoFullName={r.full_name || `${owner}/${repoName}`} />
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                    r.private
+                                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                                        : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                                }`}>
+                                    {r.private ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+                                    {r.private ? 'Private' : 'Public'}
+                                </span>
+                                {r.archived && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                        Archived
+                                    </span>
+                                )}
+                                {r.fork && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
+                                        <GitFork className="w-3 h-3" /> Fork
+                                    </span>
+                                )}
+                            </>
+                        }
+                    />
 
                     <div className="flex items-center gap-4 mt-2 text-xs text-slate-500 dark:text-slate-400">
                         {r.language && (

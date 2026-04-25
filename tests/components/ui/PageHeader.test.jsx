@@ -38,4 +38,24 @@ describe('PageHeader', () => {
         // No paragraph element below the H1.
         expect(document.querySelectorAll('p').length).toBe(0)
     })
+
+    it('applies the gradient text class when gradient prop is true', () => {
+        render(<PageHeader title="Page" gradient />)
+        const h1 = screen.getByRole('heading', { level: 1 })
+        expect(h1.className).toContain('ds-gradient-text')
+    })
+
+    it('renders titleAccessory inline next to the H1 when supplied', () => {
+        render(
+            <PageHeader
+                title="owner/repo"
+                titleAccessory={<span data-testid="chip">Private</span>}
+            />,
+        )
+        const chip = screen.getByTestId('chip')
+        const h1 = screen.getByRole('heading', { level: 1 })
+        // Chip and H1 share the same parent (the inline accessory wrapper).
+        expect(chip.parentElement).toBe(h1.parentElement)
+        expect(h1.className).toContain('truncate')
+    })
 })

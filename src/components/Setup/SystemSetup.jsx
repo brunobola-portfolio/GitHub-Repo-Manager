@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Database, CheckCircle, Loader2, Server, HardDrive, ShieldCheck, ArrowRight } from 'lucide-react';
+import { PageHeader } from '../ui/PageHeader';
 
 export function SystemSetup({ onComplete }) {
     const [step, setStep] = useState(0);
     const [completed, setCompleted] = useState(false);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        startSetup();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     const startSetup = async () => {
         // Step 1: Connecting
@@ -40,7 +38,12 @@ export function SystemSetup({ onComplete }) {
         }
     };
 
-    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    /* eslint-disable react-hooks/set-state-in-effect -- one-shot bootstrap on mount */
+    useEffect(() => {
+        startSetup();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     return (
         <div className="fixed inset-0 bg-slate-950 flex items-center justify-center z-50 text-white overflow-hidden">
@@ -57,8 +60,12 @@ export function SystemSetup({ onComplete }) {
                     <div className="w-20 h-20 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-xl shadow-indigo-500/30">
                         <Database className="w-10 h-10 text-white" />
                     </div>
-                    <h1 className="text-3xl font-bold mb-2">Initialize System</h1>
-                    <p className="text-slate-400">Setting up your portable workspace.</p>
+                    <PageHeader
+                        title="Initialize System"
+                        description="Setting up your portable workspace."
+                        align="center"
+                        className="mb-0 flex-col sm:flex-col sm:items-center"
+                    />
                 </motion.div>
 
                 <div className="space-y-6">

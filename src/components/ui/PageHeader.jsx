@@ -20,8 +20,14 @@ export function PageHeader({
     icon: Icon,
     actions,
     align = 'left',
+    gradient = false,
+    titleAccessory,
     className = '',
 }) {
+    const titleClass = `mt-1 text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight ds-font-display ${
+        gradient ? 'ds-gradient-text' : 'text-slate-900 dark:text-white'
+    } ${titleAccessory ? 'truncate' : ''}`.trim()
+
     return (
         <header className={`flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6 ${className}`.trim()}>
             <div className={`min-w-0 ${align === 'center' ? 'text-center mx-auto' : ''}`}>
@@ -31,9 +37,14 @@ export function PageHeader({
                         {eyebrow && <span>{eyebrow}</span>}
                     </div>
                 )}
-                <h1 className="mt-1 text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white ds-font-display">
-                    {title}
-                </h1>
+                {titleAccessory ? (
+                    <div className="mt-1 flex items-center gap-3 flex-wrap min-w-0">
+                        <h1 className={titleClass}>{title}</h1>
+                        {titleAccessory}
+                    </div>
+                ) : (
+                    <h1 className={titleClass}>{title}</h1>
+                )}
                 {description && (
                     <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
                         {description}

@@ -16,6 +16,7 @@ import { OrganizationSelector } from './OrganizationSelector'
 import { OrganizationCard } from './OrganizationCard'
 import { shouldShowCategory, aggregateRepoStats, aggregateLanguages, calculateActivityMetrics } from '../../utils/statsAggregator'
 import { useModal } from '../../hooks/useModal'
+import { PageHeader } from '../ui/PageHeader'
 import { motion } from 'framer-motion'
 
 /**
@@ -108,32 +109,25 @@ export function DashboardPremium({
             animate="visible"
             className="space-y-5 sm:space-y-6 lg:space-y-8"
         >
-            {/* Header with Organization Selector */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
-                <div className="flex-1">
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight ds-font-display ds-gradient-text">
-                        Dashboard
-                    </h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1.5 sm:mt-2 text-base sm:text-lg ds-font-display">
-                        Comprehensive overview of your GitHub ecosystem
-                    </p>
-                </div>
-
-                {/* Organization Selector */}
-                <div className="lg:self-start">
-                    <div className="mb-2">
-                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+            <PageHeader
+                title="Dashboard"
+                description="Comprehensive overview of your GitHub ecosystem"
+                gradient
+                className="mb-0 items-start sm:items-end"
+                actions={
+                    <div>
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
                             Filter by Organization
                         </p>
+                        <OrganizationSelector
+                            orgs={orgs}
+                            selectedOrg={selectedOrg}
+                            onSelectOrg={onSelectOrg}
+                            loading={loading}
+                        />
                     </div>
-                    <OrganizationSelector
-                        orgs={orgs}
-                        selectedOrg={selectedOrg}
-                        onSelectOrg={onSelectOrg}
-                        loading={loading}
-                    />
-                </div>
-            </div>
+                }
+            />
 
             {/* Attention Feed — top of the dashboard, lists repos that need your eyes today.
                 Backed by a pure-DB endpoint so it loads even when the GitHub API is

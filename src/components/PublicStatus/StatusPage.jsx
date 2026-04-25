@@ -13,6 +13,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { MOCK_MODE } from '../../config'
 import { useRelativeTime } from '../../hooks/useRelativeTime.js'
+import { PageHeader } from '../ui/PageHeader'
 
 const POLL_INTERVAL_MS = 60_000
 
@@ -100,10 +101,11 @@ export function StatusPage() {
     return (
         <main className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
             <div className="max-w-3xl mx-auto px-6 py-12 sm:py-16">
-                <header className="mb-10">
-                    <p className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">System status</p>
-                    <h1 className="text-2xl sm:text-3xl font-semibold">GitHub Repo Manager</h1>
-                </header>
+                <PageHeader
+                    eyebrow="System status"
+                    title="GitHub Repo Manager"
+                    className="mb-10"
+                />
 
                 <section
                     aria-live="polite"
