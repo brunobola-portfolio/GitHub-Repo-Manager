@@ -6,6 +6,7 @@ import { SkeletonList, UpsellCard } from '../shared/shared-ui'
 import { dayLabel } from '../shared/formatters'
 import { WorkBoardRowMenu } from '../WorkBoardRowMenu'
 import { EmptyStateDiscovery } from '../EmptyStateDiscovery'
+import { Card } from '../../ui/Card'
 
 export function TechDebtTab() {
     const { data, loading, error, refresh } = useTechDebt()
@@ -63,7 +64,7 @@ export function TechDebtTab() {
             )}
 
             {/* Issues */}
-            <div className="divide-y divide-slate-100 dark:divide-slate-800/60 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 overflow-hidden">
+            <Card glass={false} shadow="none" className="divide-y divide-slate-100 dark:divide-slate-800/60">
                 {items.map((issue, i) => (
                     <motion.a
                         key={`${issue.repoFullName}-${issue.issueNumber}`}
@@ -111,7 +112,7 @@ export function TechDebtTab() {
                         </div>
                     </motion.a>
                 ))}
-            </div>
+            </Card>
         </div>
     )
 }

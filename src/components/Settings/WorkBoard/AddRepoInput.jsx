@@ -2,6 +2,7 @@ import { Command } from 'cmdk'
 import { useEffect, useState } from 'react'
 import { Plus, Loader2 } from 'lucide-react'
 import { searchRepos } from '../../../api/workBoardTracking'
+import { useDebounce } from '../../../hooks/useDebounce'
 
 const REPO_FORMAT_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}\/[a-zA-Z0-9_.-]{1,100}$/
 const DEBOUNCE_MS = 200
@@ -10,23 +11,24 @@ export function AddRepoInput({ onAdd }) {
     const [query, setQuery] = useState('')
     const [results, setResults] = useState({ tracked: [], untracked: [] })
     const [loading, setLoading] = useState(false)
+    const debouncedQuery = useDebounce(query.trim(), DEBOUNCE_MS)
 
+    /* eslint-disable react-hooks/set-state-in-effect -- debounced query drives the search */
     useEffect(() => {
-        const trimmed = query.trim()
-        const handle = setTimeout(() => {
-            if (!trimmed) {
-                setResults({ tracked: [], untracked: [] })
-                setLoading(false)
-                return
-            }
-            setLoading(true)
-            searchRepos(trimmed)
-                .then(data => setResults(data))
-                .catch(() => setResults({ tracked: [], untracked: [] }))
-                .finally(() => setLoading(false))
-        }, DEBOUNCE_MS)
-        return () => clearTimeout(handle)
-    }, [query])
+        if (!debouncedQuery) {
+            setResults({ tracked: [], untracked: [] })
+            setLoading(false)
+            return
+        }
+        setLoading(true)
+        let cancelled = false
+        searchRepos(debouncedQuery)
+            .then(data => { if (!cancelled) setResults(data) })
+            .catch(() => { if (!cancelled) setResults({ tracked: [], untracked: [] }) })
+            .finally(() => { if (!cancelled) setLoading(false) })
+        return () => { cancelled = true }
+    }, [debouncedQuery])
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const looksLikeRepo = REPO_FORMAT_RE.test(query.trim())
     const hasResults = results.tracked.length > 0 || results.untracked.length > 0
