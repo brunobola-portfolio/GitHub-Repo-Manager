@@ -1,6 +1,21 @@
-import { Sparkles, Cloud, KeyRound, ShieldAlert, CheckCircle2, Clock, AlertTriangle } from 'lucide-react'
+import { useMemo } from 'react'
+import { Sparkles, Cloud, KeyRound, ShieldAlert, CheckCircle2, Clock, AlertTriangle, HelpCircle, WifiOff } from 'lucide-react'
 import { PROVIDER_LABELS, PROVIDER_DEFAULTS } from '../../../utils/providerCapabilities'
 import { useAIStatus } from '../../../hooks/useAIStatus'
+import { useAIFeaturesHealth } from '../../../hooks/useAIFeaturesHealth'
+
+const HEALTH_PILL = {
+    ok:           { Icon: CheckCircle2,  cls: 'text-emerald-600 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-900/40 ring-emerald-200/70 dark:ring-emerald-800/60', label: 'OK' },
+    invalid:      { Icon: AlertTriangle, cls: 'text-red-600 dark:text-red-400 bg-red-100/70 dark:bg-red-900/40 ring-red-200/70 dark:ring-red-800/60',                    label: 'Invalid' },
+    unreachable:  { Icon: WifiOff,       cls: 'text-amber-600 dark:text-amber-400 bg-amber-100/70 dark:bg-amber-900/40 ring-amber-200/70 dark:ring-amber-800/60',          label: 'Down' },
+    unknown:      { Icon: HelpCircle,    cls: 'text-slate-500 dark:text-slate-400 bg-slate-100/70 dark:bg-slate-800/60 ring-slate-200/70 dark:ring-slate-700/60',          label: '—' },
+}
+
+const FEATURE_LABEL = {
+    completion: 'Completion',
+    chat:       'Chat',
+    embedding:  'Embedding',
+}
 
 function formatRelativeTime(iso) {
     if (!iso) return null
@@ -34,6 +49,21 @@ export function CurrentConfigSummary({ form }) {
     const overrideCount = Object.values(form.featureOverrides || {}).filter(Boolean).length
     const savedAgo = formatRelativeTime(form.updatedAt)
     const { keyHealth } = useAIStatus()
+
+    // Show per-feature health pills only when the user has at least one
+    // feature beyond completion configured (embedding provider set, or
+    // overrides). Avoids cluttering the summary for the common single-key case.
+    const activeFeatures = useMemo(() => {
+        const features = ['completion']
+        if (form.embeddingProvider) features.push('embedding')
+        const overrides = form.featureOverrides || {}
+        for (const f of ['chat', 'embedding']) {
+            if (overrides[f] && !features.includes(f)) features.push(f)
+        }
+        return features
+    }, [form.embeddingProvider, form.featureOverrides])
+    const showPerFeature = activeFeatures.length > 1
+    const featuresHealth = useAIFeaturesHealth(showPerFeature ? activeFeatures : [])
 
     return (
         <div className="rounded-2xl p-[1px] bg-gradient-to-br from-indigo-500/30 via-purple-500/20 to-pink-500/10 dark:from-indigo-500/40 dark:via-purple-500/30 dark:to-pink-500/20">
@@ -93,6 +123,35 @@ export function CurrentConfigSummary({ form }) {
                                 value={`${overrideCount} override${overrideCount === 1 ? '' : 's'}`}
                                 accent="indigo"
                             />
+                        )}
+                        {showPerFeature && (
+                            <div className="flex items-start gap-3">
+                                <div className="w-7 h-7 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-800/80 ring-1 ring-inset ring-slate-200/60 dark:ring-slate-700 flex items-center justify-center">
+                                    <Sparkles className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" aria-hidden="true" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                                        Per-feature health
+                                    </div>
+                                    <div className="mt-1 flex flex-wrap gap-1">
+                                        {activeFeatures.map((feature) => {
+                                            const entry = featuresHealth[feature]
+                                            const meta = HEALTH_PILL[entry?.keyHealth ?? 'unknown'] ?? HEALTH_PILL.unknown
+                                            const Icon = meta.Icon
+                                            return (
+                                                <span
+                                                    key={feature}
+                                                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ring-1 ring-inset ${meta.cls}`}
+                                                    title={`${FEATURE_LABEL[feature]}: ${meta.label}`}
+                                                >
+                                                    <Icon className="w-2.5 h-2.5" aria-hidden="true" />
+                                                    <span>{FEATURE_LABEL[feature]}</span>
+                                                </span>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
                         )}
                         {form.serverFallbackAvailable && !hasKey && (
                             <div className="mt-1 text-[11px] text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 ring-1 ring-inset ring-amber-200/60 dark:ring-amber-800/50 rounded-lg px-2 py-1.5">
