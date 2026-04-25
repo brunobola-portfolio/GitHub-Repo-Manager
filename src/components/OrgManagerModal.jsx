@@ -7,6 +7,7 @@ import {
 import { Button } from './ui/Button'
 import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
+import { EmptyState } from './ui/EmptyState'
 import { useToast } from '../hooks/useToast'
 
 const ORG_TABS = [
@@ -363,18 +364,16 @@ function CapabilitiesCard({ isPersonal }) {
 function MembersTab({ members, orgLogin }) {
     if (members.length === 0) {
         return (
-            <div className="text-center py-12">
-                <Users className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <p className="text-slate-500 dark:text-slate-400">No members found or not authorized to view</p>
-                <a
-                    href={`https://github.com/orgs/${orgLogin}/people`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-600 dark:text-indigo-300 hover:underline text-sm mt-2 inline-block"
-                >
-                    View members on GitHub
-                </a>
-            </div>
+            <EmptyState
+                icon={Users}
+                title="No members visible"
+                description="Either this org has no members or your token isn't authorized to read the member list."
+                gradient="from-slate-400 to-slate-500"
+                action={{
+                    label: 'View members on GitHub',
+                    href: `https://github.com/orgs/${orgLogin}/people`,
+                }}
+            />
         )
     }
 

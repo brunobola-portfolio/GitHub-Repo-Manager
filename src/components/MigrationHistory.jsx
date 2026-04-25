@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from './ui/Button'
 import { Modal } from './ui/Modal'
+import { EmptyState } from './ui/EmptyState'
 import {
     History, CheckCircle2, XCircle, Loader2, ExternalLink,
     Clock, ArrowRight, RefreshCw, Cloud, Globe, GitBranch,
@@ -149,10 +150,12 @@ export function MigrationHistory({ isOpen, onClose }) {
                     ) : activeTab === 'plans' ? (
                         /* Plans view */
                         plans.length === 0 ? (
-                            <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-                                <ListChecks className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                                <p className="text-sm">No migration plans found</p>
-                            </div>
+                            <EmptyState
+                                icon={ListChecks}
+                                title="No migration plans yet"
+                                description="Plans show up here once you start a migration from the wizard."
+                                gradient="from-slate-400 to-slate-500"
+                            />
                         ) : (
                             plans.map(plan => {
                                 const status = STATUS_STYLES[plan.status] || STATUS_STYLES.pending
@@ -244,10 +247,12 @@ export function MigrationHistory({ isOpen, onClose }) {
                     ) : (
                         /* Legacy jobs view */
                         filteredJobs.length === 0 ? (
-                            <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-                                <History className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                                <p className="text-sm">No migrations found</p>
-                            </div>
+                            <EmptyState
+                                icon={History}
+                                title="No legacy jobs"
+                                description="Pre-plan migrations from older sessions would show up here."
+                                gradient="from-slate-400 to-slate-500"
+                            />
                         ) : (
                             filteredJobs.map(job => {
                                 const status = STATUS_STYLES[job.status] || STATUS_STYLES.pending

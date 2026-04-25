@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { GitCommit, GitPullRequest, CircleDot, Activity, Clock, FileCode, Star, GitFork, Tag, Trash2 } from 'lucide-react';
 
 import { MOCK_MODE } from '../../config';
+import { EmptyState } from '../ui/EmptyState';
 
 export function ActivityTab({ teamId }) {
     const [events, setEvents] = useState([]);
@@ -60,10 +61,12 @@ export function ActivityTab({ teamId }) {
     if (loading) return <ActivitySkeleton />;
     if (error && events.length === 0) return <div className="p-8 text-center text-red-400">{error}</div>;
     if (events.length === 0) return (
-        <div className="flex flex-col items-center justify-center p-12 text-slate-400">
-            <Activity className="w-12 h-12 mb-4 opacity-20" />
-            <p>No recent activity found for this team's repositories.</p>
-        </div>
+        <EmptyState
+            icon={Activity}
+            title="No recent activity"
+            description="Once this team's repositories see commits, PRs or issues, they'll show up here."
+            gradient="from-slate-400 to-slate-500"
+        />
     );
 
     // Group events by date
