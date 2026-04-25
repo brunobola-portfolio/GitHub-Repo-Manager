@@ -4,6 +4,7 @@ import {
   Info, ArrowRight,
 } from 'lucide-react'
 import { parseAzureUrl } from '../../../utils/azureUrlParser'
+import { Button } from '../../ui/Button'
 
 /**
  * UrlInputStep - Git URL entry + authentication for the unified Migration Wizard.
@@ -101,9 +102,9 @@ export default function UrlInputStep({ source, onChange }) {
 
       {/* Auth type selector */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+        <p className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
           Authentication
-        </label>
+        </p>
         <div className="flex gap-2">
           {authOptions.map((a) => (
             <button
@@ -181,16 +182,7 @@ export default function UrlInputStep({ source, onChange }) {
 
       {/* Validate button + status */}
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={handleValidate}
-          disabled={!canValidate}
-          className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all
-            ${canValidate
-              ? 'bg-indigo-500 hover:bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
-              : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
-            }`}
-        >
+        <Button variant="primary" type="button" onClick={handleValidate} disabled={!canValidate}>
           {source.urlValidation === 'validating' ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -199,7 +191,7 @@ export default function UrlInputStep({ source, onChange }) {
           ) : (
             'Validate URL'
           )}
-        </button>
+        </Button>
 
         {source.urlValidation === 'valid' && (
           <span className="inline-flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">

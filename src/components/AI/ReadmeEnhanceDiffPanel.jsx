@@ -3,6 +3,7 @@ import { DiffView, DiffModeEnum } from '@git-diff-view/react'
 import '@git-diff-view/react/styles/diff-view.css'
 import { aiApi } from '../../api/ai'
 import { Loader2, Sparkles, Copy, Check } from 'lucide-react'
+import { Button } from '../ui/Button'
 
 export function ReadmeEnhanceDiffPanel({ repo }) {
   const [loading, setLoading] = useState(true)
@@ -85,14 +86,11 @@ export function ReadmeEnhanceDiffPanel({ repo }) {
           <Sparkles className="w-4 h-4 text-indigo-500" />
           AI README Enhancement
         </h3>
-        <button
-          onClick={handleCopy}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-indigo-600 text-white hover:bg-indigo-700 ds-btn-shimmer ds-focus-ring"
-        >
+        <Button variant="primary" size="xs" onClick={handleCopy}>
           {copied
             ? <><Check className="w-3 h-3" /> Copied</>
             : <><Copy className="w-3 h-3" /> Copy enhanced</>}
-        </button>
+        </Button>
       </div>
       <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
         <DiffView
