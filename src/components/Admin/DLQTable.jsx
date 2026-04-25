@@ -12,6 +12,7 @@
 import { motion } from 'framer-motion'
 import { Eye, RotateCw, CheckCircle2, Inbox } from 'lucide-react'
 import { Badge } from '../ui/Badge'
+import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
 
 function formatTimestamp(iso) {
@@ -59,7 +60,7 @@ export function DLQTable({
     }
 
     return (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+        <Card glass={false} shadow="sm" className="rounded-xl overflow-x-auto">
             <table className="w-full text-sm">
                 <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700">
                     <tr className="text-left text-slate-500 dark:text-slate-400 uppercase text-[11px] tracking-wider">
@@ -160,7 +161,7 @@ export function DLQTable({
                     })}
                 </tbody>
             </table>
-        </div>
+        </Card>
     )
 }
 

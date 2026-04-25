@@ -14,6 +14,7 @@
 import { SidePanel } from '../ui/SidePanel'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
+import { Card } from '../ui/Card'
 import { RotateCw, CheckCircle2, Loader2 } from 'lucide-react'
 
 function formatTimestamp(iso) {
@@ -85,7 +86,7 @@ export function DLQDetailPanel({
 
             {!loading && entry && (
                 <div className="space-y-4">
-                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-900">
+                    <Card glass={false} shadow="sm" className="rounded-xl p-4">
                         <div className="flex items-center justify-between mb-3">
                             <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                 Metadata
@@ -113,7 +114,7 @@ export function DLQDetailPanel({
                             <Field label="Resolved at" value={formatTimestamp(entry.resolved_at)} />
                         )}
                         <Field label="Last error" value={entry.last_error} />
-                    </div>
+                    </Card>
 
                     {kind === 'email' && (
                         <>

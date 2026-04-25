@@ -1,6 +1,20 @@
 import { twMerge } from 'tailwind-merge'
 
-export function Card({ children, className, hover = false, glass = true, ref, ...props }) {
+const SHADOW_CLASS = {
+    lg: 'shadow-lg shadow-slate-200/40 dark:shadow-black/40',
+    sm: 'shadow-sm dark:shadow-black/30',
+    none: '',
+}
+
+export function Card({
+    children,
+    className,
+    hover = false,
+    glass = true,
+    shadow = 'lg',
+    ref,
+    ...props
+}) {
     return (
         <div ref={ref} {...props} className={twMerge(
             // Base glassmorphism styling
@@ -9,8 +23,8 @@ export function Card({ children, className, hover = false, glass = true, ref, ..
                 : 'bg-white dark:bg-slate-800',
             // Borders with subtle transparency
             'rounded-2xl border border-slate-200/70 dark:border-slate-700/50',
-            // Layered shadows for depth
-            'shadow-lg shadow-slate-200/40 dark:shadow-black/40',
+            // Layered shadows for depth (opt-out via shadow="sm" | "none")
+            SHADOW_CLASS[shadow] ?? SHADOW_CLASS.lg,
             // Smooth transitions
             'overflow-hidden transition-all duration-300',
             // Hover effects
