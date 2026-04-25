@@ -6,10 +6,24 @@ vi.mock('../../../src/api/attentionFeed', () => ({
     fetchAttentionFeed: (...args) => mockFetch(...args),
 }))
 
+const mockNarrative = vi.fn()
+vi.mock('../../../src/api/attentionNarrative', () => ({
+    fetchAttentionNarrative: (...args) => mockNarrative(...args),
+}))
+
+const mockAIStatus = vi.fn()
+vi.mock('../../../src/hooks/useAIStatus', () => ({
+    useAIStatus: () => mockAIStatus(),
+}))
+
 const { AttentionFeed } = await import('../../../src/components/Dashboard/AttentionFeed')
 
 beforeEach(() => {
     mockFetch.mockReset()
+    mockNarrative.mockReset()
+    mockAIStatus.mockReset()
+    // Default: AI not configured → narrative path stays silent.
+    mockAIStatus.mockReturnValue({ configured: false, keyOk: false })
 })
 
 const SAMPLE = {
@@ -88,5 +102,46 @@ describe('AttentionFeed', () => {
         await waitFor(() => expect(mockFetch).toHaveBeenCalled())
         const args = mockFetch.mock.calls[0][0]
         expect(args.limit).toBe(3)
+    })
+
+    it('does NOT request the AI narrative when AI is not configured', async () => {
+        mockFetch.mockResolvedValue(SAMPLE)
+        mockAIStatus.mockReturnValue({ configured: false, keyOk: false })
+        render(<AttentionFeed />)
+        await screen.findByText('acme/blocker')
+        expect(mockNarrative).not.toHaveBeenCalled()
+    })
+
+    it('does NOT request the AI narrative when the key is unhealthy', async () => {
+        mockFetch.mockResolvedValue(SAMPLE)
+        mockAIStatus.mockReturnValue({ configured: true, keyOk: false })
+        render(<AttentionFeed />)
+        await screen.findByText('acme/blocker')
+        expect(mockNarrative).not.toHaveBeenCalled()
+    })
+
+    it('renders the AI narrative for the top item when configured + healthy', async () => {
+        mockFetch.mockResolvedValue(SAMPLE)
+        mockAIStatus.mockReturnValue({ configured: true, keyOk: true })
+        mockNarrative.mockResolvedValue({
+            narrative: 'Failed clone for acme/blocker — auth rejected three hours ago.',
+            cached: false,
+            model: 'gemini-test',
+        })
+        render(<AttentionFeed />)
+        expect(await screen.findByText(/Failed clone for acme\/blocker/)).toBeInTheDocument()
+        // narrative should fire only for the top item, not the second one
+        expect(mockNarrative).toHaveBeenCalledTimes(1)
+        expect(mockNarrative.mock.calls[0][0].repo).toBe('acme/blocker')
+    })
+
+    it('stays silent when the narrative fetch returns null (AI failure)', async () => {
+        mockFetch.mockResolvedValue(SAMPLE)
+        mockAIStatus.mockReturnValue({ configured: true, keyOk: true })
+        mockNarrative.mockResolvedValue(null)
+        render(<AttentionFeed />)
+        await screen.findByText('acme/blocker')
+        // Sanity: no garnish text rendered, layout stays intact.
+        expect(screen.queryByText(/Sparkles|narrative/i)).toBeNull()
     })
 })

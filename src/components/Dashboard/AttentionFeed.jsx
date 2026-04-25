@@ -9,6 +9,8 @@ import {
     RefreshCw,
 } from 'lucide-react'
 import { fetchAttentionFeed } from '../../api/attentionFeed'
+import { fetchAttentionNarrative } from '../../api/attentionNarrative'
+import { useAIStatus } from '../../hooks/useAIStatus'
 import { Spinner } from '../ui/Spinner'
 
 const SEVERITY_RING = {
@@ -71,6 +73,8 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
     const [feed, setFeed] = useState({ items: [], counts: {}, total: 0 })
     const [loading, setLoading] = useState(true)
     const [refreshTick, setRefreshTick] = useState(0)
+    const [narrative, setNarrative] = useState({ text: null, loading: false })
+    const { configured, keyOk } = useAIStatus()
 
     /* eslint-disable react-hooks/set-state-in-effect -- mount + refresh-tick fetch */
     useEffect(() => {
@@ -96,6 +100,39 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
     /* eslint-enable react-hooks/set-state-in-effect */
 
     const items = feed?.items ?? []
+    const topItem = items[0] ?? null
+    const topKey = topItem ? `${topItem.repoFullName}|${topItem.kind}|${topItem.since ?? ''}` : null
+
+    /* eslint-disable react-hooks/set-state-in-effect -- top-item changes trigger AI narrative fetch */
+    useEffect(() => {
+        if (!topItem || !configured || !keyOk) {
+            setNarrative({ text: null, loading: false })
+            return
+        }
+        const ctrl = new AbortController()
+        let cancelled = false
+        setNarrative({ text: null, loading: true })
+        fetchAttentionNarrative({
+            repo: topItem.repoFullName,
+            kind: topItem.kind,
+            signalPayload: {
+                title: topItem.title,
+                hint: topItem.hint,
+                since: topItem.since,
+                severity: topItem.severity,
+            },
+            abortSignal: ctrl.signal,
+        }).then((data) => {
+            if (cancelled) return
+            setNarrative({ text: data?.narrative ?? null, loading: false })
+        })
+        return () => {
+            cancelled = true
+            ctrl.abort()
+        }
+    }, [topKey, configured, keyOk]) // eslint-disable-line react-hooks/exhaustive-deps -- topKey captures the meaningful identity
+    /* eslint-enable react-hooks/set-state-in-effect */
+
     if (!loading && items.length === 0) return null
 
     return (
@@ -131,10 +168,11 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
                     </div>
                 ) : (
                     <ul className="divide-y divide-slate-200/60 dark:divide-slate-800">
-                        {items.map((item) => (
+                        {items.map((item, idx) => (
                             <AttentionRow
                                 key={item.id}
                                 item={item}
+                                narrative={idx === 0 ? narrative : null}
                                 onClick={() => onSelectRepo?.(item.repoFullName, item)}
                             />
                         ))}
@@ -145,7 +183,7 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
     )
 }
 
-function AttentionRow({ item, onClick }) {
+function AttentionRow({ item, onClick, narrative = null }) {
     const Icon = KIND_ICON[item.kind] ?? Sparkles
     const ringClass = SEVERITY_RING[item.severity] ?? SEVERITY_RING.low
     const badgeClass = SEVERITY_BADGE[item.severity] ?? SEVERITY_BADGE.low
@@ -177,6 +215,15 @@ function AttentionRow({ item, onClick }) {
                     {item.hint && (
                         <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
                             {item.hint}
+                        </p>
+                    )}
+                    {narrative?.loading && (
+                        <p className="mt-1.5 h-3 w-2/3 rounded bg-indigo-100/60 dark:bg-indigo-900/30 animate-pulse" aria-hidden="true" />
+                    )}
+                    {!narrative?.loading && narrative?.text && (
+                        <p className="mt-1.5 flex items-start gap-1.5 text-[11px] italic text-indigo-700 dark:text-indigo-300">
+                            <Sparkles className="w-3 h-3 shrink-0 mt-[2px]" aria-hidden="true" />
+                            <span>{narrative.text}</span>
                         </p>
                     )}
                 </div>
