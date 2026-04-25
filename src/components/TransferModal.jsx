@@ -6,6 +6,7 @@ import { InsightCard } from './ui/InsightCard'
 import { StatBar } from './ui/StatBar'
 import { EmptyState } from './ui/EmptyState'
 import { ConflictPanel } from './ConflictPanel'
+import { useDebounce } from '../hooks/useDebounce'
 import { API_ENDPOINTS } from '../config'
 
 export function TransferModal({
@@ -25,52 +26,50 @@ export function TransferModal({
 	const [checkingConflicts, setCheckingConflicts] = useState(false)
 	const [resolutions, setResolutions] = useState({}) // { repoName: { action, newName? } }
 	const [dryRun, setDryRun] = useState(false)
+	const debouncedTargetOrg = useDebounce(targetOrg, 500)
 
-	// Check conflicts when targetOrg changes (transfer mode only) - debounced 500ms
-	/* eslint-disable react-hooks/set-state-in-effect -- targetOrg/action change drives debounced conflict probe */
+	// Check conflicts when (debounced) targetOrg / repos / action changes
+	/* eslint-disable react-hooks/set-state-in-effect -- targetOrg/action change drives conflict probe */
 	useEffect(() => {
-		if (!targetOrg || !repos.length || action !== 'transfer') {
+		if (!debouncedTargetOrg || !repos.length || action !== 'transfer') {
 			setConflicts(null)
 			setResolutions({})
 			return
 		}
 
 		let cancelled = false
-		const timer = setTimeout(() => {
-			async function checkConflicts() {
-				setCheckingConflicts(true)
-				setConflicts(null)
-				setResolutions({})
-				try {
-					const resp = await fetch(API_ENDPOINTS.checkConflicts, {
-						method: 'POST',
-						credentials: 'include',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({
-							repos: repos.map(r => r.full_name),
-							targetOrg
-						})
+		;(async function checkConflicts() {
+			setCheckingConflicts(true)
+			setConflicts(null)
+			setResolutions({})
+			try {
+				const resp = await fetch(API_ENDPOINTS.checkConflicts, {
+					method: 'POST',
+					credentials: 'include',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						repos: repos.map(r => r.full_name),
+						targetOrg: debouncedTargetOrg
 					})
-					if (!cancelled && resp.ok) {
-						const data = await resp.json()
-						setConflicts(data.conflicts || {})
-					} else if (!cancelled) {
-						// Conflict check is best-effort — the transfer RPC will
-						// re-validate server-side on submit, so a failed probe
-						// just means we can't show pre-flight warnings here.
-						setConflicts({})
-					}
-				} catch {
-					// Silently fail — transfer will still catch conflicts at execution time
-				} finally {
-					if (!cancelled) setCheckingConflicts(false)
+				})
+				if (!cancelled && resp.ok) {
+					const data = await resp.json()
+					setConflicts(data.conflicts || {})
+				} else if (!cancelled) {
+					// Conflict check is best-effort — the transfer RPC will
+					// re-validate server-side on submit, so a failed probe
+					// just means we can't show pre-flight warnings here.
+					setConflicts({})
 				}
+			} catch {
+				// Silently fail — transfer will still catch conflicts at execution time
+			} finally {
+				if (!cancelled) setCheckingConflicts(false)
 			}
-			checkConflicts()
-		}, 500)
+		})()
 
-		return () => { cancelled = true; clearTimeout(timer) }
-	}, [targetOrg, repos, action])
+		return () => { cancelled = true }
+	}, [debouncedTargetOrg, repos, action])
 	/* eslint-enable react-hooks/set-state-in-effect */
 
 	// Detect if all selected repos belong to the same owner as the target

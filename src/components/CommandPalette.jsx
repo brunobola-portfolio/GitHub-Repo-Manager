@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { searchApi } from '../api/search'
 import { translateSearch } from '../api/translateSearch'
+import { useDebounce } from '../hooks/useDebounce'
 import { MOCK_MODE } from '../config'
 import { useTrackedRepos } from '../hooks/useTrackedRepos'
 import { useToast } from '../hooks/useToast'
@@ -80,48 +81,40 @@ const MIN_QUERY_LEN = 2
 const EMPTY_SEARCH = { prs: [], issues: [], repos: [] }
 
 function useDebouncedGitHubSearch(query, enabled) {
-  // Tracks the data returned by the last completed search. Reset to EMPTY_SEARCH
-  // by setting activeQuery to null (see below) rather than via effect setState.
   const [result, setResult] = useState({ data: EMPTY_SEARCH, loading: false, error: null })
   const controllerRef = useRef(null)
   const trimmed = (query || '').trim()
-  const shouldSearch = enabled && trimmed.length >= MIN_QUERY_LEN
+  const debouncedQuery = useDebounce(trimmed, DEBOUNCE_MS)
+  const shouldSearch = enabled && debouncedQuery.length >= MIN_QUERY_LEN
 
+  /* eslint-disable react-hooks/set-state-in-effect -- debounced query drives the search */
   useEffect(() => {
-    // When conditions aren't met, abort any in-flight request and schedule a
-    // deferred reset so we don't call setState synchronously inside the effect.
     if (!shouldSearch) {
       controllerRef.current?.abort()
-      const id = setTimeout(() => setResult({ data: EMPTY_SEARCH, loading: false, error: null }), 0)
-      return () => clearTimeout(id)
+      setResult({ data: EMPTY_SEARCH, loading: false, error: null })
+      return
     }
-
-    const timer = setTimeout(() => {
-      controllerRef.current?.abort()
-      const controller = new AbortController()
-      controllerRef.current = controller
-      setResult((prev) => ({ ...prev, loading: true, error: null }))
-      searchApi
-        .github(trimmed, { type: 'all', limit: 15, signal: controller.signal })
-        .then((res) => {
-          if (controller.signal.aborted) return
-          setResult({
-            data: { prs: res.prs || [], issues: res.issues || [], repos: res.repos || [] },
-            loading: false,
-            error: null,
-          })
+    controllerRef.current?.abort()
+    const controller = new AbortController()
+    controllerRef.current = controller
+    setResult((prev) => ({ ...prev, loading: true, error: null }))
+    searchApi
+      .github(debouncedQuery, { type: 'all', limit: 15, signal: controller.signal })
+      .then((res) => {
+        if (controller.signal.aborted) return
+        setResult({
+          data: { prs: res.prs || [], issues: res.issues || [], repos: res.repos || [] },
+          loading: false,
+          error: null,
         })
-        .catch((err) => {
-          if (err?.name === 'AbortError' || controller.signal.aborted) return
-          setResult((prev) => ({ ...prev, loading: false, error: err?.code || 'SEARCH_FAILED' }))
-        })
-    }, DEBOUNCE_MS)
-
-    return () => {
-      clearTimeout(timer)
-      controllerRef.current?.abort()
-    }
-  }, [shouldSearch, trimmed])
+      })
+      .catch((err) => {
+        if (err?.name === 'AbortError' || controller.signal.aborted) return
+        setResult((prev) => ({ ...prev, loading: false, error: err?.code || 'SEARCH_FAILED' }))
+      })
+    return () => controllerRef.current?.abort()
+  }, [shouldSearch, debouncedQuery])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return { data: result.data, loading: result.loading, error: result.error }
 }
@@ -142,30 +135,28 @@ const ASK_MIN_LEN = 4
 function useDebouncedTranslateSearch(askQuery, enabled) {
     const [state, setState] = useState({ data: null, loading: false, error: null })
     const ctrlRef = useRef(null)
-    const shouldFire = enabled && askQuery.length >= ASK_MIN_LEN
+    const debouncedAskQuery = useDebounce(askQuery, ASK_DEBOUNCE_MS)
+    const shouldFire = enabled && debouncedAskQuery.length >= ASK_MIN_LEN
 
+    /* eslint-disable react-hooks/set-state-in-effect -- debounced query drives translate */
     useEffect(() => {
         if (!shouldFire) {
             ctrlRef.current?.abort()
-            const id = setTimeout(() => setState({ data: null, loading: false, error: null }), 0)
-            return () => clearTimeout(id)
+            setState({ data: null, loading: false, error: null })
+            return
         }
-        const timer = setTimeout(() => {
-            ctrlRef.current?.abort()
-            const ctrl = new AbortController()
-            ctrlRef.current = ctrl
-            setState((prev) => ({ ...prev, loading: true, error: null }))
-            translateSearch({ q: askQuery, signal: ctrl.signal }).then((data) => {
-                if (ctrl.signal.aborted) return
-                if (data) setState({ data, loading: false, error: null })
-                else setState({ data: null, loading: false, error: 'TRANSLATE_FAILED' })
-            })
-        }, ASK_DEBOUNCE_MS)
-        return () => {
-            clearTimeout(timer)
-            ctrlRef.current?.abort()
-        }
-    }, [shouldFire, askQuery])
+        ctrlRef.current?.abort()
+        const ctrl = new AbortController()
+        ctrlRef.current = ctrl
+        setState((prev) => ({ ...prev, loading: true, error: null }))
+        translateSearch({ q: debouncedAskQuery, signal: ctrl.signal }).then((data) => {
+            if (ctrl.signal.aborted) return
+            if (data) setState({ data, loading: false, error: null })
+            else setState({ data: null, loading: false, error: 'TRANSLATE_FAILED' })
+        })
+        return () => ctrlRef.current?.abort()
+    }, [shouldFire, debouncedAskQuery])
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     return state
 }

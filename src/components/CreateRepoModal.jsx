@@ -6,6 +6,7 @@ import { useMobileBreakpoint } from '../hooks/useMobileBreakpoint'
 import { useToast } from '../hooks/useToast'
 import { Select } from './ui/Select'
 import { Button } from './ui/Button'
+import { useDebounce } from '../hooks/useDebounce'
 import { Plus, Sparkles, Loader2, CheckCircle2, XCircle, Lock, Globe } from 'lucide-react'
 
 export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming, askAI }) {
@@ -19,6 +20,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
     const [isMaximized, setIsMaximized] = useState(false)
     const isMobile = useMobileBreakpoint()
     const { toast } = useToast()
+    const debouncedName = useDebounce(name, 500)
 
     const handleToggleMaximize = useCallback(() => setIsMaximized((v) => !v), [])
 
@@ -27,19 +29,19 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
     // can't set stale `nameStatus` after the user has moved on.
     /* eslint-disable react-hooks/set-state-in-effect -- debounced name availability probe + reset on close */
     useEffect(() => {
-        if (!name || !isOpen) {
+        if (!debouncedName || !isOpen) {
             setNameStatus(null)
             return
         }
         setNameStatus('checking')
         const controller = new AbortController()
-        const timer = setTimeout(async () => {
+        ;(async () => {
             try {
                 const res = await fetch('/api/import/check-duplicates', {
                     method: 'POST',
                     credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ names: [name], org: targetOrg || undefined }),
+                    body: JSON.stringify({ names: [debouncedName], org: targetOrg || undefined }),
                     signal: controller.signal,
                 })
                 if (controller.signal.aborted) return
@@ -55,12 +57,9 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                 if (controller.signal.aborted || err?.name === 'AbortError') return
                 setNameStatus(null)
             }
-        }, 500)
-        return () => {
-            clearTimeout(timer)
-            controller.abort()
-        }
-    }, [name, targetOrg, isOpen])
+        })()
+        return () => controller.abort()
+    }, [debouncedName, targetOrg, isOpen])
 
     // Reset form on close
     useEffect(() => {
