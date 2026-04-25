@@ -69,11 +69,17 @@ function relativeTime(iso) {
  * Click → navigates to the repo (consumer supplies onSelectRepo). The whole
  * card collapses gracefully when there's nothing to show.
  */
+// Number of top items that get an AI narrative (when AI is configured + healthy).
+// Each request hits the cache after the first call, so repeated dashboard loads
+// don't re-bill — but the initial cold render of three items costs ~3× tokens
+// vs a single narrative. Tunable here if cost pressure changes.
+const NARRATIVE_TOP_N = 3
+
 export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
     const [feed, setFeed] = useState({ items: [], counts: {}, total: 0 })
     const [loading, setLoading] = useState(true)
     const [refreshTick, setRefreshTick] = useState(0)
-    const [narrative, setNarrative] = useState({ text: null, loading: false })
+    const [narratives, setNarratives] = useState({})
     const { configured, keyOk } = useAIStatus()
 
     /* eslint-disable react-hooks/set-state-in-effect -- mount + refresh-tick fetch */
@@ -100,37 +106,51 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
     /* eslint-enable react-hooks/set-state-in-effect */
 
     const items = feed?.items ?? []
-    const topItem = items[0] ?? null
-    const topKey = topItem ? `${topItem.repoFullName}|${topItem.kind}|${topItem.since ?? ''}` : null
+    // Stable composite key over the top-N items so the effect re-runs only
+    // when the meaningful identity of the slice changes (not on every
+    // refresh of the parent).
+    const topItems = items.slice(0, NARRATIVE_TOP_N)
+    const topKeys = topItems.map((it) => `${it.id}|${it.repoFullName}|${it.kind}|${it.since ?? ''}`)
+    const topKeysJoined = topKeys.join('||')
 
-    /* eslint-disable react-hooks/set-state-in-effect -- top-item changes trigger AI narrative fetch */
+    /* eslint-disable react-hooks/set-state-in-effect -- top items change drives AI narrative fan-out */
     useEffect(() => {
-        if (!topItem || !configured || !keyOk) {
-            setNarrative({ text: null, loading: false })
-            return
+        if (topItems.length === 0 || !configured || !keyOk) {
+            setNarratives({})
+            return undefined
         }
         const ctrl = new AbortController()
         let cancelled = false
-        setNarrative({ text: null, loading: true })
-        fetchAttentionNarrative({
-            repo: topItem.repoFullName,
-            kind: topItem.kind,
-            signalPayload: {
-                title: topItem.title,
-                hint: topItem.hint,
-                since: topItem.since,
-                severity: topItem.severity,
-            },
-            abortSignal: ctrl.signal,
-        }).then((data) => {
+        // Mark all loading up-front so the rows render their shimmer
+        // simultaneously instead of cascading as each request resolves.
+        const loadingMap = {}
+        for (const it of topItems) loadingMap[it.id] = { text: null, loading: true }
+        setNarratives(loadingMap)
+
+        Promise.all(topItems.map((it) =>
+            fetchAttentionNarrative({
+                repo: it.repoFullName,
+                kind: it.kind,
+                signalPayload: {
+                    title: it.title,
+                    hint: it.hint,
+                    since: it.since,
+                    severity: it.severity,
+                },
+                abortSignal: ctrl.signal,
+            }).then((data) => ({ id: it.id, text: data?.narrative ?? null }))
+        )).then((results) => {
             if (cancelled) return
-            setNarrative({ text: data?.narrative ?? null, loading: false })
+            const next = {}
+            for (const r of results) next[r.id] = { text: r.text, loading: false }
+            setNarratives(next)
         })
+
         return () => {
             cancelled = true
             ctrl.abort()
         }
-    }, [topKey, configured, keyOk]) // eslint-disable-line react-hooks/exhaustive-deps -- topKey captures the meaningful identity
+    }, [topKeysJoined, configured, keyOk]) // eslint-disable-line react-hooks/exhaustive-deps -- topKeysJoined captures meaningful identity
     /* eslint-enable react-hooks/set-state-in-effect */
 
     if (!loading && items.length === 0) return null
@@ -172,7 +192,7 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
                             <AttentionRow
                                 key={item.id}
                                 item={item}
-                                narrative={idx === 0 ? narrative : null}
+                                narrative={idx < NARRATIVE_TOP_N ? (narratives[item.id] ?? null) : null}
                                 onClick={() => onSelectRepo?.(item.repoFullName, item)}
                             />
                         ))}

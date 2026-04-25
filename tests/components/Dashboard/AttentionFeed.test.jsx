@@ -120,19 +120,22 @@ describe('AttentionFeed', () => {
         expect(mockNarrative).not.toHaveBeenCalled()
     })
 
-    it('renders the AI narrative for the top item when configured + healthy', async () => {
+    it('requests the AI narrative for each top-N item when configured + healthy', async () => {
         mockFetch.mockResolvedValue(SAMPLE)
         mockAIStatus.mockReturnValue({ configured: true, keyOk: true })
-        mockNarrative.mockResolvedValue({
-            narrative: 'Failed clone for acme/blocker — auth rejected three hours ago.',
+        // Different narrative per call so we can assert each rendered.
+        mockNarrative.mockImplementation(({ repo }) => Promise.resolve({
+            narrative: `Narrative for ${repo}.`,
             cached: false,
             model: 'gemini-test',
-        })
+        }))
         render(<AttentionFeed />)
-        expect(await screen.findByText(/Failed clone for acme\/blocker/)).toBeInTheDocument()
-        // narrative should fire only for the top item, not the second one
-        expect(mockNarrative).toHaveBeenCalledTimes(1)
-        expect(mockNarrative.mock.calls[0][0].repo).toBe('acme/blocker')
+        // SAMPLE has 2 items — both fall inside NARRATIVE_TOP_N (3).
+        expect(await screen.findByText(/Narrative for acme\/blocker\./)).toBeInTheDocument()
+        expect(await screen.findByText(/Narrative for acme\/quiet\./)).toBeInTheDocument()
+        expect(mockNarrative).toHaveBeenCalledTimes(2)
+        const repos = mockNarrative.mock.calls.map((c) => c[0].repo).sort()
+        expect(repos).toEqual(['acme/blocker', 'acme/quiet'])
     })
 
     it('stays silent when the narrative fetch returns null (AI failure)', async () => {
