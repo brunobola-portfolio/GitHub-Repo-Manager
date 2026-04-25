@@ -6,6 +6,7 @@ import { useToast } from '../../hooks/useToast';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { PageHeader } from '../ui/PageHeader';
 import { PageShell } from '../ui/PageShell';
+import { Card } from '../ui/Card';
 import { listTeams } from '../../api/teams';
 
 export function TeamHub({ onTeamSelect }) {
@@ -134,8 +135,9 @@ export function TeamHub({ onTeamSelect }) {
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
-                        className="mb-8 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl"
+                        className="mb-8"
                     >
+                        <Card className="p-6">
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
                             {isEditing ? 'Edit Team' : 'Create New Team'}
                         </h3>
@@ -179,6 +181,7 @@ export function TeamHub({ onTeamSelect }) {
                                 </button>
                             </div>
                         </form>
+                        </Card>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -249,11 +252,8 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
     const [showMenu, setShowMenu] = useState(false);
 
     return (
-        <motion.div
-            layoutId={`team-${team.id}`}
-            onClick={onClick}
-            className="group relative bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl border border-slate-200 dark:border-slate-700 rounded-3xl p-6 cursor-pointer hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 hover:border-indigo-500/50"
-        >
+        <motion.div layoutId={`team-${team.id}`} onClick={onClick} className="group">
+        <Card hover className="relative p-6 hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-500/50">
             <div className="flex items-start justify-between mb-4">
                 <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                     <Users className="w-6 h-6" />
@@ -321,6 +321,7 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
                     </span>
                 )}
             </div>
+        </Card>
         </motion.div>
     );
 }

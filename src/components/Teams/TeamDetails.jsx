@@ -745,7 +745,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                 ) : (
                     <div className="space-y-8">
                         {/* Workflows List */}
-                        <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <Card className="p-6">
                             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                                 <Play className="w-5 h-5 text-indigo-500" />
                                 Available Workflows
@@ -770,10 +770,10 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                                     ))
                                 )}
                             </div>
-                        </div>
+                        </Card>
 
                         {/* Recent Runs */}
-                        <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+                        <Card className="p-6">
                             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                                 <Clock className="w-5 h-5 text-slate-500" />
                                 Recent Runs
@@ -803,7 +803,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                                 ))}
                                 {runs.length === 0 && <p className="text-slate-500 italic">No recent runs.</p>}
                             </div>
-                        </div>
+                        </Card>
                     </div>
                 )}
             </div>
