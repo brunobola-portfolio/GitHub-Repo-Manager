@@ -3,6 +3,7 @@ import { SidePanel } from '../ui/SidePanel'
 import { aiApi } from '../../api/ai'
 import { Loader2, Sparkles, GitCompare } from 'lucide-react'
 import { EmptyState } from '../ui/EmptyState'
+import { Card } from '../ui/Card'
 import { CompareDiffModal } from './CompareDiffModal'
 
 // `r.repoId` may be either a numeric ID ("42") or an "owner/name" full_name.
@@ -44,10 +45,12 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
     }
   }
 
+  /* eslint-disable react-hooks/set-state-in-effect -- mount + open-state fetch */
   useEffect(() => {
     if (isOpen && repo) loadResults()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, repo?.id])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleIndex = async () => {
     setIndexing(true)
@@ -90,9 +93,12 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
           {results.map(r => {
             const target = parseFullName(r.full_name || r.repoId)
             return (
-              <div
+              <Card
                 key={r.repoId}
-                className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 ds-card-shimmer ds-hover-lift"
+                hover
+                glass={false}
+                shadow="sm"
+                className="rounded-xl p-4"
               >
                 <div className="flex justify-between items-start gap-3">
                   <div className="min-w-0">
@@ -134,7 +140,7 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
                     Compare
                   </button>
                 </div>
-              </div>
+              </Card>
             )
           })}
         </div>

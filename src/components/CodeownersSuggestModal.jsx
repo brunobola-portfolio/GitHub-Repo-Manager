@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Modal, ModalFooter } from './ui/Modal'
 import { Button } from './ui/Button'
+import { Card } from './ui/Card'
 import { Loader2, Copy, CheckCircle2, AlertTriangle, Users, GitCommit, Settings2 } from 'lucide-react'
 import { reposApi } from '../api/repos'
 
@@ -43,10 +44,12 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
         }
     }
 
+    /* eslint-disable react-hooks/set-state-in-effect -- mount + open-state fetch */
     useEffect(() => {
         if (isOpen) load()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, owner, repo])
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const handleCopy = async () => {
         if (!data?.preview) return
@@ -216,7 +219,7 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
                             Suggested rules
                         </p>
-                        <div className="rounded-xl border border-slate-200/60 dark:border-slate-700/40 overflow-hidden">
+                        <Card glass={false} shadow="none" className="rounded-xl">
                             <table className="w-full text-sm">
                                 <thead className="bg-slate-50 dark:bg-slate-900/60 text-left text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                     <tr>
@@ -244,7 +247,7 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
                                     ))}
                                 </tbody>
                             </table>
-                        </div>
+                        </Card>
                     </div>
 
                     {/* Preview — plain textarea so users can Ctrl+A on denied clipboards. */}
