@@ -6,6 +6,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { GitBranch, Shield, Trash2, Plus, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
+import { BranchHygieneCard } from './BranchHygieneCard'
 
 export function BranchesTab({ api }) {
     const { toast } = useToast()
@@ -87,6 +88,8 @@ export function BranchesTab({ api }) {
                     <Plus className="w-4 h-4 mr-1" /> New Branch
                 </Button>
             </div>
+
+            <BranchHygieneCard branches={branches} />
 
             {message && (
                 <div className={`flex items-center gap-2 p-2 rounded-lg text-sm ${
