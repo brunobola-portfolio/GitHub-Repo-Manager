@@ -16,6 +16,9 @@ import { aiApi } from '../../api/ai'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { InsightCard } from '../ui/InsightCard'
 import { StatBar } from '../ui/StatBar'
+import { AINotConfiguredBanner } from './AINotConfiguredBanner'
+import { AINotHealthyBanner } from './AINotHealthyBanner'
+import { useAIStatus } from '../../hooks/useAIStatus'
 
 // ReadmeEnhanceDiffPanel pulls in @git-diff-view/react + shiki (~1 MB). Only load
 // it when the user actually clicks "Enhance with AI" so the main Insights modal
@@ -71,6 +74,11 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
     const abortRef = useRef(null)
     const suggestionsAbortRef = useRef(null)
 
+    const { configured: aiConfigured, keyHealth, loading: aiStatusLoading } = useAIStatus()
+    const showNotConfigured = !aiStatusLoading && !aiConfigured
+    const showNotHealthy = !aiStatusLoading && aiConfigured && (keyHealth === 'invalid' || keyHealth === 'unreachable')
+
+    /* eslint-disable react-hooks/set-state-in-effect, react-hooks/immutability -- this effect is the open/close + repo-switch synchronisation point; setState resets are intentional */
     useEffect(() => {
         if (!isOpen || !repo) {
             setAnalysis(null)
@@ -101,6 +109,7 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, repo?.id, initialTab])
+    /* eslint-enable react-hooks/set-state-in-effect, react-hooks/immutability */
 
     // Kick off a new fetch with a fresh AbortController. Used by the error-card
     // retry button and by the mount effect. Always aborts any previous inflight
@@ -178,6 +187,7 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
         if (!isOpen || !repo) return
         if (activeTab !== 'suggestions') return
         if (suggestionsData || suggestionsLoading || suggestionsError) return
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- lazy-load suggestions on tab activation
         startSuggestionsFetch()
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab, isOpen, repo?.id])
@@ -219,6 +229,8 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
                 </ModalFooter>
             }
         >
+            {showNotConfigured && <AINotConfiguredBanner className="mb-4" />}
+            {showNotHealthy && <AINotHealthyBanner state={keyHealth} className="mb-4" />}
             {loading && !analysis && <InsightsSkeletonGrid />}
             {error && <InsightsErrorCard message={error} onRetry={startFetch} />}
             {analysis && !loading && activeTab === 'overview'    && <OverviewGrid    data={analysis} />}

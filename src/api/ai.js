@@ -1,5 +1,6 @@
 import { API_BASE, MOCK_MODE } from '../config';
 import { getCsrfToken } from '../utils/api';
+import { getAIStatus } from './aiStatus';
 
 const getHeaders = () => {
     return {
@@ -14,6 +15,19 @@ const getHeaders = () => {
 async function mutationHeaders() {
     const token = await getCsrfToken();
     return { 'Content-Type': 'application/json', 'X-CSRF-Token': token };
+}
+
+// Short-circuit helper — when AI is not configured we skip the HTTP request
+// entirely and return the caller's mock payload. This keeps the browser
+// console clean (no 503) and gives the UI a stable `mock: true` contract to
+// branch on.
+async function withAIConfigured(mockFactory) {
+    const status = await getAIStatus();
+    if (!status?.configured) {
+        const mock = mockFactory();
+        return { ...mock, mock: true, aiConfigured: false };
+    }
+    return null;
 }
 
 /**
@@ -112,6 +126,9 @@ export const aiApi = {
             return { success: true, analysis: mockAnalysis(repo) };
         }
 
+        const shortCircuit = await withAIConfigured(() => ({ success: true, analysis: mockAnalysis(repo) }));
+        if (shortCircuit) return shortCircuit;
+
         const res = await fetch(`${API_BASE}/ai/index`, {
             method: 'POST',
             headers: await mutationHeaders(),
@@ -121,7 +138,7 @@ export const aiApi = {
 
         // Handle AI not configured - return mock data
         if (res.status === 503) {
-            return { success: true, analysis: mockAnalysis(repo), mock: true };
+            return { success: true, analysis: mockAnalysis(repo), mock: true, aiConfigured: false };
         }
         return handleAIResponse(res, 'index');
     },
@@ -133,6 +150,14 @@ export const aiApi = {
             return mockSearchResults(query);
         }
 
+        const status = await getAIStatus();
+        if (!status?.configured) {
+            const results = mockSearchResults(query)
+            results.mock = true
+            results.aiConfigured = false
+            return results
+        }
+
         const res = await fetch(`${API_BASE}/ai/search?q=${encodeURIComponent(query)}`, {
             headers: getHeaders(),
             credentials: 'include'
@@ -142,6 +167,7 @@ export const aiApi = {
         if (res.status === 503) {
             const results = mockSearchResults(query)
             results.mock = true
+            results.aiConfigured = false
             return results
         }
         return handleAIResponse(res, 'search');
@@ -178,6 +204,16 @@ export const aiApi = {
             };
         }
 
+        const unconfiguredSuggestions = () => ({
+            suggestions: [
+                { title: 'AI Not Configured', description: 'Set GEMINI_API_KEY for real suggestions', type: 'info' }
+            ],
+            analysis: 'AI features require a Gemini API key. Using placeholder data.',
+        });
+
+        const shortCircuit = await withAIConfigured(unconfiguredSuggestions);
+        if (shortCircuit) return shortCircuit;
+
         const res = await fetch(`${API_BASE}/ai/suggest`, {
             method: 'POST',
             headers: await mutationHeaders(),
@@ -187,13 +223,7 @@ export const aiApi = {
 
         // Handle AI not configured
         if (res.status === 503) {
-            return {
-                suggestions: [
-                    { title: 'AI Not Configured', description: 'Set GEMINI_API_KEY for real suggestions', type: 'info' }
-                ],
-                analysis: 'AI features require a Gemini API key. Using placeholder data.',
-                mock: true
-            };
+            return { ...unconfiguredSuggestions(), mock: true, aiConfigured: false };
         }
         return handleAIResponse(res, 'suggest');
     },
@@ -205,6 +235,9 @@ export const aiApi = {
             return { success: true, ...mockReadmeEnhancement(repo) };
         }
 
+        const shortCircuit = await withAIConfigured(() => ({ success: true, ...mockReadmeEnhancement(repo) }));
+        if (shortCircuit) return shortCircuit;
+
         const res = await fetch(`${API_BASE}/ai/readme/enhance`, {
             method: 'POST',
             headers: await mutationHeaders(),
@@ -213,7 +246,7 @@ export const aiApi = {
         });
 
         if (res.status === 503) {
-            return { success: true, ...mockReadmeEnhancement(repo), mock: true };
+            return { success: true, ...mockReadmeEnhancement(repo), mock: true, aiConfigured: false };
         }
         return handleAIResponse(res, 'enhance README');
     },
@@ -225,6 +258,9 @@ export const aiApi = {
             return { success: true, report: mockQualityReport(repo), repo: repo.full_name };
         }
 
+        const shortCircuit = await withAIConfigured(() => ({ success: true, report: mockQualityReport(repo), repo: repo.full_name }));
+        if (shortCircuit) return shortCircuit;
+
         const res = await fetch(`${API_BASE}/ai/quality-report`, {
             method: 'POST',
             headers: await mutationHeaders(),
@@ -233,7 +269,7 @@ export const aiApi = {
         });
 
         if (res.status === 503) {
-            return { success: true, report: mockQualityReport(repo), repo: repo.full_name, mock: true };
+            return { success: true, report: mockQualityReport(repo), repo: repo.full_name, mock: true, aiConfigured: false };
         }
         return handleAIResponse(res, 'quality report');
     },
@@ -250,6 +286,16 @@ export const aiApi = {
             };
         }
 
+        const buildMock = () => ({
+            success: true,
+            processed: repos.length,
+            results: repos.map(r => ({ repo: r.full_name, success: true, health_score: Math.floor(Math.random() * 30) + 65 })),
+            skipped: 0,
+        });
+
+        const shortCircuit = await withAIConfigured(buildMock);
+        if (shortCircuit) return shortCircuit;
+
         const res = await fetch(`${API_BASE}/ai/batch-index`, {
             method: 'POST',
             headers: await mutationHeaders(),
@@ -258,13 +304,7 @@ export const aiApi = {
         });
 
         if (res.status === 503) {
-            return {
-                success: true,
-                processed: repos.length,
-                results: repos.map(r => ({ repo: r.full_name, success: true, health_score: Math.floor(Math.random() * 30) + 65 })),
-                skipped: 0,
-                mock: true
-            };
+            return { ...buildMock(), mock: true, aiConfigured: false };
         }
         return handleAIResponse(res, 'batch index');
     },
@@ -308,6 +348,14 @@ export const aiApi = {
             }
         }
 
+        const status = await getAIStatus()
+        if (!status?.configured) {
+            const err = new Error('AI not configured. Set up a provider in Settings → AI Configuration.')
+            err.status = 503
+            err.code = 'AI_NOT_CONFIGURED'
+            throw err
+        }
+
         const res = await fetch(`${API_BASE}/ai/issue-to-plan`, {
             method: 'POST',
             headers: await mutationHeaders(),
@@ -323,20 +371,6 @@ export const aiApi = {
         return handleAIResponse(res, 'issue plan')
     },
 
-    // Check AI configuration status
-    checkStatus: async () => {
-        if (MOCK_MODE) {
-            return { configured: true, provider: 'mock' };
-        }
-
-        try {
-            const res = await fetch(`${API_BASE}/config/ai-status`, {
-                credentials: 'include'
-            });
-            if (!res.ok) return { configured: false };
-            return res.json();
-        } catch {
-            return { configured: false };
-        }
-    }
+    // Check AI configuration status (uses shared cache)
+    checkStatus: () => getAIStatus(),
 };
