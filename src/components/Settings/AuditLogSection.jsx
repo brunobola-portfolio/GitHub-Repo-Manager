@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, ChevronLeft, ChevronRight, AlertTriangle, Filter, RefreshCw } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
 import { formatDateTime as formatDateTimeBase } from '../../utils/format'
+import { Card } from '../ui/Card'
 
 const ACTION_OPTIONS = [
     { value: '', label: 'All Actions' },
@@ -76,10 +77,12 @@ export function AuditLogSection() {
         }
     }, [page, limit, action, dateFrom, dateTo])
 
+    /* eslint-disable react-hooks/set-state-in-effect -- filter changes drive page reset + refetch */
     useEffect(() => { fetchLogs() }, [fetchLogs])
 
     // Reset to page 1 when filters change
     useEffect(() => { setPage(1) }, [action, dateFrom, dateTo])
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const totalPages = Math.max(1, Math.ceil(total / limit))
 
@@ -159,7 +162,7 @@ export function AuditLogSection() {
                     ))}
                 </div>
             ) : (
-                <div className="overflow-x-auto rounded-2xl border border-slate-200/70 dark:border-slate-700/50 bg-white dark:bg-slate-800/60">
+                <Card glass={false} shadow="sm" className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-slate-200/70 dark:border-slate-700/50 bg-slate-50/80 dark:bg-slate-800/80">
@@ -212,7 +215,7 @@ export function AuditLogSection() {
                             </AnimatePresence>
                         </tbody>
                     </table>
-                </div>
+                </Card>
             )}
 
             {/* Pagination */}
