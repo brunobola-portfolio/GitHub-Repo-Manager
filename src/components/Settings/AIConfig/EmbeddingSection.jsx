@@ -6,8 +6,10 @@ import {
     PROVIDER_CAPABILITIES,
     PROVIDER_DEFAULTS,
 } from '../../../utils/providerCapabilities'
+import { getEmbeddingModels } from '../../../utils/providerModels'
 import { PROVIDERS_NEEDING_EMBEDDING_OVERRIDE, INPUT_CLS, LABEL_CLS } from './constants'
 import { PriceHint } from './PriceHint'
+import { ModelCombobox } from './ModelCombobox'
 
 // ---------------------------------------------------------------------------
 // Sub-component: EmbeddingSection
@@ -107,11 +109,11 @@ export function EmbeddingSection({ form, onChange }) {
                     </div>
                     <div>
                         <label htmlFor="embedding-model" className={LABEL_CLS}>Embedding Model</label>
-                        <input
+                        <ModelCombobox
                             id="embedding-model"
-                            type="text"
                             value={form.embeddingModel ?? ''}
-                            onChange={(e) => onChange('embeddingModel', e.target.value)}
+                            onChange={(v) => onChange('embeddingModel', v)}
+                            options={getEmbeddingModels(form.embeddingProvider)}
                             placeholder={
                                 form.embeddingProvider === 'openai'
                                     ? 'text-embedding-3-small'
@@ -119,7 +121,6 @@ export function EmbeddingSection({ form, onChange }) {
                                     ? 'gemini-embedding-001'
                                     : 'embedding-model'
                             }
-                            className={INPUT_CLS}
                         />
                         <PriceHint modelName={
                             form.embeddingModel ||

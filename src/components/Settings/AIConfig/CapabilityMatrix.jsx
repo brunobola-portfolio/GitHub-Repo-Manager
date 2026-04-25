@@ -1,5 +1,4 @@
-import { Check, X, Cpu } from 'lucide-react'
-import { InsightCard } from '../../ui/InsightCard'
+import { Cpu, AlertTriangle } from 'lucide-react'
 import {
     PROVIDER_IDS,
     PROVIDER_LABELS,
@@ -8,92 +7,124 @@ import {
 } from '../../../utils/providerCapabilities'
 
 // ---------------------------------------------------------------------------
-// Sub-component: CapabilityMatrix
+// Premium CapabilityMatrix — compact matrix with a single column-header row
+// and dot-only cells. Kept within the right rail (18rem) and still legible
+// when the modal reflows to full-width on mobile.
 // ---------------------------------------------------------------------------
 
-export function CapabilityMatrix({ activeProvider }) {
-    const features = Object.keys(FEATURE_LABELS)
+const FEATURE_KEYS = Object.keys(FEATURE_LABELS)
 
+const DOT_STATE = {
+    yes: {
+        dot: 'bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.12)]',
+        label: 'Supported',
+    },
+    depends: {
+        dot: 'bg-amber-400 shadow-[0_0_0_3px_rgba(245,158,11,0.12)]',
+        label: 'Depends on configuration',
+    },
+    no: {
+        dot: 'bg-slate-300 dark:bg-slate-600',
+        label: 'Not supported',
+    },
+}
+
+export function CapabilityMatrix({ activeProvider }) {
     return (
-        <InsightCard tone="default" hover={false}>
-            <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                    <Cpu className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Provider Capabilities
-                    </span>
-                </div>
-                <div className="overflow-x-auto -mx-1">
-                    <table className="w-full text-xs">
-                        <thead>
-                            <tr>
-                                <th className="text-left py-1.5 pr-3 font-medium text-slate-500 dark:text-slate-400 w-32">
-                                    Provider
-                                </th>
-                                {features.map((f) => (
-                                    <th
-                                        key={f}
-                                        className="text-center py-1.5 px-2 font-medium text-slate-500 dark:text-slate-400"
-                                    >
-                                        {FEATURE_LABELS[f]}
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {PROVIDER_IDS.map((pid) => {
-                                const isActive = pid === activeProvider
+        <div className="rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+                <Cpu className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
+                <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
+                    Provider Capabilities
+                </span>
+            </div>
+
+            {/* Feature legend — named once, dots below align to this order */}
+            <ul
+                aria-hidden="true"
+                className="flex flex-wrap gap-x-3 gap-y-1 pb-2 border-b border-slate-200/70 dark:border-slate-800"
+            >
+                {FEATURE_KEYS.map((fk, i) => (
+                    <li
+                        key={fk}
+                        className="inline-flex items-center gap-1.5 text-[10px] font-medium text-slate-500 dark:text-slate-400"
+                    >
+                        <span className="font-mono text-[9px] text-slate-400 dark:text-slate-500 w-3 text-right">{i + 1}</span>
+                        {FEATURE_LABELS[fk]}
+                    </li>
+                ))}
+            </ul>
+
+            <ul className="space-y-0.5">
+                {PROVIDER_IDS.map((pid) => {
+                    const isActive = pid === activeProvider
+                    const caps = PROVIDER_CAPABILITIES[pid] || {}
+                    return (
+                        <li
+                            key={pid}
+                            className={`relative grid grid-cols-[minmax(0,1fr)_repeat(4,1.25rem)] gap-x-1.5 items-center rounded-lg px-2 py-1.5 transition-colors ${
+                                isActive
+                                    ? 'bg-indigo-50/80 dark:bg-indigo-900/20 ring-1 ring-inset ring-indigo-500/30'
+                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                            }`}
+                        >
+                            {isActive && (
+                                <span
+                                    aria-hidden="true"
+                                    className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-gradient-to-b from-indigo-500 to-purple-500"
+                                />
+                            )}
+                            <div className="flex items-center gap-1.5 min-w-0">
+                                <span className={`text-xs font-semibold truncate ${isActive ? 'text-indigo-700 dark:text-indigo-200' : 'text-slate-700 dark:text-slate-200'}`}>
+                                    {PROVIDER_LABELS[pid]}
+                                </span>
+                                {isActive && (
+                                    <span className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-indigo-500 text-white shrink-0">
+                                        active
+                                    </span>
+                                )}
+                            </div>
+                            {FEATURE_KEYS.map((fk) => {
+                                const state = caps[fk] || 'no'
+                                const style = DOT_STATE[state] || DOT_STATE.no
                                 return (
-                                    <tr
-                                        key={pid}
-                                        className={`border-t border-slate-100 dark:border-slate-800 ${
-                                            isActive
-                                                ? 'bg-indigo-50/60 dark:bg-indigo-900/20'
-                                                : ''
-                                        }`}
+                                    <span
+                                        key={fk}
+                                        title={`${FEATURE_LABELS[fk]} — ${style.label}`}
+                                        className="flex justify-center"
                                     >
-                                        <td className={`py-1.5 pr-3 font-medium ${
-                                            isActive
-                                                ? 'text-indigo-700 dark:text-indigo-300'
-                                                : 'text-slate-600 dark:text-slate-400'
-                                        }`}>
-                                            {PROVIDER_LABELS[pid]}
-                                            {isActive && (
-                                                <span className="ml-1.5 text-[10px] font-semibold text-indigo-500 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/40 px-1.5 py-0.5 rounded-full">
-                                                    active
-                                                </span>
-                                            )}
-                                        </td>
-                                        {features.map((f) => {
-                                            const cap = PROVIDER_CAPABILITIES[pid]?.[f]
-                                            return (
-                                                <td key={f} className="text-center py-1.5 px-2">
-                                                    {cap === 'yes' ? (
-                                                        <Check className="w-3.5 h-3.5 text-emerald-500 mx-auto" />
-                                                    ) : cap === 'depends' ? (
-                                                        <span
-                                                            className="inline-block text-xs font-semibold text-amber-500 leading-none"
-                                                            aria-label="depends on configuration"
-                                                            title="Depends on configuration"
-                                                        >~</span>
-                                                    ) : (
-                                                        <X className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 mx-auto" />
-                                                    )}
-                                                </td>
-                                            )
-                                        })}
-                                    </tr>
+                                        <span aria-hidden="true" className={`inline-block w-2 h-2 rounded-full ${style.dot}`} />
+                                        <span className="sr-only">{FEATURE_LABELS[fk]}: {style.label}.</span>
+                                    </span>
                                 )
                             })}
-                        </tbody>
-                    </table>
-                </div>
-                {activeProvider && PROVIDER_CAPABILITIES[activeProvider]?.semanticSearch !== 'yes' && (
-                    <p className="text-xs text-amber-700 dark:text-amber-400">
-                        Semantic search requires an embedding provider. Configure one above or switch to Gemini / OpenAI.
-                    </p>
-                )}
+                        </li>
+                    )
+                })}
+            </ul>
+
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 border-t border-slate-200/70 dark:border-slate-800 text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <Legend state="yes" label="Supported" />
+                <Legend state="depends" label="Depends" />
+                <Legend state="no" label="Unavailable" />
             </div>
-        </InsightCard>
+
+            {activeProvider && PROVIDER_CAPABILITIES[activeProvider]?.semanticSearch !== 'yes' && (
+                <p className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 ring-1 ring-inset ring-amber-200/60 dark:ring-amber-800/50 rounded-lg px-2 py-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden="true" />
+                    <span>Semantic search needs an embedding provider. Configure one above or switch to Gemini / OpenAI.</span>
+                </p>
+            )}
+        </div>
+    )
+}
+
+function Legend({ state, label }) {
+    const style = DOT_STATE[state]
+    return (
+        <span className="inline-flex items-center gap-1.5">
+            <span aria-hidden="true" className={`inline-block w-1.5 h-1.5 rounded-full ${style.dot}`} />
+            {label}
+        </span>
     )
 }

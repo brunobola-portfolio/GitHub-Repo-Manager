@@ -7,7 +7,6 @@ import {
 import { API_BASE_URL } from '../../config'
 import { fetchWithRetry } from '../../utils/api'
 import { useToast } from '../../hooks/useToast'
-import { InsightCard } from '../ui/InsightCard'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { PROVIDER_DEFAULTS } from '../../utils/providerCapabilities'
 import { PRICING_LAST_UPDATED } from '../../utils/providerPricing'
@@ -19,6 +18,8 @@ import { EmbeddingSection } from './AIConfig/EmbeddingSection'
 import { PerFeatureOverrideSection } from './AIConfig/PerFeatureOverrideSection'
 import { TestButton } from './AIConfig/TestButton'
 import { CapabilityMatrix } from './AIConfig/CapabilityMatrix'
+import { CurrentConfigSummary } from './AIConfig/CurrentConfigSummary'
+import { SectionHeader } from './AIConfig/SectionHeader'
 
 // ---------------------------------------------------------------------------
 // Main: AIConfigSection
@@ -37,6 +38,7 @@ const EMPTY_FORM = {
     hasEmbeddingKey: false,
     featureOverrides: {},
     serverFallbackAvailable: false,
+    updatedAt: null,
 }
 
 export function AIConfigSection() {
@@ -82,6 +84,7 @@ export function AIConfigSection() {
                 hasEmbeddingKey: data.hasEmbeddingKey ?? false,
                 featureOverrides: data.featureOverrides ?? {},
                 serverFallbackAvailable: data.serverFallbackAvailable ?? false,
+                updatedAt: data.updatedAt ?? null,
             }
             setForm(loaded)
             setSaved(loaded)
@@ -295,127 +298,145 @@ export function AIConfigSection() {
         )
     }
 
+    const hasKeyStored = form.hasCompletionKey || form.hasEmbeddingKey
+
     return (
-        <div className="space-y-4">
-            {/* Header */}
-            <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-purple-500" />
-                </div>
-                <div>
-                    <h2 className="text-base font-semibold text-slate-900 dark:text-white">AI Configuration</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Bring your own API key — overrides the server-wide provider
+        <div className="space-y-5">
+            {/* Editorial header */}
+            <header className="relative flex items-start gap-4 pb-1">
+                <span
+                    aria-hidden="true"
+                    className="absolute -left-1 top-1 bottom-1 w-0.5 rounded-full bg-gradient-to-b from-indigo-500 via-purple-500 to-pink-500 opacity-80"
+                />
+                <div className="pl-3 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
+                        <Sparkles className="w-3 h-3" aria-hidden="true" />
+                        AI Workspace
+                    </div>
+                    <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-900 dark:text-white ds-font-display">
+                        Bring your own AI
+                    </h2>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 max-w-lg">
+                        Connect your own provider API key. Your choices override the server default and stay private to your account.
                     </p>
                 </div>
-            </div>
+            </header>
 
-            {/* Server fallback indicator */}
-            {form.serverFallbackAvailable && (
-                <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl text-sm border bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700/50 text-amber-800 dark:text-amber-300">
-                    <Info className="w-4 h-4 shrink-0 mt-0.5" />
-                    <span>
-                        Currently using the server&apos;s shared AI key. Configure your own for private, metered usage.
-                    </span>
+            {/* Shared-key banner — premium hairline-gradient */}
+            {form.serverFallbackAvailable && !hasKeyStored && (
+                <div className="relative rounded-2xl p-[1px] bg-gradient-to-br from-amber-400/40 via-amber-500/20 to-transparent">
+                    <div className="flex items-start gap-3 rounded-2xl bg-amber-50/80 dark:bg-amber-900/10 backdrop-blur-xl px-3.5 py-3">
+                        <div className="w-8 h-8 shrink-0 rounded-lg bg-amber-500/15 ring-1 ring-inset ring-amber-500/30 flex items-center justify-center">
+                            <Info className="w-4 h-4 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                        </div>
+                        <div className="flex-1 min-w-0 text-sm text-amber-900 dark:text-amber-200">
+                            <div className="font-semibold">
+                                Currently using the server&apos;s shared AI key. Configure your own for private, metered usage.
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 
-            {/* Completion Provider */}
-            <InsightCard tone="ai" hover={false}>
-                <div className="space-y-4">
-                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Completion Provider
-                    </p>
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_18rem] gap-5 lg:items-start">
+                {/* ─────────── Left column: configuration form ─────────── */}
+                <div className="space-y-4 min-w-0">
+                    {/* 01 — Completion provider */}
+                    <section className="rounded-2xl bg-gradient-to-br from-indigo-500/[0.03] via-purple-500/[0.02] to-transparent dark:from-indigo-500/[0.05] dark:via-purple-500/[0.03] ring-1 ring-inset ring-indigo-500/15 dark:ring-indigo-500/20 p-4">
+                        <SectionHeader
+                            step={1}
+                            title="Completion provider"
+                            description="Choose where completions are generated."
+                        />
+                        <div className="space-y-3">
+                            <ProviderSelect
+                                value={form.completionProvider}
+                                onChange={(v) => {
+                                    handleFieldChange('completionProvider', v)
+                                    handleFieldChange('completionModel', '')
+                                }}
+                            />
+                            <AnimatePresence mode="wait">
+                                {form.completionProvider && (
+                                    <motion.div
+                                        key={form.completionProvider}
+                                        initial={{ opacity: 0, y: -4 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -4 }}
+                                        transition={{ duration: 0.15 }}
+                                    >
+                                        <ProviderFields
+                                            provider={form.completionProvider}
+                                            form={form}
+                                            onChange={handleFieldChange}
+                                            errors={errors}
+                                        />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </section>
 
-                    <ProviderSelect
-                        value={form.completionProvider}
-                        onChange={(v) => {
-                            handleFieldChange('completionProvider', v)
-                            // Reset model when switching providers
-                            handleFieldChange('completionModel', '')
-                        }}
-                    />
-
-                    <AnimatePresence mode="wait">
+                    {/* 02 — Embedding provider */}
+                    <AnimatePresence>
                         {form.completionProvider && (
-                            <motion.div
-                                key={form.completionProvider}
-                                initial={{ opacity: 0, y: -4 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -4 }}
-                                transition={{ duration: 0.15 }}
+                            <motion.section
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="rounded-2xl bg-white/60 dark:bg-slate-900/50 ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 p-4 overflow-hidden"
                             >
-                                <ProviderFields
-                                    provider={form.completionProvider}
-                                    form={form}
-                                    onChange={handleFieldChange}
-                                    errors={errors}
+                                <SectionHeader
+                                    step={2}
+                                    title="Embedding provider"
+                                    description={
+                                        PROVIDERS_NEEDING_EMBEDDING_OVERRIDE.includes(form.completionProvider)
+                                            ? 'Required — your completion provider has no native embeddings.'
+                                            : 'Optional override — only if you want a different provider for semantic search.'
+                                    }
                                 />
-                            </motion.div>
+                                <EmbeddingSection form={form} onChange={handleFieldChange} />
+                            </motion.section>
                         )}
                     </AnimatePresence>
-                </div>
-            </InsightCard>
 
-            {/* Embedding Provider */}
-            <AnimatePresence>
-                {form.completionProvider && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <InsightCard tone="default" hover={false}>
-                            <div className="space-y-3">
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    Embedding Provider
-                                    {!PROVIDERS_NEEDING_EMBEDDING_OVERRIDE.includes(form.completionProvider) && (
-                                        <span className="ml-2 text-xs font-normal text-slate-400">(optional override)</span>
-                                    )}
-                                </label>
-                                <EmbeddingSection form={form} onChange={handleFieldChange} />
-                            </div>
-                        </InsightCard>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    {/* 03 — Per-feature overrides */}
+                    <AnimatePresence>
+                        {form.completionProvider && (
+                            <motion.section
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden"
+                            >
+                                <PerFeatureOverrideSection
+                                    featureOverrides={form.featureOverrides}
+                                    completionModel={form.completionModel || (PROVIDER_DEFAULTS[form.completionProvider]?.modelPlaceholder ?? '')}
+                                    completionProvider={form.completionProvider}
+                                    embeddingProvider={form.embeddingProvider}
+                                    onChange={handleFieldChange}
+                                />
+                            </motion.section>
+                        )}
+                    </AnimatePresence>
 
-            {/* Per-feature model overrides */}
-            <AnimatePresence>
-                {form.completionProvider && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <PerFeatureOverrideSection
-                            featureOverrides={form.featureOverrides}
-                            completionModel={form.completionModel || (PROVIDER_DEFAULTS[form.completionProvider]?.modelPlaceholder ?? '')}
-                            onChange={handleFieldChange}
-                        />
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Test Connection — only shown when a provider is selected */}
-            <AnimatePresence>
-                {form.completionProvider && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <InsightCard tone="default" hover={false}>
-                            <div className="space-y-3">
-                                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    Test Connection
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">
-                                    Verify your API key is valid and the provider responds correctly.
-                                </p>
+                    {/* 04 — Test connection */}
+                    <AnimatePresence>
+                        {form.completionProvider && (
+                            <motion.section
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="rounded-2xl bg-white/60 dark:bg-slate-900/50 ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 p-4 overflow-hidden"
+                            >
+                                <SectionHeader
+                                    step={4}
+                                    title="Test connection"
+                                    description="Verify your API key is valid and the provider responds correctly."
+                                />
                                 <TestButton
                                     onTest={handleTest}
                                     disabled={testing}
@@ -423,68 +444,67 @@ export function AIConfigSection() {
                                     countdown={testCountdown}
                                     isDirty={isDirty}
                                 />
-                            </div>
-                        </InsightCard>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                            </motion.section>
+                        )}
+                    </AnimatePresence>
 
-            {/* Save message */}
-            <AnimatePresence>
-                {saveMessage && (
-                    <motion.p
-                        role="status"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className={`text-sm font-medium flex items-center gap-1.5 ${
-                            saveMessage.type === 'success'
-                                ? 'text-emerald-600 dark:text-emerald-400'
-                                : 'text-red-600 dark:text-red-400'
-                        }`}
-                    >
-                        {saveMessage.type === 'success'
-                            ? <Check className="w-4 h-4 shrink-0" />
-                            : <AlertTriangle className="w-4 h-4 shrink-0" />}
-                        {saveMessage.text}
-                    </motion.p>
-                )}
-            </AnimatePresence>
+                    {/* Save message */}
+                    <AnimatePresence>
+                        {saveMessage && (
+                            <motion.p
+                                role="status"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className={`text-sm font-medium flex items-center gap-1.5 ${
+                                    saveMessage.type === 'success'
+                                        ? 'text-emerald-600 dark:text-emerald-400'
+                                        : 'text-red-600 dark:text-red-400'
+                                }`}
+                            >
+                                {saveMessage.type === 'success'
+                                    ? <Check className="w-4 h-4 shrink-0" />
+                                    : <AlertTriangle className="w-4 h-4 shrink-0" />}
+                                {saveMessage.text}
+                            </motion.p>
+                        )}
+                    </AnimatePresence>
 
-            {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-1">
-                {(form.hasCompletionKey || form.hasEmbeddingKey) && (
-                    <button
-                        onClick={handleRemove}
-                        disabled={removing}
-                        className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors"
-                    >
-                        <X className="w-4 h-4" />
-                        {removing ? 'Removing...' : 'Remove Config'}
-                    </button>
-                )}
+                    {/* Action bar — sticky on mobile for thumb-reach */}
+                    <div className="sticky bottom-0 -mx-4 px-4 pb-2 pt-3 bg-gradient-to-t from-white via-white/95 to-white/0 dark:from-slate-900 dark:via-slate-900/95 dark:to-slate-900/0 lg:static lg:mx-0 lg:px-0 lg:pt-2 lg:pb-0 lg:bg-none">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                            {hasKeyStored ? (
+                                <button
+                                    onClick={handleRemove}
+                                    disabled={removing}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                    {removing ? 'Removing…' : 'Remove config'}
+                                </button>
+                            ) : <span />}
 
-                <button
-                    onClick={handleSave}
-                    disabled={saving || !isDirty}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm shadow-indigo-500/20 transition-all"
-                >
-                    {saving ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                        <Check className="w-4 h-4" />
-                    )}
-                    {saving ? 'Saving...' : 'Save'}
-                </button>
+                            <button
+                                onClick={handleSave}
+                                disabled={saving || !isDirty}
+                                className="ds-btn-shimmer inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-slate-400 disabled:to-slate-500 disabled:shadow-none disabled:cursor-not-allowed rounded-xl shadow-lg shadow-indigo-500/25 transition-all"
+                            >
+                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                                {saving ? 'Saving...' : 'Save'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ─────────── Right rail: summary + capabilities ─────────── */}
+                <aside className="space-y-4 lg:sticky lg:top-2">
+                    <CurrentConfigSummary form={form} />
+                    <CapabilityMatrix activeProvider={form.completionProvider} />
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
+                        Prices as of {PRICING_LAST_UPDATED}, informational only. We never meter LLM tokens — you pay your provider directly.
+                    </p>
+                </aside>
             </div>
-
-            {/* Capability Matrix */}
-            <CapabilityMatrix activeProvider={form.completionProvider} />
-
-            {/* Pricing disclaimer */}
-            <p className="text-xs text-slate-400 dark:text-slate-500 text-center">
-                Prices as of {PRICING_LAST_UPDATED} and informational only. We never meter LLM tokens — you pay your provider directly.
-            </p>
 
             <ConfirmModal
                 isOpen={confirmRemove}

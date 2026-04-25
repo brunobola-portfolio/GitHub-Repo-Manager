@@ -1,7 +1,9 @@
-import { AlertTriangle, ExternalLink } from 'lucide-react'
+import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { PROVIDER_DEFAULTS } from '../../../utils/providerCapabilities'
+import { getCompletionModels } from '../../../utils/providerModels'
 import { INPUT_CLS, LABEL_CLS } from './constants'
 import { PriceHint } from './PriceHint'
+import { ModelCombobox } from './ModelCombobox'
 
 // ---------------------------------------------------------------------------
 // Sub-component: ProviderFields
@@ -17,7 +19,15 @@ export function ProviderFields({ provider, form, onChange, errors }) {
             {/* API Key */}
             {(defaults.apiKeyRequired || provider !== 'local') && (
                 <div>
-                    <label htmlFor="completion-api-key" className={LABEL_CLS}>{defaults.apiKeyLabel}</label>
+                    <div className="flex items-center justify-between mb-1">
+                        <label htmlFor="completion-api-key" className={`${LABEL_CLS} mb-0`}>{defaults.apiKeyLabel}</label>
+                        {form.hasCompletionKey && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                                <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                                Stored
+                            </span>
+                        )}
+                    </div>
                     <input
                         id="completion-api-key"
                         type="password"
@@ -31,6 +41,11 @@ export function ProviderFields({ provider, form, onChange, errors }) {
                         className={`${INPUT_CLS} ${errors.completionApiKey ? 'border-red-400 dark:border-red-500 focus:ring-red-500' : ''}`}
                         autoComplete="off"
                     />
+                    {form.hasCompletionKey && !form.completionApiKey && !errors.completionApiKey && (
+                        <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                            Your key is encrypted at rest. Leave empty to keep the current one; type a new one to replace it.
+                        </p>
+                    )}
                     {errors.completionApiKey && (
                         <p role="alert" aria-live="polite" className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
                             <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
@@ -58,28 +73,17 @@ export function ProviderFields({ provider, form, onChange, errors }) {
             {/* Model override */}
             <div>
                 <label htmlFor="completion-model" className={LABEL_CLS}>Model</label>
-                <input
+                <ModelCombobox
                     id="completion-model"
-                    type="text"
                     value={form.completionModel ?? ''}
-                    onChange={(e) => onChange('completionModel', e.target.value)}
+                    onChange={(v) => onChange('completionModel', v)}
+                    options={getCompletionModels(provider)}
                     placeholder={defaults.modelPlaceholder}
-                    className={INPUT_CLS}
+                    catalogueHref={defaults.modelHelpUrl}
+                    catalogueLabel={defaults.modelHelp}
                 />
-                {defaults.modelHelp && (
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        {defaults.modelHelpUrl ? (
-                            <a
-                                href={defaults.modelHelpUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-0.5 text-indigo-600 dark:text-indigo-400 hover:underline"
-                            >
-                                {defaults.modelHelp}
-                                <ExternalLink className="w-3 h-3" />
-                            </a>
-                        ) : defaults.modelHelp}
-                    </p>
+                {defaults.modelHelp && !defaults.modelHelpUrl && (
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{defaults.modelHelp}</p>
                 )}
                 <PriceHint modelName={form.completionModel || defaults.modelPlaceholder} />
             </div>
