@@ -105,6 +105,12 @@ export const aiChatSchema = z.object({
     })).max(50).optional()
 });
 
+export const attentionNarrativeSchema = z.object({
+    repo: z.string().min(3).max(200).regex(/^[^/\s]+\/[^/\s]+$/, 'expected owner/name'),
+    kind: z.enum(['failed_migration', 'stale_pinned', 'abandoned', 'hot']),
+    signal: z.record(z.string(), z.unknown()).optional().default({}),
+});
+
 export const aiIndexSchema = z.object({
     repo: z.object({
         full_name: z.string().min(1).max(200),

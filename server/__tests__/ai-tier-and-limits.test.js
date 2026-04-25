@@ -108,6 +108,7 @@ vi.mock('../lib/validators.js', async () => {
         aiIssueToPlanSchema: {},
         migrationSizeStrategySchema: {},
         migrationDescriptionSchema: {},
+        attentionNarrativeSchema: {},
     }
 })
 
@@ -125,7 +126,7 @@ function makeSession(overrides = {}) {
     }
 }
 
-async function buildApp(routerFactory) {
+async function _buildApp(routerFactory) {
     const app = express()
     app.use(express.json())
     app.use((req, _res, next) => {

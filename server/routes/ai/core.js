@@ -12,7 +12,7 @@
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError } from '../../middleware/auth.js';
-import { aiChatSchema } from '../../lib/validators.js';
+import { aiChatSchema, attentionNarrativeSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { aiService, sanitizeForPrompt } from '../../ai-service.js';
 import { safeJsonParse } from '../../lib/utils.js';
@@ -20,6 +20,13 @@ import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage,
 import { auditLog } from '../../lib/audit.js';
 import { requireAI, handleAIError, providerGenerateWithRetry } from './shared.js';
 import { getKeyHealth, probeAndCache } from '../../lib/ai-health-probe.js';
+import {
+    buildPrompt as buildNarrativePrompt,
+    shapeNarrative,
+    readCachedNarrative,
+    writeCachedNarrative,
+    ATTENTION_NARRATIVE_LIMITS,
+} from '../../lib/attention-narrative.js';
 
 const router = express.Router();
 
@@ -170,6 +177,55 @@ User message: ${message}`;
         });
     } catch (error) {
         req.log.error({ err: error }, 'AI chat failed');
+        handleAIError(res, error);
+    }
+});
+
+// ------------------------------------------------------------------
+// AI Attention Narrative — one-line "why this repo needs you" for the
+// dashboard top item. 1h cache per (user, repo, kind, signal-hash).
+// ------------------------------------------------------------------
+
+router.post('/ai/attention-narrative', requireAuth, validateBody(attentionNarrativeSchema), requireAI, async (req, res) => {
+    const userId = req.session.userId;
+    const { repo, kind, signal } = req.validatedBody;
+
+    // Cache hit short-circuit — never burns tokens on repeat loads.
+    const cached = readCachedNarrative({ userId, repo, kind, signal });
+    if (cached) {
+        return res.json({ narrative: cached.narrative, cached: true, model: cached.model });
+    }
+
+    // Quota gate — same bucket as ai_queries so the cap-reached banner stays
+    // accurate. The narrative is small (~80 output tokens) but still counted.
+    const usage = checkUsageLimit(userId, 'ai_queries');
+    if (!usage.allowed) {
+        return res.status(429).json(quotaExceededResponse(usage));
+    }
+
+    try {
+        const prompt = buildNarrativePrompt({ repo, kind, signal });
+        const { text } = await providerGenerateWithRetry(req.aiProvider, {
+            prompt,
+            maxOutputTokens: ATTENTION_NARRATIVE_LIMITS.maxOutputTokens,
+        });
+
+        const narrative = shapeNarrative(text);
+        if (!narrative) {
+            return res.status(502).json({
+                error: 'AI returned an empty narrative.',
+                code: 'AI_PARSE_ERROR',
+            });
+        }
+
+        const model = req.aiProvider?.modelId || 'unknown';
+        writeCachedNarrative({ userId, repo, kind, signal }, { narrative, model });
+        incrementUsage(userId, 'ai_queries');
+        auditLog(req, 'ai.attention_narrative', 'ai', null, { repo, kind });
+
+        res.json({ narrative, cached: false, model });
+    } catch (error) {
+        req.log.error({ err: error, repo, kind }, 'AI attention-narrative failed');
         handleAIError(res, error);
     }
 });
