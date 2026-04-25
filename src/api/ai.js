@@ -58,7 +58,10 @@ async function handleAIResponse(res, operation) {
     return res.json();
 }
 
-// Mock data generators for AI features
+// Mock data generators for explicit MOCK_MODE (demo / e2e). Random numbers
+// here are obvious in the demo context and do NOT reach a real, unconfigured
+// user — that path goes through `unconfigured*` factories below which return
+// honest null values plus a CTA-ready message.
 const mockAnalysis = (repo) => ({
     summary: `${repo.name} is a ${repo.language || 'multi-language'} project focused on ${repo.description || 'software development'}.`,
     health_score: Math.floor(Math.random() * 30) + 65, // 65-95
@@ -117,6 +120,54 @@ const mockReadmeEnhancement = (repo) => ({
     patterns: { hasInstallation: false, hasUsage: false, hasContributing: false }
 });
 
+// ---------------------------------------------------------------------------
+// Unconfigured-AI placeholders
+// ---------------------------------------------------------------------------
+//
+// When the user has no AI provider configured we still need to return *some*
+// shape so consuming components don't crash, but we must NOT fabricate scores
+// or recommendations — that's misleading. These factories return null for
+// every numeric field and a single canonical message the UI can render as
+// "Connect AI to see X".
+
+const NEEDS_CONFIG_NOTE = 'Connect an AI provider in Settings → AI Configuration to see real analysis.'
+
+const unconfiguredAnalysis = (repo) => ({
+    summary: NEEDS_CONFIG_NOTE,
+    health_score: null,
+    project_type: null,
+    suggested_topics: [],
+    improvements: [],
+    readme_suggestions: [],
+    highlights: [],
+    quality_breakdown: null,
+    patterns: null,
+    name: repo?.name,
+    language: repo?.language,
+})
+
+const unconfiguredQualityReport = (repo) => ({
+    score: null,
+    breakdown: null,
+    patterns: null,
+    recommendations: [],
+    summary: NEEDS_CONFIG_NOTE,
+    repo: repo?.full_name,
+})
+
+const unconfiguredReadmeEnhancement = () => ({
+    enhancement: null,
+    missingSections: [],
+    patterns: null,
+    note: NEEDS_CONFIG_NOTE,
+})
+
+const unconfiguredSearchResults = () => {
+    const arr = []
+    arr.note = NEEDS_CONFIG_NOTE
+    return arr
+}
+
 // AI Client Wrapper with mock fallbacks
 export const aiApi = {
     // Trigger indexing for a specific repo
@@ -126,7 +177,7 @@ export const aiApi = {
             return { success: true, analysis: mockAnalysis(repo) };
         }
 
-        const shortCircuit = await withAIConfigured(() => ({ success: true, analysis: mockAnalysis(repo) }));
+        const shortCircuit = await withAIConfigured(() => ({ success: true, analysis: unconfiguredAnalysis(repo) }));
         if (shortCircuit) return shortCircuit;
 
         const res = await fetch(`${API_BASE}/ai/index`, {
@@ -136,9 +187,10 @@ export const aiApi = {
             body: JSON.stringify({ repo })
         });
 
-        // Handle AI not configured - return mock data
+        // Provider failed at runtime — give the UI an honest placeholder shape
+        // (null scores) instead of fabricated numbers.
         if (res.status === 503) {
-            return { success: true, analysis: mockAnalysis(repo), mock: true, aiConfigured: false };
+            return { success: true, analysis: unconfiguredAnalysis(repo), mock: true, aiConfigured: false };
         }
         return handleAIResponse(res, 'index');
     },
@@ -152,7 +204,7 @@ export const aiApi = {
 
         const status = await getAIStatus();
         if (!status?.configured) {
-            const results = mockSearchResults(query)
+            const results = unconfiguredSearchResults()
             results.mock = true
             results.aiConfigured = false
             return results
@@ -163,9 +215,10 @@ export const aiApi = {
             credentials: 'include'
         });
 
-        // Handle AI not configured - return mock results with flag
+        // Provider failed — return an empty list with an honest "configure AI"
+        // note rather than fabricated matches.
         if (res.status === 503) {
-            const results = mockSearchResults(query)
+            const results = unconfiguredSearchResults()
             results.mock = true
             results.aiConfigured = false
             return results
@@ -235,7 +288,7 @@ export const aiApi = {
             return { success: true, ...mockReadmeEnhancement(repo) };
         }
 
-        const shortCircuit = await withAIConfigured(() => ({ success: true, ...mockReadmeEnhancement(repo) }));
+        const shortCircuit = await withAIConfigured(() => ({ success: true, ...unconfiguredReadmeEnhancement() }));
         if (shortCircuit) return shortCircuit;
 
         const res = await fetch(`${API_BASE}/ai/readme/enhance`, {
@@ -246,7 +299,7 @@ export const aiApi = {
         });
 
         if (res.status === 503) {
-            return { success: true, ...mockReadmeEnhancement(repo), mock: true, aiConfigured: false };
+            return { success: true, ...unconfiguredReadmeEnhancement(), mock: true, aiConfigured: false };
         }
         return handleAIResponse(res, 'enhance README');
     },
@@ -258,7 +311,7 @@ export const aiApi = {
             return { success: true, report: mockQualityReport(repo), repo: repo.full_name };
         }
 
-        const shortCircuit = await withAIConfigured(() => ({ success: true, report: mockQualityReport(repo), repo: repo.full_name }));
+        const shortCircuit = await withAIConfigured(() => ({ success: true, report: unconfiguredQualityReport(repo), repo: repo.full_name }));
         if (shortCircuit) return shortCircuit;
 
         const res = await fetch(`${API_BASE}/ai/quality-report`, {
@@ -269,7 +322,7 @@ export const aiApi = {
         });
 
         if (res.status === 503) {
-            return { success: true, report: mockQualityReport(repo), repo: repo.full_name, mock: true, aiConfigured: false };
+            return { success: true, report: unconfiguredQualityReport(repo), repo: repo.full_name, mock: true, aiConfigured: false };
         }
         return handleAIResponse(res, 'quality report');
     },
@@ -286,14 +339,17 @@ export const aiApi = {
             };
         }
 
-        const buildMock = () => ({
+        // Honest unconfigured/runtime-failure placeholder: signal that no
+        // analysis ran instead of fabricating health scores.
+        const buildPlaceholder = () => ({
             success: true,
-            processed: repos.length,
-            results: repos.map(r => ({ repo: r.full_name, success: true, health_score: Math.floor(Math.random() * 30) + 65 })),
-            skipped: 0,
+            processed: 0,
+            results: repos.map(r => ({ repo: r.full_name, success: false, health_score: null, note: NEEDS_CONFIG_NOTE })),
+            skipped: repos.length,
+            note: NEEDS_CONFIG_NOTE,
         });
 
-        const shortCircuit = await withAIConfigured(buildMock);
+        const shortCircuit = await withAIConfigured(buildPlaceholder);
         if (shortCircuit) return shortCircuit;
 
         const res = await fetch(`${API_BASE}/ai/batch-index`, {
@@ -304,7 +360,7 @@ export const aiApi = {
         });
 
         if (res.status === 503) {
-            return { ...buildMock(), mock: true, aiConfigured: false };
+            return { ...buildPlaceholder(), mock: true, aiConfigured: false };
         }
         return handleAIResponse(res, 'batch index');
     },

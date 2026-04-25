@@ -109,14 +109,17 @@ router.get(['/teams/:id/activity', '/team/:id/activity'], requireAuth, async (re
         const repos = db.prepare('SELECT repo_full_name FROM repo_assignments WHERE team_id = ?').all(teamId);
 
         if (!repos.length) {
-            return res.json([]);
+            return res.json({ events: [], totalRepos: 0, scannedRepos: 0, truncated: false });
         }
 
-        // 2. Fetch events for each repo (Limit to first 10 repos to avoid rate limits/timeouts)
-        // Uses batched fetching (3 at a time) with small delays to avoid rate limit spikes.
-        const targetRepos = repos.slice(0, 10);
+        // 2. Fetch events for each repo. We cap at MAX_REPOS to avoid blowing
+        // the GitHub rate-limit budget on huge teams; the response includes
+        // `truncated` so the UI can surface "showing first N of M repos".
+        const MAX_REPOS = 10;
         const BATCH_SIZE = 3;
         const BATCH_DELAY_MS = 100;
+        const targetRepos = repos.slice(0, MAX_REPOS);
+        const truncated = repos.length > MAX_REPOS;
         const results = [];
 
         for (let i = 0; i < targetRepos.length; i += BATCH_SIZE) {
@@ -146,13 +149,20 @@ router.get(['/teams/:id/activity', '/team/:id/activity'], requireAuth, async (re
 
         uniqueEvents.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-        // Return top 50
-        const activityData = uniqueEvents.slice(0, 50);
+        // Return top 50 events with metadata so callers can warn the user
+        // when not all team repos were scanned.
+        const events = uniqueEvents.slice(0, 50);
+        const payload = {
+            events,
+            totalRepos: repos.length,
+            scannedRepos: targetRepos.length,
+            truncated,
+        };
 
         // Cache the result (TTL + LRU eviction handled by createCache)
-        activityCache.set(cacheKey, activityData);
+        activityCache.set(cacheKey, payload);
 
-        res.json(activityData);
+        res.json(payload);
 
     } catch (error) {
         req.log.error({ err: error }, 'Team activity fetch failed');

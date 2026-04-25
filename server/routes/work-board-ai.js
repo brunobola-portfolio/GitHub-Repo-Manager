@@ -12,13 +12,13 @@ import { createProviderForUser } from '../lib/ai-provider.js';
 import { loadPrompt } from '../lib/ai-features/work-board-assistant/prompts/index.js';
 import { signDiffToken, verifyDiffToken } from '../lib/work-board-ai-hmac.js';
 import { recordSpend, getMonthlySpend, getCurrentMonthKey } from '../lib/work-board-ai-cost.js';
+import { estimateCallCostCents } from '../lib/provider-pricing.js';
 import { bulkUpdate } from '../lib/work-board-tracking.js';
 import db from '../db.js';
 
 const router = express.Router();
 
 const VALID_ACTIONS = new Set(['pin', 'unpin', 'mute', 'unmute', 'track', 'untrack']);
-const INTERPRET_ESTIMATED_CENTS = 1;
 
 function listTrackedReposForPrompt(userId) {
     return db.prepare(
@@ -126,7 +126,17 @@ router.post('/interpret', requireAuth, requireWorkBoardAI, async (req, res) => {
         a && typeof a.repo === 'string' && VALID_ACTIONS.has(a.action) && trackedSet.has(a.repo)
     );
 
-    recordSpend(userId, INTERPRET_ESTIMATED_CENTS);
+    // Estimate cost from the actual prompt + response sizes and the provider's
+    // model. This replaces the previous flat 1¢ that ignored both. The
+    // estimate uses ~4 chars/token and per-model pricing in provider-pricing.js
+    // so the per-user monthly cap reflects real usage within an order of
+    // magnitude (vs. always 1¢).
+    const callCostCents = estimateCallCostCents({
+        modelName: provider.getModelName?.() ?? null,
+        promptChars: (systemPrompt?.length ?? 0) + userPrompt.length,
+        responseChars: llmText?.length ?? 0,
+    });
+    recordSpend(userId, callCostCents);
 
     const validity_token = signDiffToken({ userId, actions: validActions });
 

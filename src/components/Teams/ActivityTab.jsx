@@ -8,6 +8,7 @@ export function ActivityTab({ teamId }) {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [meta, setMeta] = useState({ truncated: false, totalRepos: 0, scannedRepos: 0 });
 
     useEffect(() => {
         const fetchActivity = async () => {
@@ -32,7 +33,19 @@ export function ActivityTab({ teamId }) {
                 }
 
                 const data = await res.json();
-                setEvents(data);
+                // Backwards compatible: older shape was a bare array; current
+                // shape is { events, totalRepos, scannedRepos, truncated }.
+                if (Array.isArray(data)) {
+                    setEvents(data);
+                    setMeta({ truncated: false, totalRepos: 0, scannedRepos: 0 });
+                } else {
+                    setEvents(data.events ?? []);
+                    setMeta({
+                        truncated: !!data.truncated,
+                        totalRepos: data.totalRepos ?? 0,
+                        scannedRepos: data.scannedRepos ?? 0,
+                    });
+                }
             } catch (e) {
                 setError(e?.message || 'Failed to load activity feed');
                 setEvents(MOCK_ACTIVITY_DATA);
@@ -71,6 +84,11 @@ export function ActivityTab({ teamId }) {
             {error && (
                 <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
                     {error} — showing cached data.
+                </div>
+            )}
+            {meta.truncated && (
+                <div className="px-4 py-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl text-xs text-amber-800 dark:text-amber-200">
+                    Showing activity from {meta.scannedRepos} of {meta.totalRepos} team repositories — older or rate-limited repos are deferred to keep this feed responsive.
                 </div>
             )}
             {Object.entries(groupedEvents).map(([date, dayEvents]) => (
