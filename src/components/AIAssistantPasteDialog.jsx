@@ -2,6 +2,7 @@ import { useState } from 'react'
 // Note: lucide-react does not export a `Github` icon; `GitBranch` is the
 // closest thematic fit for the in-chat GitHub preview badge.
 import { Wand2, X, ArrowRight, Check, Cloud, GitBranch } from 'lucide-react'
+import { Button } from './ui/Button'
 
 /**
  * Inline chat card that drives the paste-URL dialog.
@@ -75,13 +76,9 @@ export function AIAssistantPasteDialog({ dialog, onAnswer, onConfirm, onCancel }
               placeholder={question.placeholder}
               className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
-            <button
-              type="submit"
-              className="px-3 py-1.5 text-sm font-medium rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50"
-              disabled={!value.trim()}
-            >
+            <Button type="submit" variant="primary" size="xs" disabled={!value.trim()}>
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
           {question.hint && (
             <p className="text-[11px] text-slate-500 dark:text-slate-400">{question.hint}</p>
@@ -90,13 +87,9 @@ export function AIAssistantPasteDialog({ dialog, onAnswer, onConfirm, onCancel }
       )}
 
       {isReady && (
-        <button
-          type="button"
-          onClick={onConfirm}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg bg-indigo-500 text-white hover:bg-indigo-600"
-        >
+        <Button type="button" variant="primary" size="sm" onClick={onConfirm} className="w-full">
           <Check className="w-4 h-4" /> Abrir wizard com isto preenchido
-        </button>
+        </Button>
       )}
     </div>
   )

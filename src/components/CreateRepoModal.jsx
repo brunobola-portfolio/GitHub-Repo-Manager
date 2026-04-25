@@ -5,6 +5,7 @@ import { InsightCard } from './ui/InsightCard'
 import { useMobileBreakpoint } from '../hooks/useMobileBreakpoint'
 import { useToast } from '../hooks/useToast'
 import { Select } from './ui/Select'
+import { Button } from './ui/Button'
 import { Plus, Sparkles, Loader2, CheckCircle2, XCircle, Lock, Globe } from 'lucide-react'
 
 export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming, askAI }) {
@@ -24,6 +25,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
     // Debounced name availability check. Uses AbortController so a rapid
     // typing session (or a closed modal) cancels any in-flight request and
     // can't set stale `nameStatus` after the user has moved on.
+    /* eslint-disable react-hooks/set-state-in-effect -- debounced name availability probe + reset on close */
     useEffect(() => {
         if (!name || !isOpen) {
             setNameStatus(null)
@@ -70,6 +72,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
             setNameStatus(null)
         }
     }, [isOpen])
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const handleMagicDescription = async () => {
         if (!name) return
@@ -111,13 +114,9 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
 
     const footer = (
         <div className="flex items-center justify-end gap-3">
-            <button
-                type="button"
-                onClick={onClose}
-                className="px-5 py-2.5 text-[13px] font-medium rounded-lg text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-sm transition-all"
-            >
+            <Button variant="secondary" type="button" onClick={onClose}>
                 Cancel
-            </button>
+            </Button>
             <button
                 type="button"
                 onClick={handleSubmit}
@@ -146,9 +145,9 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                 <div className="max-w-lg mx-auto space-y-6">
                     {/* Owner */}
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        <p className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                             Owner
-                        </label>
+                        </p>
                         <Select
                             value={targetOrg}
                             onChange={setTargetOrg}

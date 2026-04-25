@@ -137,12 +137,9 @@ export function OrgManagerModal({
             mobileVariant="sheet"
             footer={
                 <ModalFooter align="right">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors"
-                    >
+                    <Button variant="ghost" onClick={onClose}>
                         Close
-                    </button>
+                    </Button>
                 </ModalFooter>
             }
         >
