@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { Copy, Check, Pencil } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { RefinementChips } from './RefinementChips'
+import { Card } from '../../ui/Card'
 
 export function SectionCard({ title, content, onContentChange, chips, onRefine, refining, loading }) {
     const [editing, setEditing] = useState(false)
@@ -18,11 +19,8 @@ export function SectionCard({ title, content, onContentChange, chips, onRefine, 
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden"
-        >
+        <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}>
+        <Card glass={false} shadow="none" className="rounded-xl">
             <div className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700">
                 <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">{title}</span>
                 <div className="flex gap-1">
@@ -54,6 +52,7 @@ export function SectionCard({ title, content, onContentChange, chips, onRefine, 
                     <RefinementChips chips={chips} onSelect={onRefine} disabled={refining} loading={refining} />
                 </div>
             )}
+        </Card>
         </motion.div>
     )
 }
