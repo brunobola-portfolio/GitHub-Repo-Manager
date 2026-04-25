@@ -4,6 +4,7 @@ import { Button } from './ui/Button'
 import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
 import { StatBar } from './ui/StatBar'
+import { EmptyState } from './ui/EmptyState'
 import { ConflictPanel } from './ConflictPanel'
 import { API_ENDPOINTS } from '../config'
 
@@ -26,6 +27,7 @@ export function TransferModal({
 	const [dryRun, setDryRun] = useState(false)
 
 	// Check conflicts when targetOrg changes (transfer mode only) - debounced 500ms
+	/* eslint-disable react-hooks/set-state-in-effect -- targetOrg/action change drives debounced conflict probe */
 	useEffect(() => {
 		if (!targetOrg || !repos.length || action !== 'transfer') {
 			setConflicts(null)
@@ -69,6 +71,7 @@ export function TransferModal({
 
 		return () => { cancelled = true; clearTimeout(timer) }
 	}, [targetOrg, repos, action])
+	/* eslint-enable react-hooks/set-state-in-effect */
 
 	// Detect if all selected repos belong to the same owner as the target
 	const repoOwners = [...new Set(repos.map(r => r.owner?.login).filter(Boolean))]
@@ -211,9 +214,9 @@ export function TransferModal({
 
 				{/* Target Organization */}
 				<InsightCard hover={false}>
-					<label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+					<p className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
 						Target Organization
-					</label>
+					</p>
 					{orgs.length > 0 ? (
 						<div className="grid grid-cols-2 gap-2">
 							{orgs.map(org => (
@@ -244,18 +247,16 @@ export function TransferModal({
 							))}
 						</div>
 					) : (
-						<div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-lg">
-							<Building2 className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-							<p className="text-slate-500 dark:text-slate-400 mb-3">No organizations found</p>
-							<a
-								href="https://github.com/organizations/plan"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium text-sm"
-							>
-								Create an organization on GitHub &rarr;
-							</a>
-						</div>
+						<EmptyState
+							icon={Building2}
+							title="No organizations"
+							description="You're not a member of any GitHub organization that can receive transfers."
+							gradient="from-slate-400 to-slate-500"
+							action={{
+								label: "Create an organization on GitHub",
+								href: "https://github.com/organizations/plan",
+							}}
+						/>
 					)}
 					{formError && (
 						<p className="mt-3 flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
