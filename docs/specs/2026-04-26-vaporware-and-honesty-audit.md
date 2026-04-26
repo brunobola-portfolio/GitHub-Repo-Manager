@@ -325,7 +325,46 @@ The selector uses `property.name='stack'` (no object-name constraint) so it catc
 
 ### 3.1 Backend response enrichment
 
-Update the rate-limit middleware ([server/middleware/rate-limit.js](../../server/middleware/rate-limit.js) or equivalent — to be confirmed in the plan) so 429 and tier-block 403 responses include:
+There is no generic rate-limit middleware. The codebase pattern is: each route in `server/routes/ai/*` calls `checkUsageLimit()` / `checkAIFeatureLimit()` directly from [server/lib/usage-meter.js](../../server/lib/usage-meter.js) and constructs its own 429 response inline. To enforce uniformity without rewriting every handler, this wave introduces a helper:
+
+```js
+// server/lib/usage-meter.js — appended export
+export function quotaErrorPayload(check, { feature, upgradeTo, tier }) {
+  const { start } = getCurrentPeriod()
+  const resetAt = new Date(new Date(start).getFullYear(), new Date(start).getMonth() + 1, 1).toISOString()
+  return {
+    error: 'Quota exceeded',
+    code: 'QUOTA_EXCEEDED',
+    feature,
+    tier,
+    limit: check.limit,
+    used: check.current,
+    resetAt,
+    upgradeTo: upgradeTo ?? null,
+  }
+}
+
+export function tierRequiredPayload(currentTier, requiredTier, feature) {
+  return {
+    error: 'Tier required',
+    code: `TIER_REQUIRED_${requiredTier.toUpperCase()}`,
+    feature,
+    currentTier,
+    requiredTier,
+  }
+}
+```
+
+Each existing 429 callsite is updated from:
+```js
+return res.status(429).json({ error: 'Quota exceeded' })
+```
+to:
+```js
+return res.status(429).json(quotaErrorPayload(check, { feature: 'ai_queries', upgradeTo: 'pro', tier }))
+```
+
+Each 403 tier-block callsite is updated to use `tierRequiredPayload()`. Rate-limit logic itself does not change — only the response payload shape grows. Existing tests continue to pass (they assert status code and `error` field; the new fields are additive). The shape required:
 
 ```json
 {
