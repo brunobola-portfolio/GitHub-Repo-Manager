@@ -8,6 +8,7 @@ import { OrgPanel } from './components/OrgPanel'
 import { ConfirmModal } from './components/ui/ConfirmModal'
 import { ToastContainer } from './components/ui/Toast'
 import { Spinner } from './components/ui/Spinner'
+import { QuotaExceededState } from './components/ui/QuotaExceededState'
 import { useToast } from './hooks/useToast'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
@@ -103,6 +104,15 @@ function AppContent() {
   const [orgOverlayOpen, setOrgOverlayOpen] = useState(false)
   const [sessionExpired, setSessionExpired] = useState(false)
   const [rateLimitBanner, setRateLimitBanner] = useState(null) // { retryAt: number } | null
+  // Quota-exceeded modal: detail object emitted via the global
+  // 'app:show-quota-exceeded' event by toast.errorFromException's
+  // 'open-quota' action. Cleared when the modal is dismissed.
+  const [quotaModal, setQuotaModal] = useState(null)
+  useEffect(() => {
+    const handler = (e) => setQuotaModal(e.detail || {})
+    window.addEventListener('app:show-quota-exceeded', handler)
+    return () => window.removeEventListener('app:show-quota-exceeded', handler)
+  }, [])
   const { toasts, toast, dismissToast } = useToast()
   const { modalStates, openModal, openModalWithData, closeModal, getModalData } = useModal()
   const { selectedIds } = useSelection()
@@ -1221,6 +1231,33 @@ function AppContent() {
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      {quotaModal && (
+        /* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Quota exceeded"
+          tabIndex={-1}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+          onClick={() => setQuotaModal(null)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setQuotaModal(null) }}
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            <Suspense fallback={null}>
+              <QuotaExceededState
+                feature={quotaModal.feature || 'AI'}
+                currentTier={quotaModal.tier || quotaModal.currentTier}
+                used={quotaModal.used}
+                limit={quotaModal.limit}
+                resetAt={quotaModal.resetAt}
+                upgradeTo={quotaModal.upgradeTo}
+                onClose={() => setQuotaModal(null)}
+              />
+            </Suspense>
+          </div>
+        </div>
+        /* eslint-enable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
+      )}
       <OfflineBanner />
       <ErrorBoundary fallback={<ViewErrorFallback viewName="AI Assistant" />}>
         <Suspense fallback={null}>
