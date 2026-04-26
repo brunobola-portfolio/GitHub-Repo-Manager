@@ -11,6 +11,7 @@ import {
     Eye, ShieldCheck, ShieldAlert, MessageCircle, GitBranch, Wand2
 } from 'lucide-react'
 import { useToast } from '../../hooks/useToast'
+import { useAIStatus } from '../../hooks/useAIStatus'
 
 const REVIEW_STATES = {
     APPROVED: { label: 'Approved', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', icon: ShieldCheck },
@@ -31,6 +32,8 @@ function getFileIcon(status) {
 
 export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGenerateDescription }) {
     const { toast } = useToast()
+    const aiStatus = useAIStatus()
+    const aiOff = !aiStatus.loading && !aiStatus.configured
     const [detail, setDetail] = useState(null)
     const [reviews, setReviews] = useState([])
     const [files, setFiles] = useState([])
@@ -233,8 +236,11 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                     <div className="flex items-center gap-2 flex-shrink-0">
                         {onGenerateDescription && (
                             <button
+                                type="button"
                                 onClick={() => onGenerateDescription?.(pr)}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition-colors"
+                                disabled={aiOff}
+                                title={aiOff ? 'Configure AI in Settings → AI to enable generation' : undefined}
+                                className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition-colors ${aiOff ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <Wand2 className="w-3.5 h-3.5" />
                                 Generate Description
