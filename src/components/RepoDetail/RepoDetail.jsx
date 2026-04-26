@@ -13,6 +13,7 @@ import {
     ArrowLeft, GitBranch, Tag, CircleDot, GitPullRequest, Settings,
     FileText, Star, Eye, GitFork, ExternalLink, Lock, Globe, Loader2, Zap
 } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 import { TabBar } from '../ui/TabBar'
 import { TrackedChip } from '../WorkBoard/TrackedChip'
 import { PageHeader } from '../ui/PageHeader'
@@ -132,7 +133,7 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription 
                     )}
                 </div>
 
-                {loadingRepo && <Loader2 className="w-5 h-5 text-indigo-500 animate-spin shrink-0" />}
+                {loadingRepo && <Spinner size="md" className="shrink-0" />}
             </div>
 
             {/* Tabs */}

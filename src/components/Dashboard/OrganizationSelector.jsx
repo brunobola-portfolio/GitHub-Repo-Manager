@@ -1,4 +1,5 @@
 import React from 'react'
+import { Spinner } from '../ui/Spinner'
 import { Building2, ChevronDown, Check, Loader2 } from 'lucide-react'
 import * as Popover from '@radix-ui/react-popover'
 
@@ -46,7 +47,7 @@ export function OrganizationSelector({ orgs = [], selectedOrg, onSelectOrg, load
                             </div>
                         </div>
                         {loading ? (
-                            <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
+                            <Spinner size="md" />
                         ) : (
                             <ChevronDown className="w-5 h-5 text-slate-400 group-hover:text-indigo-500 group-hover:rotate-180 transition-all duration-300" />
                         )}

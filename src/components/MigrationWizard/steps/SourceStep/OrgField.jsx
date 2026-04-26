@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   Cloud, KeyRound, Loader2, Globe, Info, X, Keyboard, AlertTriangle,
 } from 'lucide-react'
+import { Spinner } from '../../../ui/Spinner'
 import { Select } from '../../../ui/Select'
 
 /**
@@ -186,7 +187,7 @@ export default function OrgField({
                     aria-live="polite"
                   >
                     {orgStatusBadge.spin ? (
-                      <Loader2 className={`w-3 h-3 ${orgStatusBadge.color} animate-spin`} />
+                      <Spinner size="xs" className={orgStatusBadge.color} />
                     ) : (
                       <motion.span
                         initial={{ scale: 1 }}

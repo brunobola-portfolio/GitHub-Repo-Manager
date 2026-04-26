@@ -5,6 +5,7 @@ import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
 import { GitPullRequest, Plus, Loader2, CheckCircle2, XCircle, GitMerge, ExternalLink, ChevronDown } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 import { PRDetailPanel } from './PRDetailPanel'
 import { PRRiskBadges } from './PRRiskBadges'
 import { useTabData } from '../../hooks/useTabData'
@@ -228,7 +229,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                         <div className="flex gap-2">
                             <Button size="sm" variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button>
                             <Button size="sm" onClick={handleCreate} disabled={!form.title || !form.head || !form.base || creating}>
-                                {creating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
+                                {creating ? <Spinner size="sm" className="mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
                                 {form.draft ? 'Create Draft PR' : 'Create PR'}
                             </Button>
                         </div>
@@ -237,7 +238,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
             )}
 
             {loading ? (
-                <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-indigo-500 animate-spin" /></div>
+                <div className="flex justify-center py-12"><Spinner size="lg" /></div>
             ) : (
                 <div className="space-y-2">
                     {pulls.map(pr => (

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { GitPullRequest, ExternalLink, Clock, MessageSquare, Loader2, Sparkles } from 'lucide-react'
+import { Spinner } from '../../ui/Spinner'
 import { Modal, ModalFooter } from '../../ui/Modal'
 import { Button } from '../../ui/Button'
 import * as Popover from '@radix-ui/react-popover'
@@ -94,7 +95,7 @@ function ChipStrip({ review, hasAI, onSnooze, onPing }) {
                             )}
                         >
                             {pingState === 'loading'
-                                ? <Loader2 className="w-3 h-3 animate-spin" />
+                                ? <Spinner size="xs" />
                                 : <MessageSquare className="w-3 h-3" />}
                             {pingState === 'error' ? 'Try again' : 'Ping author'}
                         </button>
@@ -296,7 +297,7 @@ function DraftCommentModal({ review, intent, onConfirm, onClose }) {
             <div className="relative">
                 {draftLoading && (
                     <div className="absolute top-2 right-2">
-                        <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
+                        <Spinner size="sm" />
                     </div>
                 )}
                 <label htmlFor="my-reviews-draft-comment" className="sr-only">{title} body</label>

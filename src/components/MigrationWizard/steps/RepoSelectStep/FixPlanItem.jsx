@@ -1,5 +1,6 @@
 // src/components/MigrationWizard/steps/RepoSelectStep/FixPlanItem.jsx
 import { ArrowRight, Check, AlertCircle, Loader2 } from 'lucide-react'
+import { Spinner } from '../../../ui/Spinner'
 
 const TYPE_LABEL = {
   'invalid-chars': 'Invalid chars',
@@ -47,7 +48,7 @@ export function FixPlanItem({ item, checked, conflictStatus, onToggle, onEdit })
 }
 
 function ConflictIcon({ status }) {
-  if (status === 'checking') return <Loader2 className="h-4 w-4 animate-spin text-slate-500" aria-label="Checking target" />
+  if (status === 'checking') return <Spinner size="md" tone="muted" label="Checking target" />
   if (status === 'clear') return <Check className="h-4 w-4 text-emerald-500" aria-label="Clear" />
   if (status === 'conflict') return <AlertCircle className="h-4 w-4 text-red-500" aria-label="Conflict" />
   if (status === 'unchecked') return <AlertCircle className="h-4 w-4 text-amber-500" aria-label="Unchecked" />

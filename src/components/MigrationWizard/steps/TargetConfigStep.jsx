@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   FolderGit2, Lock, Globe, Loader2, CheckCircle2, XCircle, ChevronDown,
 } from 'lucide-react'
+import { Spinner } from '../../ui/Spinner'
 
 /**
  * TargetConfigStep - Configure the target GitHub repository for URL / GitHub imports.
@@ -107,7 +108,7 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
               ${nameStatus === 'conflict' ? 'border-red-400 dark:border-red-600' : 'border-slate-300 dark:border-slate-600'}`}
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            {nameStatus === 'checking' && <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />}
+            {nameStatus === 'checking' && <Spinner size="md" tone="warning" />}
             {nameStatus === 'clear' && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
             {nameStatus === 'conflict' && <XCircle className="w-4 h-4 text-red-500" />}
           </div>
@@ -121,6 +122,7 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
 
       {/* Visibility toggle */}
       <div>
+        {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
           Visibility
         </label>

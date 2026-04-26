@@ -15,7 +15,8 @@ import { SidePanel } from '../ui/SidePanel'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
-import { RotateCw, CheckCircle2, Loader2 } from 'lucide-react'
+import { RotateCw, CheckCircle2 } from 'lucide-react'
+import { SectionSpinner } from '../ui/Spinner'
 
 function formatTimestamp(iso) {
     if (!iso) return '—'
@@ -79,9 +80,7 @@ export function DLQDetailPanel({
     return (
         <SidePanel isOpen={isOpen} onClose={onClose} title={title} subtitle={subtitle} width={560}>
             {loading && (
-                <div className="flex items-center justify-center py-12 text-slate-400">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                </div>
+                <SectionSpinner padding="py-12" tone="muted" />
             )}
 
             {!loading && entry && (

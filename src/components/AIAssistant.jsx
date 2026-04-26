@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { X, Send, Sparkles, Loader2, Settings, Key, Minus, ArrowRight, AlertTriangle, RotateCw } from 'lucide-react'
+import { Spinner } from './ui/Spinner'
 import { Card } from './ui/Card'
 import ReactMarkdown from 'react-markdown'
 import { useModal } from '../hooks/useModal'
@@ -246,6 +247,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                         <Card className={`ds-glass-strong w-[calc(100vw-2rem)] sm:w-[22rem] md:w-[26rem] flex flex-col shadow-2xl shadow-indigo-500/20 dark:shadow-black/60 border border-white/30 dark:border-white/10 bg-white/85 dark:bg-slate-900/80 overflow-hidden rounded-2xl transition-all duration-300 ${
                             isMinimized ? '' : 'h-[65vh] xl:h-[540px]'
                         }`}>
+                            {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
                             <div
                                 className="relative p-4 text-white flex items-center justify-between shrink-0 cursor-pointer select-none overflow-hidden"
                                 onClick={() => isMinimized && setIsMinimized(false)}
@@ -345,7 +347,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                                         aria-label="Send message"
                                                     >
                                                         {isLoading
-                                                            ? <Loader2 size={16} className="animate-spin" />
+                                                            ? <Spinner size="sm" />
                                                             : <Send size={16} />}
                                                     </button>
                                                 </div>

@@ -3,6 +3,7 @@ import {
 	RefreshCw, Loader2, Search, LayoutGrid, List as ListIcon,
 	CheckSquare, X, Sparkles, ChevronDown, ArrowRightLeft
 } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 import { Button } from '../ui/Button'
 import { Select } from '../ui/Select'
 
@@ -150,7 +151,7 @@ export function RepoFilterBar({
 						<Sparkles className="w-4 h-4" />
 					</button>
 					{isSearchingAI && (
-						<Loader2 className="absolute right-10 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-purple-500" />
+						<Spinner size="sm" />
 					)}
 					{aiSearchError && (
 						<p className="absolute -bottom-6 left-0 text-xs text-red-500 dark:text-red-400">{aiSearchError}</p>

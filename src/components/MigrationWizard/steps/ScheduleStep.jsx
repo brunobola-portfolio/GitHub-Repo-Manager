@@ -4,6 +4,7 @@ import {
   Rocket, Calendar, Clock, Package, ClipboardList, BookOpen,
   AlertCircle, Loader2, Info, Flag, HardDrive, AlertTriangle,
 } from 'lucide-react'
+import { Spinner } from '../../ui/Spinner'
 import { migrationApi } from '../../../api/migration'
 import { useToast } from '../../../hooks/useToast'
 import { StatCard } from '../ui/repo/StatCard'
@@ -295,7 +296,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
         >
           {executing ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Spinner size="md" tone="onPrimary" />
               {schedule.mode === 'now' ? 'Starting...' : 'Scheduling...'}
             </>
           ) : (

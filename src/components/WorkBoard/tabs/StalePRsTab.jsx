@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { GitPullRequest, ExternalLink, Clock, AlertTriangle, MessageSquare, Loader2, Sparkles } from 'lucide-react'
+import { Spinner } from '../../ui/Spinner'
 import * as Popover from '@radix-ui/react-popover'
 import { clsx } from 'clsx'
 import { useStalePRs } from '../../../hooks/useWorkBoard'
@@ -92,7 +93,7 @@ function ChipStrip({ pr, hasAI, onSnooze, onPing }) {
                             )}
                         >
                             {pingState === 'loading'
-                                ? <Loader2 className="w-3 h-3 animate-spin" />
+                                ? <Spinner size="xs" />
                                 : <MessageSquare className="w-3 h-3" />}
                             {pingState === 'error' ? 'Try again' : 'Ping author'}
                         </button>

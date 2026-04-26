@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { Loader2, AlertCircle, AlertTriangle, FolderGit2 } from 'lucide-react'
+import { Spinner } from '../../ui/Spinner'
 import { useEnrichedRepos } from './RepoSelectStep/useEnrichedRepos'
 import { useRiskEngine } from './RepoSelectStep/useRiskEngine'
 import { SelectionDashboard } from './RepoSelectStep/SelectionDashboard'
@@ -241,7 +242,7 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
 
       {enriching && (
         <p className="text-[11px] text-slate-500">
-          <Loader2 className="w-3 h-3 inline animate-spin mr-1" /> Loading activity & LFS signals…
+          <Spinner size="xs" className="inline mr-1" /> Loading activity & LFS signals…
         </p>
       )}
 

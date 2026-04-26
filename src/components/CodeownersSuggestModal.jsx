@@ -3,6 +3,7 @@ import { Modal, ModalFooter } from './ui/Modal'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
 import { Loader2, Copy, CheckCircle2, AlertTriangle, Users, GitCommit, Settings2 } from 'lucide-react'
+import { Spinner } from './ui/Spinner'
 import { reposApi } from '../api/repos'
 
 /**
@@ -145,14 +146,14 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
                     disabled={loading}
                     className="ml-auto"
                 >
-                    {loading ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : null}
+                    {loading ? <Spinner size="xs" className="mr-1" /> : null}
                     Regenerate
                 </Button>
             </div>
 
             {loading && (
                 <div className="flex flex-col items-center justify-center py-10 gap-3">
-                    <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+                    <Spinner size="lg" />
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                         Scanning {commits} recent commits…
                     </p>

@@ -10,6 +10,7 @@ import {
     ArrowLeft, FileText, FilePlus, FileMinus, FileEdit,
     Eye, ShieldCheck, ShieldAlert, MessageCircle, GitBranch, Wand2
 } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 import { useToast } from '../../hooks/useToast'
 import { useAIStatus } from '../../hooks/useAIStatus'
 
@@ -279,7 +280,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
 
             {loading ? (
                 <div className="flex justify-center py-8">
-                    <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+                    <Spinner size="lg" />
                 </div>
             ) : (
                 <>
@@ -339,7 +340,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                             className="bg-green-600 hover:bg-green-700 text-white"
                                         >
                                             {merging ? (
-                                                <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                                                <Spinner size="sm" className="mr-1" />
                                             ) : (
                                                 <GitMerge className="w-4 h-4 mr-1" />
                                             )}
@@ -413,7 +414,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                         disabled={!newComment.trim() || submitting}
                                     >
                                         {submitting ? (
-                                            <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                                            <Spinner size="sm" className="mr-1" />
                                         ) : (
                                             <Send className="w-4 h-4 mr-1" />
                                         )}

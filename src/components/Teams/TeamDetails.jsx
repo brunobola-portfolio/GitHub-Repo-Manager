@@ -254,7 +254,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                         />
                                         {isSearchingUsers && (
                                             <div className="absolute right-3 top-2.5">
-                                                <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+                                                <Spinner size="sm" />
                                             </div>
                                         )}
                                     </div>
@@ -592,7 +592,7 @@ function RepoCard({ repo, teamMembers }) {
                             <div>
                                 <h5 className="text-[10px] uppercase font-bold text-slate-400 mb-2">Collaborators</h5>
                                 {loadingCollabs ? (
-                                    <Loader2 className="w-4 h-4 animate-spin text-indigo-500 mx-auto" />
+                                    <Spinner size="sm" className="mx-auto" />
                                 ) : (
                                     <div className="flex flex-wrap gap-1">
                                         {collaborators.map(c => (
@@ -625,7 +625,7 @@ function RepoCard({ repo, teamMembers }) {
                                                     disabled={inviting === m.username}
                                                     className="px-2 py-0.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400 rounded hover:bg-indigo-200 dark:hover:bg-indigo-900 transition-colors disabled:opacity-50"
                                                 >
-                                                    {inviting === m.username ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Add'}
+                                                    {inviting === m.username ? <Spinner size="xs" /> : 'Add'}
                                                 </button>
                                             </div>
                                         ))}
@@ -784,7 +784,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                                             ) : run.conclusion === 'failure' ? (
                                                 <XCircle className="w-5 h-5 text-red-500" />
                                             ) : (
-                                                <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                                                <Spinner size="md" tone="warning" />
                                             )}
                                             <div>
                                                 <div className="font-medium text-slate-900 dark:text-white">{run.name}</div>

@@ -4,6 +4,7 @@ import {
     Sparkles, Loader2, X, FileCode, FilePlus, FileX,
     FileEdit, ShieldAlert, FlaskConical, Clock, AlertTriangle,
 } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { aiApi } from '../../api/ai'
@@ -121,7 +122,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
 
             {loading && (
                 <div className="flex flex-col items-center justify-center py-8 gap-3">
-                    <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+                    <Spinner size="lg" />
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                         Reading issue, scanning repo, drafting plan…
                     </p>

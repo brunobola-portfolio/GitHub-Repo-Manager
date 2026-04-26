@@ -1,6 +1,7 @@
 import { Command } from 'cmdk'
 import { useEffect, useState } from 'react'
 import { Plus, Loader2 } from 'lucide-react'
+import { Spinner } from '../../ui/Spinner'
 import { searchRepos } from '../../../api/workBoardTracking'
 import { useDebounce } from '../../../hooks/useDebounce'
 
@@ -49,7 +50,7 @@ export function AddRepoInput({ onAdd }) {
                 <Command.List className="max-h-48 overflow-auto p-1 border-t border-slate-200 dark:border-slate-700">
                     {loading && (
                         <div className="px-2 py-1.5 text-xs text-slate-500 flex items-center gap-1.5">
-                            <Loader2 className="w-3 h-3 animate-spin" /> Searching…
+                            <Spinner size="xs" /> Searching…
                         </div>
                     )}
                     {!loading && results.tracked.length > 0 && (

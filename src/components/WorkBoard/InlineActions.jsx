@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, XCircle, Clock, Loader2 } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 
 function IconButton({ onClick, disabled, icon: Icon, label, tone = 'slate' }) {
     const tones = {
@@ -32,12 +33,13 @@ export function InlineActions({ onApprove, onRequestChanges, onSnooze, busy }) {
     }
 
     return (
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
         <div
             className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 md:opacity-0 sm:opacity-100 transition-opacity"
             onClick={e => e.stopPropagation()}
         >
             {busy ? (
-                <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+                <Spinner size="sm" />
             ) : (
                 <>
                     {onApprove && <IconButton onClick={stop(onApprove)} icon={Check} label="Approve" tone="emerald" />}

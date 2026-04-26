@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ArrowRight, Building2, GitFork, AlertTriangle, ArrowRightLeft, Copy, Loader2, CheckCircle2, CheckCircle, XCircle } from 'lucide-react'
+import { Spinner } from './ui/Spinner'
 import { Button } from './ui/Button'
 import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
@@ -281,7 +282,7 @@ export function TransferModal({
 									<div key={repo.id} className="p-3">
 										<div className="flex items-center gap-3">
 											{checkingConflicts ? (
-												<Loader2 className="w-4 h-4 text-slate-400 animate-spin shrink-0" />
+												<Spinner size="sm" tone="muted" className="shrink-0" />
 											) : hasConflict ? (
 												<AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
 											) : conflicts ? (
@@ -337,7 +338,7 @@ export function TransferModal({
 							/>
 							{progress.message && (
 								<p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
-									{progress.status === 'running' && <Loader2 className="w-4 h-4 animate-spin text-blue-500" />}
+									{progress.status === 'running' && <Spinner size="sm" />}
 									{progress.status === 'success' && <CheckCircle className="w-4 h-4 text-emerald-500" />}
 									{progress.status === 'error' && <XCircle className="w-4 h-4 text-red-500" />}
 									{progress.message}

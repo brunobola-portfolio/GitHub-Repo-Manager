@@ -7,6 +7,7 @@ import {
   Package, MoreHorizontal, Building2, ArrowRight,
   Globe, ArrowLeft, Sparkles,
 } from 'lucide-react'
+import { Spinner } from '../../ui/Spinner'
 import { Select } from '../../ui/Select'
 import { formatFileSize } from '../../../utils/format'
 import { RiskBadge } from '../ui/repo/RiskBadge'
@@ -152,6 +153,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
       if (repo.risk?.flags?.some((f) => f.type === 'name-conflict')) seeded[repo.name] = 'conflict'
       else if (repo.targetName?.trim()) seeded[repo.name] = 'clear'
     })
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setConflicts(seeded)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -432,7 +434,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                         />
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">
                           {conflictStatus === 'checking' && (
-                            <Loader2 className="w-3 h-3 text-amber-500 animate-spin" />
+                            <Spinner size="xs" tone="warning" />
                           )}
                           {conflictStatus === 'clear' && (
                             <CheckCircle2 className="w-3 h-3 text-emerald-500" />
@@ -578,6 +580,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
 
                         {/* LFS + Branch row */}
                         <div className="flex items-center gap-4">
+                          {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
                           <label className="inline-flex items-center gap-2 cursor-pointer">
                             <button
                               type="button"
@@ -636,7 +639,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                               <div className="space-y-1 max-h-32 overflow-y-auto">
                                 {loadingBranches[branchKey] ? (
                                   <div className="flex items-center gap-2 text-xs text-slate-500 py-2">
-                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    <Spinner size="xs" />
                                     Loading branches...
                                   </div>
                                 ) : (branchCache[branchKey] || []).length > 0 ? (
@@ -736,7 +739,7 @@ function DescriptionField({ repo, index, aiAvailable, isGenerating, onChange, on
             }`}
         >
           {isGenerating
-            ? <Loader2 className="w-3 h-3 animate-spin" />
+            ? <Spinner size="xs" />
             : <Sparkles className={`w-3 h-3 ${aiAvailable ? '' : 'text-slate-400 dark:text-slate-500'}`} />
           }
           <span>{buttonLabel}</span>

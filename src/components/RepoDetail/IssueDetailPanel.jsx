@@ -7,6 +7,7 @@ import {
     CircleDot, X, MessageSquare, Clock, ExternalLink,
     Loader2, Send, CheckCircle2, XCircle, ArrowLeft, Tag, Sparkles
 } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 import { AIIssuePlanner } from './AIIssuePlanner'
 import { useToast } from '../../hooks/useToast'
 
@@ -220,7 +221,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
             {/* Body */}
             {loading ? (
                 <div className="flex justify-center py-8">
-                    <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+                    <Spinner size="lg" />
                 </div>
             ) : (
                 <>
@@ -305,7 +306,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                                 disabled={!newComment.trim() || submitting}
                             >
                                 {submitting ? (
-                                    <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                                    <Spinner size="sm" className="mr-1" />
                                 ) : (
                                     <Send className="w-4 h-4 mr-1" />
                                 )}

@@ -4,6 +4,7 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
 import { CircleDot, Plus, Loader2, CheckCircle2, XCircle, MessageSquare, ExternalLink } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 import { IssueDetailPanel } from './IssueDetailPanel'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
@@ -139,7 +140,7 @@ export function IssuesTab({ api, repoFullName }) {
                     <div className="flex gap-2">
                         <Button size="sm" variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button>
                         <Button size="sm" onClick={handleCreate} disabled={!form.title || creating}>
-                            {creating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
+                            {creating ? <Spinner size="sm" className="mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
                             Submit
                         </Button>
                     </div>
@@ -147,7 +148,7 @@ export function IssuesTab({ api, repoFullName }) {
             )}
 
             {loading ? (
-                <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-indigo-500 animate-spin" /></div>
+                <div className="flex justify-center py-12"><Spinner size="lg" /></div>
             ) : (
                 <div className="space-y-2">
                     {issues.map(issue => (

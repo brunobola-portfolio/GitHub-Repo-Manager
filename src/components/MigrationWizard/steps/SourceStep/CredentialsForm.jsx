@@ -2,6 +2,7 @@ import {
   KeyRound, Eye, EyeOff, CheckCircle2, XCircle, Loader2,
   ExternalLink, Server, Globe, ShieldCheck,
 } from 'lucide-react'
+import { Spinner } from '../../../ui/Spinner'
 import CredCard from './CredCard'
 import { Button } from '../../../ui/Button'
 
@@ -140,7 +141,7 @@ export default function CredentialsForm({
               )}
               {oauthStatusValue === 'pending' && (
                 <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Spinner size="md" tone="muted" />
                   Waiting for browser authentication...
                 </div>
               )}

@@ -12,6 +12,7 @@ import {
     Wand2,
     Info,
 } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 import { aiApi } from '../../api/ai'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { InsightCard } from '../ui/InsightCard'
@@ -30,8 +31,8 @@ const ReadmeEnhanceDiffPanel = lazy(() =>
 
 function DiffPanelFallback() {
     return (
-        <div className="flex items-center justify-center py-8 text-slate-500 dark:text-slate-400 text-sm">
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        <div className="flex items-center justify-center py-8 text-slate-500 dark:text-slate-400 text-sm gap-2">
+            <Spinner size="md" tone="muted" />
             Loading diff viewer…
         </div>
     )

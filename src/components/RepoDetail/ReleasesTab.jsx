@@ -4,6 +4,7 @@ import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
 import { Tag, Plus, Trash2, Loader2, ExternalLink, CheckCircle2, XCircle, Package } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 
@@ -63,7 +64,7 @@ export function ReleasesTab({ api }) {
     }
 
     if (loading) {
-        return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-indigo-500 animate-spin" /></div>
+        return <div className="flex justify-center py-12"><Spinner size="lg" /></div>
     }
 
     return (
@@ -124,7 +125,7 @@ export function ReleasesTab({ api }) {
                     <div className="flex gap-2">
                         <Button size="sm" variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button>
                         <Button size="sm" onClick={handleCreate} disabled={!form.tag_name || creating}>
-                            {creating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
+                            {creating ? <Spinner size="sm" className="mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
                             Publish
                         </Button>
                     </div>

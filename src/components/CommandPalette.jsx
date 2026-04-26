@@ -7,6 +7,7 @@ import {
   Pin, PinOff, Bell, BellOff, X, RefreshCw, RotateCw, Eraser,
   ExternalLink, Copy, FileText, GitBranch, Star, Clock, Archive, ArrowDownAZ,
 } from 'lucide-react'
+import { Spinner } from './ui/Spinner'
 import { searchApi } from '../api/search'
 import { translateSearch } from '../api/translateSearch'
 import { useDebounce } from '../hooks/useDebounce'
@@ -342,7 +343,7 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
             }`}
           />
           {(loading || ask.loading || askResults.loading) && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 animate-spin" aria-label="Searching" />
+            <Spinner size="sm" tone="muted" />
           )}
         </div>
         <Command.List className="max-h-[400px] overflow-y-auto p-2">

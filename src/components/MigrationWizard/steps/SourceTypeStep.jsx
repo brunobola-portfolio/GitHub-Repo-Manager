@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Cloud, Globe, GitBranch, AlertTriangle, Loader2, Star, ChevronRight } from 'lucide-react'
+import { Spinner } from '../../ui/Spinner'
 
 const SOURCE_TYPES = [
   {
@@ -103,7 +104,7 @@ export default function SourceTypeStep({ source, onChange, onAdvance }) {
           animate={{ opacity: 1 }}
           className="flex items-center gap-2.5 text-sm text-slate-500 dark:text-slate-400 mb-6"
         >
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <Spinner size="md" tone="onPrimary" />
           Checking git availability...
         </motion.div>
       )}

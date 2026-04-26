@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronRight, AlertTriangle, RefreshCw, Loader2 } from 'lucide-react'
+import { Spinner } from '../../ui/Spinner'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const RISK_TEXT = {
@@ -85,7 +86,7 @@ export function AISummaryPanel({ summary, loading, error, collapsed, onToggle, o
               {/* Loading state */}
               {loading && (
                 <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                  <Loader2 size={14} className="animate-spin shrink-0" aria-hidden="true" />
+                  <Spinner size="sm" className="shrink-0" />
                   <span>Analyzing PR...</span>
                 </div>
               )}

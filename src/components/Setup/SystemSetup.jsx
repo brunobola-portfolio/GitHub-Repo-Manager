@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Database, CheckCircle, Loader2, Server, HardDrive, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Database, CheckCircle, Server, HardDrive, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Spinner } from '../ui/Spinner';
 import { PageHeader } from '../ui/PageHeader';
 
 export function SystemSetup({ onComplete }) {
@@ -138,7 +139,7 @@ function SetupStep({ label, icon: Icon, status }) {
                 {status === 'done' ? (
                     <CheckCircle className="w-5 h-5" />
                 ) : status === 'active' ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Spinner size="lg" tone="primary" />
                 ) : (
                     <Icon className="w-5 h-5" />
                 )}

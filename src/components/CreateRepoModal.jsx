@@ -8,6 +8,7 @@ import { Select } from './ui/Select'
 import { Button } from './ui/Button'
 import { useDebounce } from '../hooks/useDebounce'
 import { Plus, Sparkles, Loader2, CheckCircle2, XCircle, Lock, Globe } from 'lucide-react'
+import { Spinner } from './ui/Spinner'
 
 export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming, askAI }) {
     const [name, setName] = useState('')
@@ -181,7 +182,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                             />
                             {nameStatus && (
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2">
-                                    {nameStatus === 'checking' && <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />}
+                                    {nameStatus === 'checking' && <Spinner size="sm" tone="muted" />}
                                     {nameStatus === 'available' && (
                                         <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}>
                                             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -225,7 +226,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                                 className="absolute right-2.5 bottom-2.5 text-emerald-500 hover:text-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed p-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
                                 title="Generate description with AI"
                             >
-                                {isGenerating ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+                                {isGenerating ? <Spinner size="sm" /> : <Sparkles size={15} />}
                             </button>
                         </div>
                     </div>

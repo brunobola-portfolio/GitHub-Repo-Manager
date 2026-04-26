@@ -9,6 +9,7 @@ import { useAIStatus } from '../../hooks/useAIStatus'
 import { aiApi } from '../../api/ai'
 import { reposApi } from '../../api/repos'
 import { Settings, Save, Loader2, CheckCircle2, XCircle, AlertTriangle, Lock, Globe, Webhook, Trash2, Plus, RefreshCw, Users, Tag, Sparkles } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 
 export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
     const { toast } = useToast()
@@ -218,7 +219,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                 </div>
 
                 <Button onClick={handleSave} disabled={saving}>
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
+                    {saving ? <Spinner size="sm" className="mr-1" /> : <Save className="w-4 h-4 mr-1" />}
                     Save Changes
                 </Button>
             </Card>
@@ -232,7 +233,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                     <div className="flex gap-2">
                         {!hooksLoaded ? (
                             <Button size="sm" variant="secondary" onClick={loadWebhooks} disabled={loadingHooks}>
-                                {loadingHooks ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Load Webhooks'}
+                                {loadingHooks ? <Spinner size="sm" /> : 'Load Webhooks'}
                             </Button>
                         ) : (
                             <Button size="sm" onClick={() => setShowNewHook(!showNewHook)}>
@@ -364,7 +365,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
 
                 {topicsState.kind === 'loading' && (
                     <p className="text-sm text-slate-500 dark:text-slate-400 inline-flex items-center gap-2">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading suggestions…
+                        <Spinner size="xs" /> Loading suggestions…
                     </p>
                 )}
 
@@ -410,7 +411,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                             onClick={applyTopics}
                             disabled={selectedTopics.size === 0 || topicsState.kind === 'applying' || repoData.archived}
                         >
-                            {topicsState.kind === 'applying' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                            {topicsState.kind === 'applying' && <Spinner size="xs" />}
                             Add {selectedTopics.size} topic{selectedTopics.size === 1 ? '' : 's'}
                         </Button>
                     </>

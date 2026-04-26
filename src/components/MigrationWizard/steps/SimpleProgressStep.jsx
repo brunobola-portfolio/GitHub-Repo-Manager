@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Loader2, CheckCircle2, XCircle, ExternalLink, Clock,
 } from 'lucide-react'
+import { Spinner } from '../../ui/Spinner'
 
 const STATUS_BADGES = {
   pending: { icon: Clock, color: 'text-gray-500 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800', label: 'Pending' },
@@ -158,7 +159,7 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
               exit={{ opacity: 0 }}
               className="flex items-center gap-3 py-6 justify-center"
             >
-              <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+              <Spinner size="lg" tone="primary" />
               <span className="text-sm text-slate-500 dark:text-slate-400">Starting import...</span>
             </motion.div>
           ) : (

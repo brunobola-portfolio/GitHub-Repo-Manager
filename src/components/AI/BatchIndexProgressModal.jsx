@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Modal } from '../ui/Modal'
 import { aiApi } from '../../api/ai'
-import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { CheckCircle2, XCircle } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 
 export function BatchIndexProgressModal({ isOpen, onClose, repos = [] }) {
   const [processed, setProcessed] = useState(0)
@@ -12,6 +13,7 @@ export function BatchIndexProgressModal({ isOpen, onClose, repos = [] }) {
   useEffect(() => {
     if (!isOpen || !repos.length) return
     let cancelled = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProcessed(0)
     setResults([])
     setError(null)
@@ -59,7 +61,7 @@ export function BatchIndexProgressModal({ isOpen, onClose, repos = [] }) {
         </p>
         {running && (
           <div className="flex items-center gap-2 text-xs text-slate-500">
-            <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+            <Spinner size="md" tone="primary" />
             Indexing in progress…
           </div>
         )}

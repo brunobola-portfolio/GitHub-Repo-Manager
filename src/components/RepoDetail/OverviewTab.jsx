@@ -1,6 +1,7 @@
 import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
 import { Loader2, FileText, BookOpen, Sparkles } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 import { useModal } from '../../hooks/useModal'
 import { useTabData } from '../../hooks/useTabData'
 
@@ -64,7 +65,7 @@ export function OverviewTab({ api, repoData }) {
                     </h3>
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
-                            <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+                            <Spinner size="lg" />
                         </div>
                     ) : error ? (
                         <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">

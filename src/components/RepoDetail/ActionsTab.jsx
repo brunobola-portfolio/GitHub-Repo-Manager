@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Zap, Play, RefreshCw, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 import { repoActionsApi } from '../../api/repo-actions'
 import { EmptyState } from '../ui/EmptyState'
 import { Skeleton } from '../ui/Skeleton'
@@ -8,7 +9,7 @@ import { useTabData } from '../../hooks/useTabData'
 const STATUS_ICONS = {
   success: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
   failure: <XCircle className="w-4 h-4 text-red-500" />,
-  in_progress: <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />,
+  in_progress: <Spinner size="sm" />,
   cancelled: <Clock className="w-4 h-4 text-slate-400" />
 }
 

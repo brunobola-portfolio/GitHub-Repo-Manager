@@ -3,9 +3,10 @@ import {
 } from 'react'
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
+import { Spinner } from './ui/Spinner'
 import {
     ArrowRightLeft, Lock, Unlock, History, Zap, CheckCircle, XCircle,
-    Loader2, Archive, Trash2, MoreHorizontal,
+    Archive, Trash2, MoreHorizontal,
     GitCommit, GitPullRequest, CircleDot, Play, ExternalLink,
     Clock, ChevronRight, Download, Kanban
 } from 'lucide-react'
@@ -414,7 +415,7 @@ function ActionHistory({ results, isPerforming, message }) {
                 </h3>
                 {isPerforming && (
                     <div className="flex items-center gap-2 text-xs text-indigo-500 font-medium animate-pulse">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <Spinner size="sm" tone="primary" />
                         Processing...
                     </div>
                 )}

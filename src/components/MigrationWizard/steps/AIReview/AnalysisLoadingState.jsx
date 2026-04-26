@@ -4,6 +4,7 @@ import {
   Brain, Shield, CheckCircle2, Loader2,
   Search, Route, Timer,
 } from 'lucide-react'
+import { Spinner } from '../../../ui/Spinner'
 
 /* ═══════════════════════════════════════════
    ANALYSIS PHASES — the loading animation
@@ -83,7 +84,7 @@ function AnalysisPhaseIndicator({ phase, index, currentPhase }) {
 
       {isActive && (
         <motion.div className="shrink-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <Loader2 className="w-4 h-4 text-violet-500 animate-spin" />
+          <Spinner size="md" tone="primary" />
         </motion.div>
       )}
     </motion.div>
