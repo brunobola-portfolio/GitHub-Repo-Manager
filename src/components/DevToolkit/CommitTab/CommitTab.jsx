@@ -3,6 +3,7 @@ import { RefreshCw, Wand2 } from 'lucide-react'
 import { BranchSelector } from '../shared/BranchSelector'
 import { DiffSummary } from '../shared/DiffSummary'
 import { useStreaming } from '../../../hooks/useStreaming'
+import { useAIStatus } from '../../../hooks/useAIStatus'
 import { StreamingOutput } from '../shared/StreamingOutput'
 import { RefinementZone } from '../shared/RefinementZone'
 import { FormatSelector } from './FormatSelector'
@@ -29,6 +30,8 @@ export function CommitTab({ toolkit }) {
     const { selectedRepo, headBranch, baseBranch, branches, compareData, compareLoading, handleBranchChange, getDiffText, repoOwner, history, addToHistory, setGeneratedCommit } = toolkit
 
     const { streamingText, isStreaming, error: streamError, retryCount, startStream, cancelStream } = useStreaming()
+    const aiStatus = useAIStatus()
+    const aiOff = !aiStatus.loading && !aiStatus.configured
 
     const [inputMode, setInputMode] = useState(selectedRepo ? 'auto' : 'manual')
     const [manualDiff, setManualDiff] = useState('')
@@ -226,7 +229,8 @@ export function CommitTab({ toolkit }) {
             <button
                 type="button"
                 onClick={handleGenerate}
-                disabled={!canGenerate || isStreaming}
+                disabled={aiOff || !canGenerate || isStreaming}
+                title={aiOff ? 'Configure AI in Settings → AI to enable generation' : undefined}
                 className="ds-btn-shimmer inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
                 {isStreaming ? (
