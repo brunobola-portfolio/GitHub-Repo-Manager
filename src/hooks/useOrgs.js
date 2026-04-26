@@ -13,37 +13,12 @@ import {
     ErrorType,
     isSessionExpired
 } from '../utils/api'
-import { MOCK_MODE, API_BASE } from '../config'
+import { API_BASE } from '../config'
 
-/**
- * Generate mock activity data for development
- */
-function generateMockActivity() {
-    const actions = ['PushEvent', 'PullRequestEvent', 'IssuesEvent', 'CreateEvent', 'WatchEvent']
-    const repos = ['fintech-dashboard', 'ai-analytics-platform', 'react-component-library', 'serverless-api-gateway', 'mobile-app-flutter']
-
-    return Array.from({ length: 15 }, (_, i) => {
-        const type = actions[Math.floor(Math.random() * actions.length)]
-        const repoName = repos[Math.floor(Math.random() * repos.length)]
-        const timeOffset = Math.floor(Math.random() * 1000 * 60 * 60 * 24 * 3)
-
-        return {
-            id: `evt-${i}`,
-            type,
-            actor: { login: 'dev-user', avatar_url: 'https://github.com/ghost.png' },
-            repo: { name: `dev-user/${repoName}` },
-            created_at: new Date(Date.now() - timeOffset).toISOString(),
-            payload: {
-                commits: type === 'PushEvent' ? [{ message: 'feat: Add new dashboard widgets' }, { message: 'fix: Resolve memory leak in data processor' }] : [],
-                action: type === 'PullRequestEvent' ? 'opened' : (type === 'IssuesEvent' ? 'opened' : null),
-                issue: type === 'IssuesEvent' ? { title: 'Bug: Login fails on mobile devices', number: 42 } : null,
-                pull_request: type === 'PullRequestEvent' ? { title: 'Feat: Implement Dark Mode Support', number: 101 } : null,
-                ref_type: type === 'CreateEvent' ? 'branch' : null,
-                ref: type === 'CreateEvent' ? 'feature/new-ui-components' : null
-            }
-        }
-    }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-}
+// Mock data for orgs/stats/activity is loaded lazily from src/__mocks__/mockOrgs.js
+// only when import.meta.env.DEV && VITE_MOCK_MODE === 'true'. Vite tree-shakes
+// the entire dynamic import() out of production builds.
+const MOCKS_ENABLED = import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true'
 
 /**
  * Hook for organization management, dashboard stats, and activity feed.
@@ -75,12 +50,9 @@ export function useOrgs(user) {
      * Fetch user's organizations
      */
     const fetchOrgs = useCallback(async () => {
-        if (MOCK_MODE) {
-            setOrgs([
-                { login: 'acme-corp', avatar_url: 'https://github.com/ghost.png', public_repos: 42, total_private_repos: 15 },
-                { login: 'open-source-collective', avatar_url: 'https://github.com/ghost.png', public_repos: 128, total_private_repos: 0 },
-                { login: 'startup-incubator', avatar_url: 'https://github.com/ghost.png', public_repos: 5, total_private_repos: 27 },
-            ])
+        if (MOCKS_ENABLED) {
+            const { generateMockOrgs } = await import('../__mocks__/mockOrgs.js')
+            setOrgs(generateMockOrgs())
             return
         }
         if (isSessionExpired()) return
@@ -101,21 +73,9 @@ export function useOrgs(user) {
      * Fetch repos for a specific organization
      */
     async function fetchOrgRepos(orgLogin, pageNum = 1) {
-        if (MOCK_MODE) {
-            const mockOrgRepos = Array.from({ length: 15 }, (_, i) => ({
-                id: 1000 + i,
-                name: `${orgLogin}-service-${i + 1}`,
-                full_name: `${orgLogin}/${orgLogin}-service-${i + 1}`,
-                description: `Core service ${i + 1} for ${orgLogin} infrastructure`,
-                fork: i % 4 === 0,
-                private: i % 3 === 0,
-                owner: { login: orgLogin },
-                html_url: `https://github.com/${orgLogin}/${orgLogin}-service-${i + 1}`,
-                updated_at: new Date(Date.now() - i * 86400000).toISOString(),
-                stargazers_count: Math.floor(Math.random() * 500),
-                language: ['JavaScript', 'TypeScript', 'Python', 'Go', 'Rust'][i % 5],
-            }))
-            setOrgRepos(mockOrgRepos)
+        if (MOCKS_ENABLED) {
+            const { generateMockOrgRepos } = await import('../__mocks__/mockOrgs.js')
+            setOrgRepos(generateMockOrgRepos(orgLogin))
             setSelectedOrg(orgLogin)
             return
         }
@@ -140,24 +100,9 @@ export function useOrgs(user) {
      * Fetch dashboard statistics
      */
     const fetchStats = useCallback(async (org = '') => {
-        if (MOCK_MODE) {
-            setStats({
-                totalRepos: org ? 42 : 87,
-                publicRepos: org ? 30 : 65,
-                privateRepos: org ? 12 : 22,
-                forks: org ? 5 : 18,
-                sources: org ? 37 : 69,
-                archived: org ? 2 : 4,
-                organizations: 3,
-                languages: {
-                    "TypeScript": 45,
-                    "Python": 30,
-                    "JavaScript": 25,
-                    "Go": 15,
-                    "Rust": 10
-                },
-                user: { login: 'dev-user', avatar_url: 'https://github.com/ghost.png' }
-            })
+        if (MOCKS_ENABLED) {
+            const { generateMockStats } = await import('../__mocks__/mockOrgs.js')
+            setStats(generateMockStats(org))
             return
         }
         if (isSessionExpired()) return
@@ -196,9 +141,7 @@ export function useOrgs(user) {
 
     // Auto-refresh stats when selectedOrg changes
     useEffect(() => {
-        if (!MOCK_MODE && user) {
-            Promise.resolve().then(() => fetchStats(selectedOrg))
-        } else if (MOCK_MODE) {
+        if (MOCKS_ENABLED || user) {
             Promise.resolve().then(() => fetchStats(selectedOrg))
         }
     }, [selectedOrg, user, fetchStats])
@@ -219,7 +162,8 @@ export function useOrgs(user) {
     const fetchActivity = useCallback(async (username) => {
         if (!username) return
 
-        if (MOCK_MODE) {
+        if (MOCKS_ENABLED) {
+            const { generateMockActivity } = await import('../__mocks__/mockOrgs.js')
             setActivity(generateMockActivity())
             return
         }
