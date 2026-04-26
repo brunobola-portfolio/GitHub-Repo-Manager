@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { DiffView, DiffModeEnum } from '@git-diff-view/react'
 import '@git-diff-view/react/styles/diff-view.css'
 import { aiApi } from '../../api/ai'
-import { Loader2, Sparkles, Copy, Check } from 'lucide-react'
+import { Sparkles, Copy, Check } from 'lucide-react'
 import { Button } from '../ui/Button'
+import { SectionSpinner } from '../ui/Spinner'
 
 export function ReadmeEnhanceDiffPanel({ repo }) {
   const [loading, setLoading] = useState(true)
@@ -64,10 +65,7 @@ export function ReadmeEnhanceDiffPanel({ repo }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 gap-3">
-        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-        <p className="text-sm text-slate-600 dark:text-slate-400">Generating AI enhancement…</p>
-      </div>
+      <SectionSpinner label="Generating AI enhancement…" padding="py-12" />
     )
   }
 

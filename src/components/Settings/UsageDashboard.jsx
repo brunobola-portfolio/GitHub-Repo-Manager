@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { SectionSpinner } from '../ui/Spinner'
 
 function UsageBar({ label, current, limit }) {
   const isInf = limit === 'Infinity' || limit === Infinity || limit === null || limit === undefined
@@ -61,9 +61,7 @@ export function UsageDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
-      </div>
+      <SectionSpinner padding="py-8" />
     )
   }
 

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { Button } from '../ui/Button'
-import { Loader2, AlertTriangle, FileCode2, FileJson, ScrollText } from 'lucide-react'
+import { AlertTriangle, FileCode2, FileJson, ScrollText } from 'lucide-react'
+import { SectionSpinner } from '../ui/Spinner'
 import { reposApi } from '../../api/repos'
 
 /**
@@ -60,9 +61,7 @@ async function loadFile(owner, repo, path) {
 function FilePane({ label, loading, result }) {
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-10">
-                <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
-            </div>
+            <SectionSpinner padding="py-10" />
         )
     }
     if (!result || !result.ok) {

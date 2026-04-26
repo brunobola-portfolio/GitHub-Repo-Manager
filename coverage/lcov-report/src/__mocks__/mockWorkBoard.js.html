@@ -1,0 +1,424 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for src/__mocks__/mockWorkBoard.js</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/__mocks__</a> mockWorkBoard.js</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">96.96% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>32/33</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">87.5% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>7/8</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">92.85% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>13/14</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">96.55% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>28/29</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line high'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">14x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">30x</span>
+<span class="cline-any cline-yes">30x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">30x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/*
+ * GitHub Repo Manager
+ * Mock work-board data — DEV ONLY (see mockRepos.js header).
+ *
+ * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Licensed under the MIT License. See LICENSE in the project root.
+ */
+&nbsp;
+const REVIEWS = [
+  { repoFullName: 'acme/backend', prNumber: 142, title: 'Add rate limiting to /api/auth', authorLogin: 'alice', requestedAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(), ageHours: 2 },
+  { repoFullName: 'acme/frontend', prNumber: 87, title: 'Redesign dashboard cards', authorLogin: 'bob', requestedAt: new Date(Date.now() - 18 * 3600 * 1000).toISOString(), ageHours: 18 },
+  { repoFullName: 'acme/infra', prNumber: 31, title: 'Migrate CI to GitHub Actions', authorLogin: 'carol', requestedAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(), ageHours: 72 },
+  { repoFullName: 'acme/docs', prNumber: 12, title: 'Update API reference for v3', authorLogin: 'dave', requestedAt: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(), ageHours: 120 },
+  { repoFullName: 'acme/backend', prNumber: 155, title: 'Optimise SQL queries in billing module', authorLogin: 'eve', requestedAt: new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(), ageHours: 168 },
+]
+&nbsp;
+const STALE_PRS = Array.from({ length: 10 }, (_, i) =&gt; ({
+  repoFullName: i % 2 === 0 ? 'acme/backend' : 'acme/frontend',
+  prNumber: 200 + i,
+  title: `Stale PR #${200 + i}: feature/${['auth', 'ui', 'perf', 'db', 'ci'][i % 5]}-improvements`,
+  authorLogin: ['alice', 'bob', 'carol', 'dave', 'eve'][i % 5],
+  openedAt: new Date(Date.now() - (8 + i * 3) * 24 * 3600 * 1000).toISOString(),
+  ageDays: 8 + i * 3,
+}))
+&nbsp;
+const ISSUES = [
+  { repoFullName: 'acme/backend', issueNumber: 501, labels: ['bug', 'priority:high'], openedAt: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(), ageDays: 1 },
+  { repoFullName: 'acme/frontend', issueNumber: 312, labels: ['enhancement'], openedAt: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString(), ageDays: 4 },
+  { repoFullName: 'acme/docs', issueNumber: 88, labels: ['documentation'], openedAt: new Date(Date.now() - 10 * 24 * 3600 * 1000).toISOString(), ageDays: 10 },
+]
+&nbsp;
+const REVIEW_LOAD = [
+  { reviewerLogin: 'alice', reviewsSubmitted: 18, reviewsPending: 4 },
+  { reviewerLogin: 'bob', reviewsSubmitted: 12, reviewsPending: 7 },
+  { reviewerLogin: 'carol', reviewsSubmitted: 9, reviewsPending: 1 },
+  { reviewerLogin: 'dave', reviewsSubmitted: 5, reviewsPending: 6 },
+  { reviewerLogin: 'eve', reviewsSubmitted: 3, reviewsPending: 2 },
+]
+&nbsp;
+const TECH_DEBT = {
+  items: [
+    { repoFullName: 'acme/backend', issueNumber: 204, title: 'Refactor auth middleware — deprecated passport strategy', labels: ['tech-debt', 'refactor'], openedAt: new Date(Date.now() - 42 * 24 * 3600 * 1000).toISOString(), ageDays: 42, assignees: ['alice'] },
+    { repoFullName: 'acme/frontend', issueNumber: 98, title: 'Remove legacy jQuery plugins from settings page', labels: ['cleanup', 'tech-debt'], openedAt: new Date(Date.now() - 21 * 24 * 3600 * 1000).toISOString(), ageDays: 21, assignees: [] },
+    { repoFullName: 'acme/backend', issueNumber: 237, title: 'Replace synchronous fs.readFile with streams', labels: ['tech-debt', 'perf'], openedAt: new Date(Date.now() - 14 * 24 * 3600 * 1000).toISOString(), ageDays: 14, assignees: ['bob'] },
+    { repoFullName: 'acme/infra', issueNumber: 17, title: 'Migrate Terraform workspace to 1.9+', labels: ['refactor'], openedAt: new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString(), ageDays: 7, assignees: [] },
+  ],
+  hotspots: [
+    { repoFullName: 'acme/backend', count: 2, oldestAgeDays: 42 },
+    { repoFullName: 'acme/frontend', count: 1, oldestAgeDays: 21 },
+    { repoFullName: 'acme/infra', count: 1, oldestAgeDays: 7 },
+  ],
+}
+&nbsp;
+const KPI_SNAPSHOTS = Array.from({ length: 7 }, (_, i) =&gt; ({
+  snappedAt: new Date(Date.now() - (6 - i) * 24 * 3600 * 1000).toISOString(),
+  reviews: [3, 2, 4, 3, 2, 3, 2][i],
+  stalePRs: 8 + i,
+  issues: 4,
+  techDebt: 12 + i,
+}))
+&nbsp;
+let _dora = null
+function makeDORA() {
+  const perDay = Array.from({ length: 30 }, (_, i) =&gt; {
+    const d = new Date(Date.now() - (29 - i) * 24 * 3600 * 1000)
+    return { date: d.toISOString().split('T')[0], count: Math.floor(Math.random() * 5) }
+  })
+  return {
+    totalDeployments: perDay.reduce((s, d) =&gt; s + d.count, 0),
+    perDay,
+    medianLeadTimeHours: 18.5,
+    p50: 18.5,
+    p90: 52,
+    sampleSize: 47,
+  }
+}
+function getDORA() {
+  if (!_dora) _dora = makeDORA()
+  return _dora
+}
+&nbsp;
+let _doraFull = null
+function getDORAFull() {
+  <span class="missing-if-branch" title="else path not taken" >E</span>if (!_doraFull) {
+    const base = getDORA()
+    _doraFull = {
+      environment: 'production',
+      windowStart: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(),
+      deployFrequency: { totalDeployments: base.totalDeployments, perDay: base.perDay },
+      leadTime: { sampleSize: base.sampleSize, medianHours: base.medianLeadTimeHours, p50: base.p50, p90: base.p90 },
+      changeFailureRate: { total: 42, failed: 5, successful: 37, rate: 0.119 },
+      mttr: { sampleSize: 5, medianHours: 3.2, p50: 3.2, p90: 11.5, unresolved: 0 },
+    }
+  }
+  return _doraFull
+}
+&nbsp;
+const MOCKS = {
+  reviews: () =&gt; REVIEWS,
+  stalePRs: () =&gt; STALE_PRS,
+  issues: () =&gt; ISSUES,
+  reviewLoad: () =&gt; REVIEW_LOAD,
+<span class="fstat-no" title="function not covered" >  techDebt: () =&gt; <span class="cstat-no" title="statement not covered" >T</span>ECH_DEBT,</span>
+  kpiSnapshots: () =&gt; KPI_SNAPSHOTS,
+  dora: getDORA,
+  doraFull: getDORAFull,
+}
+&nbsp;
+export function getMockWorkBoardData(key) {
+  const factory = MOCKS[key]
+  if (!factory) throw new Error(`Unknown work-board mock key: ${key}`)
+  return factory()
+}
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-04-26T16:20:31.860Z
+            </div>
+        <script src="../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
+    </body>
+</html>
+    

@@ -4,6 +4,7 @@ import {
   Download, CheckCircle2, XCircle, Loader2, Cloud,
   ArrowRight, Clock, FolderGit2, AlertTriangle
 } from 'lucide-react'
+import { SectionSpinner } from '../ui/Spinner'
 
 const STATUS_CONFIG = {
   complete: { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'Completed' },
@@ -46,9 +47,7 @@ export function MigrationActivity({ loading: parentLoading }) {
 
   if (loading || parentLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
-      </div>
+      <SectionSpinner padding="py-12" />
     )
   }
 

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { SidePanel } from '../ui/SidePanel'
 import { aiApi } from '../../api/ai'
-import { Loader2, Sparkles, GitCompare } from 'lucide-react'
+import { Sparkles, GitCompare } from 'lucide-react'
 import { EmptyState } from '../ui/EmptyState'
+import { SectionSpinner } from '../ui/Spinner'
 import { Card } from '../ui/Card'
 import { CompareDiffModal } from './CompareDiffModal'
 
@@ -67,10 +68,7 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
   return (
     <SidePanel isOpen={isOpen} onClose={onClose} title="Similar Repositories" subtitle={repo?.full_name}>
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-12 gap-3">
-          <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-          <p className="text-sm text-slate-600 dark:text-slate-400">Finding similar repos…</p>
-        </div>
+        <SectionSpinner label="Finding similar repos…" padding="py-12" />
       ) : notIndexed ? (
         <EmptyState
           icon={Sparkles}

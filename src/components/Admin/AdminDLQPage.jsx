@@ -17,7 +17,8 @@
  */
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Mail, Webhook, RefreshCw, ShieldAlert, Loader2 } from 'lucide-react'
+import { Mail, Webhook, RefreshCw, ShieldAlert } from 'lucide-react'
+import { SectionSpinner } from '../ui/Spinner'
 import { TabBar } from '../ui/TabBar'
 import { Button } from '../ui/Button'
 import { PageHeader } from '../ui/PageHeader'
@@ -212,9 +213,7 @@ export function AdminDLQPage() {
             </div>
 
             {loading && (
-                <div className="flex items-center justify-center py-16 text-slate-400">
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                </div>
+                <SectionSpinner padding="py-16" tone="muted" />
             )}
 
             {!loading && error && error.status !== 403 && (

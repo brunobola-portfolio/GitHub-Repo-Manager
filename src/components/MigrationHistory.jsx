@@ -7,6 +7,7 @@ import {
     Clock, ArrowRight, RefreshCw, Cloud, Globe, GitBranch,
     ChevronDown, ChevronRight, RotateCcw, FileText, ListChecks
 } from 'lucide-react'
+import { SectionSpinner } from './ui/Spinner'
 import { migrationApi } from '../api/migration'
 
 const MIGRATION_TABS = [
@@ -146,7 +147,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                 {/* Content area */}
                 <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar" role="tabpanel" id={`tabpanel-migration-tabs-${activeTab}`} aria-labelledby={`tab-migration-tabs-${activeTab}`}>
                     {loading ? (
-                        <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 text-indigo-500 animate-spin" /></div>
+                        <SectionSpinner padding="py-12" />
                     ) : activeTab === 'plans' ? (
                         /* Plans view */
                         plans.length === 0 ? (
