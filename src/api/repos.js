@@ -65,5 +65,21 @@ export const reposApi = {
       URL.revokeObjectURL(url)
     }
     return { filename }
-  }
+  },
+
+  /**
+   * Replace the GitHub topics on a repo. CSRF is injected by fetchWithRetry.
+   * Backed by PUT /api/repos/:owner/:repo/topics.
+   *
+   * @param {string} owner
+   * @param {string} repo
+   * @param {string[]} names — full topic list to set on the repo
+   */
+  setTopics: async (owner, repo, names) => {
+    return apiCall(`/api/repos/${owner}/${repo}/topics`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ names }),
+    })
+  },
 }

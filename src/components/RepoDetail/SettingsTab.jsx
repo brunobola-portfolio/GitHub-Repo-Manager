@@ -2,14 +2,73 @@ import { useState } from 'react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
+import { EmptyState } from '../ui/EmptyState'
 import { CodeownersSuggestModal } from '../CodeownersSuggestModal'
 import { useToast } from '../../hooks/useToast'
-import { Settings, Save, Loader2, CheckCircle2, XCircle, AlertTriangle, Lock, Globe, Webhook, Trash2, Plus, RefreshCw, Users } from 'lucide-react'
+import { useAIStatus } from '../../hooks/useAIStatus'
+import { aiApi } from '../../api/ai'
+import { reposApi } from '../../api/repos'
+import { Settings, Save, Loader2, CheckCircle2, XCircle, AlertTriangle, Lock, Globe, Webhook, Trash2, Plus, RefreshCw, Users, Tag, Sparkles } from 'lucide-react'
 
 export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
     const { toast } = useToast()
+    const aiStatus = useAIStatus()
+    const aiOff = !aiStatus.loading && !aiStatus.configured
     const [codeownersOpen, setCodeownersOpen] = useState(false)
     const [saving, setSaving] = useState(false)
+    // AI-suggested topics state.
+    // kind: 'idle' | 'loading' | 'suggestions' | 'empty' | 'not-indexed' | 'applying'
+    const [topicsState, setTopicsState] = useState({ kind: 'idle' })
+    const [selectedTopics, setSelectedTopics] = useState(new Set())
+
+    const loadTopicSuggestions = async () => {
+        setTopicsState({ kind: 'loading' })
+        try {
+            const meta = await aiApi.getMetadata(repoData.id)
+            const aiTopics = Array.isArray(meta?.topics) ? meta.topics : []
+            const existing = new Set(repoData.topics || [])
+            const newOnes = aiTopics.filter((t) => !existing.has(t))
+            if (newOnes.length === 0) {
+                setTopicsState({ kind: 'empty' })
+                return
+            }
+            setSelectedTopics(new Set())
+            setTopicsState({ kind: 'suggestions', items: newOnes })
+        } catch (err) {
+            if (err?.status === 404) {
+                setTopicsState({ kind: 'not-indexed' })
+                return
+            }
+            toast.errorFromException(err, { fallbackTitle: 'Failed to load topic suggestions' })
+            setTopicsState({ kind: 'idle' })
+        }
+    }
+
+    const toggleTopic = (t) => {
+        setSelectedTopics((prev) => {
+            const next = new Set(prev)
+            if (next.has(t)) next.delete(t)
+            else next.add(t)
+            return next
+        })
+    }
+
+    const applyTopics = async () => {
+        if (selectedTopics.size === 0) return
+        setTopicsState((s) => ({ ...s, kind: 'applying' }))
+        try {
+            const union = Array.from(new Set([...(repoData.topics || []), ...selectedTopics]))
+            await reposApi.setTopics(owner, repo, union)
+            toast.success(`Added ${selectedTopics.size} topic${selectedTopics.size === 1 ? '' : 's'}`)
+            setTopicsState({ kind: 'idle' })
+            setSelectedTopics(new Set())
+            onUpdate?.()
+        } catch (err) {
+            toast.errorFromException(err, { fallbackTitle: 'Failed to update topics' })
+            setTopicsState((s) => ({ ...s, kind: 'suggestions' }))
+        }
+    }
+
     const [message, setMessage] = useState(null)
     const [form, setForm] = useState({
         description: repoData.description || '',
@@ -280,6 +339,83 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                     </Button>
                 </div>
             </Card>
+
+            <section data-testid="ai-suggested-topics" className="mt-6 p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4 text-indigo-500" />
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">AI-suggested topics</h3>
+                </div>
+
+                {topicsState.kind === 'idle' && (
+                    <>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                            See what topics AI would add to this repo based on its README, language, and dependencies.
+                        </p>
+                        <Button
+                            variant="secondary"
+                            onClick={loadTopicSuggestions}
+                            disabled={aiOff || repoData.archived}
+                            title={aiOff ? 'Configure AI in Settings → AI to enable suggestions' : (repoData.archived ? 'Archived repos cannot be modified' : undefined)}
+                        >
+                            <Tag className="w-3.5 h-3.5" /> Suggest topics
+                        </Button>
+                    </>
+                )}
+
+                {topicsState.kind === 'loading' && (
+                    <p className="text-sm text-slate-500 dark:text-slate-400 inline-flex items-center gap-2">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading suggestions…
+                    </p>
+                )}
+
+                {topicsState.kind === 'empty' && (
+                    <EmptyState
+                        icon={Tag}
+                        title="Looks good"
+                        description="No new topics suggested. Try re-indexing this repo if it changed recently."
+                    />
+                )}
+
+                {topicsState.kind === 'not-indexed' && (
+                    <EmptyState
+                        icon={Sparkles}
+                        title="Not indexed yet"
+                        description="Index this repo first to get AI-suggested topics."
+                    />
+                )}
+
+                {(topicsState.kind === 'suggestions' || topicsState.kind === 'applying') && (
+                    <>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                            {topicsState.items.length} suggestion{topicsState.items.length === 1 ? '' : 's'} not already on the repo. Pick which to add.
+                        </p>
+                        <ul className="space-y-1.5 mb-3">
+                            {topicsState.items.map((t) => (
+                                <li key={t}>
+                                    <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedTopics.has(t)}
+                                            onChange={() => toggleTopic(t)}
+                                            aria-label={t}
+                                            disabled={topicsState.kind === 'applying'}
+                                        />
+                                        {t}
+                                    </label>
+                                </li>
+                            ))}
+                        </ul>
+                        <Button
+                            variant="primary"
+                            onClick={applyTopics}
+                            disabled={selectedTopics.size === 0 || topicsState.kind === 'applying' || repoData.archived}
+                        >
+                            {topicsState.kind === 'applying' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                            Add {selectedTopics.size} topic{selectedTopics.size === 1 ? '' : 's'}
+                        </Button>
+                    </>
+                )}
+            </section>
 
             <CodeownersSuggestModal
                 isOpen={codeownersOpen}
