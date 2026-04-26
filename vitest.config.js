@@ -33,10 +33,20 @@ export default defineConfig({
       ],
       include: ['src/**/*.{js,jsx}', 'server/**/*.js'],
       all: true,
-      lines: 80,
-      functions: 80,
-      branches: 80,
-      statements: 80
+      // Coverage thresholds: in Vitest 4+ these MUST live under `thresholds:`.
+      // The previous root-level numbers (lines/functions/branches/statements: 80)
+      // were silently ignored because of the schema mismatch (see
+      // docs/reports/2026-04-26-coverage-audit.md).
+      //
+      // Floors set 2pp below current actual (measured 2026-04-26) so PRs that
+      // erode coverage by more than 2pp fail. Aspirational target stays at 80%;
+      // raise the floors as follow-up tests land.
+      thresholds: {
+        lines: 48,       // actual 49.68%
+        functions: 42,   // actual 43.78%
+        branches: 38,    // actual 39.86%
+        statements: 46,  // actual 48.22%
+      },
     }
   },
   resolve: {
