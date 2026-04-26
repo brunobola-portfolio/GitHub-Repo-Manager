@@ -64,7 +64,7 @@ const TABS = [
 
 function EmptyState({ webhookConnected, onRefresh }) {
     return (
-        <div className="flex flex-col items-center justify-center mt-16 mx-auto max-w-md text-center px-4">
+        <div data-testid="empty-state" className="flex flex-col items-center justify-center mt-16 mx-auto max-w-md text-center px-4">
             <svg width="80" height="80" viewBox="0 0 80 80" fill="none" className="mb-6 opacity-40" aria-hidden="true">
                 <rect x="8" y="16" width="64" height="48" rx="6" stroke="#94a3b8" strokeWidth="2" />
                 <path d="M24 40h32M32 48h16" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />

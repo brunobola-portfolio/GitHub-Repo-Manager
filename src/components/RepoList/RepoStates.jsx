@@ -68,7 +68,7 @@ export function ErrorState({ error, errorInfo, onRefresh }) {
 export function EmptyState({ hasRepos, onCreateRepo, onImport, onClearFilters }) {
 	if (!hasRepos) {
 		return (
-			<div className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
+			<div data-testid="empty-state" className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
 				<div className="w-16 h-16 mb-5 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/15 dark:to-purple-500/15 flex items-center justify-center">
 					<Archive className="w-8 h-8 text-indigo-500 dark:text-indigo-400" />
 				</div>
@@ -91,7 +91,7 @@ export function EmptyState({ hasRepos, onCreateRepo, onImport, onClearFilters })
 	}
 
 	return (
-		<div className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
+		<div data-testid="empty-state" className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
 			<Search className="w-12 h-12 mb-4 opacity-20" />
 			<p>No repositories match your current filters.</p>
 			<Button variant="ghost" className="mt-2" onClick={onClearFilters}>

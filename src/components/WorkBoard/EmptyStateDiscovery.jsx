@@ -19,7 +19,7 @@ export function EmptyStateDiscovery({ plainTitle, plainSubtitle, icon: Icon = Sp
 
     if (hasTrackedAny) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-center gap-2">
+            <div data-testid="empty-state" className="flex flex-col items-center justify-center py-12 text-center gap-2">
                 <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                     <Icon className="w-6 h-6 text-slate-400" />
                 </div>
@@ -30,7 +30,7 @@ export function EmptyStateDiscovery({ plainTitle, plainSubtitle, icon: Icon = Sp
     }
 
     return (
-        <div className="flex flex-col items-center justify-center py-12 text-center gap-3 px-4">
+        <div data-testid="empty-state" className="flex flex-col items-center justify-center py-12 text-center gap-3 px-4">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/15 to-purple-500/15 flex items-center justify-center">
                 <Sparkles className="w-7 h-7 text-indigo-500" />
             </div>

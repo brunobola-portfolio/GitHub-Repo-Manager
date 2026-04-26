@@ -114,8 +114,7 @@ function getTierSpec(info, error) {
 
   // Active real license — render tier-appropriate pill regardless of MOCK_MODE.
   // The backend's /api/v1/license reads LICENSE_KEY from env, not from the
-  // session, so this correctly surfaces the server-side license even when
-  // the frontend uses mock data.
+  // session, so this surfaces the real license even in demo mode (MOCK_MODE).
   const activeReal = info.active && info.source === 'license_key'
 
   // No active real license AND frontend in MOCK_MODE: show Demo pill.

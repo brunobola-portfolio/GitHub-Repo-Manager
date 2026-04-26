@@ -20,8 +20,8 @@ function openAISettings() {
 
 /**
  * AINotConfiguredBanner — premium inline banner shown on AI surfaces when
- * the server has no Gemini provider configured and the UI is therefore
- * showing mock data.
+ * the server has no Gemini provider configured. The UI shows degraded
+ * results (no scores, no recommendations) plus a CTA to open Settings → AI.
  *
  * Variants:
  *   - "inline" (default): compact banner for placement at the top of
@@ -30,7 +30,7 @@ function openAISettings() {
  *
  * Dismissible is session-scoped via local state only — the banner
  * reappears next time the component mounts so the user is never left
- * wondering why data looks fake.
+ * wondering why data looks degraded.
  */
 export function AINotConfiguredBanner({
     variant = 'inline',
