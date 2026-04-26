@@ -9,11 +9,12 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { MOCK_MODE } from '../config'
 import { getCached, setCached } from './utils/swrCache'
 import { mark } from '../lib/observability'
 
-const MOCKS_ENABLED = import.meta.env.DEV && MOCK_MODE
+// Mock data lives in src/__mocks__/mockWorkBoard.js. The MOCKS_ENABLED
+// check is inlined at each callsite so Vite's dead-code analysis can drop
+// the dynamic import() entirely in production builds.
 
 export { getCached, setCached, invalidateCached, clearCache } from './utils/swrCache'
 
@@ -37,7 +38,8 @@ function useWorkBoardFetch(url, mockKey, { refreshIntervalMs = 60_000 } = {}) {
     // Seed from SWR cache on mount so repeat views render instantly.
     // The mock path keeps its legacy "brief delay, then data" behaviour
     // unchanged — caching there adds no value and complicates tests.
-    const cached = !MOCKS_ENABLED ? getCached(url) : null
+    const mocksOn = import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true'
+    const cached = !mocksOn ? getCached(url) : null
 
     const [data, setData] = useState(cached ? cached.data : null)
     const [meta, setMeta] = useState(cached ? cached.meta : null)
@@ -61,7 +63,7 @@ function useWorkBoardFetch(url, mockKey, { refreshIntervalMs = 60_000 } = {}) {
         }
         setError(null)
         try {
-            if (MOCKS_ENABLED) {
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
                 const { getMockWorkBoardData } = await import('../__mocks__/mockWorkBoard.js')
                 // Simulate a brief network delay for realistic UX
                 await new Promise(r => setTimeout(r, 80))

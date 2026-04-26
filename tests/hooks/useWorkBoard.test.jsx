@@ -2,12 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 
 // ---------------------------------------------------------------------------
-// Mock config — MOCK_MODE=false so real fetch paths are exercised by default
+// Force real fetch paths. Data hooks read import.meta.env.VITE_MOCK_MODE
+// directly (so Vite tree-shakes mock chunks in prod), so stubEnv is the
+// right toggle rather than mocking @/config.
 // ---------------------------------------------------------------------------
-vi.mock('@/config', () => ({
-    MOCK_MODE: false,
-    API_BASE_URL: '',
-}))
+vi.stubEnv('VITE_MOCK_MODE', 'false')
 
 // ---------------------------------------------------------------------------
 // Mock global fetch
@@ -193,20 +192,21 @@ describe('useDORAMetrics', () => {
 
 describe('MOCK_MODE', () => {
     it('returns synthetic data without calling fetch', async () => {
-        // Re-mock config with MOCK_MODE=true
-        vi.doMock('@/config', () => ({ MOCK_MODE: true, API_BASE_URL: '' }))
+        // Toggle the env stub to enable mocks for this test only.
+        vi.stubEnv('VITE_MOCK_MODE', 'true')
+        try {
+            vi.resetModules()
+            const { useMyPendingReviews } = await import('@/hooks/useWorkBoard')
 
-        // Reset modules so the new config mock is picked up
-        vi.resetModules()
-        const { useMyPendingReviews } = await import('@/hooks/useWorkBoard')
+            const { result } = renderHook(() => useMyPendingReviews())
+            await waitFor(() => expect(result.current.loading).toBe(false))
 
-        const { result } = renderHook(() => useMyPendingReviews())
-        await waitFor(() => expect(result.current.loading).toBe(false))
-
-        expect(result.current.data).not.toBeNull()
-        expect(Array.isArray(result.current.data)).toBe(true)
-        expect(result.current.data.length).toBeGreaterThan(0)
-        // Fetch should not have been called
-        expect(mockFetch).not.toHaveBeenCalled()
+            expect(result.current.data).not.toBeNull()
+            expect(Array.isArray(result.current.data)).toBe(true)
+            expect(result.current.data.length).toBeGreaterThan(0)
+            expect(mockFetch).not.toHaveBeenCalled()
+        } finally {
+            vi.stubEnv('VITE_MOCK_MODE', 'false')
+        }
     })
 })

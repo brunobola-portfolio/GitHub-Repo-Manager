@@ -1,11 +1,10 @@
-import { API_BASE, MOCK_MODE } from '../config';
+import { API_BASE } from '../config';
 import { getCsrfToken } from '../utils/api';
 import { getAIStatus } from './aiStatus';
 
-// AI mocks live in src/__mocks__/mockAI.js and are loaded only in DEV
-// builds with MOCK_MODE opted in. Production builds tree-shake the entire
-// import branch via the import.meta.env.DEV literal.
-const MOCKS_ENABLED = import.meta.env.DEV && MOCK_MODE
+// AI mocks live in src/__mocks__/mockAI.js. Each callsite inlines the
+// `import.meta.env.DEV && VITE_MOCK_MODE === 'true'` check so Vite can
+// statically eliminate the dynamic import() in production builds.
 
 const getHeaders = () => {
     return {
@@ -118,7 +117,7 @@ const unconfiguredSearchResults = () => {
 export const aiApi = {
     // Trigger indexing for a specific repo
     indexRepo: async (repo) => {
-        if (MOCKS_ENABLED) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             const { mockAnalysis } = await import('../__mocks__/mockAI.js');
             await new Promise(r => setTimeout(r, 1500)); // Simulate processing
             return { success: true, analysis: mockAnalysis(repo) };
@@ -144,7 +143,7 @@ export const aiApi = {
 
     // Semantic Search
     search: async (query) => {
-        if (MOCKS_ENABLED) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             const { mockSearchResults } = await import('../__mocks__/mockAI.js');
             await new Promise(r => setTimeout(r, 800));
             return mockSearchResults(query);
@@ -176,7 +175,7 @@ export const aiApi = {
 
     // Get Metadata
     getMetadata: async (repoId) => {
-        if (MOCKS_ENABLED) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             const { mockAnalysis } = await import('../__mocks__/mockAI.js');
             await new Promise(r => setTimeout(r, 500));
             const mockRepo = { id: repoId, name: `project-${repoId}`, language: 'JavaScript' };
@@ -193,7 +192,7 @@ export const aiApi = {
 
     // Get Suggestions (Existing feature, reused)
     getSuggestions: async (repo) => {
-        if (MOCKS_ENABLED) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             const { mockSuggestions } = await import('../__mocks__/mockAI.js');
             await new Promise(r => setTimeout(r, 1200));
             return mockSuggestions(repo);
@@ -225,7 +224,7 @@ export const aiApi = {
 
     // Enhance existing README
     enhanceReadme: async (repo) => {
-        if (MOCKS_ENABLED) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             const { mockReadmeEnhancement } = await import('../__mocks__/mockAI.js');
             await new Promise(r => setTimeout(r, 1800));
             return { success: true, ...mockReadmeEnhancement(repo) };
@@ -249,7 +248,7 @@ export const aiApi = {
 
     // Get comprehensive quality report
     getQualityReport: async (repo) => {
-        if (MOCKS_ENABLED) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             const { mockQualityReport } = await import('../__mocks__/mockAI.js');
             await new Promise(r => setTimeout(r, 1500));
             return { success: true, report: mockQualityReport(repo), repo: repo.full_name };
@@ -273,7 +272,7 @@ export const aiApi = {
 
     // Batch index multiple repos
     batchIndex: async (repos) => {
-        if (MOCKS_ENABLED) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             const { mockBatchIndexResults } = await import('../__mocks__/mockAI.js');
             await new Promise(r => setTimeout(r, 2000));
             return mockBatchIndexResults(repos);
@@ -317,7 +316,7 @@ export const aiApi = {
     // Issue-to-PR planner (plan-only mode). Takes an issue number in a repo
     // and returns a structured plan (files to touch, approach, tests, risks).
     planIssue: async ({ repoFullName, issueNumber, extraContext }) => {
-        if (MOCKS_ENABLED) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             const { mockIssuePlan } = await import('../__mocks__/mockAI.js')
             await new Promise(r => setTimeout(r, 1600))
             return mockIssuePlan({ repoFullName, issueNumber })

@@ -13,12 +13,11 @@ import {
     ErrorType,
     isSessionExpired
 } from '../utils/api'
-import { MOCK_MODE, API_BASE } from '../config'
+import { API_BASE } from '../config'
 
-// Mock data for orgs/stats/activity loads lazily from src/__mocks__/mockOrgs.js
-// only when DEV builds AND MOCK_MODE is opted in. Vite tree-shakes the entire
-// dynamic import() out of production builds via the import.meta.env.DEV check.
-const MOCKS_ENABLED = import.meta.env.DEV && MOCK_MODE
+// Mock data for orgs/stats/activity loads lazily from src/__mocks__/mockOrgs.js.
+// Each callsite inlines `import.meta.env.DEV && VITE_MOCK_MODE === 'true'` so
+// Vite's static analysis can eliminate the dynamic import() in prod builds.
 
 /**
  * Hook for organization management, dashboard stats, and activity feed.
@@ -50,7 +49,7 @@ export function useOrgs(user) {
      * Fetch user's organizations
      */
     const fetchOrgs = useCallback(async () => {
-        if (MOCKS_ENABLED) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             const { generateMockOrgs } = await import('../__mocks__/mockOrgs.js')
             setOrgs(generateMockOrgs())
             return
@@ -73,7 +72,7 @@ export function useOrgs(user) {
      * Fetch repos for a specific organization
      */
     async function fetchOrgRepos(orgLogin, pageNum = 1) {
-        if (MOCKS_ENABLED) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             const { generateMockOrgRepos } = await import('../__mocks__/mockOrgs.js')
             setOrgRepos(generateMockOrgRepos(orgLogin))
             setSelectedOrg(orgLogin)
@@ -100,7 +99,7 @@ export function useOrgs(user) {
      * Fetch dashboard statistics
      */
     const fetchStats = useCallback(async (org = '') => {
-        if (MOCKS_ENABLED) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             const { generateMockStats } = await import('../__mocks__/mockOrgs.js')
             setStats(generateMockStats(org))
             return
@@ -141,7 +140,8 @@ export function useOrgs(user) {
 
     // Auto-refresh stats when selectedOrg changes
     useEffect(() => {
-        if (MOCKS_ENABLED || user) {
+        const mocksEnabled = import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true'
+        if (mocksEnabled || user) {
             Promise.resolve().then(() => fetchStats(selectedOrg))
         }
     }, [selectedOrg, user, fetchStats])
@@ -162,7 +162,7 @@ export function useOrgs(user) {
     const fetchActivity = useCallback(async (username) => {
         if (!username) return
 
-        if (MOCKS_ENABLED) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             const { generateMockActivity } = await import('../__mocks__/mockOrgs.js')
             setActivity(generateMockActivity())
             return

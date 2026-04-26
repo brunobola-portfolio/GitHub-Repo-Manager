@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 
-vi.mock('@/config', () => ({ MOCK_MODE: false, API_BASE_URL: '' }));
+// VITE_MOCK_MODE=false forces real fetch paths. The data hooks read
+// import.meta.env.VITE_MOCK_MODE directly so Vite can tree-shake the
+// dynamic mock import() out of prod, so stubEnv is the right toggle.
+vi.stubEnv('VITE_MOCK_MODE', 'false');
 
 global.fetch = vi.fn();
 
@@ -22,7 +25,7 @@ describe('useWorkBoard — auto-refresh', () => {
         vi.useFakeTimers({ shouldAdvanceTime: true });
         global.fetch.mockResolvedValue({ ok: true, json: async () => ({ data: [], meta: { fetchedAt: new Date().toISOString() } }) });
 
-        const { result } = renderHook(() => useMyPendingReviews({ refreshIntervalMs: 1000 }));
+        renderHook(() => useMyPendingReviews({ refreshIntervalMs: 1000 }));
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
 
         await act(async () => { await vi.advanceTimersByTimeAsync(1050); });

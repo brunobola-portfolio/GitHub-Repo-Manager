@@ -17,10 +17,11 @@ import { getErrorInfo } from '../utils/errors'
 import { MOCK_MODE, API_BASE, API_ENDPOINTS, PAGINATION } from '../config'
 import { bulkExecuteWithConfirmation } from '../api/bulkConfirm'
 
-// Mock repository data lives in src/__mocks__/mockRepos.js and is loaded
-// dynamically only when DEV builds AND MOCK_MODE is opted in. The DEV check
-// lets Vite's dead-code elimination remove the import branch in production.
-const MOCKS_ENABLED = import.meta.env.DEV && MOCK_MODE
+// Mock repository data lives in src/__mocks__/mockRepos.js. Each callsite
+// inlines `import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true'`
+// so Vite's static analysis can eliminate the dynamic import() in prod.
+// (A module-level alias defeats cross-module constant folding and ships the
+// mock chunk to dist/.)
 
 /**
  * Hook for repository data, pagination, CRUD, and bulk operations.
@@ -42,7 +43,7 @@ export function useRepos(user) {
 
     // Initialize with mock data (DEV + VITE_MOCK_MODE=true only)
     useEffect(() => {
-        if (!MOCKS_ENABLED) return
+        if (!(import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true')) return
         let cancelled = false
         ;(async () => {
             const { generateMockRepos } = await import('../__mocks__/mockRepos.js')
@@ -104,7 +105,7 @@ export function useRepos(user) {
     // When unauthenticated, avoid calling the repos API and instead
     // clear the current list so the UI can show an auth empty state.
     useEffect(() => {
-        if (MOCKS_ENABLED) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             let cancelled = false
             ;(async () => {
                 const { generateMockRepos } = await import('../__mocks__/mockRepos.js')
@@ -259,7 +260,7 @@ export function useRepos(user) {
      * Refresh the current page
      */
     const refresh = useCallback(() => {
-        if (MOCKS_ENABLED) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             ;(async () => {
                 const { generateMockRepos } = await import('../__mocks__/mockRepos.js')
                 const { repos: mockRepos, totalPages: mockTotalPages } = generateMockRepos(page, perPage)
