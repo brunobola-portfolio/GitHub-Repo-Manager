@@ -15,6 +15,15 @@ import {
   generateMockActivity,
 } from '../../src/__mocks__/mockOrgs.js'
 import { getMockWorkBoardData } from '../../src/__mocks__/mockWorkBoard.js'
+import {
+  mockAnalysis,
+  mockSearchResults,
+  mockQualityReport,
+  mockReadmeEnhancement,
+  mockSuggestions,
+  mockBatchIndexResults,
+  mockIssuePlan,
+} from '../../src/__mocks__/mockAI.js'
 
 describe('mockRepos generator', () => {
   it('returns the requested page size', () => {
@@ -93,5 +102,49 @@ describe('mockWorkBoard generator', () => {
 
   it('throws on unknown key', () => {
     expect(() => getMockWorkBoardData('bogus')).toThrow()
+  })
+})
+
+describe('mockAI factories', () => {
+  it('mockAnalysis returns expected shape', () => {
+    const out = mockAnalysis({ name: 'foo', language: 'TypeScript', description: 'a thing' })
+    expect(out).toMatchObject({
+      summary: expect.any(String),
+      health_score: expect.any(Number),
+      improvements: expect.any(Array),
+      patterns: expect.any(Object),
+    })
+  })
+
+  it('mockSearchResults includes the query in descriptions', () => {
+    const out = mockSearchResults('react')
+    expect(out).toHaveLength(3)
+    expect(out[0].description).toContain('react')
+  })
+
+  it('mockQualityReport returns recommendations array', () => {
+    expect(mockQualityReport({}).recommendations).toBeInstanceOf(Array)
+  })
+
+  it('mockReadmeEnhancement returns enhancement string and missingSections', () => {
+    const out = mockReadmeEnhancement({ name: 'foo' })
+    expect(out.enhancement).toContain('Installation')
+    expect(out.missingSections).toContain('Installation')
+  })
+
+  it('mockSuggestions returns 3 suggestions', () => {
+    expect(mockSuggestions({ name: 'foo' }).suggestions).toHaveLength(3)
+  })
+
+  it('mockBatchIndexResults processes all repos', () => {
+    const out = mockBatchIndexResults([{ full_name: 'a/x' }, { full_name: 'b/y' }])
+    expect(out.processed).toBe(2)
+    expect(out.results).toHaveLength(2)
+  })
+
+  it('mockIssuePlan returns a plan and issue object', () => {
+    const out = mockIssuePlan({ repoFullName: 'a/b', issueNumber: 7 })
+    expect(out.plan).toBeDefined()
+    expect(out.issue.number).toBe(7)
   })
 })

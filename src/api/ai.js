@@ -2,6 +2,11 @@ import { API_BASE, MOCK_MODE } from '../config';
 import { getCsrfToken } from '../utils/api';
 import { getAIStatus } from './aiStatus';
 
+// AI mocks live in src/__mocks__/mockAI.js and are loaded only in DEV
+// builds with MOCK_MODE opted in. Production builds tree-shake the entire
+// import branch via the import.meta.env.DEV literal.
+const MOCKS_ENABLED = import.meta.env.DEV && MOCK_MODE
+
 const getHeaders = () => {
     return {
         'Content-Type': 'application/json'
@@ -58,67 +63,8 @@ async function handleAIResponse(res, operation) {
     return res.json();
 }
 
-// Mock data generators for explicit MOCK_MODE (demo / e2e). Random numbers
-// here are obvious in the demo context and do NOT reach a real, unconfigured
-// user — that path goes through `unconfigured*` factories below which return
-// honest null values plus a CTA-ready message.
-const mockAnalysis = (repo) => ({
-    summary: `${repo.name} is a ${repo.language || 'multi-language'} project focused on ${repo.description || 'software development'}.`,
-    health_score: Math.floor(Math.random() * 30) + 65, // 65-95
-    project_type: 'application',
-    suggested_topics: ['open-source', repo.language?.toLowerCase() || 'code', 'development'].filter(Boolean),
-    improvements: [
-        'Add comprehensive documentation with examples',
-        'Set up automated testing with CI/CD pipeline',
-        'Include contribution guidelines (CONTRIBUTING.md)',
-        'Add status badges to README'
-    ],
-    readme_suggestions: ['Installation', 'Usage Examples', 'API Reference'],
-    highlights: [
-        `Active ${repo.language || 'multi-language'} project`,
-        'Well-structured codebase'
-    ],
-    quality_breakdown: {
-        documentation: 15,
-        community: 10,
-        engineering: 12,
-        polish: 5
-    },
-    patterns: {
-        hasInstallation: true,
-        hasUsage: false,
-        hasTests: true,
-        hasCI: true,
-        hasLicense: true
-    }
-});
-
-const mockSearchResults = (query) => [
-    { repo_id: 1, score: 0.92, name: 'project-1', full_name: 'dev-user/project-1', description: `Matches "${query}" - React dashboard`, summary: 'A React-based dashboard for data visualization' },
-    { repo_id: 2, score: 0.85, name: 'project-2', full_name: 'dev-user/project-2', description: `Related to "${query}" - API service`, summary: 'RESTful API service with authentication' },
-    { repo_id: 3, score: 0.78, name: 'project-3', full_name: 'dev-user/project-3', description: `Contains "${query}" - Utility library`, summary: 'Collection of utility functions' }
-];
-
-const mockQualityReport = (_repo) => ({
-    score: Math.floor(Math.random() * 30) + 60,
-    breakdown: { documentation: 18, community: 12, engineering: 15, polish: 5 },
-    patterns: {
-        hasInstallation: true, hasUsage: false, hasExamples: false,
-        hasContributing: false, hasLicense: true, hasCI: true, hasTests: true
-    },
-    recommendations: [
-        { priority: 'high', action: 'Add usage examples to README' },
-        { priority: 'medium', action: 'Add CONTRIBUTING.md for community guidelines' },
-        { priority: 'low', action: 'Add status badges to README' }
-    ],
-    summary: 'Good quality. A few improvements would make it great.'
-});
-
-const mockReadmeEnhancement = (repo) => ({
-    enhancement: `## Installation\n\n\`\`\`bash\nnpm install ${repo.name}\n\`\`\`\n\n## Usage\n\n\`\`\`javascript\nimport { example } from '${repo.name}';\n\n// Your code here\n\`\`\`\n\n## Contributing\n\nContributions are welcome! Please read our contributing guidelines first.`,
-    missingSections: ['Installation', 'Usage', 'Contributing'],
-    patterns: { hasInstallation: false, hasUsage: false, hasContributing: false }
-});
+// Mock factories live in src/__mocks__/mockAI.js. They are loaded lazily so
+// production builds (where MOCKS_ENABLED is statically false) tree-shake them.
 
 // ---------------------------------------------------------------------------
 // Unconfigured-AI placeholders
@@ -172,7 +118,8 @@ const unconfiguredSearchResults = () => {
 export const aiApi = {
     // Trigger indexing for a specific repo
     indexRepo: async (repo) => {
-        if (MOCK_MODE) {
+        if (MOCKS_ENABLED) {
+            const { mockAnalysis } = await import('../__mocks__/mockAI.js');
             await new Promise(r => setTimeout(r, 1500)); // Simulate processing
             return { success: true, analysis: mockAnalysis(repo) };
         }
@@ -197,7 +144,8 @@ export const aiApi = {
 
     // Semantic Search
     search: async (query) => {
-        if (MOCK_MODE) {
+        if (MOCKS_ENABLED) {
+            const { mockSearchResults } = await import('../__mocks__/mockAI.js');
             await new Promise(r => setTimeout(r, 800));
             return mockSearchResults(query);
         }
@@ -228,9 +176,9 @@ export const aiApi = {
 
     // Get Metadata
     getMetadata: async (repoId) => {
-        if (MOCK_MODE) {
+        if (MOCKS_ENABLED) {
+            const { mockAnalysis } = await import('../__mocks__/mockAI.js');
             await new Promise(r => setTimeout(r, 500));
-            // Return cached mock metadata or null
             const mockRepo = { id: repoId, name: `project-${repoId}`, language: 'JavaScript' };
             return mockAnalysis(mockRepo);
         }
@@ -245,16 +193,10 @@ export const aiApi = {
 
     // Get Suggestions (Existing feature, reused)
     getSuggestions: async (repo) => {
-        if (MOCK_MODE) {
+        if (MOCKS_ENABLED) {
+            const { mockSuggestions } = await import('../__mocks__/mockAI.js');
             await new Promise(r => setTimeout(r, 1200));
-            return {
-                suggestions: [
-                    { title: 'Add License', description: 'Include an open-source license file', type: 'improvement' },
-                    { title: 'Improve README', description: 'Add installation and usage instructions', type: 'improvement' },
-                    { title: 'Add Tests', description: 'Set up unit testing framework', type: 'improvement' }
-                ],
-                analysis: `${repo.name} could benefit from better documentation and testing.`
-            };
+            return mockSuggestions(repo);
         }
 
         const unconfiguredSuggestions = () => ({
@@ -283,7 +225,8 @@ export const aiApi = {
 
     // Enhance existing README
     enhanceReadme: async (repo) => {
-        if (MOCK_MODE) {
+        if (MOCKS_ENABLED) {
+            const { mockReadmeEnhancement } = await import('../__mocks__/mockAI.js');
             await new Promise(r => setTimeout(r, 1800));
             return { success: true, ...mockReadmeEnhancement(repo) };
         }
@@ -306,7 +249,8 @@ export const aiApi = {
 
     // Get comprehensive quality report
     getQualityReport: async (repo) => {
-        if (MOCK_MODE) {
+        if (MOCKS_ENABLED) {
+            const { mockQualityReport } = await import('../__mocks__/mockAI.js');
             await new Promise(r => setTimeout(r, 1500));
             return { success: true, report: mockQualityReport(repo), repo: repo.full_name };
         }
@@ -329,14 +273,10 @@ export const aiApi = {
 
     // Batch index multiple repos
     batchIndex: async (repos) => {
-        if (MOCK_MODE) {
+        if (MOCKS_ENABLED) {
+            const { mockBatchIndexResults } = await import('../__mocks__/mockAI.js');
             await new Promise(r => setTimeout(r, 2000));
-            return {
-                success: true,
-                processed: repos.length,
-                results: repos.map(r => ({ repo: r.full_name, success: true, health_score: Math.floor(Math.random() * 30) + 65 })),
-                skipped: 0
-            };
+            return mockBatchIndexResults(repos);
         }
 
         // Honest unconfigured/runtime-failure placeholder: signal that no
@@ -377,31 +317,10 @@ export const aiApi = {
     // Issue-to-PR planner (plan-only mode). Takes an issue number in a repo
     // and returns a structured plan (files to touch, approach, tests, risks).
     planIssue: async ({ repoFullName, issueNumber, extraContext }) => {
-        if (MOCK_MODE) {
+        if (MOCKS_ENABLED) {
+            const { mockIssuePlan } = await import('../__mocks__/mockAI.js')
             await new Promise(r => setTimeout(r, 1600))
-            return {
-                plan: {
-                    title: `Implement #${issueNumber}: mock plan`,
-                    approach:
-                        'Parse the issue, identify the relevant module, add a small adapter that routes the new request, and extend the existing integration test suite. Keep changes additive to avoid breaking current consumers.',
-                    files: [
-                        { path: 'src/services/example.js', action: 'modify', notes: 'Add a new exported function wrapping the existing helper' },
-                        { path: 'src/routes/example.js', action: 'modify', notes: 'Expose a POST endpoint that calls the new helper' },
-                        { path: 'tests/services/example.test.js', action: 'create', notes: 'Cover happy path + invalid input + quota exceeded' },
-                    ],
-                    tests: 'Unit test the new helper with valid / invalid input. Add integration test that hits the new endpoint end-to-end.',
-                    risks: 'Rate-limit interaction with the downstream API; keep request budget modest. No DB migration needed.',
-                    estimatedHours: 4,
-                },
-                issue: {
-                    number: issueNumber,
-                    title: `Mock issue #${issueNumber}`,
-                    url: `https://github.com/${repoFullName}/issues/${issueNumber}`,
-                    state: 'open',
-                    labels: ['enhancement'],
-                },
-                mock: true,
-            }
+            return mockIssuePlan({ repoFullName, issueNumber })
         }
 
         const status = await getAIStatus()
