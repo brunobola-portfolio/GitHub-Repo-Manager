@@ -18,10 +18,9 @@ import { MOCK_MODE, API_BASE, API_ENDPOINTS, PAGINATION } from '../config'
 import { bulkExecuteWithConfirmation } from '../api/bulkConfirm'
 
 // Mock repository data lives in src/__mocks__/mockRepos.js and is loaded
-// dynamically only when import.meta.env.DEV && VITE_MOCK_MODE === 'true'.
-// In production builds Vite's dead-code elimination removes the import branch
-// entirely, so no mock string ships to dist/.
-const MOCKS_ENABLED = import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true'
+// dynamically only when DEV builds AND MOCK_MODE is opted in. The DEV check
+// lets Vite's dead-code elimination remove the import branch in production.
+const MOCKS_ENABLED = import.meta.env.DEV && MOCK_MODE
 
 /**
  * Hook for repository data, pagination, CRUD, and bulk operations.

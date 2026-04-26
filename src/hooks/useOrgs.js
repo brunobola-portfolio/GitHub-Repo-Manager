@@ -13,12 +13,12 @@ import {
     ErrorType,
     isSessionExpired
 } from '../utils/api'
-import { API_BASE } from '../config'
+import { MOCK_MODE, API_BASE } from '../config'
 
-// Mock data for orgs/stats/activity is loaded lazily from src/__mocks__/mockOrgs.js
-// only when import.meta.env.DEV && VITE_MOCK_MODE === 'true'. Vite tree-shakes
-// the entire dynamic import() out of production builds.
-const MOCKS_ENABLED = import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true'
+// Mock data for orgs/stats/activity loads lazily from src/__mocks__/mockOrgs.js
+// only when DEV builds AND MOCK_MODE is opted in. Vite tree-shakes the entire
+// dynamic import() out of production builds via the import.meta.env.DEV check.
+const MOCKS_ENABLED = import.meta.env.DEV && MOCK_MODE
 
 /**
  * Hook for organization management, dashboard stats, and activity feed.

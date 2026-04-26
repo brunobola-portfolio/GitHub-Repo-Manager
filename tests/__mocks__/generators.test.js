@@ -14,6 +14,7 @@ import {
   generateMockStats,
   generateMockActivity,
 } from '../../src/__mocks__/mockOrgs.js'
+import { getMockWorkBoardData } from '../../src/__mocks__/mockWorkBoard.js'
 
 describe('mockRepos generator', () => {
   it('returns the requested page size', () => {
@@ -62,5 +63,35 @@ describe('mockOrgs generators', () => {
       expect(new Date(events[i - 1].created_at).getTime())
         .toBeGreaterThanOrEqual(new Date(events[i].created_at).getTime())
     }
+  })
+})
+
+describe('mockWorkBoard generator', () => {
+  it.each([
+    ['reviews', 5],
+    ['stalePRs', 10],
+    ['issues', 3],
+    ['reviewLoad', 5],
+    ['kpiSnapshots', 7],
+  ])('getMockWorkBoardData("%s") returns array of length %i', (key, len) => {
+    expect(getMockWorkBoardData(key)).toHaveLength(len)
+  })
+
+  it('returns DORA object with 30-day perDay array', () => {
+    expect(getMockWorkBoardData('dora').perDay).toHaveLength(30)
+  })
+
+  it('returns DORA full snapshot with required sections', () => {
+    const full = getMockWorkBoardData('doraFull')
+    expect(full).toMatchObject({
+      deployFrequency: expect.any(Object),
+      leadTime: expect.any(Object),
+      changeFailureRate: expect.any(Object),
+      mttr: expect.any(Object),
+    })
+  })
+
+  it('throws on unknown key', () => {
+    expect(() => getMockWorkBoardData('bogus')).toThrow()
   })
 })

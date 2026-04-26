@@ -8,8 +8,10 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 // Mock Mode
 // Controls whether the app uses simulated data or real backend APIs.
-// Default: true (Demo Mode) unless VITE_MOCK_MODE is explicitly 'false'.
-export const MOCK_MODE = import.meta.env.VITE_MOCK_MODE !== 'false';
+// Default: false. Set VITE_MOCK_MODE=true to opt into demo / mock data.
+// Mock data generators live in src/__mocks__/ and are loaded only when
+// import.meta.env.DEV is also true, so production builds never bundle them.
+export const MOCK_MODE = import.meta.env.VITE_MOCK_MODE === 'true';
 
 // API Base Path (used by hooks that build URLs manually)
 export const API_BASE = API_BASE_URL + '/api';
