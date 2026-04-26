@@ -1,6 +1,48 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { ToastContext } from './contexts'
 import { trackBreadcrumb } from '../lib/observability'
+import { formatUserError } from '../utils/errors'
+
+function dispatchAction(action, ctx = {}) {
+    if (!action) return
+    switch (action.kind) {
+        case 'retry':
+            ctx.onRetry?.()
+            break
+        case 'reauth':
+            window.location.href = '/api/auth/github'
+            break
+        case 'open-settings':
+            window.dispatchEvent(new CustomEvent('app:open-settings', { detail: { tab: action.settingsTab } }))
+            break
+        case 'open-pricing':
+            window.location.hash = '#pricing'
+            break
+        case 'open-quota':
+            window.dispatchEvent(new CustomEvent('app:show-quota-exceeded', { detail: ctx.detail || {} }))
+            break
+        default:
+            ctx.onRetry?.()
+    }
+}
+
+function ErrorToastContent({ formatted, ctx }) {
+    return (
+        <div className="space-y-1.5">
+            <div className="font-semibold">{formatted.title}</div>
+            <div className="text-sm opacity-90">{formatted.body}</div>
+            {formatted.action && (
+                <button
+                    type="button"
+                    onClick={() => dispatchAction(formatted.action, ctx)}
+                    className="mt-1 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-white/30 dark:bg-white/10 hover:bg-white/40 dark:hover:bg-white/20 transition-colors"
+                >
+                    {formatted.action.label}
+                </button>
+            )}
+        </div>
+    )
+}
 
 const MAX_TOASTS = 5
 
@@ -76,6 +118,18 @@ export function ToastProvider({ children }) {
         // Custom content adder — stores a ReactNode instead of a string message.
         custom:  ({ type = 'info', content, duration = 5000 }) =>
             addToastRecord({ type, content, duration }),
+        // Uniform exception-to-toast helper. Routes the error through
+        // formatUserError (no raw stack/message reaches the UI) and renders
+        // a structured toast with an optional CTA. ctx.onRetry is invoked
+        // when the action kind is 'retry'.
+        errorFromException: (err, ctx = {}) => {
+            const formatted = formatUserError(err, ctx)
+            return addToastRecord({
+                type: 'error',
+                content: <ErrorToastContent formatted={formatted} ctx={ctx} />,
+                duration: ctx.duration ?? 7000,
+            })
+        },
     }), [addToast, addToastRecord])
 
     const value = useMemo(

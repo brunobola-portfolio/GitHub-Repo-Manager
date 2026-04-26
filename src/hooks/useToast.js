@@ -14,6 +14,7 @@ const NOOP_TOAST = {
     info: NOOP,
     warning: NOOP,
     custom: NOOP,
+    errorFromException: NOOP,
 }
 const FALLBACK_CTX = {
     toast: NOOP_TOAST,
