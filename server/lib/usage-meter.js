@@ -107,3 +107,45 @@ export function quotaExceededResponse(check, fallbackLabel = 'AI') {
         upgradeUrl: '/pricing',
     };
 }
+
+// ---------------------------------------------------------------------------
+// Uniform 429/403 payload helpers (Wave 3 of the honesty audit).
+//
+// quotaErrorPayload() builds the standard 429 shape that the frontend
+// recognises via { code: 'QUOTA_EXCEEDED', ... } and routes through the
+// <QuotaExceededState /> primitive instead of a generic toast.
+//
+// tierRequiredPayload() builds the standard 403 shape with
+// { code: 'TIER_REQUIRED_<TIER>', ... } so formatUserError() in the frontend
+// can map it to a "Pro feature" / "Enterprise feature" toast with a
+// "See plans" CTA.
+//
+// Existing callers using quotaExceededResponse() above continue to work —
+// new callers should prefer these because they include reset-date and
+// upgradeTo hints the new UI surfaces directly.
+// ---------------------------------------------------------------------------
+
+export function quotaErrorPayload(check, { feature, upgradeTo = null, tier }) {
+    const now = new Date();
+    const resetAt = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();
+    return {
+        error: 'Quota exceeded',
+        code: 'QUOTA_EXCEEDED',
+        feature,
+        tier,
+        limit: check.limit,
+        used: check.current,
+        resetAt,
+        upgradeTo,
+    };
+}
+
+export function tierRequiredPayload(currentTier, requiredTier, feature) {
+    return {
+        error: 'Tier required',
+        code: `TIER_REQUIRED_${requiredTier.toUpperCase()}`,
+        feature,
+        currentTier,
+        requiredTier,
+    };
+}
