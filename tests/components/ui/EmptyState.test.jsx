@@ -70,4 +70,9 @@ describe('EmptyState', () => {
     const gradientDiv = container.querySelector('.from-red-500')
     expect(gradientDiv).toBeInTheDocument()
   })
+
+  it('exposes data-testid="empty-state" for e2e selectors', () => {
+    render(<EmptyState icon={Inbox} title="Nothing yet" description="Try again." />)
+    expect(screen.getByTestId('empty-state')).toBeInTheDocument()
+  })
 })
