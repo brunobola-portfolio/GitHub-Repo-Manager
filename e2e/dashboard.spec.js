@@ -79,7 +79,9 @@ test.describe('Dashboard & Navigation', () => {
     await expect(notifButton).toBeVisible()
     await notifButton.click()
 
-    await expect(page.getByText('Notifications')).toBeVisible()
+    // Dropdown header text — "Activity digest" when no prior `since`
+    // (default in mock mode), "Since X ago" once seen at least once.
+    await expect(page.getByText(/activity digest|since .* ago/i)).toBeVisible()
   })
 
   test('should filter repos by search in repos view', async ({ page }) => {

@@ -17,6 +17,11 @@ function safeRemove(key) {
 }
 
 function computeShouldShow() {
+    // Mock mode (e2e + dev with VITE_MOCK_MODE=true) starts with a fresh
+    // localStorage on every page load, so the tour would re-appear every
+    // run and intercept pointer events on cards/buttons the test wants to
+    // click. Inline DCE guard so production builds keep the tour.
+    if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') return false
     const completed = safeGet(COMPLETED_KEY)
     if (completed) return false
     const lastSeen = safeGet(LAST_SEEN_KEY)
