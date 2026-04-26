@@ -78,6 +78,13 @@ export function _setSessionExpiredRedirectorForTests(fn) {
 
 function notifySessionExpired({ url } = {}) {
     if (sessionExpired) return // already notified
+    // Mock mode runs e2e and dev with a fabricated dev-user; the backend has
+    // no real session, so every authenticated /api/* call returns 401 on
+    // mount-time fan-out (license, work-board, notifications, attention-feed).
+    // Hard-reloading to /?error=session_expired then destroys Playwright /
+    // axe-core execution contexts mid-test. Inline DCE guard so the branch
+    // is eliminated from production bundles.
+    if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') return
     sessionExpired = true
     authListeners.forEach(cb => {
         try { cb() } catch (e) { console.error('Auth listener error', e) }
