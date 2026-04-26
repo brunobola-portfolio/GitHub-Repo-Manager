@@ -1,0 +1,69 @@
+/*
+ * GitHub Repo Manager
+ * formatUserError tests — verifies the user-facing error helper never leaks
+ * stack traces, raw backend strings, or unmapped exceptions into the UI.
+ */
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { formatUserError } from '../../src/utils/errors.js'
+
+describe('formatUserError', () => {
+  beforeEach(() => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('maps known code to title/body/action', () => {
+    const out = formatUserError({ code: 'AI_NOT_CONFIGURED' })
+    expect(out.title).toBe('AI is not configured')
+    expect(out.action.kind).toBe('open-settings')
+    expect(out.action.settingsTab).toBe('ai')
+    expect(out.raw).toBeNull()
+  })
+
+  it('detects a fetch network error', () => {
+    const err = new TypeError('Failed to fetch')
+    expect(formatUserError(err).code).toBe('NETWORK_ERROR')
+  })
+
+  it('detects 401 without explicit code', () => {
+    expect(formatUserError({ status: 401 }).code).toBe('UNAUTHORIZED')
+  })
+
+  it('detects 401 from axios-shape response', () => {
+    expect(formatUserError({ response: { status: 401 } }).code).toBe('UNAUTHORIZED')
+  })
+
+  it('returns fallback for unknown error', () => {
+    const out = formatUserError(new Error('weird internal thing'))
+    expect(out.title).toBe('Something went wrong')
+    expect(out.body).toContain('bruno@bolalabs.pt')
+  })
+
+  it('never includes the original error message in the returned object', () => {
+    const err = new Error('boom — secret backend detail')
+    const out = formatUserError(err)
+    expect(out.raw).toBeNull()
+    expect(JSON.stringify(out)).not.toContain('boom')
+    expect(JSON.stringify(out)).not.toContain('secret backend')
+  })
+
+  it('reads code from response.data.code (axios shape)', () => {
+    expect(formatUserError({ response: { data: { code: 'AI_KEY_INVALID' } } }).code).toBe('AI_KEY_INVALID')
+  })
+
+  it('returns fallback when err is null/undefined', () => {
+    expect(formatUserError(null).title).toBe('Something went wrong')
+    expect(formatUserError(undefined).title).toBe('Something went wrong')
+  })
+
+  it('honors explicit code in context override', () => {
+    expect(formatUserError(new Error('x'), { code: 'TIER_REQUIRED_PRO' }).code).toBe('TIER_REQUIRED_PRO')
+  })
+
+  it('maps QUOTA_EXCEEDED to open-quota action', () => {
+    expect(formatUserError({ code: 'QUOTA_EXCEEDED' }).action.kind).toBe('open-quota')
+  })
+})
