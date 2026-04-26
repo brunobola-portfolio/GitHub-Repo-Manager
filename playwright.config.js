@@ -25,15 +25,13 @@ export default defineConfig({
   // Fail the build on CI if you accidentally left test.only in the source code
   forbidOnly: !!process.env.CI,
 
-  // Retries: 2 on CI to absorb genuine flakes (mock data race, network jitter
-  // against mock backend). 0 locally so failures surface immediately.
-  retries: process.env.CI ? 2 : 0,
+  // Retry once on CI to absorb environmental flakes; two retries was just
+  // tripling every failure's runtime without improving signal.
+  retries: process.env.CI ? 1 : 0,
 
-  // CI: serialize to avoid resource contention. Two workers were causing
-  // race conditions on Vite's mock module compilation (each worker triggers
-  // independent on-demand recompiles of the same dynamic-import targets).
-  // Local: undefined (Playwright picks based on cores).
-  workers: process.env.CI ? 1 : undefined,
+  // Parallelize on CI. workers=1 was forcing serial execution (~28min suite).
+  // Two workers completes the suite in ~half the time; requests are idempotent.
+  workers: process.env.CI ? 2 : undefined,
 
   // Reporter to use
   reporter: [
