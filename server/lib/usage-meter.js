@@ -97,8 +97,17 @@ export function quotaExceededResponse(check, fallbackLabel = 'AI') {
     const message = isFeature
         ? `${label} limit reached (${check.current}/${check.limit} this month). Upgrade to Pro for unlimited.`
         : `AI query limit reached (${check.current}/${check.limit} this month). Upgrade to Pro for more.`;
+    const now = new Date();
+    const resetAt = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();
     return {
         error: 'usage_limit_exceeded',
+        // Wave 3 honesty-audit additions: structured fields the frontend
+        // <QuotaExceededState /> primitive parses. Existing callers
+        // unaffected — these are additive only.
+        code: 'QUOTA_EXCEEDED',
+        feature: check.metric || 'ai_queries',
+        resetAt,
+        upgradeTo: 'pro',
         message,
         metric: check.metric,
         limit: check.limit,
