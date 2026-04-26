@@ -93,9 +93,15 @@ vi.mock('@/components/PRReview/hooks/useReviewKeyboard', () => ({
 }))
 
 const mockToastError = vi.fn()
+const mockToastErrorFromException = vi.fn()
 vi.mock('@/hooks/useToast', () => ({
     useToast: () => ({
-        toast: { error: mockToastError, success: vi.fn(), info: vi.fn() },
+        toast: {
+            error: mockToastError,
+            success: vi.fn(),
+            info: vi.fn(),
+            errorFromException: mockToastErrorFromException,
+        },
     }),
 }))
 
@@ -269,8 +275,12 @@ describe('PRReviewView — staleness ConfirmModal flow', () => {
         })
 
         await waitFor(() => {
-            expect(mockToastError).toHaveBeenCalledWith(
-                expect.stringContaining('network down'),
+            // formatUserError strips raw messages from the UI; the helper now
+            // routes the exception through errorFromException with a contextual
+            // fallback title rather than echoing err.message.
+            expect(mockToastErrorFromException).toHaveBeenCalledWith(
+                expect.any(Error),
+                expect.objectContaining({ fallbackTitle: expect.stringContaining('staleness') }),
             )
         })
         expect(mockSubmitReview).not.toHaveBeenCalled()

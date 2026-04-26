@@ -41,7 +41,7 @@ export function IssuesTab({ api, repoFullName }) {
             loadIssues()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.error(`Failed to create issue — ${e.message || 'try again'}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed to create issue' })
         } finally {
             setCreating(false)
         }
@@ -55,7 +55,7 @@ export function IssuesTab({ api, repoFullName }) {
             loadIssues()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.error(`Failed to close issue — ${e.message || 'try again'}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed to close issue' })
         }
     }
 
@@ -67,7 +67,7 @@ export function IssuesTab({ api, repoFullName }) {
             loadIssues()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.error(`Failed to reopen issue — ${e.message || 'try again'}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed to reopen issue' })
         }
     }
 

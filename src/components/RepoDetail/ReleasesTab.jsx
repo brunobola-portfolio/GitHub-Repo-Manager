@@ -37,7 +37,7 @@ export function ReleasesTab({ api }) {
             loadReleases()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.error(`Failed to publish release — ${e.message || 'try again'}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed to publish release' })
         } finally {
             setCreating(false)
         }
@@ -56,7 +56,7 @@ export function ReleasesTab({ api }) {
                     loadReleases()
                 } catch (e) {
                     setMessage({ type: 'error', text: e.message })
-                    toast.error(`Failed to delete release — ${e.message || 'try again'}`)
+                    toast.errorFromException(e, { fallbackTitle: 'Failed to delete release' })
                 }
             }
         })

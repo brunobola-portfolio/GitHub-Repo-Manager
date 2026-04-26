@@ -13,7 +13,7 @@ export function EmptyStateDiscovery({ plainTitle, plainSubtitle, icon: Icon = Sp
             const result = await hook.discover()
             toast.success(`Discovery complete: +${result.added} added`)
         } catch (e) {
-            toast.error(`Discovery failed: ${e.message}`)
+            toast.errorFromException(e, { fallbackTitle: 'Discovery failed' })
         }
     }
 

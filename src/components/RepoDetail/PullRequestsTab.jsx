@@ -53,7 +53,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
             loadPulls()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.error(`Failed to create pull request — ${e.message || 'try again'}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed to create pull request' })
         } finally {
             setCreating(false)
         }
@@ -73,7 +73,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                     loadPulls()
                 } catch (e) {
                     setMessage({ type: 'error', text: e.message })
-                    toast.error(`Failed to merge PR — ${e.message || 'try again'}`)
+                    toast.errorFromException(e, { fallbackTitle: 'Failed to merge PR' })
                 }
             }
         })
@@ -87,7 +87,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
             loadPulls()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.error(`Failed to close PR — ${e.message || 'try again'}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed to close PR' })
         }
     }
 

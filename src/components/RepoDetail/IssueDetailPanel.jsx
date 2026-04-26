@@ -60,7 +60,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
             setComments(Array.isArray(data) ? data : [])
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.error(`Failed to post comment — ${e.message || 'try again'}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed to post comment' })
         } finally {
             setSubmitting(false)
         }
@@ -76,7 +76,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
             onUpdate?.()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.error(`Failed to ${newState === 'closed' ? 'close' : 'reopen'} issue — ${e.message || 'try again'}`)
+            toast.errorFromException(e, { fallbackTitle: `Failed to ${newState === 'closed' ? 'close' : 'reopen'} issue` })
         }
     }
 
@@ -84,6 +84,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
     const isOpen = current.state === 'open'
 
     function timeAgo(date) {
+        // eslint-disable-next-line react-hooks/purity
         const diff = Date.now() - new Date(date).getTime()
         const mins = Math.floor(diff / 60000)
         if (mins < 60) return `${mins}m ago`

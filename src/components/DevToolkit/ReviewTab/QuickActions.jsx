@@ -26,7 +26,7 @@ export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
             onSubmitted?.()
         } catch (err) {
             setError(err.message || 'Failed to submit review')
-            toast.error(`Failed to submit review — ${err.message || 'try again'}`)
+            toast.errorFromException(err, { fallbackTitle: 'Failed to submit review' })
         } finally { setLoading(false) }
     }
 

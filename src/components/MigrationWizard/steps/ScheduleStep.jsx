@@ -47,6 +47,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
 
   // Minimum schedule time: now + 5 minutes
   const minDateTime = useMemo(() => {
+    // eslint-disable-next-line react-hooks/purity
     const d = new Date(Date.now() + 5 * 60 * 1000)
     return d.toISOString().slice(0, 16) // YYYY-MM-DDTHH:MM format for datetime-local
   }, [])
@@ -139,7 +140,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
     } catch (err) {
       console.error('[ScheduleStep] Migration error:', err)
       setExecError(err.message || 'Failed to start migration')
-      toast.error(`Failed to start migration — ${err.message || 'try again'}`)
+      toast.errorFromException(err, { fallbackTitle: 'Failed to start migration' })
     } finally {
       setExecuting(false)
     }
@@ -160,6 +161,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
           Execution Timing
         </legend>
 
+        {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
         <label className={`
           flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all
           ${schedule.mode === 'now'
@@ -186,6 +188,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
           </div>
         </label>
 
+        {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
         <label className={`
           flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all
           ${schedule.mode === 'scheduled'
@@ -244,6 +247,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
       )}
 
       {/* Dry-run checkbox */}
+      {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
       <label className="flex items-center gap-3 cursor-pointer">
         <input
           type="checkbox"

@@ -115,7 +115,7 @@ export function AdminDLQPage() {
             const full = await handlers.get(row.id)
             setOpenEntry(full)
         } catch (err) {
-            toast.error(`Failed to load entry: ${err.message}`)
+            toast.errorFromException(err, { fallbackTitle: 'Failed to load entry' })
             setOpenEntry(null)
         } finally {
             setOpenLoading(false)
@@ -131,7 +131,7 @@ export function AdminDLQPage() {
             // Refresh the drawer if it's showing this row
             setOpenEntry((prev) => (prev && prev.id === row.id ? { ...prev, next_retry_at: new Date().toISOString() } : prev))
         } catch (err) {
-            toast.error(`Retry failed: ${err.message}`)
+            toast.errorFromException(err, { fallbackTitle: 'Retry failed' })
         } finally {
             markBusy(row.id, false)
         }
@@ -145,7 +145,7 @@ export function AdminDLQPage() {
             await load()
             setOpenEntry((prev) => (prev && prev.id === row.id ? null : prev))
         } catch (err) {
-            toast.error(`Resolve failed: ${err.message}`)
+            toast.errorFromException(err, { fallbackTitle: 'Resolve failed' })
         } finally {
             markBusy(row.id, false)
         }

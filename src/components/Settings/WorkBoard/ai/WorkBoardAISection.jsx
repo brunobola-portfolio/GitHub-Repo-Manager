@@ -29,7 +29,7 @@ export function WorkBoardAISection() {
             }
             await ai.reload()
         } catch (e) {
-            toast.error(`Apply failed: ${e.message}`)
+            toast.errorFromException(e, { fallbackTitle: 'Apply failed' })
         }
     }
 
@@ -38,7 +38,7 @@ export function WorkBoardAISection() {
             await ai.dismiss(pattern_key, dismissKey)
             toast.success('Suggestion dismissed')
         } catch (e) {
-            toast.error(`Dismiss failed: ${e.message}`)
+            toast.errorFromException(e, { fallbackTitle: 'Dismiss failed' })
         }
     }
 

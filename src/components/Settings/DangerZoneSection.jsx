@@ -54,7 +54,7 @@ export function DangerZoneSection({ onErased }) {
             toast.success('Data export downloaded')
         } catch (err) {
             setExportMsg({ type: 'error', text: err.message || 'Export failed' })
-            toast.error(`Failed to export data — ${err.message || 'try again'}`)
+            toast.errorFromException(err, { fallbackTitle: 'Failed to export data' })
         } finally {
             setExporting(false)
         }

@@ -141,7 +141,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
       })
       dispatch({ type: 'CLEAR_PENDING_COMMENTS' })
     } catch (e) {
-      toast.error(`Failed to submit review: ${e.message}`)
+      toast.errorFromException(e, { fallbackTitle: 'Failed to submit review' })
     } finally {
       setSubmitting(false)
     }
@@ -162,7 +162,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
       }
     } catch (e) {
       setSubmitting(false)
-      toast.error(`Failed to check PR staleness: ${e.message}`)
+      toast.errorFromException(e, { fallbackTitle: 'Failed to check PR staleness' })
       return
     }
     await doSubmit({ event, body })

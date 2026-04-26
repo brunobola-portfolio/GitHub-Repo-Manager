@@ -403,7 +403,7 @@ function AppContent() {
       await performAction(action, null, org, options)
       toast.success(`${action} completed successfully`)
     } catch (err) {
-      toast.error(`${action} failed: ${err.message}`)
+      toast.errorFromException(err, { fallbackTitle: `${action} failed` })
     }
   }, [performAction, org, toast])
 
@@ -428,7 +428,7 @@ function AppContent() {
               closeModal('showConfirm')
               refresh()
             } catch (err) {
-              toast.error(`Failed to change visibility: ${err.message}`)
+              toast.errorFromException(err, { fallbackTitle: 'Failed to change visibility' })
             }
           }
         })
@@ -448,7 +448,7 @@ function AppContent() {
               closeModal('showConfirm')
               refresh()
             } catch (err) {
-              toast.error(`Failed to ${value ? 'archive' : 'unarchive'}: ${err.message}`)
+              toast.errorFromException(err, { fallbackTitle: `Failed to ${value ? 'archive' : 'unarchive'}` })
             }
           }
         })
@@ -476,7 +476,7 @@ function AppContent() {
               closeModal('showConfirm')
               refresh()
             } catch (err) {
-              toast.error(`Failed to delete: ${err.message}`)
+              toast.errorFromException(err, { fallbackTitle: 'Failed to delete' })
             }
           }
         })
@@ -494,7 +494,7 @@ function AppContent() {
               closeModal('showConfirm')
               refresh()
             } catch (err) {
-              toast.error(`Failed to archive: ${err.message}`)
+              toast.errorFromException(err, { fallbackTitle: 'Failed to archive' })
             }
           }
         })
@@ -513,7 +513,7 @@ function AppContent() {
               closeModal('showConfirm')
               refresh()
             } catch (err) {
-              toast.error(`Failed to delete: ${err.message}`)
+              toast.errorFromException(err, { fallbackTitle: 'Failed to delete' })
             }
           }
         })
@@ -1028,7 +1028,7 @@ function AppContent() {
                 toast.error(result?.message || 'Transfer failed')
               }
             } catch (err) {
-              toast.error(`Transfer failed: ${err.message}`)
+              toast.errorFromException(err, { fallbackTitle: 'Transfer failed' })
             }
           }}
           onMirror={async (repoNames, targetOrg) => {
@@ -1042,7 +1042,7 @@ function AppContent() {
                 toast.error(result?.message || 'Mirror failed')
               }
             } catch (err) {
-              toast.error(`Mirror failed: ${err.message}`)
+              toast.errorFromException(err, { fallbackTitle: 'Mirror failed' })
             }
           }}
           isPerforming={isPerforming}

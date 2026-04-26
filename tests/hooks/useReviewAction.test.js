@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
-const mockToast = { success: vi.fn(), error: vi.fn() }
+const mockToast = { success: vi.fn(), error: vi.fn(), errorFromException: vi.fn() }
 vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: mockToast }) }))
 
 beforeEach(() => {
@@ -42,7 +42,7 @@ describe('useReviewAction', () => {
         const { result } = renderHook(() => useReviewAction({ onOptimistic, onRollback }))
         await act(async () => { await result.current.approve({ repoFullName: 'o/r', prNumber: 1 }) })
         expect(onRollback).toHaveBeenCalled()
-        expect(mockToast.error).toHaveBeenCalled()
+        expect(mockToast.errorFromException).toHaveBeenCalled()
     })
 
     it('scope_required triggers Re-authorize error toast', async () => {

@@ -42,7 +42,7 @@ export function useReviewAction({ onOptimistic, onRollback } = {}) {
             if (e.code === 'scope_required') {
                 toast.error('Re-authorize this app with the repo scope to submit reviews.')
             } else {
-                toast.error(e.message || 'Action failed')
+                toast.errorFromException(e, { fallbackTitle: 'Action failed' })
             }
         }
     }, [onOptimistic, onRollback, toast])
@@ -63,7 +63,7 @@ export function useReviewAction({ onOptimistic, onRollback } = {}) {
             toast.success(SUCCESS_LABEL.snooze)
         } catch (e) {
             onRollback?.('snooze', args, e)
-            toast.error(e.message || 'Snooze failed')
+            toast.errorFromException(e, { fallbackTitle: 'Snooze failed' })
         }
     }, [onOptimistic, onRollback, toast])
 
@@ -79,7 +79,7 @@ export function useReviewAction({ onOptimistic, onRollback } = {}) {
             toast.success(SUCCESS_LABEL.unsnooze)
         } catch (e) {
             onRollback?.('unsnooze', args, e)
-            toast.error(e.message || 'Unsnooze failed')
+            toast.errorFromException(e, { fallbackTitle: 'Unsnooze failed' })
         }
     }, [onOptimistic, onRollback, toast])
 

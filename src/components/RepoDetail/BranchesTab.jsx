@@ -48,7 +48,7 @@ export function BranchesTab({ api }) {
             loadBranches()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.error(`Failed to create branch — ${e.message || 'try again'}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed to create branch' })
         } finally {
             setCreating(false)
         }
@@ -67,7 +67,7 @@ export function BranchesTab({ api }) {
                     loadBranches()
                 } catch (e) {
                     setMessage({ type: 'error', text: e.message })
-                    toast.error(`Failed to delete branch — ${e.message || 'try again'}`)
+                    toast.errorFromException(e, { fallbackTitle: 'Failed to delete branch' })
                 }
             }
         })

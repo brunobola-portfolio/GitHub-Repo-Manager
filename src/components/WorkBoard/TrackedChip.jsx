@@ -27,7 +27,7 @@ export function TrackedChip({ repoFullName }) {
                 toast.success(successMessage)
             }
         } catch (e) {
-            toast.error(`Failed: ${e.message}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed' })
         }
     }
 

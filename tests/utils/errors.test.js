@@ -66,4 +66,15 @@ describe('formatUserError', () => {
   it('maps QUOTA_EXCEEDED to open-quota action', () => {
     expect(formatUserError({ code: 'QUOTA_EXCEEDED' }).action.kind).toBe('open-quota')
   })
+
+  it('honors fallbackTitle when error is unmapped', () => {
+    const out = formatUserError(new Error('weird'), { fallbackTitle: 'Mirror failed' })
+    expect(out.title).toBe('Mirror failed')
+    expect(out.body).toContain('bruno@bolalabs.pt')
+  })
+
+  it('ignores fallbackTitle when error has a known code', () => {
+    const out = formatUserError({ code: 'AI_NOT_CONFIGURED' }, { fallbackTitle: 'Mirror failed' })
+    expect(out.title).toBe('AI is not configured')
+  })
 })

@@ -79,6 +79,7 @@ export function RepoList({
 
 	// Reset context menu when filtered repos change
 	useEffect(() => {
+		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setRepoMenu(null)
 	}, [filteredRepos])
 
@@ -234,7 +235,7 @@ export function RepoList({
 									const result = await reposApi.exportMetadata(data.owner.login, data.name)
 									toast.success(`Exported ${result.filename}`)
 								} catch (err) {
-									toast.error(`Export failed: ${err.message}`)
+									toast.errorFromException(err, { fallbackTitle: 'Export failed' })
 								}
 								break
 							case 'exportMeta_selected': {
@@ -246,7 +247,7 @@ export function RepoList({
 									}
 									toast.success(`Exported ${ok} repositories`)
 								} catch (err) {
-									toast.error(`Exported ${ok} of ${data.length}; stopped at ${err.message}`)
+									toast.errorFromException(err, { fallbackTitle: `Exported ${ok} of ${data.length}; stopped` })
 								}
 								break
 							}
@@ -262,7 +263,7 @@ export function RepoList({
 											toast.success(`Synced in ${Math.round(result.duration / 1000)}s`)
 											closeModal('showConfirm')
 										} catch (err) {
-											toast.error(`Sync failed: ${err.message}`)
+											toast.errorFromException(err, { fallbackTitle: 'Sync failed' })
 										}
 									}
 								})

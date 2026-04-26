@@ -157,8 +157,13 @@ export function formatUserError(err, ctx = {}) {
     }
 
     if (import.meta.env?.DEV) {
-         
+
         console.warn('[formatUserError] unmapped error:', err)
     }
-    return { ...FALLBACK, code: null, raw: null }
+    return {
+        ...FALLBACK,
+        title: ctx.fallbackTitle || FALLBACK.title,
+        code: null,
+        raw: null,
+    }
 }

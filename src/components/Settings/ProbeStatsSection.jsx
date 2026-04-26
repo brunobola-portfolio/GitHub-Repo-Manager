@@ -65,7 +65,7 @@ export function ProbeStatsSection({ isAdmin = false }) {
             toast.success('Probe counters reset')
             await fetchStats()
         } catch (err) {
-            toast.error(`Reset failed: ${err.message ?? 'unknown error'}`)
+            toast.errorFromException(err, { fallbackTitle: 'Reset failed' })
         } finally {
             setResetting(false)
         }

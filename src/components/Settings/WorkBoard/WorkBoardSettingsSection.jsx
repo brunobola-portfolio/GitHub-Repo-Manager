@@ -51,7 +51,7 @@ export function WorkBoardSettingsSection() {
             const result = await hook.discover()
             toast.success(`Discovery: +${result.added} added, -${result.removed} removed`)
         } catch (e) {
-            toast.error(`Discovery failed: ${e.message}`)
+            toast.errorFromException(e, { fallbackTitle: 'Discovery failed' })
         }
     }
 
@@ -60,7 +60,7 @@ export function WorkBoardSettingsSection() {
             await hook.updatePrefs(patch)
             toast.success('Settings saved')
         } catch (e) {
-            toast.error(`Save failed: ${e.message}`)
+            toast.errorFromException(e, { fallbackTitle: 'Save failed' })
         }
     }
 
@@ -82,7 +82,7 @@ export function WorkBoardSettingsSection() {
                 toast.success(`${label} ${repoFullName}`)
             }
         } catch (e) {
-            toast.error(`${action} failed: ${e.message}`)
+            toast.errorFromException(e, { fallbackTitle: `${action} failed` })
         }
     }
 
@@ -99,7 +99,7 @@ export function WorkBoardSettingsSection() {
                 })
             }
         } catch (e) {
-            toast.error(`Bulk ${action} failed: ${e.message}`)
+            toast.errorFromException(e, { fallbackTitle: `Bulk ${action} failed` })
         }
     }
 
@@ -108,7 +108,7 @@ export function WorkBoardSettingsSection() {
             await hook.track(repo)
             toast.success(`Added ${repo}`)
         } catch (e) {
-            toast.error(`Add failed: ${e.message}`)
+            toast.errorFromException(e, { fallbackTitle: 'Add failed' })
         }
     }
 

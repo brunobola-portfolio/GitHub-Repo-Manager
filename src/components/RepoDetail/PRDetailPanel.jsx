@@ -86,7 +86,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
             setComments(Array.isArray(data) ? data : [])
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.error(`Failed to post comment — ${e.message || 'try again'}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed to post comment' })
         } finally {
             setSubmitting(false)
         }
@@ -105,7 +105,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
             onUpdate?.()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.error(`Failed to merge PR — ${e.message || 'try again'}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed to merge PR' })
         } finally {
             setMerging(false)
         }
@@ -120,7 +120,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
             onUpdate?.()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.error(`Failed to close PR — ${e.message || 'try again'}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed to close PR' })
         }
     }
 
@@ -139,6 +139,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
     const totalDeletions = files.reduce((sum, f) => sum + (f.deletions || 0), 0)
 
     function timeAgo(date) {
+        // eslint-disable-next-line react-hooks/purity
         const diff = Date.now() - new Date(date).getTime()
         const mins = Math.floor(diff / 60000)
         if (mins < 60) return `${mins}m ago`

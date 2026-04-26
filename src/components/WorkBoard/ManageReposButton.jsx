@@ -37,7 +37,7 @@ export function ManageReposButton({ onOpenSettings }) {
                 toast.success(successMessage)
             }
         } catch (e) {
-            toast.error(`Failed: ${e.message}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed' })
         }
     }
 

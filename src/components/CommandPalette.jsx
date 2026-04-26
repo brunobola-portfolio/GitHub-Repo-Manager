@@ -245,7 +245,7 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
           return
       }
     } catch (e) {
-      toast.error(`${item.label} failed: ${e.message}`)
+      toast.errorFromException(e, { fallbackTitle: `${item.label} failed` })
     }
   }
 
@@ -274,7 +274,7 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
         toast.success(`${item.label} ✓`)
       }
     } catch (e) {
-      toast.error(`${item.label} failed: ${e.message}`)
+      toast.errorFromException(e, { fallbackTitle: `${item.label} failed` })
     }
   }
 

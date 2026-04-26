@@ -41,7 +41,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
             toast.success('Repository settings saved')
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.error(`Failed to save settings — ${e.message || 'try again'}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed to save settings' })
         } finally {
             setSaving(false)
         }
@@ -72,7 +72,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
             loadWebhooks()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.error(`Failed to create webhook — ${e.message || 'try again'}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed to create webhook' })
         }
     }
 
@@ -89,7 +89,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                     loadWebhooks()
                 } catch (e) {
                     setMessage({ type: 'error', text: e.message })
-                    toast.error(`Failed to delete webhook — ${e.message || 'try again'}`)
+                    toast.errorFromException(e, { fallbackTitle: 'Failed to delete webhook' })
                 }
             }
         })
@@ -102,7 +102,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
             toast.success('Webhook ping sent')
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.error(`Failed to ping webhook — ${e.message || 'try again'}`)
+            toast.errorFromException(e, { fallbackTitle: 'Failed to ping webhook' })
         }
     }
 
@@ -141,6 +141,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
 
                 {/* Feature toggles */}
                 <div className="space-y-2">
+                    {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Features</label>
                     {[
                         { key: 'has_issues', label: 'Issues' },

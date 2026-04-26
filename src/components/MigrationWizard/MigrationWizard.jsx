@@ -508,7 +508,7 @@ export default function MigrationWizard({
         importing: false,
         jobStatus: { status: 'failed', errorMessage: e.message, progressPct: 0 },
       })
-      toast.error(`Failed to start import — ${e.message || 'try again'}`)
+      toast.errorFromException(e, { fallbackTitle: 'Failed to start import' })
       nextStep()
     }
   }, [source, updateImportJobs, nextStep, toast])
