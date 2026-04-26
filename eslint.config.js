@@ -74,4 +74,17 @@ export default defineConfig([
       'jsx-a11y/role-supports-aria-props': 'error',
     },
   },
+  {
+    // Surfacing err.stack (or any .stack) inside UI components leaks
+    // implementation detail to users. The formatUserError() helper in
+    // src/utils/errors.js is the supported way to convert exceptions
+    // into a user-facing toast/banner.
+    files: ['src/components/**/*.{js,jsx}'],
+    rules: {
+      'no-restricted-syntax': ['error', {
+        selector: "MemberExpression[property.name='stack']",
+        message: 'Do not surface .stack in UI. Use formatUserError(err) from src/utils/errors.js instead.',
+      }],
+    },
+  },
 ])
