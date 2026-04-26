@@ -19,6 +19,7 @@ export function RepoGrid({
 	onContextMenu,
 	onOpenInsights,
 	onOpenHealth,
+	onExplainHealth,
 	onRepoClick,
 }) {
 	const isGrid = viewMode === 'grid'
@@ -56,6 +57,7 @@ export function RepoGrid({
 					onContextMenu={(e) => onContextMenu(e, repo)}
 					onOpenInsights={() => onOpenInsights(repo)}
 					onOpenHealth={() => onOpenHealth(repo)}
+					onExplainHealth={onExplainHealth ? (r) => onExplainHealth(r) : undefined}
 					onRepoClick={onRepoClick}
 				/>
 			))}

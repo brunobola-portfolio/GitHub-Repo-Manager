@@ -32,6 +32,7 @@ export const RepoCard = memo(function RepoCard({
 	onContextMenu,
 	onOpenInsights,
 	onOpenHealth,
+	onExplainHealth,
 	onRepoClick,
 }) {
 	const isGrid = viewMode === 'grid'
@@ -130,7 +131,10 @@ export const RepoCard = memo(function RepoCard({
 							</h3>
 							<TrackedDot repoFullName={repo.full_name} size="sm" />
 							{aiMeta?.health_score != null && (
-								<RepoHealthBadge score={aiMeta.health_score} />
+								<RepoHealthBadge
+									score={aiMeta.health_score}
+									onClick={onExplainHealth ? () => onExplainHealth(repo) : undefined}
+								/>
 							)}
 							{repo.archived && (
 								<Badge variant="secondary" className="text-[10px] py-0 h-5">Archived</Badge>
