@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { RepoHealthBadge } from '../../../src/components/AI/RepoHealthBadge'
 
 describe('RepoHealthBadge', () => {
@@ -44,5 +44,19 @@ describe('RepoHealthBadge', () => {
     it('exposes an a11y label including the out-of-100 score', () => {
         render(<RepoHealthBadge score={70} />)
         expect(screen.getByLabelText(/AI health score 70 out of 100/)).toBeInTheDocument()
+    })
+
+    it('renders as a span (non-interactive) when no onClick is provided', () => {
+        render(<RepoHealthBadge score={75} />)
+        const el = screen.getByLabelText(/AI health score 75/i)
+        expect(el.tagName).toBe('SPAN')
+    })
+
+    it('renders as a button and fires onClick when provided', () => {
+        const handler = vi.fn()
+        render(<RepoHealthBadge score={75} onClick={handler} />)
+        const btn = screen.getByRole('button', { name: /AI health score 75/i })
+        fireEvent.click(btn)
+        expect(handler).toHaveBeenCalledTimes(1)
     })
 })

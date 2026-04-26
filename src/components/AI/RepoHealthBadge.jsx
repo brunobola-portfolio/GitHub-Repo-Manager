@@ -22,20 +22,41 @@ function pickTone(score) {
  * Compact AI health badge for repo lists. Renders nothing when the repo
  * hasn't been indexed yet (score is null) so unindexed rows stay clean.
  *
- * Hover surfaces a tooltip with the exact score; click is a no-op — the
- * full insights live in RepoInsightsModal a click away on the row itself.
+ * Hover surfaces a tooltip with the exact score. When `onClick` is provided
+ * the badge becomes an interactive button (focus ring + cursor pointer)
+ * that opens the deeper insights view; without it it stays a non-interactive
+ * `<span>` for callers that just want to display the score.
  */
-export function RepoHealthBadge({ score, className = '' }) {
+export function RepoHealthBadge({ score, className = '', onClick }) {
     const tone = pickTone(score)
     if (!tone) return null
+    const baseClasses = `inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ring-1 ring-inset ${tone.bg} ${tone.text} ${className}`.trim()
+    const content = (
+        <>
+            <Heart className="w-2.5 h-2.5" aria-hidden="true" />
+            {Math.round(score)}
+        </>
+    )
+    if (onClick) {
+        return (
+            <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onClick() }}
+                className={`${baseClasses} cursor-pointer hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500`}
+                title={`AI health score: ${score}/100 — click to see details`}
+                aria-label={`AI health score ${score} out of 100`}
+            >
+                {content}
+            </button>
+        )
+    }
     return (
         <span
-            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ring-1 ring-inset ${tone.bg} ${tone.text} ${className}`.trim()}
+            className={baseClasses}
             title={`AI health score: ${score}/100`}
             aria-label={`AI health score ${score} out of 100`}
         >
-            <Heart className="w-2.5 h-2.5" aria-hidden="true" />
-            {Math.round(score)}
+            {content}
         </span>
     )
 }
