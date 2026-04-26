@@ -73,16 +73,6 @@
   to   { opacity: 1; }
 }
 
-@keyframes ds-slide-in-right {
-  from { opacity: 0; transform: translateX(24px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes ds-slide-in-left {
-  from { opacity: 0; transform: translateX(-24px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
 @keyframes ds-scale-in {
   from { opacity: 0; transform: scale(0.92); }
   to   { opacity: 1; transform: scale(1); }
@@ -117,14 +107,6 @@
 
 .ds-animate-fade-in {
   animation: ds-fade-in 0.4s ease-out both;
-}
-
-.ds-animate-slide-right {
-  animation: ds-slide-in-right 0.5s var(--ds-ease-out-expo) both;
-}
-
-.ds-animate-slide-left {
-  animation: ds-slide-in-left 0.5s var(--ds-ease-out-expo) both;
 }
 
 .ds-animate-scale-in {
@@ -177,30 +159,8 @@
  * Callers can still add `bodyClassName` or local padding when a specific
  * modal truly needs something different. */
 
-.ds-modal-header {
-  padding: 1rem 1.25rem; /* py-4 px-5 */
-}
-
 .ds-modal-body {
   padding: 1.5rem; /* p-6 */
-}
-
-.ds-modal-footer {
-  padding: 1rem 1.25rem; /* py-4 px-5 */
-  border-top: 1px solid rgb(226 232 240 / 0.6); /* slate-200/60 */
-}
-
-:where(.dark) .ds-modal-footer {
-  border-top-color: rgb(51 65 85 / 0.5); /* slate-700/50 */
-}
-
-@media (min-width: 768px) {
-  .ds-modal-header {
-    padding: 1.25rem 1.5rem; /* md:py-5 md:px-6 */
-  }
-  .ds-modal-footer {
-    padding: 1.25rem 1.5rem;
-  }
 }
 
 /* ===== OPT-IN CARD SHIMMER ===== */
@@ -330,27 +290,6 @@
   box-shadow: 0 0 0 2px theme('colors.indigo.500'), 0 0 0 4px theme('colors.indigo.500' / 0.2);
 }
 
-/* Focus ring with offset (for elements with backgrounds) */
-.ds-focus-ring-offset {
-  outline: none;
-  transition: box-shadow 0.2s ease;
-}
-.ds-focus-ring-offset:focus-visible {
-  box-shadow: 0 0 0 2px theme('colors.white'), 0 0 0 4px theme('colors.indigo.500');
-}
-:where(.dark) .ds-focus-ring-offset:focus-visible {
-  box-shadow: 0 0 0 2px theme('colors.slate.900'), 0 0 0 4px theme('colors.indigo.500');
-}
-
-/* Focus ring inset (for inputs inside containers) */
-.ds-focus-ring-inset {
-  outline: none;
-  transition: box-shadow 0.2s ease;
-}
-.ds-focus-ring-inset:focus-visible {
-  box-shadow: inset 0 0 0 2px theme('colors.indigo.500');
-}
-
 /* ===== PREMIUM SCROLLBAR ===== */
 
 .ds-scrollbar {
@@ -448,8 +387,6 @@
   /* Disable specific design system animations */
   .ds-animate-fade-in-up,
   .ds-animate-fade-in,
-  .ds-animate-slide-right,
-  .ds-animate-slide-left,
   .ds-animate-scale-in,
   .ds-animate-float,
   .animate-pulse,
