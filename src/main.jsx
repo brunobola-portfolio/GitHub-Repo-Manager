@@ -9,7 +9,7 @@
 import { StrictMode, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MotionConfig } from 'framer-motion'
-import * as Sentry from '@sentry/react'
+import { init as sentryInit, captureException as sentryCaptureException } from '@sentry/react'
 import './index.css'
 import './design-system.css'
 import App from './App.jsx'
@@ -24,7 +24,7 @@ import { ToastProvider } from './contexts/ToastProvider.jsx'
 const StatusPage = lazy(() => import('./components/PublicStatus/StatusPage.jsx'))
 
 if (import.meta.env.VITE_SENTRY_DSN) {
-  Sentry.init({
+  sentryInit({
     dsn: import.meta.env.VITE_SENTRY_DSN,
     environment: import.meta.env.MODE,
     tracesSampleRate: import.meta.env.MODE === 'production' ? 0.1 : 1.0,
@@ -44,7 +44,7 @@ if (typeof window !== 'undefined') {
     if (message.includes('AbortError') || reason?.name === 'AbortError') return
     console.error('[unhandledrejection]', reason)
     if (import.meta.env.VITE_SENTRY_DSN && reason instanceof Error) {
-      Sentry.captureException(reason)
+      sentryCaptureException(reason)
     }
   })
 }

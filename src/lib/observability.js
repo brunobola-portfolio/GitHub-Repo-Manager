@@ -12,35 +12,25 @@
  * Both helpers swallow errors — observability must never break the app.
  */
 
-// Resolve Sentry lazily + defensively. We don't statically import
-// @sentry/react here because:
-//   - In test environments (happy-dom) the package is installed but not
-//     initialised; calling addBreadcrumb before init is harmless but
-//     noisy. Probing a window-level flag + the module at call time keeps
-//     behaviour symmetric in dev / test / prod.
-//   - Self-hosted users who vendor the frontend without VITE_SENTRY_DSN
-//     get a silent no-op with zero bundle cost beyond the import below.
-import * as SentryReact from '@sentry/react';
+// Sentry consumed via named imports so Vite/Rollup tree-shake the rest
+// of @sentry/react. Both `getClient` (active-init probe) and
+// `addBreadcrumb` (the actual API we use) are stable v8+ exports.
+// Self-hosted users without VITE_SENTRY_DSN still get a silent no-op
+// because main.jsx skips Sentry.init unless the DSN is present —
+// addBreadcrumb on an uninitialised SDK is itself a documented no-op.
+import { getClient, addBreadcrumb } from '@sentry/react';
 
 /**
  * True when Sentry has been initialised (main.jsx wires this up behind
- * the VITE_SENTRY_DSN flag). We treat the presence of an active Hub as
- * the signal — falling back to the global getClient() helper shipped
- * by @sentry/react v8+.
+ * the VITE_SENTRY_DSN flag). The v8+ getClient() helper returns the
+ * active client when init has run, undefined otherwise.
  */
 function isSentryActive() {
     try {
-        if (typeof SentryReact.getClient === 'function') {
-            return Boolean(SentryReact.getClient());
-        }
-        // Legacy fallback — some older Sentry builds only expose getCurrentHub.
-        if (typeof SentryReact.getCurrentHub === 'function') {
-            return Boolean(SentryReact.getCurrentHub()?.getClient());
-        }
+        return Boolean(getClient());
     } catch {
-        /* ignore */
+        return false;
     }
-    return false;
 }
 
 /**
@@ -54,7 +44,7 @@ function isSentryActive() {
 export function trackBreadcrumb(category, message, data, level = 'info') {
     if (!isSentryActive()) return;
     try {
-        SentryReact.addBreadcrumb({
+        addBreadcrumb({
             category,
             message,
             data,
