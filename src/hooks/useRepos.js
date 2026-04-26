@@ -17,61 +17,11 @@ import { getErrorInfo } from '../utils/errors'
 import { MOCK_MODE, API_BASE, API_ENDPOINTS, PAGINATION } from '../config'
 import { bulkExecuteWithConfirmation } from '../api/bulkConfirm'
 
-/**
- * Generate mock repository data for development
- */
-function generateMockData(page = 1, perPage = 30) {
-    const mockRepoList = [
-        { name: 'fintech-dashboard', lang: 'TypeScript', desc: 'Real-time financial analytics dashboard with React and D3.js' },
-        { name: 'ai-analytics-platform', lang: 'Python', desc: 'Machine learning pipeline for predictive customer behavior analysis' },
-        { name: 'react-component-library', lang: 'TypeScript', desc: 'Enterprise-grade UI component library based on Glassmorphism' },
-        { name: 'serverless-api-gateway', lang: 'Go', desc: 'High-performance API gateway for microservices architecture' },
-        { name: 'mobile-app-flutter', lang: 'Dart', desc: 'Cross-platform mobile application for inventory management' },
-        { name: 'kubernetes-deploy-scripts', lang: 'HCL', desc: 'Terraform modules and Helm charts for production clusters' },
-        { name: 'blockchain-wallet-core', lang: 'Rust', desc: 'Secure crypto wallet core implementation with multi-chain support' },
-        { name: 'e-commerce-microservices', lang: 'Java', desc: 'Spring Boot microservices for high-scale retail platform' },
-        { name: 'docs-portal', lang: 'JavaScript', desc: 'Developer documentation portal built with Docusaurus' },
-        { name: 'auth-service', lang: 'Go', desc: 'Centralized authentication service with OAuth2 and OIDC support' },
-        { name: 'data-lake-processor', lang: 'Python', desc: 'Spark jobs for processing daily terabyte-scale logs' },
-        { name: 'ios-checkout-sdk', lang: 'Swift', desc: 'Native iOS SDK for seamless checkout integration' },
-        { name: 'android-pos-terminal', lang: 'Kotlin', desc: 'Point of Sale application for Android tablets' },
-        { name: 'graphql-federation', lang: 'TypeScript', desc: 'Apollo Federation gateway for unified data graph' },
-        { name: 'legacy-crm-importer', lang: 'PHP', desc: 'Tools for migrating data from legacy CRM systems' },
-        { name: 'design-system-tokens', lang: 'CSS', desc: 'Design tokens and assets for the corporate brand identity' },
-        { name: 'devops-ci-templates', lang: 'YAML', desc: 'Standardized GitHub Actions workflows for all teams' },
-        { name: 'nlp-chatbot-engine', lang: 'Python', desc: 'Natural Language Processing engine for customer support bots' },
-        { name: 'web-assembly-video-editor', lang: 'C++', desc: 'Browser-based video editing core using WASM' },
-        { name: 'marketing-landing-pages', lang: 'HTML', desc: 'High-conversion landing pages for marketing campaigns' }
-    ]
-
-    const totalRepos = 87
-    const totalPages = Math.ceil(totalRepos / perPage)
-    const startIndex = (page - 1) * perPage
-    const endIndex = Math.min(startIndex + perPage, totalRepos)
-
-    const mockRepos = []
-    for (let i = startIndex; i < endIndex; i++) {
-        const template = mockRepoList[i % mockRepoList.length]
-        const suffix = Math.floor(i / mockRepoList.length) > 0 ? `-${Math.floor(i / mockRepoList.length) + 1}` : ''
-
-        mockRepos.push({
-            id: i + 1,
-            name: `${template.name}${suffix}`,
-            full_name: `dev-user/${template.name}${suffix}`,
-            description: template.desc,
-            fork: i % 5 === 0,
-            private: i % 3 === 0,
-            owner: { login: 'dev-user' },
-            html_url: `https://github.com/dev-user/${template.name}${suffix}`,
-            updated_at: new Date(Date.now() - i * 3600000 * (Math.random() * 10)).toISOString(),
-            stargazers_count: Math.floor(Math.random() * 500) + (i * 10),
-            language: template.lang,
-            topics: ['react', 'typescript', 'dashboard', 'ui', 'finance'].slice(0, Math.floor(Math.random() * 5))
-        })
-    }
-
-    return { repos: mockRepos, totalPages }
-}
+// Mock repository data lives in src/__mocks__/mockRepos.js and is loaded
+// dynamically only when import.meta.env.DEV && VITE_MOCK_MODE === 'true'.
+// In production builds Vite's dead-code elimination removes the import branch
+// entirely, so no mock string ships to dist/.
+const MOCKS_ENABLED = import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true'
 
 /**
  * Hook for repository data, pagination, CRUD, and bulk operations.
@@ -91,13 +41,18 @@ export function useRepos(user) {
     const [isPerforming, setIsPerforming] = useState(false)
     const [results, setResults] = useState([])
 
-    // Initialize with mock data
+    // Initialize with mock data (DEV + VITE_MOCK_MODE=true only)
     useEffect(() => {
-        if (MOCK_MODE) {
-            const { repos: mockRepos, totalPages: mockTotalPages } = generateMockData(1, perPage)
+        if (!MOCKS_ENABLED) return
+        let cancelled = false
+        ;(async () => {
+            const { generateMockRepos } = await import('../__mocks__/mockRepos.js')
+            if (cancelled) return
+            const { repos: mockRepos, totalPages: mockTotalPages } = generateMockRepos(1, perPage)
             setRepos(mockRepos)
             setTotalPages(mockTotalPages)
-        }
+        })()
+        return () => { cancelled = true }
     }, [perPage])
 
     /**
@@ -146,19 +101,26 @@ export function useRepos(user) {
         }
     }, [])
 
-    // Fetch repos when page or perPage changes (non-mock mode).
+    // Fetch repos when page or perPage changes.
     // When unauthenticated, avoid calling the repos API and instead
     // clear the current list so the UI can show an auth empty state.
     useEffect(() => {
-        if (MOCK_MODE) {
-            const { repos: mockRepos, totalPages: mockTotalPages } = generateMockData(page, perPage)
-            setRepos(mockRepos)
-            setTotalPages(mockTotalPages)
-            return
+        if (MOCKS_ENABLED) {
+            let cancelled = false
+            ;(async () => {
+                const { generateMockRepos } = await import('../__mocks__/mockRepos.js')
+                if (cancelled) return
+                const { repos: mockRepos, totalPages: mockTotalPages } = generateMockRepos(page, perPage)
+                setRepos(mockRepos)
+                setTotalPages(mockTotalPages)
+            })()
+            return () => { cancelled = true }
         }
 
         if (!user) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setRepos([])
+             
             setTotalPages(null)
             return
         }
@@ -298,10 +260,13 @@ export function useRepos(user) {
      * Refresh the current page
      */
     const refresh = useCallback(() => {
-        if (MOCK_MODE) {
-            const { repos: mockRepos, totalPages: mockTotalPages } = generateMockData(page, perPage)
-            setRepos(mockRepos)
-            setTotalPages(mockTotalPages)
+        if (MOCKS_ENABLED) {
+            ;(async () => {
+                const { generateMockRepos } = await import('../__mocks__/mockRepos.js')
+                const { repos: mockRepos, totalPages: mockTotalPages } = generateMockRepos(page, perPage)
+                setRepos(mockRepos)
+                setTotalPages(mockTotalPages)
+            })()
             return
         }
 
