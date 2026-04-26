@@ -515,6 +515,20 @@ export function AIConfigSection() {
                 variant="danger"
                 isLoading={removing}
             />
+
+            <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+                <button
+                    type="button"
+                    onClick={() => {
+                        try { window.localStorage.removeItem('grm.onboarding.completedAt') } catch { /* noop */ }
+                        try { window.localStorage.removeItem('grm.onboarding.lastSeenAt') } catch { /* noop */ }
+                        window.dispatchEvent(new CustomEvent('app:show-onboarding'))
+                    }}
+                    className="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 underline-offset-2 hover:underline"
+                >
+                    Re-run onboarding tour
+                </button>
+            </div>
         </div>
     )
 }

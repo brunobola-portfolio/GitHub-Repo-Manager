@@ -9,6 +9,9 @@ import { ConfirmModal } from './components/ui/ConfirmModal'
 import { ToastContainer } from './components/ui/Toast'
 import { Spinner } from './components/ui/Spinner'
 import { QuotaExceededState } from './components/ui/QuotaExceededState'
+import { OnboardingTour } from './components/Onboarding/OnboardingTour'
+import { useOnboarding } from './hooks/useOnboarding'
+import { useFocusTrap } from './hooks/useFocusTrap'
 import { useToast } from './hooks/useToast'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
@@ -108,10 +111,27 @@ function AppContent() {
   // 'app:show-quota-exceeded' event by toast.errorFromException's
   // 'open-quota' action. Cleared when the modal is dismissed.
   const [quotaModal, setQuotaModal] = useState(null)
+  const quotaCardRef = useFocusTrap(!!quotaModal, () => setQuotaModal(null))
   useEffect(() => {
     const handler = (e) => setQuotaModal(e.detail || {})
     window.addEventListener('app:show-quota-exceeded', handler)
     return () => window.removeEventListener('app:show-quota-exceeded', handler)
+  }, [])
+
+  // Onboarding tour: shown on first visit (after a brief delay so the
+  // dashboard renders first), throttled to once per 6h via useOnboarding.
+  // The 'app:show-onboarding' event lets Settings re-trigger it on demand.
+  const onboarding = useOnboarding()
+  const [tourOpen, setTourOpen] = useState(false)
+  useEffect(() => {
+    if (!onboarding.shouldShow) return
+    const t = setTimeout(() => setTourOpen(true), 1500)
+    return () => clearTimeout(t)
+  }, [onboarding.shouldShow])
+  useEffect(() => {
+    const handler = () => setTourOpen(true)
+    window.addEventListener('app:show-onboarding', handler)
+    return () => window.removeEventListener('app:show-onboarding', handler)
   }, [])
   const { toasts, toast, dismissToast } = useToast()
   const { modalStates, openModal, openModalWithData, closeModal, getModalData } = useModal()
@@ -1231,6 +1251,11 @@ function AppContent() {
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      <OnboardingTour
+        isOpen={tourOpen}
+        onClose={() => { onboarding.markSeen(); setTourOpen(false) }}
+        onNeverShow={() => onboarding.markComplete()}
+      />
       {quotaModal && (
         /* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
         <div
@@ -1242,7 +1267,7 @@ function AppContent() {
           onClick={() => setQuotaModal(null)}
           onKeyDown={(e) => { if (e.key === 'Escape') setQuotaModal(null) }}
         >
-          <div onClick={(e) => e.stopPropagation()}>
+          <div ref={quotaCardRef} onClick={(e) => e.stopPropagation()}>
             <Suspense fallback={null}>
               <QuotaExceededState
                 feature={quotaModal.feature || 'AI'}
