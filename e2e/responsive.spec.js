@@ -28,8 +28,11 @@ test.describe('Mobile Responsiveness', () => {
     // Use force click because dashboard gradient overlay may intercept pointer events
     await menuButton.click({ force: true })
 
-    // Sidebar content should be visible in drawer
-    await expect(page.getByText('Quick Actions')).toBeVisible({ timeout: 5000 })
+    // Drawer is a role=dialog with aria-label "Navigation drawer"; assert on
+    // that rather than on Sidebar content text (which can race the spring
+    // animation in CI and gives a flaky 5s window).
+    await expect(page.getByRole('dialog', { name: /navigation drawer/i }))
+      .toBeVisible({ timeout: 5000 })
   })
 
   test('should navigate to repos view on mobile', async ({ page }) => {

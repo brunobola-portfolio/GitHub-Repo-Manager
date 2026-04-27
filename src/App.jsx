@@ -250,6 +250,11 @@ function AppContent() {
   useEffect(() => {
     const unsubscribe = onRateLimit(({ retryAfterSec }) => {
       if (rateLimitToastIdRef.current !== null) return // dedupe
+      // Mock mode shares one Express rate-limit budget across the whole e2e
+      // suite; once a worker trips the global limiter the resulting toast
+      // (z-index 60, ~15min duration) blocks click targets in every later
+      // test. Inline DCE guard so prod still surfaces the warning.
+      if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') return
       const retryAt = Date.now() + retryAfterSec * 1000
       const id = toast.custom({
         type: 'warning',

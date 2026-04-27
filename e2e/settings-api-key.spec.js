@@ -76,9 +76,9 @@ async function openSettingsAITab(page) {
     const dialog = page.getByRole('dialog', { name: /^settings$/i })
     await expect(dialog).toBeVisible({ timeout: 10000 })
 
-    // Switch to AI Configuration tab
+    // Switch to AI Configuration tab — section heading is "Bring your own AI"
     await dialog.getByRole('tab', { name: /ai configuration/i }).click()
-    await expect(dialog.getByRole('heading', { name: /ai configuration/i })).toBeVisible()
+    await expect(dialog.getByRole('heading', { name: /bring your own ai/i })).toBeVisible()
 
     return dialog
 }
