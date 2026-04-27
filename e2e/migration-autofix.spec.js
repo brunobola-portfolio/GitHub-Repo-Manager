@@ -1,6 +1,13 @@
 import { test, expect } from '@playwright/test'
 
 async function installMocks(page) {
+  // CSRF token — useAutoFixPlan posts to /api/ai/migration-size-strategy
+  // and getCsrfToken() throws on a 401 from /api/auth/csrf-token, which
+  // would skip the AI fan-out and leave the AISuggestionBanner unmounted.
+  await page.route('**/api/auth/csrf-token', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ token: 'test-csrf' }) }),
+  )
+
   // AI status
   await page.route('**/api/config/ai-status', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ configured: true }) }),

@@ -104,8 +104,10 @@ test.describe('Settings — AI API key flow', () => {
 
         await dialog.getByRole('button', { name: /^save$/i }).click()
 
-        await expect(dialog.getByRole('status'))
-            .toContainText(/saved/i, { timeout: 10000 })
+        // Skeleton spinners in the dialog also carry role="status" — filter
+        // by text so we target the AIConfigSection's save-message line.
+        await expect(dialog.getByRole('status').filter({ hasText: /saved/i }))
+            .toBeVisible({ timeout: 10000 })
     })
 
     test('persists provider + model after reopening settings', async ({ page }) => {
@@ -116,7 +118,7 @@ test.describe('Settings — AI API key flow', () => {
         await dialog.locator('#completion-api-key').fill('sk-test-1234567890')
         await dialog.locator('#completion-model').fill('gpt-4o-mini')
         await dialog.getByRole('button', { name: /^save$/i }).click()
-        await expect(dialog.getByRole('status')).toContainText(/saved/i, { timeout: 10000 })
+        await expect(dialog.getByRole('status').filter({ hasText: /saved/i })).toBeVisible({ timeout: 10000 })
 
         // Close the modal (use the dialog's own close button / Escape)
         await page.keyboard.press('Escape')
@@ -139,15 +141,15 @@ test.describe('Settings — AI API key flow', () => {
         await dialog.getByLabel(/completion provider/i).selectOption('openai')
         await dialog.locator('#completion-api-key').fill('sk-test-1234567890')
         await dialog.getByRole('button', { name: /^save$/i }).click()
-        await expect(dialog.getByRole('status')).toContainText(/saved/i, { timeout: 10000 })
+        await expect(dialog.getByRole('status').filter({ hasText: /saved/i })).toBeVisible({ timeout: 10000 })
 
         // Remove it
         await dialog.getByRole('button', { name: /remove config/i }).click()
         // Confirm in the ConfirmModal
         await page.getByRole('button', { name: /remove configuration/i }).click()
 
-        await expect(dialog.getByRole('status'))
-            .toContainText(/removed/i, { timeout: 10000 })
+        await expect(dialog.getByRole('status').filter({ hasText: /removed/i }))
+            .toBeVisible({ timeout: 10000 })
 
         // Provider select should be blank again
         await expect(dialog.getByLabel(/completion provider/i)).toHaveValue('')
