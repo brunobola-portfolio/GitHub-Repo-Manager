@@ -16,7 +16,7 @@ test.describe('Work Board — KPI trends', () => {
             })
         )
         await page.goto('/')
-        await page.getByRole('link', { name: /work board/i }).click()
+        await page.getByRole('button', { name: /work board/i }).click()
         await page.waitForSelector('[data-testid="kpi-row"]', { timeout: 5000 }).catch(() => {})
     })
 

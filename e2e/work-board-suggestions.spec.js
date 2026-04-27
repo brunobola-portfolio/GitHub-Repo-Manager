@@ -16,7 +16,7 @@ test.describe('Work Board — suggestion chips', () => {
             })
         )
         await page.goto('/')
-        await page.getByRole('link', { name: /work board/i }).click()
+        await page.getByRole('button', { name: /work board/i }).click()
     })
 
     test('chip strip appears on row hover after 300ms', async ({ page }) => {
