@@ -125,6 +125,12 @@ function AppContent() {
   const [tourOpen, setTourOpen] = useState(false)
   useEffect(() => {
     if (!onboarding.shouldShow) return
+    // Mock mode (e2e + dev with VITE_MOCK_MODE=true) gets a fresh
+    // localStorage every load — the tour would otherwise auto-open and
+    // intercept pointer events on cards/buttons that subsequent tests
+    // want to click. Inline DCE guard so production builds still
+    // auto-open the tour for first-run users.
+    if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') return
     const t = setTimeout(() => setTourOpen(true), 1500)
     return () => clearTimeout(t)
   }, [onboarding.shouldShow])
