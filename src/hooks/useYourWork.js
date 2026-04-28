@@ -11,6 +11,7 @@ const VISIBILITY_REFRESH_THRESHOLD_MS = 30_000
 async function fetchCount(url) {
     try {
         const res = await fetch(url, { credentials: 'include' })
+        // 401/403/404 → endpoint is gated or not available for this user; suppress the widget.
         if (res.status === 401 || res.status === 403 || res.status === 404) {
             return { count: 0, hidden: true }
         }
@@ -58,13 +59,17 @@ export function useYourWork() {
         lastFetchedAt: null,
     })
     const lastFetchRef = useRef(0)
+    const fetchIdRef = useRef(0)
 
     const refresh = useCallback(async () => {
+        const id = ++fetchIdRef.current
         const [r, s, i] = await Promise.all([
             fetchCount(ENDPOINTS.reviews),
             fetchCount(ENDPOINTS.stale),
             fetchCount(ENDPOINTS.issues),
         ])
+        if (id !== fetchIdRef.current) return // a newer call has taken over
+
         const hidden = r.hidden && s.hidden && i.hidden
         const reviews = buildCategoryState('reviews', r.count)
         const stale   = buildCategoryState('stale', s.count)
