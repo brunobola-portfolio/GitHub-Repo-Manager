@@ -2,14 +2,13 @@ import { useMemo } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Activity } from 'lucide-react'
 import { Card } from '../ui/Card'
-import { Select } from '../ui/Select'
 import { Skeleton } from '../ui/Skeleton'
 import { motion } from 'framer-motion'
 
 /**
  * ActivityChart - Timeline chart showing commits, PRs, and issues
  */
-export function ActivityChart({ activity = [], timeRange, onTimeRangeChange, loading }) {
+export function ActivityChart({ activity = [], timeRange, loading }) {
     const chartData = useMemo(() => {
         if (!activity || activity.length === 0) {
             return [
@@ -71,21 +70,11 @@ export function ActivityChart({ activity = [], timeRange, onTimeRangeChange, loa
                 className="p-4 sm:p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl hover:shadow-2xl hover:border-indigo-400/50 dark:hover:border-indigo-500/40 transition-all duration-300 cursor-pointer"
                 style={{ minHeight: `${chartHeight + 60}px` }}
             >
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center mb-6">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <Activity className="w-5 h-5 text-indigo-500" />
                         Activity Trends
                     </h3>
-                    <Select
-                        value={timeRange}
-                        onChange={onTimeRangeChange}
-                        options={[
-                            { value: '7d', label: 'Last 7 days' },
-                            { value: '30d', label: 'Last 30 days' },
-                            { value: '90d', label: 'Last 3 months' }
-                        ]}
-                        size="sm"
-                    />
                 </div>
                 {loading ? (
                     <Skeleton className="w-full rounded-xl" style={{ height: `${chartHeight}px` }} />

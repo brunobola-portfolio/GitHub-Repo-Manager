@@ -14,6 +14,8 @@ import { useSystemHealth } from '../hooks/useSystemHealth.js'
 import { useRelativeTime } from '../hooks/useRelativeTime.js'
 import { useWorkBoardBadgeCounts } from '../hooks/useWorkBoardBadgeCounts'
 import { useNotificationsDigest } from '../hooks/useNotificationsDigest'
+import { Sheet } from './ui/Sheet'
+import { MobileQuickActionsFab } from './MobileQuickActionsFab'
 
 export function Header({
     user,
@@ -42,6 +44,7 @@ export function Header({
     const [showUserMenu, setShowUserMenu] = useState(false)
     const [showNotifications, setShowNotifications] = useState(false)
     const [syncing, setSyncing] = useState(false)
+    const [moreOpen, setMoreOpen] = useState(false)
     const menuRef = useRef(null)
     const notifRef = useRef(null)
     const { isDark, toggleTheme } = useTheme()
@@ -285,6 +288,7 @@ export function Header({
         </header>
 
         {user && (
+          <>
           <nav
             className="fixed bottom-0 left-0 right-0 z-40 md:hidden backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-t border-slate-200/60 dark:border-slate-700/50"
             role="navigation"
@@ -293,27 +297,84 @@ export function Header({
           >
             <div className="flex items-center justify-around h-14 px-4">
               {[
-                { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-                { id: 'repos', icon: FolderGit2, label: 'Repos' },
-                { id: 'teams', icon: Users, label: 'Teams' },
-                { id: 'pricing', icon: CreditCard, label: 'Pricing' },
-              ].map(({ id, icon: Icon, label }) => (
+                { id: 'dashboard',  icon: LayoutDashboard, label: 'Home',  showDot: false },
+                { id: 'repos',      icon: FolderGit2,      label: 'Repos', showDot: false },
+                { id: 'work-board', icon: Kanban,          label: 'Work',  showDot: workBoardCount > 0 },
+                { id: 'teams',      icon: Users,           label: 'Teams', showDot: false },
+                { id: 'more',       icon: Menu,            label: 'More',  showDot: false },
+              ].map(({ id, icon: Icon, label, showDot }) => (
                 <button
                   key={id}
-                  onClick={() => onViewChange?.(id)}
-                  className={`flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-xl transition-colors ${
-                    activeView === id
+                  onClick={id === 'more' ? () => setMoreOpen(true) : () => onViewChange?.(id)}
+                  className={`relative flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-xl transition-colors ${
+                    activeView === id && id !== 'more'
                       ? 'text-indigo-600 dark:text-indigo-400'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                   }`}
-                  aria-current={activeView === id ? 'page' : undefined}
+                  aria-current={activeView === id && id !== 'more' ? 'page' : undefined}
                 >
-                  <Icon className="w-5 h-5" />
+                  <span className="relative">
+                    <Icon className="w-5 h-5" />
+                    {showDot && (
+                      <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white/80 dark:ring-slate-900/80" />
+                    )}
+                  </span>
                   <span className="text-[10px] font-medium leading-none">{label}</span>
                 </button>
               ))}
             </div>
           </nav>
+          <Sheet open={moreOpen} onOpenChange={setMoreOpen} title="More">
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => { onViewChange?.('pricing'); setMoreOpen(false) }}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
+              >
+                <CreditCard className="w-4 h-4" />
+                Pricing
+              </button>
+              <button
+                type="button"
+                onClick={() => { onMigrationHistory?.(); setMoreOpen(false) }}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
+              >
+                <History className="w-4 h-4" />
+                Migration History
+              </button>
+              <button
+                type="button"
+                onClick={() => { onOpenSettings?.(); setMoreOpen(false) }}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
+              >
+                <Settings className="w-4 h-4" />
+                Settings
+              </button>
+              <button
+                type="button"
+                onClick={() => { onReauthorize?.(); setMoreOpen(false) }}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
+              >
+                <Shield className="w-4 h-4" />
+                Re-authorize Permissions
+              </button>
+              <div className="border-t border-slate-100 dark:border-slate-700 my-1" />
+              <button
+                type="button"
+                onClick={() => { onLogout?.(); setMoreOpen(false) }}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors text-left"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
+          </Sheet>
+          <MobileQuickActionsFab
+            onCreate={onCreateRepo}
+            onImport={onImport}
+            onOpenDevToolkit={onOpenDevToolkit}
+          />
+          </>
         )}
         </>
     )

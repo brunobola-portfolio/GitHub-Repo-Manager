@@ -182,9 +182,9 @@ describe('App shell (authenticated, MOCK_MODE=true)', () => {
         renderApp()
         await screen.findByRole('heading', { name: /repo manager/i }, { timeout: 5000 })
 
-        // Default view is dashboard — the Dashboard <h1> is lazy-loaded but
-        // should appear after a tick.
-        const dashboardHeading = await screen.findByRole('heading', { name: /^dashboard$/i }, { timeout: 5000 })
+        // Default view is dashboard — the Dashboard hero h1 (greeting) is lazy-loaded
+        // but should appear after a tick.
+        const dashboardHeading = await screen.findByRole('heading', { level: 1 }, { timeout: 5000 })
         expect(dashboardHeading).toBeInTheDocument()
 
         // Click Work Board in the desktop nav. Use the nav scope to avoid the
@@ -204,8 +204,13 @@ describe('App shell (authenticated, MOCK_MODE=true)', () => {
             { timeout: 5000 }
         )
 
-        // The Dashboard <h1> should no longer be rendered — the view switched.
-        expect(screen.queryByRole('heading', { name: /^dashboard$/i })).not.toBeInTheDocument()
+        // After switching to Work Board the dashboard hero h1 should be gone.
+        // Work Board renders its own h1 ("Work Board"), so we just verify the
+        // dashboard greeting h1 is no longer present by confirming no h1 with
+        // a greeting pattern exists.
+        const remainingH1s = screen.queryAllByRole('heading', { level: 1 })
+        const hasGreeting = remainingH1s.some(el => /bom\s|boa\s/i.test(el.textContent))
+        expect(hasGreeting).toBe(false)
     })
 
     it('pressing ? opens the global keyboard shortcuts help modal', async () => {

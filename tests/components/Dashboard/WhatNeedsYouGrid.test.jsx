@@ -1,0 +1,57 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+
+beforeEach(() => {
+    global.fetch = vi.fn()
+    sessionStorage.clear()
+})
+
+const { WhatNeedsYouGrid } = await import('../../../src/components/Dashboard/WhatNeedsYouGrid')
+
+function mockAllZero() {
+    global.fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ data: [] }) })
+}
+
+function mockCounts(reviews, stale, issues) {
+    global.fetch
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: new Array(reviews) }) })
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: new Array(stale) }) })
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: new Array(issues) }) })
+}
+
+describe('WhatNeedsYouGrid', () => {
+    it('shows skeleton placeholders while loading', () => {
+        global.fetch.mockReturnValue(new Promise(() => {}))
+        render(<WhatNeedsYouGrid onOpenWorkBoard={() => {}} />)
+        expect(screen.getAllByTestId('skeleton-card').length).toBeGreaterThan(0)
+    })
+
+    it('renders three category cards with counts after fetch', async () => {
+        mockCounts(5, 3, 7)
+        render(<WhatNeedsYouGrid onOpenWorkBoard={() => {}} />)
+        await waitFor(() => expect(screen.getByLabelText(/5 reviews waiting/i)).toBeInTheDocument())
+        expect(screen.getByLabelText(/3 stale prs/i)).toBeInTheDocument()
+        expect(screen.getByLabelText(/7 issues/i)).toBeInTheDocument()
+    })
+
+    it('shows empty state when all counts are zero', async () => {
+        mockAllZero()
+        render(<WhatNeedsYouGrid onOpenWorkBoard={() => {}} />)
+        await waitFor(() => expect(screen.getByText(/estás em dia/i)).toBeInTheDocument())
+    })
+
+    it('triggers onOpenWorkBoard with initialTab on card click', async () => {
+        mockCounts(2, 0, 0)
+        const onOpen = vi.fn()
+        render(<WhatNeedsYouGrid onOpenWorkBoard={onOpen} />)
+        await waitFor(() => screen.getByLabelText(/2 reviews waiting/i))
+        fireEvent.click(screen.getByLabelText(/2 reviews waiting/i))
+        expect(onOpen).toHaveBeenCalledWith({ initialTab: 'reviews' })
+    })
+
+    it('hides itself when all endpoints return 401', async () => {
+        global.fetch.mockResolvedValue({ ok: false, status: 401, json: async () => ({}) })
+        const { container } = render(<WhatNeedsYouGrid onOpenWorkBoard={() => {}} />)
+        await waitFor(() => expect(container.firstChild).toBeNull())
+    })
+})
