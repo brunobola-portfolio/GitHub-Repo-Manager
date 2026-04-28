@@ -90,13 +90,15 @@ export function Header({
                             <AppLogoIcon className="w-[18px] h-[18px]" />
                         </div>
                         <div className="min-w-0 hidden sm:block">
-                            {/* Brand label, not the page heading. The page-level h1 lives in
-                                each route's PageHeader (e.g. the dashboard greeting); promoting
-                                the brand to h1 creates two competing h1s on every page. */}
-                            <p className="text-[13px] font-bold text-slate-900 dark:text-slate-100 leading-none ds-font-display truncate flex items-center gap-1">
-                                <span>Repo Manager</span>
+                            {/* Brand label demoted from <h1> to <h2>: the page-level h1 lives in
+                                each route's PageHeader (e.g. the dashboard greeting). Two
+                                <h1>s on the same page broke Playwright's strict-mode locator
+                                in dashboard-hero.spec; <h2> keeps the heading role for
+                                consumers like findByRole('heading', { name: /repo manager/i }). */}
+                            <h2 className="text-[13px] font-bold text-slate-900 dark:text-slate-100 leading-none ds-font-display truncate">
+                                Repo Manager
                                 <LicenseBadge />
-                            </p>
+                            </h2>
                             <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-none mt-0.5">Organize & migrate</p>
                         </div>
                     </div>
