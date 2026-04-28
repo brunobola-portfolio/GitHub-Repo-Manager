@@ -826,6 +826,7 @@ function AppContent() {
             <ErrorBoundary fallback={<ViewErrorFallback viewName="Dashboard" />}>
               <Suspense fallback={<LoadingFallback />}>
                 <DashboardPremium
+                  user={user}
                   stats={stats}
                   orgs={orgs}
                   repos={displayRepos}
@@ -839,6 +840,8 @@ function AppContent() {
                     handleOrgSelect(orgLogin)
                     setActiveView('repos')
                   }}
+                  onSync={handleRefreshOrgs}
+                  lastSyncedAt={syncStatus?.lastSync ? new Date(syncStatus.lastSync) : null}
                 />
               </Suspense>
             </ErrorBoundary>
