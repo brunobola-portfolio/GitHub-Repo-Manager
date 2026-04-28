@@ -92,10 +92,11 @@ beforeEach(() => {
 describe('Header', () => {
     it('renders the Repo Manager heading', () => {
         renderHeader()
-        // The heading is only visible on sm+ screens but happy-dom renders
-        // it regardless — it is always in the DOM.
-        const heading = screen.getByRole('heading', { level: 1 })
-        expect(heading).toHaveTextContent(/Repo Manager/i)
+        // The brand label is rendered as <h2> (the page-level <h1> belongs
+        // to each route's PageHeader). Match by role+name rather than level
+        // so future tag tweaks don't churn this assertion.
+        const heading = screen.getByRole('heading', { name: /repo manager/i })
+        expect(heading).toBeInTheDocument()
     })
 
     it('shows all five nav buttons when authenticated', () => {
