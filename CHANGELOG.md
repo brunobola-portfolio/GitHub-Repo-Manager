@@ -7,6 +7,254 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-04-28
+
+A feature-and-honesty release. The dashboard hero, mobile nav and AI surfaces
+were rebuilt; the Work Board grew a tracked-repos / discovery / AI-suggestions
+spine across seven implementation phases; and a four-slice "vaporware audit"
+swept the codebase for fake placeholder data, unmapped errors, missing
+quota signalling, mocked-prod leaks, and inconsistent UI primitives. CSRF
+coverage was extended to every mutating same-origin call site that had been
+hand-rolled around `fetchWithRetry`. 2782 unit tests pass (up from 2060 at
+v3.7.2); CI gates lint warnings, build honesty, and a 415 KB-gzip eager
+bundle budget on every commit.
+
+### Added — Dashboard hero redesign
+
+- **`DashboardHero` composition** (`src/components/Dashboard/DashboardHero.jsx`)
+  replaces the old PageHeader + YourWorkCard + AI banner with a unified
+  mobile-first hero: personalized greeting (`getGreeting`), org-filter chip,
+  time-range chip, and a "What needs you" grid (`WhatNeedsYouGrid`) with
+  reviews / stale / issues counts, week-over-week deltas, and a celebratory
+  empty state.
+- **`HeroChip` primitive + variants** — `HeroOrgChip` (popover on desktop,
+  bottom sheet on mobile via `Sheet`), `HeroTimeRangeChip`, mobile-only
+  `HeroSyncChip`. All three are URL-syncable.
+- **`AIPromoStrip`** — slim auto-dismissing AI promo with telemetry-driven
+  visibility (`useAIPromoVisibility` + `useSyncExternalStore`); listens to
+  `assistant:open-count` and `insights-viewed` events and hides itself once
+  the user has clearly engaged with AI.
+- **`AttentionFeed` on the Dashboard** — surfaces the top three repos that
+  need your eyes today, with a `/api/v1/ai/attention-narrative` endpoint
+  rendering an AI-written one-liner per item (1-hour cache).
+- **PR list — inline risk badges** — every PR row carries a risk pill driven
+  by the existing PR-review risk engine.
+
+### Added — Mobile UX overhaul
+
+- **`MobileQuickActionsFab`** — bottom-right FAB that expands Create / Import
+  / DevToolkit with stagger animation, ESC handling, and focus management.
+- **Mobile bottom-nav (5 items + More sheet)** in `Header.jsx` — `Home`,
+  `Repos`, `Work` (with tracked-pending dot), `Teams`, `More`. The "More"
+  bottom sheet exposes Pricing / Settings / sign-out.
+- **`MobileDrawer` reachable via the Open-navigation-menu FAB** — keeps the
+  desktop Sidebar accessible on mobile without showing the legacy slim rail.
+
+### Added — Work Board (tracked repos + AI upgrade, 7 phases)
+
+- **Phase 1 — Tracked repos foundation.** New tables `tracked_repos`,
+  `prefs`, `ai_dismissed`, `undo_log` (migration 016). CRUD endpoints under
+  `/api/v1/work-board/tracked-repos` (single + bulk), discovery
+  (`POST /discover` with five signal collectors: review / authored /
+  assigned / owned / commits), `POST /undo/:operation_id` with 24 h TTL,
+  `GET/PATCH /prefs`. Existing read endpoints now drop muted repos and
+  webhook ingestion auto-inserts unknown repos.
+- **Phase 2 — Settings UI.** `WorkBoardSettingsSection` composes a
+  premium tracked-repos manager: `RepoRow` with pin/mute/untrack menus,
+  virtualized `TrackedReposList`, sticky `BulkActionsBar`, debounced
+  `SearchFilterBar` with signal chips, `DiscoveryPanel` (refresh window +
+  auto-mute), `AddRepoInput` with cmdk autocomplete, `WebhookConnectPanel`
+  (tier-gated), `DangerZoneCard` (reset + clear-all confirms).
+- **Phase 3 — Inline row actions.** Per-row `WorkBoardRowMenu`
+  (pin/mute/untrack) on every Work Board tab + `EmptyStateDiscovery` with
+  discover CTA, `ManageReposButton` popover in the page header.
+- **Phase 4 — Cross-app integration.** `TrackedDot` indicator on RepoCards,
+  `TrackedChip` in RepoDetail and PR Review headers, header nav badge
+  driven by `useWorkBoardBadgeCounts`, Dashboard "Your Work" card with live
+  counts.
+- **Phase 5 — Command Palette extension.** `Ctrl+K` chip in the header,
+  palette commands for pin / mute / track / refresh + tracked-repos fuzzy
+  search via `GET /api/v1/work-board/repo-search`.
+- **Phase 6 — AI Assistant backend.** `work_board_ai_spend` table for
+  monthly cost tracking, AI gate middleware (flag + opt-in + cost cap),
+  versioned prompts, deterministic suggestions engine
+  (`server/lib/work-board-suggestions-engine.js`), HMAC-signed validity
+  tokens for diff handoff, suggestions / dismiss / interpret / apply
+  endpoints.
+- **Phase 7 — AI Assistant frontend.** `WorkBoardAISection` with
+  ConversationalEdit (preview → apply), SuggestionsPanel, AI activity
+  card with spend + cap progress, AI Assistant toggle + monthly cap
+  selector, AI commands group in the palette.
+- **KPI snapshots.** Migration 017 adds `work_board_kpi_snapshots`; daily
+  job extends the sweeper; `GET /api/v1/work-board/kpi-snapshots` exposes
+  trend data; sparklines + delta badges + count-up animation on KPI tiles.
+- **Suggestion chips on rows.** `POST /api/v1/work-board/suggest-action`
+  returns ping / snooze / view chips on hover/focus; typewriter draft
+  comment replaces the old `window.prompt`.
+- **AI summary card** redesigned with two-column layout + urgency glow;
+  trend-aware `buildFactSheet` passes 7-day snapshots into the prompt.
+- **Keyboard nav.** `useFocusedRow` adds `j` / `k` row navigation across
+  every Work Board tab.
+
+### Added — Premium AI Configuration & honest error handling
+
+- **Premium AI Configuration layout** in Settings with curated model
+  dropdowns per provider, per-feature override section
+  (`PerFeatureOverrideSection`), and a `CurrentConfigSummary` with
+  per-feature key-health pills.
+- **AI key health probes.** `keyHealth` field on the cached AI status
+  endpoint; banners surface "invalid key" and "monthly cap reached" without
+  firing the underlying request. Telemetry on probe outcomes.
+- **Admin AI Probes tab** with `ProbeStatsSection` reading
+  `/api/v1/admin/probe-stats`.
+- **`formatUserError`** (`src/utils/errors.js`) + `toast.errorFromException`
+  helper. 50 `toast.error(err.message)` callsites routed through the
+  uniform mapper so users see "Couldn't reach the AI provider — try again
+  in a moment" instead of `TypeError: fetch failed`.
+- **`QuotaExceededState` modal** (`src/components/ui/QuotaExceededState.jsx`)
+  with tier-aware CTA; mounted on the `app:show-quota-exceeded` event so
+  every 429 in the app surfaces as a single rich UI.
+- **Server quota envelope.** `quotaErrorPayload` + `tierRequiredPayload`
+  helpers; existing 429 helper now emits `code: 'QUOTA_EXCEEDED'` for
+  uniform frontend handling.
+
+### Added — Cross-app polish
+
+- **Conversational ask mode in `Ctrl+K`.** Natural-language queries hit
+  `/api/ai/translate-search` (5-min cache) and convert to GitHub Search
+  syntax; results stream back into the palette.
+- **Recents + footer keyboard hints in `Ctrl+K`.** Contextual command
+  groups change per active view.
+- **Real notifications digest** in the header dropdown
+  (`/api/v1/notifications/digest` + `/notifications/mark-seen`),
+  `users.notifications_last_seen_at` column, aggregator library.
+- **Branch hygiene panel** above `BranchesTab` — surfaces stale,
+  unprotected, and conflicted branches with inline actions.
+- **Personal-account aware `OrgManagerModal`** — opens on the user's own
+  account when no org is selected.
+- **AI-suggested topics in `RepoDetail` Settings tab.**
+- **`RepoHealthBadge` is clickable** — opens the Insights Quality tab.
+- **`PRDetailPanel` Generate Description + `CommitTab` Generate** are
+  gated on AI being configured (no more silent failures).
+
+### Added — Onboarding & UX uniformity
+
+- **`useOnboarding` hook + `OnboardingTour`** 3-step carousel; mount in
+  `App.jsx` with focus trap, a Settings re-run button, and an
+  `app:show-quota-exceeded` listener that pauses the tour while the modal
+  is up.
+- **UI primitive consolidation.** New `Spinner` / `SectionSpinner`,
+  `PageShell` / `PageHeader`, `EmptyState`, `Skeleton`, `Card`, expanded
+  `Button` (soft-primary, soft-danger, outline, size=xs). 25 standalone
+  `Loader2` sites migrated; 7 raw modals + DevToolkit SectionCard +
+  AuditLog table + DLQ panels migrated to the shared primitives.
+- **Lint guard against standalone `Loader2`** so the regression doesn't
+  re-enter the codebase.
+- **`docs/specs/` and `docs/plans/`** added for every slice (audit, AI
+  wiring, UX uniformity, code health, work-board upgrade, dashboard hero).
+
+### Changed — CSRF coverage on every mutation
+
+- **30+ hand-rolled `fetch()` mutations** across migration wizard, teams,
+  settings, dev toolkit, billing, AI chat, and the bulk-confirmation
+  helper now route through `getCsrfToken()` before the POST/PUT/PATCH/
+  DELETE. Coverage helpers in `useRepoDetail.apiFetch`,
+  `useReviewAction.call`, `useWorkBoardPresets.call`,
+  `useDevToolkit`, `useStreaming`, `useAzureOrganizations`, and
+  `bulkExecuteWithConfirmation`. Server middleware unchanged — this
+  closes a gap where new code had been bypassing the existing
+  `requireCsrfToken` guard.
+- **Test parity.** Seven test files updated to mock
+  `@/utils/api.getCsrfToken` so the test fetch queue isn't consumed by
+  the auth/csrf-token request. Header assertions relaxed to
+  `expect.objectContaining` to allow `X-CSRF-Token`.
+
+### Changed — Honesty pass
+
+- **Mock factories moved behind a dev-only guard.**
+  `src/__mocks__/mockAI.js` is loaded via dynamic `import()` from
+  callsites that inline `import.meta.env.DEV && VITE_MOCK_MODE === 'true'`
+  so production builds tree-shake the mock entirely.
+- **CI build-honesty gate** (`tests/build/build-honesty.test.js`) fails
+  the build if a production bundle contains mock-repo strings.
+- **AI placeholders.** When AI is not configured, every analysis-shaped
+  endpoint returns explicit `null` scores with a `Connect AI to see real
+  analysis` note instead of fabricating numbers.
+- **README honesty regression guard** (`tests/ci/`) catches future
+  README claims that grep can't back up against the source tree.
+- **ESLint rule** forbidding `.stack` access in `src/components/` so
+  internal stacks can never reach a UI surface.
+
+### Changed — Performance & operational guards
+
+- **Bundle-size budget gate** (`tests/build/bundle-budget.test.js`):
+  eager set ≤ 415 KB gzip. Sentry switched to named imports + dropped
+  the dead `getCurrentHub` fallback.
+- **`coverage.thresholds.{}`** updated to the Vitest 4+ schema.
+- **`coverage/`** added to `.gitignore`.
+- **Brand label demoted** from `<h1>` to `<h2>` (`Header.jsx`) so the
+  page-level `<h1>` (e.g. the dashboard greeting) is the single
+  semantic heading per route.
+- **`/api/system/setup`, `/api/system/client-error`, `/api/v1/license/validate`,
+  `/api/v1/billing/portal`, `/api/v1/billing/checkout`,
+  `/api/stats/clear-cache`, `/api/repos/check-conflicts`, `/api/orgs/:org`
+  PATCH, `/api/azure/projects` POST, `/api/azure/repos/*`,
+  `/api/import/check-duplicates`, `/api/import/validate-url`,
+  `/api/teams/*`, `/api/teams/:id/members`, `/api/teams/:id/repos`,
+  `/api/repos/:owner/:repo/collaborators/:user`, `/api/repos/:owner/:repo/actions/workflows/:id/dispatches`,
+  `/api/v1/api-keys`, `/api/v1/user/data` DELETE,
+  `/api/v1/work-board/review-action`, `/api/v1/work-board/snooze`,
+  `/api/v1/work-board/presets`, `/api/repos/.../pulls(/:n)`,
+  `/api/repos/.../pulls/:n/reviews`, `/api/ai/chat`,
+  `/api/ai/analyze-context`** — every one of these mutating endpoints
+  now reliably receives `X-CSRF-Token` from the frontend.
+
+### Fixed
+
+- **`/api/ai/index` validator** now requires the GitHub numeric repo
+  `id` (NOT NULL primary key in `repo_metadata` / `repo_embeddings`).
+  Without it the INSERT was throwing as an opaque 500. Errors now
+  route through `handleAIError` so quota / invalid-key / rate-limit
+  cases surface with the typed envelope.
+- **`/test` provider check** stopped silently falling back to Gemini
+  when the user-configured provider was misconfigured.
+- **Dashboard hero** — `useYourWork` guards concurrent refreshes and
+  covers the negative-delta + visibility-debounce cases.
+- **`AISummaryCard` meta prop** + sparkline opacity animation fixes.
+- **`WorkBoardPage` mock** in `tests/components/App.test.jsx` now
+  exports `useKpiSnapshots` so other route tests don't blow up when a
+  WorkBoard hook is rendered into the tree.
+- **CommandPalette tests** stub `translateSearch` so palette tests do
+  not call out to localhost (was producing `ECONNREFUSED ::1:3000` in CI).
+- **`webhook-retry.test.js`** — undo-log prepared statements now
+  lazy-init.
+- **Onboarding tour skip** moved from the hook to the App mount site
+  so mock mode no longer flashes the tour on first paint.
+- **E2E pipeline.** Mobile drawer-open assertion uses force-click +
+  programmatic dispatch fallback (rides out hydration races on slow CI),
+  responsive nav-button assertions match the actual mobile bottom-nav
+  labels (`Home` / `Repos` / `Work` / `Teams` / `More`), dashboard-hero
+  spec greens after the brand `<h1>` → `<h2>` demotion.
+- **Mock-mode 401 redirect** skipped — the pre-existing redirect was
+  killing every e2e test that auth-checked.
+- **Rate-limit toast suppressed in mock mode**; onboarding tour
+  suppressed in mock mode; status banner scoped; CSRF mocked for the
+  migration auto-fix spec.
+- **Build artifacts** (`.vite/`, `dist/`, `coverage/`) consistently
+  `.gitignore`-d.
+
+### Internal
+
+- **267 commits** since v3.7.2. **Test count** 2060 → 2782 (+722).
+  Significant new suites: WorkBoard tracked-repos backend (~120
+  tests), KPI snapshots, AI suggestions engine, UI primitives
+  consolidation guards, CSRF interceptor, formatUserError, build
+  honesty, bundle budget.
+- **CSS audit** — six orphan `ds-*` classes deleted (-63 lines) after a
+  reachability sweep.
+- **CI configuration.** Husky pre-commit lints touched files and
+  rejects warnings; bundle budget guard runs on every PR.
+
 ## [3.7.2] - 2026-04-23
 
 Docs pass — no code changes.

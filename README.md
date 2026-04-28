@@ -21,13 +21,13 @@
 ![LM Studio](https://img.shields.io/badge/LM_Studio-4B2DDC?style=for-the-badge)
 
 <!-- Quality -->
-![Tests](https://img.shields.io/badge/Tests-2060_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-2782_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
 ![License](https://img.shields.io/badge/License-AGPL_v3-blue?style=for-the-badge&logo=gnu&logoColor=white)
 ![Release](https://img.shields.io/github/v/release/brunobola-portfolio/GitHub-Repo-Manager?style=for-the-badge&logo=github&logoColor=white)
 
 **A full-stack AI-powered dashboard for managing repositories, teams, CI/CD, and migrating from Azure DevOps — all in one beautiful interface.**
 
-[Try Demo Mode](#quick-start-demo-mode) | [Features](#features-overview) | [Installation](#installation) | [Documentation](docs/) | [What's new in v3.7.2](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v3.7.2)
+[Try Demo Mode](#quick-start-demo-mode) | [Features](#features-overview) | [Installation](#installation) | [Documentation](docs/) | [What's new in v3.8.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v3.8.0)
 
 **Production-hardened** — AES-256-GCM BYOK, rolling sessions + CSRF double-submit, GitHub API circuit breaker, SSRF guard on import-from-URL.
 
@@ -40,6 +40,10 @@
 ### Dashboard
 
 ![Dashboard Dark Mode](docs/images/01_dashboard_dark_hd.png)
+
+### Dashboard Hero (mobile)
+
+![Dashboard mobile](docs/images/dashboard-hero-after_mobile_hd.png)
 
 ### Migration Wizard
 
@@ -89,13 +93,17 @@ Managing a growing GitHub ecosystem is hard. Between dozens of repositories, mul
 ## Features Overview
 
 ### Comprehensive Dashboard
+
 Get a bird's-eye view of your entire GitHub ecosystem at a glance.
 
-- **Real-time Statistics** — Total repos, public/private distribution, stars, forks, organizations
-- **Activity Trends** — Interactive charts showing development activity over 7/30/90 days
-- **Language Distribution** — Technology breakdown across all your projects
-- **Organization Overview** — Quick insights with star, fork, and issue counts per org
-- **Migration Activity** — Track migration progress and history
+- **DashboardHero** — personalised greeting (`Bom dia` / `Good morning` based on locale + time), org-filter and time-range chips that round-trip through the URL, and a "What needs you" grid surfacing reviews waiting / stale PRs / open issues with week-over-week deltas and a celebratory empty state.
+- **Attention Feed** — top three repos that need your eyes today, with an AI-written one-liner on the lead item (1-hour cache, BYOK).
+- **Real-time Statistics** — Total repos, public/private distribution, stars, forks, organizations.
+- **Activity Trends** — Interactive charts showing development activity over 7/30/90 days.
+- **Language Distribution** — Technology breakdown across all your projects.
+- **Organization Overview** — Quick insights with star, fork, and issue counts per org.
+- **Migration Activity** — Track migration progress and history.
+- **Auto-dismissing AI promo strip** — quietly disappears once you've engaged with the AI Assistant and Insights surfaces enough times.
 
 ### Advanced Repository Management
 
@@ -138,7 +146,7 @@ Organize, filter, and manage your repositories with powerful tools built for sca
 
 ### Cross-Repo Work Board
 
-A single cockpit across all your repositories — no context switching.
+A single cockpit across all your repositories — no context switching, no manual repo registration.
 
 ![Work Board — KPI row, filter bar, inline actions](docs/images/33_work_board_dark_hd.png)
 
@@ -146,27 +154,73 @@ Filters are URL-synced and round-trip through the browser history — share a fi
 
 ![Filters applied — 1 matching PR](docs/images/37_work_board_filters_active_hd.png)
 
-- **Zero-config data** — live-fetches PRs and issues from GitHub when no webhook is configured; ETag-revalidated with a 5-minute cache.
+#### Tracked repos & discovery
+
+The Work Board operates on an explicit set of **tracked repositories** that you can pin / mute / untrack from anywhere in the app. Discovery seeds the set automatically from five signal collectors (review-requested, authored, assigned, owned, recently-committed) so you don't start with an empty board, and the **Settings → Work Board** page exposes virtualised lists, bulk actions, signal-aware search, and a "Discover now" panel with auto-mute toggle.
+
+Cross-app integration:
+
+- `TrackedDot` indicator on every RepoCard
+- `TrackedChip` in RepoDetail and PR Review headers
+- Header nav badge showing pending-review count (driven by `useWorkBoardBadgeCounts`)
+- Dashboard "Your Work" card with live counts
+
+#### KPI tiles & trends
+
+KPI tiles show count-up animations, sparklines (last 7 days), and delta badges. Snapshots persist in `work_board_kpi_snapshots` (migration 017) via a daily sweeper job, exposed at `GET /api/v1/work-board/kpi-snapshots`.
+
+#### AI Assistant (BYOK, opt-in, monthly cap)
+
+- **AI summary card** — two-column layout with urgency glow; the prompt receives 7-day trend snapshots so the headline reflects momentum, not just snapshot state.
+- **Suggestion chips on rows** — `POST /api/v1/work-board/suggest-action` returns `ping` / `snooze` / `view` chips on hover/focus; clicking `Ping` opens an inline typewriter draft comment (no more `window.prompt`).
+- **Conversational edits** — describe what you want ("mute all forks, keep only tesla org") and review a preview before applying. Implemented with deterministic suggestion engine + HMAC-signed validity tokens for the diff handoff.
+- **Suggestions panel** with Apply / Dismiss; dismissed suggestions persist server-side.
+- **Activity card** with monthly spend + cap progress; opt-in toggle and cap selector live in the WorkBoard AI section of Settings.
+
+#### Inline actions everywhere
+
+- **Per-row menu** — pin / mute / untrack on every Work Board tab.
+- **Empty-state discovery** — `EmptyStateDiscovery` with a one-click "Discover now" CTA when no repos are tracked.
+- **Approve / request-changes / snooze** a PR directly on the row (falls back to a re-auth prompt if the OAuth scope is missing).
 - **Auto-refresh** — polls every 60 s, pauses when the tab is hidden, shows "updated N ago".
-- **Filters + URL sync** — multi-select by repo / author / label, single-select age bucket (24 h / 7 d / 30 d), hide snoozed toggle. Selection reflected in the URL and saveable as a server-side preset.
-- **Inline actions** — approve / request-changes / snooze a PR directly on the row (falls back to a re-auth prompt if the OAuth scope is missing).
-- **AI summary** (BYOK) — Anthropic, OpenAI, Gemini, OpenRouter or Local Ollama / LMStudio generate a headline + urgency gauge + actionable bullets; silently hidden when no provider is configured.
-- **Command Palette group** — `⌘K` surfaces a Work Board section with one-shortcut navigation to every tab plus AI regenerate.
+- **Keyboard nav** — `j` / `k` / `↑` / `↓` row navigation, `Enter` to open, `.` approve, `x` request changes, `s` / `Shift+S` snooze, `u` unsnooze, `r` re-request review, `/` focus filter, `?` help modal.
+- **Command Palette group** — `⌘K` surfaces a Work Board section with one-shortcut navigation to every tab plus AI regenerate / palette suggestions.
 
   ![Command Palette — Work Board group](docs/images/35_work_board_command_palette_hd.png)
 
-Tabs on offer:
+#### Tabs on offer
 
-- **My Reviews** — every PR where you are a requested reviewer, sorted by age
-- **My Issues** — every open issue assigned to you across all tracked repos
-- **Stale PRs** (Pro+) — PRs open beyond a configurable threshold, ranked by staleness
-- **Review Load** (Pro+) — per-reviewer submitted vs pending counts, visualised as stacked bars to spot overloaded reviewers at a glance
-- **Tech Debt** (Pro+) — open issues labelled with `tech-debt`, `technical-debt`, `debt`, `refactor`, `refactoring`, `cleanup` or `code-smell`, grouped by repo with hotspot ranking
-- **DORA Metrics** (Enterprise) — deploy frequency, lead-time p50/p90, change failure rate, MTTR p50/p90, and CSV export for the whole 4-metric set
+- **My Reviews** — every PR where you are a requested reviewer, sorted by age.
+- **My Issues** — every open issue assigned to you across all tracked repos.
+- **Stale PRs** (Pro+) — PRs open beyond a configurable threshold, ranked by staleness.
+- **Review Load** (Pro+) — per-reviewer submitted vs pending counts, visualised as stacked bars to spot overloaded reviewers at a glance.
+- **Tech Debt** (Pro+) — open issues labelled with `tech-debt`, `technical-debt`, `debt`, `refactor`, `refactoring`, `cleanup` or `code-smell`, grouped by repo with hotspot ranking.
+- **DORA Metrics** (Enterprise) — deploy frequency, lead-time p50/p90, change failure rate, MTTR p50/p90, and CSV export for the whole 4-metric set.
+
+Filters and presets:
+
+- **Filters + URL sync** — multi-select by repo / author / label, single-select age bucket (24 h / 7 d / 30 d), hide snoozed toggle. Selection reflected in the URL and saveable as a server-side preset.
+- **Zero-config data** — live-fetches PRs and issues from GitHub when no webhook is configured; ETag-revalidated with a 5-minute cache.
+- **Webhook auto-track** — incoming GitHub webhooks auto-insert the source repo as tracked the first time they're seen.
 
 ### Command Palette (Ctrl+K)
 
-Keyboard-first navigation across the entire app — search repos, jump to any page, trigger bulk actions.
+Keyboard-first navigation across the entire app — search repos, jump to any page, trigger bulk actions, manage tracked repos.
+
+- **Conversational ask mode** — natural-language queries pass through `/api/ai/translate-search` (5-minute cache) and convert into GitHub Search syntax with results streamed inline.
+- **Contextual command groups** — the available commands change with your active view (Dashboard / RepoDetail / WorkBoard / PR Review).
+- **Recents + footer keyboard hints** keep frequent actions discoverable.
+- **Work Board controls** — pin / mute / track / refresh / discover-now from the palette, plus a tracked-repos fuzzy search (`/api/v1/work-board/repo-search`).
+
+### Mobile-first UX
+
+- **Bottom-nav** — Home / Repos / Work / Teams / More, with a pending-review dot on the Work tab. The "More" entry opens a bottom sheet for Pricing / Settings / sign-out.
+- **`MobileQuickActionsFab`** — bottom-right FAB expands Create / Import / Dev Toolkit with stagger and ESC handling.
+- **Mobile drawer** — left-side navigation drawer reachable from the floating menu button, focus-trapped and body-scroll-locked.
+
+### Onboarding tour
+
+A 3-step carousel (`useOnboarding` + `OnboardingTour`) introduces the Dashboard, Work Board, and Migration Wizard on first sign-in. Skip / dismiss is sticky; a re-run button lives in **Settings → Onboarding** for when you want a refresher.
 
 ### BYOK — Multi-Provider AI
 
@@ -475,15 +529,16 @@ For detailed architecture documentation, see [`docs/architecture/overview.md`](d
 | Category | Technologies |
 |----------|-------------|
 | **Frontend** | React 19.2, Vite 8.0, TailwindCSS 4.1 |
-| **UI/UX** | Framer Motion 12, Lucide Icons (554), Recharts 3, Radix UI |
+| **UI/UX** | Framer Motion 12, Lucide Icons 1.8, Recharts 3, Radix UI, cmdk |
 | **Backend** | Node.js 20+, Express 5.2 |
-| **Database** | Better-SQLite3 12.9 (WAL mode, 32MB cache) |
-| **Security** | Helmet.js, express-rate-limit, Zod validation on critical routes, SSRF protection |
-| **AI** | Google Gemini API (gemini-embedding-001, gemini-2.5-flash) |
-| **APIs** | GitHub REST API (v2022-11-28), Azure DevOps API (v7.1) |
-| **Logging** | Pino (structured JSON logging with credential redaction) |
-| **Testing** | Vitest, Testing Library, Playwright |
-| **Auth** | GitHub OAuth 2.0 (CSRF state validation), Azure DevOps OAuth |
+| **Database** | better-sqlite3 12.9 (WAL mode, 32 MB cache) |
+| **Security** | Helmet.js, express-rate-limit (per-tier + per-IP auth-route), Zod validation, SSRF guard, CSRF double-submit, AES-256-GCM credential encryption |
+| **AI (BYOK)** | Anthropic, OpenAI, Google Gemini, OpenRouter, LMStudio / local — per-user keys encrypted at rest |
+| **APIs** | GitHub REST API (v2022-11-28), Azure DevOps API (v7.1), Stripe Billing |
+| **Logging** | Pino (structured JSON, automatic credential redaction) + Sentry breadcrumbs |
+| **Testing** | Vitest 4 (2782 unit tests), Testing Library, Playwright |
+| **Auth** | GitHub OAuth 2.0 (CSRF state), Azure DevOps OAuth |
+| **CI gates** | ESLint `max-warnings 0`, build-honesty test (no mock leaks), bundle-budget (≤ 415 KB gzip eager), README honesty regression guard |
 
 ### GitHub Permissions
 
@@ -706,24 +761,46 @@ A: No. Source repos are never modified. Use dry-run mode to test first.
 
 ---
 
-## Recently Shipped (March–April 2026)
+## Recently Shipped
 
-- **BYOK — Multi-provider AI** — configure Gemini, Anthropic, OpenAI, OpenRouter, or LMStudio per user in Settings → AI Configuration; keys encrypted at rest with AES-256-GCM
-- **GitHub Event Ingestion** — real-time PR, issue, and deployment webhook pipeline (see `docs/event-ingestion.md`)
-- **Cross-Repo Work Board** — my reviews, stale PRs, review load, DORA metrics across all repos
-- **SOC 2 Code Hardening** — append-only audit log with SHA-256 hash chain, self-service data erasure (GDPR Art. 17), startup secrets verification, data retention + warning emails
-- **Command Palette (Ctrl+K)** — keyboard-first app-wide navigation and actions
-- **Stripe Billing + License Key Delivery** — Ed25519-signed JWT license keys issued and emailed on checkout completion
-- **AI Assistant Action Dispatch (v3.3.0)** — chat opens Migration Wizard, Create Repo, Transfer, and Settings modals from natural-language requests
-- **AI-Assisted Migration Descriptions (v3.3.0)** — AI generates target-repo descriptions with deterministic fallback when no key is present
-- **Migration Repo Select Redesign (v3.1.0)** — 10-rule risk engine, 5 batched Azure enrichment endpoints, slide-in detail panel, keyboard-first UX, virtualized rows
-- **Auto-Fix Drawer (v3.2.0)** — persistent size-strategy choices with "Fix applied" badge; LFS toggle auto-enabled
-- **Bulk Operations Safety** — confirmation dialogs, dry-run mode, tier-gated destructive actions
-- **PR Review Experience** — file tree, diff viewer, AI insights, conversation threads
-- **License Mint Automation** — GitHub Actions workflow for Ed25519-signed license key distribution
-- **Modal System Redesign** — shared Modal primitive with body scroll lock
-- **Health Dashboard Premium** — tabbed organization with visual polish
-- **Rate Limit UX** — friendly notices with dev-mode exemption
+### v3.8.0 (April 2026)
+
+- **Dashboard hero redesign** — unified `DashboardHero` with personalised greeting, URL-synced org / time-range chips, "What needs you" grid with weekly deltas, and an auto-dismissing AI promo strip.
+- **Mobile UX overhaul** — 5-item bottom-nav (`Home / Repos / Work / Teams / More`), `MobileQuickActionsFab`, mobile drawer with focus trap, "More" bottom sheet.
+- **Work Board — tracked repos + AI upgrade (7 phases)** — explicit tracked-repo set with five-signal discovery, virtualised settings UI, inline pin/mute/untrack on every row, KPI sparklines + deltas, AI summary card with urgency glow, suggestion chips (`ping` / `snooze` / `view`), conversational-edit preview-then-apply.
+- **Premium AI Configuration** — curated model dropdowns, per-feature override section, per-feature key-health pills, admin probe stats tab.
+- **Honest error handling** — `formatUserError` + `toast.errorFromException` (50 callsites migrated), `QuotaExceededState` modal mounted on `app:show-quota-exceeded`, server `quotaErrorPayload` / `tierRequiredPayload` helpers, ESLint rule forbidding `.stack` access in `src/components/`.
+- **Onboarding tour** — 3-step `OnboardingTour` carousel with focus trap and a Settings re-run button.
+- **Cross-app polish** — conversational ask mode in `Ctrl+K`, real notifications digest in the header, AI narrative for the top Attention Feed item, branch hygiene panel, AI-suggested topics in RepoDetail.
+- **CSRF coverage on every mutating call site** — 30+ hand-rolled `fetch()` mutations now route through `getCsrfToken()`.
+- **CI guards** — bundle-size budget (415 KB gzip eager set), build-honesty test (no mock-repo strings in production bundles), README honesty regression guard.
+- **UI primitive consolidation** — `Spinner` / `SectionSpinner`, `PageShell` / `PageHeader`, `EmptyState`, `Skeleton`, `Card`, expanded `Button` variants. 25 standalone `Loader2` sites migrated; lint guard prevents reintroduction.
+
+### v3.7.0–v3.7.2 (April 2026)
+
+- **Admin DLQ UI + CLI** — Email + Webhook DLQs with retry / resolve / filter, plus zero-dep CLI scripts (`admin:grant`, `admin:dlq*`, `admin:dlq:sweep`).
+- **Public `/status` page** — unauthenticated, polls `/api/health/ready`.
+- **Session-expiry hook** — soft warn < 1 h before the 7-day session ceiling, hard warn < 5 min.
+- **Husky v9 + lint-staged v16** — pre-commit `eslint --fix --max-warnings 0` and a `console.log` / `debugger` rejection.
+
+### v3.4.0–v3.6.0 (April 2026)
+
+- **BYOK multi-provider AI** — Gemini, Anthropic, OpenAI, OpenRouter, LMStudio per-user; AES-256-GCM at rest.
+- **GitHub event ingestion pipeline** — real-time PR, issue, and deployment webhooks (see [`docs/event-ingestion.md`](docs/event-ingestion.md)).
+- **Cross-Repo Work Board (initial release)** — my reviews / stale PRs / my issues / review load / Tech Debt / DORA.
+- **CSRF middleware + double-submit token**, **SSRF guard on `/api/import/url`**, **rolling session + 7-day absolute timeout**, **per-IP auth-route rate limit**, **mandatory `CREDENTIAL_ENCRYPTION_KEY` in production**.
+- **GitHub API circuit breaker + Retry-After honouring**; **email + webhook DLQs**; **route-level lazy splits + vendor-icons chunk**; **WCAG 2.1 AA pass on form surfaces**.
+- **CODEOWNERS Suggest endpoint + UI**; **Compare-with-existing side-by-side diff modal**; **Command Palette live GitHub search**; **AI Issue-to-PR Planner (plan-only)**; **Self-service GDPR (Article 17 + 20)**.
+
+### v3.0.0–v3.3.x
+
+- **AGPL Open-Core licensing** with Ed25519-signed JWT license keys + Stripe checkout / portal / webhook flow.
+- **AI Assistant action dispatch** — Migration Wizard, Create Repo, Transfer, History, Settings opened from natural-language intent.
+- **Migration Repo Select redesign** — 10-rule risk engine + 5 batched Azure enrichment endpoints + virtualised slide-in detail panel.
+- **Auto-Fix Drawer** with persistent size-strategy choices and "Fix applied" badge.
+- **Modal system redesign**, **reusable TabBar**, **Health Dashboard Premium**, **Rate Limit UX**.
+
+See [`CHANGELOG.md`](CHANGELOG.md) for the full history.
 
 ## Roadmap
 

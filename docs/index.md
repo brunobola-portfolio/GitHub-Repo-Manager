@@ -21,6 +21,17 @@ below links to the canonical page for that topic.
 
 Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v3.8.0 (2026-04-28)** — Dashboard hero redesign (`DashboardHero`,
+  `WhatNeedsYouGrid`, `AIPromoStrip`, `AttentionFeed`); mobile UX overhaul
+  (bottom-nav, `MobileQuickActionsFab`, drawer); Work Board tracked-repos
+  and AI upgrade across seven phases; premium AI Configuration with
+  per-feature key-health probes; honest error handling (`formatUserError`
+  with `QuotaExceededState`); CSRF coverage on every mutating call site;
+  onboarding tour; UI primitive consolidation; and CI bundle-budget,
+  build-honesty, and README honesty guards. **2782 unit tests**
+  (up from 2060).
+- **v3.7.2 (2026-04-23)** — Docs pass: `docs/index.md` rewrite,
+  `docs/operations.md` runbook, `docs/guides/admin-dlq.md`.
 - **v3.7.1 (2026-04-22)** — CI pipeline unbroken after 10+ red commits;
   `useRepoDetail` memoised (fixed real RepoDetail tab churn); a11y critical
   gate landed clean; `pr-review` e2e greened.
@@ -31,7 +42,7 @@ Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
   mandatory credential encryption key), resilience (GitHub circuit breaker,
   email + webhook DLQs, AI retry taxonomy), observability (Server-Timing,
   Sentry breadcrumbs), route-level lazy splits + bundle-budget gate.
-- **v3.5.0 (2026-04-21)** — Work Board mega-upgrade (zero-config data,
+- **v3.5.0 (2026-04-21)** — Work Board initial release (zero-config data,
   auto-refresh, inline actions, presets, snooze, DORA tab).
 
 ## Architecture
