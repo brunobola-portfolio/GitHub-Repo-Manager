@@ -4,6 +4,9 @@ import { Building2, Check } from 'lucide-react'
 import { HeroChip } from './HeroChip'
 import { Sheet } from '../ui/Sheet'
 
+// TODO: consolidate with src/hooks/useMobileBreakpoint.jsx — that hook uses
+// (max-width: 767px) for md; this chip needs sm (639px). Should grow into a
+// shared `useBreakpoint(name)` rather than two near-duplicate hooks.
 function useIsMobile() {
     const [isMobile, setIsMobile] = useState(() => {
         if (typeof window === 'undefined') return false

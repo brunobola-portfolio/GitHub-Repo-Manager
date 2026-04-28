@@ -53,9 +53,9 @@ const TONE_CLASSES = {
 function deltaContext(baselineAt) {
     if (!baselineAt) return null
     const ms = Date.now() - baselineAt
-    if (ms < 3_600_000) return 'desde há pouco'
-    if (ms < 86_400_000) return 'desde manhã'
-    return 'desde ontem'
+    if (ms < 3_600_000) return 'just now'
+    if (ms < 86_400_000) return 'earlier today'
+    return 'since yesterday'
 }
 
 function CategoryCard({ category, data, onClick }) {

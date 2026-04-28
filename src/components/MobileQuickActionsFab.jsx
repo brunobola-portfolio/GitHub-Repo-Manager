@@ -40,6 +40,9 @@ export function MobileQuickActionsFab(props) {
             </AnimatePresence>
 
             <div className="fixed right-4 bottom-[calc(56px+1rem+var(--safe-area-inset-bottom,0px))] z-50 flex flex-col items-end gap-3">
+                {/* Bare conditional (not AnimatePresence): jsdom doesn't drive exit
+                    animations, so the ESC-closes test wouldn't observe the unmount
+                    otherwise. Trade-off: secondary buttons disappear without fade. */}
                 {open && (
                     <motion.ul
                         role="menu"

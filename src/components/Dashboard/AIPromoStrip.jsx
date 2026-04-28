@@ -44,6 +44,9 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
         }
     }
 
+    // Early return skips the AnimatePresence exit path: jsdom doesn't drive
+    // exit animations, so the dismiss test can't observe an unmount otherwise.
+    // Trade-off: dismiss is instant rather than collapsing smoothly.
     if (!shouldRender) return null
 
     return (

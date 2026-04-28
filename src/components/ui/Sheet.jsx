@@ -2,6 +2,10 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 
+// Built on Framer Motion + useFocusTrap + useBodyScrollLock (mirrors SidePanel.jsx)
+// instead of Radix Dialog: @radix-ui/react-dialog isn't installed in this project,
+// and the existing hook pair already provides focus management and scroll locking.
+
 const EASE = [0.16, 1, 0.3, 1]
 
 export function Sheet({ open, onOpenChange, title, children }) {
