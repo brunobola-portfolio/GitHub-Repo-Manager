@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useCallback, useRef } from 'react'
+import { useReducer, useEffect, useRef } from 'react'
 
 const PERSIST_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
 

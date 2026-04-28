@@ -21,7 +21,7 @@ vi.mock('../lib/logger.js', () => ({
     },
 }))
 
-import { default as db, __mockPrepare as mockPrepare } from '../db.js'
+import { default as _db, __mockPrepare as mockPrepare } from '../db.js'
 import { hashKey, generateApiKey, apiKeyAuth, requireScope } from '../middleware/api-key-auth.js'
 
 describe('hashKey', () => {

@@ -21,7 +21,8 @@ import { AIError, AI_ERROR_CODE } from '../lib/ai-provider.js'
  * `chunks` is an array of raw SSE lines (or arrays of strings per read call).
  * Each element in `reads` is the bytes returned by one reader.read() call.
  */
-function makeFetchWithStream(reads, { abortAfter = Infinity } = {}) {
+// eslint-disable-next-line no-unused-vars -- helper retained for upcoming abort-stream tests; signature must match prod fetch
+function makeFetchWithStream(reads, { abortAfter: _abortAfter = Infinity } = {}) {
     let callCount = 0
 
     const reader = {

@@ -64,7 +64,8 @@ export function TabBar({ tabs, activeTab, onTabChange, variant = 'pill', layoutI
     return (
         <div
             role="tablist"
-            className={`${VARIANT_CONTAINER[variant]} ${className}`}
+            tabIndex={0}
+            className={`${VARIANT_CONTAINER[variant]} ${className} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 rounded-lg`}
             onKeyDown={handleKeyDown}
         >
             {tabs.map(({ id, label, icon: Icon }) => {

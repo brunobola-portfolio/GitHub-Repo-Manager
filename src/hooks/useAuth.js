@@ -43,6 +43,7 @@ export function useAuth() {
                 followers: 1243,
                 following: 89
             }
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- mock-mode bootstrap, runs once on mount
             setUser(mockUser)
         }
     }, [])

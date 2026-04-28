@@ -249,6 +249,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 			{!isSubmenu && (
 				<div
 					className="fixed inset-0 z-[99]"
+					aria-hidden="true"
 					onClick={(e) => { e.stopPropagation(); onClose() }}
 				/>
 			)}
@@ -296,6 +297,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 					const Icon = item.icon
 
 					return (
+						// eslint-disable-next-line jsx-a11y/click-events-have-key-events -- menu-wide arrow/Enter/Esc handlers live on the parent <motion.div role="menu"> via handleKeyDown
 						<div
 							key={item.id || item.label || `item-${index}`}
 							ref={(el) => { itemRefs.current[index] = el }}

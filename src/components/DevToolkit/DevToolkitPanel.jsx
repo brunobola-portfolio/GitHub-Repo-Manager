@@ -169,6 +169,7 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                         aria-label="Dev Toolkit"
                     >
                         {/* Drag handle */}
+                        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- mouse-only resize affordance; the panel content is independently keyboard-navigable so a kbd resize isn't required */}
                         <div
                             onMouseDown={onDragStart}
                             className={`absolute left-0 top-0 bottom-0 w-1 cursor-col-resize z-10 transition-colors bg-transparent hover:bg-indigo-500/50 ${

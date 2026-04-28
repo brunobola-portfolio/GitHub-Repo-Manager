@@ -51,7 +51,7 @@ vi.mock('../lib/license-issuer.js', () => ({
     issueLicenseForCheckout: vi.fn(async () => ({ licenseKey: 'lic_fake', emailDelivered: true })),
 }))
 
-import { default as db, __mockPrepare as mockPrepare } from '../db.js'
+import { default as _db, __mockPrepare as mockPrepare } from '../db.js'
 import { stripeWebhookHandler } from '../routes/stripe-webhooks.js'
 
 function makeReqRes({ headers = {}, body = Buffer.from('{}') } = {}) {

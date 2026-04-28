@@ -19,7 +19,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
  */
 export function useCountdown(retryAt) {
     // Pin the starting reference so progress01 is stable across re-renders.
+    // eslint-disable-next-line react-hooks/purity -- intentional Date.now() during render to lazy-init startedAtRef on first call only; subsequent renders skip this entirely
     const startedAtRef = useRef(Date.now())
+    // eslint-disable-next-line react-hooks/refs -- intentional read-during-render: startedAtRef pins the mount-time clock so totalMs is stable across re-renders
     const totalMs = Math.max(1, retryAt - startedAtRef.current)
 
     const compute = () => {
@@ -35,6 +37,7 @@ export function useCountdown(retryAt) {
 
     useEffect(() => {
         if (Date.now() >= retryAt) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot terminal state when retryAt is already in the past on mount
             setState({ secondsLeft: 0, progress01: 0, isReady: true })
             return
         }

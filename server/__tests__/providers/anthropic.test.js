@@ -271,7 +271,6 @@ describe('AnthropicProvider.generateStream()', () => {
         const mockFetch = vi.fn(() => anthropicSseResponse([]));
         vi.stubGlobal('fetch', mockFetch);
 
-        // eslint-disable-next-line no-unused-vars
         for await (const _ of provider.generateStream({ prompt: 'test' })) { /* drain */ }
 
         const body = JSON.parse(mockFetch.mock.calls[0][1].body);

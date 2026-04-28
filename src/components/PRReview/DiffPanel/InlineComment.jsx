@@ -80,6 +80,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
 
   // Sync local resolved state when parent prop changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional prop->state mirror so optimistic toggles can reset on parent refetch
     setResolvedLocally(isResolved)
     if (isResolved) setCollapsed(true)
   }, [isResolved])

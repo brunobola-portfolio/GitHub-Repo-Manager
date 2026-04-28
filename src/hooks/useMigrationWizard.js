@@ -224,6 +224,7 @@ export function useMigrationWizard({
       : null,
   )
 
+  /* eslint-disable react-hooks/refs -- hydrated is a one-shot mount-time draft loaded into useRef and only consumed inside the lazy-init callbacks below; never reassigned, never read in render output */
   const [currentStepIndex, setCurrentStepIndex] = useState(() => {
     if (hydrated.current?.currentStepIndex != null) return hydrated.current.currentStepIndex
     if (!initialStep) return 0
@@ -251,6 +252,7 @@ export function useMigrationWizard({
     isDryRun: initialDryRun,
     ...(hydrated.current?.schedule || {}),
   }))
+  /* eslint-enable react-hooks/refs */
   const [planId, setPlanId] = useState(null)
   const [importJobs, setImportJobs] = useState(INITIAL_IMPORT_JOBS)
   const [error, setError] = useState(null)

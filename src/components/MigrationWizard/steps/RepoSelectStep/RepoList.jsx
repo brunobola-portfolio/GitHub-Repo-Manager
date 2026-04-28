@@ -43,6 +43,7 @@ export function RepoList({ repos, selectedIds, activeId, density, onToggle, onOp
 function VirtualList({ repos, selectedIds, activeId, density, onToggle, onOpenDetail }) {
   const parentRef = useRef(null)
   const rowHeight = density === 'compact' ? 40 : 68
+  // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual is intentional; the React Compiler's compatibility check skips the function but the hook itself is React-stable
   const virtualizer = useVirtualizer({
     count: repos.length,
     getScrollElement: () => parentRef.current,

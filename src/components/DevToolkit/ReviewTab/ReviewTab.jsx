@@ -29,6 +29,7 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
         const controller = new AbortController()
         pullsAbortRef.current = controller
 
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag for the fetch this effect kicks off
         setPullsLoading(true)
         fetch(`/api/repos/${repoOwner}/${selectedRepo.name}/pulls?state=open`, { signal: controller.signal, credentials: 'include' })
             .then(r => r.ok ? r.json() : [])
@@ -44,6 +45,7 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
     useEffect(() => {
         if (prContext?.number && pulls.length) {
             const pr = pulls.find(p => p.number === prContext.number)
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs selectedPR when an external prContext arrives
             if (pr) setSelectedPR(pr)
         }
     }, [prContext, pulls])
@@ -51,6 +53,7 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
     useEffect(() => {
         if (generatedPR?.number && pulls.length) {
             const pr = pulls.find(p => p.number === generatedPR.number)
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs selectedPR when a freshly-created PR appears in the list
             if (pr) setSelectedPR(pr)
         }
     }, [generatedPR, pulls])

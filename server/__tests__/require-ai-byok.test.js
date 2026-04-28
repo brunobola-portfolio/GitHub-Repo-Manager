@@ -5,7 +5,7 @@
  *  - attachAIProvider: req.getAIProvider(), req.aiProvider, req.genAI legacy shim
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createRequireAI, attachAIProvider } from '../middleware/auth.js'
+import { createRequireAI } from '../middleware/auth.js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -165,8 +165,6 @@ describe('createRequireAI (BYOK-aware)', () => {
 // ---------------------------------------------------------------------------
 
 describe('attachAIProvider middleware', () => {
-    let origCreateProvider
-
     beforeEach(() => {
         vi.resetModules()
     })

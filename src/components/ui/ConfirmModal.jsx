@@ -31,6 +31,7 @@ export function ConfirmModal({
     // Reset input when modal opens/closes
     useEffect(() => {
         if (isOpen) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot reset on open; the alternative (key prop) churns the modal subtree
             setInputValue('')
             setInputError('')
             setIsSubmitting(false)

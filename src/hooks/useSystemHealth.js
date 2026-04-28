@@ -48,6 +48,7 @@ export function useSystemHealth() {
     useEffect(() => {
         if (MOCK_MODE) return undefined
         mountedRef.current = true
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot bootstrap fetch; fetchOnce() handles its own state guards (mountedRef, document.hidden)
         fetchOnce()
 
         const startInterval = () => {

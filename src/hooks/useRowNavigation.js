@@ -5,6 +5,7 @@ export function useRowNavigation({ rows, onOpen, onKey }) {
 
     useEffect(() => {
         if (activeIndex >= rows.length) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- clamp activeIndex when the row list shrinks (e.g. after a filter narrows the result set)
             setActiveIndex(Math.max(0, rows.length - 1))
         }
     }, [rows.length, activeIndex])

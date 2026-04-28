@@ -21,7 +21,7 @@ vi.mock('../lib/audit.js', () => ({
     auditLogDirect: vi.fn(),
 }))
 
-import { default as db, __mockPrepare as mockPrepare } from '../db.js'
+import { default as _db, __mockPrepare as mockPrepare } from '../db.js'
 import { sendEmail } from '../lib/email.js'
 import { auditLogDirect } from '../lib/audit.js'
 
@@ -70,8 +70,9 @@ describe('runRetentionPass', () => {
     })
 
     it('fresh row (updated_at recent) → no action taken', async () => {
-        // Updated 10 days ago — well outside the warning window
-        const recentDate = new Date(NOW.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString()
+        // Updated 10 days ago — well outside the warning window. The date
+        // itself isn't asserted on; the contract is that setupDb returns
+        // zero rows, so retention takes no action.
         setupDb([]) // query returns no rows (threshold not met)
 
         const { runRetentionPass } = await import('../lib/retention.js')

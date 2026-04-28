@@ -56,7 +56,7 @@ Respond with strict JSON only, no prose outside the JSON:
  * @param {{ input: object, mockResponse: string, provider: object }} opts
  * @returns {Promise<{ strategy: string, rationale: string, confidence: number } | null>}
  */
-export async function runCase({ input, mockResponse, provider }) {
+export async function runCase({ input, mockResponse: _mockResponse, provider }) {
     // Build the prompt exactly as the route does (irrelevant for mock evals,
     // but verifies that buildPrompt doesn't throw on the given input).
     buildPrompt(input);

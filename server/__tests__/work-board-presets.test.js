@@ -30,7 +30,7 @@ describe('work-board-presets', () => {
     });
 
     it('createPreset trims whitespace in the name', () => {
-        const p = createPreset({ userId: 1, name: '  Trimmed  ', filters: {} });
+        createPreset({ userId: 1, name: '  Trimmed  ', filters: {} });
         expect(listPresets(1)[0].name).toBe('Trimmed');
     });
 

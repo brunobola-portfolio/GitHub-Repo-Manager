@@ -53,6 +53,7 @@ export function FileTree({
 
   // Files are already sorted by PRReviewView — use them directly
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual is intentional; the React Compiler's compatibility check skips the function but the hook itself is React-stable
   const rowVirtualizer = useVirtualizer({
     count: files.length,
     getScrollElement: () => parentRef.current,

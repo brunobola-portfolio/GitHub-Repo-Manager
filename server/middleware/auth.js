@@ -202,7 +202,7 @@ export function attachAIProvider() {
  * @param {object} [aiService] - Legacy aiService singleton (ignored, kept for compat)
  * @returns {(req, res, next) => Promise<void>}
  */
-export function createRequireAI(aiService) {
+export function createRequireAI(_aiService) {
     return async (req, res, next) => {
         // req.aiProvider is populated by attachAIProvider() but may be absent
         // when the middleware wasn't applied (e.g. API-key auth paths that skip

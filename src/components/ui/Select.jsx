@@ -256,6 +256,7 @@ export function Select({
     }, [filteredSections, sections])
 
     return (
+        // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- wrapper exists only to scope the keydown handler (arrow nav + Esc); the inner <button role="combobox"> carries the actual interactive role
         <div ref={selectRef} className={`relative ${className}`} onKeyDown={handleKeyDown}>
             {/* Select Trigger */}
             <button

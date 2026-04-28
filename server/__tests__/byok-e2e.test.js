@@ -52,7 +52,7 @@ import { attachAIProvider, createRequireAI } from '../middleware/auth.js'
 // App factory
 // ---------------------------------------------------------------------------
 
-function buildApp({ provider } = {}) {
+function buildApp({ provider: _provider } = {}) {
     const app = express()
     app.use(express.json())
 

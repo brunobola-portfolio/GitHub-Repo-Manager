@@ -55,6 +55,7 @@ export function useSessionExpiry({ enabled = true } = {}) {
     const [state, setState] = useState({ expiresAt: null, expiresInSeconds: null })
     const { toast } = useToast()
     const toastRef = useRef(toast)
+    // eslint-disable-next-line react-hooks/refs -- intentional render-time toastRef refresh so async pollers always see the latest toast helper without re-creating the interval
     toastRef.current = toast
 
     // Reset-on-unmount guard so a late fetch doesn't setState after the
@@ -140,6 +141,7 @@ export function useSessionExpiry({ enabled = true } = {}) {
 
         // Initial poll kicks off as soon as the hook mounts so the header
         // indicator and first warning toast show without waiting 5 min.
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- poll() owns its own state writes; the lint rule can't see across the call boundary
         poll()
 
         const id = setInterval(poll, POLL_INTERVAL_MS)

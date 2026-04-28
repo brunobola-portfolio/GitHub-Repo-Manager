@@ -89,6 +89,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
 
   useEffect(() => {
     if (!aiPlan?.analyzed && !analyzing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot AI plan bootstrap; analyze() owns its own loading flag and writes to wizard state via onUpdate
       analyze()
     }
   }, [analyze, aiPlan?.analyzed, analyzing])

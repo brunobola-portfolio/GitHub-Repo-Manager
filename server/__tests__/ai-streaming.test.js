@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { EventEmitter } from 'events'
 import { initSSE } from '../routes/ai-streaming.js'
 

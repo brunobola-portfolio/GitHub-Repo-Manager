@@ -5,13 +5,29 @@ import { CheckCircle2 } from 'lucide-react'
  * Renders icon, label, status chip ("Configured" / "Not configured"),
  * and optional children when active or when the card is not selectable.
  */
+// The wrapping <div> hosts a paragraph (subtitle) and arbitrary children;
+// promoting it to <button> would create nested-interactive a11y issues
+// elsewhere in the wizard. role + tabIndex + onKeyDown manually wire
+// button-like semantics when selectable.
+/* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex */
 export default function CredCard({ mode, icon: Icon, label, subtitle, available, active, onSelect, children, extra }) {
   const selectable = available !== false
+  const handleSelect = () => { if (selectable) onSelect(mode) }
   return (
     <div
-      onClick={() => selectable && onSelect(mode)}
+      role={selectable ? 'button' : undefined}
+      tabIndex={selectable ? 0 : undefined}
+      aria-pressed={selectable && active ? 'true' : undefined}
+      onClick={handleSelect}
+      onKeyDown={(e) => {
+        if (!selectable) return
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          handleSelect()
+        }
+      }}
       className={`rounded-xl border p-4 transition-all
-        ${selectable ? 'cursor-pointer' : 'cursor-default opacity-60'}
+        ${selectable ? 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500' : 'cursor-default opacity-60'}
         ${active && selectable
           ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
           : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'}

@@ -33,7 +33,6 @@ vi.mock('../lib/logger.js', () => ({
 // Import modules-under-test once (they see the _db Proxy lazily)
 // ---------------------------------------------------------------------------
 
-import { auditLog } from '../lib/audit.js';
 import userDataRouter from '../routes/user-data.js';
 
 // ---------------------------------------------------------------------------

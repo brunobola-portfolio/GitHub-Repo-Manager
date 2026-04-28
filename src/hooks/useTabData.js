@@ -29,6 +29,7 @@ export function useTabData(loader, deps) {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const loaderRef = useRef(loader)
+    // eslint-disable-next-line react-hooks/refs -- pin the latest loader closure so reload() always uses the freshest one without re-creating the effect
     loaderRef.current = loader
 
     // reload returns a Promise so callers can `await reload()` after a mutation
@@ -47,7 +48,7 @@ export function useTabData(loader, deps) {
             if (!controller.signal.aborted) setLoading(false)
         }
         return () => controller.abort()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo -- deps array is the caller's contract; we cannot inline it as a literal here
     }, deps)
 
     useEffect(() => {

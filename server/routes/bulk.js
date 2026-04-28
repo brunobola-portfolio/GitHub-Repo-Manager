@@ -26,7 +26,6 @@ import { requireAuth, isValidGitHubUsername, safeError, errorResponse } from '..
 import { requireTier } from '../middleware/require-tier.js';
 import { bulkVisibilitySchema, bulkArchiveSchema, bulkDeleteSchema, bulkTransferSchema, bulkMirrorSchema, checkConflictsSchema } from '../lib/validators.js';
 import { validateBody } from '../middleware/validate-request.js';
-import { auditLog } from '../lib/audit.js';
 import { performBulk } from '../lib/bulk-helpers.js';
 
 const router = express.Router();

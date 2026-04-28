@@ -16,7 +16,7 @@ vi.mock('../../lib/logger.js', () => ({
     default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-import { default as db, __mockPrepare as mockPrepare, __mockRun as mockRun } from '../../db.js';
+import { default as _db, __mockPrepare as mockPrepare, __mockRun as mockRun } from '../../db.js';
 import { handle } from '../../lib/github-events/pull_request.js';
 
 // ---------------------------------------------------------------------------

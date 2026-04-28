@@ -175,9 +175,9 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
       {/* Project Dropdown — enriched */}
       {source.validated && (
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+          <p className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
             Project
-          </label>
+          </p>
           <Select
             value={source.project}
             onChange={handleProjectChange}

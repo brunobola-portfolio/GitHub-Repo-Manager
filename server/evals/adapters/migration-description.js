@@ -10,11 +10,7 @@
  */
 
 import { sanitizeForPrompt } from '../../ai-service.js';
-import {
-    defaultRepoDescription,
-    sanitizeRepoDescription,
-    REPO_DESCRIPTION_MAX,
-} from '../../lib/repo-description.js';
+import { REPO_DESCRIPTION_MAX } from '../../lib/repo-description.js';
 import { parseDescriptionResponse } from '../../lib/migration-ai-parsers.js';
 
 export const feature = 'migration-description';
@@ -73,7 +69,7 @@ Respond with strict JSON only, no prose outside the JSON:
  * @param {{ input: object, mockResponse: string, provider: object }} opts
  * @returns {Promise<{ description: string }>}
  */
-export async function runCase({ input, mockResponse, provider }) {
+export async function runCase({ input, mockResponse: _mockResponse, provider }) {
     // Build prompt (validates buildPrompt doesn't throw; mock ignores it).
     buildPrompt(input);
 
