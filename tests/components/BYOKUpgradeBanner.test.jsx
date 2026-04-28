@@ -13,6 +13,7 @@ vi.mock('@/config', () => ({
 vi.mock('framer-motion', () => {
     const React = require('react')
     function passthrough({ children, ...rest }) {
+        // eslint-disable-next-line no-unused-vars -- swallow framer-motion-only props so they don't reach the DOM
         const { initial, animate, exit, variants, transition, layout, whileHover, whileTap, ...clean } = rest
         return React.createElement(React.Fragment, null, children)
     }

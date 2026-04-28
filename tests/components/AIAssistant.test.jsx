@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { AIAssistant } from '../../src/components/AIAssistant'
 import { ModalProvider } from '../../src/contexts/ModalContext.jsx'
 import { useModal } from '../../src/hooks/useModal'
