@@ -947,7 +947,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.2...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.8.0...HEAD
+[3.8.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.2...v3.8.0
 [3.7.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.1...v3.7.2
 [3.7.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.0...v3.7.1
 [3.7.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.6.0...v3.7.0
