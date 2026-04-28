@@ -7,6 +7,7 @@ import { DiffSummary } from '../shared/DiffSummary'
 import { RefinementZone } from '../shared/RefinementZone'
 import { PRSections } from './PRSections'
 import { CreatePRConfirm } from './CreatePRConfirm'
+import { getCsrfToken } from '../../../utils/api'
 
 export function PRTab({ toolkit }) {
     const { toast } = useToast()
@@ -157,10 +158,15 @@ export function PRTab({ toolkit }) {
             const repo = selectedRepo.name
             const body = buildBody()
 
+            const csrfHeader = await getCsrfToken().catch(() => null)
+            const mutationHeaders = {
+                'Content-Type': 'application/json',
+                ...(csrfHeader ? { 'X-CSRF-Token': csrfHeader } : {}),
+            }
             if (prContext?.number) {
                 const patchRes = await fetch(`/api/repos/${owner}/${repo}/pulls/${prContext.number}`, {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: mutationHeaders,
                     credentials: 'include',
                     body: JSON.stringify({ title: sections.title, body }),
                 })
@@ -172,7 +178,7 @@ export function PRTab({ toolkit }) {
             } else {
                 const res = await fetch(`/api/repos/${owner}/${repo}/pulls`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: mutationHeaders,
                     credentials: 'include',
                     body: JSON.stringify({
                         title: sections.title,

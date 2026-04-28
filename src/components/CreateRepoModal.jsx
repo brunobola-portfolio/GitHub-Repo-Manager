@@ -9,6 +9,7 @@ import { Button } from './ui/Button'
 import { useDebounce } from '../hooks/useDebounce'
 import { Plus, Sparkles, Loader2, CheckCircle2, XCircle, Lock, Globe } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
+import { getCsrfToken } from '../utils/api'
 
 export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming, askAI }) {
     const [name, setName] = useState('')
@@ -38,10 +39,13 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
         const controller = new AbortController()
         ;(async () => {
             try {
+                const headers = { 'Content-Type': 'application/json' }
+                try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
+                if (controller.signal.aborted) return
                 const res = await fetch('/api/import/check-duplicates', {
                     method: 'POST',
                     credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers,
                     body: JSON.stringify({ names: [debouncedName], org: targetOrg || undefined }),
                     signal: controller.signal,
                 })

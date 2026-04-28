@@ -3,6 +3,7 @@ import { ExternalLink, ChevronUp, ChevronDown } from 'lucide-react'
 import { SidePanel } from '../../../ui/SidePanel'
 import { RepoMetaBadges } from '../../ui/repo/RepoMetaBadges'
 import { RepoRiskReport } from '../../ui/repo/RepoRiskReport'
+import { getCsrfToken } from '../../../../utils/api'
 
 export function RepoDetailPanel({ repo, source, onClose, onPrev, onNext, onRiskAction }) {
   const [stats, setStats] = useState(null)
@@ -16,25 +17,31 @@ export function RepoDetailPanel({ repo, source, onClose, onPrev, onNext, onRiskA
       org: source.org, project: source.project, repoId: repo.id, defaultBranch: repo.defaultBranch,
       pat: source.credentialMode === 'personalPat' ? source.pat : undefined,
     }
-    Promise.all([
-      fetch('/api/azure/repos/full-stats', {
-        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }).then((r) => r.ok ? r.json() : null).catch(() => null),
-      fetch('/api/azure/repos/readme', {
-        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }).then((r) => r.ok ? r.json() : null).catch(() => null),
-      fetch('/api/azure/repos/commit-activity', {
-        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, months: 12 }),
-      }).then((r) => r.ok ? r.json() : null).catch(() => null),
-    ]).then(([statsRes, readmeRes, activityRes]) => {
+    ;(async () => {
+      const csrfToken = await getCsrfToken().catch(() => null)
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+      }
+      const [statsRes, readmeRes, activityRes] = await Promise.all([
+        fetch('/api/azure/repos/full-stats', {
+          method: 'POST', credentials: 'include', headers,
+          body: JSON.stringify(payload),
+        }).then((r) => r.ok ? r.json() : null).catch(() => null),
+        fetch('/api/azure/repos/readme', {
+          method: 'POST', credentials: 'include', headers,
+          body: JSON.stringify(payload),
+        }).then((r) => r.ok ? r.json() : null).catch(() => null),
+        fetch('/api/azure/repos/commit-activity', {
+          method: 'POST', credentials: 'include', headers,
+          body: JSON.stringify({ ...payload, months: 12 }),
+        }).then((r) => r.ok ? r.json() : null).catch(() => null),
+      ])
       if (cancelled) return
       setStats(statsRes)
       setReadme(readmeRes)
       setActivity(activityRes?.activity || [])
-    })
+    })()
     return () => { cancelled = true }
   }, [repo, source.org, source.project, source.credentialMode, source.pat])
 

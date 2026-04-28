@@ -9,6 +9,7 @@ import { useAzureOAuth } from '../../hooks/useAzureOAuth'
 import { useAzureOrganizations } from '../../hooks/useAzureOrganizations'
 import { useToast } from '../../hooks/useToast'
 import { migrationApi } from '../../api/migration'
+import { getCsrfToken } from '../../utils/api'
 import SourceTypeStep from './steps/SourceTypeStep'
 import SourceStep from './steps/SourceStep'
 import UrlInputStep from './steps/UrlInputStep'
@@ -483,10 +484,12 @@ export default function MigrationWizard({
         }
       }
 
+      const headers = { 'Content-Type': 'application/json' }
+      try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
       const res = await fetch(endpoint, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(body),
       })
       const data = await res.json()

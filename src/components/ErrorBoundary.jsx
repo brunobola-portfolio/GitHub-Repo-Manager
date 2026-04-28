@@ -1,5 +1,6 @@
 import { Component, cloneElement, isValidElement } from 'react'
 import { AlertTriangle, RefreshCw, RotateCcw } from 'lucide-react'
+import { getCsrfToken } from '../utils/api'
 
 class ErrorBoundary extends Component {
   state = { hasError: false, error: null, errorInfo: null }
@@ -12,23 +13,28 @@ class ErrorBoundary extends Component {
     this.setState({ errorInfo })
     console.error('ErrorBoundary caught:', error, errorInfo)
 
-    // Report error to backend for monitoring
-    try {
-      fetch('/api/system/client-error', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: error?.message,
-          // eslint-disable-next-line no-restricted-syntax -- legitimate telemetry POST, not UI surface
-          stack: error?.stack?.slice(0, 5000),
-          componentStack: errorInfo?.componentStack?.slice(0, 5000),
-          url: window.location.href,
-          timestamp: new Date().toISOString()
+    // Report error to backend for monitoring (best-effort, fire and forget)
+    ;(async () => {
+      const headers = { 'Content-Type': 'application/json' }
+      try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* drop telemetry rather than block */ }
+      try {
+        await fetch('/api/system/client-error', {
+          method: 'POST',
+          credentials: 'include',
+          headers,
+          body: JSON.stringify({
+            message: error?.message,
+            // eslint-disable-next-line no-restricted-syntax -- legitimate telemetry POST, not UI surface
+            stack: error?.stack?.slice(0, 5000),
+            componentStack: errorInfo?.componentStack?.slice(0, 5000),
+            url: window.location.href,
+            timestamp: new Date().toISOString()
+          })
         })
-      }).catch(() => {}) // Don't let reporting failure cause another error
-    } catch {
-      // Silently ignore reporting failures
-    }
+      } catch {
+        // Silently ignore reporting failures
+      }
+    })()
   }
 
   handleRetry = () => {

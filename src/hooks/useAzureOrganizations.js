@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { getCsrfToken } from '../utils/api'
 
 const MAX_CONCURRENT = 5
 
@@ -67,6 +68,7 @@ export function useAzureOrganizations() {
       if (e.name === 'AbortError') {
         // Auto-retry once on timeout
         if (retryCount < 1 && mountedRef.current) {
+          // eslint-disable-next-line react-hooks/immutability -- intentional self-recursion via useCallback (deps: [])
           return fetchOrganizations(retryCount + 1)
         }
         setOrgsError('Timeout — could not list organizations')
@@ -75,6 +77,7 @@ export function useAzureOrganizations() {
       }
       // Auto-retry once on 401 (token expired)
       if (e.message === 'TOKEN_EXPIRED' && retryCount < 1 && mountedRef.current) {
+         
         return fetchOrganizations(retryCount + 1)
       }
       if (!mountedRef.current) return []
@@ -109,10 +112,11 @@ export function useAzureOrganizations() {
       while (queue.length > 0) {
         const orgName = queue.shift()
         try {
+          const csrfToken = await getCsrfToken()
           const res = await fetch('/api/azure/projects', {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
             body: JSON.stringify({
               org: orgName,
               pat: pat || undefined,

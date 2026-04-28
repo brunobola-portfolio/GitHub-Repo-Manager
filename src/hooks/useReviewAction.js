@@ -1,11 +1,18 @@
 import { useCallback } from 'react'
 import { useToast } from '@/hooks/useToast'
+import { getCsrfToken } from '@/utils/api'
+
+const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
 async function call(url, { method = 'POST', body } = {}) {
+    const headers = body ? { 'Content-Type': 'application/json' } : {}
+    if (MUTATION_METHODS.has(method.toUpperCase())) {
+        try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
+    }
     const res = await fetch(url, {
         method,
         credentials: 'include',
-        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        headers: Object.keys(headers).length ? headers : undefined,
         body: body ? JSON.stringify(body) : undefined,
     })
     const json = await res.json().catch(() => ({}))

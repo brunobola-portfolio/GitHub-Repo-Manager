@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Loader2, CheckCircle2, XCircle, Copy, Check } from 'lucide-react'
+import { getCsrfToken } from '../../utils/api'
 
 export function LicenseActivationModal({ isOpen, onClose }) {
   const [keyInput, setKeyInput] = useState('')
@@ -16,10 +17,12 @@ export function LicenseActivationModal({ isOpen, onClose }) {
     setError(null)
     setResult(null)
     try {
+      const headers = { 'Content-Type': 'application/json' }
+      try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
       const res = await fetch('/api/v1/license/validate', {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ key: keyInput.trim() })
       })
       const data = await res.json()

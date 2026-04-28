@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { parseAzureUrl } from '../../../utils/azureUrlParser'
 import { Button } from '../../ui/Button'
+import { getCsrfToken } from '../../../utils/api'
 
 /**
  * UrlInputStep - Git URL entry + authentication for the unified Migration Wizard.
@@ -32,10 +33,14 @@ export default function UrlInputStep({ source, onChange }) {
   const handleValidate = async () => {
     onChange({ urlValidation: 'validating', urlError: '' })
     try {
+      const csrfToken = await getCsrfToken().catch(() => null)
       const res = await fetch('/api/import/validate-url', {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+        },
         body: JSON.stringify({ url: source.sourceUrl, credentials: buildCredentials() }),
       })
       const data = await res.json()

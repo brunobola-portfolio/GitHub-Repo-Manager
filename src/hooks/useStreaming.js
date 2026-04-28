@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { getCsrfToken } from '../utils/api'
 
 const DEFAULT_MAX_RETRIES = 3
 const DEFAULT_INITIAL_DELAY = 1000
@@ -33,9 +34,10 @@ export function useStreaming({ maxRetries = DEFAULT_MAX_RETRIES } = {}) {
             const separator = url.includes('?') ? '&' : '?'
             const streamUrl = `${url}${separator}stream=true`
 
+            const csrfToken = await getCsrfToken()
             const res = await fetch(streamUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                 credentials: 'include',
                 body: JSON.stringify(body),
                 signal: controller.signal,
@@ -107,6 +109,7 @@ export function useStreaming({ maxRetries = DEFAULT_MAX_RETRIES } = {}) {
 
                 return new Promise((resolve) => {
                     retryTimerRef.current = setTimeout(async () => {
+                        // eslint-disable-next-line react-hooks/immutability -- intentional self-recursion via useCallback for retry-with-backoff (deps: [maxRetries])
                         const result = await doStream(url, body, retriesLeft - 1, accumulatedText)
                         resolve(result)
                     }, delay)

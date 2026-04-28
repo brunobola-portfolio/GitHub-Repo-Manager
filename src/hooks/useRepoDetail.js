@@ -1,15 +1,23 @@
 import { useState, useCallback, useMemo } from 'react'
+import { getCsrfToken } from '../utils/api'
 
 const API_BASE = '/api/repos'
 
+const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+
 async function apiFetch(url, options = {}) {
+    const method = (options.method || 'GET').toUpperCase()
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+    if (MUTATION_METHODS.has(method) && !headers['X-CSRF-Token']) {
+        try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* fall through; server will 403 */ }
+    }
     const res = await fetch(url, {
         credentials: 'include',
         ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            ...options.headers
-        }
+        headers,
     })
     if (!res.ok) {
         const body = await res.json().catch(() => null)

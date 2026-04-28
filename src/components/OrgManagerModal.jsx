@@ -9,6 +9,7 @@ import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
 import { EmptyState } from './ui/EmptyState'
 import { useToast } from '../hooks/useToast'
+import { getCsrfToken } from '../utils/api'
 
 const ORG_TABS = [
     { id: 'overview', label: 'Overview' },
@@ -91,10 +92,12 @@ export function OrgManagerModal({
         setLoading(true)
         setError(null)
         try {
+            const headers = { 'Content-Type': 'application/json' }
+            try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
             const res = await fetch(`/api/orgs/${org.login}`, {
                 method: 'PATCH',
                 credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(editForm)
             })
 

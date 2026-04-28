@@ -9,6 +9,7 @@ import { EmptyState } from './ui/EmptyState'
 import { ConflictPanel } from './ConflictPanel'
 import { useDebounce } from '../hooks/useDebounce'
 import { API_ENDPOINTS } from '../config'
+import { getCsrfToken } from '../utils/api'
 
 export function TransferModal({
 	isOpen,
@@ -44,10 +45,13 @@ export function TransferModal({
 			setConflicts(null)
 			setResolutions({})
 			try {
+				const headers = { 'Content-Type': 'application/json' }
+				try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
+				if (cancelled) return
 				const resp = await fetch(API_ENDPOINTS.checkConflicts, {
 					method: 'POST',
 					credentials: 'include',
-					headers: { 'Content-Type': 'application/json' },
+					headers,
 					body: JSON.stringify({
 						repos: repos.map(r => r.full_name),
 						targetOrg: debouncedTargetOrg

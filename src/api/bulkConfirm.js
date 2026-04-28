@@ -6,6 +6,8 @@
  * Licensed under the MIT License. See LICENSE in the project root.
  */
 
+import { getCsrfToken } from '../utils/api'
+
 /**
  * Build a BulkError with `.status` and `.reason` attached.
  */
@@ -37,12 +39,15 @@ export async function bulkExecuteWithConfirmation({ url, body, fetchOptions = {}
   // which is a no-dupe-keys lint error and a footgun (the second wins
   // silently — the first declaration was always dead code).
   const { headers: callerHeaders, ...restFetchOptions } = fetchOptions
+  let csrfToken = null
+  try { csrfToken = await getCsrfToken() } catch { /* server will 403 */ }
   const baseOptions = {
     method: 'POST',
     credentials: 'include',
     ...restFetchOptions,
     headers: {
       'Content-Type': 'application/json',
+      ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
       ...(callerHeaders || {}),
     },
   }

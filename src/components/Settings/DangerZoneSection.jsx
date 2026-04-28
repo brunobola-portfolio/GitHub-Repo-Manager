@@ -5,6 +5,7 @@ import { ConfirmModal } from '../ui/ConfirmModal'
 import { Button } from '../ui/Button'
 import { API_BASE_URL, MOCK_MODE } from '../../config'
 import { useToast } from '../../hooks/useToast'
+import { getCsrfToken } from '../../utils/api'
 
 /**
  * Settings — Danger Zone section.
@@ -66,10 +67,12 @@ export function DangerZoneSection({ onErased }) {
         }
         setErasing(true)
         try {
+            const headers = { 'Content-Type': 'application/json' }
+            try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
             const res = await fetch(`${API_BASE_URL}/api/v1/user/data`, {
                 method: 'DELETE',
                 credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ confirmString: 'ERASE MY DATA' }),
             })
             if (!res.ok) {

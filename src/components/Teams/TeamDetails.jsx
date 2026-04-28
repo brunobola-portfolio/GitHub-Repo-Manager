@@ -11,6 +11,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { PageHeader } from '../ui/PageHeader';
 import { SectionSpinner } from '../ui/Spinner';
+import { getCsrfToken } from '../../utils/api';
 
 const TEAM_TABS = [
     { id: 'activity', label: 'Activity', icon: Activity },
@@ -58,9 +59,12 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
 
     const handleInviteGivenUsername = async (usernameToInvite) => {
         try {
+            const headers = { 'Content-Type': 'application/json' };
+            try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
             const res = await fetch(`/api/teams/${team.id}/members`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers,
                 body: JSON.stringify({ username: usernameToInvite })
             });
             const data = await res.json();
@@ -84,9 +88,12 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
 
     const handleAssignRepoDirectly = async (repo) => {
         try {
+            const headers = { 'Content-Type': 'application/json' };
+            try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
             const res = await fetch(`/api/teams/${team.id}/repos`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers,
                 body: JSON.stringify({ repoFullName: repo.full_name, repoId: repo.id })
             });
             if (res.ok) {
@@ -104,9 +111,12 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
 
     const _handleUpdateRole = async (userId, newRole) => {
         try {
+            const headers = { 'Content-Type': 'application/json' };
+            try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
             const res = await fetch(`/api/teams/${team.id}/members/${userId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers,
                 body: JSON.stringify({ role: newRole })
             });
 
@@ -128,8 +138,12 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
             confirmText: 'Remove',
             onConfirm: async () => {
                 try {
+                    const headers = {};
+                    try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
                     const res = await fetch(`/api/teams/${team.id}/members/${userId}`, {
-                        method: 'DELETE'
+                        method: 'DELETE',
+                        credentials: 'include',
+                        headers,
                     });
 
                     if (res.ok) {
@@ -520,9 +534,12 @@ function RepoCard({ repo, teamMembers }) {
         setInviting(username);
         try {
             const [owner, repoName] = repo.repo_full_name.split('/');
+            const headers = { 'Content-Type': 'application/json' };
+            try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
             const res = await fetch(`/api/repos/${owner}/${repoName}/collaborators/${username}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers,
                 body: JSON.stringify({ permission: 'push' }) // Default to Write access
             });
 
@@ -676,9 +693,12 @@ function ActionsTab({ assignedRepos, onShowStats }) {
     const handleRunWorkflow = async (workflowId, repoFullName) => {
         try {
             const [owner, repo] = repoFullName.split('/');
+            const headers = { 'Content-Type': 'application/json' };
+            try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
             const res = await fetch(`/api/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers,
                 body: JSON.stringify({ ref: 'main' })
             });
 

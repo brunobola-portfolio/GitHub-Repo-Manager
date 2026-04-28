@@ -7,7 +7,7 @@
  */
 
 import { useCallback } from 'react'
-import { safeParseJson, isSessionExpired } from '../utils/api'
+import { safeParseJson, isSessionExpired, getCsrfToken } from '../utils/api'
 import { MOCK_MODE, API_BASE } from '../config'
 
 /**
@@ -61,11 +61,20 @@ export function useAI() {
             err.code = 'SESSION_EXPIRED'
             throw err
         }
+        let csrfHeader
+        try {
+            csrfHeader = await getCsrfToken()
+        } catch (csrfErr) {
+            const err = new Error('Could not establish a secure session. Please reload and try again.')
+            err.code = 'CSRF_FETCH_FAILED'
+            err.cause = csrfErr
+            throw err
+        }
         let r
         try {
             r = await fetch(`${API_BASE}/ai/chat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfHeader },
                 body: JSON.stringify({ message, context }),
                 credentials: 'include',
             })

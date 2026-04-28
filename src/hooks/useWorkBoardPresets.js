@@ -1,9 +1,20 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getCsrfToken } from '../utils/api'
 
 const BASE = '/api/v1/work-board/presets'
 
+const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+
 async function call(url, options = {}) {
-    const res = await fetch(url, { credentials: 'include', ...options })
+    const method = (options.method || 'GET').toUpperCase()
+    let headers = options.headers
+    if (MUTATION_METHODS.has(method)) {
+        headers = { ...(headers || {}) }
+        if (!headers['X-CSRF-Token']) {
+            try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
+        }
+    }
+    const res = await fetch(url, { credentials: 'include', ...options, headers })
     const json = await res.json().catch(() => ({}))
     if (!res.ok) {
         const err = new Error(json.error || `status ${res.status}`)

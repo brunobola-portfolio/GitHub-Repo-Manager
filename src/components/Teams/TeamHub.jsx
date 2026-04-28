@@ -9,6 +9,7 @@ import { PageShell } from '../ui/PageShell';
 import { Card } from '../ui/Card';
 import { Skeleton } from '../ui/Skeleton';
 import { listTeams } from '../../api/teams';
+import { getCsrfToken } from '../../utils/api';
 
 export function TeamHub({ onTeamSelect }) {
     const [teams, setTeams] = useState([]);
@@ -52,9 +53,12 @@ export function TeamHub({ onTeamSelect }) {
             const url = isEditing ? `/api/teams/${activeTeamId}` : '/api/teams';
             const method = isEditing ? 'PUT' : 'POST';
 
+            const headers = { 'Content-Type': 'application/json' };
+            try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
             const res = await fetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers,
                 body: JSON.stringify(formData)
             });
             const data = await res.json();
@@ -82,7 +86,13 @@ export function TeamHub({ onTeamSelect }) {
             confirmText: 'Delete',
             onConfirm: async () => {
                 try {
-                    const res = await fetch(`/api/teams/${teamId}`, { method: 'DELETE' });
+                    const headers = {};
+                    try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
+                    const res = await fetch(`/api/teams/${teamId}`, {
+                        method: 'DELETE',
+                        credentials: 'include',
+                        headers,
+                    });
                     if (res.ok) {
                         toast.success('Team deleted');
                         fetchTeams();

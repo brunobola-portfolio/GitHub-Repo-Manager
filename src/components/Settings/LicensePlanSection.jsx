@@ -9,6 +9,7 @@ import { Skeleton } from '../ui/Skeleton'
 import { useModal } from '../../hooks/useModal'
 import { UsageDashboard } from './UsageDashboard'
 import { formatDate as formatDateBase } from '../../utils/format'
+import { getCsrfToken } from '../../utils/api'
 
 const TIER_CONFIG = {
     free: {
@@ -316,9 +317,12 @@ export function LicensePlanSection() {
         setPortalLoading(true)
         setPortalError(null)
         try {
+            const headers = {}
+            try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
             const res = await fetch(`${API_BASE_URL}/api/v1/billing/portal`, {
                 method: 'POST',
                 credentials: 'include',
+                headers,
             })
             if (!res.ok) throw new Error('Failed to open billing portal')
             const data = await res.json()

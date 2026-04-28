@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
 import { API_BASE } from '../config'
+import { getCsrfToken } from '../utils/api'
 
 const TAB_STORAGE_KEY = 'devToolkit_activeTab'
 const PANEL_WIDTH_KEY = 'devToolkit_panelWidth'
@@ -104,10 +105,11 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
     const fetchContextAnalysis = useCallback(async (owner, repo, diffSummary, commits, fileList) => {
         setContextAnalysisLoading(true)
         try {
+            const csrfToken = await getCsrfToken()
             const res = await fetch(`${API_BASE}/ai/analyze-context`, {
                 method: 'POST',
                 credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                 body: JSON.stringify({
                     repo: `${owner}/${repo}`,
                     diff_summary: diffSummary,

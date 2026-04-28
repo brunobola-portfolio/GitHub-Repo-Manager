@@ -7,6 +7,7 @@ import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
 import { formatDate as formatDateBase } from '../../utils/format'
+import { getCsrfToken } from '../../utils/api'
 
 const SCOPE_OPTIONS = [
     { id: 'read', label: 'Read', description: 'Read access to repositories and data' },
@@ -81,9 +82,11 @@ function NewKeyForm({ onCreated, onCancel }) {
         setError(null)
         try {
             const body = { name: name.trim(), scopes, ...(expiry ? { expires_at: new Date(expiry).toISOString() } : {}) }
+            const headers = { 'Content-Type': 'application/json' }
+            try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
             const res = await fetch(`${API_BASE_URL}/api/v1/api-keys`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 credentials: 'include',
                 body: JSON.stringify(body),
             })
@@ -381,9 +384,12 @@ export function ApiKeysSection() {
     }, [fetchKeys, toast])
 
     const handleRevoke = useCallback(async (id) => {
+        const headers = {}
+        try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
         const res = await fetch(`${API_BASE_URL}/api/v1/api-keys/${id}`, {
             method: 'DELETE',
             credentials: 'include',
+            headers,
         })
         if (!res.ok) {
             const data = await res.json().catch(() => ({}))

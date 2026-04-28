@@ -13,6 +13,7 @@ import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
 import { Button } from './ui/Button'
 import { ProbeStatsSection } from './Settings/ProbeStatsSection'
+import { getCsrfToken } from '../utils/api'
 
 // SettingsIcon defined before TABS so it can be referenced in the array
 function SettingsIcon({ className }) {
@@ -83,9 +84,12 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
         setClearing(true)
         setCacheMessage(null)
         try {
+            const headers = {}
+            try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
             const response = await fetch(`${API_BASE_URL}/api/stats/clear-cache`, {
                 method: 'POST',
-                credentials: 'include'
+                credentials: 'include',
+                headers,
             })
             if (response.ok) {
                 const data = await response.json()

@@ -3,6 +3,7 @@ import {
   FolderGit2, Lock, Globe, Loader2, CheckCircle2, XCircle, ChevronDown,
 } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
+import { getCsrfToken } from '../../../utils/api'
 
 /**
  * TargetConfigStep - Configure the target GitHub repository for URL / GitHub imports.
@@ -32,10 +33,14 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
 
       debounceRef.current = setTimeout(async () => {
         try {
+          const csrfToken = await getCsrfToken().catch(() => null)
           const res = await fetch('/api/import/check-duplicates', {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+            },
             body: JSON.stringify({ repos: [name], targetOwner: source.targetOrg || '' }),
           })
           const data = await res.json()

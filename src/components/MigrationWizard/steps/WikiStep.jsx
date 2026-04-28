@@ -3,6 +3,7 @@ import {
   AlertCircle, BookOpen, AlertTriangle,
 } from 'lucide-react'
 import { SectionSpinner } from '../../ui/Spinner'
+import { getCsrfToken } from '../../../utils/api'
 
 /**
  * WikiStep - Configure wiki migration for the Migration Wizard.
@@ -25,10 +26,14 @@ export default function WikiStep({ wiki, onUpdate, source }) {
       setLoading(true)
       setError('')
       try {
+        const csrfToken = await getCsrfToken().catch(() => null)
         const res = await fetch('/api/azure/wikis', {
           method: 'POST',
           credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+          },
           body: JSON.stringify({
             org: source.org,
             project: source.project,

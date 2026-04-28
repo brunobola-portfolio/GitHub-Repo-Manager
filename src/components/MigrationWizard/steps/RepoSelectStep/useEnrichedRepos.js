@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { getCsrfToken } from '../../../../utils/api'
 
 /**
  * Orchestrates the Select step's data lifecycle:
@@ -28,9 +29,11 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
       setLoading(true)
       setError('')
       try {
+        const csrfToken = await getCsrfToken().catch(() => null)
+        const csrfHeaders = csrfToken ? { 'X-CSRF-Token': csrfToken } : {}
         const res = await fetch('/api/azure/repos', {
           method: 'POST', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...csrfHeaders },
           body: JSON.stringify({
             org: source.org,
             project: source.project,
@@ -62,7 +65,7 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
           try {
             const tfvcRes = await fetch('/api/azure/tfvc/items', {
               method: 'POST', credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', ...csrfHeaders },
               body: JSON.stringify({
                 org: source.org, project: source.project,
                 pat: source.credentialMode === 'personalPat' ? source.pat : undefined,
@@ -112,18 +115,24 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
       repos: gitRepos.map((r) => ({ id: r.id, defaultBranch: r.defaultBranch })),
     }
     setEnriching(true)
-    Promise.allSettled([
-      fetch('/api/azure/repos/activity', {
-        method: 'POST', credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }).then((r) => r.json()),
-      fetch('/api/azure/repos/lfs-check', {
-        method: 'POST', credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }).then((r) => r.json()),
-    ]).then(([activityRes, lfsRes]) => {
+    ;(async () => {
+      const csrfToken = await getCsrfToken().catch(() => null)
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+      }
+      const [activityRes, lfsRes] = await Promise.allSettled([
+        fetch('/api/azure/repos/activity', {
+          method: 'POST', credentials: 'include',
+          headers,
+          body: JSON.stringify(payload),
+        }).then((r) => r.json()),
+        fetch('/api/azure/repos/lfs-check', {
+          method: 'POST', credentials: 'include',
+          headers,
+          body: JSON.stringify(payload),
+        }).then((r) => r.json()),
+      ])
       if (cancelled) return
       const activity = activityRes.status === 'fulfilled' ? (activityRes.value.activity || {}) : {}
       const lfs      = lfsRes.status === 'fulfilled'      ? (lfsRes.value.lfs      || {}) : {}
@@ -138,7 +147,7 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
           hasLfsMarker: lfs[r.id] ?? r.hasLfsMarker,
         }))
       )
-    }).finally(() => { if (!cancelled) setEnriching(false) })
+    })().finally(() => { if (!cancelled) setEnriching(false) })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetched])
@@ -147,9 +156,13 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
   const runConflictCheck = useCallback(async (names, targetOwner) => {
     if (!names.length || !targetOwner) return
     try {
+      const csrfToken = await getCsrfToken().catch(() => null)
       const res = await fetch('/api/import/check-duplicates', {
         method: 'POST', credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+        },
         body: JSON.stringify({ repos: names, targetOwner }),
       })
       const data = await res.json()

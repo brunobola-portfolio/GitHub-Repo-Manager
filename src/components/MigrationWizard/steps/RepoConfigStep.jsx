@@ -8,6 +8,7 @@ import {
   Globe, ArrowLeft, Sparkles,
 } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
+import { getCsrfToken } from '../../../utils/api'
 import { Select } from '../../ui/Select'
 import { formatFileSize } from '../../../utils/format'
 import { RiskBadge } from '../ui/repo/RiskBadge'
@@ -77,10 +78,14 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
     if (!isExpanded && !branchCache[key]) {
       setLoadingBranches((prev) => ({ ...prev, [key]: true }))
       try {
+        const csrfToken = await getCsrfToken().catch(() => null)
         const res = await fetch('/api/azure/branches', {
           method: 'POST',
           credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+          },
           body: JSON.stringify({
             org: source.org,
             project: source.project,
@@ -112,10 +117,14 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
 
       debounceTimers.current[repoName] = setTimeout(async () => {
         try {
+          const csrfToken = await getCsrfToken().catch(() => null)
           const res = await fetch('/api/import/check-duplicates', {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+            },
             body: JSON.stringify({
               repos: [targetName],
               targetOwner: source.targetOrg || source.org,

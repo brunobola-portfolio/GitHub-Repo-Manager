@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { parseAzureUrl } from '../../../utils/azureUrlParser'
+import { getCsrfToken } from '../../../utils/api'
 
 const DEBOUNCE_MS = 400
 
@@ -145,10 +146,14 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
         org: source.org,
         pat: source.credentialMode === 'personalPat' ? source.pat : undefined,
       }
+      const csrfToken = await getCsrfToken().catch(() => null)
       const fetchOpts = {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+        },
         body: JSON.stringify(body),
         signal: controller.signal,
       }
@@ -185,6 +190,7 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
   useEffect(() => {
     if (!source.org?.trim() || !credentialReady) return
     if (source.credentialMode === 'serverPat' || oauthStatusValue === 'success') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- runValidation owns its own debounced state machine; calling sync here matches the no-debounce code path
       runValidation()
       return
     }
@@ -208,10 +214,14 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
           if (cancelled) return
           const p = queue.shift()
           try {
+            const csrfToken = await getCsrfToken().catch(() => null)
             const res = await fetch('/api/azure/repos', {
               method: 'POST',
               credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+              },
               body: JSON.stringify({ org, project: p.name, pat }),
             })
             const data = await res.json()

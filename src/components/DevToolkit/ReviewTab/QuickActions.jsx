@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ThumbsUp, MessageSquare } from 'lucide-react'
 import { useToast } from '../../../hooks/useToast'
+import { getCsrfToken } from '../../../utils/api'
 
 export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
     const { toast } = useToast()
@@ -13,9 +14,11 @@ export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
         setLoading(true)
         setError(null)
         try {
+            const headers = { 'Content-Type': 'application/json' }
+            try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
             const res = await fetch(`/api/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 credentials: 'include',
                 body: JSON.stringify({ event, body: comment || undefined, comments: [] }),
             })

@@ -4,6 +4,7 @@ import { ChevronDown, ArrowRight, Sparkles, GitBranch, Shield, Cpu } from 'lucid
 import { PricingCard } from './PricingCard'
 import { FeatureComparison } from './FeatureComparison'
 import { API_BASE_URL } from '../../config'
+import { getCsrfToken } from '../../utils/api'
 
 /* ─── Tier definitions ─── */
 const TIERS_MONTHLY = [
@@ -165,10 +166,12 @@ export function PricingPage({ onGetStarted } = {}) {
   const handleCheckout = useCallback(async (tier) => {
     setCheckoutLoading(tier)
     try {
+      const headers = { 'Content-Type': 'application/json' }
+      try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
       const res = await fetch(`${API_BASE_URL}/api/v1/billing/checkout`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ tier }),
       })
       const data = await res.json()

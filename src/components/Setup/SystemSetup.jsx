@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Database, CheckCircle, Server, HardDrive, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Spinner } from '../ui/Spinner';
 import { PageHeader } from '../ui/PageHeader';
+import { getCsrfToken } from '../../utils/api';
 
 export function SystemSetup({ onComplete }) {
     const [step, setStep] = useState(0);
@@ -19,7 +20,13 @@ export function SystemSetup({ onComplete }) {
         // Step 2: Request Backend Setup
         try {
             setError(null);
-            const res = await fetch('/api/system/setup', { method: 'POST' });
+            const headers = {};
+            try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
+            const res = await fetch('/api/system/setup', {
+                method: 'POST',
+                credentials: 'include',
+                headers,
+            });
             if (!res.ok) throw new Error('Setup failed');
 
             // Step 2 -> 3 (Simulate progress matching backend simulation)
