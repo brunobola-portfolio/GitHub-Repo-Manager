@@ -54,6 +54,21 @@ function descriptionFromLanguage(language) {
     return `${language} repository`;
 }
 
+/**
+ * Deterministically suggest a name and description for a repository.
+ * Returns an object with proposed values, rationale for the choices, and flags
+ * indicating whether each field differs from the current values.
+ *
+ * @param {object} input
+ * @param {string} input.name                 - Repository name (usually kebab-case).
+ * @param {string} input.description          - Current description text.
+ * @param {string} [input.language]           - Primary programming language.
+ * @param {string[]} [input.topics]           - GitHub topics array.
+ * @param {string} [input.readmeExcerpt]      - Raw README content (for extracting h1 and first sentence).
+ * @param {object} [input.aiMetadata]         - AI metadata object with optional `summary` field.
+ * @returns {{proposed: {name: string, description: string}, rationale: string, noChange: {name: boolean, description: boolean}}}
+ *          Object describing the proposed values, the reasoning used, and whether they differ from current.
+ */
 export function generateDeterministic({
     name,
     description,
@@ -74,8 +89,13 @@ export function generateDeterministic({
     const usedSources = [];
     let proposedDesc = null;
 
-    // Cascade — first non-empty candidate (capped at 120 chars) wins.
-    // Priority: AI metadata > README > topics template > current (non-import) > language fallback.
+    // Description cascade — first source that yields a non-empty trimmed string wins:
+    //   1. aiMetadata.summary  (unless it starts with "Imported from")
+    //   2. README h1 + first sentence (when excerpt is provided)
+    //   3. Language + topics template ("<Language> project for <topic1> and <topic2>")
+    //   4. Current description (only if non-empty and not an "Imported from" artefact)
+    //   5. Language-only template ("<Language> repository")
+    // If everything fails, returns currentDesc unchanged (or empty when it's an import artefact).
     const aiSummary = aiMetadata?.summary;
     if (aiSummary && !IMPORTED_PREFIX.test(aiSummary.trim())) {
         const c = clamp(aiSummary, 1, 120);
