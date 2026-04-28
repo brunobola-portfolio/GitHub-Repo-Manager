@@ -13,9 +13,14 @@ test.describe('Mobile Responsiveness', () => {
   })
 
   test('should show mobile navigation buttons', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /dashboard/i }).first()).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Repos', exact: true })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Teams' })).toBeVisible()
+    // The mobile bottom-nav (Header.jsx) renders short labels: Home, Repos,
+    // Work, Teams, More. Use exact matches so we don't accidentally hit the
+    // "Open navigation menu" FAB or any "More" sheet trigger.
+    const bottomNav = page.getByRole('navigation', { name: /main navigation/i })
+    await expect(bottomNav).toBeVisible()
+    await expect(bottomNav.getByRole('button', { name: 'Home', exact: true })).toBeVisible()
+    await expect(bottomNav.getByRole('button', { name: 'Repos', exact: true })).toBeVisible()
+    await expect(bottomNav.getByRole('button', { name: 'Teams', exact: true })).toBeVisible()
   })
 
   test('should show floating menu button on mobile', async ({ page }) => {
@@ -30,9 +35,10 @@ test.describe('Mobile Responsiveness', () => {
 
     // Drawer is a role=dialog with aria-label "Navigation drawer"; assert on
     // that rather than on Sidebar content text (which can race the spring
-    // animation in CI and gives a flaky 5s window).
+    // animation in CI). 10s gives the framer-motion spring + lazy children
+    // time to settle on slow CI runners.
     await expect(page.getByRole('dialog', { name: /navigation drawer/i }))
-      .toBeVisible({ timeout: 5000 })
+      .toBeVisible({ timeout: 10000 })
   })
 
   test('should navigate to repos view on mobile', async ({ page }) => {

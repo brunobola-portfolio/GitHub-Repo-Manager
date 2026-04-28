@@ -90,10 +90,13 @@ export function Header({
                             <AppLogoIcon className="w-[18px] h-[18px]" />
                         </div>
                         <div className="min-w-0 hidden sm:block">
-                            <h1 className="text-[13px] font-bold text-slate-900 dark:text-slate-100 leading-none ds-font-display truncate">
-                                Repo Manager
+                            {/* Brand label, not the page heading. The page-level h1 lives in
+                                each route's PageHeader (e.g. the dashboard greeting); promoting
+                                the brand to h1 creates two competing h1s on every page. */}
+                            <p className="text-[13px] font-bold text-slate-900 dark:text-slate-100 leading-none ds-font-display truncate flex items-center gap-1">
+                                <span>Repo Manager</span>
                                 <LicenseBadge />
-                            </h1>
+                            </p>
                             <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-none mt-0.5">Organize & migrate</p>
                         </div>
                     </div>
