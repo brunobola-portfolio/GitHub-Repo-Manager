@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+
+// useStreaming fetches a CSRF token before each POST; stub it so the test
+// fetch queue isn't consumed by the auth/csrf-token request.
+vi.mock('../../src/utils/api', async (importOriginal) => {
+    const actual = await importOriginal()
+    return { ...actual, getCsrfToken: vi.fn(async () => 'csrf-test-token') }
+})
+
 import { useStreaming } from '../../src/hooks/useStreaming'
 
 // --- Helper: create a mock SSE response with a ReadableStream ---
@@ -73,7 +81,7 @@ describe('useStreaming', () => {
             '/api/generate?stream=true',
             expect.objectContaining({
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: expect.objectContaining({ 'Content-Type': 'application/json', 'X-CSRF-Token': 'csrf-test-token' }),
                 credentials: 'include',
                 body: JSON.stringify({ prompt: 'test' }),
             })

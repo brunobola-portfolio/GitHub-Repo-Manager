@@ -1,5 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+
+// ErrorBoundary now reports via an async IIFE that fetches a CSRF token
+// before POSTing telemetry. Stub the token fetch so it doesn't consume the
+// test's global.fetch mock and we can assert the telemetry call directly.
+vi.mock('@/utils/api', async (importOriginal) => {
+    const actual = await importOriginal()
+    return { ...actual, getCsrfToken: vi.fn(async () => 'csrf-test-token') }
+})
+
 import ErrorBoundary from '@/components/ErrorBoundary'
 
 // Suppress console.error for expected errors
@@ -70,20 +79,24 @@ describe('ErrorBoundary', () => {
     expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument()
   })
 
-  it('reports error to backend', () => {
+  it('reports error to backend', async () => {
     render(
       <ErrorBoundary>
         <ThrowingChild shouldThrow={true} />
       </ErrorBoundary>
     )
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      '/api/system/client-error',
-      expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      })
-    )
+    // The telemetry POST runs in an async IIFE (awaiting the CSRF token first),
+    // so we wait for the call rather than asserting synchronously.
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/system/client-error',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({ 'Content-Type': 'application/json', 'X-CSRF-Token': 'csrf-test-token' })
+        })
+      )
+    })
   })
 
   it('displays error message in fallback UI', () => {

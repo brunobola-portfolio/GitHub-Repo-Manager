@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { screen, fireEvent, waitFor, act } from '@testing-library/react'
+
+// QuickActions now sends a CSRF header on review POST; stub the token fetch
+// so it doesn't consume the test's mocked fetch response.
+vi.mock('@/utils/api', async (importOriginal) => {
+    const actual = await importOriginal()
+    return { ...actual, getCsrfToken: vi.fn(async () => 'csrf-test-token') }
+})
+
 import { QuickActions } from '@/components/DevToolkit/ReviewTab/QuickActions'
 import { renderWithProviders } from '../../helpers/render-with-providers'
 

@@ -28,6 +28,14 @@ vi.mock('../../../src/api/search', () => ({
     searchApi: { github: vi.fn().mockResolvedValue({ prs: [], issues: [], repos: [] }) },
 }))
 
+// Palette's "smart search" calls translateSearch, which goes through aiFetch
+// and tries to GET /api/auth/csrf-token. With no global.fetch mock the
+// request hits localhost:3000 → ECONNREFUSED. These tests don't exercise
+// the AI search path so we stub it.
+vi.mock('../../../src/api/translateSearch', () => ({
+    translateSearch: vi.fn().mockResolvedValue(null),
+}))
+
 const { CommandPalette } = await import('../../../src/components/CommandPalette')
 
 beforeEach(() => {

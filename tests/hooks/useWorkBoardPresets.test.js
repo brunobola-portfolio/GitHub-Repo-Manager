@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 
+// Mutations now fetch a CSRF token; stub it so the test's global.fetch queue
+// isn't consumed by the auth/csrf-token request.
+vi.mock('@/utils/api', async (importOriginal) => {
+    const actual = await importOriginal()
+    return { ...actual, getCsrfToken: vi.fn(async () => 'csrf-test-token') }
+})
+
 beforeEach(() => { global.fetch = vi.fn(); })
 
 const { useWorkBoardPresets } = await import('@/hooks/useWorkBoardPresets')

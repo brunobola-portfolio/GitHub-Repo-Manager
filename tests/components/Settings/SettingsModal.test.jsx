@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { screen, fireEvent, waitFor, act } from '@testing-library/react'
+
+// Cache-clear now sends a CSRF header; stub the token fetch so it doesn't
+// consume the first response from the test's fetch queue.
+vi.mock('@/utils/api', async (importOriginal) => {
+    const actual = await importOriginal()
+    return { ...actual, getCsrfToken: vi.fn(async () => 'csrf-test-token') }
+})
+
 import { SettingsModal } from '@/components/SettingsModal'
 import { ThemeProvider } from '@/hooks/useTheme.jsx'
 import { renderWithProviders } from '../../helpers/render-with-providers'
@@ -8,6 +16,7 @@ import { renderWithProviders } from '../../helpers/render-with-providers'
 vi.mock('framer-motion', () => {
     const React = require('react')
     function passthrough({ children, ...rest }) {
+        // eslint-disable-next-line no-unused-vars -- swallow framer-motion-only props so they don't reach the DOM
         const { initial, animate, exit, variants, transition, layout, whileHover, whileTap, ...clean } = rest
         return React.createElement(React.Fragment, null, children)
     }

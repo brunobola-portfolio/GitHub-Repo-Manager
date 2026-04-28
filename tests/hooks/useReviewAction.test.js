@@ -4,6 +4,13 @@ import { renderHook, act } from '@testing-library/react'
 const mockToast = { success: vi.fn(), error: vi.fn(), errorFromException: vi.fn() }
 vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: mockToast }) }))
 
+// `call()` now fetches a CSRF token before mutations. Stub it so the test's
+// global.fetch mock isn't consumed by the auth/csrf-token request.
+vi.mock('@/utils/api', async (importOriginal) => {
+    const actual = await importOriginal()
+    return { ...actual, getCsrfToken: vi.fn(async () => 'csrf-test-token') }
+})
+
 beforeEach(() => {
     vi.clearAllMocks()
     global.fetch = vi.fn()

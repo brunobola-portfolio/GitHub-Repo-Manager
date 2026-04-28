@@ -59,6 +59,7 @@ vi.mock('@/hooks/useWorkBoard', () => ({
     useDORASummary: () => ({ data: null, loading: false, error: null, refresh: vi.fn() }),
     useTechDebt: () => ({ data: null, loading: false, error: null, refresh: vi.fn() }),
     useReviewLoad: () => ({ data: [], loading: false, error: null, refresh: vi.fn() }),
+    useKpiSnapshots: () => ({ data: [], loading: false, error: null, refresh: vi.fn() }),
 }))
 
 // ---------------------------------------------------------------------------

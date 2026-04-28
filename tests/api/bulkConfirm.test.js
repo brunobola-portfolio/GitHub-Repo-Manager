@@ -1,4 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+
+// bulkConfirm now fetches a CSRF token before each call. Tests stub global
+// fetch with a fixed response queue, so we short-circuit getCsrfToken to
+// avoid consuming the first mocked response on the auth/csrf-token endpoint.
+vi.mock('@/utils/api', async (importOriginal) => {
+    const actual = await importOriginal()
+    return { ...actual, getCsrfToken: vi.fn(async () => 'csrf-test-token') }
+})
+
 import { bulkExecuteWithConfirmation } from '@/api/bulkConfirm'
 
 // ---------------------------------------------------------------------------
