@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
     createRepoSchema,
     bulkVisibilitySchema,
@@ -306,14 +306,21 @@ describe('aiChatSchema', () => {
 describe('aiIndexSchema', () => {
     it('accepts valid repo object', () => {
         const result = aiIndexSchema.safeParse({
-            repo: { full_name: 'owner/repo' }
+            repo: { id: 12345, full_name: 'owner/repo' }
         })
         expect(result.success).toBe(true)
     })
 
     it('rejects missing full_name', () => {
         const result = aiIndexSchema.safeParse({
-            repo: { name: 'repo' }
+            repo: { id: 12345, name: 'repo' }
+        })
+        expect(result.success).toBe(false)
+    })
+
+    it('rejects missing id (PK in repo_metadata is NOT NULL)', () => {
+        const result = aiIndexSchema.safeParse({
+            repo: { full_name: 'owner/repo' }
         })
         expect(result.success).toBe(false)
     })

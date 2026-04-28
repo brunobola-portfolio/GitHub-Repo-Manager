@@ -116,7 +116,12 @@ export const aiTranslateSearchSchema = z.object({
 });
 
 export const aiIndexSchema = z.object({
+    // `id` is the GitHub numeric repo ID and the primary key in
+    // repo_metadata / repo_embeddings (NOT NULL). Without it on the
+    // schema Zod strips the field and the INSERT throws against the
+    // NOT NULL column, surfacing as a generic 500.
     repo: z.object({
+        id: z.number().int().positive(),
         full_name: z.string().min(1).max(200),
         name: z.string().optional(),
         description: z.string().max(5000).optional().nullable(),

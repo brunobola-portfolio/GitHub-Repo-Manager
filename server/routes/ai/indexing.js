@@ -17,7 +17,7 @@ import { validateBody } from '../../middleware/validate-request.js';
 import { aiService } from '../../ai-service.js';
 import { checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
-import { requireAI } from './shared.js';
+import { requireAI, handleAIError } from './shared.js';
 
 const router = express.Router();
 
@@ -114,7 +114,7 @@ router.post('/ai/index', requireAuth, validateBody(aiIndexSchema), requireAI, as
 
     } catch (error) {
         req.log.error({ err: error }, 'AI indexing failed');
-        res.status(500).json({ error: safeError(error, 'Indexing failed') });
+        handleAIError(res, error, 'Indexing failed');
     }
 });
 
