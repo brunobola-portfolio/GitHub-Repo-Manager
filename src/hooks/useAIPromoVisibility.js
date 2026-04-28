@@ -18,6 +18,9 @@ function subscribe(callback) {
 }
 
 export function useAIPromoVisibility({ reposCount }) {
+    // Subscribe to cross-tab storage events so the strip auto-hides when the user
+    // dismisses or discovers AI in another tab. Snapshot value is unused — the
+    // visibility decision is re-derived from localStorage on each render below.
     useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 
     if (reposCount === 0) return false
