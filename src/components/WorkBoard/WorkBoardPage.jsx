@@ -162,10 +162,32 @@ function LockedTabButton({ tab }) {
 // WorkBoardPage
 // ---------------------------------------------------------------------------
 
-export function WorkBoardPage({ repoCount = 0, onOpenSettings }) {
+// Map from dashboard category keys (passed as initialTab) to canonical Work
+// Board tab IDs. The tab IDs already match the category keys 1:1, so this map
+// doubles as a whitelist — any unrecognised key is silently ignored.
+const INITIAL_TAB_ALIAS = {
+    reviews: 'reviews', // WhatNeedsYouGrid "reviews" → My Reviews tab
+    stale:   'stale',   // WhatNeedsYouGrid "stale"   → Stale PRs tab
+    issues:  'issues',  // WhatNeedsYouGrid "issues"  → My Issues tab
+}
+
+export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
     const [params, setParams] = useUrlParams(['tab', 'repos', 'authors', 'labels', 'age', 'snoozed'])
     const activeTab = params.tab || 'reviews'
     const setActiveTab = (tab) => setParams({ tab: tab === 'reviews' ? '' : tab })
+
+    // Sync to initialTab when navigation requests a specific tab.
+    // Only runs when initialTab changes (including on first mount).
+    // Does not override if initialTab is absent or unrecognised.
+    useEffect(() => {
+        if (!initialTab) return
+        const canonical = INITIAL_TAB_ALIAS[initialTab]
+        if (canonical) setActiveTab(canonical)
+        // setActiveTab is intentionally excluded from deps — it's a stable
+        // derived setter and including it would cause an infinite loop when
+        // the URL param update triggers a re-render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialTab])
 
     const [hasAI, setHasAI] = useState(false)
     useEffect(() => {

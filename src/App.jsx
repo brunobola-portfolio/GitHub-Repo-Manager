@@ -82,11 +82,18 @@ function AppContent() {
   const [_session, setSession] = useState(null)
   const [appLoading, setAppLoading] = useState(true)
   const [activeView, _setActiveView] = useState('dashboard')
+  // viewParams carries optional navigation metadata (e.g. { initialTab }) that
+  // the target view can consume. Cleared on every view change so stale params
+  // never leak into a subsequently visited view.
+  const [viewParams, setViewParams] = useState({})
 
   // Wrap setActiveView so every route/view change drops a Sentry
   // breadcrumb + a performance mark. When Sentry isn't initialised or
   // the Performance API isn't available these are cheap no-ops.
-  const setActiveView = useCallback((next) => {
+  // Accepts an optional second argument `params` (plain object) that is stored
+  // in viewParams and forwarded to the rendered view component.
+  const setActiveView = useCallback((next, params = {}) => {
+    setViewParams(params)
     _setActiveView((prev) => {
       const resolved = typeof next === 'function' ? next(prev) : next
       if (resolved !== prev) {
@@ -1021,6 +1028,7 @@ function AppContent() {
                 <WorkBoardPage
                     repoCount={displayRepos.length}
                     onOpenSettings={() => openModalWithData('showSettings', { initialTab: 'work-board' })}
+                    initialTab={viewParams?.initialTab}
                 />
               </Suspense>
             </ErrorBoundary>
