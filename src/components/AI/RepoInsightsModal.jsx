@@ -80,6 +80,18 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
     const showNotConfigured = !aiStatusLoading && !aiConfigured
     const showNotHealthy = !aiStatusLoading && aiConfigured && (keyHealth === 'invalid' || keyHealth === 'unreachable')
 
+    // Instrument insights-viewed flag for promo dismissal tracking
+    useEffect(() => {
+        if (!isOpen) return
+        try {
+            if (localStorage.getItem('ai-insights-viewed') !== 'true') {
+                localStorage.setItem('ai-insights-viewed', 'true')
+            }
+        } catch {
+            /* OK to skip */
+        }
+    }, [isOpen])
+
     /* eslint-disable react-hooks/set-state-in-effect, react-hooks/immutability -- this effect is the open/close + repo-switch synchronisation point; setState resets are intentional */
     useEffect(() => {
         if (!isOpen || !repo) {

@@ -78,6 +78,18 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
     const handleCloseChat = useCallback(() => setIsOpen(false), [])
     const chatRef = useFocusTrap(isOpen, handleCloseChat)
 
+    // Instrument open-count for AI promo dismissal tracking
+    useEffect(() => {
+        if (!isOpen) return
+        try {
+            const current = parseInt(localStorage.getItem('ai-assistant-opened-count') ?? '0', 10)
+            const next = Number.isFinite(current) ? current + 1 : 1
+            localStorage.setItem('ai-assistant-opened-count', String(next))
+        } catch {
+            /* OK to skip */
+        }
+    }, [isOpen])
+
     useEffect(() => {
         if (!isOpen) return
         let cancelled = false
