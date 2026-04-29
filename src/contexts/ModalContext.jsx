@@ -17,6 +17,7 @@ const MODAL_NAMES = [
   'showSecurityScan',
   'showLicenseActivation',
   'workBoardHelp',
+  'suggestNameDescription',
 ]
 
 function createClosedState() {
