@@ -68,7 +68,7 @@
     "@tanstack/react-virtual": "^3.13.24",
     "adm-zip": "^0.5.17",
     "better-sqlite3": "^12.9.0",
-    "bullmq": "^5.74.1",
+    "bullmq": "^5.76.4",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "connect-redis": "^9.0.0",
