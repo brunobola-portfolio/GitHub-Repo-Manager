@@ -111,6 +111,9 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
     const [useName, setUseName] = useState(true)
     const [useDesc, setUseDesc] = useState(true)
     const [ackRename, setAckRename] = useState(false)
+    // True after the user clicks Regenerate while they have unsaved edits.
+    // The next click confirms the discard. Reset on every successful fetch.
+    const [confirmingRegenerate, setConfirmingRegenerate] = useState(false)
 
     const abortRef = useRef(null)
 
@@ -129,6 +132,7 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
             setUseName(!result.noChange.name)
             setUseDesc(!result.noChange.description)
             setAckRename(false)
+            setConfirmingRegenerate(false)
         } catch (e) {
             if (ctrl.signal.aborted) return
             setError(e)
@@ -151,6 +155,21 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
 
     const nameWillChange = useName && data && nameValue !== data.current.name
     const descWillChange = useDesc && data && descValue !== data.current.description
+
+    // Regenerate guard — if the user edited the proposed value, the first
+    // click arms a "confirm discard" state and the button label changes;
+    // the second click (or any click without unsaved edits) actually fetches.
+    const userHasEdits = Boolean(
+        data && (nameValue !== data.proposed.name || descValue !== data.proposed.description),
+    )
+    const onRegenerateClick = () => {
+        if (userHasEdits && !confirmingRegenerate) {
+            setConfirmingRegenerate(true)
+            return
+        }
+        setConfirmingRegenerate(false)
+        startFetch()
+    }
     const applyDisabled =
         applying ||
         loading ||
@@ -189,9 +208,13 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
             isBusy={loading || applying}
             footer={
                 <ModalFooter align="between">
-                    <Button variant="ghost" onClick={startFetch} disabled={loading || applying}>
+                    <Button
+                        variant={confirmingRegenerate ? 'danger' : 'ghost'}
+                        onClick={onRegenerateClick}
+                        disabled={loading || applying}
+                    >
                         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
-                        Regenerate
+                        {confirmingRegenerate ? 'Discard edits & regenerate?' : 'Regenerate'}
                     </Button>
                     <div className="flex gap-2">
                         <Button variant="ghost" onClick={onClose}>Cancel</Button>

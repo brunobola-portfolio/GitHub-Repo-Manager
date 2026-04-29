@@ -13,9 +13,6 @@ vi.mock('../../../src/api/repos', () => ({
         updateRepo: vi.fn(),
     },
 }));
-vi.mock('../../../src/hooks/useAIStatus', () => ({
-    useAIStatus: () => ({ configured: true, keyHealth: 'ok', loading: false }),
-}));
 vi.mock('../../../src/hooks/useToast', () => ({
     useToast: () => ({ toast: { success: vi.fn(), errorFromException: vi.fn() } }),
 }));
@@ -102,6 +99,30 @@ describe('SuggestNameDescriptionModal', () => {
         await screen.findByDisplayValue('apos-pos');
         await user.click(screen.getByRole('button', { name: /Regenerate/i }));
         await waitFor(() => expect(screen.getByDisplayValue('apos-v2')).toBeInTheDocument());
+    });
+
+    it('asks to confirm when regenerating with unsaved edits', async () => {
+        const user = userEvent.setup();
+        aiApi.suggestNameDescription
+            .mockResolvedValueOnce(SUGGESTION)
+            .mockResolvedValueOnce({ ...SUGGESTION, proposed: { name: 'apos-v3', description: 'Latest desc' } });
+
+        render(<SuggestNameDescriptionModal isOpen repo={REPO} onClose={() => {}} />);
+
+        const proposedName = await screen.findByDisplayValue('apos-pos');
+        // Edit the proposed value so a regenerate would discard the change.
+        await user.clear(proposedName);
+        await user.type(proposedName, 'apos-edited');
+
+        // First click — arms the confirm state, no fetch yet.
+        await user.click(screen.getByRole('button', { name: /Regenerate/i }));
+        expect(aiApi.suggestNameDescription).toHaveBeenCalledTimes(1);
+        await screen.findByRole('button', { name: /Discard edits & regenerate\?/i });
+
+        // Second click — proceeds with the fetch.
+        await user.click(screen.getByRole('button', { name: /Discard edits & regenerate\?/i }));
+        await waitFor(() => expect(screen.getByDisplayValue('apos-v3')).toBeInTheDocument());
+        expect(aiApi.suggestNameDescription).toHaveBeenCalledTimes(2);
     });
 
     it('collapses to "Already great" when noChange is true for a field', async () => {
