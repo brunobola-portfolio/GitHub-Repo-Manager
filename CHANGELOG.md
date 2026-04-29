@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Suggest Name & Description** now delivers on its label: a dedicated modal
+  proposes a concrete name and description for a repository, lets you accept,
+  edit, or reject each field independently, and applies the change via the
+  existing repos `PATCH` endpoint. Works with or without an AI key — falls
+  back silently to a deterministic generator that draws from indexed AI
+  metadata, README h1 + first sentence, topics, and primary language.
+  Available from the repo context menu and from a new "Suggest with AI"
+  button in the Settings tab.
+
 ## [3.8.0] - 2026-04-28
 
 A feature-and-honesty release. The dashboard hero, mobile nav and AI surfaces
