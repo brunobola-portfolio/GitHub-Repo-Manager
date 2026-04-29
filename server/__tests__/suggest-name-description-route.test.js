@@ -8,6 +8,7 @@ const mockProviderGenerate = vi.hoisted(() => vi.fn());
 const mockCheckUsageLimit = vi.hoisted(() => vi.fn());
 const mockIncrementUsage = vi.hoisted(() => vi.fn());
 const mockAuditLog = vi.hoisted(() => vi.fn());
+const mockDbGet = vi.hoisted(() => vi.fn());
 
 vi.mock('../lib/github-api.js', () => ({
     githubApi: mockGithubApi,
@@ -19,6 +20,19 @@ vi.mock('../lib/usage-meter.js', () => ({
 vi.mock('../lib/audit.js', () => ({
     auditLog: mockAuditLog,
 }));
+// db.prepare(...).get(...) is used by loadIndexedAiMetadata. We expose a
+// per-test handle (`mockDbGet`) so each test can return null (no indexed
+// metadata) or a row, without instantiating a real SQLite connection.
+vi.mock('../db.js', () => ({
+    default: {
+        prepare: () => ({ get: mockDbGet }),
+    },
+}));
+// requireAuth populates req.session and req.log. We also use this hook to
+// optionally inject `req.aiProvider` for tests that exercise the AI path,
+// because the route is intentionally NOT gated by the `requireAI` middleware
+// (the deterministic generator works without a provider).
+const provideAIProviderInTest = vi.hoisted(() => ({ enabled: false }));
 vi.mock('../middleware/auth.js', async () => {
     const actual = await vi.importActual('../middleware/auth.js');
     return {
@@ -26,14 +40,13 @@ vi.mock('../middleware/auth.js', async () => {
         requireAuth: (req, _res, next) => {
             req.session = { userId: 1, accessToken: 'fake' };
             req.log = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+            if (provideAIProviderInTest.enabled) {
+                req.aiProvider = { generate: mockProviderGenerate };
+            }
             next();
         },
     };
 });
-vi.mock('../routes/ai/shared.js', () => ({
-    requireAI: (req, _res, next) => { req.aiProvider = { generate: mockProviderGenerate }; next(); },
-    handleAIError: (res) => res.status(500).json({ error: 'ai-error' }),
-}));
 
 const { default: router } = await import('../routes/ai/suggest-name-description.js');
 
@@ -61,11 +74,14 @@ beforeEach(() => {
     mockCheckUsageLimit.mockReset();
     mockIncrementUsage.mockReset();
     mockAuditLog.mockReset();
+    mockDbGet.mockReset();
     mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 100 });
-    // First call: GET repo by id; second: GET README contents
+    mockDbGet.mockReturnValue(null);   // default: repo not indexed
+    provideAIProviderInTest.enabled = true;  // default: AI provider available
+    // First call: GET repo by id. Second: GET canonical README via /repos/.../readme.
     mockGithubApi.mockImplementation((path) => {
         if (path === '/repositories/42') return { data: REPO_PAYLOAD };
-        if (path.includes('/contents/README')) {
+        if (path.endsWith('/readme')) {
             return {
                 data: {
                     content: Buffer.from('# Apos\n\nPoint of sale system for restaurant ordering.', 'utf8').toString('base64'),
@@ -123,6 +139,41 @@ describe('POST /ai/suggest-name-description', () => {
 
         expect(res.status).toBe(200);
         expect(res.body.source).toBe('deterministic');
+    });
+
+    it('returns deterministic when no AI provider is configured', async () => {
+        // Simulate an unconfigured user: no req.aiProvider, no req.getAIProvider.
+        provideAIProviderInTest.enabled = false;
+
+        const res = await request(makeApp())
+            .post('/ai/suggest-name-description')
+            .send({ repoId: 42 });
+
+        expect(res.status).toBe(200);
+        expect(res.body.source).toBe('deterministic');
+        expect(res.body.proposed.name).toBe('apos-pos');
+        // The provider should never have been invoked.
+        expect(mockProviderGenerate).not.toHaveBeenCalled();
+        // Quota is still incremented — usage is metered for both paths.
+        expect(mockIncrementUsage).toHaveBeenCalledWith(1, 'ai_queries');
+    });
+
+    it('uses indexed AI metadata summary when available', async () => {
+        provideAIProviderInTest.enabled = false;   // force deterministic path
+        mockDbGet.mockReturnValue({
+            summary: 'Indexed summary describing the POS system in detail and at length.',
+            topics: '[]',
+        });
+
+        const res = await request(makeApp())
+            .post('/ai/suggest-name-description')
+            .send({ repoId: 42 });
+
+        expect(res.status).toBe(200);
+        expect(res.body.source).toBe('deterministic');
+        expect(res.body.proposed.description).toBe(
+            'Indexed summary describing the POS system in detail and at length.',
+        );
     });
 
     it('returns 429 when quota exceeded', async () => {
