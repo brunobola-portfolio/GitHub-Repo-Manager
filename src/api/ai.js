@@ -222,6 +222,28 @@ export const aiApi = {
         return handleAIResponse(res, 'suggest');
     },
 
+    // Suggest a concrete name + description for the repo. The server returns a
+    // unified shape (source: 'ai' | 'deterministic'); the modal renders the
+    // same UI either way and decides what to display via `source`.
+    suggestNameDescription: async (repoId) => {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+            const { mockSuggestNameDescription } = await import('../__mocks__/mockAI.js');
+            await new Promise(r => setTimeout(r, 600));
+            // In mock-mode the modal still passes the full repo object,
+            // so we emulate the lookup here for the test fixture.
+            const fakeRepo = { id: repoId, name: `repo-${repoId}`, language: 'JavaScript', topics: ['demo'] };
+            return mockSuggestNameDescription(fakeRepo);
+        }
+
+        const res = await fetch(`${API_BASE}/ai/suggest-name-description`, {
+            method: 'POST',
+            headers: await mutationHeaders(),
+            credentials: 'include',
+            body: JSON.stringify({ repoId }),
+        });
+        return handleAIResponse(res, 'suggest-name-description');
+    },
+
     // Enhance existing README
     enhanceReadme: async (repo) => {
         if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
