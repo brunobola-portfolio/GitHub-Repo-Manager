@@ -68,6 +68,22 @@ export const reposApi = {
   },
 
   /**
+   * Update repo metadata (name, description, homepage, etc.).
+   * Backed by PATCH /api/v1/repos/:owner/:repo.
+   *
+   * @param {string} owner
+   * @param {string} repo
+   * @param {object} payload — fields accepted by repoUpdateSchema (name, description, …)
+   */
+  updateRepo: async (owner, repo, payload) => {
+    return apiCall(`/api/v1/repos/${owner}/${repo}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+  },
+
+  /**
    * Replace the GitHub topics on a repo. CSRF is injected by fetchWithRetry.
    * Backed by PUT /api/repos/:owner/:repo/topics.
    *
