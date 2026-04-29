@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 vi.mock('@/hooks/useAIStatus', () => ({ useAIStatus: vi.fn() }))
+vi.mock('@/hooks/useModal', () => ({ useModal: () => ({ openModalWithData: vi.fn() }) }))
 vi.mock('@/api/ai', () => ({
     aiApi: { getMetadata: vi.fn() },
 }))

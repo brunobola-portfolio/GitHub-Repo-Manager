@@ -54,6 +54,7 @@ const DashboardPremium = lazy(() => import('./components/Dashboard/DashboardPrem
 const TeamHub = lazy(() => import('./components/Teams/TeamHub').then(m => ({ default: m.TeamHub })))
 const TeamDetails = lazy(() => import('./components/Teams/TeamDetails').then(m => ({ default: m.TeamDetails })))
 const RepoInsightsModal = lazy(() => import('./components/AI/RepoInsightsModal'))
+const SuggestNameDescriptionModal = lazy(() => import('./components/AI/SuggestNameDescriptionModal'))
 const CommunityHealthDashboard = lazy(() => import('./components/CommunityHealthDashboard').then(m => ({ default: m.CommunityHealthDashboard })))
 const SystemSetup = lazy(() => import('./components/Setup/SystemSetup').then(m => ({ default: m.SystemSetup })))
 const CreateRepoModal = lazy(() => import('./components/CreateRepoModal').then(m => ({ default: m.CreateRepoModal })))
@@ -1170,6 +1171,27 @@ function AppContent() {
                 onClose={() => closeModal('showRepoInsights')}
                 repo={insightsRepo}
                 initialTab={insightsInitialTab}
+              />
+            </Suspense>
+          </ErrorBoundary>
+        )
+      })()}
+
+      {(() => {
+        const sndPayload = getModalData('suggestNameDescription')
+        const sndRepo = sndPayload?.repo ?? null
+        const sndOnApplied = sndPayload?.onApplied
+        return (
+          <ErrorBoundary fallback={<ViewErrorFallback viewName="Suggest Name & Description" onGoHome={() => closeModal('suggestNameDescription')} />}>
+            <Suspense fallback={null}>
+              <SuggestNameDescriptionModal
+                isOpen={modalStates.suggestNameDescription}
+                onClose={() => closeModal('suggestNameDescription')}
+                repo={sndRepo}
+                onApplied={(updated) => {
+                  sndOnApplied?.(updated)
+                  closeModal('suggestNameDescription')
+                }}
               />
             </Suspense>
           </ErrorBoundary>

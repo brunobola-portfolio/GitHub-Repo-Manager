@@ -6,6 +6,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { CodeownersSuggestModal } from '../CodeownersSuggestModal'
 import { useToast } from '../../hooks/useToast'
 import { useAIStatus } from '../../hooks/useAIStatus'
+import { useModal } from '../../hooks/useModal'
 import { aiApi } from '../../api/ai'
 import { reposApi } from '../../api/repos'
 import { Settings, Save, Loader2, CheckCircle2, XCircle, AlertTriangle, Lock, Globe, Webhook, Trash2, Plus, RefreshCw, Users, Tag, Sparkles } from 'lucide-react'
@@ -15,6 +16,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
     const { toast } = useToast()
     const aiStatus = useAIStatus()
     const aiOff = !aiStatus.loading && !aiStatus.configured
+    const { openModalWithData } = useModal()
     const [codeownersOpen, setCodeownersOpen] = useState(false)
     const [saving, setSaving] = useState(false)
     // AI-suggested topics state.
@@ -179,9 +181,21 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
 
             {/* General Settings */}
             <Card className="p-5 space-y-4">
-                <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-indigo-500" /> General
-                </h3>
+                <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                        <Settings className="w-5 h-5 text-indigo-500" /> General
+                    </h3>
+                    <button
+                        type="button"
+                        onClick={() => openModalWithData('suggestNameDescription', {
+                            repo: { ...repoData, owner: repoData.owner || { login: owner } },
+                            onApplied: (updated) => onUpdate?.((prev) => ({ ...prev, ...updated })),
+                        })}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-gradient-to-r from-indigo-500/10 to-purple-500/10 hover:from-indigo-500/20 hover:to-purple-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/20 transition-colors"
+                    >
+                        <Sparkles className="w-3.5 h-3.5" /> Suggest with AI
+                    </button>
+                </div>
                 <div>
                     <label htmlFor="repo-settings-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
                     <input id="repo-settings-description" type="text" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}

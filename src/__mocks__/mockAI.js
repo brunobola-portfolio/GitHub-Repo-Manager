@@ -89,3 +89,23 @@ export const mockIssuePlan = ({ repoFullName, issueNumber }) => ({
   },
   mock: true,
 })
+
+export const mockSuggestNameDescription = (repo) => {
+    const currentName = repo?.name || 'unnamed-repo';
+    const slug = String(currentName).toLowerCase().replace(/[_\s]+/g, '-').replace(/[^a-z0-9-]+/g, '').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+    const language = repo?.language || 'Code';
+    const topic = repo?.topics?.[0];
+    const description = topic
+        ? `${language} project for ${topic}`
+        : `${language} repository`;
+    return {
+        source: 'deterministic',
+        current: { name: currentName, description: repo?.description || '' },
+        proposed: { name: slug || currentName, description },
+        rationale: 'Mock-mode deterministic suggestion based on language and topics.',
+        noChange: {
+            name: (slug || currentName) === currentName,
+            description: description === (repo?.description || ''),
+        },
+    };
+};

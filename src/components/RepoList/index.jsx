@@ -208,8 +208,9 @@ export function RepoList({
 							case 'migrationHistory':
 								openModal('showMigrationHistory')
 								break
-							// AI context-menu actions route to the right tab in
-							// RepoInsightsModal so each menu item feels distinct.
+							// AI context-menu actions: aiQuality routes to the Insights modal Quality tab,
+							// aiSuggest opens the dedicated SuggestNameDescription modal, and the rest
+							// open their own focused surfaces.
 							case 'aiCompare':
 								openModalWithData('showCompare', { repo: data })
 								break
@@ -217,7 +218,7 @@ export function RepoList({
 								openModalWithData('showRepoInsights', { repo: data, initialTab: 'quality' })
 								break
 							case 'aiSuggest':
-								openModalWithData('showRepoInsights', { repo: data, initialTab: 'suggestions' })
+								openModalWithData('suggestNameDescription', { repo: data })
 								break
 							case 'aiCommit':
 								openModalWithData('showDevToolkit', { initialTab: 'commits', repo: data })
