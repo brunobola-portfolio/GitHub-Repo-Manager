@@ -1,3 +1,14 @@
+/*
+ * GitHub Repo Manager - AI Suggest Name & Description Route
+ *
+ * Endpoints:
+ *   POST /ai/suggest-name-description — propose a concrete name and description
+ *     for a repository, with AI as the primary path and a deterministic
+ *     heuristic generator as a silent fallback. Response shape is uniform
+ *     regardless of source; only the `source: 'ai' | 'deterministic'` field
+ *     differs.
+ */
+
 import express from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../../middleware/auth.js';
@@ -8,6 +19,7 @@ import { githubApi } from '../../lib/github-api.js';
 import { safeJsonParse } from '../../lib/utils.js';
 import { requireAI } from './shared.js';
 import { generateDeterministic } from '../../lib/suggest-name-description.js';
+import { sanitizeForPrompt } from '../../ai-service.js';
 
 const router = express.Router();
 
@@ -49,10 +61,10 @@ function buildAIPrompt({ name, description, language, isPrivate, topics, readmeE
         '',
         'Return JSON only: { "name": "...", "description": "...", "rationale": "..." }',
         '',
-        `Repo: ${name} (${language || 'unknown'}, ${isPrivate ? 'private' : 'public'})`,
-        `Current description: ${description || 'none'}`,
-        `Topics: ${topics?.length ? topics.join(', ') : 'none'}`,
-        `README excerpt: ${readmeExcerpt || 'none'}`,
+        `Repo: ${sanitizeForPrompt(name, 100)} (${sanitizeForPrompt(language || 'unknown', 50)}, ${isPrivate ? 'private' : 'public'})`,
+        `Current description: ${sanitizeForPrompt(description || 'none', 500)}`,
+        `Topics: ${sanitizeForPrompt(topics?.length ? topics.join(', ') : 'none', 200)}`,
+        `README excerpt: ${sanitizeForPrompt(readmeExcerpt || 'none', 1500)}`,
     ].join('\n');
 }
 
