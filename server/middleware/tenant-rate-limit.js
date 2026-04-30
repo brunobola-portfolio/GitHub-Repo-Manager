@@ -4,8 +4,18 @@ import logger from '../lib/logger.js';
 const isDev = () => process.env.NODE_ENV !== 'production';
 
 function computeTierLimits() {
+    // Dev/test gets generous ceilings so React StrictMode double-invokes,
+    // HMR re-mounts, and badge/notification polling don't trip the limiter
+    // for a single developer. Production keeps the real per-tier budgets.
+    if (isDev()) {
+        return {
+            free:       { api: 2000, ai: 100, auth: 200 },
+            pro:        { api: 2000, ai: 100, auth: 200 },
+            enterprise: { api: 2000, ai: 200, auth: 200 },
+        };
+    }
     return {
-        free:       { api: 100,  ai: 10,  auth: isDev() ? 200 : 10 },
+        free:       { api: 100,  ai: 10,  auth: 10 },
         pro:        { api: 500,  ai: 50,  auth: 20 },
         enterprise: { api: 2000, ai: 200, auth: 50 },
     };

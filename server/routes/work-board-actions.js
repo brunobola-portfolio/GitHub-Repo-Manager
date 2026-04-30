@@ -5,7 +5,7 @@
  */
 import express from 'express';
 import { z } from 'zod';
-import { rateLimit } from 'express-rate-limit';
+import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import { requireAuth, errorResponse, safeError } from '../middleware/auth.js';
 import { validateBody, validateParams } from '../middleware/validate-request.js';
 import * as snoozeLib from '../lib/work-board-snooze.js';
@@ -93,7 +93,7 @@ const draftCommentBodySchema = z.object({
 const draftCommentLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 10,
-    keyGenerator: (req) => `draft-comment:${req.session?.userId ?? req.ip}`,
+    keyGenerator: (req) => `draft-comment:${req.session?.userId ?? ipKeyGenerator(req)}`,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many draft requests — try again in an hour', code: 'rate_limited' },
