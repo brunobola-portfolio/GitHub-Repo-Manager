@@ -243,7 +243,7 @@ describe('WorkBoardPage', () => {
         renderPage()
         fireEvent.click(screen.getByRole('tab', { name: /dora/i }))
         expect(screen.getByText(/enterprise feature/i)).toBeInTheDocument()
-        expect(screen.getByRole('link', { name: /view pricing/i })).toBeInTheDocument()
+        expect(screen.getByRole('link', { name: /view enterprise pricing/i })).toBeInTheDocument()
     })
 
     it('renders a refresh button', () => {

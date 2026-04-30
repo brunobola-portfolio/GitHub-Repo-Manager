@@ -5,6 +5,7 @@ import { PricingCard } from './PricingCard'
 import { FeatureComparison } from './FeatureComparison'
 import { API_BASE_URL } from '../../config'
 import { getCsrfToken } from '../../utils/api'
+import { ServiceUnavailable, FeatureError } from '../states'
 
 /* ─── Tier definitions ─── */
 const TIERS_MONTHLY = [
@@ -158,13 +159,14 @@ const SALES_EMAIL = 'bruno@bolalabs.pt'
 export function PricingPage({ onGetStarted } = {}) {
   const [isYearly, setIsYearly] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(null)
-  // Surface when self-hosters haven't configured Stripe. Silent fallback
-  // used to send users to the dashboard with no explanation — the banner
-  // makes the constraint obvious and shows the sales email for Enterprise.
-  const [stripeUnavailable, setStripeUnavailable] = useState(false)
+  // Stays on Pricing when checkout is unavailable so the user actually sees
+  // the explanation (previously we navigated home and the banner never showed).
+  // 'unavailable' = Stripe missing (503); 'error' = network / unexpected.
+  const [checkoutState, setCheckoutState] = useState(null)
 
   const handleCheckout = useCallback(async (tier) => {
     setCheckoutLoading(tier)
+    setCheckoutState(null)
     try {
       const headers = { 'Content-Type': 'application/json' }
       try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
@@ -174,23 +176,28 @@ export function PricingPage({ onGetStarted } = {}) {
         headers,
         body: JSON.stringify({ tier }),
       })
+      if (res.status === 503) {
+        setCheckoutState({ kind: 'unavailable' })
+        return
+      }
+      if (!res.ok) {
+        let msg = `Checkout failed (HTTP ${res.status}).`
+        try { const body = await res.json(); if (body?.error) msg = body.error } catch { /* keep default */ }
+        setCheckoutState({ kind: 'error', message: msg })
+        return
+      }
       const data = await res.json()
-      if (data.url) {
+      if (data?.url) {
         window.location.href = data.url
-      } else if (res.status === 503) {
-        // Stripe not configured — fall back to dashboard AND show the banner
-        // so the user knows why they weren't redirected to checkout.
-        setStripeUnavailable(true)
-        if (onGetStarted) onGetStarted(tier)
+      } else {
+        setCheckoutState({ kind: 'error', message: 'Checkout session did not return a redirect URL.' })
       }
     } catch {
-      // Billing not available (network, CORS, etc.) — same UX as 503.
-      setStripeUnavailable(true)
-      if (onGetStarted) onGetStarted(tier)
+      setCheckoutState({ kind: 'error', message: 'Network error — please try again.' })
     } finally {
       setCheckoutLoading(null)
     }
-  }, [onGetStarted])
+  }, [])
 
   const handleTierAction = useCallback((tier) => {
     if (tier === 'Enterprise') {
@@ -243,34 +250,29 @@ export function PricingPage({ onGetStarted } = {}) {
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
 
-        {/* ── Stripe-not-configured banner (self-hosted) ── */}
+        {/* ── Checkout-blocked banner (Stripe missing or network error) ── */}
         <AnimatePresence>
-          {stripeUnavailable && (
-            <motion.div
-              key="stripe-banner"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.25 }}
-              role="status"
-              className="mb-8 rounded-xl border border-amber-400/40 bg-amber-50/90 dark:bg-amber-500/10 dark:border-amber-500/30 px-5 py-4 text-sm text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center gap-3 justify-between"
-            >
-              <div>
-                <strong className="font-semibold">Checkout unavailable on this instance.</strong>{' '}
-                Stripe isn't configured for self-hosted deployments. Continue on the Free tier, or
-                contact{' '}
-                <a href={`mailto:${SALES_EMAIL}`} className="underline hover:text-amber-700 dark:hover:text-amber-100">
-                  {SALES_EMAIL}
-                </a>{' '}
-                for a Pro license key.
-              </div>
-              <button
-                onClick={() => setStripeUnavailable(false)}
-                className="text-xs font-medium underline hover:no-underline opacity-80 hover:opacity-100 self-start sm:self-auto"
-              >
-                Dismiss
-              </button>
-            </motion.div>
+          {checkoutState?.kind === 'unavailable' && (
+            <ServiceUnavailable
+              key="checkout-unavailable"
+              variant="banner"
+              service="Stripe checkout"
+              reason="This self-hosted deployment doesn't have Stripe configured. Continue on Free, or contact us for a Pro license key."
+              contactEmail={SALES_EMAIL}
+              contactSubject="GitHub Repo Manager — Pro license inquiry"
+              onDismiss={() => setCheckoutState(null)}
+              className="mb-8"
+            />
+          )}
+          {checkoutState?.kind === 'error' && (
+            <FeatureError
+              key="checkout-error"
+              tone="error"
+              title="Checkout couldn't start"
+              hint={checkoutState.message}
+              onRetry={() => setCheckoutState(null)}
+              className="mb-8"
+            />
           )}
         </AnimatePresence>
 

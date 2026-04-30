@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, ChevronLeft, ChevronRight, AlertTriangle, Filter, RefreshCw } from 'lucide-react'
+import { Shield, ChevronLeft, ChevronRight, Filter, RefreshCw } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
 import { formatDateTime as formatDateTimeBase } from '../../utils/format'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
 import { Button } from '../ui/Button'
+import { FeatureState, parseApiError } from '../states'
 
 const ACTION_OPTIONS = [
     { value: '', label: 'All Actions' },
@@ -68,12 +69,17 @@ export function AuditLogSection() {
             if (dateTo) params.set('to', dateTo)
 
             const res = await fetch(`${API_BASE_URL}/api/v1/audit?${params}`, { credentials: 'include' })
-            if (!res.ok) throw new Error('Failed to load audit log')
+            if (!res.ok) {
+                setError(await parseApiError(res, { service: 'Audit log' }))
+                setLogs([])
+                setTotal(0)
+                return
+            }
             const data = await res.json()
             setLogs(data.entries || data.logs || data.items || [])
             setTotal(data.total || 0)
         } catch (err) {
-            setError(err.message)
+            setError(await parseApiError(err))
         } finally {
             setLoading(false)
         }
@@ -149,10 +155,16 @@ export function AuditLogSection() {
 
             {/* Table */}
             {error ? (
-                <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    {error}
-                </div>
+                <FeatureState
+                    error={error}
+                    feature="Audit log"
+                    benefits={[
+                        'Track every authentication, repo and team change',
+                        'Filter by action, resource and date range',
+                        'Retain compliance-grade history for your account',
+                    ]}
+                    onRetry={fetchLogs}
+                />
             ) : loading && logs.length === 0 ? (
                 <div className="space-y-2">
                     {[...Array(5)].map((_, i) => (

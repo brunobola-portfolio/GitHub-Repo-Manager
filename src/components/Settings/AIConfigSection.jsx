@@ -13,6 +13,8 @@ import { Button } from '../ui/Button'
 import { PROVIDER_DEFAULTS } from '../../utils/providerCapabilities'
 import { PRICING_LAST_UPDATED } from '../../utils/providerPricing'
 
+import { FeatureState, parseApiError } from '../states'
+
 import { TEST_COOLDOWN_S, PROVIDERS_NEEDING_EMBEDDING_OVERRIDE } from './AIConfig/constants'
 import { ProviderSelect } from './AIConfig/ProviderSelect'
 import { ProviderFields } from './AIConfig/ProviderFields'
@@ -52,6 +54,7 @@ export function AIConfigSection() {
     const [removing, setRemoving] = useState(false)
     const [errors, setErrors] = useState({})
     const [saveMessage, setSaveMessage] = useState(null)
+    const [loadError, setLoadError] = useState(null)
 
     // Test connection state
     const [testing, setTesting] = useState(false)
@@ -66,11 +69,15 @@ export function AIConfigSection() {
 
     const fetchConfig = useCallback(async () => {
         setLoading(true)
+        setLoadError(null)
         try {
             const res = await fetch(`${API_BASE_URL}/api/user/ai-config`, {
                 credentials: 'include',
             })
-            if (!res.ok) throw new Error('Failed to load AI configuration')
+            if (!res.ok) {
+                setLoadError(await parseApiError(res, { service: 'AI configuration' }))
+                return
+            }
             const data = await res.json()
 
             const loaded = {
@@ -90,8 +97,8 @@ export function AIConfigSection() {
             }
             setForm(loaded)
             setSaved(loaded)
-        } catch {
-            setSaveMessage({ type: 'error', text: 'Failed to load AI configuration.' })
+        } catch (err) {
+            setLoadError(await parseApiError(err))
         } finally {
             setLoading(false)
         }
@@ -297,6 +304,22 @@ export function AIConfigSection() {
                     <Skeleton key={i} variant="card" className="h-28" />
                 ))}
             </div>
+        )
+    }
+
+    if (loadError) {
+        return (
+            <FeatureState
+                error={loadError}
+                feature="AI configuration"
+                benefits={[
+                    'Bring your own provider key (Gemini, OpenAI, Anthropic, …)',
+                    'Per-feature model overrides for finer control',
+                    'Private, metered usage on your own quota',
+                ]}
+                onRetry={fetchConfig}
+                contactSubject="GitHub Repo Manager — AI configuration help"
+            />
         )
     }
 

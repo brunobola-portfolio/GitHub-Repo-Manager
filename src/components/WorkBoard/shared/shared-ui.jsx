@@ -4,7 +4,7 @@
  * circular imports.
  */
 
-import { Lock } from 'lucide-react'
+import { UpgradeRequired } from '../../states'
 
 // ---------------------------------------------------------------------------
 // Skeleton
@@ -69,26 +69,10 @@ export function WebhookHint() {
 
 // ---------------------------------------------------------------------------
 // Upsell card for tier-gated endpoints
+// Thin wrapper over the canonical <UpgradeRequired/> primitive in
+// src/components/states so all gated surfaces share the same look.
 // ---------------------------------------------------------------------------
 
-export function UpsellCard({ tier }) {
-    return (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mb-4 shadow-lg shadow-indigo-500/20">
-                <Lock className="w-7 h-7 text-white" />
-            </div>
-            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">
-                {tier === 'enterprise' ? 'Enterprise' : 'Pro'} feature
-            </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mb-4">
-                Upgrade to {tier === 'enterprise' ? 'Enterprise' : 'Pro'} to unlock this view.
-            </p>
-            <a
-                href="#pricing"
-                className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 transition-colors shadow-md shadow-indigo-500/25"
-            >
-                View pricing
-            </a>
-        </div>
-    )
+export function UpsellCard({ tier, feature, benefits }) {
+    return <UpgradeRequired tier={tier} feature={feature} benefits={benefits} />
 }
