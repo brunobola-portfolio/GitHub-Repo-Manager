@@ -347,4 +347,132 @@ export const repoActions = {
 			ctx.toast.success(`${repo.name} deleted`)
 		},
 	},
+
+	// ───── Batch ─────
+	/** @unconfirmed-by-design highly reversible — count is shown in toast */
+	archive_selected: {
+		id: 'archive_selected',
+		label: (repos) => `Archive ${repos.length} repos`,
+		description: 'Archives all selected repositories. Reversible.',
+		icon: Archive,
+		intent: 'mutation',
+		surfaces: ['selectionBar', 'commandPalette'],
+		isBatchSafe: true,
+		// NOTE: ctx.archiveRepos wrapper already refreshes.
+		run: async (repos, ctx) => {
+			await ctx.archiveRepos(repos.map((r) => r.full_name), true)
+			ctx.toast.success(`Archived ${repos.length} repositories`)
+		},
+	},
+	transfer_selected: {
+		id: 'transfer_selected',
+		label: (repos) => `Transfer ${repos.length} repos`,
+		description: 'Hands ownership of selected repos to another account.',
+		icon: ArrowRightLeft,
+		intent: 'mutation',
+		surfaces: ['selectionBar', 'commandPalette'],
+		isBatchSafe: true,
+		triggersRefresh: true,
+		confirm: (repos) => ({
+			title: `Transfer ${repos.length} repositories?`,
+			message: `The following repositories will be transferred (each recipient must accept):\n\n${repos.slice(0, 5).map((r) => `• ${r.full_name}`).join('\n')}${repos.length > 5 ? `\n• …and ${repos.length - 5} more` : ''}`,
+			confirmText: 'Continue',
+			variant: 'warning',
+		}),
+		run: async (_repos, ctx) => ctx.openModal('showTransfer'),
+	},
+	migrate_selected: {
+		id: 'migrate_selected',
+		label: (repos) => `Migrate ${repos.length} repos`,
+		description: 'Imports the selected repositories via the migration wizard.',
+		icon: Upload,
+		intent: 'mutation',
+		surfaces: ['selectionBar', 'commandPalette'],
+		isBatchSafe: true,
+		triggersRefresh: true,
+		run: async (_repos, ctx) => ctx.openModal('showMigrationWizard'),
+	},
+	dry_run_selected: {
+		id: 'dry_run_selected',
+		label: (repos) => `Dry-Run ${repos.length} repos`,
+		description: 'Simulates migrating the selected repositories.',
+		icon: FlaskConical,
+		intent: 'read-only',
+		surfaces: ['selectionBar', 'commandPalette'],
+		isBatchSafe: true,
+		run: async (_repos, ctx) => ctx.openModalWithData('showMigrationWizard', { initialDryRun: true }),
+	},
+	export_meta_selected: {
+		id: 'export_meta_selected',
+		label: (repos) => `Export ${repos.length} (JSON)`,
+		description: 'Exports metadata for each selected repository.',
+		icon: Download,
+		intent: 'read-only',
+		surfaces: ['selectionBar', 'commandPalette'],
+		isBatchSafe: true,
+		run: async (repos, ctx) => {
+			let ok = 0
+			try {
+				for (const repo of repos) {
+					await ctx.api.exportMetadata(repo.owner.login, repo.name)
+					ok++
+				}
+				ctx.toast.success(`Exported ${ok} repositories`)
+			} catch (err) {
+				ctx.toast.errorFromException(err, { fallbackTitle: `Exported ${ok} of ${repos.length}; stopped` })
+			}
+		},
+	},
+	ai_batch_index_selected: {
+		id: 'ai_batch_index_selected',
+		label: (repos) => `Batch Index ${repos.length} with AI`,
+		description: 'Indexes the selected repositories so AI search can find them.',
+		icon: Sparkles,
+		intent: 'read-only',
+		surfaces: ['selectionBar', 'commandPalette'],
+		isBatchSafe: true,
+		run: async (repos, ctx) => ctx.openModalWithData('showBatchIndex', { repos }),
+	},
+	visibility_selected: {
+		id: 'visibility_selected',
+		label: 'Make Public/Private',
+		description: 'Changes the visibility of all selected repositories at once.',
+		icon: Lock,
+		intent: 'mutation',
+		surfaces: ['selectionBar', 'commandPalette'],
+		isBatchSafe: true,
+		// NOTE: ctx.performAction wrapper already refreshes.
+		confirm: (repos) => ({
+			title: `Change visibility for ${repos.length} repositories?`,
+			message: `Visibility changes are reversible but already-cached public links will 404 for any becoming private. Affected:\n\n${repos.slice(0, 5).map((r) => `• ${r.full_name}`).join('\n')}${repos.length > 5 ? `\n• …and ${repos.length - 5} more` : ''}`,
+			confirmText: 'Continue',
+			variant: 'warning',
+		}),
+		// TODO(visibility-target-picker): build a 2-button modal (Public / Private). For Phase 1, default to private.
+		run: async (repos, ctx) => {
+			await ctx.performAction('visibility', repos.map((r) => r.full_name), '', { makePublic: false })
+			ctx.toast.success(`${repos.length} repositories are now private`)
+		},
+	},
+	delete_selected: {
+		id: 'delete_selected',
+		label: (repos) => `Delete ${repos.length} repos`,
+		description: 'Permanently deletes the selected repositories. This cannot be undone.',
+		icon: Trash2,
+		intent: 'destructive',
+		surfaces: ['selectionBar', 'commandPalette'],
+		isBatchSafe: true,
+		// NOTE: ctx.deleteRepos wrapper already refreshes.
+		confirm: (repos) => ({
+			title: `Delete ${repos.length} repositories?`,
+			message: `This permanently deletes the following:\n\n${repos.slice(0, 5).map((r) => `• ${r.full_name}`).join('\n')}${repos.length > 5 ? `\n• …and ${repos.length - 5} more` : ''}\n\nType "delete ${repos.length} repos" to confirm.`,
+			confirmText: 'Delete All',
+			variant: 'danger',
+			requiresInput: `delete ${repos.length} repos`,
+		}),
+		run: async (repos, ctx) => {
+			await ctx.deleteRepos(repos.map((r) => r.full_name))
+			ctx.toast.success(`Deleted ${repos.length} repositories`)
+		},
+	},
 }

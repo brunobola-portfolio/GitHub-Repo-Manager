@@ -141,3 +141,36 @@ describe('migration & export', () => {
 		expect(repoActions.export_meta.triggersRefresh).toBeFalsy()
 	})
 })
+
+describe('batch actions', () => {
+	const BATCH_IDS = [
+		'archive_selected', 'transfer_selected', 'migrate_selected',
+		'dry_run_selected', 'export_meta_selected', 'ai_batch_index_selected',
+		'visibility_selected', 'delete_selected',
+	]
+
+	it('all 8 batch actions are present', () => {
+		for (const id of BATCH_IDS) {
+			expect(repoActions[id], id).toBeDefined()
+		}
+	})
+
+	it('batch actions are isBatchSafe and on the selectionBar surface', () => {
+		for (const id of BATCH_IDS) {
+			expect(repoActions[id].isBatchSafe, id).toBe(true)
+			expect(repoActions[id].surfaces, id).toContain('selectionBar')
+		}
+	})
+
+	it('delete_selected requires typed input matching count', () => {
+		const cfg = repoActions.delete_selected.confirm([{ id: 1 }, { id: 2 }, { id: 3 }])
+		expect(cfg.requiresInput).toBe('delete 3 repos')
+		expect(cfg.variant).toBe('danger')
+	})
+
+	it('wrapper-bound batch actions do NOT triggerRefresh', () => {
+		expect(repoActions.archive_selected.triggersRefresh).toBeFalsy()
+		expect(repoActions.delete_selected.triggersRefresh).toBeFalsy()
+		expect(repoActions.visibility_selected.triggersRefresh).toBeFalsy()
+	})
+})
