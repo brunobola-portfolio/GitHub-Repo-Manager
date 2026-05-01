@@ -1,5 +1,9 @@
-import { describe, it, expect } from 'vitest'
-import { generateLicense, generateCodeOfConduct, FILE_GENERATORS, SUPPORTED_LICENSES } from '../lib/ai-features/community-health-fix.js'
+import { describe, it, expect, vi } from 'vitest'
+import {
+	generateLicense, generateCodeOfConduct,
+	generateContributing, generateSecurityMd, generateIssueTemplate, generatePRTemplate, generateReadmeStub,
+	FILE_GENERATORS, SUPPORTED_LICENSES,
+} from '../lib/ai-features/community-health-fix.js'
 
 describe('generateLicense', () => {
 	it('substitutes {{year}} and {{owner}} in MIT', () => {
@@ -84,5 +88,70 @@ describe('generateCodeOfConduct', () => {
 
 	it('suggestedCommitMessage is consistent', () => {
 		expect(generateCodeOfConduct({ email: 'a@b.c' }).suggestedCommitMessage).toBe('chore: add Code of Conduct')
+	})
+})
+
+describe('AI-backed generators', () => {
+	const mkProvider = (text) => ({ generate: vi.fn(async () => ({ text, parsed: null })) })
+
+	it('generateContributing sends a prompt naming the repo and returns CONTRIBUTING.md path', async () => {
+		const provider = mkProvider('# Contributing\n\nbody')
+		const out = await generateContributing({ repo: { full_name: 'acme/x', description: 'CLI tool', language: 'TS' }, provider })
+		expect(provider.generate).toHaveBeenCalledOnce()
+		const prompt = provider.generate.mock.calls[0][0].prompt
+		expect(prompt).toMatch(/CONTRIBUTING/)
+		expect(prompt).toContain('acme/x')
+		expect(out.filePath).toBe('CONTRIBUTING.md')
+		expect(out.content).toContain('Contributing')
+		expect(out.suggestedCommitMessage).toBe('chore: add CONTRIBUTING.md')
+	})
+
+	it('generateSecurityMd injects the contact email and returns SECURITY.md path', async () => {
+		const provider = mkProvider('## Reporting a vulnerability')
+		const out = await generateSecurityMd({ repo: { full_name: 'a/b' }, email: 'sec@a.test', provider })
+		const prompt = provider.generate.mock.calls[0][0].prompt
+		expect(prompt).toContain('sec@a.test')
+		expect(out.filePath).toBe('SECURITY.md')
+	})
+
+	it('generateIssueTemplate returns the bug_report path under .github/ISSUE_TEMPLATE', async () => {
+		const out = await generateIssueTemplate({ repo: { full_name: 'a/b', language: 'JS' }, provider: mkProvider('---\nname: Bug\n---') })
+		expect(out.filePath).toBe('.github/ISSUE_TEMPLATE/bug_report.md')
+	})
+
+	it('generatePRTemplate returns .github/PULL_REQUEST_TEMPLATE.md path', async () => {
+		const out = await generatePRTemplate({ repo: { full_name: 'a/b' }, provider: mkProvider('## Summary') })
+		expect(out.filePath).toBe('.github/PULL_REQUEST_TEMPLATE.md')
+	})
+
+	it('generateReadmeStub returns README.md path', async () => {
+		const out = await generateReadmeStub({ repo: { full_name: 'a/b', description: 'x', language: 'Go' }, provider: mkProvider('# a/b') })
+		expect(out.filePath).toBe('README.md')
+	})
+
+	it('sanitises Mustache-style placeholders in repo metadata before injection', async () => {
+		const provider = mkProvider('out')
+		await generateContributing({
+			repo: { full_name: 'a/b', description: 'Tool {{evil}} prompt-inject', language: 'TS' },
+			provider,
+		})
+		const prompt = provider.generate.mock.calls[0][0].prompt
+		expect(prompt).not.toContain('{{evil}}')
+	})
+
+	it('FILE_GENERATORS includes all 7 entries with correct deterministic flags', () => {
+		expect(FILE_GENERATORS.license.deterministic).toBe(true)
+		expect(FILE_GENERATORS.code_of_conduct.deterministic).toBe(true)
+		expect(FILE_GENERATORS.contributing.deterministic).toBe(false)
+		expect(FILE_GENERATORS.security.deterministic).toBe(false)
+		expect(FILE_GENERATORS.issue_template.deterministic).toBe(false)
+		expect(FILE_GENERATORS.pr_template.deterministic).toBe(false)
+		expect(FILE_GENERATORS.readme_stub.deterministic).toBe(false)
+	})
+
+	it('AI generators tolerate missing description/language without crashing', async () => {
+		const provider = mkProvider('out')
+		await expect(generateContributing({ repo: { full_name: 'a/b' }, provider })).resolves.toBeDefined()
+		await expect(generateReadmeStub({ repo: { full_name: 'a/b' }, provider })).resolves.toBeDefined()
 	})
 })

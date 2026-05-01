@@ -15,6 +15,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { sanitizeForPrompt } from './sanitize.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const TEMPLATES_DIR = path.join(__dirname, 'license-templates')
@@ -80,14 +81,82 @@ export function generateCodeOfConduct({ email = 'admin@example.com' } = {}) {
 	}
 }
 
+// ----------------------------------------------------------------------------
+// AI-backed generators
+// ----------------------------------------------------------------------------
+
+/**
+ * Caller passes a resolved provider (`createProviderForUser(...)`); we inject
+ * sanitised repo metadata into the prompt and return the model's text.
+ *
+ * Sanitiser strips Mustache-style `{{...}}` substitutions and clamps length
+ * so a malicious description can't smuggle prompt instructions.
+ */
+function clean(s) {
+	return sanitizeForPrompt(String(s ?? ''), 500).replace(/\{\{[^}]*\}\}/g, '')
+}
+
+export async function generateContributing({ repo, provider }) {
+	const prompt = `Write a CONTRIBUTING.md for ${clean(repo?.full_name)}, a ${clean(repo?.description) || 'project'}. Cover: setup, build, test, PR guidelines, commit message format. Tone: friendly, professional. Use Markdown with H2/H3 only. Keep total length under 800 words.`
+	const result = await provider.generate({ prompt })
+	return {
+		filePath: 'CONTRIBUTING.md',
+		content: result?.text || '',
+		suggestedCommitMessage: 'chore: add CONTRIBUTING.md',
+	}
+}
+
+export async function generateSecurityMd({ repo, email = 'security@example.com', provider }) {
+	const prompt = `Write a SECURITY.md for ${clean(repo?.full_name)}. Cover: supported versions, how to report a vulnerability, expected response time. Use the contact email ${clean(email)}. Use Markdown. Keep total length under 400 words.`
+	const result = await provider.generate({ prompt })
+	return {
+		filePath: 'SECURITY.md',
+		content: result?.text || '',
+		suggestedCommitMessage: 'chore: add SECURITY.md',
+	}
+}
+
+export async function generateIssueTemplate({ repo, provider }) {
+	const prompt = `Write a GitHub bug report issue template for ${clean(repo?.full_name)}. Tech stack: ${clean(repo?.language) || 'unspecified'}. Output Markdown with YAML front matter (name, about, title, labels). Sections: description, reproduction steps, expected behavior, actual behavior, environment. Keep total length under 1.5 KB.`
+	const result = await provider.generate({ prompt })
+	return {
+		filePath: '.github/ISSUE_TEMPLATE/bug_report.md',
+		content: result?.text || '',
+		suggestedCommitMessage: 'chore: add bug report issue template',
+	}
+}
+
+export async function generatePRTemplate({ repo, provider }) {
+	const prompt = `Write a concise PR template for ${clean(repo?.full_name)}. Sections: summary, related issues, testing notes, screenshots (if UI). Output Markdown. Keep total length under 300 words.`
+	const result = await provider.generate({ prompt })
+	return {
+		filePath: '.github/PULL_REQUEST_TEMPLATE.md',
+		content: result?.text || '',
+		suggestedCommitMessage: 'chore: add pull request template',
+	}
+}
+
+export async function generateReadmeStub({ repo, provider }) {
+	const prompt = `Write a README.md stub for ${clean(repo?.full_name)}, a ${clean(repo?.description) || 'project'}. Tech stack: ${clean(repo?.language) || 'unspecified'}. Include: title, badges placeholder, install, quick start, license. Use Markdown with H2 sections. Keep total length under 500 words.`
+	const result = await provider.generate({ prompt })
+	return {
+		filePath: 'README.md',
+		content: result?.text || '',
+		suggestedCommitMessage: 'chore: add README stub',
+	}
+}
+
 /**
  * Registry of file generators consumed by the /community-health/generate
  * endpoint. Each entry declares the destination path and whether the
  * generator runs deterministically (no AI) or via the provider abstraction.
- *
- * Other generators (contributing, security, …) are added in Task 3 of the plan.
  */
 export const FILE_GENERATORS = {
 	license: { path: 'LICENSE', generator: generateLicense, deterministic: true },
 	code_of_conduct: { path: 'CODE_OF_CONDUCT.md', generator: generateCodeOfConduct, deterministic: true },
+	contributing: { path: 'CONTRIBUTING.md', generator: generateContributing, deterministic: false },
+	security: { path: 'SECURITY.md', generator: generateSecurityMd, deterministic: false },
+	issue_template: { path: '.github/ISSUE_TEMPLATE/bug_report.md', generator: generateIssueTemplate, deterministic: false },
+	pr_template: { path: '.github/PULL_REQUEST_TEMPLATE.md', generator: generatePRTemplate, deterministic: false },
+	readme_stub: { path: 'README.md', generator: generateReadmeStub, deterministic: false },
 }
