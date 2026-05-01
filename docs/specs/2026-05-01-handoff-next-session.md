@@ -115,6 +115,47 @@ Pick highest-priority unblocked item first. Each line ends with the spec/plan re
 
 ---
 
+## Update 2026-05-02 — Premium polish audit + 13 commits shipped
+
+A 5-dimension audit (parallel subagents) covered: code duplication / scaffolding consolidation, vaporware / silent failures, dashboard interconnections, AI prompt + model consistency, and menu / quick-action coverage. ~25 distinct findings; ~14 of them mapped to mechanical wins shipped in this session, the rest were either reclassified (audit was wrong) or deferred as architectural decisions.
+
+**Phase 1 (high-impact, low-effort) — 11 commits shipped:**
+
+- [x] ~~**Command palette enumerates `repoActions` registry on the repos view.**~~ Commit `f1d3041`. The slice-1 registry was never consumed by `Cmd+K`; users browsing repos couldn't discover ai_quality / transfer / mirror / sync via palette. New adapter `buildRepoActionsCommands` + `kind:'run'` switch case + `useRepoActionContext` wired into the palette. Top 3 displayRepos × commandPalette-surface actions = ~24 items, cmdk filters as user types.
+- [x] ~~**JSON.parse guards in `server/lib/ai-features/semantic-search.js` (3 sites)**~~. Commit `9635a6f`. A single corrupt `repo_embeddings.embedding` row no longer crashes `findSimilarById` / `semanticSearch` / target-row lookup. New `parseEmbedding(json, repoId)` helper logs once at warn level and returns null; callers skip-vs-throw.
+- [x] ~~**Honest 503 differentiation in `src/api/ai.js`**~~. Commit `5031170`. Previously the unconfigured short-circuit and the runtime-503 path returned identical "Connect AI..." placeholders, so a configured-but-temporarily-broken AI looked like a setup prompt. New `RUNTIME_UNAVAILABLE_NOTE` + `runtimeUnavailable: true` flag distinguishes them in indexRepo / search / enhanceReadme / getQualityReport / batchIndex.
+- [x] ~~**`timeAgo()` consolidation — 4 of 6 variants → `formatRelativeTime`**~~. Commit `770cf80`. Dashboard MigrationActivity, PR review InlineComment, RepoDetail Issue/PRDetailPanel now use the canonical helper. Two variants stay local (AISummaryCard "5 min ago" verbose, RepoMetaBadges no-suffix compact, CurrentConfigSummary full sentence) — different intentional output styles; could fold in via a `style` option in a follow-up.
+- [x] ~~**Dashboard wiring: Teams cards + MigrationActivity click-through**~~. Commit `29b0ed2`. Team cards (DashboardPremium) become real buttons → setSelectedTeam + navigate. MigrationActivity rows + summary stats open MigrationHistory modal. ALSO: removed the dishonest `cursor-pointer` from LanguageChart + ActivityChart cards/legends since they had no onClick — better to look static than to lie about interactivity.
+- [x] ~~**Friendlier error message in LicenseActivationModal catch path**~~. Commit `72ae3cc`. Network failures previously dumped raw `err.message` ("Failed to fetch", TypeError stacks). Now threads through `formatUserError` for human title/body.
+- [x] ~~**`<Skeleton>` primitive replaces 3 high-traffic ad-hoc skeletons**~~. Commit `e57fa0f`. WorkBoard SkeletonRow (cascades into every WB tab), Dashboard SkeletonCard (WhatNeedsYouGrid), AISummaryCard pre-data state. Visual upgrade — the primitive uses the polished `ds-skeleton` shimmer instead of the old animate-pulse.
+- [x] ~~**Centralized Gemini model defaults**~~. Commit `ecc6dbb`. `GEMINI_DEFAULT_MODEL` + `GEMINI_DEFAULT_EMBEDDING_MODEL` exports + `getGeminiModelDefaults()` helper. 4 call sites that duplicated the literal model IDs (constructor signature, two factory paths, semantic-search error message) all flow through it. Provider-pricing keeps the IDs as lookup keys (different concern, correctly unchanged).
+- [x] ~~**Co-located AI prompt templates in `community-health-fix.js`**~~. Commit `03dcb86`. The 5 generators now share a frozen `PROMPT_TEMPLATES` block at module top with `{placeholder}` substitution via a small `renderPromptVars` helper. Easier to audit/A-B test in one place than 5 inline strings.
+
+**Phase 1 items also shipped earlier in the day:** lint regression fix (5a2648b), Apache/GPL/MPL license templates (5738375), RepoDetail tab fade (fab9b82), LanguageChart compact bar variant (726466e), WorkBoard mobile (ae3a034), Modal tab strip overflow (5ce1843), LicenseActivationModal sticky footer (6808a71), MigrationWizard sweep (d0f3290), route-level tests for community-health endpoints (06eb211).
+
+**Phase 2 (AI hygiene) re-evaluated:**
+
+- [x] ~~**SKIPPED: pr-review + readme-enhance system prompts → registry**~~. The user-editable `AI_PROMPT_REGISTRY` is designed for chat-persona / suggest-name-description style prompts the user might want to tune. Pushing per-feature generator system prompts through it expands DB schema + Settings UI for unclear ROI. Document for future demand.
+- [x] ~~**SKIPPED: try-catch wrapping in 5 community-health generators**~~. The audit's claim was incorrect — `actions-community.js` route already wraps generator calls in try-catch and routes AIError through `mapAIErrorToResponse`. The generators don't need their own wrapping; raw errors propagate cleanly to the route's mapper.
+- [x] ~~**SKIPPED: SettingsTab webhook/topic actions → registry**~~. These actions are context-bound (specific topic name, specific hook ID) and require form input. Adding `add_topic`/`remove_topic`/`ping_hook`/`delete_hook` to a context-menu / quickAction registry would clutter the UI without value — they correctly belong inside the Settings tab where their context lives.
+
+**Skipped vaporware-audit items reclassified:**
+- LanguageChart legend → language filter: deferred. The full chain (`repos:set-filter` listener) doesn't exist on the receiving side either (vaporware in the palette's `reposCommands.js`). Adding the legend onClick alone would be incomplete; the palette events also need a listener. Bigger refactor than warranted.
+- TooltipButton primitive: already correct (uses `title={label}` directly). No work.
+- Settings link from dashboard: exists in Sidebar already.
+
+**Test suite at end of session: 3045 passing, 24 skipped, zero failures.** All build green.
+
+### Phase 3 (architectural — needs user direction)
+
+These three items emerged from the audit as legitimate but heavy. Pause before starting; ask the user.
+
+- [ ] **PR / Branch / Issue action registries.** Today only repos have a registered cross-surface action catalog. PR/branch/issue actions live as inline buttons in PullRequestsTab / BranchesTab / IssuesTab. Building parallel registries unblocks command-palette + context-menu discovery for those object types. Effort: 2–4 h per registry + per-surface wiring.
+- [ ] **Centralized `fetchApi()` wrapper with CSRF.** Several files call `getCsrfToken()` then construct headers manually; one (`MigrationHistory.jsx`) skips CSRF entirely. A canonical `fetchApi(url, opts)` would be a drop-in replacement and remove the inconsistency. Effort: 1.5 h refactor.
+- [ ] **Keyboard shortcuts derive from `repoActions` registry.** `useKeyboardShortcuts.js` has a hardcoded SHORTCUTS array disconnected from the registry. New registry actions can't get shortcuts without editing the hook. Effort: 1 h adapter + per-action `keyboardShortcut` field design.
+
+---
+
 ## 5. Known issues + pitfalls (read before acting)
 
 ### Pre-existing test failure ✅ RESOLVED
