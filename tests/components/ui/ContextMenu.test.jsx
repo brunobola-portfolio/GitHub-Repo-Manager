@@ -106,4 +106,31 @@ describe('ContextMenu', () => {
 			expect(onClose).toHaveBeenCalled()
 		}
 	})
+
+	it('renders two-line layout when item.description is set', () => {
+		const itemsWithDesc = [
+			{ label: 'Make Private', description: 'Hides repo from listings.', onClick: vi.fn() },
+		]
+		render(<ContextMenu items={itemsWithDesc} x={100} y={100} onClose={vi.fn()} />)
+		expect(screen.getByText('Make Private')).toBeInTheDocument()
+		expect(screen.getByText('Hides repo from listings.')).toBeInTheDocument()
+		expect(screen.getByTestId('menu-item-description')).toBeInTheDocument()
+	})
+
+	it('renders single-line when description is absent (backwards compat)', () => {
+		const itemsNoDesc = [{ label: 'Open', onClick: vi.fn() }]
+		render(<ContextMenu items={itemsNoDesc} x={100} y={100} onClose={vi.fn()} />)
+		expect(screen.getByText('Open')).toBeInTheDocument()
+		expect(screen.queryByTestId('menu-item-description')).toBeNull()
+	})
+
+	it('applies destructive styling when intent="destructive"', () => {
+		const destructiveItems = [
+			{ label: 'Delete', intent: 'destructive', onClick: vi.fn() },
+		]
+		render(<ContextMenu items={destructiveItems} x={100} y={100} onClose={vi.fn()} />)
+		const item = document.body.querySelector('[role="menuitem"]')
+		expect(item).not.toBeNull()
+		expect(item.className).toMatch(/text-red-/)
+	})
 })
