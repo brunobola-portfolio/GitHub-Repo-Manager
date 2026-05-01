@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Modal } from '../ui/Modal'
+import { Modal, ModalFooter } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Loader2, CheckCircle2, XCircle, Copy, Check } from 'lucide-react'
 import { getCsrfToken } from '../../utils/api'
@@ -54,7 +54,31 @@ export function LicenseActivationModal({ isOpen, onClose }) {
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Activate License" data-testid="license-activation-modal">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Activate License"
+      data-testid="license-activation-modal"
+      footer={
+        <ModalFooter align="between">
+          <Button variant="ghost" onClick={handleClose}>
+            {result ? 'Close' : 'Cancel'}
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleValidate}
+            disabled={!keyInput.trim() || validating}
+            data-testid="license-validate-button"
+          >
+            {validating ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Validating…</>
+            ) : (
+              'Validate License'
+            )}
+          </Button>
+        </ModalFooter>
+      }
+    >
       <div className="space-y-4">
         <p className="text-sm text-slate-600 dark:text-slate-400">
           Paste your license key below to validate it. After validation, add the key to your{' '}
@@ -72,13 +96,6 @@ export function LicenseActivationModal({ isOpen, onClose }) {
             rows={4}
           />
         </div>
-        <Button variant="primary" onClick={handleValidate} disabled={!keyInput.trim() || validating} className="w-full">
-          {validating ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Validating…</>
-          ) : (
-            'Validate License'
-          )}
-        </Button>
         {error && (
           <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-900 dark:text-red-300 text-sm flex gap-2">
             <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
