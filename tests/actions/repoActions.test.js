@@ -47,3 +47,46 @@ describe('repoActions registry', () => {
 		expect(repoActions.community_health).toBeDefined()
 	})
 })
+
+describe('mutation actions', () => {
+	it('visibility, archive, transfer, mirror, sync, ai_suggest_name_desc are present', () => {
+		expect(repoActions.visibility).toBeDefined()
+		expect(repoActions.archive).toBeDefined()
+		expect(repoActions.transfer).toBeDefined()
+		expect(repoActions.mirror).toBeDefined()
+		expect(repoActions.sync).toBeDefined()
+		expect(repoActions.ai_suggest_name_desc).toBeDefined()
+	})
+
+	it('non-wrapper mutation actions trigger refresh', () => {
+		expect(repoActions.sync.triggersRefresh).toBe(true)
+		expect(repoActions.transfer.triggersRefresh).toBe(true)
+		expect(repoActions.mirror.triggersRefresh).toBe(true)
+	})
+
+	it('wrapper-bound mutations do NOT triggerRefresh (wrapper handles it)', () => {
+		expect(repoActions.archive.triggersRefresh).toBeFalsy()
+		expect(repoActions.visibility.triggersRefresh).toBeFalsy()
+	})
+
+	it('visibility confirm uses warning variant', () => {
+		const cfg = repoActions.visibility.confirm({ name: 'r', private: false })
+		expect(cfg).toBeTruthy()
+		expect(cfg.variant).toBe('warning')
+	})
+
+	it('transfer confirm uses warning variant', () => {
+		const cfg = repoActions.transfer.confirm({ name: 'r' })
+		expect(cfg).toBeTruthy()
+		expect(cfg.variant).toBe('warning')
+	})
+
+	it('archive does not gate (toast-only by design)', () => {
+		expect(repoActions.archive.confirm).toBeUndefined()
+	})
+
+	it('sync isApplicable returns false for non-mirror repos', () => {
+		expect(repoActions.sync.isApplicable({ isMirror: false })).toBe(false)
+		expect(repoActions.sync.isApplicable({ isMirror: true })).toBe(true)
+	})
+})

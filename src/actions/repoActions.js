@@ -135,4 +135,113 @@ export const repoActions = {
 			ctx.toast?.success?.('gh CLI command copied')
 		},
 	},
+
+	// ───── Mutation: visibility ─────
+	visibility: {
+		id: 'visibility',
+		label: (repo) => repo.private ? 'Make Public' : 'Make Private',
+		description: (repo) => repo.private
+			? 'Lets anyone on the internet view this repository and its contents.'
+			: 'Removes the repository from public listings. Existing public links will return 404.',
+		icon: (repo) => repo?.private ? Unlock : Lock,
+		intent: 'mutation',
+		surfaces: ['contextMenu', 'quickAction', 'commandPalette'],
+		quickActionPriority: 20,
+		// NOTE: ctx.performAction wrapper already refreshes — no triggersRefresh.
+		confirm: (repo) => ({
+			title: `Make ${repo.name} ${repo.private ? 'public' : 'private'}?`,
+			message: repo.private
+				? `"${repo.name}" will become visible to everyone on the internet.`
+				: `"${repo.name}" will be hidden from public listings; existing public links will 404.`,
+			confirmText: repo.private ? 'Make Public' : 'Make Private',
+			variant: 'warning',
+		}),
+		run: async (repo, ctx) => {
+			await ctx.performAction('visibility', [repo.full_name], '', { makePublic: !!repo.private })
+			ctx.toast.success(`${repo.name} is now ${repo.private ? 'public' : 'private'}`)
+		},
+	},
+
+	// ───── Mutation: archive ─────
+	/** @unconfirmed-by-design highly reversible — toast feedback is enough; modal would feel pedantic */
+	archive: {
+		id: 'archive',
+		label: (repo) => repo.archived ? 'Unarchive' : 'Archive',
+		description: (repo) => repo.archived
+			? 'Reactivates the repository — collaborators can push again.'
+			: 'Marks the repo read-only on GitHub. No pushes, issues, or PRs until unarchived.',
+		icon: Archive,
+		intent: 'mutation',
+		surfaces: ['contextMenu', 'quickAction', 'commandPalette'],
+		quickActionPriority: 30,
+		// NOTE: ctx.archiveRepos wrapper already refreshes — no triggersRefresh.
+		run: async (repo, ctx) => {
+			await ctx.archiveRepos([repo.full_name], !repo.archived)
+			ctx.toast.success(`${repo.name} ${repo.archived ? 'unarchived' : 'archived'}`)
+		},
+	},
+
+	// ───── Mutation: transfer ─────
+	transfer: {
+		id: 'transfer',
+		label: 'Transfer to Org',
+		description: 'Hands ownership of this repo to another user or organization. The new owner must accept.',
+		icon: ArrowRightLeft,
+		intent: 'mutation',
+		surfaces: ['contextMenu', 'commandPalette'],
+		triggersRefresh: true,
+		confirm: (repo) => ({
+			title: `Transfer ${repo.name}?`,
+			message: 'Transferring hands ownership to another account. The recipient must accept the transfer in their GitHub notifications. This is hard to reverse.',
+			confirmText: 'Continue',
+			variant: 'warning',
+		}),
+		run: async (repo, ctx) => ctx.openModalWithData('showTransfer', repo),
+	},
+
+	// ───── Mutation: mirror ─────
+	mirror: {
+		id: 'mirror',
+		label: 'Mirror / Fork',
+		description: 'Creates a mirror copy of this repository under your account.',
+		icon: GitFork,
+		intent: 'mutation',
+		surfaces: ['contextMenu', 'commandPalette'],
+		triggersRefresh: true,
+		run: async (repo, ctx) => ctx.openModalWithData('showMirror', repo),
+	},
+
+	// ───── Mutation: sync ─────
+	sync: {
+		id: 'sync',
+		label: 'Sync Repository',
+		description: 'Fetches latest changes from the mirror source and force-pushes to the target. Only available for mirrored repos.',
+		icon: RefreshCw,
+		intent: 'mutation',
+		surfaces: ['contextMenu', 'commandPalette'],
+		triggersRefresh: true,
+		isApplicable: (repo) => !!repo?.isMirror,
+		confirm: (repo) => ({
+			title: 'Sync Mirror',
+			message: `Fetch latest changes from ${repo.full_name}'s mirror source and force-push to the target?`,
+			confirmText: 'Sync',
+			variant: 'info',
+		}),
+		run: async (repo, ctx) => {
+			const result = await ctx.api.syncMirror(repo.owner.login, repo.name)
+			ctx.toast.success(`Synced in ${Math.round(result.duration / 1000)}s`)
+		},
+	},
+
+	// ───── Mutation: AI suggest name & description ─────
+	ai_suggest_name_desc: {
+		id: 'ai_suggest_name_desc',
+		label: 'Suggest Name & Description',
+		description: 'AI proposes a clearer name and description; you review before applying.',
+		icon: Lightbulb,
+		intent: 'mutation',
+		surfaces: ['contextMenu', 'commandPalette'],
+		triggersRefresh: true,
+		run: async (repo, ctx) => ctx.openModalWithData('suggestNameDescription', { repo }),
+	},
 }
