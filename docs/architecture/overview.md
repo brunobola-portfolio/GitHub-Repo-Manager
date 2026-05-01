@@ -57,6 +57,38 @@ State & data:
 - `src/hooks/useToast.js`
   - Provides a simple toast API (`toast.success`, `toast.error`) used across the UI.
 
+## Action Registry
+
+Repository actions (archive, transfer, delete, AI commands, etc.) are declared
+once in [`src/actions/repoActions.js`](../../src/actions/repoActions.js) and
+consumed by every UI surface — context menu, card quick-actions, selection bar
+(desktop pill / mobile bottom-sheet), and the command palette builder.
+
+Each entry is a `RepoAction` object with `id`, `label`, `description`, `icon`,
+`intent`, `surfaces`, `confirm`, `run`. The dispatcher
+[`runAction(id, target, ctx, registry)`](../../src/actions/runAction.js) is the
+single entry point — it gates each action through optional confirmation, runs
+it, refreshes the list when `triggersRefresh: true`, and surfaces errors via
+toast.
+
+Surfaces are decoupled: each one filters the registry by
+`surfaces.includes('contextMenu' | 'quickAction' | 'selectionBar' | 'commandPalette')`
+and renders its own way. Adding a new action is a single edit in the registry.
+
+`useRepoActionContext()` packages the dependencies actions need (`api`, `toast`,
+modal helpers, `refresh`, mutation wrappers, and a `confirmGate` Promise wrapper
+around the existing `showConfirm` modal contract).
+
+**Double-refresh rule.** `archiveRepos` / `deleteRepos` / `performAction`
+exposed via `useRepoActionContext` are the React wrappers from `useRepos.js` —
+they already call `fetchRepos` on success. Registry actions whose `run()`
+delegates to these MUST NOT also declare `triggersRefresh: true`, or the list
+refreshes twice. The runner enforces this only at runtime; the JSDoc warning
+is the design-time guardrail.
+
+Spec: [`docs/specs/2026-05-01-action-surface-unification.md`](../specs/2026-05-01-action-surface-unification.md).
+Plan: [`docs/plans/2026-05-01-action-surface-unification.md`](../plans/2026-05-01-action-surface-unification.md).
+
 ## Backend
 
 Entry point: `server/index.js`
