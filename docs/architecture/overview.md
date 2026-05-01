@@ -57,6 +57,35 @@ State & data:
 - `src/hooks/useToast.js`
   - Provides a simple toast API (`toast.success`, `toast.error`) used across the UI.
 
+## Action affordances — when to confirm, what variant to use
+
+The repo action registry (slice 1) and the `useDangerAction` hook (slice 2)
+share one rule:
+
+- **`variant: 'info'`** — reversible navigations or non-mutating commands
+  ("Sync now", "Re-fetch metadata"). Modal optional; tooltip preferred.
+- **`variant: 'warning'`** — mutations with reversible side effects, but
+  where the user might not realise it ("Make Private", "Archive", "Leave
+  Team"). Always modal.
+- **`variant: 'danger'`** — destructive or hard-to-reverse mutations
+  ("Delete account", "Drop DLQ job", "Delete team"). Always modal +
+  `requiresInput` for type-name verification when impossible to reverse.
+
+For non-registry call sites, use
+[`useDangerAction({ title, message, variant, requiresInput, onConfirm })`](../../src/hooks/useDangerAction.js).
+The lint test
+[`tests/lint/no-bare-destructive-buttons.test.js`](../../tests/lint/no-bare-destructive-buttons.test.js)
+enforces the discipline going forward — adding a red Button without one of
+the recognised confirm patterns (`useDangerAction`, `openModalWithData('showConfirm', …)`,
+`setConfirmAction`/`setConfirmOpen` state-based modal, or a `<ConfirmModal>`
+sibling) fails CI. The escape hatch for legitimate non-modal flows is a
+`// danger-button-allowed: <reason>` (JS) or
+`{/* danger-button-allowed: <reason> */}` (JSX) comment within 5 lines
+documenting why the bare red styling is intentional (e.g., in-card 2-step
+confirm flow in `ConflictPanel`).
+
+Spec: [`docs/specs/2026-05-01-intent-affordances-audit.md`](../specs/2026-05-01-intent-affordances-audit.md).
+
 ## Responsive layout — mobile primitives
 
 Slice 5 ships three primitives that turn most desktop flows into usable mobile
