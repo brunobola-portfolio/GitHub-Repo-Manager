@@ -103,90 +103,132 @@ export function LanguageChart({ data = [], loading }) {
                         <p>No language data available</p>
                     </div>
                 ) : (
-                    <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-8" style={{ minHeight: `${chartHeight}px` }}>
-                        {/* Chart */}
-                        <div style={{ maxWidth: '280px', width: '100%', height: '280px', overflow: 'hidden' }}>
-                            <ResponsiveContainer
-                                width="100%"
-                                height="100%"
-                                minWidth={0}
-                                minHeight={0}
-                                debounce={200}
-                                initialDimension={{ width: 280, height: 280 }}
-                            >
-                                <PieChart>
-                                    <Pie
-                                        data={enrichedData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={85}
-                                        outerRadius={130}
-                                        paddingAngle={3}
-                                        dataKey="value"
-                                        cornerRadius={8}
-                                    >
-                                        {enrichedData.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={entry.color}
-                                                strokeWidth={0}
-                                                className="transition-opacity hover:opacity-80"
-                                            />
-                                        ))}
-                                    </Pie>
-                                <Tooltip
-                                    contentStyle={{
-                                        backgroundColor: 'var(--ds-chart-tooltip-bg)',
-                                        backdropFilter: 'blur(16px)',
-                                        border: '1px solid var(--ds-chart-tooltip-border)',
-                                        borderRadius: '16px',
-                                        boxShadow: 'var(--ds-chart-tooltip-shadow)',
-                                        padding: '12px 16px',
-                                    }}
-                                    itemStyle={{
-                                        color: 'var(--ds-chart-tooltip-text)',
-                                        fontSize: '13px',
-                                        fontWeight: '500',
-                                    }}
-                                />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        </div>
-
-                        {/* Language Legend - Dynamic and scrollable */}
-                        <div className="flex-1 w-full lg:w-auto overflow-y-auto max-h-[340px] custom-scrollbar pr-2">
-                            <div
-                                className="grid gap-3"
-                                style={{
-                                    gridTemplateColumns: enrichedData.length > 8 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
-                                    gridAutoRows: 'minmax(0, auto)'
-                                }}
-                            >
+                    <>
+                        {/* Compact horizontal stacked bar — sub-sm only (slice 5 row 4) */}
+                        <div
+                            data-testid="language-chart-bar"
+                            className="sm:hidden mb-4"
+                            role="img"
+                            aria-label={`Language distribution: ${enrichedData.map((l) => `${l.name} ${l.percentage}%`).join(', ')}`}
+                        >
+                            <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-200/60 dark:bg-slate-700/60">
                                 {enrichedData.map((lang) => (
                                     <div
-                                        key={lang.name}
-                                        className="flex items-center gap-3 group hover:bg-slate-50/80 dark:hover:bg-slate-800/40 p-2.5 rounded-xl transition-all duration-200 cursor-pointer"
-                                    >
-                                        <div
-                                            className="w-4 h-4 rounded-md flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform"
-                                            style={{ backgroundColor: lang.color }}
-                                        />
-                                        <span className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate flex-1 min-w-0">
-                                            {lang.name}
-                                        </span>
-                                        <div className="flex items-center gap-2 text-xs flex-shrink-0">
-                                            <span className="text-slate-600 dark:text-slate-400 font-semibold">
-                                                {lang.value}
-                                            </span>
-                                            <span className="text-slate-400 dark:text-slate-500 font-medium">
-                                                {lang.percentage}%
-                                            </span>
-                                        </div>
-                                    </div>
+                                        key={`bar-${lang.name}`}
+                                        style={{ width: `${lang.percentage}%`, backgroundColor: lang.color }}
+                                        title={`${lang.name} — ${lang.percentage}%`}
+                                    />
                                 ))}
                             </div>
                         </div>
-                    </div>
+
+                        <div
+                            data-testid="language-chart-pie"
+                            className="hidden sm:flex flex-col lg:flex-row items-center gap-4 sm:gap-8"
+                            style={{ minHeight: `${chartHeight}px` }}
+                        >
+                            {/* Chart */}
+                            <div style={{ maxWidth: '280px', width: '100%', height: '280px', overflow: 'hidden' }}>
+                                <ResponsiveContainer
+                                    width="100%"
+                                    height="100%"
+                                    minWidth={0}
+                                    minHeight={0}
+                                    debounce={200}
+                                    initialDimension={{ width: 280, height: 280 }}
+                                >
+                                    <PieChart>
+                                        <Pie
+                                            data={enrichedData}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={85}
+                                            outerRadius={130}
+                                            paddingAngle={3}
+                                            dataKey="value"
+                                            cornerRadius={8}
+                                        >
+                                            {enrichedData.map((entry, index) => (
+                                                <Cell
+                                                    key={`cell-${index}`}
+                                                    fill={entry.color}
+                                                    strokeWidth={0}
+                                                    className="transition-opacity hover:opacity-80"
+                                                />
+                                            ))}
+                                        </Pie>
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: 'var(--ds-chart-tooltip-bg)',
+                                            backdropFilter: 'blur(16px)',
+                                            border: '1px solid var(--ds-chart-tooltip-border)',
+                                            borderRadius: '16px',
+                                            boxShadow: 'var(--ds-chart-tooltip-shadow)',
+                                            padding: '12px 16px',
+                                        }}
+                                        itemStyle={{
+                                            color: 'var(--ds-chart-tooltip-text)',
+                                            fontSize: '13px',
+                                            fontWeight: '500',
+                                        }}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                            </div>
+
+                            {/* Language Legend - Dynamic and scrollable */}
+                            <div className="flex-1 w-full lg:w-auto overflow-y-auto max-h-[340px] custom-scrollbar pr-2">
+                                <div
+                                    className="grid gap-3"
+                                    style={{
+                                        gridTemplateColumns: enrichedData.length > 8 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
+                                        gridAutoRows: 'minmax(0, auto)'
+                                    }}
+                                >
+                                    {enrichedData.map((lang) => (
+                                        <div
+                                            key={lang.name}
+                                            className="flex items-center gap-3 group hover:bg-slate-50/80 dark:hover:bg-slate-800/40 p-2.5 rounded-xl transition-all duration-200 cursor-pointer"
+                                        >
+                                            <div
+                                                className="w-4 h-4 rounded-md flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform"
+                                                style={{ backgroundColor: lang.color }}
+                                            />
+                                            <span className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate flex-1 min-w-0">
+                                                {lang.name}
+                                            </span>
+                                            <div className="flex items-center gap-2 text-xs flex-shrink-0">
+                                                <span className="text-slate-600 dark:text-slate-400 font-semibold">
+                                                    {lang.value}
+                                                </span>
+                                                <span className="text-slate-400 dark:text-slate-500 font-medium">
+                                                    {lang.percentage}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Compact legend list — sub-sm, paired with the stacked bar above */}
+                        <div className="sm:hidden grid grid-cols-2 gap-2">
+                            {enrichedData.map((lang) => (
+                                <div key={`legend-${lang.name}`} className="flex items-center gap-2 min-w-0">
+                                    <span
+                                        className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                                        style={{ backgroundColor: lang.color }}
+                                    />
+                                    <span className="text-xs text-slate-700 dark:text-slate-300 font-medium truncate flex-1 min-w-0">
+                                        {lang.name}
+                                    </span>
+                                    <span className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">
+                                        {lang.percentage}%
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </>
                 )}
             </Card>
         </motion.div>
