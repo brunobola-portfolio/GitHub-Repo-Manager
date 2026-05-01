@@ -90,3 +90,20 @@ describe('mutation actions', () => {
 		expect(repoActions.sync.isApplicable({ isMirror: true })).toBe(true)
 	})
 })
+
+describe('destructive: delete', () => {
+	it('delete is registered with destructive intent', () => {
+		expect(repoActions.delete).toBeDefined()
+		expect(repoActions.delete.intent).toBe('destructive')
+	})
+
+	it('delete confirm uses danger variant and type-name verification', () => {
+		const cfg = repoActions.delete.confirm({ name: 'my-repo', full_name: 'me/my-repo' })
+		expect(cfg.variant).toBe('danger')
+		expect(cfg.requiresInput).toBe('my-repo')
+	})
+
+	it('delete does NOT trigger refresh (wrapper handles it)', () => {
+		expect(repoActions.delete.triggersRefresh).toBeFalsy()
+	})
+})

@@ -244,4 +244,26 @@ export const repoActions = {
 		triggersRefresh: true,
 		run: async (repo, ctx) => ctx.openModalWithData('suggestNameDescription', { repo }),
 	},
+
+	// ───── Destructive ─────
+	delete: {
+		id: 'delete',
+		label: 'Delete Repository',
+		description: 'Permanently deletes this repository on GitHub. This cannot be undone.',
+		icon: Trash2,
+		intent: 'destructive',
+		surfaces: ['contextMenu', 'commandPalette'],
+		// NOTE: ctx.deleteRepos wrapper already refreshes — no triggersRefresh.
+		confirm: (repo) => ({
+			title: `Delete ${repo.name}?`,
+			message: `This permanently deletes "${repo.full_name}". This cannot be undone. Type the repo name to confirm.`,
+			confirmText: 'Delete',
+			variant: 'danger',
+			requiresInput: repo.name,
+		}),
+		run: async (repo, ctx) => {
+			await ctx.deleteRepos([repo.full_name])
+			ctx.toast.success(`${repo.name} deleted`)
+		},
+	},
 }
