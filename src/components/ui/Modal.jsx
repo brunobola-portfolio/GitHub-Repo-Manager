@@ -186,7 +186,7 @@ export function Modal({
                                 )}
                             </div>
                             {tabs && tabs.length > 0 && (
-                                <div className="flex-shrink-0 px-4 md:px-5 bg-slate-50/80 dark:bg-slate-900/70 border-b border-slate-200/50 dark:border-slate-800/40">
+                                <div className="flex-shrink-0 px-4 md:px-5 bg-slate-50/80 dark:bg-slate-900/70 border-b border-slate-200/50 dark:border-slate-800/40 overflow-x-auto [mask-image:linear-gradient(to_right,transparent,black_24px,black_calc(100%-24px),transparent)]">
                                     <TabBar
                                         tabs={tabs}
                                         activeTab={activeTab}
