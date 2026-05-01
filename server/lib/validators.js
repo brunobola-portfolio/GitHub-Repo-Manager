@@ -147,6 +147,7 @@ export const repoUpdateSchema = z.object({
     has_issues: z.boolean().optional(),
     has_projects: z.boolean().optional(),
     has_wiki: z.boolean().optional(),
+    allow_forking: z.boolean().optional(),
     default_branch: z.string().min(1).max(255).optional(),
     allow_squash_merge: z.boolean().optional(),
     allow_merge_commit: z.boolean().optional(),

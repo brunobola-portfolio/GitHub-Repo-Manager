@@ -4,11 +4,19 @@ import {
 	ExternalLink, Copy, Settings, Rocket, Sparkles, Package,
 	Lock, Unlock, Archive, Trash2, RefreshCw, Wand2, GitCompare, Shield,
 	BarChart3, Lightbulb, ArrowRightLeft, GitFork, Download, Upload, History, FlaskConical,
-	Globe, KeyRound, Terminal, GitPullRequest
+	Globe, KeyRound, Terminal, GitPullRequest, Eye
 } from 'lucide-react'
 
 /**
  * RepoContextMenu - Context menu for repository actions
+ *
+ * Items are grouped, separated by `{ type: 'separator' }` markers, in this
+ * order from top to bottom:
+ *   1. Open    — read-only navigation (in-app first, web second)
+ *   2. Copy    — clone URL variants
+ *   3. Submenus — Migration / AI / Management (heavy actions)
+ *   4. Quick mutations — visibility, archive (frequent toggles)
+ *   5. Danger  — delete
  *
  * Props:
  * - repo: single repo object (null if batch)
@@ -26,11 +34,24 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 
 	const singleRepoItems = repo ? [
 		{ type: 'header', label: repo.name },
+		// 1. Open — in-app first (premium), GitHub web second.
+		{
+			label: 'Open Details',
+			icon: Eye,
+			onClick: () => onAction('openDetail', repo)
+		},
+		{
+			label: 'Open Settings',
+			icon: Settings,
+			onClick: () => onAction('openRepoSettings', repo)
+		},
 		{
 			label: 'Open on GitHub',
 			icon: ExternalLink,
 			onClick: () => window.open(repo.html_url, '_blank')
 		},
+		{ type: 'separator' },
+		// 2. Copy
 		{
 			label: 'Copy Clone URL',
 			icon: Copy,
@@ -40,12 +61,8 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 				{ label: 'GitHub CLI', icon: Terminal, onClick: () => copyToClipboard(`gh repo clone ${repo.full_name}`) }
 			]
 		},
-		{
-			label: 'Settings',
-			icon: Settings,
-			onClick: () => window.open(`${repo.html_url}/settings`, '_blank')
-		},
 		{ type: 'separator' },
+		// 3. Submenus — heavier groups of actions.
 		{
 			label: 'Migration',
 			icon: Rocket,
@@ -85,6 +102,7 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 			]
 		},
 		{ type: 'separator' },
+		// 4. Quick mutations — common toggles surfaced flat for one-click access.
 		{
 			label: repo.private ? 'Make Public' : 'Make Private',
 			icon: repo.private ? Unlock : Lock,
@@ -96,6 +114,7 @@ const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = []
 			onClick: () => onAction('archive', repo)
 		},
 		{ type: 'separator' },
+		// 5. Danger
 		{
 			label: 'Delete Repository',
 			icon: Trash2,

@@ -288,6 +288,26 @@ router.put('/:owner/:repo/collaborators/:username', requireAuth, validateBody(co
     }
 });
 
+// Remove a Collaborator from a Repo
+router.delete('/:owner/:repo/collaborators/:username', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, username } = req.params;
+        if (!isValidGitHubUsername(username)) return res.status(400).json({ error: 'Invalid username format' });
+
+        await githubApi(`/repos/${owner}/${repo}/collaborators/${username}`, req.session.accessToken, {
+            method: 'DELETE',
+        });
+
+        // Revoking access is security-relevant — audit it explicitly.
+        auditLog(req, 'repo.collaborator.remove', 'collaborator', `${owner}/${repo}:${username}`, {});
+
+        res.json({ success: true });
+    } catch (error) {
+        req.log.error({ err: error }, 'Remove collaborator failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Failed to remove collaborator') });
+    }
+});
+
 // ------------------------------------------------------------------
 // Repository Contents & Files
 // ------------------------------------------------------------------

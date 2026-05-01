@@ -7,6 +7,8 @@ import {
 import { Spinner } from '../ui/Spinner'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
+import { AIRunButton } from '../ui/AIRunButton'
+import { AIUnavailableBanner } from '../ui/AIUnavailableBanner'
 import { aiApi } from '../../api/ai'
 
 const ACTION_META = {
@@ -91,6 +93,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
 
             {!plan && !loading && (
                 <div className="space-y-3">
+                    <AIUnavailableBanner />
                     <label className="block">
                         <span className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                             Extra context (optional)
@@ -107,16 +110,13 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
                             {extra.length}/2000
                         </span>
                     </label>
-                    <Button
-                        variant="primary"
+                    <AIRunButton
                         size="sm"
                         onClick={generate}
-                        disabled={loading}
+                        loading={loading}
+                        label="Generate plan"
                         className="w-full"
-                    >
-                        <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                        Generate plan
-                    </Button>
+                    />
                 </div>
             )}
 

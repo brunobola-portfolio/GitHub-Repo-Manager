@@ -1,3 +1,14 @@
+/**
+ * AI action catalog.
+ *
+ * Each entry describes how to dispatch a whitelisted action:
+ * - `modal` (string): name passed to `openModal` for modal-opening actions.
+ * - `event` (string): DOM custom event name for navigation actions that need
+ *   App-level state (e.g. selecting a repo + switching the active tab).
+ * - `payloadShape` (object): per-key validators for the optional payload.
+ *   Only keys listed here are forwarded; unknown keys are dropped silently
+ *   so a hallucinated `description: '...'` never reaches the dispatcher.
+ */
 export const AI_ACTIONS = {
   open_migration_wizard: {
     modal: 'showMigrationWizard',
@@ -19,9 +30,28 @@ export const AI_ACTIONS = {
     modal: 'showSettings',
     defaultLabel: 'Open Settings',
   },
+  open_repo_settings: {
+    event: 'app:open-repo-settings',
+    defaultLabel: 'Open Repo Settings',
+    payloadShape: {
+      owner: (v) => typeof v === 'string' && /^[A-Za-z0-9-]{1,39}$/.test(v),
+      repo: (v) => typeof v === 'string' && /^[A-Za-z0-9._-]{1,100}$/.test(v),
+    },
+  },
 }
 
 export const AI_ACTION_TYPES = Object.keys(AI_ACTIONS)
+
+function validatePayload(entry, candidatePayload) {
+  if (!entry.payloadShape) return undefined
+  if (!candidatePayload || typeof candidatePayload !== 'object') return undefined
+  const out = {}
+  for (const [key, check] of Object.entries(entry.payloadShape)) {
+    const value = candidatePayload[key]
+    if (value !== undefined && check(value)) out[key] = value
+  }
+  return Object.keys(out).length ? out : undefined
+}
 
 export function validateAction(candidate) {
   if (!candidate || typeof candidate !== 'object') return null
@@ -30,7 +60,10 @@ export function validateAction(candidate) {
   const label = typeof candidate.label === 'string' && candidate.label.trim()
     ? candidate.label.trim()
     : entry.defaultLabel
-  return { type: candidate.type, label }
+  const payload = validatePayload(entry, candidate.payload)
+  const validated = { type: candidate.type, label }
+  if (payload) validated.payload = payload
+  return validated
 }
 
 export function sanitizeActions(raw) {
@@ -47,10 +80,17 @@ export function sanitizeActions(raw) {
   return result
 }
 
-export function dispatchAction(action, { openModal }) {
+export function dispatchAction(action, { openModal } = {}) {
   const validated = validateAction(action)
   if (!validated) return false
   const entry = AI_ACTIONS[validated.type]
-  openModal(entry.modal)
-  return true
+  if (entry.modal && openModal) {
+    openModal(entry.modal)
+    return true
+  }
+  if (entry.event && typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(entry.event, { detail: validated.payload || {} }))
+    return true
+  }
+  return false
 }

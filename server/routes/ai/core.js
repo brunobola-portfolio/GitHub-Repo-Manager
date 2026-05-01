@@ -19,6 +19,7 @@ import { safeJsonParse } from '../../lib/utils.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
 import { requireAI, handleAIError, providerGenerateWithRetry } from './shared.js';
+import { buildChatPrompt } from '../../lib/ai-chat-prompt.js';
 import { getKeyHealth, probeAndCache } from '../../lib/ai-health-probe.js';
 import {
     buildPrompt as buildNarrativePrompt,
@@ -122,29 +123,7 @@ router.post('/ai/chat', requireAuth, validateBody(aiChatSchema), requireAI, asyn
         // uses `schema` which every provider implementation handles
         // (for JSON-incapable providers the implementation coerces via
         // system prompt + JSON parse).
-        const systemPrompt = `You are an expert GitHub Repository Manager Assistant.
-Your goal is to help users manage their repositories, analyze code, and suggest improvements.
-
-You ALWAYS reply as JSON matching this exact shape:
-{
-  "reply": "<markdown text, concise and professional>",
-  "actions": [ { "type": "<action>", "label": "<short button text in the user's language>" } ]
-}
-
-The "actions" array is OPTIONAL. Include an action ONLY when the user's request maps clearly to one of the whitelisted types below. Never invent action types. Never include more than one action of the same type. Keep labels short (max 32 chars) and localized to the user's language.
-
-Whitelisted action types:
-- "open_migration_wizard": opens the Azure DevOps → GitHub migration wizard. Use when the user wants to migrate, import, or move repositories from Azure DevOps.
-- "open_migration_history": shows past migration jobs. Use when the user asks about past migrations, status, logs, or history.
-- "open_create_repo": opens the create repository modal. Use when the user wants to create, start, or initialize a new repository.
-- "open_transfer": opens the repository transfer modal. Use when the user wants to transfer ownership of a repo to another org/user.
-- "open_settings": opens the app settings modal. Use when the user wants to change preferences, configure API keys, or adjust the app.
-
-If the user just asks a question, answer in "reply" and omit "actions".
-
-Current context: ${JSON.stringify(context || {}, null, 2)}
-
-User message: ${message}`;
+        const systemPrompt = buildChatPrompt({ message, context, userId: req.session.userId });
 
         const schema = {
             type: 'object',

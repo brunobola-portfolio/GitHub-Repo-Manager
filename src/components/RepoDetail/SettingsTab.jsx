@@ -1,16 +1,19 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
 import { CodeownersSuggestModal } from '../CodeownersSuggestModal'
+import { CollaboratorsSection } from './CollaboratorsSection'
 import { useToast } from '../../hooks/useToast'
 import { useAIStatus } from '../../hooks/useAIStatus'
 import { useModal } from '../../hooks/useModal'
 import { aiApi } from '../../api/ai'
 import { reposApi } from '../../api/repos'
-import { Settings, Save, Loader2, CheckCircle2, XCircle, AlertTriangle, Lock, Globe, Webhook, Trash2, Plus, RefreshCw, Users, Tag, Sparkles } from 'lucide-react'
+import { Settings, Save, AlertTriangle, Lock, Globe, Webhook, Trash2, Plus, RefreshCw, Users, Tag, Sparkles, Undo2, X, GitMerge, Archive, ArchiveRestore } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
+
+const FIELD_CLASSES = 'w-full px-3 py-2.5 rounded-lg bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed'
 
 export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
     const { toast } = useToast()
@@ -72,18 +75,101 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
         }
     }
 
-    const [message, setMessage] = useState(null)
-    const [form, setForm] = useState({
+    const initialForm = useMemo(() => ({
         description: repoData.description || '',
         homepage: repoData.homepage || '',
         has_issues: repoData.has_issues !== false,
         has_projects: repoData.has_projects !== false,
         has_wiki: repoData.has_wiki !== false,
         allow_forking: repoData.allow_forking !== false,
-        default_branch: repoData.default_branch || 'main'
-    })
+        default_branch: repoData.default_branch || 'main',
+        allow_squash_merge: repoData.allow_squash_merge !== false,
+        allow_merge_commit: repoData.allow_merge_commit !== false,
+        allow_rebase_merge: repoData.allow_rebase_merge !== false,
+        delete_branch_on_merge: !!repoData.delete_branch_on_merge,
+    }), [
+        repoData.description, repoData.homepage, repoData.has_issues, repoData.has_projects,
+        repoData.has_wiki, repoData.allow_forking, repoData.default_branch,
+        repoData.allow_squash_merge, repoData.allow_merge_commit, repoData.allow_rebase_merge,
+        repoData.delete_branch_on_merge,
+    ])
+    const [form, setForm] = useState(initialForm)
+    const isDirty = useMemo(
+        () => Object.keys(initialForm).some(k => initialForm[k] !== form[k]),
+        [initialForm, form],
+    )
+    const handleDiscard = () => setForm(initialForm)
 
     const [confirmAction, setConfirmAction] = useState(null)
+
+    // Manual topics editor — coexists with the AI suggestions section.
+    const [newTopicInput, setNewTopicInput] = useState('')
+    const [topicsSaving, setTopicsSaving] = useState(false)
+    const TOPIC_PATTERN = /^[a-z0-9-]{1,50}$/
+
+    const persistTopics = async (next) => {
+        setTopicsSaving(true)
+        try {
+            await reposApi.setTopics(owner, repo, next)
+            onUpdate?.((prev) => ({ ...prev, topics: next }))
+            return true
+        } catch (err) {
+            toast.errorFromException(err, { fallbackTitle: 'Failed to update topics' })
+            return false
+        } finally {
+            setTopicsSaving(false)
+        }
+    }
+
+    const handleAddTopic = async () => {
+        const candidate = newTopicInput.trim().toLowerCase()
+        if (!candidate) return
+        if (!TOPIC_PATTERN.test(candidate)) {
+            toast.error('Topics must be lowercase letters, digits, or hyphens (max 50 chars).')
+            return
+        }
+        const current = repoData.topics || []
+        if (current.includes(candidate)) {
+            toast.error('Topic already added.')
+            return
+        }
+        if (current.length >= 20) {
+            toast.error('GitHub allows up to 20 topics per repository.')
+            return
+        }
+        const ok = await persistTopics([...current, candidate])
+        if (ok) {
+            setNewTopicInput('')
+            toast.success(`Added topic "${candidate}"`)
+        }
+    }
+
+    const handleRemoveTopic = async (topic) => {
+        const next = (repoData.topics || []).filter((t) => t !== topic)
+        const ok = await persistTopics(next)
+        if (ok) toast.success(`Removed topic "${topic}"`)
+    }
+
+    const handleArchiveToggle = () => {
+        const willArchive = !repoData.archived
+        setConfirmAction({
+            title: willArchive ? 'Archive Repository' : 'Unarchive Repository',
+            message: willArchive
+                ? 'Archived repositories become read-only — you can read them but not push, open issues, or run actions. You can unarchive at any time.'
+                : 'Unarchiving will allow pushes, issues, and actions on this repository again.',
+            confirmText: willArchive ? 'Archive' : 'Unarchive',
+            variant: 'warning',
+            onConfirm: async () => {
+                try {
+                    const result = await api.updateRepo({ archived: willArchive })
+                    onUpdate?.((prev) => ({ ...prev, ...(result.data || result) }))
+                    toast.success(willArchive ? 'Repository archived' : 'Repository unarchived')
+                } catch (e) {
+                    toast.errorFromException(e, { fallbackTitle: 'Failed to update archive state' })
+                }
+            },
+        })
+    }
 
     // Webhooks state
     const [webhooks, setWebhooks] = useState([])
@@ -93,16 +179,14 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
     const [hookForm, setHookForm] = useState({ url: '', content_type: 'json', events: ['push'] })
 
     const handleSave = async () => {
+        if (!isDirty) return
         setSaving(true)
-        setMessage(null)
         try {
             const result = await api.updateRepo(form)
             const updated = result.data || result
             onUpdate(prev => ({ ...prev, ...updated }))
-            setMessage({ type: 'success', text: 'Settings saved' })
             toast.success('Repository settings saved')
         } catch (e) {
-            setMessage({ type: 'error', text: e.message })
             toast.errorFromException(e, { fallbackTitle: 'Failed to save settings' })
         } finally {
             setSaving(false)
@@ -127,13 +211,11 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                 events: hookForm.events,
                 active: true
             })
-            setMessage({ type: 'success', text: 'Webhook created' })
             toast.success('Webhook created')
             setShowNewHook(false)
             setHookForm({ url: '', content_type: 'json', events: ['push'] })
             loadWebhooks()
         } catch (e) {
-            setMessage({ type: 'error', text: e.message })
             toast.errorFromException(e, { fallbackTitle: 'Failed to create webhook' })
         }
     }
@@ -146,11 +228,9 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
             onConfirm: async () => {
                 try {
                     await api.deleteWebhook(hookId)
-                    setMessage({ type: 'success', text: 'Webhook deleted' })
                     toast.success('Webhook deleted')
                     loadWebhooks()
                 } catch (e) {
-                    setMessage({ type: 'error', text: e.message })
                     toast.errorFromException(e, { fallbackTitle: 'Failed to delete webhook' })
                 }
             }
@@ -160,25 +240,14 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
     const pingHook = async (hookId) => {
         try {
             await api.pingWebhook(hookId)
-            setMessage({ type: 'success', text: 'Ping sent' })
             toast.success('Webhook ping sent')
         } catch (e) {
-            setMessage({ type: 'error', text: e.message })
             toast.errorFromException(e, { fallbackTitle: 'Failed to ping webhook' })
         }
     }
 
     return (
         <div className="space-y-6 max-w-2xl">
-            {message && (
-                <div className={`flex items-center gap-2 p-2 rounded-lg text-sm ${
-                    message.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
-                }`}>
-                    {message.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                    {message.text}
-                </div>
-            )}
-
             {/* General Settings */}
             <Card className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
@@ -197,62 +266,97 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                     </button>
                 </div>
                 <div>
-                    <label htmlFor="repo-settings-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
-                    <input id="repo-settings-description" type="text" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
+                    <label htmlFor="repo-settings-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Description</label>
+                    <input id="repo-settings-description" type="text" value={form.description}
+                        onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                        placeholder="A short description of this repository"
+                        disabled={saving}
+                        className={FIELD_CLASSES} />
                 </div>
                 <div>
-                    <label htmlFor="repo-settings-homepage" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Website</label>
-                    <input id="repo-settings-homepage" type="url" value={form.homepage} onChange={e => setForm(f => ({ ...f, homepage: e.target.value }))}
+                    <label htmlFor="repo-settings-homepage" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Website</label>
+                    <input id="repo-settings-homepage" type="url" value={form.homepage}
+                        onChange={e => setForm(f => ({ ...f, homepage: e.target.value }))}
                         placeholder="https://example.com"
-                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
+                        disabled={saving}
+                        className={FIELD_CLASSES} />
                 </div>
                 <div>
-                    <label htmlFor="repo-settings-default-branch" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Default Branch</label>
-                    <input id="repo-settings-default-branch" type="text" value={form.default_branch} onChange={e => setForm(f => ({ ...f, default_branch: e.target.value }))}
-                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
+                    <label htmlFor="repo-settings-default-branch" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Default Branch</label>
+                    <input id="repo-settings-default-branch" type="text" value={form.default_branch}
+                        onChange={e => setForm(f => ({ ...f, default_branch: e.target.value }))}
+                        placeholder="main"
+                        disabled={saving}
+                        className={FIELD_CLASSES} />
                 </div>
 
                 {/* Feature toggles */}
                 <div className="space-y-2">
                     {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Features</label>
-                    {[
-                        { key: 'has_issues', label: 'Issues' },
-                        { key: 'has_projects', label: 'Projects' },
-                        { key: 'has_wiki', label: 'Wiki' },
-                        { key: 'allow_forking', label: 'Allow Forking' }
-                    ].map(feat => (
-                        <label key={feat.key} className="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" checked={form[feat.key]}
-                                onChange={e => setForm(f => ({ ...f, [feat.key]: e.target.checked }))}
-                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600" />
-                            <span className="text-sm text-slate-700 dark:text-slate-300">{feat.label}</span>
-                        </label>
-                    ))}
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-0.5">Features</label>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                        {[
+                            { key: 'has_issues', label: 'Issues' },
+                            { key: 'has_projects', label: 'Projects' },
+                            { key: 'has_wiki', label: 'Wiki' },
+                            { key: 'allow_forking', label: 'Allow Forking' }
+                        ].map(feat => (
+                            <label key={feat.key} className="flex items-center gap-2 cursor-pointer select-none py-1 rounded hover:bg-slate-50 dark:hover:bg-slate-800/50 px-1 -mx-1 transition-colors">
+                                <input type="checkbox" checked={form[feat.key]}
+                                    onChange={e => setForm(f => ({ ...f, [feat.key]: e.target.checked }))}
+                                    disabled={saving}
+                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500/40" />
+                                <span className="text-sm text-slate-700 dark:text-slate-300">{feat.label}</span>
+                            </label>
+                        ))}
+                    </div>
                 </div>
 
-                {/* Desktop save button — inline at the bottom of the card */}
-                <div className="hidden md:flex justify-end">
-                    <Button onClick={handleSave} disabled={saving}>
-                        {saving ? <Spinner size="sm" className="mr-1" /> : <Save className="w-4 h-4 mr-1" />}
-                        Save Changes
-                    </Button>
+                {/* Pull request merge settings */}
+                <div className="space-y-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/50">
+                    {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-0.5 flex items-center gap-1.5">
+                        <GitMerge className="w-3.5 h-3.5 text-indigo-500" /> Pull request merging
+                    </label>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                        {[
+                            { key: 'allow_merge_commit', label: 'Allow merge commits' },
+                            { key: 'allow_squash_merge', label: 'Allow squash merging' },
+                            { key: 'allow_rebase_merge', label: 'Allow rebase merging' },
+                            { key: 'delete_branch_on_merge', label: 'Auto-delete head branches' },
+                        ].map(feat => (
+                            <label key={feat.key} className="flex items-center gap-2 cursor-pointer select-none py-1 rounded hover:bg-slate-50 dark:hover:bg-slate-800/50 px-1 -mx-1 transition-colors">
+                                <input type="checkbox" checked={form[feat.key]}
+                                    onChange={e => setForm(f => ({ ...f, [feat.key]: e.target.checked }))}
+                                    disabled={saving}
+                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500/40" />
+                                <span className="text-sm text-slate-700 dark:text-slate-300">{feat.label}</span>
+                            </label>
+                        ))}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">At least one merge style must remain enabled — GitHub blocks the save otherwise.</p>
+                </div>
+
+                {/* Save row — desktop inline; mobile sticky version is a TODO follow-up
+                    (slice 5 docs cover the pattern: md:hidden fixed bottom-0 inset-x-0 +
+                    md:flex inline). */}
+                <div className="flex items-center justify-between gap-2 pt-1">
+                    <span className={`text-xs transition-opacity ${isDirty ? 'opacity-100 text-amber-600 dark:text-amber-400' : 'opacity-0'}`} aria-live="polite">
+                        {isDirty ? 'Unsaved changes' : ''}
+                    </span>
+                    <div className="flex items-center gap-2">
+                        {isDirty && (
+                            <Button variant="ghost" onClick={handleDiscard} disabled={saving}>
+                                <Undo2 className="w-4 h-4 mr-1" /> Discard
+                            </Button>
+                        )}
+                        <Button onClick={handleSave} disabled={saving || !isDirty}>
+                            {saving ? <Spinner size="sm" className="mr-1" /> : <Save className="w-4 h-4 mr-1" />}
+                            Save Changes
+                        </Button>
+                    </div>
                 </div>
             </Card>
-
-            {/* Mobile sticky save bar — pinned to viewport bottom so the CTA
-                doesn't scroll off-screen on long Settings forms. */}
-            <div
-                role="region"
-                aria-label="Save changes"
-                className="md:hidden fixed bottom-0 left-0 right-0 z-30 px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2 safe-area-bottom"
-            >
-                <Button onClick={handleSave} disabled={saving} className="flex-1">
-                    {saving ? <Spinner size="sm" className="mr-1" /> : <Save className="w-4 h-4 mr-1" />}
-                    Save Changes
-                </Button>
-            </div>
 
             {/* Webhooks */}
             <Card className="p-5 space-y-4">
@@ -276,10 +380,11 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                 {showNewHook && (
                     <div className="space-y-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                         <div>
-                            <label htmlFor="webhook-payload-url" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Payload URL *</label>
-                            <input id="webhook-payload-url" type="url" value={hookForm.url} onChange={e => setHookForm(f => ({ ...f, url: e.target.value }))}
+                            <label htmlFor="webhook-payload-url" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Payload URL *</label>
+                            <input id="webhook-payload-url" type="url" value={hookForm.url}
+                                onChange={e => setHookForm(f => ({ ...f, url: e.target.value }))}
                                 placeholder="https://example.com/webhook"
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
+                                className={FIELD_CLASSES} />
                         </div>
                         <div className="flex gap-2">
                             <Button size="sm" variant="secondary" onClick={() => setShowNewHook(false)}>Cancel</Button>
@@ -311,6 +416,9 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                 )}
             </Card>
 
+            {/* Collaborators — direct access list (read/write/admin) for this repo */}
+            <CollaboratorsSection owner={owner} repo={repo} archived={!!repoData.archived} />
+
             {/* Danger Zone */}
             <Card className="p-5 border-red-200 dark:border-red-900/50">
                 <h3 className="font-bold text-red-600 dark:text-red-400 flex items-center gap-2 mb-3">
@@ -335,14 +443,30 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                                     try {
                                         const result = await api.updateRepo({ private: newVisibility })
                                         onUpdate(prev => ({ ...prev, ...(result.data || result) }))
-                                        setMessage({ type: 'success', text: `Repository is now ${newVisibility ? 'private' : 'public'}` })
+                                        toast.success(`Repository is now ${newVisibility ? 'private' : 'public'}`)
                                     } catch (e) {
-                                        setMessage({ type: 'error', text: e.message })
+                                        toast.errorFromException(e, { fallbackTitle: 'Failed to change visibility' })
                                     }
                                 }
                             })
                         }}>
                             {repoData.private ? <><Globe className="w-3.5 h-3.5 mr-1" /> Make Public</> : <><Lock className="w-3.5 h-3.5 mr-1" /> Make Private</>}
+                        </Button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border border-red-200 dark:border-red-900/50 rounded-lg">
+                        <div>
+                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{repoData.archived ? 'Unarchive Repository' : 'Archive Repository'}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                {repoData.archived
+                                    ? 'Currently archived (read-only). Unarchiving restores write access.'
+                                    : 'Archived repos become read-only — no pushes, issues, or actions. Reversible.'}
+                            </p>
+                        </div>
+                        <Button variant="danger" size="sm" onClick={handleArchiveToggle}>
+                            {repoData.archived
+                                ? <><ArchiveRestore className="w-3.5 h-3.5 mr-1" /> Unarchive</>
+                                : <><Archive className="w-3.5 h-3.5 mr-1" /> Archive</>}
                         </Button>
                     </div>
                 </div>
@@ -367,6 +491,61 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                     >
                         <Users className="w-4 h-4 mr-1.5" />
                         Suggest
+                    </Button>
+                </div>
+            </Card>
+
+            {/* Topics — manual editor (chips + add input). AI suggestions live in the section below. */}
+            <Card className="p-5 space-y-3">
+                <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <Tag className="w-5 h-5 text-indigo-500" /> Topics
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Lowercase letters, digits, or hyphens. Up to 20 per repository. Saved instantly.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                    {(repoData.topics || []).length === 0 && (
+                        <span className="text-sm text-slate-400 dark:text-slate-500 italic">No topics yet — add the first one below.</span>
+                    )}
+                    {(repoData.topics || []).map((topic) => (
+                        <span key={topic} className="group inline-flex items-center gap-1 pl-2.5 pr-1 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-700/40">
+                            {topic}
+                            <button
+                                type="button"
+                                onClick={() => handleRemoveTopic(topic)}
+                                disabled={topicsSaving || repoData.archived}
+                                className="rounded-full p-0.5 text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-200 hover:bg-indigo-100 dark:hover:bg-indigo-800/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                title={`Remove "${topic}"`}
+                                aria-label={`Remove topic ${topic}`}
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
+                        </span>
+                    ))}
+                </div>
+                <div className="flex items-center gap-2">
+                    <input
+                        type="text"
+                        value={newTopicInput}
+                        onChange={(e) => setNewTopicInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault()
+                                handleAddTopic()
+                            }
+                        }}
+                        placeholder="add-a-topic"
+                        disabled={topicsSaving || repoData.archived}
+                        aria-label="Add a topic"
+                        className={FIELD_CLASSES + ' flex-1'} />
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleAddTopic}
+                        disabled={topicsSaving || !newTopicInput.trim() || repoData.archived}
+                    >
+                        {topicsSaving ? <Spinner size="xs" className="mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
+                        Add
                     </Button>
                 </div>
             </Card>

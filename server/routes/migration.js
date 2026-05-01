@@ -11,6 +11,67 @@ import db from '../db.js';
 const router = express.Router();
 const engine = new MigrationEngine(db);
 
+function parseJsonField(value) {
+  if (value == null || typeof value === 'object') return value ?? null;
+  try { return JSON.parse(value); } catch { return value; }
+}
+
+// Maps a `migration_plans` row (snake_case) to the API/UI shape (camelCase,
+// nested `source` object). Keep the engine's `getPlanStatus` shape unchanged —
+// SSE consumers and engine tests rely on the raw row shape.
+function formatPlanForApi(row, { taskCount, tasks } = {}) {
+  if (!row) return null;
+  const formatted = {
+    id: row.id,
+    status: row.status,
+    source: {
+      type: row.source_type || 'azure',
+      org: row.source_org || null,
+      project: row.source_project || null,
+    },
+    targetOrg: row.target_org || null,
+    isDryRun: !!row.is_dry_run,
+    scheduledAt: row.scheduled_at || null,
+    startedAt: row.started_at || null,
+    completedAt: row.completed_at || null,
+    createdAt: row.created_at || null,
+    updatedAt: row.updated_at || null,
+    aiAnalysis: parseJsonField(row.ai_analysis),
+    summary: parseJsonField(row.summary),
+  };
+  if (typeof taskCount === 'number') formatted.taskCount = taskCount;
+  if (Array.isArray(tasks)) {
+    formatted.tasks = tasks.map(formatTaskForApi);
+    formatted.taskCount = tasks.length;
+  }
+  return formatted;
+}
+
+function formatTaskForApi(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    type: row.type,
+    executionOrder: row.execution_order,
+    sourceRef: row.source_ref,
+    targetRef: row.target_ref || null,
+    repoName: row.source_ref,
+    config: parseJsonField(row.config),
+    status: row.status,
+    progressPct: row.progress_pct ?? 0,
+    progressMessage: row.progress_message || null,
+    errorMessage: row.error_message || null,
+    retries: row.retries ?? 0,
+    maxRetries: row.max_retries ?? 0,
+    startedAt: row.started_at || null,
+    completedAt: row.completed_at || null,
+    metadata: parseJsonField(row.metadata),
+    createdAt: row.created_at || null,
+  };
+}
+
+export { formatPlanForApi, formatTaskForApi };
+
 // Free users can create plans but only in dry-run mode. Real execution (and
 // resume/retry of anything that wasn't a dry-run) requires Pro+.
 function requireProOrDryRunPlan(req, res, next) {
@@ -120,10 +181,15 @@ router.get('/plans', requireAuth, async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const perPage = Math.min(100, Math.max(1, parseInt(req.query.per_page) || 20));
     const offset = (page - 1) * perPage;
-    const plans = db.prepare(
-      'SELECT * FROM migration_plans WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    const rows = db.prepare(
+      `SELECT p.*, (SELECT COUNT(*) FROM migration_tasks t WHERE t.plan_id = p.id) AS task_count
+       FROM migration_plans p
+       WHERE p.user_id = ?
+       ORDER BY p.created_at DESC
+       LIMIT ? OFFSET ?`
     ).all(req.session.userId, perPage, offset);
     const total = db.prepare('SELECT COUNT(*) as count FROM migration_plans WHERE user_id = ?').get(req.session.userId);
+    const plans = rows.map(row => formatPlanForApi(row, { taskCount: row.task_count ?? 0 }));
     res.json({ plans, total: total.count, page, perPage });
   } catch (err) {
     res.status(500).json({ error: safeError(err, 'Operation failed') });
@@ -137,7 +203,7 @@ router.get('/plans/:id', requireAuth, async (req, res) => {
     const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
     if (!plan) return res.status(404).json({ error: 'Plan not found' });
     const fullPlan = engine.getPlanStatus(id);
-    res.json(fullPlan);
+    res.json(formatPlanForApi(fullPlan, { tasks: fullPlan.tasks || [] }));
   } catch (err) {
     res.status(500).json({ error: safeError(err, 'Operation failed') });
   }

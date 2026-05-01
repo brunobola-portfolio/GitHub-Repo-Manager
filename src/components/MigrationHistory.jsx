@@ -39,6 +39,7 @@ export function MigrationHistory({ isOpen, onClose }) {
     const [filter, setFilter] = useState('all')
     const [activeTab, setActiveTab] = useState('plans') // 'plans' | 'legacy'
     const [expandedPlan, setExpandedPlan] = useState(null)
+    const [loadingPlanIds, setLoadingPlanIds] = useState(() => new Set())
 
     const loadJobs = async () => {
         setLoading(true)
@@ -64,6 +65,32 @@ export function MigrationHistory({ isOpen, onClose }) {
             setPlans([])
         } finally {
             setLoading(false)
+        }
+    }
+
+    const togglePlanExpanded = async (plan) => {
+        const willExpand = expandedPlan !== plan.id
+        setExpandedPlan(willExpand ? plan.id : null)
+        if (!willExpand) return
+        const tasksLoaded = Array.isArray(plan.tasks)
+        const expectsTasks = (plan.taskCount || 0) > 0
+        if (tasksLoaded || !expectsTasks) return
+        setLoadingPlanIds(prev => {
+            const next = new Set(prev)
+            next.add(plan.id)
+            return next
+        })
+        try {
+            const full = await migrationApi.getPlan(plan.id)
+            setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, ...full } : p))
+        } catch {
+            setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, tasks: [] } : p))
+        } finally {
+            setLoadingPlanIds(prev => {
+                const next = new Set(prev)
+                next.delete(plan.id)
+                return next
+            })
         }
     }
 
@@ -163,23 +190,31 @@ export function MigrationHistory({ isOpen, onClose }) {
                                 const StatusIcon = status.icon
                                 const isExpanded = expandedPlan === plan.id
                                 const tasks = plan.tasks || []
-                                const taskCount = tasks.length || plan.taskCount || 0
+                                const taskCount = Array.isArray(plan.tasks) ? plan.tasks.length : (plan.taskCount || 0)
+                                const isLoadingTasks = loadingPlanIds.has(plan.id)
+                                const isExpandable = taskCount > 0
                                 const sourceInfo = plan.source || {}
+                                const hasSource = !!(sourceInfo.org && sourceInfo.project)
+                                const sourceLabel = hasSource
+                                    ? `${sourceInfo.org}/${sourceInfo.project}`
+                                    : `Migration #${plan.id}`
 
                                 return (
                                     <div key={plan.id} className="rounded-xl border border-slate-200/60 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50 transition-colors">
                                         <div
-                                            role="button"
-                                            tabIndex={0}
-                                            aria-expanded={isExpanded}
-                                            onClick={() => setExpandedPlan(isExpanded ? null : plan.id)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' || e.key === ' ') {
-                                                    e.preventDefault()
-                                                    setExpandedPlan(isExpanded ? null : plan.id)
-                                                }
-                                            }}
-                                            className="w-full p-3 flex items-start gap-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                            {...(isExpandable ? {
+                                                role: 'button',
+                                                tabIndex: 0,
+                                                'aria-expanded': isExpanded,
+                                                onClick: () => togglePlanExpanded(plan),
+                                                onKeyDown: (e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.preventDefault()
+                                                        togglePlanExpanded(plan)
+                                                    }
+                                                },
+                                            } : {})}
+                                            className={`w-full p-3 flex items-start gap-3 text-left rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isExpandable ? 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer' : ''}`}
                                         >
                                             <div className={`p-1.5 rounded-lg ${status.bg}`}>
                                                 <StatusIcon className={`w-4 h-4 ${status.text} ${plan.status === 'running' || plan.status === 'executing' ? 'animate-spin' : ''}`} />
@@ -187,13 +222,13 @@ export function MigrationHistory({ isOpen, onClose }) {
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 text-sm">
                                                     <Cloud className="w-3.5 h-3.5 text-slate-400" />
-                                                    <span className="font-medium text-slate-900 dark:text-slate-100 truncate">
-                                                        {sourceInfo.org || 'Unknown'}/{sourceInfo.project || 'Unknown'}
+                                                    <span className={`font-medium truncate ${hasSource ? 'text-slate-900 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400 italic'}`}>
+                                                        {sourceLabel}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
                                                     <span className={`capitalize font-medium ${status.text}`}>{plan.status}</span>
-                                                    <span>{taskCount} task{taskCount !== 1 ? 's' : ''}</span>
+                                                    {taskCount > 0 && <span>{taskCount} task{taskCount !== 1 ? 's' : ''}</span>}
                                                     <span>{plan.createdAt ? new Date(plan.createdAt).toLocaleString() : ''}</span>
                                                 </div>
                                             </div>
@@ -216,7 +251,13 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                         <FileText className="w-4 h-4" />
                                                     </button>
                                                 )}
-                                                {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                                                {isExpandable && (
+                                                    isLoadingTasks
+                                                        ? <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                                                        : isExpanded
+                                                            ? <ChevronDown className="w-4 h-4 text-slate-400" />
+                                                            : <ChevronRight className="w-4 h-4 text-slate-400" />
+                                                )}
                                             </div>
                                         </div>
                                         {isExpanded && tasks.length > 0 && (

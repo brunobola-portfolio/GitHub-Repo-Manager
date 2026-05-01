@@ -28,8 +28,8 @@ const TABS = [
     { id: 'settings', label: 'Settings', icon: Settings }
 ]
 
-export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription }) {
-    const [activeTab, setActiveTab] = useState('overview')
+export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription, initialTab = 'overview', onRepoMutated }) {
+    const [activeTab, setActiveTab] = useState(initialTab)
     const [repoData, setRepoData] = useState(repo)
     const [loadingRepo, setLoadingRepo] = useState(false)
     const [isStaleData, setIsStaleData] = useState(false)
@@ -57,6 +57,24 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription 
         // eslint-disable-next-line react-hooks/set-state-in-effect
         loadRepo()
     }, [loadRepo])
+
+    // Local repo-data setter that also notifies the App-level repos list
+    // so RepoList / Dashboard cards reflect the change after the user
+    // navigates back. Functional updates (prev => ({...prev, ...updated}))
+    // are forwarded as-is; calls without arguments are intercepted and
+    // trigger a forced server refetch instead of clobbering local state.
+    const handleRepoMutated = useCallback((updater) => {
+        if (typeof updater === 'function') {
+            setRepoData(updater)
+        } else if (updater && typeof updater === 'object') {
+            setRepoData(prev => ({ ...prev, ...updater }))
+        } else {
+            // Caller signaled "I changed something but don't have the new
+            // shape" — pull a fresh copy from the server.
+            loadRepo()
+        }
+        onRepoMutated?.()
+    }, [loadRepo, onRepoMutated])
 
     const r = repoData
 
@@ -148,13 +166,13 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription 
 
             {/* Tab Content */}
             <div role="tabpanel" id={`tabpanel-repo-detail-tabs-${activeTab}`} aria-labelledby={`tab-repo-detail-tabs-${activeTab}`}>
-                {activeTab === 'overview' && <OverviewTab api={api} repoData={r} />}
-                {activeTab === 'branches' && <BranchesTab api={api} />}
+                {activeTab === 'overview' && <OverviewTab api={api} repoData={r} onUpdate={handleRepoMutated} />}
+                {activeTab === 'branches' && <BranchesTab api={api} repoData={r} />}
                 {activeTab === 'releases' && <ReleasesTab api={api} />}
                 {activeTab === 'actions' && <ActionsTab repo={r} />}
                 {activeTab === 'issues' && <IssuesTab api={api} repoFullName={`${owner}/${repoName}`} />}
                 {activeTab === 'pulls' && <PullRequestsTab api={api} onStartReview={onStartReview} onGenerateDescription={onGenerateDescription} />}
-                {activeTab === 'settings' && <SettingsTab owner={owner} repo={repoName} api={api} repoData={r} onUpdate={setRepoData} />}
+                {activeTab === 'settings' && <SettingsTab owner={owner} repo={repoName} api={api} repoData={r} onUpdate={handleRepoMutated} />}
             </div>
         </div>
     )

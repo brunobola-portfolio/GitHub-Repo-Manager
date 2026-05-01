@@ -1,17 +1,15 @@
-import { useState, useEffect, useRef } from 'react'
-import { Sparkles, Wand2, Loader2, CheckCircle2, RotateCcw, AlertTriangle } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Sparkles, Wand2, Loader2, CheckCircle2, AlertTriangle, Info } from 'lucide-react'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { InsightCard } from '../ui/InsightCard'
 import { Button } from '../ui/Button'
 import { aiApi } from '../../api/ai'
 import { reposApi } from '../../api/repos'
 import { useToast } from '../../hooks/useToast'
-
-function SkeletonCard({ height = 120 }) {
-    return <div data-testid="suggest-skeleton" className="ds-skeleton rounded-xl" style={{ height }} />
-}
+import { useAIStatus } from '../../hooks/useAIStatus'
 
 function SourceBadge({ source }) {
+    if (!source) return null
     const isAI = source === 'ai'
     return (
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
@@ -25,8 +23,19 @@ function SourceBadge({ source }) {
     )
 }
 
+/**
+ * Field block with three rendering modes:
+ *
+ * - `manual`     — no AI suggestion yet; show a single editable input.
+ *                  This is the entry state and the always-available
+ *                  fallback when AI is unavailable / errors out.
+ * - `suggestion` — AI proposed a different value; show Current vs Proposed.
+ * - `noChange`   — AI inspected and judged the current value already good;
+ *                  collapsed to a confirmation card.
+ */
 function FieldCard({
     label,
+    mode,
     currentValue,
     proposedValue,
     onChange,
@@ -35,9 +44,8 @@ function FieldCard({
     onRestore,
     multiline = false,
     maxLength,
-    noChange,
 }) {
-    if (noChange) {
+    if (mode === 'noChange') {
         return (
             <InsightCard tone="success" hover={false}>
                 <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm">
@@ -47,7 +55,41 @@ function FieldCard({
             </InsightCard>
         )
     }
+
     const Tag = multiline ? 'textarea' : 'input'
+
+    if (mode === 'manual') {
+        return (
+            <InsightCard hover={false}>
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{label}</h3>
+                    <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={useField}
+                            onChange={(e) => onToggleUse(e.target.checked)}
+                            className="accent-indigo-500"
+                            aria-label={`Use this ${label.toLowerCase()}`}
+                        />
+                        Use this {label.toLowerCase()}
+                    </label>
+                </div>
+                <Tag
+                    value={proposedValue}
+                    onChange={(e) => onChange(e.target.value)}
+                    maxLength={maxLength}
+                    rows={multiline ? 3 : undefined}
+                    disabled={!useField}
+                    aria-label={`Edit ${label.toLowerCase()}`}
+                    placeholder={!proposedValue ? `Enter ${label.toLowerCase()}…` : undefined}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50"
+                />
+                <p className="text-[11px] text-slate-400 mt-2">Edit manually, or use “Suggest with AI” below to fill this in.</p>
+            </InsightCard>
+        )
+    }
+
+    // 'suggestion' mode — Current vs Proposed split.
     const emptyCurrent = !currentValue
     return (
         <InsightCard hover={false}>
@@ -77,10 +119,10 @@ function FieldCard({
                         <button
                             type="button"
                             onClick={onRestore}
-                            className="text-[11px] text-slate-500 hover:text-indigo-500 inline-flex items-center gap-1"
+                            className="text-[11px] text-slate-500 hover:text-indigo-500"
                             title="Restore original suggestion"
                         >
-                            <RotateCcw className="w-3 h-3" /> Restore
+                            Restore
                         </button>
                     </div>
                     <Tag
@@ -100,24 +142,52 @@ function FieldCard({
 
 export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onApplied }) {
     const { toast } = useToast()
-    const [data, setData] = useState(null)
+    const aiStatus = useAIStatus()
+    const aiOff = !aiStatus.loading && !aiStatus.configured
+
+    // The repo prop is the single source of truth for "current" values; the
+    // form starts in manual mode (proposed = current) so the user can edit
+    // straight away without waiting for any AI call.
+    const initialName = repo?.name || ''
+    const initialDesc = repo?.description || ''
+
+    const [suggestion, setSuggestion] = useState(null) // server response or null
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
     const [applying, setApplying] = useState(false)
 
-    // Editable proposed values + per-field toggle + acknowledged-rename
-    const [nameValue, setNameValue] = useState('')
-    const [descValue, setDescValue] = useState('')
+    const [nameValue, setNameValue] = useState(initialName)
+    const [descValue, setDescValue] = useState(initialDesc)
     const [useName, setUseName] = useState(true)
     const [useDesc, setUseDesc] = useState(true)
     const [ackRename, setAckRename] = useState(false)
-    // True after the user clicks Regenerate while they have unsaved edits.
-    // The next click confirms the discard. Reset on every successful fetch.
     const [confirmingRegenerate, setConfirmingRegenerate] = useState(false)
 
     const abortRef = useRef(null)
 
-    const startFetch = async () => {
+    // Reset every time the modal is opened against a different repo. We keep
+    // existing state when isOpen flips false→true with the same repo so an
+    // accidental close doesn't drop user edits.
+    /* eslint-disable react-hooks/set-state-in-effect -- mount-time reset on open / repo change */
+    useEffect(() => {
+        if (!isOpen) {
+            abortRef.current?.abort()
+            return
+        }
+        setSuggestion(null)
+        setError(null)
+        setNameValue(initialName)
+        setDescValue(initialDesc)
+        setUseName(true)
+        setUseDesc(true)
+        setAckRename(false)
+        setConfirmingRegenerate(false)
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- only the repo identity matters
+    }, [isOpen, repo?.id])
+    /* eslint-enable react-hooks/set-state-in-effect */
+
+    const fetchSuggestion = async () => {
+        if (!repo) return
         abortRef.current?.abort()
         const ctrl = new AbortController()
         abortRef.current = ctrl
@@ -126,7 +196,7 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
         try {
             const result = await aiApi.suggestNameDescription(repo.id)
             if (ctrl.signal.aborted) return
-            setData(result)
+            setSuggestion(result)
             setNameValue(result.proposed.name)
             setDescValue(result.proposed.description)
             setUseName(!result.noChange.name)
@@ -141,47 +211,52 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
         }
     }
 
-    /* eslint-disable react-hooks/set-state-in-effect -- mount-time fetch + reset on repo change */
-    useEffect(() => {
-        if (!isOpen || !repo) {
-            setData(null); setError(null); setLoading(false)
-            return
-        }
-        startFetch()
-        return () => abortRef.current?.abort()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, repo?.id])
-    /* eslint-enable react-hooks/set-state-in-effect */
-
-    const nameWillChange = useName && data && nameValue !== data.current.name
-    const descWillChange = useDesc && data && descValue !== data.current.description
-
-    // Regenerate guard — if the user edited the proposed value, the first
-    // click arms a "confirm discard" state and the button label changes;
-    // the second click (or any click without unsaved edits) actually fetches.
     const userHasEdits = Boolean(
-        data && (nameValue !== data.proposed.name || descValue !== data.proposed.description),
+        suggestion && (
+            nameValue !== suggestion.proposed.name
+            || descValue !== suggestion.proposed.description
+        ),
     )
-    const onRegenerateClick = () => {
+
+    // Single button in the footer that triggers either the first AI fetch or
+    // a regenerate, with a confirm step when unsaved edits would be lost.
+    const onSuggestClick = () => {
         if (userHasEdits && !confirmingRegenerate) {
             setConfirmingRegenerate(true)
             return
         }
         setConfirmingRegenerate(false)
-        startFetch()
+        fetchSuggestion()
     }
+
+    const nameMode = useMemo(() => {
+        if (!suggestion) return 'manual'
+        if (suggestion.noChange.name) return 'noChange'
+        return 'suggestion'
+    }, [suggestion])
+
+    const descMode = useMemo(() => {
+        if (!suggestion) return 'manual'
+        if (suggestion.noChange.description) return 'noChange'
+        return 'suggestion'
+    }, [suggestion])
+
+    const trimmedName = nameValue.trim()
+    const trimmedDesc = descValue.trim()
+    const nameWillChange = useName && trimmedName !== initialName.trim() && trimmedName.length > 0
+    const descWillChange = useDesc && trimmedDesc !== initialDesc.trim()
+    const nothingToApply = !nameWillChange && !descWillChange
     const applyDisabled =
-        applying ||
-        loading ||
-        !data ||
-        (!nameWillChange && !descWillChange) ||
-        (nameWillChange && !ackRename)
+        applying
+        || loading
+        || nothingToApply
+        || (nameWillChange && !ackRename)
 
     const handleApply = async () => {
-        if (!data || applyDisabled) return
+        if (applyDisabled) return
         const payload = {}
-        if (nameWillChange) payload.name = nameValue.trim()
-        if (descWillChange) payload.description = descValue.trim()
+        if (nameWillChange) payload.name = trimmedName
+        if (descWillChange) payload.description = trimmedDesc
         setApplying(true)
         try {
             const updated = await reposApi.updateRepo(repo.owner.login, repo.name, payload)
@@ -195,6 +270,13 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
         }
     }
 
+    const suggestLabel = (() => {
+        if (loading) return 'Generating…'
+        if (confirmingRegenerate) return 'Discard edits & regenerate?'
+        if (suggestion) return 'Regenerate'
+        return aiOff ? 'Suggest (heuristic)' : 'Suggest with AI'
+    })()
+
     return (
         <Modal
             isOpen={isOpen}
@@ -205,18 +287,19 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
             iconGradient="primary"
             size="2xl"
             mobileVariant="sheet"
-            isBusy={loading || applying}
+            isBusy={applying}
             footer={
                 <ModalFooter align="between">
                     <Button
                         variant={confirmingRegenerate ? 'danger' : 'ghost'}
-                        onClick={onRegenerateClick}
+                        onClick={onSuggestClick}
                         disabled={loading || applying}
+                        title={aiOff ? 'AI is not configured — uses a deterministic heuristic instead' : undefined}
                     >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
-                        {confirmingRegenerate ? 'Discard edits & regenerate?' : 'Regenerate'}
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                        {suggestLabel}
                     </Button>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
                         <Button variant="ghost" onClick={onClose}>Cancel</Button>
                         <button
                             type="button"
@@ -232,82 +315,87 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
             }
         >
             <div aria-live="polite" className="sr-only">
-                {loading ? 'Generating suggestion…' : data ? 'Suggestion ready.' : ''}
+                {loading ? 'Generating suggestion…' : suggestion ? 'Suggestion ready.' : ''}
             </div>
 
-            {data && (
-                <div className="flex justify-end mb-3">
-                    <SourceBadge source={data.source} />
-                </div>
-            )}
+            {/* Status row: AI source badge once we have one, OR a soft notice when AI is off. */}
+            <div className="flex items-center justify-between gap-3 mb-3 min-h-[1.5rem]">
+                {aiOff && !suggestion && !error ? (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 inline-flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5" />
+                        AI not configured. Edit manually or use the heuristic suggester.
+                    </p>
+                ) : <span />}
+                {suggestion && <SourceBadge source={suggestion.source} />}
+            </div>
 
-            {loading && (
-                <div className="grid gap-4">
-                    <SkeletonCard height={130} />
-                    <SkeletonCard height={150} />
-                    <SkeletonCard height={60} />
-                </div>
-            )}
-
-            {error && !loading && (
-                <InsightCard tone="danger" hover={false}>
-                    <p className="text-red-600 dark:text-red-400 text-sm mb-2">Failed to generate a suggestion.</p>
-                    <Button variant="ghost" onClick={startFetch}>Retry</Button>
+            {error && (
+                <InsightCard tone="warning" hover={false}>
+                    <div className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-300">
+                        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                        <div>
+                            <p className="mb-1">Could not generate a suggestion. You can still edit and apply changes manually.</p>
+                            <Button variant="ghost" size="sm" onClick={fetchSuggestion} disabled={loading}>
+                                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+                                Retry
+                            </Button>
+                        </div>
+                    </div>
                 </InsightCard>
             )}
 
-            {data && !loading && (
-                <div className="grid gap-4">
-                    <FieldCard
-                        label="Name"
-                        currentValue={data.current.name}
-                        proposedValue={nameValue}
-                        onChange={setNameValue}
-                        useField={useName}
-                        onToggleUse={setUseName}
-                        onRestore={() => setNameValue(data.proposed.name)}
-                        maxLength={100}
-                        noChange={data.noChange.name}
-                    />
+            <div className="grid gap-4 mt-3">
+                <FieldCard
+                    label="Name"
+                    mode={nameMode}
+                    currentValue={initialName}
+                    proposedValue={nameValue}
+                    onChange={setNameValue}
+                    useField={useName}
+                    onToggleUse={setUseName}
+                    onRestore={() => suggestion && setNameValue(suggestion.proposed.name)}
+                    maxLength={100}
+                />
 
-                    {nameWillChange && (
-                        <InsightCard tone="warning" hover={false}>
-                            <label className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-300 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={ackRename}
-                                    onChange={(e) => setAckRename(e.target.checked)}
-                                    className="mt-0.5 accent-amber-500"
-                                />
-                                <span className="flex items-start gap-2">
-                                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                                    I understand renaming changes the repo URL and existing clone remotes.
-                                </span>
-                            </label>
-                        </InsightCard>
-                    )}
+                {nameWillChange && (
+                    <InsightCard tone="warning" hover={false}>
+                        <label className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-300 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={ackRename}
+                                onChange={(e) => setAckRename(e.target.checked)}
+                                className="mt-0.5 accent-amber-500"
+                            />
+                            <span className="flex items-start gap-2">
+                                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                                I understand renaming changes the repo URL and existing clone remotes.
+                            </span>
+                        </label>
+                    </InsightCard>
+                )}
 
-                    <FieldCard
-                        label="Description"
-                        currentValue={data.current.description}
-                        proposedValue={descValue}
-                        onChange={setDescValue}
-                        useField={useDesc}
-                        onToggleUse={setUseDesc}
-                        onRestore={() => setDescValue(data.proposed.description)}
-                        multiline
-                        maxLength={500}
-                        noChange={data.noChange.description}
-                    />
+                <FieldCard
+                    label="Description"
+                    mode={descMode}
+                    currentValue={initialDesc}
+                    proposedValue={descValue}
+                    onChange={setDescValue}
+                    useField={useDesc}
+                    onToggleUse={setUseDesc}
+                    onRestore={() => suggestion && setDescValue(suggestion.proposed.description)}
+                    multiline
+                    maxLength={500}
+                />
 
+                {suggestion?.rationale && (
                     <InsightCard tone="ai" hover={false}>
                         <div className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
                             <Wand2 className="w-4 h-4 mt-0.5 text-indigo-500 shrink-0" />
-                            {data.rationale}
+                            {suggestion.rationale}
                         </div>
                     </InsightCard>
-                </div>
-            )}
+                )}
+            </div>
         </Modal>
     )
 }

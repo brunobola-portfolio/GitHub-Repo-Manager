@@ -8,17 +8,18 @@ import {
 } from '../../src/utils/aiActions'
 
 describe('aiActions registry', () => {
-  it('exposes exactly the five v1 actions', () => {
+  it('exposes the whitelisted actions', () => {
     expect(AI_ACTION_TYPES.sort()).toEqual([
       'open_create_repo',
       'open_migration_history',
       'open_migration_wizard',
+      'open_repo_settings',
       'open_settings',
       'open_transfer',
     ])
   })
 
-  it('every action maps to a real ModalContext name', () => {
+  it('every action has either a modal name or an event name', () => {
     const VALID_MODALS = new Set([
       'showCreateRepo', 'showTransfer', 'showOrgManager', 'showDevToolkit',
       'showRepoInsights', 'showCommunityHealth', 'showSettings',
@@ -26,7 +27,10 @@ describe('aiActions registry', () => {
       'showBatchIndex', 'showCompare', 'showSecurityScan', 'showLicenseActivation',
     ])
     for (const type of AI_ACTION_TYPES) {
-      expect(VALID_MODALS.has(AI_ACTIONS[type].modal)).toBe(true)
+      const entry = AI_ACTIONS[type]
+      const valid = (entry.modal && VALID_MODALS.has(entry.modal))
+        || (entry.event && entry.event.startsWith('app:'))
+      expect(valid).toBe(true)
     }
   })
 })
@@ -94,5 +98,38 @@ describe('dispatchAction', () => {
     const result = dispatchAction({ type: 'nuke_everything' }, { openModal })
     expect(openModal).not.toHaveBeenCalled()
     expect(result).toBe(false)
+  })
+
+  it('dispatches event-based actions via window CustomEvent with validated payload', () => {
+    const handler = vi.fn()
+    window.addEventListener('app:open-repo-settings', handler)
+    const result = dispatchAction(
+      { type: 'open_repo_settings', label: 'Open settings', payload: { owner: 'alice', repo: 'demo' } },
+      { openModal: vi.fn() }
+    )
+    expect(result).toBe(true)
+    expect(handler).toHaveBeenCalledTimes(1)
+    expect(handler.mock.calls[0][0].detail).toEqual({ owner: 'alice', repo: 'demo' })
+    window.removeEventListener('app:open-repo-settings', handler)
+  })
+
+  it('drops invalid payload fields silently before dispatching', () => {
+    const handler = vi.fn()
+    window.addEventListener('app:open-repo-settings', handler)
+    dispatchAction(
+      { type: 'open_repo_settings', payload: { owner: 'alice', repo: 'demo', extra: 'evil', description: 'hijack' } },
+      { openModal: vi.fn() }
+    )
+    expect(handler.mock.calls[0][0].detail).toEqual({ owner: 'alice', repo: 'demo' })
+    window.removeEventListener('app:open-repo-settings', handler)
+  })
+
+  it('rejects payload with malformed owner/repo (script tags, slashes)', () => {
+    const validated = validateAction({
+      type: 'open_repo_settings',
+      payload: { owner: '<script>', repo: 'a/b' },
+    })
+    // Both fields are invalid → no payload survives → action keeps default label only.
+    expect(validated.payload).toBeUndefined()
   })
 })

@@ -410,6 +410,23 @@ export function initDB(targetDb = db) {
         `);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_user_ai_config_updated ON user_ai_config(updated_at)`);
 
+        // Per-user, per-feature AI prompt overrides. The default prompt for
+        // each feature lives in code (server/lib/ai-prompt-registry.js); this
+        // table only stores the user's custom version when they choose to
+        // override one. Rows are identified by `feature_key` strings declared
+        // in the registry, so unrecognized keys are filtered at the route layer.
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS user_ai_prompts (
+                user_id INTEGER NOT NULL,
+                feature_key TEXT NOT NULL,
+                prompt TEXT NOT NULL,
+                updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                PRIMARY KEY (user_id, feature_key),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_user_ai_prompts_user ON user_ai_prompts(user_id)`);
+
         // -----------------------------------------------------------------------
         // Work Board — Premium UX Feature Tables
         // -----------------------------------------------------------------------

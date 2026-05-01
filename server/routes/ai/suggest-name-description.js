@@ -19,6 +19,7 @@ import { githubApi } from '../../lib/github-api.js';
 import { safeJsonParse } from '../../lib/utils.js';
 import { generateDeterministic } from '../../lib/suggest-name-description.js';
 import { sanitizeForPrompt } from '../../ai-service.js';
+import { getResolvedPrompt } from '../../lib/ai-prompt-registry.js';
 import db from '../../db.js';
 
 const router = express.Router();
@@ -64,22 +65,15 @@ function loadIndexedAiMetadata(userId, repoId) {
     }
 }
 
-function buildAIPrompt({ name, description, language, isPrivate, topics, readmeExcerpt }) {
-    return [
-        'You are renaming a GitHub repo. Given the metadata below, propose:',
-        '- name: kebab-case, 3-5 words, descriptive of WHAT it does (not generic).',
-        "  Keep current name if already good (don't rename for the sake of it).",
-        '- description: ONE sentence, max 120 chars, no marketing fluff,',
-        '  starts with a verb or noun (not "A repo that…").',
-        '- rationale: 1 sentence explaining what signals you used.',
-        '',
-        'Return JSON only: { "name": "...", "description": "...", "rationale": "..." }',
-        '',
-        `Repo: ${sanitizeForPrompt(name, 100)} (${sanitizeForPrompt(language || 'unknown', 50)}, ${isPrivate ? 'private' : 'public'})`,
-        `Current description: ${sanitizeForPrompt(description || 'none', 500)}`,
-        `Topics: ${sanitizeForPrompt(topics?.length ? topics.join(', ') : 'none', 200)}`,
-        `README excerpt: ${sanitizeForPrompt(readmeExcerpt || 'none', 1500)}`,
-    ].join('\n');
+function buildAIPrompt(userId, { name, description, language, isPrivate, topics, readmeExcerpt }) {
+    return getResolvedPrompt(userId, 'suggest_name_description', {
+        name: sanitizeForPrompt(name, 100),
+        description: sanitizeForPrompt(description || 'none', 500),
+        language: sanitizeForPrompt(language || 'unknown', 50),
+        visibility: isPrivate ? 'private' : 'public',
+        topics: sanitizeForPrompt(topics?.length ? topics.join(', ') : 'none', 200),
+        readme: sanitizeForPrompt(readmeExcerpt || 'none', 1500),
+    });
 }
 
 function clampString(s, max) {
@@ -166,7 +160,7 @@ router.post(
 
         if (provider) {
             try {
-                const prompt = buildAIPrompt({
+                const prompt = buildAIPrompt(userId, {
                     name,
                     description: repo.description,
                     language: repo.language,

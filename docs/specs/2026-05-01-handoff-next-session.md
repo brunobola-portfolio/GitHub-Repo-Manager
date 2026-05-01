@@ -10,13 +10,13 @@
 
 Make the entire app feel "premium and connected" via 5 focused slices. Originally requested via a multi-paragraph user message + screenshots; decomposed during brainstorming into:
 
-| # | Slice | Status | Branch / commits |
+| # | Slice | Status | Branch / merge state |
 |---|---|---|---|
-| 1 | Action Surface Unification | ✅ **Shipped** | `feat/action-surface-unification` (PR pending) — 19 commits, registry of 31 actions, runner, all surfaces wired, tests green |
-| 2 | Intent affordances audit | ✅ **Shipped** | `feat/intent-affordances-audit` (PR pending) — 3 commits. Audit revealed only 3 destructive offenders (vs 24 specced); all already used valid project confirm patterns (`setConfirmAction`/`setConfirmOpen`/`<ConfirmModal>` + 1 in-card flow with allow comment). Foundation: `useDangerAction` hook + lint guard. |
-| 3 | Dashboard wiring | ⚠️ **Part 1 shipped** | On `main` (commit `06698e5`) — StatCards interactive, 8/8 wired. Part 2 (deeper dashboard interactivity) not yet specced. |
-| 4 | AI auto-fix Community Health | ✅ **Shipped** (Tasks 1–8 + 11) | `feat/community-health-ai-autofix` (PR pending) — 9 commits, 44 tests green, full suite 2860/2860. Tasks 9 (registry entry) and 10 (e2e) deferred — see follow-ups. Spec: [`2026-05-01-community-health-ai-autofix.md`](2026-05-01-community-health-ai-autofix.md) · Plan: [`../plans/2026-05-01-community-health-ai-autofix.md`](../plans/2026-05-01-community-health-ai-autofix.md) |
-| 5 | Mobile parity sweep | ⚠️ **Phase 1+2 shipped** | `feat/mobile-parity-sweep` (PR pending) — 6 commits. Primitives: `useViewportSafeHeight`, `<MobileFAB>`, `<ModalSticky>` (12 tests). Wirings: toast width clamp, MobileFAB→command palette, Dashboard StatCards 1-wide, Sidebar drawer (already wired), RepoFilterBar bottom-sheet w/ active-filter badge, RepoDetail Settings sticky save bar. Remaining (follow-up): RepoDetail tabs scroll fade, WorkBoard mobile, SettingsModal sections, ModalSticky migration of existing modals, MigrationWizard responsive sweep, Playwright mobile project. |
+| 1 | Action Surface Unification | ⚠️ **Open PR — needs conflict resolution** | [PR #27](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/pull/27) on `feat/action-surface-unification`. 19 commits. **Has merge conflicts vs current main** (slices 2/4/5 layered features on top of files slice 1 rewrites). See PR comment for resolution paths — recommended: GitHub web UI "Resolve conflicts" button, file-by-file. Branch preserved, no work lost. |
+| 2 | Intent affordances audit | ✅ **Merged** | Squash-merged via PR #28 (commit on main). `useDangerAction` hook + `tests/lint/no-bare-destructive-buttons.test.js`. |
+| 3 | Dashboard wiring | ⚠️ **Part 1 on main** | Commit `06698e5` — StatCards interactive, 8/8 wired. Part 2 (deeper dashboard interactivity) not yet specced. |
+| 4 | AI auto-fix Community Health | ✅ **Merged** | Squash-merged via PR #29 (commit on main). Tasks 1–8 + 11 done. Tasks 9 (registry entry, gated on slice 1) and 10 (e2e) queued in follow-ups. |
+| 5 | Mobile parity sweep | ✅ **Merged** (Phase 1+2) | Squash-merged via PR #30 (commit on main). Primitives + 6 audit rows shipped. Remaining 11 rows queued in follow-ups. |
 
 Plus a one-off bug fix (`b9e093a` on main) that landed during the planning session: AI quota errors now render friendly messages instead of dumping raw Google RPC errors. This fix introduces a pattern reused in slice 4.
 

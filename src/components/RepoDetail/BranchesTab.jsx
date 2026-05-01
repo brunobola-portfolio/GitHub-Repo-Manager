@@ -8,8 +8,9 @@ import { Spinner } from '../ui/Spinner'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 import { BranchHygieneCard } from './BranchHygieneCard'
+import { BranchProtectionPanel } from './BranchProtectionPanel'
 
-export function BranchesTab({ api }) {
+export function BranchesTab({ api, repoData }) {
     const { toast } = useToast()
     const { data, loading, reload: loadBranches } = useTabData(
         async () => {
@@ -91,6 +92,14 @@ export function BranchesTab({ api }) {
             </div>
 
             <BranchHygieneCard branches={branches} />
+
+            {repoData?.default_branch && (
+                <BranchProtectionPanel
+                    api={api}
+                    branch={repoData.default_branch}
+                    archived={!!repoData.archived}
+                />
+            )}
 
             {message && (
                 <div className={`flex items-center gap-2 p-2 rounded-lg text-sm ${

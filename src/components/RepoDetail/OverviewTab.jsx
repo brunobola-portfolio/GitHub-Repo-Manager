@@ -1,9 +1,11 @@
 import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
-import { Loader2, FileText, BookOpen, Sparkles } from 'lucide-react'
+import { FileText, BookOpen, Sparkles } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { useModal } from '../../hooks/useModal'
 import { useTabData } from '../../hooks/useTabData'
+import { useToast } from '../../hooks/useToast'
+import { InlineEditField } from './InlineEditField'
 
 /**
  * Decode a GitHub contents-API README payload into a UTF-8 string.
@@ -34,8 +36,9 @@ function decodeBase64ReadmeUtf8(base64) {
     }
 }
 
-export function OverviewTab({ api, repoData }) {
+export function OverviewTab({ api, repoData, onUpdate }) {
     const { openModalWithData } = useModal()
+    const { toast } = useToast()
     const { data: readme, loading, error } = useTabData(
         async () => {
             const result = await api.fetchReadme()
@@ -43,6 +46,19 @@ export function OverviewTab({ api, repoData }) {
         },
         [api],
     )
+
+    const canEdit = !!onUpdate && !repoData.archived
+    const saveField = async (key, value, label) => {
+        try {
+            const result = await api.updateRepo({ [key]: value })
+            const updated = result.data || result
+            onUpdate?.((prev) => ({ ...prev, ...updated }))
+            toast.success(`${label} updated`)
+        } catch (e) {
+            toast.errorFromException(e, { fallbackTitle: `Failed to update ${label.toLowerCase()}` })
+            throw e
+        }
+    }
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -92,18 +108,34 @@ export function OverviewTab({ api, repoData }) {
                 <Card className="p-4">
                     <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 mb-3">About</h3>
                     <dl className="space-y-2 text-sm">
-                        {repoData.description && (
-                            <div>
-                                <dt className="text-xs text-slate-500 dark:text-slate-400">Description</dt>
-                                <dd className="text-slate-700 dark:text-slate-300">{repoData.description}</dd>
-                            </div>
-                        )}
-                        {repoData.homepage && (
-                            <div>
-                                <dt className="text-xs text-slate-500 dark:text-slate-400">Website</dt>
-                                <dd><a href={repoData.homepage} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline truncate block">{repoData.homepage}</a></dd>
-                            </div>
-                        )}
+                        <div>
+                            <dt className="text-xs text-slate-500 dark:text-slate-400">Description</dt>
+                            <dd>
+                                <InlineEditField
+                                    value={repoData.description}
+                                    placeholder="Add a description"
+                                    ariaLabel="description"
+                                    disabled={!canEdit}
+                                    onSave={(v) => saveField('description', v, 'Description')}
+                                />
+                            </dd>
+                        </div>
+                        <div>
+                            <dt className="text-xs text-slate-500 dark:text-slate-400">Website</dt>
+                            <dd>
+                                <InlineEditField
+                                    value={repoData.homepage}
+                                    placeholder="Add a website"
+                                    ariaLabel="website"
+                                    type="url"
+                                    disabled={!canEdit}
+                                    onSave={(v) => saveField('homepage', v, 'Website')}
+                                    renderValue={(v) => (
+                                        <a href={v} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-indigo-600 dark:text-indigo-400 hover:underline truncate block">{v}</a>
+                                    )}
+                                />
+                            </dd>
+                        </div>
                         <div>
                             <dt className="text-xs text-slate-500 dark:text-slate-400">Default Branch</dt>
                             <dd className="text-slate-700 dark:text-slate-300 flex items-center gap-1">

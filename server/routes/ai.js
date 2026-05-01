@@ -14,6 +14,7 @@
  *   - ./ai/migration.js                — issue-to-plan + migration-risk + migration-size-strategy
  *                                        + migration-description
  *   - ./ai/suggest-name-description.js — suggest-name-description
+ *   - ./ai/prompts.js                  — list / set / clear user prompt overrides
  *
  * Shared helpers (requireAI, handleAIError, providerGenerateWithRetry) live
  * in ./ai/shared.js and are imported by each sub-router.
@@ -27,6 +28,7 @@ import indexingRouter from './ai/indexing.js';
 import devToolkitRouter from './ai/dev-toolkit.js';
 import migrationRouter from './ai/migration.js';
 import suggestNameDescriptionRouter from './ai/suggest-name-description.js';
+import promptsRouter from './ai/prompts.js';
 
 const router = express.Router();
 router.use(coreRouter);
@@ -34,5 +36,6 @@ router.use(indexingRouter);
 router.use(devToolkitRouter);
 router.use(migrationRouter);
 router.use(suggestNameDescriptionRouter);
+router.use(promptsRouter);
 
 export default router;

@@ -98,4 +98,22 @@ export const reposApi = {
       body: JSON.stringify({ names }),
     })
   },
+
+  listCollaborators: async (owner, repo) => {
+    return apiCall(`/api/repos/${owner}/${repo}/collaborators`)
+  },
+
+  addCollaborator: async (owner, repo, username, permission = 'push') => {
+    return apiCall(`/api/repos/${owner}/${repo}/collaborators/${encodeURIComponent(username)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ permission }),
+    })
+  },
+
+  removeCollaborator: async (owner, repo, username) => {
+    return apiCall(`/api/repos/${owner}/${repo}/collaborators/${encodeURIComponent(username)}`, {
+      method: 'DELETE',
+    })
+  },
 }
