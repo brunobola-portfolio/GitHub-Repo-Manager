@@ -25,6 +25,29 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import logger from './logger.js';
 
+// ---------------------------------------------------------------------------
+// Gemini model defaults — single source of truth
+// ---------------------------------------------------------------------------
+// The model IDs were duplicated across 4 sites (constructor signature, the
+// default-provider factory, the per-user provider, and semantic-search's
+// error-message remap). Bumping a default-model version meant editing all
+// four. Centralised here; consumers must call getGeminiModelDefaults() for
+// the resolved values (env override + fallback).
+
+export const GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash';
+export const GEMINI_DEFAULT_EMBEDDING_MODEL = 'gemini-embedding-001';
+
+/**
+ * Resolves the Gemini model IDs from env with the canonical defaults.
+ * @returns {{ baseModel: string, embeddingModel: string }}
+ */
+export function getGeminiModelDefaults() {
+    return {
+        baseModel: process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL,
+        embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || GEMINI_DEFAULT_EMBEDDING_MODEL,
+    };
+}
+
 // Lazy imports for providers to avoid circular deps at module load.
 // Resolved in the PROVIDERS registry below.
 let _AnthropicProvider, _OpenAIProvider, _OpenRouterProvider, _LocalProvider;
@@ -333,7 +356,7 @@ export class GeminiProvider {
      * @param {string} [opts.model]          — default model name
      * @param {string} [opts.embeddingModel] — embedding model name
      */
-    constructor({ apiKey, model = 'gemini-2.5-flash', embeddingModel = 'gemini-embedding-001' }) {
+    constructor({ apiKey, model = GEMINI_DEFAULT_MODEL, embeddingModel = GEMINI_DEFAULT_EMBEDDING_MODEL }) {
         this.genAI = new GoogleGenerativeAI(apiKey);
         this._modelName = model;
         this._embeddingModelName = embeddingModel;
@@ -564,8 +587,7 @@ export function createProvider(featureKey) {
             return null;
         }
 
-        const baseModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-        const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
+        const { baseModel, embeddingModel } = getGeminiModelDefaults();
 
         // Per-feature model override: AI_MODEL_REVIEW, AI_MODEL_CHAT, etc.
         const featureModel = featureKey
@@ -721,8 +743,7 @@ export async function createProviderForUser(userId, kind = 'completion', opts = 
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (apiKey) {
-        const baseModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-        const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
+        const { baseModel, embeddingModel } = getGeminiModelDefaults();
         return new GeminiProvider({ apiKey, model: baseModel, embeddingModel });
     }
 

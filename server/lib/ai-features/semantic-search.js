@@ -1,5 +1,5 @@
 import logger from '../logger.js';
-import { AIError, AI_ERROR_CODE } from '../ai-provider.js';
+import { AIError, AI_ERROR_CODE, getGeminiModelDefaults } from '../ai-provider.js';
 
 /**
  * Safely parse a stored embedding column. Embeddings are persisted as
@@ -56,7 +56,7 @@ export async function embedText(ctx, text) {
     } catch (error) {
         logger.error({ err: error }, 'Embedding generation failed');
         if (error instanceof AIError && error.code === AI_ERROR_CODE.NOT_FOUND) {
-            const embeddingModel = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
+            const { embeddingModel } = getGeminiModelDefaults();
             throw new Error(`Embedding model "${embeddingModel}" is not available. Please verify your API access and GEMINI_EMBEDDING_MODEL configuration.`);
         }
         throw error;
