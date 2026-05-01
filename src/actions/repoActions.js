@@ -245,6 +245,54 @@ export const repoActions = {
 		run: async (repo, ctx) => ctx.openModalWithData('suggestNameDescription', { repo }),
 	},
 
+	// ───── Read-only: AI ─────
+	ai_commit: {
+		id: 'ai_commit',
+		label: 'Generate Commit Message',
+		description: 'AI drafts a commit message from your staged diff.',
+		icon: Wand2,
+		intent: 'read-only',
+		surfaces: ['contextMenu', 'commandPalette'],
+		run: async (repo, ctx) => ctx.openModalWithData('showDevToolkit', { initialTab: 'commits', repo }),
+	},
+	ai_pr: {
+		id: 'ai_pr',
+		label: 'Generate PR Description',
+		description: 'AI writes a PR description from the branch diff and recent commits.',
+		icon: GitPullRequest,
+		intent: 'read-only',
+		surfaces: ['contextMenu', 'commandPalette'],
+		run: async (repo, ctx) => ctx.openModalWithData('showDevToolkit', { initialTab: 'pr', repo }),
+	},
+	ai_quality: {
+		id: 'ai_quality',
+		label: 'Quality Report',
+		description: 'AI scores README, CI, tests, and other quality signals.',
+		icon: BarChart3,
+		intent: 'read-only',
+		surfaces: ['contextMenu', 'quickAction', 'commandPalette'],
+		quickActionPriority: 40,
+		run: async (repo, ctx) => ctx.openModalWithData('showRepoInsights', { repo, initialTab: 'quality' }),
+	},
+	ai_compare: {
+		id: 'ai_compare',
+		label: 'Compare with Existing',
+		description: 'AI flags repos in your account that overlap with this one.',
+		icon: GitCompare,
+		intent: 'read-only',
+		surfaces: ['contextMenu', 'commandPalette'],
+		run: async (repo, ctx) => ctx.openModalWithData('showCompare', { repo }),
+	},
+	ai_security: {
+		id: 'ai_security',
+		label: 'Security / Secrets Scan',
+		description: 'Scans the repo for committed secrets and risky patterns.',
+		icon: ShieldAlert,
+		intent: 'read-only',
+		surfaces: ['contextMenu', 'commandPalette'],
+		run: async (repo, ctx) => ctx.openModalWithData('showSecurityScan', { repo }),
+	},
+
 	// ───── Destructive ─────
 	delete: {
 		id: 'delete',

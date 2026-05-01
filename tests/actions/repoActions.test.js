@@ -107,3 +107,24 @@ describe('destructive: delete', () => {
 		expect(repoActions.delete.triggersRefresh).toBeFalsy()
 	})
 })
+
+describe('AI read-only actions', () => {
+	it('all five AI read-only entries are present', () => {
+		expect(repoActions.ai_commit).toBeDefined()
+		expect(repoActions.ai_pr).toBeDefined()
+		expect(repoActions.ai_quality).toBeDefined()
+		expect(repoActions.ai_compare).toBeDefined()
+		expect(repoActions.ai_security).toBeDefined()
+	})
+
+	it('AI read-only actions do not trigger refresh', () => {
+		for (const id of ['ai_commit', 'ai_pr', 'ai_quality', 'ai_compare', 'ai_security']) {
+			expect(repoActions[id].triggersRefresh, `${id}`).toBeFalsy()
+		}
+	})
+
+	it('ai_quality is on the quickAction surface with priority 40', () => {
+		expect(repoActions.ai_quality.surfaces).toContain('quickAction')
+		expect(repoActions.ai_quality.quickActionPriority).toBe(40)
+	})
+})
