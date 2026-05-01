@@ -232,11 +232,27 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                     ))}
                 </div>
 
-                <Button onClick={handleSave} disabled={saving}>
+                {/* Desktop save button — inline at the bottom of the card */}
+                <div className="hidden md:flex justify-end">
+                    <Button onClick={handleSave} disabled={saving}>
+                        {saving ? <Spinner size="sm" className="mr-1" /> : <Save className="w-4 h-4 mr-1" />}
+                        Save Changes
+                    </Button>
+                </div>
+            </Card>
+
+            {/* Mobile sticky save bar — pinned to viewport bottom so the CTA
+                doesn't scroll off-screen on long Settings forms. */}
+            <div
+                role="region"
+                aria-label="Save changes"
+                className="md:hidden fixed bottom-0 left-0 right-0 z-30 px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2 safe-area-bottom"
+            >
+                <Button onClick={handleSave} disabled={saving} className="flex-1">
                     {saving ? <Spinner size="sm" className="mr-1" /> : <Save className="w-4 h-4 mr-1" />}
                     Save Changes
                 </Button>
-            </Card>
+            </div>
 
             {/* Webhooks */}
             <Card className="p-5 space-y-4">
