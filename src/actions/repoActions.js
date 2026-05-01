@@ -200,6 +200,7 @@ export const repoActions = {
 	},
 
 	// ───── Mutation: mirror ─────
+	/** @unconfirmed-by-design opens a dedicated modal that runs its own confirmation flow */
 	mirror: {
 		id: 'mirror',
 		label: 'Mirror / Fork',
@@ -234,6 +235,7 @@ export const repoActions = {
 	},
 
 	// ───── Mutation: AI suggest name & description ─────
+	/** @unconfirmed-by-design opens a dedicated modal where the user reviews + confirms each suggestion */
 	ai_suggest_name_desc: {
 		id: 'ai_suggest_name_desc',
 		label: 'Suggest Name & Description',
@@ -246,6 +248,7 @@ export const repoActions = {
 	},
 
 	// ───── Migration & export ─────
+	/** @unconfirmed-by-design opens the migration wizard which has its own multi-step confirmation flow */
 	migrate: {
 		id: 'migrate',
 		label: 'Migrate to GitHub',
@@ -381,6 +384,7 @@ export const repoActions = {
 		}),
 		run: async (_repos, ctx) => ctx.openModal('showTransfer'),
 	},
+	/** @unconfirmed-by-design opens the migration wizard which has its own multi-step confirmation flow */
 	migrate_selected: {
 		id: 'migrate_selected',
 		label: (repos) => `Migrate ${repos.length} repos`,

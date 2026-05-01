@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { repoActions } from '../../src/actions/repoActions'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const VALID_INTENTS = ['navigation', 'copy', 'mutation', 'destructive', 'read-only']
 const VALID_SURFACES = ['contextMenu', 'quickAction', 'selectionBar', 'commandPalette']
@@ -172,5 +177,26 @@ describe('batch actions', () => {
 		expect(repoActions.archive_selected.triggersRefresh).toBeFalsy()
 		expect(repoActions.delete_selected.triggersRefresh).toBeFalsy()
 		expect(repoActions.visibility_selected.triggersRefresh).toBeFalsy()
+	})
+})
+
+describe('confirmation discipline', () => {
+	it('every mutation/destructive action has confirm OR @unconfirmed-by-design JSDoc', () => {
+		const file = fs.readFileSync(
+			path.resolve(__dirname, '../../src/actions/repoActions.js'),
+			'utf8'
+		)
+		const offenders = []
+		const sampleRepo = { name: 'r', full_name: 'me/r', private: false, archived: false, isMirror: false }
+		const sampleRepos = [sampleRepo, { ...sampleRepo, name: 'r2', full_name: 'me/r2' }]
+		for (const [id, action] of Object.entries(repoActions)) {
+			if (action.intent !== 'mutation' && action.intent !== 'destructive') continue
+			const target = action.isBatchSafe ? sampleRepos : sampleRepo
+			const hasConfirm = typeof action.confirm === 'function' && action.confirm(target) !== null
+			if (hasConfirm) continue
+			const idPattern = new RegExp(`@unconfirmed-by-design[^\\n]*\\n[\\s\\S]{0,200}?${id}:\\s*\\{`)
+			if (!idPattern.test(file)) offenders.push(id)
+		}
+		expect(offenders).toEqual([])
 	})
 })
