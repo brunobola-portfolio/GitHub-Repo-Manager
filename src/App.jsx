@@ -463,123 +463,6 @@ function AppContent() {
     [displayRepos, selectedIds]
   )
 
-  const handleQuickAction = useCallback(async (action, repo, value) => {
-    switch (action) {
-      case 'visibility':
-        openModalWithData('showConfirm', {
-          title: `Make ${repo.name} ${value}?`,
-          message: `This will change the visibility of "${repo.name}" to ${value}. ${value === 'private' ? 'Only you and collaborators will be able to see it.' : 'Anyone on the internet can see this repository.'}`,
-          variant: value === 'private' ? 'warning' : 'info',
-          onConfirm: async () => {
-            try {
-              await performAction('visibility', [repo.full_name], null, { makePublic: value === 'public' })
-              toast.success(`${repo.name} is now ${value}`)
-              closeModal('showConfirm')
-              refresh()
-            } catch (err) {
-              toast.errorFromException(err, { fallbackTitle: 'Failed to change visibility' })
-            }
-          }
-        })
-        break
-
-      case 'archive':
-        openModalWithData('showConfirm', {
-          title: value ? `Archive ${repo.name}?` : `Unarchive ${repo.name}?`,
-          message: value
-            ? `Archiving "${repo.name}" will make it read-only. You can unarchive it later.`
-            : `Unarchiving "${repo.name}" will make it writable again.`,
-          variant: 'warning',
-          onConfirm: async () => {
-            try {
-              await archiveRepos([repo.full_name], value)
-              toast.success(`${repo.name} ${value ? 'archived' : 'unarchived'}`)
-              closeModal('showConfirm')
-              refresh()
-            } catch (err) {
-              toast.errorFromException(err, { fallbackTitle: `Failed to ${value ? 'archive' : 'unarchive'}` })
-            }
-          }
-        })
-        break
-
-      case 'transfer':
-        openModalWithData('showTransfer', [repo])
-        break
-
-      case 'mirror':
-        openModalWithData('showTransfer', [repo])
-        break
-
-      case 'delete':
-        openModalWithData('showConfirm', {
-          title: `Delete ${repo.name}?`,
-          message: `This will permanently delete "${repo.name}" and all its data. This action cannot be undone.`,
-          variant: 'danger',
-          requiresInput: repo.name,
-          confirmText: 'Delete Repository',
-          onConfirm: async () => {
-            try {
-              await deleteRepos([repo.full_name])
-              toast.success(`${repo.name} deleted`)
-              closeModal('showConfirm')
-              refresh()
-            } catch (err) {
-              toast.errorFromException(err, { fallbackTitle: 'Failed to delete' })
-            }
-          }
-        })
-        break
-
-      case 'archive_selected':
-        openModalWithData('showConfirm', {
-          title: `Archive ${selectedRepos.length} repositories?`,
-          message: `This will archive ${selectedRepos.length} repositories, making them read-only. You can unarchive them later.`,
-          variant: 'warning',
-          onConfirm: async () => {
-            try {
-              await archiveRepos(selectedRepos.map(r => r.full_name), true)
-              toast.success(`${selectedRepos.length} repositories archived`)
-              closeModal('showConfirm')
-              refresh()
-            } catch (err) {
-              toast.errorFromException(err, { fallbackTitle: 'Failed to archive' })
-            }
-          }
-        })
-        break
-
-      case 'delete_selected':
-        openModalWithData('showConfirm', {
-          title: `Delete ${selectedRepos.length} repositories?`,
-          message: `This will permanently delete ${selectedRepos.length} repositories and all their data. This action cannot be undone.`,
-          variant: 'danger',
-          confirmText: 'Delete All',
-          onConfirm: async () => {
-            try {
-              await deleteRepos(selectedRepos.map(r => r.full_name))
-              toast.success(`${selectedRepos.length} repositories deleted`)
-              closeModal('showConfirm')
-              refresh()
-            } catch (err) {
-              toast.errorFromException(err, { fallbackTitle: 'Failed to delete' })
-            }
-          }
-        })
-        break
-
-      case 'transfer_selected':
-        openModalWithData('showTransfer', selectedRepos)
-        break
-
-      default:
-        // Unknown action — surface to the user via toast instead of a
-        // console-only log that nobody sees in production.
-        toast.error(`Unknown quick action: ${action}`)
-        break
-    }
-  }, [openModalWithData, closeModal, performAction, toast, refresh, archiveRepos, deleteRepos, selectedRepos])
-
   const handleLogin = () => {
     resetSessionExpired()
     setSessionExpired(false)
@@ -890,7 +773,6 @@ function AppContent() {
                     perPage={perPage}
                     totalPages={totalPages}
                     onRefresh={refresh}
-                    onQuickAction={handleQuickAction}
                     onRepoClick={handleOpenRepo}
                   />
                 </ErrorBoundary>

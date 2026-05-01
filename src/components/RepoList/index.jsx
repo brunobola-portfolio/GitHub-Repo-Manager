@@ -32,7 +32,6 @@ export function RepoList({
 	perPage,
 	totalPages,
 	onRefresh,
-	onQuickAction,
 	onRepoClick,
 }) {
 	const { selectedIds, toggleSelect, selectRepos, deselectRepos, invertSelection, clearSelection } = useSelection()
@@ -159,11 +158,10 @@ export function RepoList({
 
 			{/* Floating Selection Bar */}
 			<SelectionBar
-				count={selectedIds.size}
-				onSelectAll={() => selectRepos(filteredRepos.map(r => r.id))}
-				onArchive={() => onQuickAction('archive_selected')}
-				onDelete={() => onQuickAction('delete_selected')}
+				repos={repos.filter((r) => selectedIds.has(r.id))}
+				onAction={dispatch}
 				onClear={clearSelection}
+				onSelectAll={() => selectRepos(filteredRepos.map(r => r.id))}
 			/>
 
 			{/* Context Menu */}
