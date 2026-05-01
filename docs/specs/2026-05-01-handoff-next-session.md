@@ -14,8 +14,8 @@ Make the entire app feel "premium and connected" via 5 focused slices. Originall
 |---|---|---|---|
 | 1 | Action Surface Unification | ✅ **Shipped** | `feat/action-surface-unification` (PR pending) — 19 commits, registry of 31 actions, runner, all surfaces wired, tests green |
 | 2 | Intent affordances audit | 📋 **Spec + plan ready** | [`docs/specs/2026-05-01-intent-affordances-audit.md`](2026-05-01-intent-affordances-audit.md) · [`docs/plans/2026-05-01-intent-affordances-audit.md`](../plans/2026-05-01-intent-affordances-audit.md) |
-| 3 | Dashboard wiring | ⚠️ **Part 1 shipped** on `main` (commit `06698e5`) — StatCards interactive, 8/8 wired. Part 2 (deeper dashboard interactivity) not yet specced. |
-| 4 | AI auto-fix Community Health | 📋 **Spec + plan ready** | [`docs/specs/2026-05-01-community-health-ai-autofix.md`](2026-05-01-community-health-ai-autofix.md) · [`docs/plans/2026-05-01-community-health-ai-autofix.md`](../plans/2026-05-01-community-health-ai-autofix.md) |
+| 3 | Dashboard wiring | ⚠️ **Part 1 shipped** | On `main` (commit `06698e5`) — StatCards interactive, 8/8 wired. Part 2 (deeper dashboard interactivity) not yet specced. |
+| 4 | AI auto-fix Community Health | ✅ **Shipped** (Tasks 1–8 + 11) | `feat/community-health-ai-autofix` (PR pending) — 9 commits, 44 tests green, full suite 2860/2860. Tasks 9 (registry entry) and 10 (e2e) deferred — see follow-ups. Spec: [`2026-05-01-community-health-ai-autofix.md`](2026-05-01-community-health-ai-autofix.md) · Plan: [`../plans/2026-05-01-community-health-ai-autofix.md`](../plans/2026-05-01-community-health-ai-autofix.md) |
 | 5 | Mobile parity sweep | 📋 **Spec + plan ready** | [`docs/specs/2026-05-01-mobile-parity-sweep.md`](2026-05-01-mobile-parity-sweep.md) · [`docs/plans/2026-05-01-mobile-parity-sweep.md`](../plans/2026-05-01-mobile-parity-sweep.md) |
 
 Plus a one-off bug fix (`b9e093a` on main) that landed during the planning session: AI quota errors now render friendly messages instead of dumping raw Google RPC errors. This fix introduces a pattern reused in slice 4.
