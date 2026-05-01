@@ -94,6 +94,28 @@ describe('mutation actions', () => {
 		expect(repoActions.sync.isApplicable({ isMirror: false })).toBe(false)
 		expect(repoActions.sync.isApplicable({ isMirror: true })).toBe(true)
 	})
+
+	it('fix_community_health is registered as a mutation that refreshes', () => {
+		const action = repoActions.fix_community_health
+		expect(action).toBeDefined()
+		expect(action.id).toBe('fix_community_health')
+		expect(action.intent).toBe('mutation')
+		expect(action.triggersRefresh).toBe(true)
+		expect(action.surfaces).toEqual(expect.arrayContaining(['contextMenu', 'commandPalette']))
+		expect(typeof action.run).toBe('function')
+	})
+
+	it('fix_community_health opens the community-health modal with the repo payload', async () => {
+		const calls = []
+		const ctx = {
+			openModalWithData: (key, data) => calls.push([key, data]),
+		}
+		const repo = { name: 'demo', full_name: 'me/demo', owner: { login: 'me' } }
+		await repoActions.fix_community_health.run(repo, ctx)
+		expect(calls).toHaveLength(1)
+		expect(calls[0][0]).toBe('showCommunityHealth')
+		expect(calls[0][1]).toBe(repo)
+	})
 })
 
 describe('destructive: delete', () => {

@@ -2,7 +2,7 @@ import {
 	Eye, Settings, ExternalLink, Globe, KeyRound, Terminal, History, Shield,
 	Lock, Unlock, Archive, ArrowRightLeft, GitFork, RefreshCw, Lightbulb,
 	Trash2, Wand2, GitPullRequest, BarChart3, GitCompare, ShieldAlert,
-	Upload, FlaskConical, Download, Sparkles,
+	Upload, FlaskConical, Download, Sparkles, Heart,
 } from 'lucide-react'
 
 const copyToClipboard = (text) => {
@@ -245,6 +245,19 @@ export const repoActions = {
 		surfaces: ['contextMenu', 'commandPalette'],
 		triggersRefresh: true,
 		run: async (repo, ctx) => ctx.openModalWithData('suggestNameDescription', { repo }),
+	},
+
+	// ───── Mutation: AI community-health auto-fix ─────
+	/** @unconfirmed-by-design opens the Community Health modal where each missing file has its own preview/edit/commit confirmation flow */
+	fix_community_health: {
+		id: 'fix_community_health',
+		label: 'Fix Community Health',
+		description: 'AI generates missing community files (LICENSE, CONTRIBUTING, etc.) for one-click commit.',
+		icon: Heart,
+		intent: 'mutation',
+		surfaces: ['contextMenu', 'commandPalette'],
+		triggersRefresh: true,
+		run: async (repo, ctx) => ctx.openModalWithData('showCommunityHealth', repo),
 	},
 
 	// ───── Migration & export ─────
