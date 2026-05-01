@@ -20,7 +20,27 @@ vi.mock('@/hooks/useTrackedRepos', () => ({
 }))
 
 vi.mock('@/hooks/useToast', () => ({
-  useToast: () => ({ toast: { success: vi.fn(), error: vi.fn() } }),
+  useToast: () => ({ toast: { success: vi.fn(), error: vi.fn(), errorFromException: vi.fn() } }),
+}))
+
+// Stub the action-registry DI hook so the new "Repo actions" palette group
+// can render without dragging ModalProvider / GitHubProvider into the test
+// tree. The hook normally chains through useModal + useGitHub which require
+// their providers; the palette unit tests focus on rendering + selection,
+// not the action mutations themselves.
+vi.mock('@/actions/repoActionContext', () => ({
+  useRepoActionContext: () => ({
+    api: {},
+    toast: { success: vi.fn(), error: vi.fn(), errorFromException: vi.fn() },
+    openModal: vi.fn(),
+    openModalWithData: vi.fn(),
+    closeModal: vi.fn(),
+    refresh: vi.fn(),
+    performAction: vi.fn(),
+    archiveRepos: vi.fn(),
+    deleteRepos: vi.fn(),
+    confirmGate: vi.fn(),
+  }),
 }))
 
 vi.mock('@/api/search', () => ({
@@ -151,9 +171,12 @@ describe('CommandPalette', () => {
 
   it('repos array of 20 items — only 10 rendered', () => {
     renderPalette({ repos: makeRepos(20) })
-    // Repositories section should only show 10
-    const repoItems = screen.getAllByText(/owner\/repo-/)
-    expect(repoItems.length).toBe(10)
+    // The "Your Repositories" navigation group caps at 10. The new "Repo
+    // actions" group produces composite labels like "Open Details — owner/repo-1",
+    // so we must match the bare full_name only — a navigation item's text is
+    // the repo full_name with no surrounding em-dash composition.
+    const navLabels = screen.getAllByText(/^owner\/repo-\d+$/)
+    expect(navLabels.length).toBe(10)
   })
 
   it('empty repos array — repositories section is hidden or shows empty state', () => {

@@ -19,9 +19,27 @@ vi.mock('../../../src/hooks/useTrackedRepos', () => ({
     useTrackedRepos: () => mockHook,
 }))
 
-const mockToast = { success: vi.fn(), error: vi.fn() }
+const mockToast = { success: vi.fn(), error: vi.fn(), errorFromException: vi.fn() }
 vi.mock('../../../src/hooks/useToast', () => ({
     useToast: () => ({ toast: mockToast }),
+}))
+
+// The palette consumes useRepoActionContext() to wire its "Repo actions"
+// group; the real hook chains through ModalProvider/GitHubProvider, neither
+// of which is set up in this unit test. Stub it.
+vi.mock('../../../src/actions/repoActionContext', () => ({
+    useRepoActionContext: () => ({
+        api: {},
+        toast: mockToast,
+        openModal: vi.fn(),
+        openModalWithData: vi.fn(),
+        closeModal: vi.fn(),
+        refresh: vi.fn(),
+        performAction: vi.fn(),
+        archiveRepos: vi.fn(),
+        deleteRepos: vi.fn(),
+        confirmGate: vi.fn(),
+    }),
 }))
 
 vi.mock('../../../src/api/search', () => ({

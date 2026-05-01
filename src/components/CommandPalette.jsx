@@ -20,6 +20,8 @@ import { buildAICommands } from './CommandPalette/aiCommands'
 import { buildRepoDetailCommands } from './CommandPalette/repoDetailCommands'
 import { buildTeamsCommands } from './CommandPalette/teamsCommands'
 import { buildReposCommands } from './CommandPalette/reposCommands'
+import { buildRepoActionsCommands } from './CommandPalette/repoActionsCommands'
+import { useRepoActionContext } from '../actions/repoActionContext'
 import { readRecents, bumpRecent } from './CommandPalette/recents'
 
 const NAVIGATE_ITEMS = [
@@ -217,11 +219,17 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
 
   const trackedHook = useTrackedRepos()
   const { toast } = useToast()
+  const repoActionCtx = useRepoActionContext()
   const trackedRepoCommands = buildTrackedRepoCommands(trackedHook.repos)
   const aiCommands = buildAICommands({ enabled: trackedHook.prefs?.ai_assistant_enabled === 1 })
   const repoDetailCommands = activeView === 'repo-detail' ? buildRepoDetailCommands(selectedRepoDetail) : []
   const teamsCommands = activeView === 'teams' ? buildTeamsCommands() : []
   const reposCommands = activeView === 'repos' ? buildReposCommands() : []
+  // Top-3 repo actions surfaced when the user is on the repos list. Cross-surface
+  // discovery — slice 1 unified the registry, this is the palette's consumer.
+  const repoActionsCommands = activeView === 'repos'
+    ? buildRepoActionsCommands(displayRepos, repoActionCtx, { reposLimit: 3 })
+    : []
 
   async function runContextCommand(item) {
     try {
@@ -241,6 +249,11 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
           window.dispatchEvent(new CustomEvent(item.event, {
             detail: item.tab ?? item.detail ?? null,
           }))
+          break
+        case 'run':
+          if (typeof item.run === 'function') {
+            await item.run()
+          }
           break
         default:
           return
@@ -632,6 +645,25 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
             <Command.Group heading="Repositories" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
               {reposCommands.map((item) => {
                 const Icon = CONTEXT_CMD_ICONS[item.icon]
+                return (
+                  <Command.Item
+                    key={item.id}
+                    value={item.searchValue}
+                    onSelect={() => { runContextCommand(item); onClose() }}
+                    className={ITEM_CLASSES}
+                  >
+                    {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
+                    {item.label}
+                  </Command.Item>
+                )
+              })}
+            </Command.Group>
+          )}
+
+          {repoActionsCommands.length > 0 && (
+            <Command.Group heading="Repo actions" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+              {repoActionsCommands.map((item) => {
+                const Icon = item.icon ? CONTEXT_CMD_ICONS[item.icon] : null
                 return (
                   <Command.Item
                     key={item.id}
