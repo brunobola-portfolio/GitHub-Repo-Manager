@@ -134,6 +134,8 @@ export function DashboardPremium({
                         color="text-blue-500"
                         bg="bg-blue-500/10"
                         loading={loading}
+                        onClick={() => onViewChange?.('repos')}
+                        hint="View all repositories"
                     />
                     <StatCard
                         title="Public / Private"
@@ -142,6 +144,8 @@ export function DashboardPremium({
                         color="text-purple-500"
                         bg="bg-purple-500/10"
                         loading={loading}
+                        onClick={() => onViewChange?.('repos', { initialFilters: { visibility: 'public' } })}
+                        hint="Filter to public repositories"
                     />
                     <StatCard
                         title="Total Stars"
@@ -150,6 +154,8 @@ export function DashboardPremium({
                         color="text-yellow-500"
                         bg="bg-yellow-500/10"
                         loading={loading}
+                        onClick={() => onViewChange?.('repos', { initialSort: 'stars' })}
+                        hint="Sort repos by star count"
                     />
                     <StatCard
                         title="Organizations"
@@ -158,6 +164,12 @@ export function DashboardPremium({
                         color="text-emerald-500"
                         bg="bg-emerald-500/10"
                         loading={loading}
+                        onClick={() => {
+                            // Smooth-scroll the dashboard to the Organizations section.
+                            const el = document.querySelector('[data-section="organizations"]')
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                        }}
+                        hint="Jump to organizations"
                     />
                     <StatCard
                         title="Total Forks"
@@ -166,6 +178,8 @@ export function DashboardPremium({
                         color="text-indigo-500"
                         bg="bg-indigo-500/10"
                         loading={loading}
+                        onClick={() => onViewChange?.('repos', { initialSort: 'forks' })}
+                        hint="Sort repos by fork count"
                     />
                     <StatCard
                         title="Commits (7d)"
@@ -174,6 +188,8 @@ export function DashboardPremium({
                         color="text-pink-500"
                         bg="bg-pink-500/10"
                         loading={loading}
+                        onClick={() => onViewChange?.('work-board', { initialTimeRange: '7d' })}
+                        hint="Open Work Board (7d window)"
                     />
                     <StatCard
                         title="Archived Repos"
@@ -182,6 +198,8 @@ export function DashboardPremium({
                         color="text-slate-500"
                         bg="bg-slate-500/10"
                         loading={loading}
+                        onClick={() => onViewChange?.('repos', { initialFilters: { archived: true } })}
+                        hint="Show archived repositories"
                     />
                     <StatCard
                         title="Source Repos"
@@ -190,6 +208,8 @@ export function DashboardPremium({
                         color="text-cyan-500"
                         bg="bg-cyan-500/10"
                         loading={loading}
+                        onClick={() => onViewChange?.('repos', { initialFilters: { type: 'source' } })}
+                        hint="Filter to source (non-fork) repos"
                     />
                 </div>
 
@@ -275,6 +295,7 @@ export function DashboardPremium({
 
             {/* CATEGORY 6: Organizations (Conditional) */}
             {categories.organizations && orgs.length > 1 && (
+                <div data-section="organizations">
                 <CategorySection
                     title="Organizations"
                     icon={Building2}
@@ -292,6 +313,7 @@ export function DashboardPremium({
                         ))}
                     </div>
                 </CategorySection>
+                </div>
             )}
 
             {/* Discover More Features Section */}

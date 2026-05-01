@@ -108,6 +108,7 @@ function AppContent() {
   const [systemInitialized, setSystemInitialized] = useState(null)
   const [org, setOrg] = useState('')
   const [selectedRepoDetail, setSelectedRepoDetail] = useState(null)
+  const [repoDetailInitialTab, setRepoDetailInitialTab] = useState('overview')
   const [reviewingPR, setReviewingPR] = useState(null)
   const [syncStatus, setSyncStatus] = useState({ lastSync: null, hasUpdates: false })
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -213,8 +214,9 @@ function AppContent() {
 
   const commandPalette = useCommandPalette()
 
-  const handleOpenRepo = useCallback((repo) => {
+  const handleOpenRepo = useCallback((repo, { tab = 'overview' } = {}) => {
     setSelectedRepoDetail(repo)
+    setRepoDetailInitialTab(tab)
     setActiveView('repo-detail')
   }, [setActiveView])
 
@@ -252,6 +254,26 @@ function AppContent() {
     window.addEventListener('app:open-settings', handler)
     return () => window.removeEventListener('app:open-settings', handler)
   }, [openModalWithData])
+
+  // Open the per-repo Settings tab via the AI assistant action.
+  // Lookup is best-effort: if the repo is loaded we use its full object
+  // (avoids a redundant fetch); otherwise we synthesize a minimal stub
+  // and let RepoDetail's own loadRepo() fill the rest from the server.
+  useEffect(() => {
+    const handler = (ev) => {
+      const owner = ev.detail?.owner
+      const repoName = ev.detail?.repo
+      if (!owner || !repoName) return
+      const fullName = `${owner}/${repoName}`
+      const found = (repos || []).concat(orgRepos || []).find(
+        (r) => r.full_name === fullName || (r.name === repoName && (r.owner?.login === owner)),
+      )
+      const target = found || { name: repoName, full_name: fullName, owner: { login: owner } }
+      handleOpenRepo(target, { tab: ev.detail?.tab || 'settings' })
+    }
+    window.addEventListener('app:open-repo-settings', handler)
+    return () => window.removeEventListener('app:open-repo-settings', handler)
+  }, [repos, orgRepos, handleOpenRepo])
 
   // Rate-limit toasts — one at a time, auto-dismisses after the countdown ends.
   const rateLimitToastIdRef = useRef(null)
@@ -892,6 +914,7 @@ function AppContent() {
                     onRefresh={refresh}
                     onQuickAction={handleQuickAction}
                     onRepoClick={handleOpenRepo}
+                    initialFilters={viewParams?.initialFilters}
                   />
                 </ErrorBoundary>
               </div>
@@ -959,6 +982,8 @@ function AppContent() {
               <Suspense fallback={<LoadingFallback />}>
                 <RepoDetail
                   repo={selectedRepoDetail}
+                  initialTab={repoDetailInitialTab}
+                  onRepoMutated={refresh}
                   onBack={() => {
                     setSelectedRepoDetail(null)
                     setActiveView('repos')

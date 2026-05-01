@@ -9,16 +9,20 @@ import { aiApi } from '../api/ai'
  * - Plain-text search only runs when AI mode is OFF (matches name or description).
  * - Type/visibility/language filters apply in both modes.
  * - AI search fires with a 500ms debounce, only for queries longer than 2 chars.
+ *
+ * Optional `initial` argument seeds the filter/sort state on first mount only —
+ * used by Dashboard StatCards that navigate with a pre-selected filter (e.g.
+ * "Archived Repos" sets `{ type: 'archived' }`). Subsequent renders ignore it.
  */
-export function useRepoFiltering(repos) {
+export function useRepoFiltering(repos, initial = {}) {
 	const [searchQuery, setSearchQuery] = useState('')
 	const [isAISearch, setIsAISearch] = useState(false)
 	const [aiResults, setAiResults] = useState([])
 	const [isSearchingAI, setIsSearchingAI] = useState(false)
 	const [aiSearchError, setAiSearchError] = useState(null)
 
-	const [typeFilter, setTypeFilter] = useState('all')
-	const [visibilityFilter, setVisibilityFilter] = useState('all')
+	const [typeFilter, setTypeFilter] = useState(() => initial.type || 'all')
+	const [visibilityFilter, setVisibilityFilter] = useState(() => initial.visibility || 'all')
 	const [languageFilter, setLanguageFilter] = useState('all')
 
 	const availableLanguages = useMemo(

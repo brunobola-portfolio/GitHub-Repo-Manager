@@ -33,6 +33,7 @@ export function RepoList({
 	onRefresh,
 	onQuickAction,
 	onRepoClick,
+	initialFilters,
 }) {
 	const { selectedIds, toggleSelect, selectRepos, deselectRepos, invertSelection, clearSelection } = useSelection()
 	const { openModal, openModalWithData, closeModal } = useModal()
@@ -51,7 +52,7 @@ export function RepoList({
 		filteredRepos,
 		hasActiveFilters,
 		clearAllFilters,
-	} = useRepoFiltering(repos)
+	} = useRepoFiltering(repos, initialFilters)
 
 	const allFilteredSelected = filteredRepos.length > 0 && filteredRepos.every(r => selectedIds.has(r.id))
 	const someFilteredSelected = filteredRepos.some(r => selectedIds.has(r.id)) && !allFilteredSelected
@@ -177,6 +178,16 @@ export function RepoList({
 					onAction={async (action, data) => {
 						setRepoMenu(null)
 						switch (action) {
+							case 'openDetail':
+								onRepoClick?.(data)
+								break
+							case 'openRepoSettings':
+								// Reuse the AI assistant's navigation event so we have one
+								// canonical path to the in-app Settings tab.
+								window.dispatchEvent(new CustomEvent('app:open-repo-settings', {
+									detail: { owner: data.owner?.login, repo: data.name }
+								}))
+								break
 							case 'visibility':
 								onQuickAction('visibility', data, data.private ? 'public' : 'private')
 								break
