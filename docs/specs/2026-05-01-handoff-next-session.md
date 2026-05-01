@@ -12,7 +12,7 @@ Make the entire app feel "premium and connected" via 5 focused slices. Originall
 
 | # | Slice | Status | Branch / merge state |
 |---|---|---|---|
-| 1 | Action Surface Unification | ⚠️ **Open PR — needs conflict resolution** | [PR #27](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/pull/27) on `feat/action-surface-unification`. 19 commits. **Has merge conflicts vs current main** (slices 2/4/5 layered features on top of files slice 1 rewrites). See PR comment for resolution paths — recommended: GitHub web UI "Resolve conflicts" button, file-by-file. Branch preserved, no work lost. |
+| 1 | Action Surface Unification | ✅ **Merged** (via #31 synthesis) | Squash-merged via PR #31 (commit `de076b3` on main). The original PR #27 had 19-commit conflict surface vs slices 2/4/5; resolved by synthesising slice 1's final state onto current main as a single squash commit. PR #27 closed. Tests: 3002/3027 passing (1 pre-existing baseline). |
 | 2 | Intent affordances audit | ✅ **Merged** | Squash-merged via PR #28 (commit on main). `useDangerAction` hook + `tests/lint/no-bare-destructive-buttons.test.js`. |
 | 3 | Dashboard wiring | ⚠️ **Part 1 on main** | Commit `06698e5` — StatCards interactive, 8/8 wired. Part 2 (deeper dashboard interactivity) not yet specced. |
 | 4 | AI auto-fix Community Health | ✅ **Merged** | Squash-merged via PR #29 (commit on main). Tasks 1–8 + 11 done. Tasks 9 (registry entry, gated on slice 1) and 10 (e2e) queued in follow-ups. |
