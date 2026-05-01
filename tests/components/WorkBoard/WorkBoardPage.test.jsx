@@ -184,13 +184,14 @@ describe('WorkBoardPage', () => {
     it('My Reviews: shows skeleton when loading', () => {
         mockUseMyPendingReviews.mockReturnValue({ data: null, loading: true, error: null, refresh: vi.fn() })
         renderPage()
-        // Skeleton rows have animate-pulse class
+        // SkeletonRow now uses the canonical <Skeleton /> primitive which carries
+        // the ds-skeleton class (shimmer) instead of the older animate-pulse.
         const { container } = render(
             <ModalProvider>
                 <WorkBoardPage />
             </ModalProvider>
         )
-        expect(container.querySelector('.animate-pulse')).toBeInTheDocument()
+        expect(container.querySelector('.ds-skeleton')).toBeInTheDocument()
     })
 
     it('My Reviews: shows empty state when data is empty array', () => {

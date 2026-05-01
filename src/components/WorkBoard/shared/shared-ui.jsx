@@ -5,20 +5,22 @@
  */
 
 import { UpgradeRequired } from '../../states'
+import { Skeleton } from '../../ui/Skeleton'
 
 // ---------------------------------------------------------------------------
-// Skeleton
+// Skeleton — composed from the canonical <Skeleton> primitive so every
+// loading row in WorkBoard shares the same shimmer treatment.
 // ---------------------------------------------------------------------------
 
 export function SkeletonRow() {
     return (
-        <div className="flex items-start gap-3 p-4 animate-pulse">
-            <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
+        <div className="flex items-start gap-3 p-4">
+            <Skeleton className="w-8 h-8 rounded-lg flex-shrink-0" />
             <div className="flex-1 space-y-2">
-                <div className="h-3.5 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
-                <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
+                <Skeleton className="h-3.5 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
             </div>
-            <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-16" />
+            <Skeleton className="h-3 w-16" />
         </div>
     )
 }

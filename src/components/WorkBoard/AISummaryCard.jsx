@@ -4,6 +4,7 @@ import { clsx } from 'clsx'
 import { Sparkles, RefreshCw, X, AlertTriangle } from 'lucide-react'
 import { getCsrfToken } from '../../utils/api'
 import { friendlyAiError } from '../../utils/aiErrorFriendly'
+import { Skeleton } from '../ui/Skeleton'
 
 function bulletHref(link) {
     if (!link || !link.repo || !link.number) return null
@@ -96,11 +97,11 @@ export function AISummaryCard({ meta: metaProp } = {}) {
     if (state.status === 'hidden') return null
     if (state.status === 'loading' && !state.data) {
         return (
-            <div className="rounded-3xl border border-slate-200/60 dark:border-slate-700/50 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 animate-pulse" role="status" aria-live="polite">
-                <div className="h-5 w-1/2 bg-slate-200 dark:bg-slate-800 rounded mb-3" />
+            <div className="rounded-3xl border border-slate-200/60 dark:border-slate-700/50 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5" role="status" aria-live="polite">
+                <Skeleton className="h-5 w-1/2 mb-3" />
                 <div className="space-y-2">
-                    <div className="h-3 w-4/5 bg-slate-200 dark:bg-slate-800 rounded" />
-                    <div className="h-3 w-3/5 bg-slate-200 dark:bg-slate-800 rounded" />
+                    <Skeleton className="h-3 w-4/5" />
+                    <Skeleton className="h-3 w-3/5" />
                 </div>
             </div>
         )

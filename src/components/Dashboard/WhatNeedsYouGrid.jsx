@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { GitPullRequest, Clock, CircleDot, Sparkles, ArrowRight, ArrowUp, ArrowDown } from 'lucide-react'
 import { useYourWork } from '../../hooks/useYourWork'
+import { Skeleton } from '../ui/Skeleton'
 
 const CATEGORIES = [
     {
@@ -108,10 +109,10 @@ function CategoryCard({ category, data, onClick }) {
 
 function SkeletonCard() {
     return (
-        <div data-testid="skeleton-card" className="flex flex-col gap-3 p-5 bg-white/60 dark:bg-slate-900/60 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl animate-pulse">
-            <div className="w-10 h-10 rounded-xl bg-slate-200/60 dark:bg-slate-800/60" />
-            <div className="h-3 w-24 rounded bg-slate-200/60 dark:bg-slate-800/60" />
-            <div className="h-8 w-12 rounded bg-slate-200/60 dark:bg-slate-800/60" />
+        <div data-testid="skeleton-card" className="flex flex-col gap-3 p-5 bg-white/60 dark:bg-slate-900/60 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl">
+            <Skeleton className="w-10 h-10 rounded-xl" />
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-8 w-12" />
         </div>
     )
 }
