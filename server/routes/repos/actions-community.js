@@ -39,6 +39,9 @@ import { safeJsonParse } from '../../lib/utils.js';
 import { webhookCreateSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { auditLog } from '../../lib/audit.js';
+import { FILE_GENERATORS, commitOrOpenPR } from '../../lib/ai-features/community-health-fix.js';
+import { createProviderForUser } from '../../lib/ai-provider.js';
+import { mapAIErrorToResponse } from '../../middleware/ai-error-mapper.js';
 
 const router = express.Router();
 
@@ -478,6 +481,84 @@ router.get('/:owner/:repo/community-health', requireAuth, async (req, res) => {
     } catch (error) {
         req.log.error({ err: error }, 'Community health analysis failed');
         res.status(500).json({ error: safeError(error, 'Operation failed') });
+    }
+});
+
+// ------------------------------------------------------------------
+// Community Health AI Auto-Fix (per-repo)
+//   POST /:owner/:repo/community-health/generate    — returns generated content (no commit)
+//   POST /:owner/:repo/community-health/commit-fix  — commits user-confirmed content
+// ------------------------------------------------------------------
+
+router.post('/:owner/:repo/community-health/generate', requireAuth, async (req, res) => {
+    const { owner, repo } = req.params;
+    const { fileType, overrides = {} } = req.body || {};
+
+    const gen = FILE_GENERATORS[fileType];
+    if (!gen) {
+        return res.status(400).json({ error: `unknown fileType: ${fileType}`, code: 'invalid_file_type' });
+    }
+
+    try {
+        const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
+
+        // Deterministic branch — no AI provider needed.
+        if (gen.deterministic) {
+            const out = fileType === 'license'
+                ? gen.generator({
+                    licenseId: overrides.licenseId || 'MIT',
+                    owner: repoData?.owner?.login || owner,
+                    year: new Date().getFullYear(),
+                })
+                : gen.generator({
+                    email: overrides.email || req.session.userEmail || 'admin@example.com',
+                });
+            return res.json(out);
+        }
+
+        // AI branch.
+        const provider = await createProviderForUser(req.session.userId, 'completion', { featureKey: 'COMMUNITY_HEALTH_FIX' });
+        if (!provider) {
+            return res.status(403).json({ error: 'AI is not configured for this user', code: 'ai_not_configured' });
+        }
+
+        const out = await gen.generator({
+            repo: repoData,
+            email: overrides.email || req.session.userEmail,
+            provider,
+        });
+        res.json(out);
+    } catch (e) {
+        const mapped = mapAIErrorToResponse(res, e);
+        if (mapped) return mapped;
+        errorResponse(res, 500, safeError(e, 'community health fix generation failed'));
+    }
+});
+
+router.post('/:owner/:repo/community-health/commit-fix', requireAuth, async (req, res) => {
+    const { owner, repo } = req.params;
+    const { filePath, content, commitMessage, mode = 'direct' } = req.body || {};
+
+    if (!filePath || !content || !commitMessage) {
+        return res.status(400).json({ error: 'missing required fields', code: 'invalid_body' });
+    }
+
+    try {
+        const result = await commitOrOpenPR({
+            owner, repo, token: req.session.accessToken,
+            filePath, content, commitMessage, mode, githubApi,
+        });
+
+        // Invalidate the health cache so the next dashboard open re-fetches.
+        const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
+        if (repoData?.id) {
+            db.prepare('DELETE FROM community_health_cache WHERE user_id = ? AND repo_id = ?')
+                .run(req.session.userId, repoData.id);
+        }
+
+        res.json({ committed: true, ...result });
+    } catch (e) {
+        errorResponse(res, 500, safeError(e, 'community health fix commit failed'));
     }
 });
 

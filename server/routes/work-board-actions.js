@@ -13,7 +13,7 @@ import * as presets from '../lib/work-board-presets.js';
 import { invalidate as invalidateCache, getCached as getCacheRow, putCached as putCacheRow } from '../lib/work-board-cache.js';
 import { githubApi } from '../lib/github-api.js';
 import { generateSummary } from '../lib/work-board-summary.js';
-import { AI_ERROR_CODE } from '../lib/ai-provider.js';
+import { mapAIErrorToResponse } from '../middleware/ai-error-mapper.js';
 import * as aggregations from '../lib/event-aggregations.js';
 import db from '../db.js';
 import { getSnapshots } from '../lib/work-board-kpi-snapshots.js';
@@ -276,54 +276,10 @@ router.post('/ai-summary', requireAuth, async (req, res) => {
         }
         // Translate AIError codes to clean client-facing messages so we never leak
         // raw provider RPC dumps (e.g. Google Gemini's full quota error JSON) to
-        // the UI. Each branch sets a friendly message + machine code; the
-        // retryAfterMs hint (when present) lets the client show "retry in Ns".
-        if (e?.name === 'AIError') {
-            const retryAfterSec = typeof e.retryAfterMs === 'number'
-                ? Math.ceil(e.retryAfterMs / 1000)
-                : null;
-            if (e.code === AI_ERROR_CODE.RATE_LIMITED) {
-                const msg = retryAfterSec
-                    ? `AI provider is rate-limited. Try again in ${retryAfterSec}s.`
-                    : 'AI provider is rate-limited. Try again shortly.';
-                return res.status(429).json({
-                    error: msg,
-                    code: 'ai_rate_limited',
-                    ...(retryAfterSec !== null && { retryAfterSec }),
-                });
-            }
-            if (e.code === AI_ERROR_CODE.QUOTA) {
-                return res.status(429).json({
-                    error: 'AI provider quota exceeded for the current plan. Check your provider billing or switch keys.',
-                    code: 'ai_quota_exceeded',
-                });
-            }
-            if (e.code === AI_ERROR_CODE.OVERLOAD) {
-                return res.status(503).json({
-                    error: 'AI provider is overloaded. Try again shortly.',
-                    code: 'ai_overload',
-                });
-            }
-            if (e.code === AI_ERROR_CODE.TIMEOUT) {
-                return res.status(504).json({
-                    error: 'AI provider timed out.',
-                    code: 'ai_timeout',
-                });
-            }
-            if (e.code === AI_ERROR_CODE.AUTH) {
-                return res.status(401).json({
-                    error: 'AI provider rejected the configured key. Update it in Settings.',
-                    code: 'ai_auth',
-                });
-            }
-            if (e.code === AI_ERROR_CODE.NETWORK) {
-                return res.status(502).json({
-                    error: 'Could not reach the AI provider.',
-                    code: 'ai_network',
-                });
-            }
-            // Fall through for INVALID_RESPONSE / NOT_FOUND / UNKNOWN.
-        }
+        // the UI. mapAIErrorToResponse returns the response when it handled the
+        // error; null means the caller should fall through to a generic 500.
+        const mapped = mapAIErrorToResponse(res, e);
+        if (mapped) return mapped;
         errorResponse(res, 500, safeError(e, 'Failed to generate AI summary'));
     }
 });
