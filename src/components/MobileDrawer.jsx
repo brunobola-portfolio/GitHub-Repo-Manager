@@ -5,8 +5,20 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 export function MobileDrawer({ isOpen, onClose, children, side = 'right' }) {
   const isLeft = side === 'left'
+  const isBottom = side === 'bottom'
   const drawerRef = useFocusTrap(isOpen, onClose)
   useBodyScrollLock(isOpen)
+
+  // Position + slide animation depend on side.
+  const positionClasses = isBottom
+    ? 'bottom-0 inset-x-0 max-h-[80vh] rounded-t-2xl'
+    : `${isLeft ? 'left-0' : 'right-0'} top-0 bottom-0 w-80 max-w-[90vw]`
+
+  const initial = isBottom
+    ? { y: '100%' }
+    : { x: isLeft ? '-100%' : '100%' }
+  const exit = initial
+  const animate = isBottom ? { y: 0 } : { x: 0 }
 
   return (
     <AnimatePresence>
@@ -25,17 +37,17 @@ export function MobileDrawer({ isOpen, onClose, children, side = 'right' }) {
           {/* Drawer */}
           <motion.div
             ref={drawerRef}
-            initial={{ x: isLeft ? '-100%' : '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: isLeft ? '-100%' : '100%' }}
+            initial={initial}
+            animate={animate}
+            exit={exit}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className={`fixed ${isLeft ? 'left-0' : 'right-0'} top-0 bottom-0 w-80 max-w-[90vw] bg-white dark:bg-slate-900 z-50 shadow-2xl overflow-y-auto`}
+            className={`fixed ${positionClasses} bg-white dark:bg-slate-900 z-50 shadow-2xl overflow-y-auto`}
             role="dialog"
             aria-modal="true"
             aria-label="Navigation drawer"
           >
             {/* Close button */}
-            <div className="sticky top-0 right-0 p-4 flex justify-end bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+            <div className={`sticky top-0 ${isBottom ? '' : 'right-0'} p-4 flex justify-end bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800`}>
               <button
                 onClick={onClose}
                 className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"

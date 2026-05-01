@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSelection } from '../../hooks/useSelection'
 import { useModal } from '../../hooks/useModal'
 import { useRepoFiltering } from '../../hooks/useRepoFiltering'
+import { useMobileBreakpoint } from '../../hooks/useMobileBreakpoint'
 import { runAction } from '../../actions/runAction'
 import { repoActions } from '../../actions/repoActions'
 import { useRepoActionContext } from '../../actions/repoActionContext'
@@ -10,6 +11,7 @@ import { RepoFilterBar } from './RepoFilterBar'
 import { RepoGrid } from './RepoGrid'
 import { RepoPagination } from './RepoPagination'
 import { SelectionBar } from './SelectionBar'
+import { SelectionSheet } from './SelectionSheet'
 import { LoadingState, ErrorState, EmptyState } from './RepoStates'
 
 /**
@@ -38,6 +40,8 @@ export function RepoList({
 	const { openModal, openModalWithData } = useModal()
 	const ctx = useRepoActionContext()
 	const dispatch = (actionId, target) => runAction(actionId, target, ctx, repoActions)
+	const isMobile = useMobileBreakpoint()
+	const [sheetOpen, setSheetOpen] = useState(false)
 	const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
 	const [repoMenu, setRepoMenu] = useState(null) // { repo, x, y }
 
@@ -156,13 +160,37 @@ export function RepoList({
 				/>
 			)}
 
-			{/* Floating Selection Bar */}
-			<SelectionBar
-				repos={repos.filter((r) => selectedIds.has(r.id))}
-				onAction={dispatch}
-				onClear={clearSelection}
-				onSelectAll={() => selectRepos(filteredRepos.map(r => r.id))}
-			/>
+			{/* Floating Selection Bar (desktop) / Sheet trigger + sheet (mobile) */}
+			{isMobile ? (
+				<>
+					{selectedIds.size > 0 && !sheetOpen && (
+						<button
+							type="button"
+							onClick={() => setSheetOpen(true)}
+							className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[45] flex items-center gap-2 px-4 py-2 bg-slate-900/90 text-white rounded-full shadow-2xl"
+						>
+							<span className="text-sm font-medium">{selectedIds.size} selected</span>
+							<span className="text-xs opacity-70">— tap for actions</span>
+						</button>
+					)}
+					<SelectionSheet
+						isOpen={sheetOpen}
+						repos={repos.filter((r) => selectedIds.has(r.id))}
+						onAction={(actionId, target) => {
+							setSheetOpen(false)
+							dispatch(actionId, target)
+						}}
+						onClose={() => setSheetOpen(false)}
+					/>
+				</>
+			) : (
+				<SelectionBar
+					repos={repos.filter((r) => selectedIds.has(r.id))}
+					onAction={dispatch}
+					onClear={clearSelection}
+					onSelectAll={() => selectRepos(filteredRepos.map(r => r.id))}
+				/>
+			)}
 
 			{/* Context Menu */}
 			{repoMenu && (
