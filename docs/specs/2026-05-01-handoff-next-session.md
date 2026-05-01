@@ -75,7 +75,7 @@ Pick highest-priority unblocked item first. Each line ends with the spec/plan re
 
 ### Priority 1 — unblocked, high value
 
-- [ ] **Slice 4 Task 9: Register `fix_community_health` action** in `src/actions/repoActions.js`. Was gated on slice 1 merge (now done). [Plan task](../plans/2026-05-01-community-health-ai-autofix.md#task-9-action-registry-entry-depends-on-slice-1). **Effort: 10 min.**
+- [x] ~~**Slice 4 Task 9: Register `fix_community_health` action** in `src/actions/repoActions.js`.~~ ✅ Shipped 2026-05-01 in commit `4ddf5aa`. Action surfaces in contextMenu + commandPalette; opens the existing Community Health modal (passes raw repo, no `focus` prop — would need extra App.jsx plumbing).
 - [ ] **Pre-existing lint regression fix:** `tests/lint/no-standalone-loader2.test.js` flags two files. Migrate `src/components/MigrationHistory.jsx` and `src/components/RepoDetail/InlineEditField.jsx` to use `<SectionSpinner label="…" />` (full-section loading) or `<Spinner size="sm" tone="muted" />` (inline status) per the lint test's expected pattern. **Effort: 15 min total.**
 
 ### Priority 2 — unblocked, medium value
