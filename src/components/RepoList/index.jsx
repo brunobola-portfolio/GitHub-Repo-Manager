@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
-import { reposApi } from '../../api/repos'
-import { useToast } from '../../hooks/useToast'
 import { useSelection } from '../../hooks/useSelection'
 import { useModal } from '../../hooks/useModal'
 import { useRepoFiltering } from '../../hooks/useRepoFiltering'
+import { useMobileBreakpoint } from '../../hooks/useMobileBreakpoint'
+import { runAction } from '../../actions/runAction'
+import { repoActions } from '../../actions/repoActions'
+import { useRepoActionContext } from '../../actions/repoActionContext'
 import RepoContextMenu from '../RepoContextMenu'
 import { RepoFilterBar } from './RepoFilterBar'
 import { RepoGrid } from './RepoGrid'
 import { RepoPagination } from './RepoPagination'
 import { SelectionBar } from './SelectionBar'
+import { SelectionSheet } from './SelectionSheet'
 import { LoadingState, ErrorState, EmptyState } from './RepoStates'
 
 /**
@@ -31,13 +34,15 @@ export function RepoList({
 	perPage,
 	totalPages,
 	onRefresh,
-	onQuickAction,
 	onRepoClick,
 	initialFilters,
 }) {
 	const { selectedIds, toggleSelect, selectRepos, deselectRepos, invertSelection, clearSelection } = useSelection()
-	const { openModal, openModalWithData, closeModal } = useModal()
-	const { toast } = useToast()
+	const { openModal, openModalWithData } = useModal()
+	const ctx = useRepoActionContext()
+	const dispatch = (actionId, target) => runAction(actionId, target, ctx, repoActions)
+	const isMobile = useMobileBreakpoint()
+	const [sheetOpen, setSheetOpen] = useState(false)
 	const [viewMode, setViewMode] = useState('grid') // 'grid' | 'list'
 	const [repoMenu, setRepoMenu] = useState(null) // { repo, x, y }
 
@@ -135,10 +140,8 @@ export function RepoList({
 					selectedIds={selectedIds}
 					contextTargetId={repoMenu?.repo?.id}
 					onToggle={toggleSelect}
-					onAction={onQuickAction}
+					onAction={dispatch}
 					onContextMenu={handleContextMenu}
-					onOpenInsights={(repo) => openModalWithData('showRepoInsights', { repo })}
-					onOpenHealth={(repo) => openModalWithData('showCommunityHealth', repo)}
 					onExplainHealth={(repo) => openModalWithData('showRepoInsights', { repo, initialTab: 'quality' })}
 					onRepoClick={onRepoClick}
 				/>
@@ -158,14 +161,37 @@ export function RepoList({
 				/>
 			)}
 
-			{/* Floating Selection Bar */}
-			<SelectionBar
-				count={selectedIds.size}
-				onSelectAll={() => selectRepos(filteredRepos.map(r => r.id))}
-				onArchive={() => onQuickAction('archive_selected')}
-				onDelete={() => onQuickAction('delete_selected')}
-				onClear={clearSelection}
-			/>
+			{/* Floating Selection Bar (desktop) / Sheet trigger + sheet (mobile) */}
+			{isMobile ? (
+				<>
+					{selectedIds.size > 0 && !sheetOpen && (
+						<button
+							type="button"
+							onClick={() => setSheetOpen(true)}
+							className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[45] flex items-center gap-2 px-4 py-2 bg-slate-900/90 text-white rounded-full shadow-2xl"
+						>
+							<span className="text-sm font-medium">{selectedIds.size} selected</span>
+							<span className="text-xs opacity-70">— tap for actions</span>
+						</button>
+					)}
+					<SelectionSheet
+						isOpen={sheetOpen}
+						repos={repos.filter((r) => selectedIds.has(r.id))}
+						onAction={(actionId, target) => {
+							setSheetOpen(false)
+							dispatch(actionId, target)
+						}}
+						onClose={() => setSheetOpen(false)}
+					/>
+				</>
+			) : (
+				<SelectionBar
+					repos={repos.filter((r) => selectedIds.has(r.id))}
+					onAction={dispatch}
+					onClear={clearSelection}
+					onSelectAll={() => selectRepos(filteredRepos.map(r => r.id))}
+				/>
+			)}
 
 			{/* Context Menu */}
 			{repoMenu && (
@@ -175,117 +201,9 @@ export function RepoList({
 					x={repoMenu.x}
 					y={repoMenu.y}
 					onClose={() => setRepoMenu(null)}
-					onAction={async (action, data) => {
+					onAction={(actionId, target) => {
 						setRepoMenu(null)
-						switch (action) {
-							case 'openDetail':
-								onRepoClick?.(data)
-								break
-							case 'openRepoSettings':
-								// Reuse the AI assistant's navigation event so we have one
-								// canonical path to the in-app Settings tab.
-								window.dispatchEvent(new CustomEvent('app:open-repo-settings', {
-									detail: { owner: data.owner?.login, repo: data.name }
-								}))
-								break
-							case 'visibility':
-								onQuickAction('visibility', data, data.private ? 'public' : 'private')
-								break
-							case 'archive':
-								onQuickAction('archive', data, !data.archived)
-								break
-							case 'delete':
-								onQuickAction('delete', data)
-								break
-							case 'archive_selected':
-								onQuickAction('archive_selected')
-								break
-							case 'delete_selected':
-								onQuickAction('delete_selected')
-								break
-							case 'transfer':
-								openModalWithData('showTransfer', data)
-								break
-							case 'migrate':
-							case 'migrate_selected':
-								openModal('showMigrationWizard')
-								break
-							case 'dryRun':
-								openModalWithData('showMigrationWizard', { initialDryRun: true })
-								break
-							case 'dryRun_selected':
-								openModalWithData('showMigrationWizard', { initialDryRun: true })
-								break
-							case 'migrationHistory':
-								openModal('showMigrationHistory')
-								break
-							// AI context-menu actions: aiQuality routes to the Insights modal Quality tab,
-							// aiSuggest opens the dedicated SuggestNameDescription modal, and the rest
-							// open their own focused surfaces.
-							case 'aiCompare':
-								openModalWithData('showCompare', { repo: data })
-								break
-							case 'aiQuality':
-								openModalWithData('showRepoInsights', { repo: data, initialTab: 'quality' })
-								break
-							case 'aiSuggest':
-								openModalWithData('suggestNameDescription', { repo: data })
-								break
-							case 'aiCommit':
-								openModalWithData('showDevToolkit', { initialTab: 'commits', repo: data })
-								break
-							case 'generatePR':
-								openModalWithData('showDevToolkit', { initialTab: 'pr', repo: data })
-								break
-							case 'aiBatchIndex_selected':
-								openModalWithData('showBatchIndex', { repos: data })
-								break
-							case 'aiSecurity':
-								openModalWithData('showSecurityScan', { repo: data })
-								break
-							case 'exportMeta':
-								try {
-									const result = await reposApi.exportMetadata(data.owner.login, data.name)
-									toast.success(`Exported ${result.filename}`)
-								} catch (err) {
-									toast.errorFromException(err, { fallbackTitle: 'Export failed' })
-								}
-								break
-							case 'exportMeta_selected': {
-								let ok = 0
-								try {
-									for (const repo of data) {
-										await reposApi.exportMetadata(repo.owner.login, repo.name)
-										ok++
-									}
-									toast.success(`Exported ${ok} repositories`)
-								} catch (err) {
-									toast.errorFromException(err, { fallbackTitle: `Exported ${ok} of ${data.length}; stopped` })
-								}
-								break
-							}
-							case 'sync':
-								openModalWithData('showConfirm', {
-									title: 'Sync Mirror',
-									message: `Fetch latest changes from ${data.full_name}'s mirror source and force-push to the target?`,
-									confirmText: 'Sync',
-									variant: 'info',
-									onConfirm: async () => {
-										try {
-											const result = await reposApi.syncMirror(data.owner.login, data.name)
-											toast.success(`Synced in ${Math.round(result.duration / 1000)}s`)
-											closeModal('showConfirm')
-										} catch (err) {
-											toast.errorFromException(err, { fallbackTitle: 'Sync failed' })
-										}
-									}
-								})
-								break
-							default:
-								// For actions not yet wired, pass through to onQuickAction
-								onQuickAction(action, data)
-								break
-						}
+						return dispatch(actionId, target)
 					}}
 				/>
 			)}

@@ -18,12 +18,14 @@ import { calculateMenuPosition } from '@/lib/menuPositioning'
  * {
  *   type: 'item' | 'separator' | 'header',
  *   label: string,
+ *   description?: string,                                                         // optional second line in muted text
  *   icon: LucideIcon,
  *   onClick: () => void,
  *   children: Item[],
  *   disabled: boolean,
  *   tooltip: string,
  *   danger: boolean,
+ *   intent?: 'navigation'|'copy'|'mutation'|'destructive'|'read-only',           // 'destructive' applies red styling
  * }
  */
 function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirection = 'right', parentMenuWidth = 0 }) {
@@ -262,7 +264,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 				animate={{ opacity: 1, scale: 1 }}
 				exit={{ opacity: 0, scale: 0.95 }}
 				transition={{ duration: 0.12, ease: 'easeOut' }}
-				className="fixed z-[100] min-w-[200px] max-w-[280px] overflow-visible p-1 rounded-xl border border-black/5 dark:border-white/10 bg-white/85 dark:bg-neutral-900/85 backdrop-blur-xl outline-none shadow-[0_20px_40px_-12px_rgba(0,0,0,0.25),0_2px_6px_-2px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.55),0_2px_6px_-2px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.06)]"
+				className="fixed z-[100] min-w-[260px] max-w-[340px] overflow-visible p-1 rounded-xl border border-black/5 dark:border-white/10 bg-white/85 dark:bg-neutral-900/85 backdrop-blur-xl outline-none shadow-[0_20px_40px_-12px_rgba(0,0,0,0.25),0_2px_6px_-2px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.55),0_2px_6px_-2px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.06)]"
 				style={{ top: position.top, left: position.left }}
 				onClick={(e) => e.stopPropagation()}
 			>
@@ -308,12 +310,12 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 							title={item.disabled ? item.tooltip : undefined}
 							data-testid={item.id ? `menu-item-${item.id}` : undefined}
 							className={`
-								px-2.5 py-1.5 rounded-lg flex items-center gap-2.5 text-sm select-none transition-colors duration-75
+								px-2.5 py-1.5 rounded-lg flex items-start gap-2.5 text-sm select-none transition-colors duration-75
 								${item.disabled
 									? 'opacity-40 cursor-not-allowed'
 									: 'cursor-pointer'
 								}
-								${item.danger && !item.disabled
+								${(item.danger || item.intent === 'destructive') && !item.disabled
 									? isHovered
 										? 'bg-red-500/10 dark:bg-red-500/15 text-red-600 dark:text-red-400'
 										: 'text-red-600 dark:text-red-400'
@@ -333,17 +335,31 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 							}}
 						>
 							{Icon && (
-								<Icon className={`w-4 h-4 flex-shrink-0 ${
-									item.danger
+								<Icon className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
+									item.danger || item.intent === 'destructive'
 										? ''
 										: isHovered && !item.disabled
 											? 'text-slate-600 dark:text-slate-300'
 											: 'text-slate-400 dark:text-slate-500'
 								}`} />
 							)}
-							<span className="flex-1 truncate">{item.label}</span>
+							<div className="flex-1 min-w-0">
+								<div className="truncate leading-tight">{item.label}</div>
+								{item.description && (
+									<div
+										data-testid="menu-item-description"
+										className={`text-[11px] truncate leading-tight mt-0.5 ${
+											(item.danger || item.intent === 'destructive')
+												? 'text-red-500/80 dark:text-red-400/80'
+												: 'text-slate-500 dark:text-slate-400'
+										}`}
+									>
+										{item.description}
+									</div>
+								)}
+							</div>
 							{hasChildren && (
-								<ChevronRight className="w-3.5 h-3.5 flex-shrink-0 text-slate-400 dark:text-slate-500" />
+								<ChevronRight className="w-3.5 h-3.5 flex-shrink-0 text-slate-400 dark:text-slate-500 mt-0.5" />
 							)}
 						</div>
 					)
