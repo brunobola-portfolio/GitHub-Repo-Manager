@@ -122,6 +122,36 @@ Tasks 4–13.
 
 Spec: [`docs/specs/2026-05-01-mobile-parity-sweep.md`](../specs/2026-05-01-mobile-parity-sweep.md).
 
+## Community Health AI Auto-Fix
+
+When a repo's Community Health dashboard reports missing standard files, users
+can trigger a per-file "Fix with AI" flow that generates content (deterministic
+for LICENSE / Code of Conduct, AI for the rest) and commits it via the GitHub
+Contents API. Branch-protected default branches automatically fall back to
+opening a PR instead.
+
+Two endpoints separate generation from commit so a quota burn doesn't lose work:
+- `POST /:owner/:repo/community-health/generate` — returns content, no commit
+- `POST /:owner/:repo/community-health/commit-fix` — takes user-edited content, commits
+
+Generators live in [`server/lib/ai-features/community-health-fix.js`](../../server/lib/ai-features/community-health-fix.js)
+and use either canonical templates (LICENSE, CoC) or the AI provider abstraction
+(`createProviderForUser`) for the rest.
+
+Phase 1 ships **MIT** + **BSD-3-Clause** license templates verbatim; Apache-2.0
+/ GPL-3.0 / MPL-2.0 are queued for a follow-up commit. The Code of Conduct
+adopts Contributor Covenant 2.1 by canonical reference (link to
+contributor-covenant.org) rather than verbatim — same legal effect, less
+maintenance burden.
+
+The `friendlyAiError` translator at [`src/utils/aiErrorFriendly.js`](../../src/utils/aiErrorFriendly.js)
+and the server-side [`server/middleware/ai-error-mapper.js`](../../server/middleware/ai-error-mapper.js)
+are the shared utilities for converting AIError codes into user-readable
+messages — used by both Work Board AI summary and the Community Health auto-fix
+modal.
+
+Spec: [`docs/specs/2026-05-01-community-health-ai-autofix.md`](../specs/2026-05-01-community-health-ai-autofix.md).
+
 ## Backend
 
 Entry point: `server/index.js`

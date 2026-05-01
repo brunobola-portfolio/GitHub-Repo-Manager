@@ -2,12 +2,38 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useReducedMotion } from 'framer-motion';
 import {
     FileText, Users, Activity, CheckCircle,
-    XCircle, AlertCircle, TrendingUp, RefreshCw, Heart
+    XCircle, AlertCircle, TrendingUp, RefreshCw, Heart, Sparkles
 } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
 import { TabBar } from './ui/TabBar';
+import { CommunityHealthFixModal } from './AI/CommunityHealthFixModal';
+
+/**
+ * Map between the file labels surfaced by the community-health analyser and
+ * the registry keys understood by `/community-health/generate`.
+ *
+ * The analyser today uses GitHub's community profile labels (e.g. "README",
+ * "LICENSE"), while the generator registry keys are snake_case. Keys not in
+ * this map (rare) hide the Fix-with-AI button — better to omit than guess.
+ */
+const FILE_TYPE_BY_LABEL = {
+    'README': 'readme_stub',
+    'README.md': 'readme_stub',
+    'LICENSE': 'license',
+    'CONTRIBUTING.md': 'contributing',
+    'CONTRIBUTING': 'contributing',
+    'CODE_OF_CONDUCT.md': 'code_of_conduct',
+    'CODE_OF_CONDUCT': 'code_of_conduct',
+    'SECURITY.md': 'security',
+    'SECURITY': 'security',
+    '.github/ISSUE_TEMPLATE': 'issue_template',
+    'ISSUE_TEMPLATE': 'issue_template',
+    '.github/PULL_REQUEST_TEMPLATE.md': 'pr_template',
+    'PULL_REQUEST_TEMPLATE.md': 'pr_template',
+    'PULL_REQUEST_TEMPLATE': 'pr_template',
+};
 
 function useIsDesktop() {
     const [isDesktop, setIsDesktop] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
@@ -91,6 +117,8 @@ export function CommunityHealthDashboard({ repo, onClose }) {
     const { toast } = useToast();
     const isDesktop = useIsDesktop();
     const [activeTab, setActiveTab] = useState('files');
+    // Slice 4: Fix-with-AI modal — null when closed, fileType key when open.
+    const [fixOpen, setFixOpen] = useState(null);
 
     useEffect(() => {
         if (repo) {
@@ -119,6 +147,21 @@ export function CommunityHealthDashboard({ repo, onClose }) {
             setLoading(false);
             setRefreshing(false);
         }
+    };
+
+    const handleFixCommitted = () => {
+        if (repo?.full_name) fetchHealth(repo.full_name, true);
+        setFixOpen(null);
+        toast.success('Community health updated');
+    };
+
+    const handleFix = (fileLabel) => {
+        const fileType = FILE_TYPE_BY_LABEL[fileLabel];
+        if (!fileType) {
+            toast.info(`No AI generator wired for ${fileLabel} yet`);
+            return;
+        }
+        setFixOpen(fileType);
     };
 
     const handleRefresh = () => {
@@ -207,7 +250,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                                         </h3>
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             {Object.entries(health.metrics.files).map(([file, data]) => (
-                                                                <FileCheckItem key={file} file={file} exists={data.exists} size={data.size} />
+                                                                <FileCheckItem key={file} file={file} exists={data.exists} size={data.size} onFix={handleFix} />
                                                             ))}
                                                         </div>
                                                     </div>
@@ -313,23 +356,47 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                         )}
                     </AnimatePresence>
                 </div>
+                {repo && (
+                    <CommunityHealthFixModal
+                        isOpen={!!fixOpen}
+                        onClose={() => setFixOpen(null)}
+                        repo={repo}
+                        fileType={fixOpen}
+                        onCommitted={handleFixCommitted}
+                    />
+                )}
         </Modal>
     );
 }
 
-function FileCheckItem({ file, exists, size }) {
+function FileCheckItem({ file, exists, size, onFix }) {
+    const canFix = !exists && typeof onFix === 'function' && FILE_TYPE_BY_LABEL[file]
     return (
         <motion.div whileHover={{ y: -1 }}
             className={`flex items-center justify-between p-3 rounded-xl min-h-[44px] ds-card-shimmer bg-white/60 dark:bg-slate-900/60 border ${exists ? 'border-slate-200/40 dark:border-slate-800/40' : 'border-red-300/40 dark:border-red-500/20'} transition-all`}>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
                 {exists ? (
                     <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
                         <CheckCircle className="w-5 h-5 text-emerald-500" />
                     </motion.div>
                 ) : (<XCircle className="w-5 h-5 text-red-400 dark:text-red-500" />)}
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{file}</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{file}</span>
             </div>
-            {exists && size > 0 && (<span className="text-xs text-slate-400">{(size / 1024).toFixed(1)} KB</span>)}
+            <div className="flex items-center gap-2 flex-shrink-0">
+                {exists && size > 0 && (<span className="text-xs text-slate-400">{(size / 1024).toFixed(1)} KB</span>)}
+                {canFix && (
+                    <button
+                        type="button"
+                        onClick={() => onFix(file)}
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 transition-colors"
+                        title={`Generate ${file} with AI and commit it to the repo`}
+                        aria-label={`Fix ${file} with AI`}
+                    >
+                        <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
+                        Fix with AI
+                    </button>
+                )}
+            </div>
         </motion.div>
     );
 }
