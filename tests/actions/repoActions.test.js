@@ -128,3 +128,16 @@ describe('AI read-only actions', () => {
 		expect(repoActions.ai_quality.quickActionPriority).toBe(40)
 	})
 })
+
+describe('migration & export', () => {
+	it('migrate, dry_run, export_meta are present', () => {
+		expect(repoActions.migrate).toBeDefined()
+		expect(repoActions.dry_run).toBeDefined()
+		expect(repoActions.export_meta).toBeDefined()
+	})
+
+	it('export_meta is read-only and does not trigger refresh', () => {
+		expect(repoActions.export_meta.intent).toBe('read-only')
+		expect(repoActions.export_meta.triggersRefresh).toBeFalsy()
+	})
+})

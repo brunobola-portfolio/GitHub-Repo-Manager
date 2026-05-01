@@ -245,6 +245,39 @@ export const repoActions = {
 		run: async (repo, ctx) => ctx.openModalWithData('suggestNameDescription', { repo }),
 	},
 
+	// ───── Migration & export ─────
+	migrate: {
+		id: 'migrate',
+		label: 'Migrate to GitHub',
+		description: 'Imports this repository (or a remote URL) into GitHub via the migration wizard.',
+		icon: Upload,
+		intent: 'mutation',
+		surfaces: ['contextMenu', 'commandPalette'],
+		triggersRefresh: true,
+		run: async (_repo, ctx) => ctx.openModal('showMigrationWizard'),
+	},
+	dry_run: {
+		id: 'dry_run',
+		label: 'Dry-Run (Simulate)',
+		description: 'Simulates the migration without writing anything; reports what would happen.',
+		icon: FlaskConical,
+		intent: 'read-only',
+		surfaces: ['contextMenu', 'commandPalette'],
+		run: async (_repo, ctx) => ctx.openModalWithData('showMigrationWizard', { initialDryRun: true }),
+	},
+	export_meta: {
+		id: 'export_meta',
+		label: 'Export Metadata (JSON)',
+		description: 'Downloads a JSON file with this repository’s settings and metadata.',
+		icon: Download,
+		intent: 'read-only',
+		surfaces: ['contextMenu', 'commandPalette'],
+		run: async (repo, ctx) => {
+			const result = await ctx.api.exportMetadata(repo.owner.login, repo.name)
+			ctx.toast.success(`Exported ${result.filename}`)
+		},
+	},
+
 	// ───── Read-only: AI ─────
 	ai_commit: {
 		id: 'ai_commit',
