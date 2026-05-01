@@ -3,6 +3,7 @@ import { Modal, ModalFooter } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Loader2, CheckCircle2, XCircle, Copy, Check } from 'lucide-react'
 import { getCsrfToken } from '../../utils/api'
+import { formatUserError } from '../../utils/errors'
 
 export function LicenseActivationModal({ isOpen, onClose }) {
   const [keyInput, setKeyInput] = useState('')
@@ -32,7 +33,11 @@ export function LicenseActivationModal({ isOpen, onClose }) {
         setResult(data)
       }
     } catch (err) {
-      setError(err.message || 'Validation failed')
+      // Network failure / unexpected exception — formatUserError gives a
+      // readable title+body without leaking raw stack traces or
+      // Failed-to-fetch jargon to the user.
+      const formatted = formatUserError(err, { fallbackTitle: 'Validation failed' })
+      setError(formatted.body || formatted.title)
     } finally {
       setValidating(false)
     }
