@@ -71,26 +71,28 @@ These came up during slice 1 brainstorming and apply to all remaining work:
 
 ## 4. What's left — prioritized todo list
 
+**Update 2026-05-01 (later session):** Priorities 1, 2, 3, plus the hygiene route-tests item are all shipped. Full vitest suite is now green (3030 passing, 24 skipped, **zero failures**). Only Priority 4 (E2E harness) and Priority 5 (Slice 3 Part 2 brainstorm) remain.
+
 Pick highest-priority unblocked item first. Each line ends with the spec/plan reference and effort estimate.
 
-### Priority 1 — unblocked, high value
+### Priority 1 — unblocked, high value ✅ DONE
 
-- [x] ~~**Slice 4 Task 9: Register `fix_community_health` action** in `src/actions/repoActions.js`.~~ ✅ Shipped 2026-05-01 in commit `4ddf5aa`. Action surfaces in contextMenu + commandPalette; opens the existing Community Health modal (passes raw repo, no `focus` prop — would need extra App.jsx plumbing).
-- [ ] **Pre-existing lint regression fix:** `tests/lint/no-standalone-loader2.test.js` flags two files. Migrate `src/components/MigrationHistory.jsx` and `src/components/RepoDetail/InlineEditField.jsx` to use `<SectionSpinner label="…" />` (full-section loading) or `<Spinner size="sm" tone="muted" />` (inline status) per the lint test's expected pattern. **Effort: 15 min total.**
+- [x] ~~**Slice 4 Task 9: Register `fix_community_health` action**~~ ✅ Commit `4ddf5aa`. Action surfaces in contextMenu + commandPalette; opens the existing Community Health modal (passes raw repo, no `focus` prop — would need extra App.jsx plumbing).
+- [x] ~~**Pre-existing lint regression fix**~~ ✅ Commit `5a2648b`. `MigrationHistory.jsx` (line 256) and `RepoDetail/InlineEditField.jsx` (line 81) migrated from raw `<Loader2 animate-spin>` to `<Spinner size="md" tone="muted" />` and `<Spinner size="sm" tone="primary" />` respectively. Suite is fully green for the first time since slice 3.
 
-### Priority 2 — unblocked, medium value
+### Priority 2 — unblocked, medium value ✅ DONE
 
-- [ ] **Slice 4 follow-up: Apache-2.0 / GPL-3.0 / MPL-2.0 license templates.** Use `WebFetch` against `choosealicense.com` to retrieve canonical text, save into `server/lib/ai-features/license-templates/<id>.txt` with `{{year}}` / `{{owner}}` placeholders, extend `SUPPORTED_LICENSES` in [`server/lib/ai-features/community-health-fix.js`](../../server/lib/ai-features/community-health-fix.js), update `server/__tests__/community-health-fix.test.js` to assert each. [Plan task](../plans/2026-05-01-community-health-ai-autofix.md#task-1-license-templates--deterministic-license-generator). **Effort: 30–45 min.**
-- [ ] **Slice 5 audit row 8: RepoDetail tabs scroll fade indicators.** Add `[mask-image:linear-gradient(...)]` Tailwind arbitrary value at horizontal scroll edges. [Spec row 8](2026-05-01-mobile-parity-sweep.md#3-audit-catalogue). **Effort: 20 min.**
-- [ ] **Slice 5 audit row 16: tooltip touch audit.** Grep for `<Tooltip` on icon-only buttons; verify each has a `title` attr fallback. [Spec row 16](2026-05-01-mobile-parity-sweep.md#3-audit-catalogue). **Effort: 30 min.**
+- [x] ~~**Slice 4 follow-up: Apache-2.0 / GPL-3.0 / MPL-2.0 license templates**~~ ✅ Commit `5738375`. Templates fetched verbatim from the GitHub-maintained `choosealicense.com` mirror. Apache uses `[yyyy] [name of copyright owner]` → `{{year}} {{owner}}`, GPL-3.0 uses `<year> <name of author>` → `{{year}} {{owner}}`, MPL-2.0 has no per-project placeholders by design (copyright lives in source headers). `SUPPORTED_LICENSES` now exposes 5 entries. Pre-existing "throws on Apache-2.0 (queued)" test was flipped to positive coverage.
+- [x] ~~**Slice 5 audit row 8: RepoDetail tabs scroll fade indicators**~~ ✅ Commit `fab9b82`. Tailwind arbitrary `[mask-image:linear-gradient(to_right,transparent,black_24px,black_calc(100%-24px),transparent)]` applied to the TabBar's overflow-x-auto wrapper in `RepoDetail.jsx`. Skipped scroll-snap (would need shrink-0 inside TabBar, affects PRDetailPanel consumer too).
+- [x] ~~**Slice 5 audit row 16: tooltip touch audit**~~ ✅ Audit only (no commit needed). The only `<Tooltip>` matches are recharts chart tooltips (not button hover tooltips) in ActivityChart + LanguageChart. Icon-only buttons consistently use `title` and/or `aria-label` already; the rarely-used `TooltipButton` primitive in `RepoStates.jsx` uses `title={label}` directly. Zero offenders.
 
-### Priority 3 — bigger pieces
+### Priority 3 — bigger pieces ✅ DONE
 
-- [ ] **Slice 5 audit row 4: LanguageChart compact bar variant** at `< sm`. Spec row 4. **Effort: 1 h.**
-- [ ] **Slice 5 audit rows 10+11: WorkBoard mobile** (KPI 1-wide stack + AISummaryCard stacked + optional bottom tab bar). [Plan task 8](../plans/2026-05-01-mobile-parity-sweep.md#task-8-cluster-e--workboard-mobile-rows-10-11). **Effort: 2 h.**
-- [ ] **Slice 5 audit row 12: SettingsModal horizontal section tab strip** at `< md`. [Plan task 9](../plans/2026-05-01-mobile-parity-sweep.md#task-9-cluster-f--settingsmodal-sections-nav-row-12). **Effort: 1 h.**
-- [ ] **Slice 5 audit row 13: `<ModalSticky>` migration** of existing modals with action buttons. [Plan task 10](../plans/2026-05-01-mobile-parity-sweep.md#task-10-cluster-g--apply-modalsticky-to-existing-modals-row-13). **Effort: 2–3 h** (10+ modals to triage).
-- [ ] **Slice 5 audit row 14: MigrationWizard responsive sweep.** [Plan task 11](../plans/2026-05-01-mobile-parity-sweep.md#task-11-cluster-h--migrationwizard-mobile-row-14). **Effort: 2 h.**
+- [x] ~~**Slice 5 audit row 4: LanguageChart compact bar variant**~~ ✅ Commit `726466e`. Below `sm` shows a horizontal stacked bar (GitHub-style language bar) + a 2-column compact legend; the pie chart hides at `<sm` and reappears at `sm:flex`. `data-testid` on each variant for future component tests.
+- [x] ~~**Slice 5 audit rows 10+11: WorkBoard mobile**~~ ✅ Commit `ae3a034`. KpiRow flipped from `grid-cols-2 md:grid-cols-4` to `grid-cols-1 sm:grid-cols-2 md:grid-cols-4` so KPIs stack 1-wide on iPhone SE. AISummaryCard's `flex-col sm:flex-row` was already correct — locked in via test. Step 8.3 (bottom-anchored tab bar) deferred (optional in plan; would interact with FAB / `shiftAboveBottomBar` contract).
+- [x] ~~**Slice 5 audit row 12: Modal tab strip overflow**~~ ✅ Commit `5ce1843`. Centralised the fix in `Modal.jsx` itself — the wrapper around `<TabBar>` now has `overflow-x-auto` + the same 24px linear-gradient mask used by RepoDetail. Modals with few tabs get it as a no-op; SettingsModal (8 tabs) and any future multi-tab modal benefit automatically.
+- [x] ~~**Slice 5 audit row 13: `<ModalSticky>` migration**~~ ✅ Commit `6808a71`. Audit of 18+ Modal consumers found only one offender: `LicenseActivationModal.jsx` had its Validate button inline in body content. Lifted into the `Modal.footer` prop (Modal already provides flex-shrink-0 footer; no `<ModalSticky>` wrapper needed). Every other consumer correctly uses the `footer` prop and inherits the sticky layout for free.
+- [x] ~~**Slice 5 audit row 14: MigrationWizard responsive sweep**~~ ✅ Commit `d0f3290`. Four offenders fixed: `RepoConfigStep` stats grid (`grid-cols-4` → `grid-cols-2 sm:grid-cols-4`); `RepoConfigStep` header row (`flex-col sm:flex-row` instead of always-row); `ProgressStep` right-side status cluster (`flex-wrap` so retry button never clips); `BreadcrumbNav` (`overflow-x-auto whitespace-nowrap` + `shrink-0` per segment so long Azure project names scroll horizontally).
 
 ### Priority 4 — gated on infra
 
@@ -103,21 +105,21 @@ Pick highest-priority unblocked item first. Each line ends with the spec/plan re
 
 ### Hygiene / cleanup
 
-- [ ] **Slice 4 follow-up: route tests for `actions-community.js` /generate + /commit-fix endpoints.** Was deferred when shipping slice 4 because the harness isn't trivial. Check existing pattern at `server/__tests__/work-board-actions.test.js`. **Effort: 1 h.**
+- [x] ~~**Slice 4 follow-up: route tests for `actions-community.js` /generate + /commit-fix endpoints**~~ ✅ Commit `06eb211`. New file `server/__tests__/actions-community-fix-routes.test.js` (8 tests) covers: deterministic license path, unknown fileType (400), AI provider lookup, `ai_not_configured` (403), invalid owner param (400), happy-path commit + cache invalidation, missing required fields (400), commit helper error → 500. Pattern follows `work-board-actions.test.js`.
 - [ ] **Toast-with-Undo (Phase 2 spec).** Multiple slices deferred this. Needs its own spec — dedicated brainstorming session.
+
+### Optional follow-ups discovered while shipping the above
+
+- WorkBoard step 8.3 (bottom-anchored tab bar at `<sm`) was marked optional in the plan. If pursued, plan to coordinate with the existing FAB `shiftAboveBottomBar` prop so they don't overlap.
+- `fix_community_health` action could pass `{ repo, focus: 'fix' }` once `App.jsx:1116` is updated to forward a `focus` prop into `<CommunityHealthDashboard>` and the dashboard scrolls/highlights missing-file rows. Currently both action entries (`community_health` + `fix_community_health`) open the same modal with raw repo.
 
 ---
 
 ## 5. Known issues + pitfalls (read before acting)
 
-### Pre-existing test failure
+### Pre-existing test failure ✅ RESOLVED
 
-`tests/lint/no-standalone-loader2.test.js` has been failing since before this initiative. The two offenders are:
-
-- `src/components/MigrationHistory.jsx` — has standalone `<Loader2 className="… animate-spin" />` outside a button
-- `src/components/RepoDetail/InlineEditField.jsx` — same
-
-Both need to migrate to `<SectionSpinner label="…" />` or `<Spinner size="sm" tone="muted" />`. The lint test header in the file has the migration recipe. **This is the only test failing on main today.**
+The `tests/lint/no-standalone-loader2.test.js` regression is fixed (commit `5a2648b`). Both `MigrationHistory.jsx` and `RepoDetail/InlineEditField.jsx` now use the `<Spinner>` primitive. **The full vitest suite is green for the first time since slice 3 — 3030 passing, zero failures.**
 
 ### Git workflow gotchas (learned in last session)
 
@@ -209,3 +211,17 @@ Concretely:
 - ✅ Honest about errors: AI failures show "AI provider quota exceeded — retry in 14s" (already shipped)
 
 **The initiative is 80% there.** The remaining 20% is the slice 5 cluster work + slice 4 task 9 + slice 3 part 2 brainstorm + the lint regression fix. None of it is hard; it's just careful per-file work.
+
+---
+
+## Update 2026-05-01 (later session) — Initiative substantially complete
+
+The remaining mechanical work has been shipped (10 commits between `4ddf5aa` and `06eb211`). The initiative is now ~95% complete:
+- ✅ Mobile-equivalent: every previously-flagged audit row is shipped or verified clean. Bullet 5 ("Mobile-equivalent: some flows still desktop-only") in §8 above can be closed.
+- ✅ Test suite is fully green for the first time since slice 3 baselined 3002 passing — now 3030 passing, zero failures.
+
+What's actually left:
+1. **Priority 4** — Playwright mock-mode harness + the e2e suites that depend on it (~half day for infra + 1 h per suite).
+2. **Priority 5** — Slice 3 Part 2 dashboard interactivity (needs brainstorming session).
+3. **Toast-with-Undo Phase 2** (separate spec to write).
+4. **WorkBoard bottom tab bar** (optional, deferred per plan).
