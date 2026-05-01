@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Pencil, Loader2 } from 'lucide-react'
+import { Pencil } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 
 const INPUT_CLASSES = 'w-full px-2 py-1 -mx-2 -my-1 rounded-md bg-white dark:bg-slate-800 border border-indigo-400 dark:border-indigo-500 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-colors'
 
@@ -78,7 +79,7 @@ export function InlineEditField({
                     className={INPUT_CLASSES}
                 />
                 {saving && (
-                    <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-indigo-500 animate-spin" />
+                    <Spinner size="sm" tone="primary" className="absolute right-2 top-1/2 -translate-y-1/2" />
                 )}
             </div>
         )

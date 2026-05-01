@@ -7,7 +7,7 @@ import {
     Clock, ArrowRight, RefreshCw, Cloud, Globe, GitBranch,
     ChevronDown, ChevronRight, RotateCcw, FileText, ListChecks
 } from 'lucide-react'
-import { SectionSpinner } from './ui/Spinner'
+import { SectionSpinner, Spinner } from './ui/Spinner'
 import { migrationApi } from '../api/migration'
 
 const MIGRATION_TABS = [
@@ -253,7 +253,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                 )}
                                                 {isExpandable && (
                                                     isLoadingTasks
-                                                        ? <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                                                        ? <Spinner size="md" tone="muted" />
                                                         : isExpanded
                                                             ? <ChevronDown className="w-4 h-4 text-slate-400" />
                                                             : <ChevronRight className="w-4 h-4 text-slate-400" />
