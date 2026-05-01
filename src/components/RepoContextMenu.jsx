@@ -1,157 +1,114 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import ContextMenu from './ui/ContextMenu'
-import {
-	ExternalLink, Copy, Settings, Rocket, Sparkles, Package,
-	Lock, Unlock, Archive, Trash2, RefreshCw, Wand2, GitCompare, Shield,
-	BarChart3, Lightbulb, ArrowRightLeft, GitFork, Download, Upload, History, FlaskConical,
-	Globe, KeyRound, Terminal, GitPullRequest
-} from 'lucide-react'
+import { Copy, Rocket, Sparkles, Package } from 'lucide-react'
+import { repoActions } from '../actions/repoActions'
 
 /**
- * RepoContextMenu - Context menu for repository actions
+ * RepoContextMenu — reads the action registry and renders items grouped
+ * by intent. Single-repo and batch modes use different filters.
  *
  * Props:
- * - repo: single repo object (null if batch)
- * - selectedRepos: array of selected repos (for batch mode)
- * - x, y: position coordinates
- * - onClose: close handler
- * - onAction: callback (action, data) => void
+ *  - repo: the right-clicked repo (single mode)
+ *  - selectedRepos: array (batch mode if length > 1)
+ *  - x, y: cursor coordinates
+ *  - onClose: close handler
+ *  - onAction: (actionId, target) => void  — caller dispatches via runAction
  */
-const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = [], x, y, onClose, onAction }) {
-	const isBatch = selectedRepos.length > 1
+const resolve = (val, target) => (typeof val === 'function' ? val(target) : val)
 
-	const copyToClipboard = (text) => {
-		navigator.clipboard.writeText(text)
+function buildItem(actionId, target, onAction) {
+	const a = repoActions[actionId]
+	if (!a) return null
+	const applicable = a.isApplicable ? a.isApplicable(target) : true
+	return {
+		id: a.id,
+		label: resolve(a.label, target),
+		description: resolve(a.description, target),
+		icon: resolve(a.icon, target),
+		disabled: !applicable,
+		tooltip: !applicable ? 'Not available for this repo' : null,
+		intent: a.intent,
+		danger: a.intent === 'destructive',
+		onClick: () => onAction(a.id, target),
 	}
+}
 
-	const singleRepoItems = repo ? [
+function buildSingleItems(repo, onAction) {
+	const item = (id) => buildItem(id, repo, onAction)
+
+	return [
 		{ type: 'header', label: repo.name },
-		{
-			label: 'Open on GitHub',
-			icon: ExternalLink,
-			onClick: () => window.open(repo.html_url, '_blank')
-		},
+		item('open_detail'),
+		item('open_repo_settings'),
+		item('open_on_github'),
+		{ type: 'separator' },
 		{
 			label: 'Copy Clone URL',
 			icon: Copy,
-			children: [
-				{ label: 'HTTPS', icon: Globe, onClick: () => copyToClipboard(repo.clone_url) },
-				{ label: 'SSH', icon: KeyRound, onClick: () => copyToClipboard(repo.ssh_url) },
-				{ label: 'GitHub CLI', icon: Terminal, onClick: () => copyToClipboard(`gh repo clone ${repo.full_name}`) }
-			]
-		},
-		{
-			label: 'Settings',
-			icon: Settings,
-			onClick: () => window.open(`${repo.html_url}/settings`, '_blank')
+			children: [item('copy_clone_https'), item('copy_clone_ssh'), item('copy_clone_gh')].filter(Boolean),
 		},
 		{ type: 'separator' },
 		{
 			label: 'Migration',
 			icon: Rocket,
-			children: [
-				{ label: 'Migrate to GitHub', icon: Upload, onClick: () => onAction('migrate', repo) },
-				{ label: 'Migration History', icon: History, onClick: () => onAction('migrationHistory', repo) },
-				{ label: 'Dry-Run (Simulate)', icon: FlaskConical, onClick: () => onAction('dryRun', repo) }
-			]
+			children: [item('migrate'), item('migration_history'), item('dry_run')].filter(Boolean),
 		},
 		{
 			label: 'AI',
 			icon: Sparkles,
 			children: [
-				{ label: 'Generate Commit Message', icon: Wand2, onClick: () => onAction('aiCommit', repo) },
-				{ label: 'Generate PR Description', icon: GitPullRequest, onClick: () => onAction('generatePR', repo) },
-				{ label: 'Quality Report', icon: BarChart3, onClick: () => onAction('aiQuality', repo) },
-				{ label: 'Suggest Name & Description', icon: Lightbulb, onClick: () => onAction('aiSuggest', repo) },
-				{ label: 'Compare with Existing', icon: GitCompare, onClick: () => onAction('aiCompare', repo) },
-				{ label: 'Security / Secrets Scan', icon: Shield, onClick: () => onAction('aiSecurity', repo) }
-			]
+				item('ai_commit'),
+				item('ai_pr'),
+				item('ai_quality'),
+				item('ai_suggest_name_desc'),
+				item('ai_compare'),
+				item('ai_security'),
+			].filter(Boolean),
 		},
 		{
 			label: 'Management',
 			icon: Package,
-			children: [
-				{ label: 'Transfer to Org', icon: ArrowRightLeft, onClick: () => onAction('transfer', repo) },
-				{ label: 'Mirror / Fork', icon: GitFork, onClick: () => onAction('mirror', repo) },
-				{
-					id: 'sync',
-					label: 'Sync Repository',
-					icon: RefreshCw,
-					disabled: !repo.isMirror,
-					tooltip: repo.isMirror ? null : 'Only available for mirrored repos',
-					onClick: () => onAction('sync', repo)
-				},
-				{ label: 'Export Metadata (JSON)', icon: Download, onClick: () => onAction('exportMeta', repo) }
-			]
+			children: [item('transfer'), item('mirror'), item('sync'), item('export_meta')].filter(Boolean),
 		},
 		{ type: 'separator' },
-		{
-			label: repo.private ? 'Make Public' : 'Make Private',
-			icon: repo.private ? Unlock : Lock,
-			onClick: () => onAction('visibility', repo)
-		},
-		{
-			label: repo.archived ? 'Unarchive' : 'Archive',
-			icon: Archive,
-			onClick: () => onAction('archive', repo)
-		},
+		item('visibility'),
+		item('archive'),
 		{ type: 'separator' },
-		{
-			label: 'Delete Repository',
-			icon: Trash2,
-			danger: true,
-			onClick: () => onAction('delete', repo)
-		}
-	] : []
+		item('delete'),
+	].filter(Boolean)
+}
 
-	const batchItems = [
-		{ type: 'header', label: `${selectedRepos.length} repositories selected` },
-		{
-			label: `Archive ${selectedRepos.length} repos`,
-			icon: Archive,
-			onClick: () => onAction('archive_selected', selectedRepos)
-		},
-		{
-			label: 'Batch Index with AI',
-			icon: Sparkles,
-			onClick: () => onAction('aiBatchIndex_selected', selectedRepos)
-		},
+function buildBatchItems(repos, onAction) {
+	const item = (id) => buildItem(id, repos, onAction)
+
+	return [
+		{ type: 'header', label: `${repos.length} repositories selected` },
+		item('archive_selected'),
+		item('ai_batch_index_selected'),
 		{ type: 'separator' },
 		{
 			label: 'Migration',
 			icon: Rocket,
-			children: [
-				{ label: `Migrate ${selectedRepos.length} repos`, icon: Upload, onClick: () => onAction('migrate_selected', selectedRepos) },
-				{ label: 'Dry-Run (Simulate)', icon: FlaskConical, onClick: () => onAction('dryRun_selected', selectedRepos) }
-			]
+			children: [item('migrate_selected'), item('dry_run_selected')].filter(Boolean),
 		},
 		{
 			label: 'Management',
 			icon: Package,
-			children: [
-				{ label: `Transfer ${selectedRepos.length} repos`, icon: ArrowRightLeft, onClick: () => onAction('transfer_selected', selectedRepos) },
-				{ label: 'Export Metadata (JSON)', icon: Download, onClick: () => onAction('exportMeta_selected', selectedRepos) }
-			]
+			children: [item('transfer_selected'), item('export_meta_selected')].filter(Boolean),
 		},
 		{ type: 'separator' },
-		{
-			label: `Delete ${selectedRepos.length} repos`,
-			icon: Trash2,
-			danger: true,
-			onClick: () => onAction('delete_selected', selectedRepos)
-		}
-	]
+		item('delete_selected'),
+	].filter(Boolean)
+}
 
-	const items = isBatch ? batchItems : singleRepoItems
-
-	return (
-		<ContextMenu
-			items={items}
-			x={x}
-			y={y}
-			onClose={onClose}
-		/>
+const RepoContextMenu = memo(function RepoContextMenu({ repo, selectedRepos = [], x, y, onClose, onAction }) {
+	const isBatch = selectedRepos.length > 1
+	const items = useMemo(
+		() => (isBatch ? buildBatchItems(selectedRepos, onAction) : buildSingleItems(repo, onAction)),
+		[isBatch, repo, selectedRepos, onAction]
 	)
+
+	return <ContextMenu items={items} x={x} y={y} onClose={onClose} />
 })
 
 export default RepoContextMenu
