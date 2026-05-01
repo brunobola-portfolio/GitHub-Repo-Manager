@@ -480,3 +480,31 @@ export const repoActions = {
 		},
 	},
 }
+
+/**
+ * buildRepoActionCommands — emits `{ id, label, description, run }[]` from
+ * the registry for the command palette to render. The palette is responsible
+ * for grouping/filtering by recents/typing; the builder just enumerates.
+ *
+ * Skips batch actions (`isBatchSafe`) — they require a selection, which is a
+ * separate context the palette doesn't own. Phase 2 may revisit when the
+ * palette gains selection-awareness.
+ */
+export function buildRepoActionCommands(repos, ctx) {
+	const out = []
+	for (const action of Object.values(repoActions)) {
+		if (!action.surfaces.includes('commandPalette')) continue
+		if (action.isBatchSafe) continue
+		for (const repo of repos) {
+			if (action.isApplicable && !action.isApplicable(repo)) continue
+			const resolveDyn = (val) => (typeof val === 'function' ? val(repo) : val)
+			out.push({
+				id: `${action.id}::${repo.id}`,
+				label: `${resolveDyn(action.label)} — ${repo.full_name}`,
+				description: resolveDyn(action.description),
+				run: () => action.run(repo, ctx),
+			})
+		}
+	}
+	return out
+}

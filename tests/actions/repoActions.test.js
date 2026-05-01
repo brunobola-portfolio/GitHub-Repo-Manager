@@ -180,6 +180,33 @@ describe('batch actions', () => {
 	})
 })
 
+describe('buildRepoActionCommands', () => {
+	it('returns one command per applicable single-repo action', async () => {
+		const { buildRepoActionCommands } = await import('../../src/actions/repoActions')
+		const repos = [{ id: 1, name: 'demo', full_name: 'me/demo', private: false, archived: false, isMirror: false }]
+		const cmds = buildRepoActionCommands(repos, {})
+
+		expect(Array.isArray(cmds)).toBe(true)
+		expect(cmds.length).toBeGreaterThan(0)
+	})
+
+	it('includes open_detail and excludes sync (not a mirror)', async () => {
+		const { buildRepoActionCommands } = await import('../../src/actions/repoActions')
+		const repos = [{ id: 1, name: 'demo', full_name: 'me/demo', private: false, archived: false, isMirror: false }]
+		const ids = buildRepoActionCommands(repos, {}).map((c) => c.id)
+		expect(ids.some((id) => id.startsWith('open_detail::'))).toBe(true)
+		expect(ids.some((id) => id.startsWith('sync::'))).toBe(false)
+	})
+
+	it('skips batch actions (require selection context)', async () => {
+		const { buildRepoActionCommands } = await import('../../src/actions/repoActions')
+		const repos = [{ id: 1, name: 'demo', full_name: 'me/demo' }]
+		const ids = buildRepoActionCommands(repos, {}).map((c) => c.id)
+		expect(ids.some((id) => id.startsWith('archive_selected::'))).toBe(false)
+		expect(ids.some((id) => id.startsWith('delete_selected::'))).toBe(false)
+	})
+})
+
 describe('confirmation discipline', () => {
 	it('every mutation/destructive action has confirm OR @unconfirmed-by-design JSDoc', () => {
 		const file = fs.readFileSync(
