@@ -13,6 +13,7 @@ import {
 import { Spinner } from '../ui/Spinner'
 import { useToast } from '../../hooks/useToast'
 import { useAIStatus } from '../../hooks/useAIStatus'
+import { formatRelativeTime } from '../../utils/format'
 
 const REVIEW_STATES = {
     APPROVED: { label: 'Approved', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', icon: ShieldCheck },
@@ -142,18 +143,6 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
     const totalAdditions = files.reduce((sum, f) => sum + (f.additions || 0), 0)
     const totalDeletions = files.reduce((sum, f) => sum + (f.deletions || 0), 0)
 
-    function timeAgo(date) {
-        // eslint-disable-next-line react-hooks/purity
-        const diff = Date.now() - new Date(date).getTime()
-        const mins = Math.floor(diff / 60000)
-        if (mins < 60) return `${mins}m ago`
-        const hours = Math.floor(mins / 60)
-        if (hours < 24) return `${hours}h ago`
-        const days = Math.floor(hours / 24)
-        if (days < 30) return `${days}d ago`
-        return new Date(date).toLocaleDateString()
-    }
-
     const tabs = [
         { id: 'overview', label: 'Overview' },
         { id: 'files', label: `Files (${files.length})` },
@@ -222,7 +211,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                             )}
                             <span className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
-                                {timeAgo(current.created_at)}
+                                {formatRelativeTime(current.created_at)}
                             </span>
                             {files.length > 0 && (
                                 <span className="flex items-center gap-1.5">
@@ -378,7 +367,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                                 {comment.user?.login}
                                             </span>
                                             <span className="text-xs text-slate-400">
-                                                {timeAgo(comment.created_at)}
+                                                {formatRelativeTime(comment.created_at)}
                                             </span>
                                         </div>
                                         <div className="prose prose-sm dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 [&_a]:text-indigo-600 dark:[&_a]:text-indigo-400 [&_code]:bg-slate-100 dark:[&_code]:bg-slate-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm">
@@ -514,7 +503,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                                 )}
                                             </div>
                                             <span className="text-xs text-slate-400 flex-shrink-0">
-                                                {timeAgo(review.submitted_at)}
+                                                {formatRelativeTime(review.submitted_at)}
                                             </span>
                                         </div>
                                     </Card>

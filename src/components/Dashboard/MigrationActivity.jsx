@@ -5,24 +5,13 @@ import {
   ArrowRight, Clock, FolderGit2, AlertTriangle
 } from 'lucide-react'
 import { SectionSpinner } from '../ui/Spinner'
+import { formatRelativeTime } from '../../utils/format'
 
 const STATUS_CONFIG = {
   complete: { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'Completed' },
   failed: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-500/10', label: 'Failed' },
   running: { icon: Loader2, color: 'text-blue-500', bg: 'bg-blue-500/10', label: 'Running', animate: true },
   pending: { icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10', label: 'Pending' },
-}
-
-function timeAgo(dateStr) {
-  if (!dateStr) return ''
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  const days = Math.floor(hrs / 24)
-  return `${days}d ago`
 }
 
 /**
@@ -117,7 +106,7 @@ export function MigrationActivity({ loading: parentLoading }) {
                         <span className="truncate">{job.targetFullName}</span>
                       </>
                     )}
-                    <span className="shrink-0">{timeAgo(job.completedAt || job.startedAt)}</span>
+                    <span className="shrink-0">{formatRelativeTime(job.completedAt || job.startedAt)}</span>
                   </div>
                 </div>
 

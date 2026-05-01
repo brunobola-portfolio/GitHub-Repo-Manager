@@ -10,6 +10,7 @@ import {
 import { Spinner } from '../ui/Spinner'
 import { AIIssuePlanner } from './AIIssuePlanner'
 import { useToast } from '../../hooks/useToast'
+import { formatRelativeTime } from '../../utils/format'
 
 export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }) {
     const { toast } = useToast()
@@ -84,18 +85,6 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
     const current = detail || issue
     const isOpen = current.state === 'open'
 
-    function timeAgo(date) {
-        // eslint-disable-next-line react-hooks/purity
-        const diff = Date.now() - new Date(date).getTime()
-        const mins = Math.floor(diff / 60000)
-        if (mins < 60) return `${mins}m ago`
-        const hours = Math.floor(mins / 60)
-        if (hours < 24) return `${hours}h ago`
-        const days = Math.floor(hours / 24)
-        if (days < 30) return `${days}d ago`
-        return new Date(date).toLocaleDateString()
-    }
-
     return (
         <motion.div
             initial={{ opacity: 0, x: 40 }}
@@ -144,7 +133,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                             )}
                             <span className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
-                                {timeAgo(current.created_at)}
+                                {formatRelativeTime(current.created_at)}
                             </span>
                             <span className="flex items-center gap-1">
                                 <MessageSquare className="w-3 h-3" />
@@ -258,7 +247,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                                         {comment.user?.login}
                                     </span>
                                     <span className="text-xs text-slate-400">
-                                        {timeAgo(comment.created_at)}
+                                        {formatRelativeTime(comment.created_at)}
                                     </span>
                                 </div>
                                 <div className="prose prose-sm dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 [&_a]:text-indigo-600 dark:[&_a]:text-indigo-400 [&_code]:bg-slate-100 dark:[&_code]:bg-slate-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm">

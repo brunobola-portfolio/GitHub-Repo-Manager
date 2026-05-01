@@ -1,23 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { ChevronDown, ChevronRight, CheckCircle } from 'lucide-react'
-
-/**
- * Convert a date string into a human-readable relative time.
- * @param {string} dateStr - ISO date string
- * @returns {string} e.g. "5m ago", "2h ago", "3d ago"
- */
-function timeAgo(dateStr) {
-  if (!dateStr) return ''
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const minutes = Math.floor(diff / 60_000)
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  return `${days}d ago`
-}
+import { formatRelativeTime } from '../../../utils/format'
 
 /**
  * Compact avatar placeholder using the first letter of the username.
@@ -50,7 +34,7 @@ function ReplyItem({ reply }) {
       <div className="flex items-center gap-2 mb-1">
         <Avatar login={login} size={5} />
         <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{login}</span>
-        <span className="text-xs text-gray-400 dark:text-gray-500">{timeAgo(reply.created_at)}</span>
+        <span className="text-xs text-gray-400 dark:text-gray-500">{formatRelativeTime(reply.created_at)}</span>
       </div>
       <div className="prose prose-sm dark:prose-invert max-w-none text-xs">
         <ReactMarkdown>{reply.body ?? ''}</ReactMarkdown>
@@ -157,7 +141,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
         <Avatar login={login} />
 
         <span className="font-semibold text-gray-700 dark:text-gray-200 text-xs">{login}</span>
-        <span className="text-xs text-gray-400 dark:text-gray-500">{timeAgo(comment.created_at)}</span>
+        <span className="text-xs text-gray-400 dark:text-gray-500">{formatRelativeTime(comment.created_at)}</span>
 
         {/* Pending badge */}
         {isPending && (
