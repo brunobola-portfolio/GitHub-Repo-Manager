@@ -21,13 +21,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const TEMPLATES_DIR = path.join(__dirname, 'license-templates')
 
 /**
- * Phase 1 ships MIT + BSD-3-Clause verbatim. Apache-2.0, GPL-3.0, and MPL-2.0
- * have very long canonical texts (10+ KB each) and are queued for a follow-up
- * commit that adds them via a build-time fetch from choosealicense.com.
- *
- * @see docs/plans/2026-05-01-community-health-ai-autofix.md (Task 1 follow-up)
+ * Canonical templates fetched from choosealicense.com (the authoritative
+ * GitHub-maintained mirror). Placeholders normalised to `{{year}}` / `{{owner}}`
+ * so the same substitution path works for every entry. MPL-2.0 has no
+ * per-project placeholders by design — its copyright notice belongs in source
+ * file headers, not in LICENSE itself.
  */
-export const SUPPORTED_LICENSES = ['MIT', 'BSD-3-Clause']
+export const SUPPORTED_LICENSES = ['MIT', 'BSD-3-Clause', 'Apache-2.0', 'GPL-3.0', 'MPL-2.0']
 
 function loadLicenseTemplate(id) {
 	if (!SUPPORTED_LICENSES.includes(id)) {

@@ -26,10 +26,27 @@ describe('generateLicense', () => {
 		expect(() => generateLicense({ licenseId: 'WTFPL', owner: 'x', year: 2026 })).toThrow(/unsupported/i)
 	})
 
-	it('throws on Apache-2.0 (queued for follow-up)', () => {
-		// Apache-2.0/GPL-3.0/MPL-2.0 have long canonical texts not yet shipped.
-		// Test locks in the expected behaviour so the follow-up commit can flip it.
-		expect(() => generateLicense({ licenseId: 'Apache-2.0', owner: 'x', year: 2026 })).toThrow(/unsupported/i)
+	it('substitutes {{year}} and {{owner}} in Apache-2.0', () => {
+		const out = generateLicense({ licenseId: 'Apache-2.0', owner: 'Acme', year: 2026 })
+		expect(out.content).toContain('Apache License')
+		expect(out.content).toContain('Version 2.0')
+		expect(out.content).toContain('Copyright 2026 Acme')
+		expect(out.content).not.toContain('{{')
+	})
+
+	it('substitutes {{year}} and {{owner}} in GPL-3.0', () => {
+		const out = generateLicense({ licenseId: 'GPL-3.0', owner: 'Acme', year: 2026 })
+		expect(out.content).toContain('GNU GENERAL PUBLIC LICENSE')
+		expect(out.content).toContain('Version 3')
+		expect(out.content).toContain('Copyright (C) 2026  Acme')
+		expect(out.content).not.toContain('{{')
+	})
+
+	it('returns canonical MPL-2.0 text (no placeholders required)', () => {
+		const out = generateLicense({ licenseId: 'MPL-2.0', owner: 'Acme', year: 2026 })
+		expect(out.content).toContain('Mozilla Public License Version 2.0')
+		// MPL-2.0 puts copyright in source file headers, not in LICENSE — no placeholders.
+		expect(out.content).not.toContain('{{')
 	})
 
 	it('FILE_GENERATORS.license is marked deterministic', () => {
