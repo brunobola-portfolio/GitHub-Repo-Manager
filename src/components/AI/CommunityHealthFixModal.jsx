@@ -1,0 +1,282 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+import { useCallback, useEffect, useState } from 'react'
+import { Sparkles, AlertTriangle, CheckCircle, ExternalLink, Settings as SettingsIcon } from 'lucide-react'
+import { Modal } from '../ui/Modal'
+import { Button } from '../ui/Button'
+import { Spinner } from '../ui/Spinner'
+import { friendlyAiError } from '../../utils/aiErrorFriendly'
+import { getCsrfToken } from '../../utils/api'
+
+/**
+ * State machine: idle | generating | preview | committing | committed | error
+ *
+ * - idle: just opened, waiting to call /generate
+ * - generating: /generate in flight
+ * - preview: content arrived; user can edit and Commit
+ * - committing: /commit-fix in flight
+ * - committed: success; show commit/PR URL
+ * - error: friendly error rendered with Retry CTA
+ */
+
+const SUPPORTED_LICENSES = ['MIT', 'BSD-3-Clause']
+
+export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCommitted }) {
+	const [state, setState] = useState('idle')
+	const [content, setContent] = useState('')
+	const [filePath, setFilePath] = useState('')
+	const [commitMessage, setCommitMessage] = useState('')
+	const [licenseId, setLicenseId] = useState('MIT')
+	const [committedResult, setCommittedResult] = useState(null)
+	const [error, setError] = useState(null)
+	const [aiNotConfigured, setAiNotConfigured] = useState(false)
+
+	const reset = useCallback(() => {
+		setState('idle')
+		setContent('')
+		setFilePath('')
+		setCommitMessage('')
+		setCommittedResult(null)
+		setError(null)
+		setAiNotConfigured(false)
+	}, [])
+
+	const callGenerate = useCallback(async (overrides = {}) => {
+		if (!repo?.owner?.login || !repo?.name || !fileType) return
+		setState('generating')
+		setError(null)
+		setAiNotConfigured(false)
+		try {
+			const csrf = await getCsrfToken()
+			const res = await fetch(`/api/repos/${repo.owner.login}/${repo.name}/community-health/generate`, {
+				method: 'POST',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+				body: JSON.stringify({ fileType, overrides }),
+			})
+			const json = await res.json().catch(() => ({}))
+			if (!res.ok) {
+				if (json.code === 'ai_not_configured') {
+					setAiNotConfigured(true)
+					setState('error')
+					return
+				}
+				setError(friendlyAiError({ status: res.status, body: json }))
+				setState('error')
+				return
+			}
+			setContent(json.content || '')
+			setFilePath(json.filePath || '')
+			setCommitMessage(json.suggestedCommitMessage || `chore: add ${fileType}`)
+			setState('preview')
+		} catch (e) {
+			setError({ headline: 'Could not reach the server.', detail: e.message || 'fetch failed' })
+			setState('error')
+		}
+	}, [repo, fileType])
+
+	// Reset on close in its own effect so the generation effect can have a
+	// clean dep list (no stale-state guard needed).
+	useEffect(() => {
+		// eslint-disable-next-line react-hooks/set-state-in-effect -- isOpen→false reset
+		if (!isOpen) reset()
+	}, [isOpen, reset])
+
+	// Auto-generate when modal opens. For the license picker, also re-generate
+	// when the user switches license — that's the desired behaviour.
+	useEffect(() => {
+		if (!isOpen) return
+		// eslint-disable-next-line react-hooks/set-state-in-effect -- modal-open kicks off fetch
+		if (fileType === 'license') callGenerate({ licenseId })
+		else callGenerate()
+	}, [isOpen, fileType, licenseId, callGenerate])
+
+	const callCommit = useCallback(async () => {
+		if (!content || !filePath || !commitMessage) return
+		setState('committing')
+		try {
+			const csrf = await getCsrfToken()
+			const res = await fetch(`/api/repos/${repo.owner.login}/${repo.name}/community-health/commit-fix`, {
+				method: 'POST',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+				body: JSON.stringify({ filePath, content, commitMessage, mode: 'direct' }),
+			})
+			const json = await res.json().catch(() => ({}))
+			if (!res.ok) {
+				setError({ headline: 'Commit failed', detail: json.error || `status ${res.status}` })
+				setState('error')
+				return
+			}
+			setCommittedResult(json)
+			setState('committed')
+			onCommitted?.(json)
+		} catch (e) {
+			setError({ headline: 'Could not reach the server.', detail: e.message || 'fetch failed' })
+			setState('error')
+		}
+	}, [content, filePath, commitMessage, repo, onCommitted])
+
+	const renderBody = () => {
+		if (state === 'generating') {
+			return (
+				<div className="flex flex-col items-center justify-center py-12 gap-3">
+					<Spinner />
+					<p className="text-sm text-slate-500 dark:text-slate-400">Generating with AI…</p>
+				</div>
+			)
+		}
+
+		if (state === 'error' && aiNotConfigured) {
+			return (
+				<div role="alert" className="flex flex-col items-center text-center gap-4 py-8">
+					<div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+						<Sparkles className="w-6 h-6 text-indigo-500" aria-hidden="true" />
+					</div>
+					<div>
+						<h3 className="font-bold text-slate-900 dark:text-white text-lg">AI is not configured</h3>
+						<p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+							Add a provider key in Settings to use AI-backed file generation.
+						</p>
+					</div>
+					<Button
+						as="a"
+						href="#"
+						onClick={(e) => {
+							e.preventDefault()
+							onClose?.()
+							window.dispatchEvent(new CustomEvent('app:open-settings', { detail: { section: 'ai' } }))
+						}}
+					>
+						<SettingsIcon className="w-4 h-4" /> Configure AI
+					</Button>
+				</div>
+			)
+		}
+
+		if (state === 'error') {
+			return (
+				<div role="alert" className="flex items-start gap-3 p-4 rounded-xl border border-rose-200/60 dark:border-rose-900/40 bg-rose-50/60 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300">
+					<AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+					<div className="flex-1 min-w-0">
+						<div className="font-semibold">{error?.headline || 'Something went wrong'}</div>
+						{error?.detail && <div className="text-xs opacity-90 mt-1">{error.detail}</div>}
+					</div>
+				</div>
+			)
+		}
+
+		if (state === 'committed') {
+			return (
+				<div className="flex flex-col items-center text-center gap-4 py-8">
+					<div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+						<CheckCircle className="w-6 h-6 text-emerald-500" aria-hidden="true" />
+					</div>
+					<div>
+						<h3 className="font-bold text-slate-900 dark:text-white text-lg">
+							{committedResult?.mode === 'pr-fallback' || committedResult?.mode === 'pr'
+								? 'Pull request opened'
+								: 'Committed'}
+						</h3>
+						<p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+							{committedResult?.mode === 'pr-fallback'
+								? `Default branch is protected — opened a PR on ${committedResult?.branch}.`
+								: committedResult?.mode === 'pr'
+									? `PR opened on ${committedResult?.branch}.`
+									: `Committed to ${committedResult?.branch}.`}
+						</p>
+					</div>
+					{committedResult?.prUrl && (
+						<a
+							href={committedResult.prUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+						>
+							View PR <ExternalLink className="w-3.5 h-3.5" />
+						</a>
+					)}
+				</div>
+			)
+		}
+
+		// preview / committing — show editor.
+		return (
+			<div className="flex flex-col gap-3">
+				{fileType === 'license' && (
+					<label className="flex items-center gap-2">
+						<span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">License:</span>
+						<select
+							value={licenseId}
+							onChange={(e) => setLicenseId(e.target.value)}
+							disabled={state === 'committing'}
+							className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
+						>
+							{SUPPORTED_LICENSES.map((id) => <option key={id} value={id}>{id}</option>)}
+						</select>
+					</label>
+				)}
+				<div className="flex items-center justify-between gap-2">
+					<span className="text-xs font-mono text-slate-500 dark:text-slate-400 truncate" title={filePath}>{filePath}</span>
+					<input
+						type="text"
+						value={commitMessage}
+						onChange={(e) => setCommitMessage(e.target.value)}
+						disabled={state === 'committing'}
+						className="flex-1 max-w-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+						placeholder="Commit message"
+					/>
+				</div>
+				<textarea
+					value={content}
+					onChange={(e) => setContent(e.target.value)}
+					disabled={state === 'committing'}
+					className="w-full h-72 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono leading-relaxed resize-none"
+					spellCheck={false}
+					aria-label={`${filePath} preview`}
+				/>
+			</div>
+		)
+	}
+
+	const renderFooter = () => {
+		if (state === 'committed') {
+			return <Button onClick={onClose}>Done</Button>
+		}
+		if (state === 'error' && !aiNotConfigured) {
+			return (
+				<>
+					<Button variant="ghost" onClick={onClose}>Cancel</Button>
+					<Button onClick={() => callGenerate(fileType === 'license' ? { licenseId } : {})}>Retry</Button>
+				</>
+			)
+		}
+		if (state === 'preview') {
+			return (
+				<>
+					<Button variant="ghost" onClick={onClose}>Cancel</Button>
+					<Button onClick={callCommit} disabled={!content || !filePath || !commitMessage}>Commit</Button>
+				</>
+			)
+		}
+		if (state === 'committing') {
+			return <Button disabled>Committing…</Button>
+		}
+		return null
+	}
+
+	return (
+		<Modal
+			isOpen={isOpen}
+			onClose={state === 'committing' ? undefined : onClose}
+			title="Fix with AI"
+			subtitle={fileType ? `Generate ${filePath || fileType.replace(/_/g, ' ')}` : undefined}
+			icon={Sparkles}
+			iconGradient="primary"
+			size="lg"
+			footer={renderFooter()}
+			closeOnBackdrop={state !== 'committing'}
+		>
+			{renderBody()}
+		</Modal>
+	)
+}
