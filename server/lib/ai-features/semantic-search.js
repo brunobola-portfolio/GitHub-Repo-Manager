@@ -2,6 +2,28 @@ import logger from '../logger.js';
 import { AIError, AI_ERROR_CODE } from '../ai-provider.js';
 
 /**
+ * Safely parse a stored embedding column. Embeddings are persisted as
+ * `JSON.stringify(Array<number>)` but corrupted rows (truncated writes,
+ * older schemas, manual edits) would crash the search loop with an
+ * unguarded JSON.parse. Returns null on any failure so callers can skip.
+ *
+ * @param {string|null|undefined} json
+ * @param {number|string} [repoId]   used only for the warn log breadcrumb
+ * @returns {Array<number>|null}
+ */
+function parseEmbedding(json, repoId) {
+    if (typeof json !== 'string' || json.length === 0) return null;
+    try {
+        const parsed = JSON.parse(json);
+        if (!Array.isArray(parsed)) return null;
+        return parsed;
+    } catch (err) {
+        logger.warn({ err, repoId }, 'semantic-search: skipping row with malformed embedding JSON');
+        return null;
+    }
+}
+
+/**
  * Cosine similarity between two equal-length vectors.
  * Returns a score in [-1, 1].
  */
@@ -66,7 +88,8 @@ export async function findSimilarById(ctx, repoId, { topK = 5, excludeSelf = tru
     }
     if (!row) return null;
 
-    const targetVec = JSON.parse(row.embedding);
+    const targetVec = parseEmbedding(row.embedding, repoId);
+    if (!targetVec) return null;
 
     let others;
     if (userId !== undefined && userId !== null) {
@@ -79,13 +102,14 @@ export async function findSimilarById(ctx, repoId, { topK = 5, excludeSelf = tru
             : db.prepare('SELECT re.repo_id, re.embedding, rm.topics, rm.summary FROM repo_embeddings re LEFT JOIN repo_metadata rm ON re.repo_id = rm.repo_id').all();
     }
 
-    const scored = others.map(o => {
-        const vec = JSON.parse(o.embedding);
-        return {
+    const scored = others.flatMap(o => {
+        const vec = parseEmbedding(o.embedding, o.repo_id);
+        if (!vec) return [];
+        return [{
             repoId: o.repo_id,
             score: cosineSimilarity(targetVec, vec),
             description: o.summary || ''
-        };
+        }];
     });
 
     return scored.sort((a, b) => b.score - a.score).slice(0, topK);
@@ -119,11 +143,12 @@ export async function semanticSearch(ctx, query, limit = 5, userId) {
         rows = db.prepare('SELECT repo_id, embedding FROM repo_embeddings').all();
     }
 
-    // 3. Rank by similarity
-    const results = rows.map(row => {
-        const embedding = JSON.parse(row.embedding);
+    // 3. Rank by similarity (skip rows whose embedding column is corrupted)
+    const results = rows.flatMap(row => {
+        const embedding = parseEmbedding(row.embedding, row.repo_id);
+        if (!embedding) return [];
         const score = cosineSimilarity(queryEmbedding, embedding);
-        return { repo_id: row.repo_id, score };
+        return [{ repo_id: row.repo_id, score }];
     });
 
     return results

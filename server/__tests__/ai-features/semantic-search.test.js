@@ -98,4 +98,50 @@ describe('ai-features/semantic-search.findSimilarById', () => {
         expect(out[0].score).toBeCloseTo(1);
         expect(out[1].repoId).toBe(2);
     });
+
+    it('skips candidate rows with malformed embedding JSON instead of crashing', async () => {
+        const target = { embedding: JSON.stringify([1, 0, 0]) };
+        const others = [
+            { repo_id: 2, embedding: '{not valid json', topics: null, summary: 'corrupt' },
+            { repo_id: 3, embedding: JSON.stringify([1, 0, 0]), topics: null, summary: 'C' },
+        ];
+        const db = {
+            prepare: () => ({
+                get: () => target,
+                all: () => others,
+            }),
+        };
+        const out = await findSimilarById({ db }, 1, { topK: 5 });
+        // Only the well-formed row should remain.
+        expect(out).toHaveLength(1);
+        expect(out[0].repoId).toBe(3);
+    });
+
+    it('returns null when the target row\'s embedding is malformed', async () => {
+        const db = {
+            prepare: () => ({
+                get: () => ({ embedding: 'totally bogus' }),
+                all: () => [],
+            }),
+        };
+        const result = await findSimilarById({ db }, 1);
+        expect(result).toBeNull();
+    });
+});
+
+describe('ai-features/semantic-search.semanticSearch — malformed rows', () => {
+    it('skips rows with malformed embedding JSON instead of throwing', async () => {
+        const rows = [
+            { repo_id: 1, embedding: JSON.stringify([1, 0, 0]) },
+            { repo_id: 2, embedding: '{this is invalid' },
+            { repo_id: 3, embedding: JSON.stringify([0, 1, 0]) },
+        ];
+        const db = buildDb({ all: rows });
+        const provider = buildProvider({ embed: vi.fn(async () => [1, 0, 0]) });
+        const out = await semanticSearch({ provider, db }, 'query', 5);
+        const ids = out.map(r => r.repo_id);
+        expect(ids).toContain(1);
+        expect(ids).toContain(3);
+        expect(ids).not.toContain(2);
+    });
 });
