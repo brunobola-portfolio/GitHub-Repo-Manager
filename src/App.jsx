@@ -31,7 +31,8 @@ import { CommandPalette } from './components/CommandPalette'
 import { useResponsiveLayout } from './hooks/useResponsiveLayout'
 import CollapsiblePanel from './components/ui/CollapsiblePanel'
 import { SlimSidebar } from './components/Sidebar'
-import { Menu, Building2, ChevronRight } from 'lucide-react'
+import { Menu, Building2, ChevronRight, Search } from 'lucide-react'
+import { MobileFAB } from './components/ui/MobileFAB'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SessionBanner } from './components/SessionBanner'
 import { BYOKUpgradeBanner } from './components/BYOKUpgradeBanner'
@@ -1317,6 +1318,13 @@ function AppContent() {
         onSelectRepo={handleOpenRepo}
         isAdmin={isAdmin}
         selectedRepoDetail={selectedRepoDetail}
+      />
+
+      {/* Mobile-only FAB to reach the command palette without a keyboard. */}
+      <MobileFAB
+        icon={Search}
+        label="Open command palette"
+        onClick={commandPalette.open}
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
