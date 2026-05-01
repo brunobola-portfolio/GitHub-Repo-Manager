@@ -33,6 +33,7 @@ export function DashboardPremium({
     loading,
     activity = [],
     onOrgClick,
+    onTeamClick,
     onViewChange,
     onSync,
     lastSyncedAt,
@@ -256,39 +257,59 @@ export function DashboardPremium({
                     defaultExpanded={true}
                 >
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-                        {teams.map(team => (
-                            <motion.div
-                                key={team.id}
-                                whileHover={{ y: -3 }}
-                                className="p-5 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/40 dark:border-slate-800/40 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-xl focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-inset transition-all"
-                            >
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-                                        <Users className="w-5 h-5 text-indigo-500" />
+                        {teams.map(team => {
+                            const interactive = typeof onTeamClick === 'function'
+                            const className = `text-left w-full p-5 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/40 dark:border-slate-800/40 rounded-xl transition-all ${
+                                interactive
+                                    ? 'cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset'
+                                    : ''
+                            }`
+                            const inner = (
+                                <>
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                                            <Users className="w-5 h-5 text-indigo-500" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h3 className="font-bold text-slate-900 dark:text-white truncate">
+                                                {team.name}
+                                            </h3>
+                                            {team.description && (
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                                    {team.description}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="min-w-0">
-                                        <h3 className="font-bold text-slate-900 dark:text-white truncate">
-                                            {team.name}
-                                        </h3>
-                                        {team.description && (
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                                {team.description}
-                                            </p>
-                                        )}
+                                    <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+                                        <span className="flex items-center gap-1">
+                                            <Users className="w-3.5 h-3.5" />
+                                            {team.members?.length || 0} members
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <Folder className="w-3.5 h-3.5" />
+                                            {team.repos?.length || 0} repos
+                                        </span>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
-                                    <span className="flex items-center gap-1">
-                                        <Users className="w-3.5 h-3.5" />
-                                        {team.members?.length || 0} members
-                                    </span>
-                                    <span className="flex items-center gap-1">
-                                        <Folder className="w-3.5 h-3.5" />
-                                        {team.repos?.length || 0} repos
-                                    </span>
-                                </div>
-                            </motion.div>
-                        ))}
+                                </>
+                            )
+                            return interactive ? (
+                                <motion.button
+                                    type="button"
+                                    key={team.id}
+                                    whileHover={{ y: -3 }}
+                                    className={className}
+                                    onClick={() => onTeamClick(team)}
+                                    aria-label={`Open team ${team.name}`}
+                                >
+                                    {inner}
+                                </motion.button>
+                            ) : (
+                                <motion.div key={team.id} whileHover={{ y: -3 }} className={className}>
+                                    {inner}
+                                </motion.div>
+                            )
+                        })}
                     </div>
                 </CategorySection>
             )}

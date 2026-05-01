@@ -757,6 +757,10 @@ function AppContent() {
                     handleOrgSelect(orgLogin)
                     setActiveView('repos')
                   }}
+                  onTeamClick={(team) => {
+                    setSelectedTeam(team)
+                    setActiveView('teams')
+                  }}
                   onSync={handleRefreshOrgs}
                   lastSyncedAt={syncStatus?.lastSync ? new Date(syncStatus.lastSync) : null}
                 />

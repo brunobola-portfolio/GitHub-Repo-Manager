@@ -67,7 +67,7 @@ export function ActivityChart({ activity = [], timeRange, loading }) {
             whileHover={{ y: -4 }}
         >
             <Card
-                className="p-4 sm:p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl hover:shadow-2xl hover:border-indigo-400/50 dark:hover:border-indigo-500/40 transition-all duration-300 cursor-pointer"
+                className="p-4 sm:p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl transition-all duration-300"
                 style={{ minHeight: `${chartHeight + 60}px` }}
             >
                 <div className="flex items-center mb-6">

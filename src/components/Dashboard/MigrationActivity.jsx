@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { SectionSpinner } from '../ui/Spinner'
 import { formatRelativeTime } from '../../utils/format'
+import { useModal } from '../../hooks/useModal'
 
 const STATUS_CONFIG = {
   complete: { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'Completed' },
@@ -20,6 +21,11 @@ const STATUS_CONFIG = {
 export function MigrationActivity({ loading: parentLoading }) {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const { openModal } = useModal()
+  // Single click-through target: every clickable surface in this widget opens
+  // the full Migration History modal so users can drill in. We intentionally
+  // don't pass per-job context since the modal does its own listing + sort.
+  const openHistory = () => openModal('showMigrationHistory')
 
   useEffect(() => {
     let mounted = true
@@ -58,14 +64,14 @@ export function MigrationActivity({ loading: parentLoading }) {
     <div className="space-y-5">
       {/* Summary stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <MiniStat label="Total Imports" value={stats.total} icon={Download} color="text-indigo-500" />
-        <MiniStat label="Successful" value={stats.completed} icon={CheckCircle2} color="text-emerald-500" />
-        <MiniStat label="In Progress" value={stats.running} icon={Loader2} color="text-blue-500" animate={stats.running > 0} />
+        <MiniStat label="Total Imports" value={stats.total} icon={Download} color="text-indigo-500" onClick={openHistory} />
+        <MiniStat label="Successful" value={stats.completed} icon={CheckCircle2} color="text-emerald-500" onClick={openHistory} />
+        <MiniStat label="In Progress" value={stats.running} icon={Loader2} color="text-blue-500" animate={stats.running > 0} onClick={openHistory} />
         {stats.tfvc > 0 && (
-          <MiniStat label="TFVC Converted" value={stats.tfvc} icon={AlertTriangle} color="text-amber-500" />
+          <MiniStat label="TFVC Converted" value={stats.tfvc} icon={AlertTriangle} color="text-amber-500" onClick={openHistory} />
         )}
         {stats.tfvc === 0 && (
-          <MiniStat label="Failed" value={stats.failed} icon={XCircle} color="text-red-500" />
+          <MiniStat label="Failed" value={stats.failed} icon={XCircle} color="text-red-500" onClick={openHistory} />
         )}
       </div>
 
@@ -80,11 +86,14 @@ export function MigrationActivity({ loading: parentLoading }) {
             const StatusIcon = config.icon
             const isTfvc = job.sourceType === 'azure-tfvc'
             return (
-              <motion.div
+              <motion.button
+                type="button"
                 key={job.id}
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-3 p-3 rounded-xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/30 dark:border-slate-800/30 hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
+                onClick={openHistory}
+                aria-label={`Open migration history for ${job.sourceName}`}
+                className="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/30 dark:border-slate-800/30 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset transition-all cursor-pointer"
               >
                 <div className={`w-8 h-8 rounded-lg ${config.bg} flex items-center justify-center shrink-0`}>
                   <StatusIcon className={`w-4 h-4 ${config.color} ${config.animate ? 'animate-spin' : ''}`} />
@@ -120,7 +129,7 @@ export function MigrationActivity({ loading: parentLoading }) {
                     </div>
                   </div>
                 )}
-              </motion.div>
+              </motion.button>
             )
           })}
         </div>
@@ -129,14 +138,26 @@ export function MigrationActivity({ loading: parentLoading }) {
   )
 }
 
-function MiniStat({ label, value, icon: Icon, color, animate }) {
-  return (
-    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/20 dark:border-slate-800/20">
+function MiniStat({ label, value, icon: Icon, color, animate, onClick }) {
+  const className = `flex items-center gap-2.5 p-3 rounded-xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/20 dark:border-slate-800/20 transition-all ${
+    onClick
+      ? 'cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset text-left w-full'
+      : ''
+  }`
+  const inner = (
+    <>
       <Icon className={`w-4 h-4 ${color} shrink-0 ${animate ? 'animate-spin' : ''}`} />
       <div className="min-w-0">
         <div className="text-lg font-bold text-slate-900 dark:text-white leading-none">{value}</div>
         <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">{label}</div>
       </div>
-    </div>
+    </>
+  )
+  return onClick ? (
+    <button type="button" onClick={onClick} aria-label={`Open migration history (${label}: ${value})`} className={className}>
+      {inner}
+    </button>
+  ) : (
+    <div className={className}>{inner}</div>
   )
 }

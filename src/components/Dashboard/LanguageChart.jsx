@@ -87,7 +87,7 @@ export function LanguageChart({ data = [], loading }) {
             whileHover={{ y: -4 }}
         >
             <Card
-                className="p-4 sm:p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl hover:shadow-2xl hover:border-pink-400/50 dark:hover:border-pink-500/40 transition-all duration-300 cursor-pointer"
+                className="p-4 sm:p-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/60 shadow-xl transition-all duration-300"
                 style={{ minHeight: `${chartHeight + 60}px` }}
             >
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
@@ -188,7 +188,7 @@ export function LanguageChart({ data = [], loading }) {
                                     {enrichedData.map((lang) => (
                                         <div
                                             key={lang.name}
-                                            className="flex items-center gap-3 group hover:bg-slate-50/80 dark:hover:bg-slate-800/40 p-2.5 rounded-xl transition-all duration-200 cursor-pointer"
+                                            className="flex items-center gap-3 group p-2.5 rounded-xl transition-all duration-200"
                                         >
                                             <div
                                                 className="w-4 h-4 rounded-md flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform"
