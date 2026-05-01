@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import {
 	generateLicense, generateCodeOfConduct,
 	generateContributing, generateSecurityMd, generateIssueTemplate, generatePRTemplate, generateReadmeStub,
+	commitOrOpenPR,
 	FILE_GENERATORS, SUPPORTED_LICENSES,
 } from '../lib/ai-features/community-health-fix.js'
 
@@ -153,5 +154,83 @@ describe('AI-backed generators', () => {
 		const provider = mkProvider('out')
 		await expect(generateContributing({ repo: { full_name: 'a/b' }, provider })).resolves.toBeDefined()
 		await expect(generateReadmeStub({ repo: { full_name: 'a/b' }, provider })).resolves.toBeDefined()
+	})
+})
+
+describe('commitOrOpenPR', () => {
+	const mkGithubApi = ({ protectedBranch = false, defaultBranch = 'main', prNumber = 42 } = {}) => {
+		return vi.fn(async (path, _token, options = {}) => {
+			if (path === `/repos/a/b`) return { data: { default_branch: defaultBranch } }
+			if (path.endsWith(`/branches/${defaultBranch}/protection`)) {
+				if (protectedBranch) return { data: { required_pull_request_reviews: {} } }
+				const err = new Error('Not Found'); err.status = 404; throw err
+			}
+			if (path.endsWith(`/git/refs/heads/${defaultBranch}`)) return { data: { object: { sha: 'baseSha123' } } }
+			if (path.endsWith('/git/refs') && options.method === 'POST') return { data: { ref: 'refs/heads/chore/health' } }
+			if (path.includes('/contents/') && options.method === 'PUT') {
+				return { data: { content: { sha: 'fileSha456' }, commit: { sha: 'commitSha789' } } }
+			}
+			if (path === '/repos/a/b/pulls' && options.method === 'POST') {
+				return { data: { number: prNumber, html_url: `https://github.com/a/b/pull/${prNumber}` } }
+			}
+			throw new Error(`unmocked githubApi call: ${path} (${options.method || 'GET'})`)
+		})
+	}
+
+	it('direct commit when default branch is unprotected', async () => {
+		const githubApi = mkGithubApi({ protectedBranch: false })
+		const out = await commitOrOpenPR({
+			owner: 'a', repo: 'b', token: 't', filePath: 'LICENSE', content: 'mit body',
+			commitMessage: 'add license', mode: 'direct', githubApi,
+		})
+		expect(out.mode).toBe('direct')
+		expect(out.branch).toBe('main')
+		expect(out.sha).toBe('fileSha456')
+	})
+
+	it('falls back to PR when default branch is protected', async () => {
+		const githubApi = mkGithubApi({ protectedBranch: true })
+		const out = await commitOrOpenPR({
+			owner: 'a', repo: 'b', token: 't', filePath: 'LICENSE', content: 'mit body',
+			commitMessage: 'add license', mode: 'direct', githubApi,
+		})
+		expect(out.mode).toBe('pr-fallback')
+		expect(out.prUrl).toMatch(/pull\/42$/)
+		expect(out.branch).toMatch(/^chore\/community-health-fixes-/)
+	})
+
+	it('honours explicit mode=pr without checking protection', async () => {
+		const githubApi = mkGithubApi({ protectedBranch: false })
+		const out = await commitOrOpenPR({
+			owner: 'a', repo: 'b', token: 't', filePath: 'LICENSE', content: 'mit body',
+			commitMessage: 'add license', mode: 'pr', githubApi,
+		})
+		expect(out.mode).toBe('pr')
+		expect(out.prUrl).toMatch(/pull\/42$/)
+		// Protection endpoint NOT called when mode is forced to pr.
+		const calls = githubApi.mock.calls.map(c => c[0])
+		expect(calls).not.toContain('/repos/a/b/branches/main/protection')
+	})
+
+	it('encodes file path with subdirectory correctly', async () => {
+		const githubApi = mkGithubApi({ protectedBranch: false })
+		await commitOrOpenPR({
+			owner: 'a', repo: 'b', token: 't',
+			filePath: '.github/PULL_REQUEST_TEMPLATE.md', content: 'x',
+			commitMessage: 'add pr template', mode: 'direct', githubApi,
+		})
+		const putCall = githubApi.mock.calls.find(c => c[2]?.method === 'PUT')
+		expect(putCall[0]).toBe('/repos/a/b/contents/.github/PULL_REQUEST_TEMPLATE.md')
+	})
+
+	it('base64-encodes content for the GitHub Contents API', async () => {
+		const githubApi = mkGithubApi({ protectedBranch: false })
+		await commitOrOpenPR({
+			owner: 'a', repo: 'b', token: 't',
+			filePath: 'LICENSE', content: 'hello world', commitMessage: 'm', mode: 'direct', githubApi,
+		})
+		const putCall = githubApi.mock.calls.find(c => c[2]?.method === 'PUT')
+		const body = JSON.parse(putCall[2].body)
+		expect(body.content).toBe(Buffer.from('hello world', 'utf8').toString('base64'))
 	})
 })

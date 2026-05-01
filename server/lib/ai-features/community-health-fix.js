@@ -146,6 +146,103 @@ export async function generateReadmeStub({ repo, provider }) {
 	}
 }
 
+// ----------------------------------------------------------------------------
+// GitHub commit helper with branch-protection PR fallback
+// ----------------------------------------------------------------------------
+
+/**
+ * Probe the default branch's protection rule. The /branches/{name}/protection
+ * endpoint returns 404 when the branch is unprotected. Anything else surfaces
+ * as a real error so the caller can decide; we treat 404 as "unprotected".
+ *
+ * @param {{ owner: string, repo: string, defaultBranch: string, token: string, githubApi: Function }} args
+ * @returns {Promise<boolean>} true when protection is configured, false when it isn't
+ */
+async function isDefaultBranchProtected({ owner, repo, defaultBranch, token, githubApi }) {
+	try {
+		await githubApi(`/repos/${owner}/${repo}/branches/${defaultBranch}/protection`, token)
+		return true
+	} catch (err) {
+		if (err?.status === 404) return false
+		throw err
+	}
+}
+
+/**
+ * Commit a file to the repo's default branch. If the default branch is
+ * protected (or `mode: 'pr'` is forced), instead create a topic branch off
+ * the default, PUT the file there, and open a PR back to the default.
+ *
+ * Why split detection from commit? Because the GitHub Contents API's PUT
+ * call against a protected branch fails with a generic 422 — by detecting
+ * up-front we can produce a clean `mode: 'pr-fallback'` outcome that the UI
+ * can render as "Opened PR instead" instead of looking like a failure.
+ *
+ * @param {object} args
+ * @param {string} args.owner
+ * @param {string} args.repo
+ * @param {string} args.token
+ * @param {string} args.filePath
+ * @param {string} args.content
+ * @param {string} args.commitMessage
+ * @param {'direct'|'pr'} [args.mode]
+ * @param {Function} args.githubApi
+ * @returns {Promise<{ mode: 'direct'|'pr'|'pr-fallback', branch: string, sha?: string, prUrl?: string }>}
+ */
+export async function commitOrOpenPR({ owner, repo, token, filePath, content, commitMessage, mode = 'direct', githubApi }) {
+	const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, token)
+	const defaultBranch = repoData?.default_branch || 'main'
+
+	const wantsPR = mode === 'pr'
+	const protectedDefault = !wantsPR && (await isDefaultBranchProtected({ owner, repo, defaultBranch, token, githubApi }))
+
+	if (wantsPR || protectedDefault) {
+		const branch = `chore/community-health-fixes-${Date.now()}`
+		const { data: ref } = await githubApi(`/repos/${owner}/${repo}/git/refs/heads/${defaultBranch}`, token)
+		const baseSha = ref?.object?.sha || ref?.sha
+		await githubApi(`/repos/${owner}/${repo}/git/refs`, token, {
+			method: 'POST',
+			body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: baseSha }),
+		})
+		await githubApi(`/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath).replace(/%2F/g, '/')}`, token, {
+			method: 'PUT',
+			body: JSON.stringify({
+				message: commitMessage,
+				content: Buffer.from(content, 'utf8').toString('base64'),
+				branch,
+			}),
+		})
+		const { data: pr } = await githubApi(`/repos/${owner}/${repo}/pulls`, token, {
+			method: 'POST',
+			body: JSON.stringify({
+				title: commitMessage,
+				head: branch,
+				base: defaultBranch,
+				body: 'Automated fix from Community Health auto-fix.',
+			}),
+		})
+		return {
+			mode: protectedDefault ? 'pr-fallback' : 'pr',
+			branch,
+			prUrl: pr?.html_url,
+		}
+	}
+
+	const { data: put } = await githubApi(`/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath).replace(/%2F/g, '/')}`, token, {
+		method: 'PUT',
+		body: JSON.stringify({
+			message: commitMessage,
+			content: Buffer.from(content, 'utf8').toString('base64'),
+			branch: defaultBranch,
+		}),
+	})
+	return {
+		mode: 'direct',
+		branch: defaultBranch,
+		sha: put?.content?.sha || put?.commit?.sha,
+	}
+}
+
 /**
  * Registry of file generators consumed by the /community-health/generate
  * endpoint. Each entry declares the destination path and whether the
