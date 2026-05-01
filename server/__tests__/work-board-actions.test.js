@@ -384,6 +384,47 @@ describe('POST /api/v1/work-board/ai-summary', () => {
         expect(res.status).toBe(500);
     });
 
+    it('returns 429 ai_quota_exceeded for AIError code QUOTA (no raw provider dump)', async () => {
+        const aiErr = Object.assign(new Error('Google rate-limit error: …long RPC dump…'), {
+            name: 'AIError',
+            code: 'QUOTA',
+            status: 403,
+        });
+        summaryLib.generateSummary.mockRejectedValueOnce(aiErr);
+        const res = await request(makeApp()).post('/api/v1/work-board/ai-summary').send({});
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('ai_quota_exceeded');
+        expect(res.body.error).not.toMatch(/Google rate-limit error/);
+        expect(res.body.error).toMatch(/quota/i);
+    });
+
+    it('returns 429 ai_rate_limited with retryAfterSec for AIError RATE_LIMITED', async () => {
+        const aiErr = Object.assign(new Error('429 Too Many Requests'), {
+            name: 'AIError',
+            code: 'RATE_LIMITED',
+            status: 429,
+            retryAfterMs: 14_000,
+        });
+        summaryLib.generateSummary.mockRejectedValueOnce(aiErr);
+        const res = await request(makeApp()).post('/api/v1/work-board/ai-summary').send({});
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('ai_rate_limited');
+        expect(res.body.retryAfterSec).toBe(14);
+        expect(res.body.error).toMatch(/14s/);
+    });
+
+    it('returns 503 ai_overload for AIError OVERLOAD', async () => {
+        const aiErr = Object.assign(new Error('upstream overload'), {
+            name: 'AIError',
+            code: 'OVERLOAD',
+            status: 529,
+        });
+        summaryLib.generateSummary.mockRejectedValueOnce(aiErr);
+        const res = await request(makeApp()).post('/api/v1/work-board/ai-summary').send({});
+        expect(res.status).toBe(503);
+        expect(res.body.code).toBe('ai_overload');
+    });
+
     it('pulls data sources from cache when fresh, falling back to aggregations on miss', async () => {
         // my_reviews fresh-cached, others miss:
         cacheLib.getCached.mockImplementation((userId, type) => {

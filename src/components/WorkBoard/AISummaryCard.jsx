@@ -10,6 +10,47 @@ function bulletHref(link) {
     return `https://github.com/${link.repo}/${path}/${link.number}`
 }
 
+/**
+ * Translate a server error response into a UI-friendly { headline, detail }.
+ * Server now classifies AIError codes (ai_quota_exceeded, ai_rate_limited, …)
+ * but legacy responses may still leak raw provider strings — guard with a
+ * keyword fallback so we never paste the full Google RPC dump into the UI.
+ */
+function friendlyAiError({ status, body }) {
+    const code = body?.code
+    const raw = typeof body?.error === 'string' ? body.error : ''
+    if (code === 'ai_quota_exceeded' || /quota/i.test(raw)) {
+        return {
+            headline: 'AI provider quota exceeded',
+            detail: 'Your free tier or plan has hit its limit. Check provider billing or switch to a key with remaining quota.',
+        }
+    }
+    if (code === 'ai_rate_limited' || status === 429 || /rate.?limit/i.test(raw)) {
+        const retry = Number(body?.retryAfterSec) > 0 ? ` Retry in ${Math.ceil(body.retryAfterSec)}s.` : ' Try again shortly.'
+        return {
+            headline: 'AI provider is rate-limited',
+            detail: `Too many requests in a short window.${retry}`,
+        }
+    }
+    if (code === 'ai_overload' || status === 503) {
+        return { headline: 'AI provider is overloaded', detail: 'The model is briefly unavailable. Try again shortly.' }
+    }
+    if (code === 'ai_timeout' || status === 504) {
+        return { headline: 'AI provider timed out', detail: 'The request did not complete in time.' }
+    }
+    if (code === 'ai_auth' || status === 401) {
+        return { headline: 'AI provider rejected the key', detail: 'Update or replace the provider key in Settings.' }
+    }
+    if (code === 'ai_network' || status === 502) {
+        return { headline: 'Could not reach the AI provider', detail: 'A network or upstream issue blocked the request.' }
+    }
+    // Fallback for anything else: short headline, hide raw provider noise.
+    return {
+        headline: 'AI summary failed',
+        detail: raw && raw.length < 200 ? raw : `The AI provider returned an error (status ${status}).`,
+    }
+}
+
 function UrgencyGauge({ score }) {
     const clamped = Math.max(0, Math.min(1, Number(score) || 0))
     const angle = -180 + 180 * clamped
@@ -64,12 +105,20 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                     setState({ status: 'hidden', data: null, error: null })
                     return
                 }
-                setState({ status: 'error', data: null, error: json.error || `status ${res.status}` })
+                setState({
+                    status: 'error',
+                    data: null,
+                    error: friendlyAiError({ status: res.status, body: json }),
+                })
                 return
             }
             setState({ status: 'ready', data: json.data, error: null })
         } catch (e) {
-            setState({ status: 'error', data: null, error: e.message || 'fetch failed' })
+            setState({
+                status: 'error',
+                data: null,
+                error: { headline: 'Could not reach the server.', detail: e.message || 'fetch failed' },
+            })
         }
     }, [])
 
@@ -97,11 +146,28 @@ export function AISummaryCard({ meta: metaProp } = {}) {
         )
     }
     if (state.status === 'error') {
+        // Tolerate legacy string errors (e.g. tests, older callers) and the new
+        // { headline, detail } shape produced by friendlyAiError.
+        const err = typeof state.error === 'string'
+            ? { headline: 'AI summary failed', detail: state.error }
+            : (state.error || { headline: 'AI summary failed', detail: '' })
         return (
-            <div className="rounded-2xl border border-rose-200/60 dark:border-rose-900/40 bg-rose-50/60 dark:bg-rose-950/20 p-3 text-sm text-rose-700 dark:text-rose-300 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" aria-hidden="true" />
-                <span>AI summary failed. {state.error}</span>
-                <button type="button" onClick={fetchSummary} className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-rose-700 dark:text-rose-300 bg-white/60 dark:bg-slate-900/40 hover:bg-white dark:hover:bg-slate-900 transition">
+            <div
+                role="alert"
+                className="rounded-2xl border border-rose-200/60 dark:border-rose-900/40 bg-rose-50/60 dark:bg-rose-950/20 p-3 text-sm text-rose-700 dark:text-rose-300 flex items-start gap-3"
+            >
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                <div className="flex-1 min-w-0">
+                    <div className="font-medium">{err.headline}</div>
+                    {err.detail && (
+                        <div className="text-xs opacity-90 mt-0.5">{err.detail}</div>
+                    )}
+                </div>
+                <button
+                    type="button"
+                    onClick={fetchSummary}
+                    className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-rose-700 dark:text-rose-300 bg-white/60 dark:bg-slate-900/40 hover:bg-white dark:hover:bg-slate-900 transition"
+                >
                     Retry
                 </button>
             </div>

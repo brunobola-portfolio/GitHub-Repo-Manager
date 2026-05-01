@@ -85,4 +85,40 @@ describe('AISummaryCard', () => {
         fireEvent.click(retry)
         await waitFor(() => expect(screen.getByText('after retry')).toBeInTheDocument())
     })
+
+    it('quota error renders a clean headline (no raw provider RPC dump)', async () => {
+        const longRawError = '[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/... [429 Too Many Requests] You exceeded your current quota, please check your plan and billing details.'
+        global.fetch.mockResolvedValue({
+            ok: false,
+            status: 429,
+            json: async () => ({ error: longRawError, code: 'ai_quota_exceeded' }),
+        })
+        render(<AISummaryCard />)
+        await waitFor(() => expect(screen.getByText(/quota exceeded/i)).toBeInTheDocument())
+        // The raw provider URL must not appear in the rendered DOM
+        expect(screen.queryByText(/generativelanguage\.googleapis\.com/)).toBeNull()
+    })
+
+    it('rate-limited error shows retry-in-Ns when retryAfterSec present', async () => {
+        global.fetch.mockResolvedValue({
+            ok: false,
+            status: 429,
+            json: async () => ({ error: 'rate limited', code: 'ai_rate_limited', retryAfterSec: 14 }),
+        })
+        render(<AISummaryCard />)
+        await waitFor(() => expect(screen.getByText(/rate-limited/i)).toBeInTheDocument())
+        expect(screen.getByText(/retry in 14s/i)).toBeInTheDocument()
+    })
+
+    it('legacy raw quota text without code still gets cleaned up', async () => {
+        // Older server responses may not include `code`. The client still detects
+        // /quota/i and renders the friendly headline.
+        global.fetch.mockResolvedValue({
+            ok: false,
+            status: 500,
+            json: async () => ({ error: 'You exceeded your current quota — long unfriendly Google RPC dump goes here…' }),
+        })
+        render(<AISummaryCard />)
+        await waitFor(() => expect(screen.getByText(/quota exceeded/i)).toBeInTheDocument())
+    })
 })
