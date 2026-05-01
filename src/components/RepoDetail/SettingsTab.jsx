@@ -463,6 +463,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                                     : 'Archived repos become read-only — no pushes, issues, or actions. Reversible.'}
                             </p>
                         </div>
+                        {/* danger-button-allowed: handleArchiveToggle (line ~153) opens setConfirmAction modal — indirect confirm pattern */}
                         <Button variant="danger" size="sm" onClick={handleArchiveToggle}>
                             {repoData.archived
                                 ? <><ArchiveRestore className="w-3.5 h-3.5 mr-1" /> Unarchive</>
