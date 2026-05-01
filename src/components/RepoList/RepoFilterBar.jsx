@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import {
 	RefreshCw, Loader2, Search, LayoutGrid, List as ListIcon,
-	CheckSquare, X, Sparkles, ChevronDown, ArrowRightLeft
+	CheckSquare, X, Sparkles, ChevronDown, ArrowRightLeft, SlidersHorizontal
 } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { Button } from '../ui/Button'
 import { Select } from '../ui/Select'
+import { MobileDrawer } from '../MobileDrawer'
+import { useMobileBreakpoint } from '../../hooks/useMobileBreakpoint'
 
 /**
  * Glassmorphic toolbar: bulk-selection menu, search (plain + AI), view
@@ -46,6 +48,16 @@ export function RepoFilterBar({
 	loading,
 }) {
 	const [showSelectionMenu, setShowSelectionMenu] = useState(false)
+	const [filterSheetOpen, setFilterSheetOpen] = useState(false)
+	const isMobile = useMobileBreakpoint()
+
+	// Count active filters (everything except 'all') so the mobile button can
+	// show a badge — keeps the user oriented without opening the sheet.
+	const activeFilterCount = [
+		typeFilter !== 'all',
+		visibilityFilter !== 'all',
+		languageFilter !== 'all',
+	].filter(Boolean).length
 
 	// Close selection dropdown on click outside or scroll
 	useEffect(() => {
@@ -177,58 +189,169 @@ export function RepoFilterBar({
 				</div>
 			</div>
 
-			{/* Filters */}
-			<div className="flex items-center gap-1.5 w-full md:w-auto flex-wrap md:flex-nowrap min-w-0">
-				<Select
-					value={typeFilter}
-					onChange={setTypeFilter}
-					options={[
-						{ value: 'all', label: 'All Types' },
-						{ value: 'source', label: 'Sources' },
-						{ value: 'fork', label: 'Forks' },
-						{ value: 'archived', label: 'Archived' }
-					]}
-					label="Repository Type"
-					size="sm"
-					className="flex-1 min-w-0"
-				/>
-				<Select
-					value={visibilityFilter}
-					onChange={setVisibilityFilter}
-					options={[
-						{ value: 'all', label: 'All Visibility' },
-						{ value: 'public', label: 'Public' },
-						{ value: 'private', label: 'Private' }
-					]}
-					label="Repository Visibility"
-					size="sm"
-					className="flex-1 min-w-0"
-				/>
-				<Select
-					value={languageFilter}
-					onChange={setLanguageFilter}
-					options={[
-						{ value: 'all', label: 'All Languages' },
-						...availableLanguages.map(l => ({ value: l, label: l }))
-					]}
-					label="Programming Language"
-					size="sm"
-					className="flex-1 min-w-0"
-				/>
+			{/* Filters — desktop (>=md): inline; mobile (<md): single "Filter" button that opens a bottom sheet */}
+			{isMobile ? (
+				<div className="flex items-center gap-1.5 w-full">
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={() => setFilterSheetOpen(true)}
+						aria-label={`Open filters${activeFilterCount > 0 ? ` (${activeFilterCount} active)` : ''}`}
+						className="flex-1 justify-start"
+					>
+						<SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+						<span>Filter</span>
+						{activeFilterCount > 0 && (
+							<span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-semibold rounded-full bg-indigo-500 text-white">
+								{activeFilterCount}
+							</span>
+						)}
+					</Button>
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={onRefresh}
+						disabled={loading}
+						aria-label="Refresh repositories"
+						className="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex-shrink-0"
+					>
+						<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+					</Button>
+				</div>
+			) : (
+				<div className="flex items-center gap-1.5 w-full md:w-auto flex-wrap md:flex-nowrap min-w-0">
+					<Select
+						value={typeFilter}
+						onChange={setTypeFilter}
+						options={[
+							{ value: 'all', label: 'All Types' },
+							{ value: 'source', label: 'Sources' },
+							{ value: 'fork', label: 'Forks' },
+							{ value: 'archived', label: 'Archived' }
+						]}
+						label="Repository Type"
+						size="sm"
+						className="flex-1 min-w-0"
+					/>
+					<Select
+						value={visibilityFilter}
+						onChange={setVisibilityFilter}
+						options={[
+							{ value: 'all', label: 'All Visibility' },
+							{ value: 'public', label: 'Public' },
+							{ value: 'private', label: 'Private' }
+						]}
+						label="Repository Visibility"
+						size="sm"
+						className="flex-1 min-w-0"
+					/>
+					<Select
+						value={languageFilter}
+						onChange={setLanguageFilter}
+						options={[
+							{ value: 'all', label: 'All Languages' },
+							...availableLanguages.map(l => ({ value: l, label: l }))
+						]}
+						label="Programming Language"
+						size="sm"
+						className="flex-1 min-w-0"
+					/>
 
-				<div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block"></div>
+					<div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block"></div>
 
-				<Button
-					variant="ghost"
-					size="sm"
-					onClick={onRefresh}
-					disabled={loading}
-					aria-label="Refresh repositories"
-					className="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={onRefresh}
+						disabled={loading}
+						aria-label="Refresh repositories"
+						className="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
+					>
+						<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+					</Button>
+				</div>
+			)}
+
+			{/* Mobile filter sheet — same selects, stacked vertically with full labels */}
+			{isMobile && (
+				<MobileDrawer
+					isOpen={filterSheetOpen}
+					onClose={() => setFilterSheetOpen(false)}
+					side="bottom"
 				>
-					<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
-				</Button>
-			</div>
+					<div className="flex flex-col gap-4 pb-2">
+						<h3 className="text-sm font-semibold text-slate-900 dark:text-white">Filter repositories</h3>
+						<div className="flex flex-col gap-3">
+							<div>
+								<div className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Type</div>
+								<Select
+									value={typeFilter}
+									onChange={setTypeFilter}
+									options={[
+										{ value: 'all', label: 'All Types' },
+										{ value: 'source', label: 'Sources' },
+										{ value: 'fork', label: 'Forks' },
+										{ value: 'archived', label: 'Archived' },
+									]}
+									label="Repository Type"
+									size="md"
+									className="w-full"
+								/>
+							</div>
+							<div>
+								<div className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Visibility</div>
+								<Select
+									value={visibilityFilter}
+									onChange={setVisibilityFilter}
+									options={[
+										{ value: 'all', label: 'All Visibility' },
+										{ value: 'public', label: 'Public' },
+										{ value: 'private', label: 'Private' },
+									]}
+									label="Repository Visibility"
+									size="md"
+									className="w-full"
+								/>
+							</div>
+							<div>
+								<div className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Language</div>
+								<Select
+									value={languageFilter}
+									onChange={setLanguageFilter}
+									options={[
+										{ value: 'all', label: 'All Languages' },
+										...availableLanguages.map(l => ({ value: l, label: l })),
+									]}
+									label="Programming Language"
+									size="md"
+									className="w-full"
+								/>
+							</div>
+						</div>
+						<div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={() => {
+									setTypeFilter('all')
+									setVisibilityFilter('all')
+									setLanguageFilter('all')
+								}}
+								disabled={activeFilterCount === 0}
+							>
+								Clear filters
+							</Button>
+							<Button
+								variant="primary"
+								size="sm"
+								onClick={() => setFilterSheetOpen(false)}
+							>
+								Done
+							</Button>
+						</div>
+					</div>
+				</MobileDrawer>
+			)}
 		</div>
 	)
 }

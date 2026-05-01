@@ -57,6 +57,42 @@ State & data:
 - `src/hooks/useToast.js`
   - Provides a simple toast API (`toast.success`, `toast.error`) used across the UI.
 
+## Responsive layout — mobile primitives
+
+Slice 5 ships three primitives that turn most desktop flows into usable mobile
+ones without rewriting per-page layouts:
+
+- [`useViewportSafeHeight`](../../src/hooks/useViewportSafeHeight.js) — returns
+  the visual viewport height, accounting for iOS Safari URL-bar collapse.
+  Falls back to `window.innerHeight` when `visualViewport` is unavailable.
+- [`<MobileFAB>`](../../src/components/ui/MobileFAB.jsx) — floating action
+  button rendered only at `< md`. Used in `App.jsx` to expose the command
+  palette on touch devices that don't have a Cmd+K shortcut. Hidden on
+  desktop. `shiftAboveBottomBar` lifts it to `bottom-20` for pages with a
+  bottom tab bar.
+- [`<ModalSticky>`](../../src/components/ui/ModalSticky.jsx) — wraps `<Modal>`
+  with mobile-aware layout: full-height container, scrolling body, sticky
+  footer pushed to the bottom edge. Backwards-compatible with `<Modal>` at
+  `>= md` (renders the same DOM, no behaviour change).
+
+Breakpoint convention: `useMobileBreakpoint()` returns `true` for `< md`
+(768 px). Anything tighter (`< sm` = 640 px) is targeted directly via Tailwind
+classes — e.g. dashboard StatCards stack 1-wide via `grid-cols-1 sm:grid-cols-2`.
+
+The toast container clamps individual toasts to `max-w-[calc(100vw-2rem)]`
+so they never overflow the viewport on narrow phones.
+
+Phase 1 (this slice) ships the three primitives + toast clamp + Dashboard
+StatCard 1-wide stack + command palette FAB. The broader audit (Sidebar
+drawer, RepoFilterBar sheet, RepoDetail Settings sticky save bar, WorkBoard
+KPIs/tabs, SettingsModal section strip, MigrationWizard responsive sweep,
+existing-modal `<ModalSticky>` migration, Playwright mobile project) is
+queued for follow-up — see
+[`docs/plans/2026-05-01-mobile-parity-sweep.md`](../plans/2026-05-01-mobile-parity-sweep.md)
+Tasks 4–13.
+
+Spec: [`docs/specs/2026-05-01-mobile-parity-sweep.md`](../specs/2026-05-01-mobile-parity-sweep.md).
+
 ## Backend
 
 Entry point: `server/index.js`
