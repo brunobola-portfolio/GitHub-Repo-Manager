@@ -17,8 +17,6 @@ export function RepoGrid({
 	onToggle,
 	onAction,
 	onContextMenu,
-	onOpenInsights,
-	onOpenHealth,
 	onExplainHealth,
 	onRepoClick,
 }) {
@@ -55,8 +53,6 @@ export function RepoGrid({
 					onToggle={() => onToggle(repo.id)}
 					onAction={onAction}
 					onContextMenu={(e) => onContextMenu(e, repo)}
-					onOpenInsights={() => onOpenInsights(repo)}
-					onOpenHealth={() => onOpenHealth(repo)}
 					onExplainHealth={onExplainHealth ? (r) => onExplainHealth(r) : undefined}
 					onRepoClick={onRepoClick}
 				/>

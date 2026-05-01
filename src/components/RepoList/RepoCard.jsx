@@ -1,14 +1,60 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
 import {
-	GitFork, Lock, Globe, ExternalLink, Archive, Star,
-	MoreHorizontal, CheckSquare, Brain, Shield, AlertCircle
+	GitFork, Lock, Globe, Star,
+	MoreHorizontal, CheckSquare, AlertCircle
 } from 'lucide-react'
 import { Badge } from '../ui/Badge'
 import { formatCompact } from '../../utils/format'
 import { TrackedDot } from '../WorkBoard/TrackedDot'
 import { RepoHealthBadge } from '../AI/RepoHealthBadge'
 import { useRepoMetadata } from '../../hooks/useRepoMetadata'
+import { repoActions } from '../../actions/repoActions'
+
+const QUICK_LIMIT = 5
+
+const resolveValue = (val, repo) => (typeof val === 'function' ? val(repo) : val)
+
+function RepoCardQuickActions({ repo, onAction, onContextMenu }) {
+	const top = Object.values(repoActions)
+		.filter((a) => a.surfaces.includes('quickAction'))
+		.filter((a) => (a.isApplicable ? a.isApplicable(repo) : true))
+		.sort((a, b) => (a.quickActionPriority ?? 999) - (b.quickActionPriority ?? 999))
+		.slice(0, QUICK_LIMIT)
+
+	return (
+		<div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300">
+			{top.map((a) => {
+				const Icon = resolveValue(a.icon, repo)
+				const label = resolveValue(a.label, repo)
+				const description = resolveValue(a.description, repo)
+				return (
+					<motion.button
+						key={a.id}
+						onClick={(e) => { e.stopPropagation(); onAction(a.id, repo) }}
+						whileHover={{ scale: 1.1 }}
+						whileTap={{ scale: 0.9 }}
+						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
+						title={description ? `${label} — ${description}` : label}
+						aria-label={label}
+					>
+						<Icon className="w-4 h-4" />
+					</motion.button>
+				)
+			})}
+			<motion.button
+				onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
+				whileHover={{ scale: 1.1 }}
+				whileTap={{ scale: 0.9 }}
+				className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
+				title="More actions"
+				aria-label="More actions"
+			>
+				<MoreHorizontal className="w-4 h-4" />
+			</motion.button>
+		</div>
+	)
+}
 
 /**
  * One repository row, rendered either as a grid card or a list row.
@@ -30,8 +76,6 @@ export const RepoCard = memo(function RepoCard({
 	onToggle,
 	onAction,
 	onContextMenu,
-	onOpenInsights,
-	onOpenHealth,
 	onExplainHealth,
 	onRepoClick,
 }) {
@@ -179,60 +223,7 @@ export const RepoCard = memo(function RepoCard({
 				<div className="flex-1"></div>
 
 				{/* Actions (Grid: Bottom Right, List: Right Side) */}
-				<div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300">
-					<motion.button
-						onClick={(e) => { e.stopPropagation(); window.open(repo.html_url, '_blank') }}
-						whileHover={{ scale: 1.1, rotate: 5 }}
-						whileTap={{ scale: 0.9 }}
-						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
-						title="Open on GitHub"
-						aria-label="Open on GitHub"
-					>
-						<ExternalLink className="w-4 h-4" />
-					</motion.button>
-					<motion.button
-						onClick={(e) => { e.stopPropagation(); onAction('archive', repo, !repo.archived) }}
-						whileHover={{ scale: 1.1, rotate: -5 }}
-						whileTap={{ scale: 0.9 }}
-						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
-						title={repo.archived ? "Unarchive" : "Archive"}
-						aria-label={repo.archived ? "Unarchive repository" : "Archive repository"}
-					>
-						<Archive className="w-4 h-4" />
-					</motion.button>
-					<motion.button
-						onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
-						whileHover={{ scale: 1.1 }}
-						whileTap={{ scale: 0.9 }}
-						className="p-2.5 sm:p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors md:hidden"
-						title="More Actions"
-						aria-label="More actions"
-					>
-						<MoreHorizontal className="w-4 h-4" />
-					</motion.button>
-					<motion.button
-						onClick={(e) => { e.stopPropagation(); onOpenInsights() }}
-						whileHover={{ scale: 1.1, y: -2 }}
-						whileTap={{ scale: 0.9 }}
-						className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-500 transition-colors"
-						title="AI Insights"
-						aria-label="AI Insights"
-					>
-						<Brain className="w-4 h-4" />
-					</motion.button>
-					{onOpenHealth && (
-						<motion.button
-							onClick={(e) => { e.stopPropagation(); onOpenHealth() }}
-							whileHover={{ scale: 1.1, y: -2 }}
-							whileTap={{ scale: 0.9 }}
-							className="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-500 transition-colors"
-							title="Community Health"
-							aria-label="Community Health"
-						>
-							<Shield className="w-4 h-4" />
-						</motion.button>
-					)}
-				</div>
+				<RepoCardQuickActions repo={repo} onAction={onAction} onContextMenu={onContextMenu} />
 			</div>
 			{isGrid && repo.pushed_at && (
 				<p className="hidden lg:block text-xs text-slate-400 dark:text-slate-500 mt-1.5">

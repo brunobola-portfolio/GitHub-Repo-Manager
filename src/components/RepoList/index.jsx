@@ -136,10 +136,8 @@ export function RepoList({
 					selectedIds={selectedIds}
 					contextTargetId={repoMenu?.repo?.id}
 					onToggle={toggleSelect}
-					onAction={onQuickAction}
+					onAction={dispatch}
 					onContextMenu={handleContextMenu}
-					onOpenInsights={(repo) => openModalWithData('showRepoInsights', { repo })}
-					onOpenHealth={(repo) => openModalWithData('showCommunityHealth', repo)}
 					onExplainHealth={(repo) => openModalWithData('showRepoInsights', { repo, initialTab: 'quality' })}
 					onRepoClick={onRepoClick}
 				/>
