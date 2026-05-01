@@ -155,6 +155,7 @@ export function ConflictPanel({ conflict, repoName, onResolve, resolution }) {
                             This will overwrite the existing target repository. This cannot be undone.
                         </p>
                         <div className="flex gap-2">
+                            {/* danger-button-allowed: in-card 2-step confirm flow — pendingAction state IS the gate, modal would be redundant */}
                             <Button variant="danger" size="xs" onClick={() => onResolve({ action: 'replace' })}>
                                 <Trash2 className="w-3.5 h-3.5" />
                                 Confirm Replace
