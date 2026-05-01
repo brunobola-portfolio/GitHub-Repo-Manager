@@ -76,9 +76,15 @@ async function handleAIResponse(res, operation) {
 // "Connect AI to see X".
 
 const NEEDS_CONFIG_NOTE = 'Connect an AI provider in Settings → AI Configuration to see real analysis.'
+const RUNTIME_UNAVAILABLE_NOTE = 'AI provider is temporarily unavailable — please try again in a moment.'
 
-const unconfiguredAnalysis = (repo) => ({
-    summary: NEEDS_CONFIG_NOTE,
+// Honest placeholder factories. The `note` helper makes the same shape work
+// for both the unconfigured short-circuit and the runtime-503 path; only the
+// summary text and the flag carrier differ. Consumers branch on
+// `aiConfigured` (false → "set me up") vs `runtimeUnavailable` (true →
+// "transient failure, retry").
+const unconfiguredAnalysis = (repo, note = NEEDS_CONFIG_NOTE) => ({
+    summary: note,
     health_score: null,
     project_type: null,
     suggested_topics: [],
@@ -91,25 +97,25 @@ const unconfiguredAnalysis = (repo) => ({
     language: repo?.language,
 })
 
-const unconfiguredQualityReport = (repo) => ({
+const unconfiguredQualityReport = (repo, note = NEEDS_CONFIG_NOTE) => ({
     score: null,
     breakdown: null,
     patterns: null,
     recommendations: [],
-    summary: NEEDS_CONFIG_NOTE,
+    summary: note,
     repo: repo?.full_name,
 })
 
-const unconfiguredReadmeEnhancement = () => ({
+const unconfiguredReadmeEnhancement = (note = NEEDS_CONFIG_NOTE) => ({
     enhancement: null,
     missingSections: [],
     patterns: null,
-    note: NEEDS_CONFIG_NOTE,
+    note,
 })
 
-const unconfiguredSearchResults = () => {
+const unconfiguredSearchResults = (note = NEEDS_CONFIG_NOTE) => {
     const arr = []
-    arr.note = NEEDS_CONFIG_NOTE
+    arr.note = note
     return arr
 }
 
@@ -133,10 +139,17 @@ export const aiApi = {
             body: JSON.stringify({ repo })
         });
 
-        // Provider failed at runtime — give the UI an honest placeholder shape
-        // (null scores) instead of fabricated numbers.
+        // Provider failed at runtime — user IS configured, the provider just
+        // returned 503. Differentiate from the unconfigured case so the UI can
+        // render a "try again" affordance instead of "connect AI".
         if (res.status === 503) {
-            return { success: true, analysis: unconfiguredAnalysis(repo), mock: true, aiConfigured: false };
+            return {
+                success: true,
+                analysis: unconfiguredAnalysis(repo, RUNTIME_UNAVAILABLE_NOTE),
+                mock: true,
+                aiConfigured: true,
+                runtimeUnavailable: true,
+            };
         }
         return handleAIResponse(res, 'index');
     },
@@ -162,12 +175,13 @@ export const aiApi = {
             credentials: 'include'
         });
 
-        // Provider failed — return an empty list with an honest "configure AI"
-        // note rather than fabricated matches.
+        // Provider failed at runtime — user IS configured but provider 503'd.
+        // Surface a "try again" note so the UI doesn't push them back to setup.
         if (res.status === 503) {
-            const results = unconfiguredSearchResults()
+            const results = unconfiguredSearchResults(RUNTIME_UNAVAILABLE_NOTE)
             results.mock = true
-            results.aiConfigured = false
+            results.aiConfigured = true
+            results.runtimeUnavailable = true
             return results
         }
         return handleAIResponse(res, 'search');
@@ -263,7 +277,13 @@ export const aiApi = {
         });
 
         if (res.status === 503) {
-            return { success: true, ...unconfiguredReadmeEnhancement(), mock: true, aiConfigured: false };
+            return {
+                success: true,
+                ...unconfiguredReadmeEnhancement(RUNTIME_UNAVAILABLE_NOTE),
+                mock: true,
+                aiConfigured: true,
+                runtimeUnavailable: true,
+            };
         }
         return handleAIResponse(res, 'enhance README');
     },
@@ -287,7 +307,14 @@ export const aiApi = {
         });
 
         if (res.status === 503) {
-            return { success: true, report: unconfiguredQualityReport(repo), repo: repo.full_name, mock: true, aiConfigured: false };
+            return {
+                success: true,
+                report: unconfiguredQualityReport(repo, RUNTIME_UNAVAILABLE_NOTE),
+                repo: repo.full_name,
+                mock: true,
+                aiConfigured: true,
+                runtimeUnavailable: true,
+            };
         }
         return handleAIResponse(res, 'quality report');
     },
@@ -302,12 +329,12 @@ export const aiApi = {
 
         // Honest unconfigured/runtime-failure placeholder: signal that no
         // analysis ran instead of fabricating health scores.
-        const buildPlaceholder = () => ({
+        const buildPlaceholder = (note = NEEDS_CONFIG_NOTE) => ({
             success: true,
             processed: 0,
-            results: repos.map(r => ({ repo: r.full_name, success: false, health_score: null, note: NEEDS_CONFIG_NOTE })),
+            results: repos.map(r => ({ repo: r.full_name, success: false, health_score: null, note })),
             skipped: repos.length,
-            note: NEEDS_CONFIG_NOTE,
+            note,
         });
 
         const shortCircuit = await withAIConfigured(buildPlaceholder);
@@ -321,7 +348,12 @@ export const aiApi = {
         });
 
         if (res.status === 503) {
-            return { ...buildPlaceholder(), mock: true, aiConfigured: false };
+            return {
+                ...buildPlaceholder(RUNTIME_UNAVAILABLE_NOTE),
+                mock: true,
+                aiConfigured: true,
+                runtimeUnavailable: true,
+            };
         }
         return handleAIResponse(res, 'batch index');
     },
