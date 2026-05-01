@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { clsx } from 'clsx'
 import { Sparkles, RefreshCw, X, AlertTriangle } from 'lucide-react'
-import { getCsrfToken } from '../../utils/api'
+import { fetchWithRetry } from '../../utils/api'
 import { friendlyAiError } from '../../utils/aiErrorFriendly'
 import { Skeleton } from '../ui/Skeleton'
 
@@ -50,35 +50,34 @@ export function AISummaryCard({ meta: metaProp } = {}) {
     const fetchSummary = useCallback(async () => {
         setState(s => ({ ...s, status: 'loading', error: null }))
         try {
-            const csrf = await getCsrfToken()
-            const res = await fetch('/api/v1/work-board/ai-summary', {
+            // fetchWithRetry handles CSRF injection, retry on transient 5xx,
+            // and session-expiry detection. We need the raw Response so we
+            // can branch on status (401/403/404 → silently hide; other
+            // non-2xx → friendly error). It throws ApiError for those, so
+            // we catch and inspect.
+            const res = await fetchWithRetry('/api/v1/work-board/ai-summary', {
                 method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+                headers: { 'Content-Type': 'application/json' },
                 body: '{}',
             })
             const json = await res.json().catch(() => ({}))
-            if (!res.ok) {
-                // 401/403/404 → silently hide: the endpoint isn't reachable for
-                // this user (no BYOK, no session, or route not mounted). A noisy
-                // error banner helps no one here.
-                if (res.status === 401 || res.status === 403 || res.status === 404) {
-                    setState({ status: 'hidden', data: null, error: null })
-                    return
-                }
-                setState({
-                    status: 'error',
-                    data: null,
-                    error: friendlyAiError({ status: res.status, body: json }),
-                })
-                return
-            }
             setState({ status: 'ready', data: json.data, error: null })
         } catch (e) {
+            const status = e?.status ?? null
+            // 401/403/404 → silently hide: the endpoint isn't reachable for
+            // this user (no BYOK, no session, or route not mounted). A noisy
+            // error banner helps no one here.
+            if (status === 401 || status === 403 || status === 404) {
+                setState({ status: 'hidden', data: null, error: null })
+                return
+            }
+            // Network / 5xx after retries → render the error banner.
             setState({
                 status: 'error',
                 data: null,
-                error: { headline: 'Could not reach the server.', detail: e.message || 'fetch failed' },
+                error: status
+                    ? friendlyAiError({ status, body: e?.data || {} })
+                    : { headline: 'Could not reach the server.', detail: e?.message || 'fetch failed' },
             })
         }
     }, [])

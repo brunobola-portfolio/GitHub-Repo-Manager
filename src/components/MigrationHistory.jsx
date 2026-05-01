@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { SectionSpinner, Spinner } from './ui/Spinner'
 import { migrationApi } from '../api/migration'
+import { apiCall } from '../utils/api'
 
 const MIGRATION_TABS = [
     { id: 'plans', label: 'Plans', icon: ListChecks },
@@ -44,14 +45,22 @@ export function MigrationHistory({ isOpen, onClose }) {
     const loadJobs = async () => {
         setLoading(true)
         try {
-            const res = await fetch('/api/migrations?per_page=50', { credentials: 'include' })
-            if (res.status === 401) {
+            // apiCall routes through fetchWithRetry: gives us retry on transient
+            // 5xx, session-expiry detection, and consistent ApiError shape on
+            // non-2xx. Previously this was a raw fetch that swallowed any
+            // network blip into the "ignore" catch.
+            const data = await apiCall('/api/migrations?per_page=50')
+            setJobs(data?.migrations || [])
+        } catch (err) {
+            // 401 means logged out — leave the modal empty without surfacing
+            // a toast, the global session-expired handler takes over.
+            if (err?.status === 401) {
                 setJobs([])
                 return
             }
-            const data = await res.json()
-            setJobs(data.migrations || [])
-        } catch { /* ignore */ } finally {
+            // Other errors leave the previous list intact and silently fail —
+            // this is a dashboard widget, not a user-initiated action.
+        } finally {
             setLoading(false)
         }
     }

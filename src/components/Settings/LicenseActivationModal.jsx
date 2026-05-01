@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Loader2, CheckCircle2, XCircle, Copy, Check } from 'lucide-react'
-import { getCsrfToken } from '../../utils/api'
+import { fetchWithRetry } from '../../utils/api'
 import { formatUserError } from '../../utils/errors'
 
 export function LicenseActivationModal({ isOpen, onClose }) {
@@ -18,26 +18,29 @@ export function LicenseActivationModal({ isOpen, onClose }) {
     setError(null)
     setResult(null)
     try {
-      const headers = { 'Content-Type': 'application/json' }
-      try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
-      const res = await fetch('/api/v1/license/validate', {
+      // fetchWithRetry auto-injects X-CSRF-Token + credentials and routes
+      // through the central retry/session-expiry pipeline.
+      const res = await fetchWithRetry('/api/v1/license/validate', {
         method: 'POST',
-        credentials: 'include',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: keyInput.trim() })
       })
       const data = await res.json()
-      if (!res.ok || !data.valid) {
+      if (!data.valid) {
         setError(data.error || 'Invalid license key')
       } else {
         setResult(data)
       }
     } catch (err) {
-      // Network failure / unexpected exception — formatUserError gives a
-      // readable title+body without leaking raw stack traces or
-      // Failed-to-fetch jargon to the user.
-      const formatted = formatUserError(err, { fallbackTitle: 'Validation failed' })
-      setError(formatted.body || formatted.title)
+      // ApiError on non-2xx (e.g. 400 with body.error) — surface the server's
+      // friendly message. Network blips fall through to formatUserError so
+      // catch path never leaks raw "Failed to fetch" / TypeError text.
+      if (err?.status && err?.data?.error) {
+        setError(err.data.error)
+      } else {
+        const formatted = formatUserError(err, { fallbackTitle: 'Validation failed' })
+        setError(formatted.body || formatted.title)
+      }
     } finally {
       setValidating(false)
     }
