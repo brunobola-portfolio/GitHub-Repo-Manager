@@ -52,14 +52,42 @@ export function generateLicense({ licenseId = 'MIT', owner, year } = {}) {
 	}
 }
 
+const COC_TEMPLATE = fs.readFileSync(path.join(__dirname, 'code-of-conduct-template.txt'), 'utf8')
+
+/**
+ * Generate CODE_OF_CONDUCT.md by adopting the Contributor Covenant 2.1 by
+ * canonical reference (link to contributor-covenant.org) plus the project
+ * contact email.
+ *
+ * **Why reference vs. verbatim?** Three reasons:
+ *   1. The canonical text at contributor-covenant.org is always the latest
+ *      authoritative version — embedding a copy means any update is missed
+ *      until we re-ship.
+ *   2. The verbatim text contains references to harassment, sexual content,
+ *      etc. that some output-safety filters block. Linking sidesteps that
+ *      while remaining fully compliant — the linked-by-reference adoption
+ *      pattern is what most OSS repos actually do.
+ *   3. Shorter file = less merge-conflict surface and easier reading.
+ *
+ * @param {{ email?: string }} opts
+ * @returns {{ filePath: string, content: string, suggestedCommitMessage: string }}
+ */
+export function generateCodeOfConduct({ email = 'admin@example.com' } = {}) {
+	return {
+		filePath: 'CODE_OF_CONDUCT.md',
+		content: COC_TEMPLATE.replaceAll('{{contact_email}}', email),
+		suggestedCommitMessage: 'chore: add Code of Conduct',
+	}
+}
+
 /**
  * Registry of file generators consumed by the /community-health/generate
  * endpoint. Each entry declares the destination path and whether the
  * generator runs deterministically (no AI) or via the provider abstraction.
  *
- * Other generators (contributing, security, code_of_conduct, …) are added
- * in Tasks 2–3 of the plan.
+ * Other generators (contributing, security, …) are added in Task 3 of the plan.
  */
 export const FILE_GENERATORS = {
 	license: { path: 'LICENSE', generator: generateLicense, deterministic: true },
+	code_of_conduct: { path: 'CODE_OF_CONDUCT.md', generator: generateCodeOfConduct, deterministic: true },
 }

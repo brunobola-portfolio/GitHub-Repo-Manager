@@ -1,0 +1,21 @@
+# Code of Conduct
+
+This project adopts the [Contributor Covenant, version 2.1][cc] as its code of conduct.
+
+The full text is available at the link above and at `https://www.contributor-covenant.org/version/2/1/code_of_conduct/`.
+
+## Reporting
+
+To report unacceptable behaviour, contact the maintainers at **{{contact_email}}**. All complaints will be reviewed and investigated promptly and fairly.
+
+The maintainers are obligated to respect the privacy and security of the reporter of any incident.
+
+## Enforcement
+
+Maintainers who do not follow or enforce the Code of Conduct in good faith may face temporary or permanent repercussions as determined by other members of the project's leadership.
+
+## Attribution
+
+This Code of Conduct is adapted from the [Contributor Covenant][cc], version 2.1, available at `https://www.contributor-covenant.org/version/2/1/code_of_conduct.html`.
+
+[cc]: https://www.contributor-covenant.org/

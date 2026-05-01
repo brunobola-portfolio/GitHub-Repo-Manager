@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generateLicense, FILE_GENERATORS, SUPPORTED_LICENSES } from '../lib/ai-features/community-health-fix.js'
+import { generateLicense, generateCodeOfConduct, FILE_GENERATORS, SUPPORTED_LICENSES } from '../lib/ai-features/community-health-fix.js'
 
 describe('generateLicense', () => {
 	it('substitutes {{year}} and {{owner}} in MIT', () => {
@@ -49,5 +49,40 @@ describe('generateLicense', () => {
 	it('suggestedCommitMessage names the license id', () => {
 		expect(generateLicense({ licenseId: 'MIT', owner: 'a' }).suggestedCommitMessage).toBe('chore: add MIT license')
 		expect(generateLicense({ licenseId: 'BSD-3-Clause', owner: 'a' }).suggestedCommitMessage).toBe('chore: add BSD-3-Clause license')
+	})
+})
+
+describe('generateCodeOfConduct', () => {
+	it('returns CODE_OF_CONDUCT.md path', () => {
+		const out = generateCodeOfConduct({ email: 'security@acme.test' })
+		expect(out.filePath).toBe('CODE_OF_CONDUCT.md')
+	})
+
+	it('substitutes {{contact_email}} with the supplied email', () => {
+		const out = generateCodeOfConduct({ email: 'security@acme.test' })
+		expect(out.content).toContain('security@acme.test')
+		expect(out.content).not.toContain('{{')
+	})
+
+	it('adopts the Contributor Covenant 2.1 by canonical reference', () => {
+		const out = generateCodeOfConduct({ email: 'a@b.c' })
+		expect(out.content).toContain('Contributor Covenant')
+		expect(out.content).toContain('contributor-covenant.org')
+		expect(out.content).toContain('2.1')
+	})
+
+	it('defaults email to a placeholder when omitted', () => {
+		const out = generateCodeOfConduct()
+		expect(out.content).toContain('admin@example.com')
+		expect(out.content).not.toContain('{{')
+	})
+
+	it('FILE_GENERATORS.code_of_conduct is marked deterministic', () => {
+		expect(FILE_GENERATORS.code_of_conduct.deterministic).toBe(true)
+		expect(FILE_GENERATORS.code_of_conduct.path).toBe('CODE_OF_CONDUCT.md')
+	})
+
+	it('suggestedCommitMessage is consistent', () => {
+		expect(generateCodeOfConduct({ email: 'a@b.c' }).suggestedCommitMessage).toBe('chore: add Code of Conduct')
 	})
 })
