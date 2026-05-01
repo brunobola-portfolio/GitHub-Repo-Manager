@@ -13,9 +13,13 @@ import { useGitHub } from '../hooks/useGitHub'
 import { reposApi } from '../api/repos'
 
 /**
- * useRepoActionContext — packages every dependency a registry action's run()
- * may need. Surfaces call useRepoActionContext() and pass the result as ctx
- * to runAction(actionId, target, ctx, registry).
+ * useRepoActionContext — DI hook for action runners.
+ *
+ * NOTE: see DOUBLE-REFRESH RULE below before authoring archive/delete/visibility actions.
+ *
+ * Packages every dependency a registry action's run() may need. Surfaces
+ * call useRepoActionContext() and pass the result as ctx to
+ * runAction(actionId, target, ctx, registry).
  *
  * Returned shape:
  *   {
@@ -62,9 +66,9 @@ export function useRepoActionContext() {
     openModalWithData,
     closeModal,
     refresh,
-    performAction,
-    archiveRepos,
-    deleteRepos,
+    performAction,  // see DOUBLE-REFRESH RULE in JSDoc — do NOT pair with triggersRefresh:true
+    archiveRepos,   // see DOUBLE-REFRESH RULE in JSDoc — do NOT pair with triggersRefresh:true
+    deleteRepos,    // see DOUBLE-REFRESH RULE in JSDoc — do NOT pair with triggersRefresh:true
     confirmGate: (cfg) => new Promise((resolve) => {
       openModalWithData('showConfirm', {
         ...cfg,

@@ -1105,7 +1105,10 @@ function AppContent() {
 
       <ConfirmModal
         isOpen={modalStates.showConfirm}
-        onClose={() => closeModal('showConfirm')}
+        onClose={() => {
+          getModalData('showConfirm')?.onClose?.()
+          closeModal('showConfirm')
+        }}
         onConfirm={getModalData('showConfirm')?.onConfirm}
         title={getModalData('showConfirm')?.title}
         message={getModalData('showConfirm')?.message}
