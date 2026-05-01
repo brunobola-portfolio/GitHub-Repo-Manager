@@ -306,7 +306,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
         className="bg-gradient-to-br from-violet-500/10 to-indigo-500/10 border border-violet-500/20 rounded-2xl p-5"
       >
         {/* Row 1: Destination + Bulk Actions */}
-        <div className="flex items-center justify-between gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-violet-500/15 flex items-center justify-center shrink-0">
               <Building2 className="w-5 h-5 text-violet-400" />
@@ -333,7 +333,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 sm:shrink-0 flex-wrap">
             <button
               type="button"
               onClick={makeAllPrivate}
@@ -358,7 +358,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
         </div>
 
         {/* Row 2: Stats Grid */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
             <div className="text-xl font-bold text-violet-400">{stats.count}</div>
             <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">Repositories</div>

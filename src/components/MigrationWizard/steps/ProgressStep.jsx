@@ -122,7 +122,7 @@ function TaskRow({ task, onRetry }) {
       </div>
 
       {/* Right side: status badge + elapsed + retry */}
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-2 sm:shrink-0 flex-wrap justify-end">
         {elapsed && (
           <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums">{elapsed}</span>
         )}
