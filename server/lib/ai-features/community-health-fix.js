@@ -96,8 +96,43 @@ function clean(s) {
 	return sanitizeForPrompt(String(s ?? ''), 500).replace(/\{\{[^}]*\}\}/g, '')
 }
 
+/**
+ * Centralised prompt templates for the 5 AI-backed community-health
+ * generators. Co-locating them here makes it trivial to audit, A/B-test, or
+ * tweak tone in one place — previously each prompt was inline at its
+ * generator, so a "make all prompts terser" pass meant 5 separate edits.
+ *
+ * Placeholders are filled by `renderPromptVars()` (literal substring
+ * substitution; nested {tokens} in values are NOT re-expanded). Every value
+ * passes through `clean()` first to strip Mustache-style smuggling and
+ * clamp length.
+ *
+ * Future: lifting these into the user-editable AI_PROMPT_REGISTRY is the
+ * next step but is gated on a Settings UI design — these are short and
+ * fairly generic, so the override surface adds DB schema + UI for low ROI
+ * until users actually ask for it.
+ */
+const PROMPT_TEMPLATES = Object.freeze({
+	contributing: 'Write a CONTRIBUTING.md for {fullName}, a {description}. Cover: setup, build, test, PR guidelines, commit message format. Tone: friendly, professional. Use Markdown with H2/H3 only. Keep total length under 800 words.',
+	security: 'Write a SECURITY.md for {fullName}. Cover: supported versions, how to report a vulnerability, expected response time. Use the contact email {email}. Use Markdown. Keep total length under 400 words.',
+	issueTemplate: 'Write a GitHub bug report issue template for {fullName}. Tech stack: {language}. Output Markdown with YAML front matter (name, about, title, labels). Sections: description, reproduction steps, expected behavior, actual behavior, environment. Keep total length under 1.5 KB.',
+	prTemplate: 'Write a concise PR template for {fullName}. Sections: summary, related issues, testing notes, screenshots (if UI). Output Markdown. Keep total length under 300 words.',
+	readmeStub: 'Write a README.md stub for {fullName}, a {description}. Tech stack: {language}. Include: title, badges placeholder, install, quick start, license. Use Markdown with H2 sections. Keep total length under 500 words.',
+})
+
+function renderPromptVars(template, vars) {
+	let out = template
+	for (const [k, v] of Object.entries(vars)) {
+		out = out.split(`{${k}}`).join(v)
+	}
+	return out
+}
+
 export async function generateContributing({ repo, provider }) {
-	const prompt = `Write a CONTRIBUTING.md for ${clean(repo?.full_name)}, a ${clean(repo?.description) || 'project'}. Cover: setup, build, test, PR guidelines, commit message format. Tone: friendly, professional. Use Markdown with H2/H3 only. Keep total length under 800 words.`
+	const prompt = renderPromptVars(PROMPT_TEMPLATES.contributing, {
+		fullName: clean(repo?.full_name),
+		description: clean(repo?.description) || 'project',
+	})
 	const result = await provider.generate({ prompt })
 	return {
 		filePath: 'CONTRIBUTING.md',
@@ -107,7 +142,10 @@ export async function generateContributing({ repo, provider }) {
 }
 
 export async function generateSecurityMd({ repo, email = 'security@example.com', provider }) {
-	const prompt = `Write a SECURITY.md for ${clean(repo?.full_name)}. Cover: supported versions, how to report a vulnerability, expected response time. Use the contact email ${clean(email)}. Use Markdown. Keep total length under 400 words.`
+	const prompt = renderPromptVars(PROMPT_TEMPLATES.security, {
+		fullName: clean(repo?.full_name),
+		email: clean(email),
+	})
 	const result = await provider.generate({ prompt })
 	return {
 		filePath: 'SECURITY.md',
@@ -117,7 +155,10 @@ export async function generateSecurityMd({ repo, email = 'security@example.com',
 }
 
 export async function generateIssueTemplate({ repo, provider }) {
-	const prompt = `Write a GitHub bug report issue template for ${clean(repo?.full_name)}. Tech stack: ${clean(repo?.language) || 'unspecified'}. Output Markdown with YAML front matter (name, about, title, labels). Sections: description, reproduction steps, expected behavior, actual behavior, environment. Keep total length under 1.5 KB.`
+	const prompt = renderPromptVars(PROMPT_TEMPLATES.issueTemplate, {
+		fullName: clean(repo?.full_name),
+		language: clean(repo?.language) || 'unspecified',
+	})
 	const result = await provider.generate({ prompt })
 	return {
 		filePath: '.github/ISSUE_TEMPLATE/bug_report.md',
@@ -127,7 +168,9 @@ export async function generateIssueTemplate({ repo, provider }) {
 }
 
 export async function generatePRTemplate({ repo, provider }) {
-	const prompt = `Write a concise PR template for ${clean(repo?.full_name)}. Sections: summary, related issues, testing notes, screenshots (if UI). Output Markdown. Keep total length under 300 words.`
+	const prompt = renderPromptVars(PROMPT_TEMPLATES.prTemplate, {
+		fullName: clean(repo?.full_name),
+	})
 	const result = await provider.generate({ prompt })
 	return {
 		filePath: '.github/PULL_REQUEST_TEMPLATE.md',
@@ -137,7 +180,11 @@ export async function generatePRTemplate({ repo, provider }) {
 }
 
 export async function generateReadmeStub({ repo, provider }) {
-	const prompt = `Write a README.md stub for ${clean(repo?.full_name)}, a ${clean(repo?.description) || 'project'}. Tech stack: ${clean(repo?.language) || 'unspecified'}. Include: title, badges placeholder, install, quick start, license. Use Markdown with H2 sections. Keep total length under 500 words.`
+	const prompt = renderPromptVars(PROMPT_TEMPLATES.readmeStub, {
+		fullName: clean(repo?.full_name),
+		description: clean(repo?.description) || 'project',
+		language: clean(repo?.language) || 'unspecified',
+	})
 	const result = await provider.generate({ prompt })
 	return {
 		filePath: 'README.md',
