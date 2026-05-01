@@ -154,14 +154,14 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
                 {loadingRepo && <Spinner size="md" className="shrink-0" />}
             </div>
 
-            {/* Tabs */}
+            {/* Tabs — fade gradient at horizontal edges signals overflow on narrow viewports (slice 5 row 8) */}
             <TabBar
                 tabs={TABS}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
                 variant="underline"
                 layoutId="repo-detail-tabs"
-                className="overflow-x-auto"
+                className="overflow-x-auto [mask-image:linear-gradient(to_right,transparent,black_24px,black_calc(100%-24px),transparent)]"
             />
 
             {/* Tab Content */}
