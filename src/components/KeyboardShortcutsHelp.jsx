@@ -5,6 +5,7 @@ export function KeyboardShortcutsHelp({ isOpen, onClose, shortcuts }) {
     const grouped = {
         global: shortcuts.filter(s => s.scope === 'global'),
         navigation: shortcuts.filter(s => s.scope === 'navigation'),
+        repoAction: shortcuts.filter(s => s.scope === 'repo-action'),
     }
 
     return (
@@ -19,6 +20,7 @@ export function KeyboardShortcutsHelp({ isOpen, onClose, shortcuts }) {
             <div className="space-y-4">
                 <ShortcutGroup title="General" items={grouped.global} />
                 <ShortcutGroup title="Navigation" items={grouped.navigation} />
+                <ShortcutGroup title="Repo Actions" items={grouped.repoAction} />
             </div>
 
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-4 text-center">

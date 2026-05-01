@@ -1,15 +1,24 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { GLOBAL_SHORTCUTS, getAllShortcuts } from '../config/keyboardShortcuts'
 
-const SHORTCUTS = [
-    { key: '/', description: 'Focus search', scope: 'global' },
-    { key: 'n', description: 'Create new repository', scope: 'global' },
-    { key: 'i', description: 'Open Migration Wizard', scope: 'global' },
-    { key: 'd', description: 'Go to Dashboard', scope: 'navigation' },
-    { key: 'r', description: 'Go to Repositories', scope: 'navigation' },
-    { key: 't', description: 'Go to Teams', scope: 'navigation' },
-    { key: 'g', description: 'Open Dev Toolkit', scope: 'global' },
-    { key: '?', description: 'Show shortcuts help', scope: 'global' }
-]
+/**
+ * Action handler dispatch — keys must match the `action` field in
+ * GLOBAL_SHORTCUTS entries. Adding a new global shortcut means appending
+ * to GLOBAL_SHORTCUTS *and* this map (the test in keyboardShortcuts.test.js
+ * cross-checks that every action key has a non-empty handler).
+ */
+function buildHandlerMap({ onSearch, onCreateRepo, onMigrate, onViewChange, onOpenDevToolkit, toggleHelp }) {
+    return {
+        searchFocus: onSearch,
+        createRepo: onCreateRepo,
+        migrate: onMigrate,
+        openDevToolkit: onOpenDevToolkit,
+        showHelp: toggleHelp,
+        navDashboard: () => onViewChange?.('dashboard'),
+        navRepos: () => onViewChange?.('repos'),
+        navTeams: () => onViewChange?.('teams'),
+    }
+}
 
 export function useKeyboardShortcuts({
     onSearch,
@@ -21,6 +30,7 @@ export function useKeyboardShortcuts({
 }) {
     const [showHelp, setShowHelp] = useState(false)
     const lastExecutionRef = useRef(0)
+    const toggleHelp = useCallback(() => setShowHelp(prev => !prev), [])
 
     const handleKeyDown = useCallback((e) => {
         if (!enabled) return
@@ -36,57 +46,34 @@ export function useKeyboardShortcuts({
             return
         }
 
+        // Escape closes the help modal regardless of modifier state
+        if (e.key === 'Escape' && showHelp) {
+            e.preventDefault()
+            setShowHelp(false)
+            return
+        }
+
         // Don't trigger with modifier keys (except shift for ?)
         if (e.ctrlKey || e.metaKey || e.altKey) return
 
-        switch (e.key) {
-            case '/':
-                e.preventDefault()
-                onSearch?.()
-                break
-            case 'n':
-                e.preventDefault()
-                onCreateRepo?.()
-                break
-            case 'i':
-                e.preventDefault()
-                onMigrate?.()
-                break
-            case 'g':
-                e.preventDefault()
-                onOpenDevToolkit?.()
-                break
-            case 'd':
-                e.preventDefault()
-                onViewChange?.('dashboard')
-                break
-            case 'r':
-                e.preventDefault()
-                onViewChange?.('repos')
-                break
-            case 't':
-                e.preventDefault()
-                onViewChange?.('teams')
-                break
-            case '?':
-                e.preventDefault()
-                setShowHelp(prev => !prev)
-                break
-            case 'Escape':
-                if (showHelp) {
-                    e.preventDefault()
-                    setShowHelp(false)
-                }
-                break
+        const handlers = buildHandlerMap({ onSearch, onCreateRepo, onMigrate, onViewChange, onOpenDevToolkit, toggleHelp })
+        const match = GLOBAL_SHORTCUTS.find(s => s.key === e.key)
+        if (match && handlers[match.action]) {
+            e.preventDefault()
+            handlers[match.action]()
         }
-    }, [enabled, onSearch, onCreateRepo, onMigrate, onViewChange, onOpenDevToolkit, showHelp])
+    }, [enabled, onSearch, onCreateRepo, onMigrate, onViewChange, onOpenDevToolkit, showHelp, toggleHelp])
 
     useEffect(() => {
         document.addEventListener('keydown', handleKeyDown)
         return () => document.removeEventListener('keydown', handleKeyDown)
     }, [handleKeyDown])
 
-    return { showHelp, setShowHelp, shortcuts: SHORTCUTS }
+    // Help modal pulls from the canonical catalog (global + any
+    // registry-declared shortcuts). The hook itself executes only the
+    // global ones; repo-scoped shortcuts need a focused-repo target so
+    // they're documented but executed by their consuming surface.
+    return { showHelp, setShowHelp, shortcuts: getAllShortcuts() }
 }
 
 /**

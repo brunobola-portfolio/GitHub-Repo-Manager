@@ -37,6 +37,10 @@ const copyToClipboard = (text) => {
  * @property {(target) => Object|null} [confirm]
  * @property {boolean} [triggersRefresh]
  * @property {(target, ctx) => Promise<void>} run
+ * @property {{ key: string, description?: string }} [keyboardShortcut]
+ *           Optional repo-scoped shortcut surfaced by the help modal.
+ *           Execution requires a focused-repo target — see
+ *           src/config/keyboardShortcuts.js for the wiring contract.
  */
 export const repoActions = {
 	// ───── Navigation ─────
