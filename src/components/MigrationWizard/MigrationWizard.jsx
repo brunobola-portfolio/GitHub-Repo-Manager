@@ -710,7 +710,7 @@ export default function MigrationWizard({
         onToggleMaximize={handleToggleMaximize}
       >
         <div data-testid="migration-wizard" role="form" aria-label={wizardTitle} className="p-4 md:p-6 lg:p-8">
-          <div className={!isMobile ? 'max-w-3xl mx-auto' : ''}>
+          <div className={!isMobile ? 'max-w-5xl mx-auto' : ''}>
             {/* Horizontal stepper — desktop restored mode only */}
             {showSidebar && !effectiveMaximized && (
               <HorizontalStepper
