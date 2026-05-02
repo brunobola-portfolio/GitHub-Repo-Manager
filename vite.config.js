@@ -53,6 +53,13 @@ export default defineConfig({
           if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) return 'vendor-icons'
           if (/[\\/]node_modules[\\/]@radix-ui[\\/]/.test(id)) return 'vendor-ui'
           if (/[\\/]node_modules[\\/]react-markdown[\\/]/.test(id)) return 'vendor-markdown'
+          // @git-diff-view/* + transitive highlight.js / lowlight / shiki
+          // (~1 MB before splitting, ~330 KB gzipped). Both consumers
+          // (PRReview DiffPanel + ReadmeEnhanceDiffPanel) already lazy() the
+          // import, but without this manualChunks rule rolldown was packing
+          // the deps into the default ESM bundle that loaded eagerly.
+          // Pinning to vendor-diff keeps it on-demand.
+          if (/[\\/]node_modules[\\/](@git-diff-view|lowlight|highlight\.js|shiki|@shikijs)[\\/]/.test(id)) return 'vendor-diff'
         }
       }
     }
