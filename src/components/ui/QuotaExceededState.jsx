@@ -7,6 +7,13 @@ function openAISettings() {
   window.dispatchEvent(new CustomEvent('app:open-settings', { detail: { tab: 'ai' } }))
 }
 
+function navigateToPricing(focus) {
+  // Mirrors the existing 'app:navigate-dashboard' contract — App.jsx listens
+  // and routes via setActiveView('pricing'). Avoids the legacy
+  // window.location.hash anti-pattern (no history entry, breaks back button).
+  window.dispatchEvent(new CustomEvent('app:navigate-pricing', { detail: { focus } }))
+}
+
 /**
  * QuotaExceededState — uniform CTA when a user hits a tier-bound quota.
  *
@@ -56,7 +63,7 @@ export function QuotaExceededState({
       {upgradeLabel && (
         <button
           type="button"
-          onClick={() => { window.location.hash = `#pricing-${upgradeTo}`; onClose?.() }}
+          onClick={() => { navigateToPricing(upgradeTo); onClose?.() }}
           className="ds-border-glow inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:shadow-lg transition-all"
         >
           Upgrade to {upgradeLabel} <ArrowRight className="w-4 h-4" />

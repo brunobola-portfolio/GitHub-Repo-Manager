@@ -11,7 +11,7 @@ import { Skeleton } from '../ui/Skeleton';
 import { listTeams } from '../../api/teams';
 import { getCsrfToken } from '../../utils/api';
 
-export function TeamHub({ onTeamSelect }) {
+export function TeamHub({ onTeamSelect, onNavigatePricing }) {
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
     const [upgradeRequired, setUpgradeRequired] = useState(false);
@@ -235,7 +235,7 @@ export function TeamHub({ onTeamSelect }) {
                                 Collaborate with teammates, assign repositories, and track team activity. Upgrade to unlock shared workspaces and member management.
                             </p>
                             <button
-                                onClick={() => window.location.hash = '#pricing'}
+                                onClick={() => onNavigatePricing?.()}
                                 className="ds-btn-shimmer inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-400 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/25"
                             >
                                 <Sparkles className="w-4 h-4" />

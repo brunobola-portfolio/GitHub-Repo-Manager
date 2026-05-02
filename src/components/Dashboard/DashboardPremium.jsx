@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, lazy, Suspense } from 'react'
 import {
     BarChart3, TrendingUp, Activity, GitPullRequest,
     Zap, Heart, Users, Building2,
@@ -10,8 +10,11 @@ import { AIPromoStrip } from './AIPromoStrip'
 import { AttentionFeed } from './AttentionFeed'
 import { CategorySection } from './CategorySection'
 import { StatCard } from './StatCard'
-import { ActivityChart } from './ActivityChart'
-import { LanguageChart } from './LanguageChart'
+// ActivityChart + LanguageChart pull recharts (~360 kB); split them out so
+// they don't block dashboard first paint. The CategorySection wrapper renders
+// a fallback skeleton on demand while the chunk loads.
+const ActivityChart = lazy(() => import('./ActivityChart').then(m => ({ default: m.ActivityChart })))
+const LanguageChart = lazy(() => import('./LanguageChart').then(m => ({ default: m.LanguageChart })))
 import { MigrationActivity } from './MigrationActivity'
 import { OrganizationCard } from './OrganizationCard'
 import { shouldShowCategory, aggregateRepoStats, aggregateLanguages, calculateActivityMetrics } from '../../utils/statsAggregator'
@@ -214,17 +217,23 @@ export function DashboardPremium({
                     />
                 </div>
 
-                {/* Charts Section */}
+                {/* Charts Section. Each chart is lazy-loaded (recharts ~360 kB) so
+                    the dashboard first paint is faster; the Suspense fallback is a
+                    plain skeleton card until the chunk arrives. */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-                    <ActivityChart
-                        activity={activity}
-                        timeRange={timeRange}
-                        loading={loading}
-                    />
-                    <LanguageChart
-                        data={languageData}
-                        loading={loading}
-                    />
+                    <Suspense fallback={<div className="h-[400px] rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/30 dark:border-slate-800/30 animate-pulse" aria-hidden="true" />}>
+                        <ActivityChart
+                            activity={activity}
+                            timeRange={timeRange}
+                            loading={loading}
+                        />
+                    </Suspense>
+                    <Suspense fallback={<div className="h-[400px] rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/30 dark:border-slate-800/30 animate-pulse" aria-hidden="true" />}>
+                        <LanguageChart
+                            data={languageData}
+                            loading={loading}
+                        />
+                    </Suspense>
                 </div>
             </CategorySection>
 

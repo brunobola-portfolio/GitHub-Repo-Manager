@@ -53,6 +53,8 @@ export const OrganizationCard = memo(function OrganizationCard({ org, repos = []
                             <img
                                 src={org.avatar_url}
                                 alt={org.login}
+                                loading="lazy"
+                                decoding="async"
                                 className="w-14 h-14 rounded-2xl ring-2 ring-slate-200 dark:ring-slate-700 shadow-md group-hover:ring-indigo-300 dark:group-hover:ring-indigo-500/50 transition-all"
                             />
                             {hasRecentActivity && (

@@ -252,6 +252,20 @@ function AppContent() {
     return () => window.removeEventListener('app:navigate-dashboard', handleNavigateDashboard)
   }, [setActiveView])
 
+  // Quota-exceeded surfaces (QuotaExceededState etc) emit
+  // 'app:navigate-pricing' instead of mutating window.location.hash. Routing
+  // through React state preserves browser-history behaviour and avoids the
+  // hash-only navigation anti-pattern that breaks deep-linkable URLs.
+  useEffect(() => {
+    const handler = () => {
+      setSelectedRepoDetail(null)
+      setReviewingPR(null)
+      setActiveView('pricing')
+    }
+    window.addEventListener('app:navigate-pricing', handler)
+    return () => window.removeEventListener('app:navigate-pricing', handler)
+  }, [setActiveView])
+
   // Open Settings modal to a specific tab via custom event (e.g. from CommandPalette AI commands)
   useEffect(() => {
     const handler = (ev) => {
@@ -1012,6 +1026,7 @@ function AppContent() {
                   <TeamHub
                     user={user}
                     onTeamSelect={setSelectedTeam}
+                    onNavigatePricing={() => setActiveView('pricing')}
                   />
                 )}
               </Suspense>

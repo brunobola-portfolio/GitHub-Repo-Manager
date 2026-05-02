@@ -28,6 +28,8 @@ export function OrganizationSelector({ orgs = [], selectedOrg, onSelectOrg, load
                                 <img
                                     src={selectedOrgData.avatar_url}
                                     alt={selectedOrg}
+                                    loading="lazy"
+                                    decoding="async"
                                     className="w-9 h-9 rounded-xl ring-2 ring-indigo-100 dark:ring-indigo-900/50 shadow-md"
                                 />
                             ) : (
@@ -87,6 +89,8 @@ export function OrganizationSelector({ orgs = [], selectedOrg, onSelectOrg, load
                                     <img
                                         src={org.avatar_url}
                                         alt={org.login}
+                                        loading="lazy"
+                                        decoding="async"
                                         className="w-9 h-9 rounded-xl object-cover ring-2 ring-slate-100 dark:ring-slate-800 shadow-sm"
                                     />
                                     <div className="flex flex-col items-start flex-1 min-w-0">

@@ -28,10 +28,17 @@ describe('QuotaExceededState', () => {
     expect(screen.getByTestId('quota-exceeded')).toBeInTheDocument()
   })
 
-  it('shows upgrade CTA when upgradeTo is pro and routes to #pricing-pro', () => {
+  it('shows upgrade CTA when upgradeTo is pro and emits app:navigate-pricing', () => {
+    // Replaces the legacy window.location.hash mutation: the CTA now fires
+    // a CustomEvent that App.jsx routes via setActiveView('pricing'), which
+    // preserves browser history + works with deep-linkable URLs.
+    const fn = vi.fn()
+    window.addEventListener('app:navigate-pricing', fn)
     render(<QuotaExceededState feature="x" currentTier="free" upgradeTo="pro" />)
     fireEvent.click(screen.getByRole('button', { name: /upgrade to pro/i }))
-    expect(window.location.hash).toBe('#pricing-pro')
+    expect(fn).toHaveBeenCalledTimes(1)
+    expect(fn.mock.calls[0][0].detail).toEqual({ focus: 'pro' })
+    window.removeEventListener('app:navigate-pricing', fn)
   })
 
   it('omits upgrade CTA when upgradeTo is null', () => {

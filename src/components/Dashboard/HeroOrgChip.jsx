@@ -51,7 +51,7 @@ function OrgList({ orgs, selectedOrg, onSelect }) {
                             : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
                     }`}
                 >
-                    <img src={org.avatar_url} alt={org.login} className="w-8 h-8 rounded-lg" />
+                    <img src={org.avatar_url} alt={org.login} loading="lazy" decoding="async" className="w-8 h-8 rounded-lg" />
                     <span className="font-semibold flex-1 truncate">{org.login}</span>
                     {selectedOrg === org.login && <Check size={16} className="text-indigo-500" strokeWidth={3} />}
                 </button>
@@ -99,7 +99,7 @@ export function HeroOrgChip({ orgs = [], selectedOrg, onSelectOrg, loading }) {
                     disabled={loading}
                     aria-label={ariaLabel}
                 >
-                    {selected && <img src={selected.avatar_url} alt="" className="w-4 h-4 rounded" />}
+                    {selected && <img src={selected.avatar_url} alt="" loading="lazy" decoding="async" className="w-4 h-4 rounded" />}
                     <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[10rem]">
                         {label}
                     </span>
