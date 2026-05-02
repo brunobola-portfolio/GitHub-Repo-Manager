@@ -262,12 +262,22 @@ User asked for the same validation again with explicit "painel de assistentes e 
 - **ESLint**: clean.
 - **Working tree**: clean.
 
-### Remaining follow-ups (low priority, deferred)
+### Remaining follow-ups — ✅ ALL FOUR SHIPPED 2026-05-02 (third pass)
 
-- Investigate the 1044 kB pre-existing `esm-*.js` chunk via `npm run build:analyze` — likely a vendor pre-bundle from a non-matched node_modules entry that doesn't appear in `manualChunks` rules.
-- Add URL-params persistence to RepoList pagination (deep-linkable repo-list pages).
-- A11y polish: focus-visible rings on a few buttons (MobileQuickActionsFab, ChatInput textarea), aria-expanded on menu toggle buttons, aria-selected on listbox items in ModelCombobox.
-- Empty catch blocks in dev-toolkit.js `catch (e) { /* No README */ }` and similar — could `req.log.warn(...)` for observability.
+User asked to close them out ("faz o que falta"). All four landed in 2 commits:
+
+- [x] ~~**1044 kB chunk investigation**~~ ✅ Commit `13abc67`. Identified as `@git-diff-view/react` + transitive deps (highlight.js, lowlight, shiki). Both consumers already lazy-loaded it, but rolldown was packing the deps into the unnamed default ESM bundle. Added explicit `vendor-diff` manualChunks rule. The 1044 kB still exists (the lib is genuinely heavy) but now lives in a clearly-named lazy chunk that loads only when DiffRenderer / ReadmeEnhanceDiffPanel renders. Verified by inspecting which bundles statically import vs only register the URL.
+- [x] ~~**RepoList pagination URL-persisted**~~ ✅ Commit `9a15ccd`. `useRepos` initial page reads from `?page=` on mount; `setPage()` writes via `history.replaceState` (page=1 strips the param to keep the URL clean); `popstate` listener syncs state when the user clicks browser back/forward. 6 unit tests in `tests/hooks/useReposPagination.test.jsx` pin the contract.
+- [x] ~~**A11y polish**~~ ✅ Commit `9a15ccd`. ChatInput textarea switched from `focus:ring` (mouse-only) to `focus-visible:ring-2`. Other a11y findings (MobileQuickActionsFab, ModelCombobox) verified as false positives — the audited code already had `aria-expanded` / `aria-haspopup` / `aria-selected` correctly.
+- [x] ~~**Empty catch blocks**~~ ✅ Commit `9a15ccd`. Three silent catches now log warn-level for non-404 errors: `dev-toolkit.js` README + contents fetch in `/ai/quality-report`, `suggest-name-description.js` README fetch + `repo_metadata` SQLite read. 404 stays silent (expected paths). Anything else (token expired, GitHub 5xx, sqlite I/O error) lands in structured logs.
+
+### Final final final test results (2026-05-02 third pass close-out)
+
+- **Vitest:** **3094 passing**, 24 skipped, **zero failures** (up by 6 from new pagination tests).
+- **Playwright e2e:** **79 passed, 9 skipped, zero failures** (full suite, ~1.5 min).
+- **Build:** green (751ms). vendor-diff chunk now properly named and verifiably lazy.
+- **ESLint:** clean.
+- **Working tree:** clean.
 
 ---
 
