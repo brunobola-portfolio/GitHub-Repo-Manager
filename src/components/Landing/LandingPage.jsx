@@ -1,9 +1,26 @@
 import { motion } from 'framer-motion'
+import { Sun, Moon } from 'lucide-react'
 import { Github } from '../icons/GithubIcon'
 import { HeroSection } from './HeroSection'
 import { FeaturesSection } from './FeaturesSection'
 import { PricingPreview } from './PricingPreview'
 import { CTASection } from './CTASection'
+import { useTheme } from '../../hooks/useTheme'
+
+function ThemeToggleButton() {
+  const { isDark, toggleTheme } = useTheme()
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+    >
+      {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+    </button>
+  )
+}
 
 function LandingFooter() {
   return (
@@ -102,6 +119,7 @@ export function LandingPage({ onSignIn }) {
               <Github className="w-4 h-4" />
               Star on GitHub
             </a>
+            <ThemeToggleButton />
             <button
               onClick={onSignIn}
               className="px-4 py-2 rounded-xl text-sm font-semibold text-white
