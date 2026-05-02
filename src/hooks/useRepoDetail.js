@@ -127,6 +127,26 @@ export function useRepoDetail(owner, repo) {
         withLoading(() => apiFetch(`${base}/issues/${number}/comments`, { method: 'POST', body: JSON.stringify({ body }) })),
         [base, withLoading])
 
+    // Issue parity (Phase 3): labels, assignees, timeline. Reads through the
+    // server's gh-cache so they survive GitHub flakes.
+    const setIssueLabels = useCallback((number, labels) =>
+        withLoading(() => apiFetch(`${base}/issues/${number}/labels`, { method: 'PUT', body: JSON.stringify({ labels }) })),
+        [base, withLoading])
+
+    const addIssueAssignees = useCallback((number, assignees) =>
+        withLoading(() => apiFetch(`${base}/issues/${number}/assignees`, { method: 'POST', body: JSON.stringify({ assignees }) })),
+        [base, withLoading])
+
+    const removeIssueAssignees = useCallback((number, assignees) =>
+        withLoading(() => apiFetch(`${base}/issues/${number}/assignees`, { method: 'DELETE', body: JSON.stringify({ assignees }) })),
+        [base, withLoading])
+
+    const fetchAssignees = useCallback(() =>
+        apiFetch(`${base}/assignees`), [base])
+
+    const fetchIssueTimeline = useCallback((number) =>
+        apiFetch(`${base}/issues/${number}/timeline`), [base])
+
     // ---- Pull Requests ----
     const fetchPulls = useCallback((params = {}) => {
         const query = new URLSearchParams(params).toString()
@@ -266,6 +286,7 @@ export function useRepoDetail(owner, repo) {
         fetchReleases, createRelease, deleteRelease,
         // Issues
         fetchIssues, fetchIssue, fetchIssueComments, createIssue, updateIssue, commentOnIssue,
+        setIssueLabels, addIssueAssignees, removeIssueAssignees, fetchAssignees, fetchIssueTimeline,
         // Pull Requests
         fetchPulls, fetchPull, fetchPullReviews, fetchPullFiles, fetchPullComments, fetchPullDiff,
         createPull, mergePull, updatePull, submitPullReview,
@@ -293,6 +314,7 @@ export function useRepoDetail(owner, repo) {
         fetchBranchProtection, updateBranchProtection, deleteBranchProtection,
         fetchReleases, createRelease, deleteRelease,
         fetchIssues, fetchIssue, fetchIssueComments, createIssue, updateIssue, commentOnIssue,
+        setIssueLabels, addIssueAssignees, removeIssueAssignees, fetchAssignees, fetchIssueTimeline,
         fetchPulls, fetchPull, fetchPullReviews, fetchPullFiles, fetchPullComments, fetchPullDiff,
         createPull, mergePull, updatePull, submitPullReview,
         fetchWebhooks, createWebhook, updateWebhook, deleteWebhook, pingWebhook,

@@ -192,4 +192,121 @@ router.get('/:owner/:repo/issues/:issue_number/comments', requireAuth, async (re
     }
 });
 
+// ------------------------------------------------------------------
+// Issue parity — labels, assignees, timeline (Phase 3)
+// ------------------------------------------------------------------
+
+// Replace labels on an issue
+router.put('/:owner/:repo/issues/:issue_number/labels', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, issue_number } = req.params;
+        const { labels } = req.body;
+        if (!Array.isArray(labels)) {
+            return errorResponse(res, 400, 'labels must be an array', 'VALIDATION_ERROR');
+        }
+        const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}/labels`, req.session.accessToken, {
+            method: 'PUT',
+            body: JSON.stringify({ labels }),
+        });
+        invalidate({ userId: req.session.userId, resourceType: 'issues', prefix: `${owner}/${repo}` });
+        res.json(data);
+    } catch (error) {
+        req.log.error({ err: error }, 'Replace issue labels failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Add assignees
+router.post('/:owner/:repo/issues/:issue_number/assignees', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, issue_number } = req.params;
+        const { assignees } = req.body;
+        if (!Array.isArray(assignees)) {
+            return errorResponse(res, 400, 'assignees must be an array', 'VALIDATION_ERROR');
+        }
+        const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}/assignees`, req.session.accessToken, {
+            method: 'POST',
+            body: JSON.stringify({ assignees }),
+        });
+        invalidate({ userId: req.session.userId, resourceType: 'issues', prefix: `${owner}/${repo}` });
+        res.json(data);
+    } catch (error) {
+        req.log.error({ err: error }, 'Add assignees failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Remove assignees
+router.delete('/:owner/:repo/issues/:issue_number/assignees', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, issue_number } = req.params;
+        const { assignees } = req.body;
+        if (!Array.isArray(assignees)) {
+            return errorResponse(res, 400, 'assignees must be an array', 'VALIDATION_ERROR');
+        }
+        const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}/assignees`, req.session.accessToken, {
+            method: 'DELETE',
+            body: JSON.stringify({ assignees }),
+        });
+        invalidate({ userId: req.session.userId, resourceType: 'issues', prefix: `${owner}/${repo}` });
+        res.json(data);
+    } catch (error) {
+        req.log.error({ err: error }, 'Remove assignees failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// List possible assignees (repo collaborators that can be assigned)
+router.get('/:owner/:repo/assignees', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo } = req.params;
+        const result = await readThrough({
+            userId: req.session.userId,
+            resourceType: 'assignees',
+            resourceKey: `${owner}/${repo}`,
+            ttlMs: 5 * 60 * 1000, // collaborator list changes rarely
+            fetcher: ({ ifNoneMatch }) => githubApi(
+                `/repos/${owner}/${repo}/assignees?per_page=100`,
+                req.session.accessToken,
+                ifNoneMatch ? { headers: { 'If-None-Match': ifNoneMatch } } : {},
+            ),
+        });
+        if (result.stale) res.setHeader('X-Cache', 'stale');
+        res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
+        res.json(result.data);
+    } catch (error) {
+        req.log.error({ err: error }, 'List assignees failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
+// Issue timeline — labelled / assigned / closed-as / cross-references
+router.get('/:owner/:repo/issues/:issue_number/timeline', requireAuth, async (req, res) => {
+    try {
+        const { owner, repo, issue_number } = req.params;
+        const result = await readThrough({
+            userId: req.session.userId,
+            resourceType: 'issue_timeline',
+            resourceKey: `${owner}/${repo}#${issue_number}`,
+            ttlMs: 5 * 60 * 1000,
+            fetcher: ({ ifNoneMatch }) => githubApi(
+                `/repos/${owner}/${repo}/issues/${issue_number}/timeline?per_page=100`,
+                req.session.accessToken,
+                {
+                    headers: {
+                        'Accept': 'application/vnd.github.mockingbird-preview+json',
+                        ...(ifNoneMatch ? { 'If-None-Match': ifNoneMatch } : {}),
+                    },
+                },
+            ),
+        });
+        if (result.stale) res.setHeader('X-Cache', 'stale');
+        res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
+        res.json(result.data);
+    } catch (error) {
+        req.log.error({ err: error }, 'Get issue timeline failed');
+        res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
+    }
+});
+
 export default router;

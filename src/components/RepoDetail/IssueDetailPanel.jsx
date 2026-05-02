@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { AIIssuePlanner } from './AIIssuePlanner'
+import { IssueSidebar, IssueTimeline } from './IssueSidebar'
 import { useToast } from '../../hooks/useToast'
 import { formatRelativeTime } from '../../utils/format'
 
@@ -304,6 +305,38 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                         </div>
                     </Card>
                 </>
+            )}
+
+            {/* Sidebar — labels / assignees / milestone editor + collapsible
+                timeline. Only renders when the API supports the parity
+                endpoints (so older clients running this file without the
+                Phase 3 useRepoDetail update don't crash). */}
+            {repoFullName && api?.setIssueLabels && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div className="lg:col-span-1">
+                        <IssueSidebar
+                            owner={repoFullName.split('/')[0]}
+                            repo={repoFullName.split('/')[1]}
+                            issue={current}
+                            api={api}
+                            onMutate={async () => {
+                                const fresh = await api.fetchIssue(issue.number)
+                                if (fresh) setDetail(fresh)
+                                onUpdate?.()
+                            }}
+                        />
+                    </div>
+                    <div className="lg:col-span-2">
+                        {api.fetchIssueTimeline && (
+                            <IssueTimeline
+                                owner={repoFullName.split('/')[0]}
+                                repo={repoFullName.split('/')[1]}
+                                number={issue.number}
+                                api={api}
+                            />
+                        )}
+                    </div>
+                </div>
             )}
         </motion.div>
     )
