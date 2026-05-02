@@ -146,13 +146,25 @@ A 5-dimension audit (parallel subagents) covered: code duplication / scaffolding
 
 **Test suite at end of session: 3045 passing, 24 skipped, zero failures.** All build green.
 
-### Phase 3 (architectural — needs user direction)
+### Phase 3 (architectural) — ✅ ALL THREE SHIPPED 2026-05-02
 
-These three items emerged from the audit as legitimate but heavy. Pause before starting; ask the user.
+User said "todas". All three architectural items from the audit are now in main. 5 commits between `48b99d5` and `57e5602`. Suite 3084 passing, zero failures.
 
-- [ ] **PR / Branch / Issue action registries.** Today only repos have a registered cross-surface action catalog. PR/branch/issue actions live as inline buttons in PullRequestsTab / BranchesTab / IssuesTab. Building parallel registries unblocks command-palette + context-menu discovery for those object types. Effort: 2–4 h per registry + per-surface wiring.
-- [ ] **Centralized `fetchApi()` wrapper with CSRF.** Several files call `getCsrfToken()` then construct headers manually; one (`MigrationHistory.jsx`) skips CSRF entirely. A canonical `fetchApi(url, opts)` would be a drop-in replacement and remove the inconsistency. Effort: 1.5 h refactor.
-- [ ] **Keyboard shortcuts derive from `repoActions` registry.** `useKeyboardShortcuts.js` has a hardcoded SHORTCUTS array disconnected from the registry. New registry actions can't get shortcuts without editing the hook. Effort: 1 h adapter + per-action `keyboardShortcut` field design.
+- [x] ~~**PR / Branch / Issue action registries**~~ ✅ Commits `8f38b4a` (registries) + `57e5602` (palette wiring).
+   - `src/actions/prActions.js` (8 entries: view/open/copy×2/start_review/generate_description/merge/close)
+   - `src/actions/branchActions.js` (5 entries: open/copy×2/protect/delete with type-name confirm)
+   - `src/actions/issueActions.js` (8 entries: view/open/copy×2/plan_with_ai/comment/close/reopen)
+   - Each ships with full unit tests (33 cases total: shape validators, applicability rules, confirm contracts, run() side effects, palette builders).
+   - Command palette consumes via opt-in `selectedRepoDetailEntities = { prs, branches, issues }` prop. When App.jsx populates it (a future patch), the palette renders three new groups. When null/empty, groups stay hidden — adoption doesn't require App.jsx changes to ship.
+   - Registry runners bridge to existing UX flows via window CustomEvents: `app:open-pr-detail`, `app:start-pr-review`, `app:generate-pr-description`, `app:open-issue-detail`, `app:plan-issue-with-ai`. RepoDetail tabs can listen and route to their existing handlers.
+- [x] ~~**Centralized `fetchApi()` wrapper with CSRF**~~ ✅ Commit `1419a57`. The wrapper already existed (`fetchWithRetry` + `apiCall` in `src/utils/api.js` — slice-1 era infrastructure). What was missing was migration of three hand-rolled call sites that bypassed it: MigrationHistory.loadJobs, WorkBoard AISummaryCard.fetchSummary, Settings LicenseActivationModal.handleValidate. All three now route through `fetchWithRetry`, getting CSRF injection + retry-on-5xx + session-expiry detection for free. AISummaryCard test rewired to mock `fetchWithRetry` directly via a MockApiError that mirrors the real ApiError contract.
+- [x] ~~**Keyboard shortcuts derive from registry**~~ ✅ Commit `48b99d5`. Catalog extracted from `useKeyboardShortcuts.js` to `src/config/keyboardShortcuts.js` (frozen `GLOBAL_SHORTCUTS` array + `collectRegistryShortcuts()` walker). The hook dispatches via a handler map keyed by the catalog's `action` field — no inline switch, no risk of catalog vs handler drift. Help modal renders a third "Repo Actions" group from `getAllShortcuts()` output. The `RepoAction.keyboardShortcut` field is documented in JSDoc; no action declares one yet — wiring per-context execution (focused-repo target) is a clean future extension that doesn't block the catalog work.
+
+### Optional follow-ups for the next session (registry adoption, all small)
+
+- **Wire App.jsx → palette `selectedRepoDetailEntities` prop.** Today the palette renders the PR/branch/issue groups only when this prop is populated. App.jsx needs to expose the active repo-detail's lists (already loaded by RepoDetail's tabs) — either via a shared context or by lifting them. Once wired, Cmd+K from inside a repo surfaces "Merge — #42 …" / "Delete branch — feature/x" / "Plan with AI — #7 …" automatically.
+- **Adopt the registry runners inside the existing tabs.** PullRequestsTab.handleMerge / handleClose, BranchesTab.handleDelete, IssuesTab handlers can be replaced with `prActions.merge_pr.run(pr, ctx)` etc. The confirm contracts already match (the existing setConfirmAction shape ↔ registry's `confirm` field).
+- **Bridge palette CustomEvents to App.jsx listeners.** `app:open-pr-detail`, `app:start-pr-review`, `app:generate-pr-description`, `app:open-issue-detail`, `app:plan-issue-with-ai` are dispatched by the palette but no listeners exist yet — Cmd+K commands that route through these will no-op until App.jsx subscribes.
 
 ---
 
