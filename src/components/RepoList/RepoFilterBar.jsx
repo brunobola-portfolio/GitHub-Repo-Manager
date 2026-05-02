@@ -51,6 +51,9 @@ export function RepoFilterBar({
 	clearAllFilters,
 	totalCount,
 	filteredCount,
+	// sort
+	sortBy,
+	setSortBy,
 }) {
 	const [showSelectionMenu, setShowSelectionMenu] = useState(false)
 	const [filterSheetOpen, setFilterSheetOpen] = useState(false)
@@ -69,11 +72,13 @@ export function RepoFilterBar({
 	// can see exactly what's filtering and dismiss each chip individually.
 	const TYPE_LABELS = { source: 'Sources only', fork: 'Forks only', archived: 'Archived only' }
 	const VISIBILITY_LABELS = { public: 'Public only', private: 'Private only' }
+	const SORT_LABELS = { stars: 'Most stars', forks: 'Most forks', updated: 'Recently updated', created: 'Recently created' }
 	const activeChips = [
 		typeFilter !== 'all' && { key: 'type', label: TYPE_LABELS[typeFilter] || typeFilter, clear: () => setTypeFilter('all') },
 		visibilityFilter !== 'all' && { key: 'visibility', label: VISIBILITY_LABELS[visibilityFilter] || visibilityFilter, clear: () => setVisibilityFilter('all') },
 		languageFilter !== 'all' && { key: 'language', label: `Language: ${languageFilter}`, clear: () => setLanguageFilter('all') },
 		searchQuery && { key: 'search', label: `Search: ${searchQuery.length > 28 ? searchQuery.slice(0, 25) + '…' : searchQuery}`, clear: () => setSearchQuery('') },
+		sortBy && sortBy !== 'name' && { key: 'sort', label: `Sort: ${SORT_LABELS[sortBy] || sortBy}`, clear: () => setSortBy?.('name') },
 	].filter(Boolean)
 
 	// Close selection dropdown on click outside or scroll
@@ -273,6 +278,20 @@ export function RepoFilterBar({
 						label="Programming Language"
 						size="sm"
 						className="flex-1 min-w-[110px]"
+					/>
+					<Select
+						value={sortBy || 'name'}
+						onChange={(v) => setSortBy?.(v)}
+						options={[
+							{ value: 'name',    label: 'Name (A→Z)' },
+							{ value: 'stars',   label: 'Most stars' },
+							{ value: 'forks',   label: 'Most forks' },
+							{ value: 'updated', label: 'Recently updated' },
+							{ value: 'created', label: 'Recently created' },
+						]}
+						label="Sort by"
+						size="sm"
+						className="flex-1 min-w-[140px]"
 					/>
 
 					<div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block"></div>

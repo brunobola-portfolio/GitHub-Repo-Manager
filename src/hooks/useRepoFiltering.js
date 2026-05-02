@@ -24,6 +24,10 @@ export function useRepoFiltering(repos, initial = {}) {
 	const [typeFilter, setTypeFilter] = useState(() => initial.type || 'all')
 	const [visibilityFilter, setVisibilityFilter] = useState(() => initial.visibility || 'all')
 	const [languageFilter, setLanguageFilter] = useState('all')
+	// Sort key — seeded from Dashboard StatCards (e.g. "Total Stars" sets
+	// initialSort='stars'). Default 'name' preserves the legacy alphabetical
+	// order. AI-search ranks by score and bypasses this entirely.
+	const [sortBy, setSortBy] = useState(() => initial.sort || 'name')
 
 	const availableLanguages = useMemo(
 		() => [...new Set(repos.map(r => r.language).filter(Boolean))].sort(),
@@ -68,8 +72,18 @@ export function useRepoFiltering(repos, initial = {}) {
 			})
 		}
 
-		return filtered
-	}, [repos, aiResults, isAISearch, searchQuery, typeFilter, visibilityFilter, languageFilter])
+		// Apply user/initial sort. Numeric sorts go descending (more stars
+		// first feels right; same for forks, recent updates, recent creation).
+		const sorters = {
+			name:    (a, b) => a.name.localeCompare(b.name),
+			stars:   (a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0),
+			forks:   (a, b) => (b.forks_count || 0) - (a.forks_count || 0),
+			updated: (a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0),
+			created: (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0),
+		}
+		const sorter = sorters[sortBy] || sorters.name
+		return [...filtered].sort(sorter)
+	}, [repos, aiResults, isAISearch, searchQuery, typeFilter, visibilityFilter, languageFilter, sortBy])
 
 	useEffect(() => {
 		let aborted = false
@@ -104,6 +118,7 @@ export function useRepoFiltering(repos, initial = {}) {
 		setTypeFilter('all')
 		setVisibilityFilter('all')
 		setLanguageFilter('all')
+		setSortBy('name')
 	}
 
 	const hasActiveFilters =
@@ -127,6 +142,8 @@ export function useRepoFiltering(repos, initial = {}) {
 		setVisibilityFilter,
 		languageFilter,
 		setLanguageFilter,
+		sortBy,
+		setSortBy,
 		// derived
 		availableLanguages,
 		filteredRepos,

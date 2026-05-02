@@ -901,6 +901,7 @@ function AppContent() {
                     onRefresh={refresh}
                     onRepoClick={handleOpenRepo}
                     initialFilters={viewParams?.initialFilters}
+                    initialSort={viewParams?.initialSort}
                   />
                 </ErrorBoundary>
               </div>

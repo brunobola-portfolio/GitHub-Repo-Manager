@@ -36,6 +36,7 @@ export function RepoList({
 	onRefresh,
 	onRepoClick,
 	initialFilters,
+	initialSort,
 }) {
 	const { selectedIds, toggleSelect, selectRepos, deselectRepos, invertSelection, clearSelection } = useSelection()
 	const { openModal, openModalWithData } = useModal()
@@ -53,11 +54,12 @@ export function RepoList({
 		typeFilter, setTypeFilter,
 		visibilityFilter, setVisibilityFilter,
 		languageFilter, setLanguageFilter,
+		sortBy, setSortBy,
 		availableLanguages,
 		filteredRepos,
 		hasActiveFilters,
 		clearAllFilters,
-	} = useRepoFiltering(repos, initialFilters)
+	} = useRepoFiltering(repos, { ...initialFilters, sort: initialSort })
 
 	const allFilteredSelected = filteredRepos.length > 0 && filteredRepos.every(r => selectedIds.has(r.id))
 	const someFilteredSelected = filteredRepos.some(r => selectedIds.has(r.id)) && !allFilteredSelected
@@ -121,6 +123,8 @@ export function RepoList({
 				clearAllFilters={clearAllFilters}
 				totalCount={repos.length}
 				filteredCount={filteredRepos.length}
+				sortBy={sortBy}
+				setSortBy={setSortBy}
 			/>
 
 			{/* Content Area */}

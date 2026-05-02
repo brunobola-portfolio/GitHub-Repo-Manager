@@ -479,7 +479,24 @@ function ActionHistory({ results, isPerforming, message }) {
 
 function ActivityList({ activity }) {
     const now = useMemo(() => new Date(), [])
-    
+
+    // Wrap in a Card to match Quick Actions / Action History above so the
+    // sidebar reads as one cohesive premium column instead of three loose
+    // panels with the activity feed dangling borderless underneath.
+    return (
+        <Card hover={true} className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl">
+            <div className="px-5 py-4 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 text-white shadow-md shadow-indigo-500/20">
+                    <Clock className="w-3.5 h-3.5" />
+                </div>
+                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100">Recent Activity</h3>
+            </div>
+            <ActivityListBody activity={activity} now={now} />
+        </Card>
+    )
+}
+
+function ActivityListBody({ activity, now }) {
     if (!Array.isArray(activity) || activity.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-10 text-slate-400">
@@ -492,7 +509,7 @@ function ActivityList({ activity }) {
     }
 
     return (
-        <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+        <div className="divide-y divide-slate-100 dark:divide-slate-800/60 max-h-[420px] overflow-y-auto custom-scrollbar">
             {activity.map((event) => {
                 if (!event) return null
                 const EventIcon = getEventIcon(event.type)
