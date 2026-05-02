@@ -66,7 +66,7 @@ export function WizardPanel({
               fixed z-50 flex flex-col overflow-hidden
               ${effectiveMaximized
                 ? 'inset-0 bg-white dark:bg-slate-950'
-                : `inset-x-0 mx-auto top-[clamp(1.5rem,5vh,4rem)] bottom-[clamp(1.5rem,5vh,4rem)] ${PANEL_SIZES[size] || PANEL_SIZES.xl} rounded-2xl bg-white dark:bg-slate-950 shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] ring-1 ring-slate-200/50 dark:ring-slate-700/50`
+                : `inset-x-0 mx-auto top-[clamp(1.5rem,5vh,4rem)] max-h-[min(90vh,calc(100vh-3rem))] ${PANEL_SIZES[size] || PANEL_SIZES.xl} rounded-2xl bg-white dark:bg-slate-950 shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] ring-1 ring-slate-200/50 dark:ring-slate-700/50`
               }
             `}
           >
