@@ -55,6 +55,12 @@ export function ToastProvider({ children }) {
     const [toasts, setToasts] = useState([])
     const timersRef = useRef(new Map())
     const idCounter = useRef(0)
+    // Mirror toasts in a ref so dedupe can check synchronously without
+    // waiting for React to flush the setToasts updater. Without this the
+    // updater can run on a later tick, the dedupe check sees stale state,
+    // and a duplicate slips through.
+    const toastsRef = useRef([])
+    useEffect(() => { toastsRef.current = toasts }, [toasts])
 
     // Clean up all timers on unmount
     useEffect(() => {
@@ -66,7 +72,8 @@ export function ToastProvider({ children }) {
     }, [])
 
     const dismissToast = useCallback((id) => {
-        setToasts(prev => prev.filter(t => t.id !== id))
+        toastsRef.current = toastsRef.current.filter(t => t.id !== id)
+        setToasts(toastsRef.current)
         const timer = timersRef.current.get(id)
         if (timer) {
             clearTimeout(timer)
@@ -75,21 +82,30 @@ export function ToastProvider({ children }) {
     }, [])
 
     const addToastRecord = useCallback((record) => {
+        // Dedupe key: same type + same string message (or same dedupeKey for
+        // ReactNode toasts). Repeated 401s used to stack three identical
+        // "Session expired" cards on top of each other; ignore duplicates
+        // already on screen. Use the ref so the check is synchronous.
+        const key = record.dedupeKey || (typeof record.message === 'string' ? `${record.type}:${record.message}` : null)
+        if (key && toastsRef.current.some(t => t.dedupeKey === key)) {
+            return null
+        }
+
         const id = ++idCounter.current
-        setToasts(prev => {
-            const next = [...prev, { id, ...record }]
-            if (next.length > MAX_TOASTS) {
-                const removed = next.splice(0, next.length - MAX_TOASTS)
-                removed.forEach(t => {
-                    const timer = timersRef.current.get(t.id)
-                    if (timer) {
-                        clearTimeout(timer)
-                        timersRef.current.delete(t.id)
-                    }
-                })
-            }
-            return next
-        })
+        const next = [...toastsRef.current, { id, ...record, dedupeKey: key }]
+        if (next.length > MAX_TOASTS) {
+            const removed = next.splice(0, next.length - MAX_TOASTS)
+            removed.forEach(t => {
+                const timer = timersRef.current.get(t.id)
+                if (timer) {
+                    clearTimeout(timer)
+                    timersRef.current.delete(t.id)
+                }
+            })
+        }
+        toastsRef.current = next
+        setToasts(next)
+
         if (record.duration > 0) {
             const timer = setTimeout(() => dismissToast(id), record.duration)
             timersRef.current.set(id, timer)
@@ -128,6 +144,7 @@ export function ToastProvider({ children }) {
                 type: 'error',
                 content: <ErrorToastContent formatted={formatted} ctx={ctx} />,
                 duration: ctx.duration ?? 7000,
+                dedupeKey: `error:${formatted.title}|${formatted.body}`,
             })
         },
     }), [addToast, addToastRecord])

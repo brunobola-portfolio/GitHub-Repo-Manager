@@ -202,6 +202,37 @@ describe('useToast', () => {
   })
 })
 
+describe('useToast — dedupe', () => {
+    it('skips duplicate string-message toasts of the same type', () => {
+        const { result } = renderHook(() => useToast(), { wrapper })
+
+        act(() => { result.current.toast.warning('Session expired') })
+        act(() => { result.current.toast.warning('Session expired') })
+        act(() => { result.current.toast.warning('Session expired') })
+
+        expect(result.current.toasts).toHaveLength(1)
+    })
+
+    it('does not dedupe across types', () => {
+        const { result } = renderHook(() => useToast(), { wrapper })
+
+        act(() => { result.current.toast.warning('Same text') })
+        act(() => { result.current.toast.error('Same text') })
+
+        expect(result.current.toasts).toHaveLength(2)
+    })
+
+    it('dedupe returns null for the rejected toast', () => {
+        const { result } = renderHook(() => useToast(), { wrapper })
+        let firstId, secondId
+        act(() => { firstId = result.current.toast.success('Hello') })
+        act(() => { secondId = result.current.toast.success('Hello') })
+
+        expect(typeof firstId).toBe('number')
+        expect(secondId).toBeNull()
+    })
+})
+
 describe('useToast — custom content', () => {
     it('toast.custom stores a ReactNode content and skips message', () => {
         const { result } = renderHook(() => useToast(), { wrapper })

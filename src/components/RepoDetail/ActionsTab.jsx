@@ -55,9 +55,29 @@ export function ActionsTab({ repo }) {
   }
 
   if (error) {
+    // 404 means Actions isn't enabled — show the empty state instead of an
+    // error banner. 401/403 means the user lost the GitHub token; show a
+    // friendly re-auth prompt instead of leaking the raw "Session expired"
+    // string from the server. Other failures get a generic retry message.
+    if (error.status === 404) {
+      return (
+        <EmptyState
+          icon={Zap}
+          title="GitHub Actions not enabled"
+          description="This repository does not have any workflows configured yet."
+        />
+      )
+    }
+    if (error.status === 401 || error.status === 403) {
+      return (
+        <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-sm text-amber-700 dark:text-amber-400">
+          Sign in again to view workflow runs.
+        </div>
+      )
+    }
     return (
-      <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 text-red-900 dark:text-red-300 text-sm">
-        {error?.message || String(error)}
+      <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
+        Couldn&apos;t load workflows. Please retry.
       </div>
     )
   }
