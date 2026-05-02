@@ -28,6 +28,7 @@ import express from 'express';
 import db from '../../db.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, isValidGitHubUsername, safeError, errorResponse } from '../../middleware/auth.js';
+import { readThrough } from '../../lib/gh-cache.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import {
     createRepoSchema,
@@ -446,21 +447,38 @@ router.delete('/:owner/:repo/labels/:name', requireAuth, async (req, res) => {
 // Commits & Comparison
 // ------------------------------------------------------------------
 
-// List commits
+// List commits — cached + resilient. When GitHub is reachable we serve fresh
+// data; when it 5xx's we serve last-known-good with `X-Cache: stale` so the
+// UI can render a "showing cached data" hint.
 router.get('/:owner/:repo/commits', requireAuth, async (req, res) => {
     try {
         const { owner, repo } = req.params;
         const { sha, path, author, since, until } = req.query;
+        const perPage = clampPerPage(req.query.per_page);
 
-        let url = `/repos/${owner}/${repo}/commits?per_page=${clampPerPage(req.query.per_page)}`;
+        let url = `/repos/${owner}/${repo}/commits?per_page=${perPage}`;
         if (sha) url += `&sha=${encodeURIComponent(sha)}`;
         if (path) url += `&path=${encodeURIComponent(path)}`;
         if (author) url += `&author=${encodeURIComponent(author)}`;
         if (since) url += `&since=${encodeURIComponent(since)}`;
         if (until) url += `&until=${encodeURIComponent(until)}`;
 
-        const { data } = await githubApi(url, req.session.accessToken);
-        res.json(data);
+        const cacheKey = `${owner}/${repo}?${url.split('?')[1] || ''}`;
+        const result = await readThrough({
+            userId: req.session.userId,
+            resourceType: 'commits',
+            resourceKey: cacheKey,
+            ttlMs: 2 * 60 * 1000, // 2 min — webhook push events invalidate too
+            fetcher: ({ ifNoneMatch }) => githubApi(
+                url,
+                req.session.accessToken,
+                ifNoneMatch ? { headers: { 'If-None-Match': ifNoneMatch } } : {},
+            ),
+        });
+
+        if (result.stale) res.setHeader('X-Cache', 'stale');
+        res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
+        res.json(result.data);
     } catch (error) {
         req.log.error({ err: error }, 'List commits failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });

@@ -7,6 +7,7 @@ import { RepoList } from './components/RepoList'
 import { OrgPanel } from './components/OrgPanel'
 import { ConfirmModal } from './components/ui/ConfirmModal'
 import { ToastContainer } from './components/ui/Toast'
+import { PendingSyncBanner } from './components/ui/PendingSyncBanner'
 import { Spinner } from './components/ui/Spinner'
 import { QuotaExceededState } from './components/ui/QuotaExceededState'
 import { OnboardingTour } from './components/Onboarding/OnboardingTour'
@@ -1321,6 +1322,7 @@ function AppContent() {
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      <PendingSyncBanner isAuthenticated={!!user} />
       <OnboardingTour
         isOpen={tourOpen}
         onClose={() => { onboarding.markSeen(); setTourOpen(false) }}

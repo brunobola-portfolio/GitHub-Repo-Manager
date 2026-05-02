@@ -25,6 +25,7 @@ import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js'
 import { requireTier } from '../../middleware/require-tier.js';
 import { prCreateSchema, prUpdateSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
+import { readThrough } from '../../lib/gh-cache.js';
 
 const router = express.Router();
 
@@ -68,7 +69,8 @@ router.param('comment_id', (req, res, next, val) => {
 // Pull Requests Management
 // ------------------------------------------------------------------
 
-// List pull requests
+// List pull requests — cached + resilient (serves stale data when GitHub is
+// unreachable; webhook-driven invalidation keeps it fresh in normal ops).
 router.get('/:owner/:repo/pulls', requireAuth, async (req, res) => {
     try {
         const { owner, repo } = req.params;
@@ -80,9 +82,24 @@ router.get('/:owner/:repo/pulls', requireAuth, async (req, res) => {
         const safeState = allowedStates.includes(state) ? state : 'open';
         const safeSort = allowedSort.includes(sort) ? sort : 'created';
         const safeDir = allowedDir.includes(direction) ? direction : 'desc';
+        const perPage = clampPerPage(req.query.per_page);
+        const ghPath = `/repos/${owner}/${repo}/pulls?state=${safeState}&sort=${safeSort}&direction=${safeDir}&per_page=${perPage}`;
 
-        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls?state=${safeState}&sort=${safeSort}&direction=${safeDir}&per_page=${clampPerPage(req.query.per_page)}`, req.session.accessToken);
-        res.json(data);
+        const result = await readThrough({
+            userId: req.session.userId,
+            resourceType: 'pulls',
+            resourceKey: `${owner}/${repo}?state=${safeState}&sort=${safeSort}&direction=${safeDir}&per_page=${perPage}`,
+            ttlMs: 60 * 1000, // 1 min — webhooks invalidate on PR events
+            fetcher: ({ ifNoneMatch }) => githubApi(
+                ghPath,
+                req.session.accessToken,
+                ifNoneMatch ? { headers: { 'If-None-Match': ifNoneMatch } } : {},
+            ),
+        });
+
+        if (result.stale) res.setHeader('X-Cache', 'stale');
+        res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
+        res.json(result.data);
     } catch (error) {
         req.log.error({ err: error }, 'List pull requests failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
@@ -140,24 +157,48 @@ router.patch('/:owner/:repo/pulls/:pull_number', requireAuth, validateBody(prUpd
     }
 });
 
-// Get single pull request
+// Get single pull request — cached + resilient
 router.get('/:owner/:repo/pulls/:pull_number', requireAuth, async (req, res) => {
     try {
         const { owner, repo, pull_number } = req.params;
-        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls/${pull_number}`, req.session.accessToken);
-        res.json(data);
+        const result = await readThrough({
+            userId: req.session.userId,
+            resourceType: 'pulls',
+            resourceKey: `${owner}/${repo}#${pull_number}`,
+            ttlMs: 60 * 1000,
+            fetcher: ({ ifNoneMatch }) => githubApi(
+                `/repos/${owner}/${repo}/pulls/${pull_number}`,
+                req.session.accessToken,
+                ifNoneMatch ? { headers: { 'If-None-Match': ifNoneMatch } } : {},
+            ),
+        });
+        if (result.stale) res.setHeader('X-Cache', 'stale');
+        res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
+        res.json(result.data);
     } catch (error) {
         req.log.error({ err: error }, 'Get pull request failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
 
-// List PR reviews
+// List PR reviews — cached + resilient
 router.get('/:owner/:repo/pulls/:pull_number/reviews', requireAuth, async (req, res) => {
     try {
         const { owner, repo, pull_number } = req.params;
-        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls/${pull_number}/reviews`, req.session.accessToken);
-        res.json(data);
+        const result = await readThrough({
+            userId: req.session.userId,
+            resourceType: 'pull_reviews',
+            resourceKey: `${owner}/${repo}#${pull_number}`,
+            ttlMs: 60 * 1000,
+            fetcher: ({ ifNoneMatch }) => githubApi(
+                `/repos/${owner}/${repo}/pulls/${pull_number}/reviews`,
+                req.session.accessToken,
+                ifNoneMatch ? { headers: { 'If-None-Match': ifNoneMatch } } : {},
+            ),
+        });
+        if (result.stale) res.setHeader('X-Cache', 'stale');
+        res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
+        res.json(result.data);
     } catch (error) {
         req.log.error({ err: error }, 'List PR reviews failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });

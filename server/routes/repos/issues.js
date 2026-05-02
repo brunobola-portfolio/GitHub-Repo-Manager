@@ -17,6 +17,7 @@ import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
 import { issueCreateSchema, issueUpdateSchema, issueCommentSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
+import { readThrough, invalidate } from '../../lib/gh-cache.js';
 
 const router = express.Router();
 
@@ -45,7 +46,7 @@ router.param('repo', (req, res, next, val) => {
 // Issues Management
 // ------------------------------------------------------------------
 
-// List issues
+// List issues — cached + resilient
 router.get('/:owner/:repo/issues', requireAuth, async (req, res) => {
     try {
         const { owner, repo } = req.params;
@@ -57,12 +58,27 @@ router.get('/:owner/:repo/issues', requireAuth, async (req, res) => {
         const safeState = allowedStates.includes(state) ? state : 'open';
         const safeSort = allowedSort.includes(sort) ? sort : 'created';
         const safeDir = allowedDir.includes(direction) ? direction : 'desc';
+        const perPage = clampPerPage(req.query.per_page);
 
-        let url = `/repos/${owner}/${repo}/issues?state=${safeState}&sort=${safeSort}&direction=${safeDir}&per_page=${clampPerPage(req.query.per_page)}`;
+        let url = `/repos/${owner}/${repo}/issues?state=${safeState}&sort=${safeSort}&direction=${safeDir}&per_page=${perPage}`;
         if (labels) url += `&labels=${encodeURIComponent(labels)}`;
+        const labelsKey = labels ? `&labels=${labels}` : '';
 
-        const { data } = await githubApi(url, req.session.accessToken);
-        res.json(data);
+        const result = await readThrough({
+            userId: req.session.userId,
+            resourceType: 'issues',
+            resourceKey: `${owner}/${repo}?state=${safeState}&sort=${safeSort}&direction=${safeDir}&per_page=${perPage}${labelsKey}`,
+            ttlMs: 60 * 1000,
+            fetcher: ({ ifNoneMatch }) => githubApi(
+                url,
+                req.session.accessToken,
+                ifNoneMatch ? { headers: { 'If-None-Match': ifNoneMatch } } : {},
+            ),
+        });
+
+        if (result.stale) res.setHeader('X-Cache', 'stale');
+        res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
+        res.json(result.data);
     } catch (error) {
         req.log.error({ err: error }, 'List issues failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
@@ -86,7 +102,7 @@ router.post('/:owner/:repo/issues', requireAuth, validateBody(issueCreateSchema)
     }
 });
 
-// Update issue
+// Update issue — invalidate cached row so the next read is fresh
 router.patch('/:owner/:repo/issues/:issue_number', requireAuth, validateBody(issueUpdateSchema), async (req, res) => {
     try {
         const { owner, repo, issue_number } = req.params;
@@ -95,6 +111,11 @@ router.patch('/:owner/:repo/issues/:issue_number', requireAuth, validateBody(iss
             method: 'PATCH',
             body: JSON.stringify(req.validatedBody)
         });
+
+        // Inline invalidation: the user just changed this issue, the next read
+        // shouldn't serve a 60s-stale cached copy.
+        invalidate({ userId: req.session.userId, resourceType: 'issues', prefix: `${owner}/${repo}` });
+
         res.json(data);
     } catch (error) {
         req.log.error({ err: error }, 'Update issue failed');
@@ -112,6 +133,10 @@ router.post('/:owner/:repo/issues/:issue_number/comments', requireAuth, validate
             method: 'POST',
             body: JSON.stringify({ body })
         });
+
+        invalidate({ userId: req.session.userId, resourceType: 'issue_comments', prefix: `${owner}/${repo}#${issue_number}` });
+        invalidate({ userId: req.session.userId, resourceType: 'issues', prefix: `${owner}/${repo}#${issue_number}` });
+
         res.json({ success: true, comment: data });
     } catch (error) {
         req.log.error({ err: error }, 'Add comment failed');
@@ -119,24 +144,48 @@ router.post('/:owner/:repo/issues/:issue_number/comments', requireAuth, validate
     }
 });
 
-// Get single issue
+// Get single issue — cached + resilient
 router.get('/:owner/:repo/issues/:issue_number', requireAuth, async (req, res) => {
     try {
         const { owner, repo, issue_number } = req.params;
-        const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}`, req.session.accessToken);
-        res.json(data);
+        const result = await readThrough({
+            userId: req.session.userId,
+            resourceType: 'issues',
+            resourceKey: `${owner}/${repo}#${issue_number}`,
+            ttlMs: 60 * 1000,
+            fetcher: ({ ifNoneMatch }) => githubApi(
+                `/repos/${owner}/${repo}/issues/${issue_number}`,
+                req.session.accessToken,
+                ifNoneMatch ? { headers: { 'If-None-Match': ifNoneMatch } } : {},
+            ),
+        });
+        if (result.stale) res.setHeader('X-Cache', 'stale');
+        res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
+        res.json(result.data);
     } catch (error) {
         req.log.error({ err: error }, 'Get issue failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
 
-// List issue comments
+// List issue comments — cached + resilient
 router.get('/:owner/:repo/issues/:issue_number/comments', requireAuth, async (req, res) => {
     try {
         const { owner, repo, issue_number } = req.params;
-        const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}/comments?per_page=100`, req.session.accessToken);
-        res.json(data);
+        const result = await readThrough({
+            userId: req.session.userId,
+            resourceType: 'issue_comments',
+            resourceKey: `${owner}/${repo}#${issue_number}`,
+            ttlMs: 60 * 1000,
+            fetcher: ({ ifNoneMatch }) => githubApi(
+                `/repos/${owner}/${repo}/issues/${issue_number}/comments?per_page=100`,
+                req.session.accessToken,
+                ifNoneMatch ? { headers: { 'If-None-Match': ifNoneMatch } } : {},
+            ),
+        });
+        if (result.stale) res.setHeader('X-Cache', 'stale');
+        res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
+        res.json(result.data);
     } catch (error) {
         req.log.error({ err: error }, 'List issue comments failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });

@@ -9,8 +9,9 @@ import { IssuesTab } from './IssuesTab'
 import { PullRequestsTab } from './PullRequestsTab'
 import { SettingsTab } from './SettingsTab'
 import { ActionsTab } from './ActionsTab'
+import { CommitsTab } from './CommitsTab'
 import {
-    ArrowLeft, GitBranch, Tag, CircleDot, GitPullRequest, Settings,
+    ArrowLeft, GitBranch, GitCommit, Tag, CircleDot, GitPullRequest, Settings,
     FileText, Star, Eye, GitFork, ExternalLink, Lock, Globe, Loader2, Zap
 } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
@@ -21,6 +22,7 @@ import { PageHeader } from '../ui/PageHeader'
 const TABS = [
     { id: 'overview', label: 'Overview', icon: FileText },
     { id: 'branches', label: 'Branches', icon: GitBranch },
+    { id: 'commits', label: 'Commits', icon: GitCommit },
     { id: 'releases', label: 'Releases', icon: Tag },
     { id: 'actions', label: 'Actions', icon: Zap },
     { id: 'issues', label: 'Issues', icon: CircleDot },
@@ -168,6 +170,7 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
             <div role="tabpanel" id={`tabpanel-repo-detail-tabs-${activeTab}`} aria-labelledby={`tab-repo-detail-tabs-${activeTab}`}>
                 {activeTab === 'overview' && <OverviewTab api={api} repoData={r} onUpdate={handleRepoMutated} />}
                 {activeTab === 'branches' && <BranchesTab api={api} repoData={r} />}
+                {activeTab === 'commits' && <CommitsTab repo={r} />}
                 {activeTab === 'releases' && <ReleasesTab api={api} />}
                 {activeTab === 'actions' && <ActionsTab repo={r} />}
                 {activeTab === 'issues' && <IssuesTab api={api} repoFullName={`${owner}/${repoName}`} />}

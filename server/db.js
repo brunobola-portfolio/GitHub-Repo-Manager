@@ -870,6 +870,67 @@ export function initDB(targetDb = db) {
         if (!err.message?.includes('duplicate column')) throw err;
     }
 
+    // Migration 019 (Resilience: read-through GitHub cache): stores serialised
+    // GitHub API responses keyed by (user, resource_type, resource_key) with
+    // ETag for conditional GETs and a stale_at marker for SWR semantics.
+    // Read by server/lib/gh-cache.js; invalidated by webhook handlers and
+    // by mutations that affect the same resource. When GitHub returns 5xx
+    // or times out, the read-through helper falls back to the cached row
+    // (even if stale) and stamps `X-Cache: stale` on the response.
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS gh_cache (
+            user_id        INTEGER NOT NULL,
+            resource_type  TEXT    NOT NULL,
+            resource_key   TEXT    NOT NULL,
+            payload        TEXT    NOT NULL,
+            etag           TEXT,
+            fetched_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            stale_at       DATETIME NOT NULL,
+            PRIMARY KEY (user_id, resource_type, resource_key),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_gh_cache_resource_type
+             ON gh_cache(resource_type, resource_key)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_gh_cache_fetched_at
+             ON gh_cache(fetched_at)`);
+
+    // Migration 020 (Resilience: GitHub mutation outbox): every write that
+    // hits the GitHub API also lands here so a worker can retry it if the
+    // synchronous attempt failed (5xx/429/timeout). The synchronous path
+    // marks rows `succeeded` immediately on success and only flags
+    // `pending` when the live call fails — so the worker only re-drives
+    // genuinely stuck mutations.
+    //   idempotency_key UNIQUE protects against duplicates if a client
+    //   retries a request: the second attempt resolves to the same row
+    //   instead of double-applying the mutation.
+    //   resolved_at IS NULL is the "pending or failed permanently" set;
+    //   the worker selects WHERE status='pending' AND next_retry_at <= NOW.
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS gh_outbox (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id          INTEGER NOT NULL,
+            method           TEXT    NOT NULL,
+            url              TEXT    NOT NULL,
+            body             TEXT,
+            idempotency_key  TEXT    NOT NULL UNIQUE,
+            status           TEXT    NOT NULL DEFAULT 'pending',
+            attempts         INTEGER NOT NULL DEFAULT 0,
+            last_error       TEXT,
+            response_status  INTEGER,
+            response_body    TEXT,
+            next_retry_at    DATETIME,
+            created_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            completed_at     DATETIME,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_gh_outbox_user_status
+             ON gh_outbox(user_id, status)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_gh_outbox_pending_retry
+             ON gh_outbox(status, next_retry_at)
+             WHERE status = 'pending'`);
+
     logger.info('SQLite Database initialized successfully');
 }
 

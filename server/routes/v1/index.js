@@ -36,6 +36,7 @@ import searchRoutes from '../search.js';
 import adminDlqRoutes from '../admin-dlq.js';
 import adminAiRoutes from '../admin-ai.js';
 import notificationsRoutes from '../notifications.js';
+import outboxRoutes from '../outbox.js';
 import { requireTier } from '../../middleware/require-tier.js';
 import { createCache } from '../../lib/memory-cache.js';
 import { computeAttentionFeed } from '../../lib/attention-feed.js';
@@ -77,6 +78,7 @@ router.use('/search', searchRoutes);
 router.use('/admin/dlq', adminDlqRoutes);
 router.use('/admin/ai', adminAiRoutes);
 router.use('/notifications', notificationsRoutes);
+router.use('/outbox', outboxRoutes);
 
 // ------------------------------------------------------------------
 // Team-specific inline routes

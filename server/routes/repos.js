@@ -30,6 +30,7 @@ import express from 'express';
 import crudRouter from './repos/crud.js';
 import pullsRouter from './repos/pulls.js';
 import issuesRouter from './repos/issues.js';
+import commitsRouter from './repos/commits.js';
 import branchesReleasesRouter from './repos/branches-releases.js';
 import actionsCommunityRouter from './repos/actions-community.js';
 
@@ -38,6 +39,7 @@ const router = express.Router();
 router.use(crudRouter);
 router.use(pullsRouter);
 router.use(issuesRouter);
+router.use(commitsRouter);
 router.use(branchesReleasesRouter);
 router.use(actionsCommunityRouter);
 

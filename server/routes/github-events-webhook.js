@@ -16,14 +16,20 @@ import db from '../db.js';
 import { verifyWebhookSignature, errorResponse } from '../middleware/auth.js';
 import * as pullRequestHandler from '../lib/github-events/pull_request.js';
 import * as pullRequestReviewHandler from '../lib/github-events/pull_request_review.js';
+import * as pullRequestReviewCommentHandler from '../lib/github-events/pull_request_review_comment.js';
 import * as issuesHandler from '../lib/github-events/issues.js';
+import * as issueCommentHandler from '../lib/github-events/issue_comment.js';
+import * as pushHandler from '../lib/github-events/push.js';
 import * as deploymentStatusHandler from '../lib/github-events/deployment_status.js';
 import { upsertTrackedRepoFromWebhook } from '../lib/work-board-tracking.js';
 
 export const HANDLERS = {
     pull_request: pullRequestHandler,
     pull_request_review: pullRequestReviewHandler,
+    pull_request_review_comment: pullRequestReviewCommentHandler,
     issues: issuesHandler,
+    issue_comment: issueCommentHandler,
+    push: pushHandler,
     deployment_status: deploymentStatusHandler,
 };
 
