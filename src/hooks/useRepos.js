@@ -39,7 +39,36 @@ export function useRepos(user) {
     const [error, setError] = useState(null)
     const [errorInfo, setErrorInfo] = useState(null)
     const [message, setMessage] = useState('')
-    const [page, setPage] = useState(1)
+    // Pagination is URL-backed so users can bookmark / share a specific page,
+    // and browser back/forward actually moves between pages instead of
+    // resetting to 1. Reads `?page=` on first render; falls back to 1.
+    const [page, setPageState] = useState(() => {
+        if (typeof window === 'undefined') return 1
+        const fromUrl = Number.parseInt(new URLSearchParams(window.location.search).get('page'), 10)
+        return Number.isFinite(fromUrl) && fromUrl > 0 ? fromUrl : 1
+    })
+    const setPage = useCallback((next) => {
+        setPageState(next)
+        if (typeof window === 'undefined') return
+        const params = new URLSearchParams(window.location.search)
+        if (!next || next === 1) params.delete('page')
+        else params.set('page', String(next))
+        const qs = params.toString()
+        const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname
+        window.history.replaceState(null, '', url)
+    }, [])
+    // Sync state with browser back/forward: if the user navigates between
+    // bookmarked pages, the URL changes via popstate and the hook follows.
+    useEffect(() => {
+        if (typeof window === 'undefined') return undefined
+        const onPop = () => {
+            const fromUrl = Number.parseInt(new URLSearchParams(window.location.search).get('page'), 10)
+            const next = Number.isFinite(fromUrl) && fromUrl > 0 ? fromUrl : 1
+            setPageState(next)
+        }
+        window.addEventListener('popstate', onPop)
+        return () => window.removeEventListener('popstate', onPop)
+    }, [])
     const [perPage, setPerPage] = useState(PAGINATION.defaultPerPage)
     const [totalPages, setTotalPages] = useState(null)
     const [isPerforming, setIsPerforming] = useState(false)
@@ -103,7 +132,7 @@ export function useRepos(user) {
         } finally {
             setLoading(false)
         }
-    }, [])
+    }, [setPage])
 
     // Fetch repos when page or perPage changes.
     // When unauthenticated, avoid calling the repos API and instead

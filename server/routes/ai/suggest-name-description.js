@@ -11,6 +11,7 @@
 
 import express from 'express';
 import { z } from 'zod';
+import logger from '../../lib/logger.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { checkUsageLimit, incrementUsage } from '../../lib/usage-meter.js';
@@ -44,8 +45,11 @@ async function fetchReadmeExcerpt(owner, name, accessToken) {
             const decoded = Buffer.from(data.content, 'base64').toString('utf8');
             return decoded.slice(0, README_EXCERPT_BYTES);
         }
-    } catch {
-        // README endpoint returns 404 when the repo has no README — treat as empty.
+    } catch (e) {
+        // 404 is the expected "no README yet" path. Anything else (token
+        // expired, GitHub 5xx) is logged so the silent fallback to empty
+        // string doesn't mask a real auth failure.
+        if (e?.status !== 404) logger.warn({ err: e, owner, name }, 'suggest-name-description: README fetch failed');
     }
     return '';
 }
@@ -60,7 +64,11 @@ function loadIndexedAiMetadata(userId, repoId) {
             .get(userId, repoId);
         if (!row) return null;
         return { summary: row.summary || null };
-    } catch {
+    } catch (e) {
+        // SQLite read failure is rare (corrupted db, schema mismatch). Log
+        // for observability so a chronic indexing-table problem isn't masked
+        // by the graceful null fallback.
+        logger.warn({ err: e, userId, repoId }, 'suggest-name-description: repo_metadata lookup failed');
         return null;
     }
 }

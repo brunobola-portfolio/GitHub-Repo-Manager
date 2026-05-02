@@ -32,19 +32,27 @@ router.post('/ai/quality-report', requireAuth, requireAI, async (req, res) => {
         const { repo } = req.body;
         if (!repo) return res.status(400).json({ error: 'Repo data required' });
 
-        // Fetch README
+        // Fetch README. 404 means no README exists yet — that's expected, the
+        // AI report just runs without it. Anything else (401/403 token issue,
+        // 5xx, network) we log for observability so silent degradation doesn't
+        // mask a real auth failure.
         let readmeContent = '';
         try {
             const { data } = await githubApi(`/repos/${repo.full_name}/readme`, req.session.accessToken);
             readmeContent = Buffer.from(data.content, 'base64').toString('utf-8');
-        } catch (e) { /* No README */ }
+        } catch (e) {
+            if (e?.status !== 404) req.log.warn({ err: e, repo: repo.full_name }, 'Quality report: README fetch failed');
+        }
 
-        // Fetch file structure
+        // Fetch file structure. Same logic — 404 is "empty repo", anything
+        // else is worth a warn.
         let fileStructure = [];
         try {
             const { data } = await githubApi(`/repos/${repo.full_name}/contents`, req.session.accessToken);
             fileStructure = data.map(f => ({ name: f.name, type: f.type }));
-        } catch (e) { /* No contents */ }
+        } catch (e) {
+            if (e?.status !== 404) req.log.warn({ err: e, repo: repo.full_name }, 'Quality report: contents fetch failed');
+        }
 
         const report = await aiService.generateQualityReport(repo, readmeContent, fileStructure);
         incrementAIUsage(userId, 'ai_insights');
