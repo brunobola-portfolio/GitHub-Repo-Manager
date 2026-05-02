@@ -118,6 +118,9 @@ export function RepoList({
 				availableLanguages={availableLanguages}
 				onRefresh={onRefresh}
 				loading={loading}
+				clearAllFilters={clearAllFilters}
+				totalCount={repos.length}
+				filteredCount={filteredRepos.length}
 			/>
 
 			{/* Content Area */}

@@ -46,6 +46,11 @@ export function RepoFilterBar({
 	// refresh
 	onRefresh,
 	loading,
+	// active-filter visibility (so users coming from a Dashboard stat-card
+	// click can see what's filtering and clear it in one click)
+	clearAllFilters,
+	totalCount,
+	filteredCount,
 }) {
 	const [showSelectionMenu, setShowSelectionMenu] = useState(false)
 	const [filterSheetOpen, setFilterSheetOpen] = useState(false)
@@ -58,6 +63,18 @@ export function RepoFilterBar({
 		visibilityFilter !== 'all',
 		languageFilter !== 'all',
 	].filter(Boolean).length
+
+	// Active-filter chips: human-readable labels for the chip row so users
+	// landing on a filtered list (e.g. clicked "Source Repos" on Dashboard)
+	// can see exactly what's filtering and dismiss each chip individually.
+	const TYPE_LABELS = { source: 'Sources only', fork: 'Forks only', archived: 'Archived only' }
+	const VISIBILITY_LABELS = { public: 'Public only', private: 'Private only' }
+	const activeChips = [
+		typeFilter !== 'all' && { key: 'type', label: TYPE_LABELS[typeFilter] || typeFilter, clear: () => setTypeFilter('all') },
+		visibilityFilter !== 'all' && { key: 'visibility', label: VISIBILITY_LABELS[visibilityFilter] || visibilityFilter, clear: () => setVisibilityFilter('all') },
+		languageFilter !== 'all' && { key: 'language', label: `Language: ${languageFilter}`, clear: () => setLanguageFilter('all') },
+		searchQuery && { key: 'search', label: `Search: ${searchQuery.length > 28 ? searchQuery.slice(0, 25) + '…' : searchQuery}`, clear: () => setSearchQuery('') },
+	].filter(Boolean)
 
 	// Close selection dropdown on click outside or scroll
 	useEffect(() => {
@@ -81,7 +98,8 @@ export function RepoFilterBar({
 	}
 
 	return (
-		<div className="sticky z-10 p-2 md:p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-xl shadow-slate-200/50 dark:shadow-black/50 flex flex-wrap md:flex-nowrap gap-2 items-center transition-all duration-300" style={{ top: 'calc(var(--header-height) + var(--layout-py))' }}>
+		<div className="sticky z-10 p-2 md:p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-xl shadow-slate-200/50 dark:shadow-black/50 transition-all duration-300" style={{ top: 'calc(var(--header-height) + var(--layout-py))' }}>
+			<div className="flex flex-wrap md:flex-nowrap gap-2 items-center">
 
 			{/* Search & View Toggle */}
 			<div className="flex items-center gap-2 w-full md:w-auto md:flex-1 flex-wrap sm:flex-nowrap min-w-0">
@@ -353,5 +371,44 @@ export function RepoFilterBar({
 				</MobileDrawer>
 			)}
 		</div>
+
+		{/* Active-filter chip row — surfaces filters arriving from a Dashboard
+			stat-card click ({ visibility: 'public' }, { archived: true }, …)
+			so the user immediately sees what's hiding repos and can clear
+			individual filters or the whole set with one click. */}
+		{activeChips.length > 0 && (
+			<div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/40 flex flex-wrap items-center gap-2">
+				<span className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
+					Filtering
+					{typeof totalCount === 'number' && typeof filteredCount === 'number' && (
+						<span className="ml-1 normal-case tracking-normal font-medium text-slate-500/80 dark:text-slate-400/80">
+							· {filteredCount} of {totalCount}
+						</span>
+					)}
+				</span>
+				{activeChips.map(chip => (
+					<button
+						key={chip.key}
+						type="button"
+						onClick={chip.clear}
+						className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-700/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+						aria-label={`Remove filter: ${chip.label}`}
+					>
+						<span>{chip.label}</span>
+						<X className="w-3 h-3 opacity-70" aria-hidden="true" />
+					</button>
+				))}
+				{clearAllFilters && activeChips.length > 1 && (
+					<button
+						type="button"
+						onClick={clearAllFilters}
+						className="ml-auto text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors"
+					>
+						Clear all
+					</button>
+				)}
+			</div>
+		)}
+	</div>
 	)
 }
