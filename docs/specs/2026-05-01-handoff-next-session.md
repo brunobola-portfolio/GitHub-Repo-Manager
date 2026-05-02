@@ -239,6 +239,38 @@ The `tests/lint/no-standalone-loader2.test.js` regression is fixed (commit `5a26
 
 ---
 
+## Second premium-polish pass — 2026-05-02 (later same session, panel + superpowers)
+
+User asked for the same validation again with explicit "painel de assistentes e superpowers skill". Invoked `superpowers:dispatching-parallel-agents`, ran 5 fresh audits covering NEW angles (server-side / performance / a11y / cross-page nav / mobile parity deep). Real fixes shipped in 2 commits:
+
+- `600e18a` — server AI error mapping (9 catch blocks across `dev-toolkit.js` + `indexing.js` now route through `mapAIErrorToResponse` / `handleAIError` instead of returning raw 500s on quota / rate-limit / auth failures). migration.js was already correct (audit was wrong on that file).
+- `befa8ca` — touch-visible StatCard hint (was opacity-0 group-hover, invisible on touch); hash-based pricing nav replaced with React state routing (`onNavigatePricing` for TeamHub + new `app:navigate-pricing` CustomEvent for QuotaExceededState — preserves browser history); ActivityChart + LanguageChart lazy-loaded (recharts ~371 kB deferred, charts now in own 3.6 / 5.4 kB chunks); dashboard org avatars get `loading="lazy"` + `decoding="async"`.
+
+### Audit verdicts (second pass, 2026-05-02 later)
+
+- **Server security/error**: 9 real catch blocks fixed via mapper. Migration routes already correct. Input-validation gaps documented but not load-bearing.
+- **Performance**: 1 unidentified 1044 kB esm chunk (pre-existing, requires `npm run build:analyze` to diagnose); 2 charts eager-loaded (now lazy); 5 avatars eager (now lazy).
+- **A11y**: 12 findings, mostly false positives. Audit was wrong on the SlimIconButton HIGH item (every caller passes `label`). Other findings deferred as polish-tier.
+- **Cross-page navigation**: 12 findings — 1 HIGH (hash navigation antipattern) fixed. URL-params for RepoList pagination + AttentionFeed context preservation deferred — none break user flows.
+- **Mobile parity deep**: 10 findings — 1 HIGH (StatCard hint hidden on touch) fixed. Other findings (sparkline at < sm, chart tooltip font size, max-h-[60vh] on iPhone SE) all polish-tier.
+
+### Final final test results (2026-05-02 later)
+
+- **Vitest**: 3088 passing, 24 skipped, **zero failures**.
+- **Playwright e2e**: **79 passed, 9 skipped, zero failures** (full suite, ~1.4 min).
+- **Build**: green (740ms). Charts now split into `ActivityChart-*.js` (3.6 kB) + `LanguageChart-*.js` (5.4 kB) standalone; recharts loads only when dashboard charts visible.
+- **ESLint**: clean.
+- **Working tree**: clean.
+
+### Remaining follow-ups (low priority, deferred)
+
+- Investigate the 1044 kB pre-existing `esm-*.js` chunk via `npm run build:analyze` — likely a vendor pre-bundle from a non-matched node_modules entry that doesn't appear in `manualChunks` rules.
+- Add URL-params persistence to RepoList pagination (deep-linkable repo-list pages).
+- A11y polish: focus-visible rings on a few buttons (MobileQuickActionsFab, ChatInput textarea), aria-expanded on menu toggle buttons, aria-selected on listbox items in ModelCombobox.
+- Empty catch blocks in dev-toolkit.js `catch (e) { /* No README */ }` and similar — could `req.log.warn(...)` for observability.
+
+---
+
 ## 6. Bootstrap protocol for the next session
 
 1. **Read this doc first.** It's the source of truth.
