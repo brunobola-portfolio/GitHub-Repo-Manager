@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
@@ -8,6 +8,7 @@ import { Spinner } from '../ui/Spinner'
 import { IssueDetailPanel } from './IssueDetailPanel'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
+import { useFocusedRow } from '../../hooks/useFocusedRow'
 import { issueActions } from '../../actions/issueActions'
 
 export function IssuesTab({ api, repoFullName }) {
@@ -36,6 +37,15 @@ export function IssuesTab({ api, repoFullName }) {
     const [message, setMessage] = useState(null)
     const [form, setForm] = useState({ title: '', body: '' })
     const [selectedIssue, setSelectedIssue] = useState(null)
+
+    const { focusedIndex } = useFocusedRow(selectedIssue ? [] : issues, {
+        onOpen: (issue) => issue && setSelectedIssue(issue),
+    })
+    const rowRefs = useRef([])
+    useEffect(() => {
+        const node = rowRefs.current[focusedIndex]
+        if (node?.scrollIntoView) node.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }, [focusedIndex])
 
     // Bridge events from the command palette via App.jsx. The palette emits
     // `app:open-issue-detail` (App.jsx routes to `repo-detail:select-issue`)
@@ -184,13 +194,18 @@ export function IssuesTab({ api, repoFullName }) {
                 <div className="flex justify-center py-12"><Spinner size="lg" /></div>
             ) : (
                 <div className="space-y-2">
-                    {issues.map(issue => (
+                    {issues.map((issue, idx) => (
                         <Card
                             key={issue.id}
+                            ref={(node) => { rowRefs.current[idx] = node }}
                             role="button"
                             tabIndex={0}
                             aria-label={`Open issue #${issue.number}: ${issue.title}`}
-                            className="p-3 cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            className={`p-3 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                                idx === focusedIndex
+                                    ? 'border-indigo-400 dark:border-indigo-600 bg-indigo-50/40 dark:bg-indigo-900/15 ring-1 ring-indigo-300 dark:ring-indigo-700/60'
+                                    : 'hover:border-indigo-300 dark:hover:border-indigo-600'
+                            }`}
                             onClick={() => setSelectedIssue(issue)}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {

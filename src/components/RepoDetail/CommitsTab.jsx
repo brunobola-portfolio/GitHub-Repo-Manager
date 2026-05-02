@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { GitCommit, ExternalLink, Clock } from 'lucide-react'
 import { Card } from '../ui/Card'
@@ -7,6 +7,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { Skeleton } from '../ui/Skeleton'
 import { StaleDataBadge } from '../ui/StaleDataBadge'
 import { useResilientFetch } from '../../hooks/useResilientFetch'
+import { useFocusedRow } from '../../hooks/useFocusedRow'
 import { CommitDetailPanel } from './CommitDetailPanel'
 
 function formatAge(iso) {
@@ -31,6 +32,20 @@ export function CommitsTab({ repo }) {
     const { data: commits, loading, error, stale, fetchedAt, reload } = useResilientFetch(
         `/api/v1/repos/${owner}/${repoName}/commits?per_page=50`,
     )
+
+    const items = Array.isArray(commits) ? commits : []
+    const { focusedIndex } = useFocusedRow(items, {
+        onOpen: (commit) => commit?.sha && setSelectedSha(commit.sha),
+    })
+
+    // Scroll the focused row into view as the user navigates.
+    const rowRefs = useRef([])
+    useEffect(() => {
+        const node = rowRefs.current[focusedIndex]
+        if (node?.scrollIntoView) {
+            node.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+        }
+    }, [focusedIndex])
 
     if (loading && !commits) {
         return (
@@ -83,6 +98,7 @@ export function CommitsTab({ repo }) {
                     <h2 className="font-bold text-sm text-slate-800 dark:text-slate-200">
                         {commits.length} {commits.length === 1 ? 'commit' : 'commits'}
                     </h2>
+                    <KeyboardHint />
                 </div>
                 {stale && <StaleDataBadge fetchedAt={fetchedAt} onRetry={reload} />}
             </div>
@@ -92,15 +108,21 @@ export function CommitsTab({ repo }) {
                     const author = commit.author || commit.commit?.author
                     const message = commit.commit?.message?.split('\n')[0] || '(no message)'
                     const sha = commit.sha?.slice(0, 7)
+                    const isFocused = idx === focusedIndex
                     return (
                         <motion.button
                             key={commit.sha}
+                            ref={(node) => { rowRefs.current[idx] = node }}
                             type="button"
                             onClick={() => setSelectedSha(commit.sha)}
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.2, delay: Math.min(idx * 0.02, 0.3) }}
-                            className="w-full flex items-start gap-3 p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group"
+                            className={`w-full flex items-start gap-3 p-4 text-left transition-colors group ${
+                                isFocused
+                                    ? 'bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-inset ring-indigo-300 dark:ring-indigo-700/60'
+                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                            }`}
                         >
                             {author?.avatar_url ? (
                                 <img
@@ -153,5 +175,19 @@ export function CommitsTab({ repo }) {
                 />
             )}
         </div>
+    )
+}
+
+// Tiny inline keyboard hint shown next to the row count. Linear-style
+// — visible enough to discover the affordance, subtle enough to ignore.
+function KeyboardHint() {
+    return (
+        <span className="hidden md:inline-flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 ml-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">j</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">k</kbd>
+            <span>to navigate</span>
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">↵</kbd>
+            <span>to open</span>
+        </span>
     )
 }

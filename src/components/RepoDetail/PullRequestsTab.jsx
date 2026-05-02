@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
@@ -11,6 +11,7 @@ import { PRRiskBadges } from './PRRiskBadges'
 import { prActions } from '../../actions/prActions'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
+import { useFocusedRow } from '../../hooks/useFocusedRow'
 
 export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
     const { toast } = useToast()
@@ -39,6 +40,17 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
     const [selectedPR, setSelectedPR] = useState(null)
     const [branches, setBranches] = useState([])
     const [confirmAction, setConfirmAction] = useState(null)
+
+    // Linear-style j/k navigation + Enter to open. Disabled while the detail
+    // panel is open so the keys belong to the panel.
+    const { focusedIndex } = useFocusedRow(selectedPR ? [] : pulls, {
+        onOpen: (pr) => pr && setSelectedPR(pr),
+    })
+    const rowRefs = useRef([])
+    useEffect(() => {
+        const node = rowRefs.current[focusedIndex]
+        if (node?.scrollIntoView) node.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }, [focusedIndex])
 
     // Bridge event from the command palette via App.jsx — selects a PR
     // inside this tab so the detail panel renders.
@@ -273,13 +285,18 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                 <div className="flex justify-center py-12"><Spinner size="lg" /></div>
             ) : (
                 <div className="space-y-2">
-                    {pulls.map(pr => (
+                    {pulls.map((pr, idx) => (
                         <Card
                             key={pr.id}
+                            ref={(node) => { rowRefs.current[idx] = node }}
                             role="button"
                             tabIndex={0}
                             aria-label={`Open pull request #${pr.number}: ${pr.title}`}
-                            className="p-3 cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            className={`p-3 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                                idx === focusedIndex
+                                    ? 'border-indigo-400 dark:border-indigo-600 bg-indigo-50/40 dark:bg-indigo-900/15 ring-1 ring-indigo-300 dark:ring-indigo-700/60'
+                                    : 'hover:border-indigo-300 dark:hover:border-indigo-600'
+                            }`}
                             onClick={() => setSelectedPR(pr)}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
