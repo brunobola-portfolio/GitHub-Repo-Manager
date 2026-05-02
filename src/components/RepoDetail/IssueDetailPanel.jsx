@@ -10,6 +10,7 @@ import {
 import { Spinner } from '../ui/Spinner'
 import { AIIssuePlanner } from './AIIssuePlanner'
 import { IssueSidebar, IssueTimeline } from './IssueSidebar'
+import { useDraftPersistence } from '../../hooks/useDraftPersistence'
 import { useToast } from '../../hooks/useToast'
 import { formatRelativeTime } from '../../utils/format'
 
@@ -20,7 +21,8 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
     const [comments, setComments] = useState([])
     const [loading, setLoading] = useState(true)
     const [fetchError, setFetchError] = useState(null)
-    const [newComment, setNewComment] = useState('')
+    const { value: newComment, setValue: setNewComment, clear: clearCommentDraft } =
+        useDraftPersistence(`draft:issue-comment:${issue.number}`)
     const [submitting, setSubmitting] = useState(false)
     const [message, setMessage] = useState(null)
     const commentRef = useRef(null)
@@ -55,7 +57,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
         setMessage(null)
         try {
             await api.commentOnIssue(issue.number, newComment)
-            setNewComment('')
+            clearCommentDraft()
             setMessage({ type: 'success', text: 'Comment added' })
             toast.success('Comment posted')
             // Reload comments

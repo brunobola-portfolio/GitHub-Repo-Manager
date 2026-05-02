@@ -13,6 +13,7 @@ import {
 import { Spinner } from '../ui/Spinner'
 import { useToast } from '../../hooks/useToast'
 import { useAIStatus } from '../../hooks/useAIStatus'
+import { useDraftPersistence } from '../../hooks/useDraftPersistence'
 import { formatRelativeTime } from '../../utils/format'
 
 const REVIEW_STATES = {
@@ -42,7 +43,8 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
     const [comments, setComments] = useState([])
     const [loading, setLoading] = useState(true)
     const [fetchError, setFetchError] = useState(null)
-    const [newComment, setNewComment] = useState('')
+    const { value: newComment, setValue: setNewComment, clear: clearCommentDraft } =
+        useDraftPersistence(`draft:pr-comment:${pr.number}`)
     const [submitting, setSubmitting] = useState(false)
     const [mergeMethod, setMergeMethod] = useState('merge')
     const [merging, setMerging] = useState(false)
@@ -84,7 +86,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
         setMessage(null)
         try {
             await api.commentOnIssue(pr.number, newComment) // PRs use issues API for comments
-            setNewComment('')
+            clearCommentDraft()
             setMessage({ type: 'success', text: 'Comment added' })
             toast.success('Comment posted')
             const data = await api.fetchIssueComments(pr.number)
@@ -567,7 +569,9 @@ function PRFileDiff({ file, getFileIcon }) {
  */
 function ReviewComposer({ api, prNumber, onSubmitted }) {
     const { toast } = useToast()
-    const [body, setBody] = useState('')
+    // Draft survives accidental modal close / navigate-away — Linear-style.
+    const { value: body, setValue: setBody, clear: clearDraft } =
+        useDraftPersistence(`draft:pr-review:${prNumber}`)
     const [submitting, setSubmitting] = useState(null) // 'APPROVE' | 'REQUEST_CHANGES' | 'COMMENT'
 
     const submit = async (event) => {
@@ -578,7 +582,7 @@ function ReviewComposer({ api, prNumber, onSubmitted }) {
         setSubmitting(event)
         try {
             await api.submitPullReview(prNumber, { event, body: body.trim() || undefined })
-            setBody('')
+            clearDraft()
             toast.success(
                 event === 'APPROVE' ? 'Approved'
                     : event === 'REQUEST_CHANGES' ? 'Changes requested'
