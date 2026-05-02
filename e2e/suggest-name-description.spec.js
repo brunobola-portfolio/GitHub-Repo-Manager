@@ -55,14 +55,22 @@ test.describe('Suggest Name & Description', () => {
     const firstCard = page.locator('[data-testid="repo-card"]').first()
     await firstCard.click({ button: 'right' })
 
-    // Navigate AI → Suggest Name & Description
+    // Navigate AI → Suggest Name & Description. Submenu items now render
+    // with a description div as a sibling of the label, so the accessible
+    // name is "label + description" — exact-match on label alone fails.
+    // Targeting the per-item data-testid avoids the issue.
     await page.getByRole('menuitem', { name: 'AI', exact: true }).hover()
-    await page.getByRole('menuitem', { name: 'Suggest Name & Description', exact: true }).click()
+    await page.getByTestId('menu-item-ai_suggest_name_desc').click()
 
     // Modal renders with the title visible.
     await expect(
       page.getByRole('heading', { name: 'Suggest Name & Description' })
     ).toBeVisible()
+
+    // Trigger the suggestion fetch — the modal does not auto-fetch on open
+    // (preserves user edits across re-opens). The button label flips between
+    // "Suggest with AI" / "Suggest (heuristic)" depending on AI status.
+    await page.getByRole('button', { name: /^Suggest( with AI| \(heuristic\))?$/i }).click()
 
     // Wait for the skeleton to disappear — the mock has a 600ms delay.
     await expect(page.locator('[data-testid="suggest-skeleton"]')).toHaveCount(0, { timeout: 5000 })

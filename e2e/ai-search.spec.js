@@ -63,8 +63,10 @@ test.describe('AI Search & Features', () => {
     const repoCard = page.getByRole('button', { name: new RegExp(SAMPLE_PUBLIC_REPO, 'i') }).first()
     await repoCard.hover()
 
-    // AI Insights button should become visible
-    const insightsButton = page.getByTitle('AI Insights').first()
+    // The AI insights affordance is the `ai_quality` registry action, surfaced
+    // on RepoCard's quick-actions row with title "Quality Report — AI scores …".
+    // Earlier name "AI Insights" was renamed when the action was registered.
+    const insightsButton = page.getByTitle(/Quality Report/i).first()
     await expect(insightsButton).toBeVisible({ timeout: 5000 })
   })
 

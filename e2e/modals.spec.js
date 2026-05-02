@@ -16,12 +16,18 @@ test.describe('Modal Interactions', () => {
     const contextMenu = page.locator('[role="menu"]')
     await expect(contextMenu).toBeVisible({ timeout: 5000 })
 
-    // Verify core context menu sections. "AI Insights" was removed from the
-    // context menu in f33acba and should not be asserted here.
-    await expect(contextMenu.getByText('Open on GitHub')).toBeVisible()
+    // Verify core context menu sections via the per-item data-testid contract
+    // (exposed by the action registry's menu renderer). Targeting the testid
+    // avoids strict-mode violations when an item description happens to share
+    // a substring with another menu label (e.g. Archive's description mentions
+    // "unarchived", which used to collide with `getByText('Archive')`).
+    // "AI Insights" was removed from the context menu in f33acba.
+    await expect(contextMenu.getByTestId('menu-item-open_on_github')).toBeVisible()
+    // "Copy Clone URL" is a parent submenu without its own testid; targeting
+    // its label text works because no other menu item shares that string.
     await expect(contextMenu.getByText('Copy Clone URL')).toBeVisible()
-    await expect(contextMenu.getByText('Archive')).toBeVisible()
-    await expect(contextMenu.getByText('Delete Repository')).toBeVisible()
+    await expect(contextMenu.getByTestId('menu-item-archive')).toBeVisible()
+    await expect(contextMenu.getByTestId('menu-item-delete')).toBeVisible()
   })
 
   test('should close context menu when clicking elsewhere', async ({ page }) => {

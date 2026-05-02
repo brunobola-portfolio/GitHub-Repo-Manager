@@ -1292,11 +1292,16 @@ function AppContent() {
         selectedRepoDetailEntities={palettePropEntities}
       />
 
-      {/* Mobile-only FAB to reach the command palette without a keyboard. */}
+      {/* Mobile-only FAB to reach the command palette without a keyboard.
+        The bottom navigation bar (Header.jsx fixed bottom-0) is always
+        visible while the user is authenticated, so we lift the FAB above
+        it (`bottom-20`) — otherwise the FAB intercepts clicks on the "More"
+        nav button at the bottom-right of the screen. */}
       <MobileFAB
         icon={Search}
         label="Open command palette"
         onClick={commandPalette.open}
+        shiftAboveBottomBar={!!user}
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
