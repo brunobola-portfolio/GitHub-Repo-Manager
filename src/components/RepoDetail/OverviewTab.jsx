@@ -84,9 +84,27 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                             <Spinner size="lg" />
                         </div>
                     ) : error ? (
-                        <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
-                            {error?.message || 'Failed to load README'}
-                        </div>
+                        // 404 means no README yet — show the empty-state, not
+                        // a red error banner. 401/403 means the user lost the
+                        // GitHub token; show a friendly "sign in to view"
+                        // instead of leaking the raw "Session expired" string
+                        // from the server. Other failures get a generic retry
+                        // message — never the raw server message.
+                        error.status === 404 ? (
+                            <EmptyState
+                                icon={BookOpen}
+                                title="No README"
+                                description="This repository doesn't have a README yet."
+                            />
+                        ) : (error.status === 401 || error.status === 403) ? (
+                            <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-sm text-amber-700 dark:text-amber-400">
+                                Sign in again to view this README.
+                            </div>
+                        ) : (
+                            <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
+                                Couldn&apos;t load the README. Please retry.
+                            </div>
+                        )
                     ) : readme?.content ? (
                         <div className="prose dark:prose-invert prose-sm max-w-none overflow-auto">
                             <pre className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">

@@ -161,7 +161,7 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
                 onTabChange={setActiveTab}
                 variant="underline"
                 layoutId="repo-detail-tabs"
-                className="overflow-x-auto [mask-image:linear-gradient(to_right,transparent,black_24px,black_calc(100%-24px),transparent)]"
+                className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,transparent,black_24px,black_calc(100%-24px),transparent)]"
             />
 
             {/* Tab Content */}

@@ -247,7 +247,12 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
     }
 
     return (
-        <div className="space-y-6 max-w-2xl">
+        // mx-auto centers the form column on wide viewports — without it the
+        // content was stuck to the left at 1440px+ leaving the right half of
+        // the page empty. max-w-3xl is slightly roomier than the previous 2xl
+        // so the Danger Zone + AI-suggest panels breathe — closer to the
+        // Branches / PRs / Issues tab feel.
+        <div className="space-y-6 max-w-3xl mx-auto">
             {/* General Settings */}
             <Card className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
