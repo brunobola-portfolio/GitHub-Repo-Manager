@@ -18,8 +18,7 @@ import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js'
 import { issueCreateSchema, issueUpdateSchema, issueCommentSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { readThrough, invalidate } from '../../lib/gh-cache.js';
-import { enqueueAndExecute, makeIdempotencyKey } from '../../lib/gh-outbox.js';
-import crypto from 'crypto';
+import { executeViaOutbox } from '../../lib/outbox-helper.js';
 
 const router = express.Router();
 
@@ -87,60 +86,41 @@ router.get('/:owner/:repo/issues', requireAuth, async (req, res) => {
     }
 });
 
-// Create issue
+// Create issue — outbox-routed
 router.post('/:owner/:repo/issues', requireAuth, validateBody(issueCreateSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
         const { title, body, labels, assignees, milestone } = req.validatedBody;
-
-        const { data } = await githubApi(`/repos/${owner}/${repo}/issues`, req.session.accessToken, {
+        const result = await executeViaOutbox(req, {
             method: 'POST',
-            body: JSON.stringify({ title, body, labels, assignees, milestone })
+            url: `/repos/${owner}/${repo}/issues`,
+            body: { title, body, labels, assignees, milestone },
         });
-        res.json({ success: true, issue: data });
+        invalidate({ userId: req.session.userId, resourceType: 'issues', prefix: `${owner}/${repo}` });
+        if (result.queued) {
+            return res.status(202).json({ queued: true, outboxId: result.outboxId, message: 'Issue creation queued — will sync when GitHub is reachable.' });
+        }
+        res.json({ success: true, issue: result.data });
     } catch (error) {
         req.log.error({ err: error }, 'Create issue failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
 
-// Update issue — routes through gh-outbox so a transient GitHub 5xx queues
-// the mutation for retry instead of failing closed. Idempotency key is
-// (resource + body hash) so the same close-issue payload posted twice
-// resolves to one row, not two GitHub calls.
+// Update issue — outbox-routed (5xx queues for retry; idempotency_key
+// dedupes if the same payload is sent twice).
 router.patch('/:owner/:repo/issues/:issue_number', requireAuth, validateBody(issueUpdateSchema), async (req, res) => {
     try {
         const { owner, repo, issue_number } = req.params;
-        const url = `/repos/${owner}/${repo}/issues/${issue_number}`;
-        const body = req.validatedBody;
-        const bodyHash = crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex').slice(0, 16);
-        const idempotencyKey = makeIdempotencyKey('PATCH', url, bodyHash);
-
-        const result = await enqueueAndExecute({
-            userId: req.session.userId,
+        const result = await executeViaOutbox(req, {
             method: 'PATCH',
-            url,
-            body,
-            idempotencyKey,
-            token: req.session.accessToken,
+            url: `/repos/${owner}/${repo}/issues/${issue_number}`,
+            body: req.validatedBody,
         });
-
-        // Inline invalidation: the user just changed this issue, the next
-        // read shouldn't serve a 60s-stale cached copy. Run regardless of
-        // queued state — when the mutation eventually lands, the cache is
-        // already free of the now-wrong rows.
         invalidate({ userId: req.session.userId, resourceType: 'issues', prefix: `${owner}/${repo}` });
-
         if (result.queued) {
-            // GitHub was unreachable; outbox worker will retry. The client
-            // shows a 'pending sync' banner via /api/v1/outbox/pending.
-            return res.status(202).json({
-                queued: true,
-                outboxId: result.outboxId,
-                message: 'Update queued — will sync to GitHub when it is reachable.',
-            });
+            return res.status(202).json({ queued: true, outboxId: result.outboxId, message: 'Update queued — will sync when GitHub is reachable.' });
         }
-
         res.json(result.data);
     } catch (error) {
         req.log.error({ err: error }, 'Update issue failed');
@@ -148,21 +128,22 @@ router.patch('/:owner/:repo/issues/:issue_number', requireAuth, validateBody(iss
     }
 });
 
-// Add issue comment
+// Add issue comment — outbox-routed
 router.post('/:owner/:repo/issues/:issue_number/comments', requireAuth, validateBody(issueCommentSchema), async (req, res) => {
     try {
         const { owner, repo, issue_number } = req.params;
         const { body } = req.validatedBody;
-
-        const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}/comments`, req.session.accessToken, {
+        const result = await executeViaOutbox(req, {
             method: 'POST',
-            body: JSON.stringify({ body })
+            url: `/repos/${owner}/${repo}/issues/${issue_number}/comments`,
+            body: { body },
         });
-
         invalidate({ userId: req.session.userId, resourceType: 'issue_comments', prefix: `${owner}/${repo}#${issue_number}` });
         invalidate({ userId: req.session.userId, resourceType: 'issues', prefix: `${owner}/${repo}#${issue_number}` });
-
-        res.json({ success: true, comment: data });
+        if (result.queued) {
+            return res.status(202).json({ queued: true, outboxId: result.outboxId, message: 'Comment queued — will sync when GitHub is reachable.' });
+        }
+        res.json({ success: true, comment: result.data });
     } catch (error) {
         req.log.error({ err: error }, 'Add comment failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
@@ -221,7 +202,7 @@ router.get('/:owner/:repo/issues/:issue_number/comments', requireAuth, async (re
 // Issue parity — labels, assignees, timeline (Phase 3)
 // ------------------------------------------------------------------
 
-// Replace labels on an issue
+// Replace labels on an issue — outbox-routed
 router.put('/:owner/:repo/issues/:issue_number/labels', requireAuth, async (req, res) => {
     try {
         const { owner, repo, issue_number } = req.params;
@@ -229,19 +210,23 @@ router.put('/:owner/:repo/issues/:issue_number/labels', requireAuth, async (req,
         if (!Array.isArray(labels)) {
             return errorResponse(res, 400, 'labels must be an array', 'VALIDATION_ERROR');
         }
-        const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}/labels`, req.session.accessToken, {
+        const result = await executeViaOutbox(req, {
             method: 'PUT',
-            body: JSON.stringify({ labels }),
+            url: `/repos/${owner}/${repo}/issues/${issue_number}/labels`,
+            body: { labels },
         });
         invalidate({ userId: req.session.userId, resourceType: 'issues', prefix: `${owner}/${repo}` });
-        res.json(data);
+        if (result.queued) {
+            return res.status(202).json({ queued: true, outboxId: result.outboxId });
+        }
+        res.json(result.data);
     } catch (error) {
         req.log.error({ err: error }, 'Replace issue labels failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
 
-// Add assignees
+// Add assignees — outbox-routed
 router.post('/:owner/:repo/issues/:issue_number/assignees', requireAuth, async (req, res) => {
     try {
         const { owner, repo, issue_number } = req.params;
@@ -249,19 +234,23 @@ router.post('/:owner/:repo/issues/:issue_number/assignees', requireAuth, async (
         if (!Array.isArray(assignees)) {
             return errorResponse(res, 400, 'assignees must be an array', 'VALIDATION_ERROR');
         }
-        const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}/assignees`, req.session.accessToken, {
+        const result = await executeViaOutbox(req, {
             method: 'POST',
-            body: JSON.stringify({ assignees }),
+            url: `/repos/${owner}/${repo}/issues/${issue_number}/assignees`,
+            body: { assignees },
         });
         invalidate({ userId: req.session.userId, resourceType: 'issues', prefix: `${owner}/${repo}` });
-        res.json(data);
+        if (result.queued) {
+            return res.status(202).json({ queued: true, outboxId: result.outboxId });
+        }
+        res.json(result.data);
     } catch (error) {
         req.log.error({ err: error }, 'Add assignees failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
 
-// Remove assignees
+// Remove assignees — outbox-routed
 router.delete('/:owner/:repo/issues/:issue_number/assignees', requireAuth, async (req, res) => {
     try {
         const { owner, repo, issue_number } = req.params;
@@ -269,12 +258,16 @@ router.delete('/:owner/:repo/issues/:issue_number/assignees', requireAuth, async
         if (!Array.isArray(assignees)) {
             return errorResponse(res, 400, 'assignees must be an array', 'VALIDATION_ERROR');
         }
-        const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}/assignees`, req.session.accessToken, {
+        const result = await executeViaOutbox(req, {
             method: 'DELETE',
-            body: JSON.stringify({ assignees }),
+            url: `/repos/${owner}/${repo}/issues/${issue_number}/assignees`,
+            body: { assignees },
         });
         invalidate({ userId: req.session.userId, resourceType: 'issues', prefix: `${owner}/${repo}` });
-        res.json(data);
+        if (result.queued) {
+            return res.status(202).json({ queued: true, outboxId: result.outboxId });
+        }
+        res.json(result.data);
     } catch (error) {
         req.log.error({ err: error }, 'Remove assignees failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });

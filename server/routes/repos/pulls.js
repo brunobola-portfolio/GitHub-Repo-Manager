@@ -25,7 +25,8 @@ import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js'
 import { requireTier } from '../../middleware/require-tier.js';
 import { prCreateSchema, prUpdateSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
-import { readThrough } from '../../lib/gh-cache.js';
+import { readThrough, invalidate } from '../../lib/gh-cache.js';
+import { executeViaOutbox } from '../../lib/outbox-helper.js';
 
 const router = express.Router();
 
@@ -106,51 +107,62 @@ router.get('/:owner/:repo/pulls', requireAuth, async (req, res) => {
     }
 });
 
-// Create pull request
+// Create pull request — outbox-routed
 router.post('/:owner/:repo/pulls', requireAuth, validateBody(prCreateSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
         const { title, body, head, base, draft } = req.validatedBody;
-
-        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls`, req.session.accessToken, {
+        const result = await executeViaOutbox(req, {
             method: 'POST',
-            body: JSON.stringify({ title, body, head, base, draft })
+            url: `/repos/${owner}/${repo}/pulls`,
+            body: { title, body, head, base, draft },
         });
-        res.json({ success: true, pull_request: data });
+        invalidate({ userId: req.session.userId, resourceType: 'pulls', prefix: `${owner}/${repo}` });
+        if (result.queued) {
+            return res.status(202).json({ queued: true, outboxId: result.outboxId, message: 'PR creation queued — will sync when GitHub is reachable.' });
+        }
+        res.json({ success: true, pull_request: result.data });
     } catch (error) {
         req.log.error({ err: error }, 'Create pull request failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
 
-// Merge pull request — write-back is tier-gated as Pro+ per pricing page
-// ("Read-only on Free; Full + write-back on Pro/Enterprise").
+// Merge pull request — outbox-routed (Pro+ tier-gated)
 router.put('/:owner/:repo/pulls/:pull_number/merge', requireAuth, requireTier('pro'), async (req, res) => {
     try {
         const { owner, repo, pull_number } = req.params;
         const { commit_title, commit_message, merge_method = 'merge' } = req.body;
-
-        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls/${pull_number}/merge`, req.session.accessToken, {
+        const result = await executeViaOutbox(req, {
             method: 'PUT',
-            body: JSON.stringify({ commit_title, commit_message, merge_method })
+            url: `/repos/${owner}/${repo}/pulls/${pull_number}/merge`,
+            body: { commit_title, commit_message, merge_method },
         });
-        res.json({ success: true, merged: data.merged, message: data.message });
+        invalidate({ userId: req.session.userId, resourceType: 'pulls', prefix: `${owner}/${repo}` });
+        if (result.queued) {
+            return res.status(202).json({ queued: true, outboxId: result.outboxId, message: 'Merge queued — will sync when GitHub is reachable.' });
+        }
+        res.json({ success: true, merged: result.data?.merged, message: result.data?.message });
     } catch (error) {
         req.log.error({ err: error }, 'Merge pull request failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
     }
 });
 
-// Update pull request
+// Update pull request — outbox-routed
 router.patch('/:owner/:repo/pulls/:pull_number', requireAuth, validateBody(prUpdateSchema), async (req, res) => {
     try {
         const { owner, repo, pull_number } = req.params;
-
-        const { data } = await githubApi(`/repos/${owner}/${repo}/pulls/${pull_number}`, req.session.accessToken, {
+        const result = await executeViaOutbox(req, {
             method: 'PATCH',
-            body: JSON.stringify(req.validatedBody)
+            url: `/repos/${owner}/${repo}/pulls/${pull_number}`,
+            body: req.validatedBody,
         });
-        res.json(data);
+        invalidate({ userId: req.session.userId, resourceType: 'pulls', prefix: `${owner}/${repo}` });
+        if (result.queued) {
+            return res.status(202).json({ queued: true, outboxId: result.outboxId });
+        }
+        res.json(result.data);
     } catch (error) {
         req.log.error({ err: error }, 'Update pull request failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
@@ -313,12 +325,16 @@ router.post('/:owner/:repo/pulls/:pull_number/comments', requireAuth, requireTie
         if (start_line !== undefined) payload.start_line = start_line;
         if (start_side !== undefined) payload.start_side = start_side;
 
-        const { data } = await githubApi(
-            `/repos/${owner}/${repo}/pulls/${pull_number}/comments`,
-            req.session.accessToken,
-            { method: 'POST', body: JSON.stringify(payload) }
-        );
-        res.status(201).json(data);
+        const result = await executeViaOutbox(req, {
+            method: 'POST',
+            url: `/repos/${owner}/${repo}/pulls/${pull_number}/comments`,
+            body: payload,
+        });
+        invalidate({ userId: req.session.userId, resourceType: 'pull_comments', prefix: `${owner}/${repo}#${pull_number}` });
+        if (result.queued) {
+            return res.status(202).json({ queued: true, outboxId: result.outboxId, message: 'Review comment queued — will sync when GitHub is reachable.' });
+        }
+        res.status(201).json(result.data);
     } catch (error) {
         req.log.error({ err: error }, 'Create PR review comment failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
@@ -389,12 +405,16 @@ router.post('/:owner/:repo/pulls/:pull_number/reviews', requireAuth, requireTier
             }));
         }
 
-        const { data } = await githubApi(
-            `/repos/${owner}/${repo}/pulls/${pull_number}/reviews`,
-            req.session.accessToken,
-            { method: 'POST', body: JSON.stringify(payload) }
-        );
-        res.status(200).json(data);
+        const result = await executeViaOutbox(req, {
+            method: 'POST',
+            url: `/repos/${owner}/${repo}/pulls/${pull_number}/reviews`,
+            body: payload,
+        });
+        invalidate({ userId: req.session.userId, resourceType: 'pull_reviews', prefix: `${owner}/${repo}#${pull_number}` });
+        if (result.queued) {
+            return res.status(202).json({ queued: true, outboxId: result.outboxId, message: 'Review queued — will sync when GitHub is reachable.' });
+        }
+        res.status(200).json(result.data);
     } catch (error) {
         req.log.error({ err: error }, 'Submit PR review failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });

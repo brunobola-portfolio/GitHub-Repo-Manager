@@ -76,6 +76,36 @@ vi.mock('../lib/validators.js', () => ({
 }))
 vi.mock('../db.js', () => ({ default: { prepare: vi.fn(() => ({ get: vi.fn(), all: vi.fn(() => []), run: vi.fn() })) } }))
 
+// PR mutations now route through gh-outbox; bypass the SQLite-backed
+// outbox here so this tier-gate test stays focused on the requireTier
+// middleware. The helper forwards to the mocked githubApi so callers can
+// still assert on its calls. gh-cache is mocked to no-op on read-through
+// (the GETs aren't exercised in this test) and on invalidate.
+vi.mock('../lib/gh-outbox.js', () => ({
+    enqueueAndExecute: vi.fn(async ({ method, url, body, token }) => {
+        const result = await mockGithubApi(url, token, {
+            method,
+            ...(body ? { body: JSON.stringify(body) } : {}),
+        })
+        return { delivered: true, queued: false, outboxId: 1, data: result.data, status: 200 }
+    }),
+    makeIdempotencyKey: vi.fn((m, u, h) => `${m}:${u}:${h}`),
+    listPendingForUser: vi.fn(() => []),
+    runOutboxOnce: vi.fn(async () => ({ picked: 0, succeeded: 0, stillPending: 0, givenUp: 0 })),
+    startGhOutboxWorker: vi.fn(),
+    stopGhOutboxWorker: vi.fn(),
+    purgeOldSucceeded: vi.fn(() => 0),
+}))
+vi.mock('../lib/gh-cache.js', () => ({
+    readThrough: vi.fn(async ({ fetcher }) => {
+        const r = await fetcher({})
+        return { data: r.data, fromCache: false, stale: false, fetchedAt: '2026-05-02 00:00:00' }
+    }),
+    invalidate: vi.fn(() => 0),
+    invalidateByRepo: vi.fn(() => 0),
+    purgeOlderThan: vi.fn(() => 0),
+}))
+
 const { default: reposRouter } = await import('../routes/repos.js')
 
 function makeApp(tier = 'free') {
