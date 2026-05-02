@@ -198,13 +198,16 @@ export function Modal({
                                 </div>
                             )}
 
-                            {/* Body */}
+                            {/* Body — when the modal has tabs, give the body a stable
+                                min-height so swapping between sparse and dense tabs
+                                doesn't make the whole panel jump in size (which
+                                feels unpolished, especially for Settings). */}
                             <div
                                 id={tabs && tabs.length > 0 && activeTab ? `tabpanel-${effectiveTabsLayoutId}-${activeTab}` : bodyId}
                                 role={tabs && tabs.length > 0 ? 'tabpanel' : undefined}
                                 aria-labelledby={tabs && tabs.length > 0 && activeTab ? `tab-${effectiveTabsLayoutId}-${activeTab}` : undefined}
                                 aria-busy={isBusy || undefined}
-                                className={`flex-1 overflow-y-auto ds-modal-body custom-scrollbar bg-slate-50/30 dark:bg-slate-950 ${bodyClassName}`}
+                                className={`flex-1 overflow-y-auto ds-modal-body custom-scrollbar bg-slate-50/30 dark:bg-slate-950 ${tabs && tabs.length > 0 ? 'min-h-[440px] md:min-h-[480px]' : ''} ${bodyClassName}`}
                             >
                                 {staggerChildren ? (
                                     <motion.div
