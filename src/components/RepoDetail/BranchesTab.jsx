@@ -8,6 +8,7 @@ import { Spinner } from '../ui/Spinner'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 import { BranchHygieneCard } from './BranchHygieneCard'
+import { branchActions } from '../../actions/branchActions'
 import { BranchProtectionPanel } from './BranchProtectionPanel'
 
 export function BranchesTab({ api, repoData }) {
@@ -63,22 +64,25 @@ export function BranchesTab({ api, repoData }) {
         }
     }
 
+    // Adopted from src/actions/branchActions.js (Phase 3 / item 16). The
+    // registry's confirm shape adds type-name verification (`requiresInput`)
+    // for an extra guard against accidental destructive clicks; the run()
+    // calls api.deleteBranch + ctx.refresh in one step.
     const handleDelete = (branch) => {
+        const action = branchActions.delete_branch
+        if (action.isApplicable && !action.isApplicable(branch)) return
+        const cfg = action.confirm(branch)
         setConfirmAction({
-            title: 'Delete Branch',
-            message: `Delete branch "${branch}"? This cannot be undone.`,
-            confirmText: 'Delete',
+            ...cfg,
             onConfirm: async () => {
                 try {
-                    await api.deleteBranch(branch)
-                    setMessage({ type: 'success', text: `Branch "${branch}" deleted` })
-                    toast.success('Branch deleted')
-                    loadBranches()
+                    await action.run(branch, { api, toast, refresh: loadBranches })
+                    setMessage({ type: 'success', text: `Branch "${branch.name}" deleted` })
                 } catch (e) {
                     setMessage({ type: 'error', text: e.message })
                     toast.errorFromException(e, { fallbackTitle: 'Failed to delete branch' })
                 }
-            }
+            },
         })
     }
 
@@ -156,7 +160,7 @@ export function BranchesTab({ api, repoData }) {
                                 <Shield className="w-3 h-3" /> Protected
                             </span>
                         )}
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(b.name)}
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(b)}
                             className="text-red-500 hover:text-red-700 dark:hover:text-red-400 opacity-0 group-hover:opacity-100"
                             title="Delete branch">
                             <Trash2 className="w-3.5 h-3.5" />

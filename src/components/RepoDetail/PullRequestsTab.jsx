@@ -8,6 +8,7 @@ import { GitPullRequest, Plus, Loader2, CheckCircle2, XCircle, GitMerge, Externa
 import { Spinner } from '../ui/Spinner'
 import { PRDetailPanel } from './PRDetailPanel'
 import { PRRiskBadges } from './PRRiskBadges'
+import { prActions } from '../../actions/prActions'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 
@@ -79,37 +80,39 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
         }
     }
 
-    const handleMerge = (pr) => {
-        setConfirmAction({
-            title: 'Merge Pull Request',
-            message: `Merge PR #${pr.number} "${pr.title}"?`,
-            confirmText: 'Merge',
-            variant: 'warning',
-            onConfirm: async () => {
-                try {
-                    await api.mergePull(pr.number)
-                    setMessage({ type: 'success', text: `PR #${pr.number} merged` })
-                    toast.success('Merged')
-                    loadPulls()
-                } catch (e) {
-                    setMessage({ type: 'error', text: e.message })
-                    toast.errorFromException(e, { fallbackTitle: 'Failed to merge PR' })
-                }
-            }
+    // Adopted from src/actions/prActions.js (Phase 3 / item 16). The
+    // registry owns label, confirm shape, and run() side effects in one
+    // place; this tab just wires the modal-confirm gate to ctx.
+    const runPRAction = (action, pr) => {
+        const ctx = {
+            api,
+            toast,
+            refresh: loadPulls,
+        }
+        const cfg = action.confirm?.(pr)
+        if (cfg) {
+            setConfirmAction({
+                ...cfg,
+                onConfirm: async () => {
+                    try {
+                        await action.run(pr, ctx)
+                        setMessage({ type: 'success', text: `${cfg.confirmText || 'Done'} #${pr.number}` })
+                    } catch (e) {
+                        setMessage({ type: 'error', text: e.message })
+                        toast.errorFromException(e, { fallbackTitle: `${cfg.confirmText || action.id} failed` })
+                    }
+                },
+            })
+            return
+        }
+        // No confirm declared — run directly.
+        action.run(pr, ctx).catch((e) => {
+            setMessage({ type: 'error', text: e.message })
+            toast.errorFromException(e, { fallbackTitle: `${action.id} failed` })
         })
     }
-
-    const handleClose = async (pr) => {
-        try {
-            await api.updatePull(pr.number, { state: 'closed' })
-            setMessage({ type: 'success', text: `PR #${pr.number} closed` })
-            toast.success('Pull request closed')
-            loadPulls()
-        } catch (e) {
-            setMessage({ type: 'error', text: e.message })
-            toast.errorFromException(e, { fallbackTitle: 'Failed to close PR' })
-        }
-    }
+    const handleMerge = (pr) => runPRAction(prActions.merge_pr, pr)
+    const handleClose = (pr) => runPRAction(prActions.close_pr, pr)
 
     function getPrIcon(pr) {
         if (pr.merged_at || pr.merged) return <GitMerge className="w-4 h-4 text-purple-500" />

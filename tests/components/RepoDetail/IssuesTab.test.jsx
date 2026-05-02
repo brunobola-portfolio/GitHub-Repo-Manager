@@ -48,6 +48,7 @@ describe('IssuesTab — toast feedback', () => {
         await waitFor(() =>
             expect(api.updateIssue).toHaveBeenCalledWith(10, { state: 'closed' })
         )
-        expect(await screen.findByText('Issue closed')).toBeInTheDocument()
+        // Toast text now comes from issueActions.close_issue.run() — "Closed issue #10".
+        expect(await screen.findByText(/Closed issue #10/)).toBeInTheDocument()
     })
 })

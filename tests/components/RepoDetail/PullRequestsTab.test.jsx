@@ -59,6 +59,7 @@ describe('PullRequestsTab — toast feedback', () => {
         await waitFor(() =>
             expect(api.mergePull).toHaveBeenCalledWith(42)
         )
-        expect(await screen.findByText('Merged')).toBeInTheDocument()
+        // Toast text shape now comes from prActions.merge_pr.run() — "Merged PR #42".
+        expect(await screen.findByText(/Merged PR #42/)).toBeInTheDocument()
     })
 })

@@ -8,6 +8,7 @@ import { Spinner } from '../ui/Spinner'
 import { IssueDetailPanel } from './IssueDetailPanel'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
+import { issueActions } from '../../actions/issueActions'
 
 export function IssuesTab({ api, repoFullName }) {
     const { toast } = useToast()
@@ -77,29 +78,22 @@ export function IssuesTab({ api, repoFullName }) {
         }
     }
 
-    const handleClose = async (issue) => {
+    // Adopted from src/actions/issueActions.js (Phase 3 / item 16). The
+    // registry owns the API call + toast in one place; we skip the
+    // close_issue.confirm gate here because the existing UX has been
+    // confirmless and adding a modal would be a behaviour change. Callers
+    // that want the gate (e.g. command palette) can opt in.
+    const runIssueAction = async (action, issue) => {
         try {
-            await api.updateIssue(issue.number, { state: 'closed' })
-            setMessage({ type: 'success', text: `Issue #${issue.number} closed` })
-            toast.success('Issue closed')
-            loadIssues()
+            await action.run(issue, { api, toast, refresh: loadIssues })
+            setMessage({ type: 'success', text: `Issue #${issue.number} ${action.id === 'close_issue' ? 'closed' : 'reopened'}` })
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
-            toast.errorFromException(e, { fallbackTitle: 'Failed to close issue' })
+            toast.errorFromException(e, { fallbackTitle: `${action.id} failed` })
         }
     }
-
-    const handleReopen = async (issue) => {
-        try {
-            await api.updateIssue(issue.number, { state: 'open' })
-            setMessage({ type: 'success', text: `Issue #${issue.number} reopened` })
-            toast.success('Issue reopened')
-            loadIssues()
-        } catch (e) {
-            setMessage({ type: 'error', text: e.message })
-            toast.errorFromException(e, { fallbackTitle: 'Failed to reopen issue' })
-        }
-    }
+    const handleClose = (issue) => runIssueAction(issueActions.close_issue, issue)
+    const handleReopen = (issue) => runIssueAction(issueActions.reopen_issue, issue)
 
     // Show detail panel when an issue is selected
     if (selectedIssue) {
