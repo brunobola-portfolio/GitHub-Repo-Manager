@@ -181,6 +181,42 @@ User asked for everything to be done end-to-end. All three follow-ups are now in
 
 ---
 
+## Final premium-polish + full-suite validation pass — 2026-05-02
+
+User asked: "Validar tudo… nao quero vaporware, nao quero bugs, ui sem erros e linda e consistente, premium feel, AI functional protegida se offline, menus e painéis ligados uniformes e funcionais, sem código duplicado, sem erros, tudo lindo premium UI e UX em desktop e mobile lindas e no final testes ok incluindo e2e."
+
+Five parallel audits run + 3 commits to close the real gaps + e2e suite unblocked end-to-end.
+
+### Audit verdicts
+
+| Dimension | Result |
+|---|---|
+| **Vaporware in Phase 3** | ✅ ZERO — every CustomEvent, every action runner, every ctx callback chain end-to-end verified. Theme toggle works + persists. All 8 keyboard shortcuts have handlers. Action registry callbacks all populated by their consumers. |
+| **AI offline behaviour** | ✅ Server returns proper `ai_not_configured` / `ai_overload` / `ai_quota_exceeded` / `ai_rate_limited` codes; client `src/api/ai.js` differentiates unconfigured from runtime-503 (commit `5031170`); AISummaryCard + AIRunButton properly degrade. Open follow-up (deferred): registry actions don't `isApplicable`-gate on AI status — they DO open modals that handle their own AI-off state, so it's discoverability gripe not silent failure. |
+| **Code duplication** | 1 finding fixed (`copyToClipboard` helper centralized to `src/utils/clipboard.js`, replacing 4 copies); 6 other findings deferred as low ROI (existing `buildXActionCommands` builders are clear in their current per-registry form, factoring out a generic builder adds complexity without behaviour win). |
+| **UI consistency / premium feel** | 4 findings shipped: per-tab Refresh button (Branches/PRs/Issues/Releases now match ActionsTab pattern); touch-invisible icons (BranchesTab delete + InlineEditField pencil) gain mobile fallback (`md:opacity-0` instead of always-hidden); hardcoded hex colours in IssueDetailPanel + PRDetailPanel borderLeftColor replaced with Tailwind semantic classes (`border-l-green-500` etc). |
+
+### Commits this validation pass
+
+- `ca280e6` — landing page theme toggle (consistency + e2e fix)
+- `0d4532d` — clipboard helper + mobile parity + refresh buttons + semantic colours
+- `f8116c5` — e2e suite re-aligned + real mobile FAB intercepting bottom nav fix
+
+### Real production bug caught by e2e
+
+**MobileFAB was intercepting the "More" bottom-nav button on mobile.** App.jsx rendered the FAB at `bottom-6 right-4` (default). Header.jsx renders a `fixed bottom-0` h-14 navigation for authenticated users on `<md`. The FAB's 56x56 footprint overlapped the nav's rightmost item (More), absorbing clicks. Fix: `shiftAboveBottomBar={!!user}` so FAB lifts to `bottom-20` whenever the bottom nav is visible.
+
+Caught by `mobile-nav-quick-actions.spec.js` timing out for 15s on `.click()`.
+
+### Final test results
+
+- **Vitest:** 3088 passing, 24 skipped, **zero failures**.
+- **Playwright e2e:** **79 passed, 9 skipped, zero failures** (full suite, ~1.4 min).
+- **Build:** green (722ms).
+- **ESLint:** clean.
+
+---
+
 ## 5. Known issues + pitfalls (read before acting)
 
 ### Pre-existing test failure ✅ RESOLVED
