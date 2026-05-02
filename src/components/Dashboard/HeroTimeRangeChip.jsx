@@ -1,16 +1,27 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import { Calendar, Check } from 'lucide-react'
 import { HeroChip } from './HeroChip'
 
-const RANGES = [
-    { value: '7d',  label: 'Últimos 7 dias' },
-    { value: '30d', label: 'Últimos 30 dias' },
-    { value: '90d', label: 'Últimos 90 dias' },
-]
+function getRanges() {
+    const lang = (typeof navigator !== 'undefined' && navigator.language) || 'en-US'
+    const pt = lang.toLowerCase().startsWith('pt')
+    return pt
+        ? [
+              { value: '7d',  label: 'Últimos 7 dias' },
+              { value: '30d', label: 'Últimos 30 dias' },
+              { value: '90d', label: 'Últimos 90 dias' },
+          ]
+        : [
+              { value: '7d',  label: 'Last 7 days' },
+              { value: '30d', label: 'Last 30 days' },
+              { value: '90d', label: 'Last 90 days' },
+          ]
+}
 
 export function HeroTimeRangeChip({ value, onChange }) {
     const [open, setOpen] = useState(false)
+    const RANGES = useMemo(() => getRanges(), [])
     const current = RANGES.find(r => r.value === value) ?? RANGES[0]
 
     return (

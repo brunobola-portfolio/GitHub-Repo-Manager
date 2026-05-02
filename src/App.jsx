@@ -813,7 +813,7 @@ function AppContent() {
         onOpenAISettings={() => openModalWithData('showSettings', { initialTab: 'ai' })}
       />
 
-      <main id="main-content" className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 pt-3 md:pt-4 lg:pt-5 pb-36 md:pb-6 transition-all duration-300 relative z-[1]">
+      <main id="main-content" className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 pt-3 md:pt-4 lg:pt-5 pb-52 md:pb-6 transition-all duration-300 relative z-[1]">
         {activeView === 'pricing' && (
           <div className="animate-in fade-in duration-500">
             <ErrorBoundary fallback={<ViewErrorFallback viewName="Pricing" />}>

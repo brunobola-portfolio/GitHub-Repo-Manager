@@ -42,11 +42,13 @@ describe('MobileFAB', () => {
 		expect(onClick).toHaveBeenCalledOnce()
 	})
 
-	it('shifts up when shiftAboveBottomBar is true', () => {
+	it('stacks above the quick-actions FAB when shiftAboveBottomBar is true', () => {
 		useMobileBreakpoint.mockReturnValue(true)
 		render(<MobileFAB icon={Search} label="Search" onClick={() => { }} shiftAboveBottomBar />)
 		const btn = screen.getByRole('button')
-		expect(btn.className).toMatch(/bottom-20/)
+		// bottom-[calc(140px+env(safe-area-inset-bottom,0px))] — 140px clears the
+		// MobileQuickActionsFab (which sits at bottom-72 in Header.jsx).
+		expect(btn.className).toMatch(/bottom-\[calc\(140px/)
 	})
 
 	it('uses bottom-6 by default', () => {
@@ -54,6 +56,6 @@ describe('MobileFAB', () => {
 		render(<MobileFAB icon={Search} label="Search" onClick={() => { }} />)
 		const btn = screen.getByRole('button')
 		expect(btn.className).toMatch(/bottom-6/)
-		expect(btn.className).not.toMatch(/bottom-20/)
+		expect(btn.className).not.toMatch(/bottom-\[calc/)
 	})
 })

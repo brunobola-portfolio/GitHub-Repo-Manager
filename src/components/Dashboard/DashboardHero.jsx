@@ -5,7 +5,13 @@ import { HeroTimeRangeChip } from './HeroTimeRangeChip'
 import { HeroSyncChip } from './HeroSyncChip'
 import { WhatNeedsYouGrid } from './WhatNeedsYouGrid'
 import { useRelativeTime } from '../../hooks/useRelativeTime.js'
-import { getGreeting } from '../../utils/greeting'
+import {
+    getGreeting,
+    getDashboardSubtitle,
+    getHeroFallbackGreeting,
+    getSyncedLabel,
+    getDashboardLocale,
+} from '../../utils/greeting'
 
 const EASE = [0.16, 1, 0.3, 1]
 
@@ -20,9 +26,10 @@ const containerVariants = {
 }
 
 function formatEyebrow(date, lastSyncedRelative) {
-    const day = date.toLocaleDateString('pt-PT', { weekday: 'long' })
-    const datePart = date.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
-    const synced = lastSyncedRelative ? ` · sincronizado ${lastSyncedRelative}` : ''
+    const locale = getDashboardLocale()
+    const day = date.toLocaleDateString(locale, { weekday: 'long' })
+    const datePart = date.toLocaleDateString(locale, { day: '2-digit', month: 'short' })
+    const synced = lastSyncedRelative ? ` · ${getSyncedLabel()} ${lastSyncedRelative}` : ''
     return `${day} · ${datePart}${synced}`.toUpperCase()
 }
 
@@ -40,7 +47,7 @@ export function DashboardHero({
 }) {
     const now = useMemo(() => new Date(), [])
     const lastSyncedRelative = useRelativeTime(lastSyncedAt)
-    const greeting = user ? getGreeting(now, user.name || user.login) : 'Olá ✨'
+    const greeting = user ? getGreeting(now, user.name || user.login) : getHeroFallbackGreeting()
     const eyebrow = formatEyebrow(now, lastSyncedRelative)
 
     return (
@@ -66,7 +73,7 @@ export function DashboardHero({
             </motion.h1>
 
             <motion.p variants={childVariants} className="text-sm text-slate-500 dark:text-slate-400">
-                Aqui está o que precisa de ti hoje.
+                {getDashboardSubtitle()}
             </motion.p>
 
             <motion.div variants={childVariants} className="flex flex-wrap items-center gap-2">

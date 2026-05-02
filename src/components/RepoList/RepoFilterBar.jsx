@@ -224,37 +224,37 @@ export function RepoFilterBar({
 						value={typeFilter}
 						onChange={setTypeFilter}
 						options={[
-							{ value: 'all', label: 'All Types' },
+							{ value: 'all', label: 'All types' },
 							{ value: 'source', label: 'Sources' },
 							{ value: 'fork', label: 'Forks' },
 							{ value: 'archived', label: 'Archived' }
 						]}
 						label="Repository Type"
 						size="sm"
-						className="flex-1 min-w-0"
+						className="flex-1 min-w-[110px]"
 					/>
 					<Select
 						value={visibilityFilter}
 						onChange={setVisibilityFilter}
 						options={[
-							{ value: 'all', label: 'All Visibility' },
+							{ value: 'all', label: 'Visibility' },
 							{ value: 'public', label: 'Public' },
 							{ value: 'private', label: 'Private' }
 						]}
 						label="Repository Visibility"
 						size="sm"
-						className="flex-1 min-w-0"
+						className="flex-1 min-w-[110px]"
 					/>
 					<Select
 						value={languageFilter}
 						onChange={setLanguageFilter}
 						options={[
-							{ value: 'all', label: 'All Languages' },
+							{ value: 'all', label: 'Language' },
 							...availableLanguages.map(l => ({ value: l, label: l }))
 						]}
 						label="Programming Language"
 						size="sm"
-						className="flex-1 min-w-0"
+						className="flex-1 min-w-[110px]"
 					/>
 
 					<div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block"></div>
@@ -288,7 +288,7 @@ export function RepoFilterBar({
 									value={typeFilter}
 									onChange={setTypeFilter}
 									options={[
-										{ value: 'all', label: 'All Types' },
+										{ value: 'all', label: 'All types' },
 										{ value: 'source', label: 'Sources' },
 										{ value: 'fork', label: 'Forks' },
 										{ value: 'archived', label: 'Archived' },
@@ -304,7 +304,7 @@ export function RepoFilterBar({
 									value={visibilityFilter}
 									onChange={setVisibilityFilter}
 									options={[
-										{ value: 'all', label: 'All Visibility' },
+										{ value: 'all', label: 'Visibility' },
 										{ value: 'public', label: 'Public' },
 										{ value: 'private', label: 'Private' },
 									]}
@@ -319,7 +319,7 @@ export function RepoFilterBar({
 									value={languageFilter}
 									onChange={setLanguageFilter}
 									options={[
-										{ value: 'all', label: 'All Languages' },
+										{ value: 'all', label: 'Language' },
 										...availableLanguages.map(l => ({ value: l, label: l })),
 									]}
 									label="Programming Language"
