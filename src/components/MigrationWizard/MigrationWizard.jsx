@@ -725,28 +725,18 @@ export default function MigrationWizard({
               <MobileProgressBar steps={steps} currentStepIndex={currentStepIndex} />
             )}
 
-            {/* Step title/subtitle */}
-            {STEP_META[currentStep] && (
+            {/* Dry-run badge — title/subtitle live in WizardPanel header to avoid duplication */}
+            {schedule.isDryRun && (
               <div className="mb-6">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h3 className={`font-bold tracking-tight text-slate-900 dark:text-slate-50 ${!isMobile ? 'text-xl' : 'text-lg'}`}>
-                    {STEP_META[currentStep].title}
-                  </h3>
-                  {schedule.isDryRun && (
-                    <span
-                      data-testid="dry-run-pill"
-                      role="status"
-                      aria-live="polite"
-                      className="ds-animate-scale-in inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-900"
-                    >
-                      <Zap className="w-3 h-3" aria-hidden="true" />
-                      Dry-Run Mode
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  {STEP_META[currentStep].subtitle}
-                </p>
+                <span
+                  data-testid="dry-run-pill"
+                  role="status"
+                  aria-live="polite"
+                  className="ds-animate-scale-in inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-900"
+                >
+                  <Zap className="w-3 h-3" aria-hidden="true" />
+                  Dry-Run Mode
+                </span>
               </div>
             )}
 
