@@ -28,6 +28,8 @@ export function MigrationActivity({ loading: parentLoading }) {
   const openHistory = () => openModal('showMigrationHistory')
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') { setLoading(false); return }
     let mounted = true
     fetch('/api/migrations/stats', { credentials: 'include' })
       .then(r => r.json())

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 
 const mockApi = {
@@ -22,10 +22,15 @@ function wrapper({ children }) {
 }
 
 beforeEach(() => {
+    vi.stubEnv('VITE_MOCK_MODE', '')
     for (const k of Object.keys(mockApi)) mockApi[k].mockReset()
     mockApi.postPing.mockResolvedValue({ prefs: { discovery_window_days: 60 }, discovery_in_flight: false })
     mockApi.fetchTrackedRepos.mockResolvedValue({ items: [], total: 0, countsBySignal: {} })
     mockApi.fetchPrefs.mockResolvedValue({ discovery_window_days: 60, max_auto_repos: 50 })
+})
+
+afterEach(() => {
+    vi.unstubAllEnvs()
 })
 
 describe('useTrackedRepos', () => {

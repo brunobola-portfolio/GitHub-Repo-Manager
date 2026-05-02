@@ -25,6 +25,10 @@ export function useNotificationsDigest({ enabled = true } = {}) {
 
     const refresh = useCallback(async () => {
         if (!enabled) return EMPTY
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+            setLoading(false)
+            return EMPTY
+        }
         ctrlRef.current?.abort()
         const ctrl = new AbortController()
         ctrlRef.current = ctrl

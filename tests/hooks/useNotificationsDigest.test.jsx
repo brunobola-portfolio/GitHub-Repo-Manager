@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 
 const mockFetch = vi.fn()
@@ -26,8 +26,13 @@ const SAMPLE = {
 }
 
 beforeEach(() => {
+    vi.stubEnv('VITE_MOCK_MODE', '')
     mockFetch.mockReset().mockResolvedValue(SAMPLE)
     mockMark.mockReset().mockResolvedValue(true)
+})
+
+afterEach(() => {
+    vi.unstubAllEnvs()
 })
 
 describe('useNotificationsDigest', () => {

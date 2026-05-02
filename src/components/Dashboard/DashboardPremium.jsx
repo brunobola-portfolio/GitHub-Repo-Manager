@@ -46,6 +46,7 @@ export function DashboardPremium({
     const { openModalWithData } = useModal()
 
     useEffect(() => {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') return
         const controller = new AbortController()
         fetch('/api/v1/license', { credentials: 'include', signal: controller.signal })
             .then((r) => (r.ok ? r.json() : null))

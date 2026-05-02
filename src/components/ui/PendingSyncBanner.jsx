@@ -19,6 +19,7 @@ export function PendingSyncBanner({ isAuthenticated }) {
 
     useEffect(() => {
         if (!isAuthenticated) return
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') return
         let cancelled = false
 
         const poll = async () => {

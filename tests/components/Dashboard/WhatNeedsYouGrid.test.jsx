@@ -1,9 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 beforeEach(() => {
+    vi.stubEnv('VITE_MOCK_MODE', '')
     global.fetch = vi.fn()
     sessionStorage.clear()
+})
+
+afterEach(() => {
+    vi.unstubAllEnvs()
 })
 
 const { WhatNeedsYouGrid } = await import('../../../src/components/Dashboard/WhatNeedsYouGrid')

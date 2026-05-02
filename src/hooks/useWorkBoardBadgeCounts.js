@@ -23,6 +23,11 @@ function writeCached(n) {
 }
 
 async function fetchJsonCount(url) {
+    if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+        if (url.includes('my-reviews')) return 5
+        if (url.includes('stale-prs')) return 10
+        return 0
+    }
     try {
         const res = await fetch(url, { credentials: 'include' })
         if (!res.ok) return 0

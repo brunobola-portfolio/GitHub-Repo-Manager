@@ -1,10 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 
 beforeEach(() => {
+    vi.stubEnv('VITE_MOCK_MODE', '')
     global.fetch = vi.fn()
     sessionStorage.clear()
     vi.useRealTimers()
+})
+
+afterEach(() => {
+    vi.unstubAllEnvs()
 })
 
 const { useYourWork } = await import('../../src/hooks/useYourWork')

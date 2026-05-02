@@ -276,6 +276,12 @@ export function LicensePlanSection() {
             setError(null)
             setBillingUnavailable(false)
 
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                setBillingUnavailable(true)
+                setLoading(false)
+                return
+            }
+
             // Check license first
             try {
                 const licRes = await fetch(`${API_BASE_URL}/api/v1/license`, { credentials: 'include' })

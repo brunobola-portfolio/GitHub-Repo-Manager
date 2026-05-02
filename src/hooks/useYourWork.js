@@ -8,7 +8,17 @@ const ENDPOINTS = {
 
 const VISIBILITY_REFRESH_THRESHOLD_MS = 30_000
 
+const MOCK_COUNTS = {
+    'my-reviews': 5,
+    'stale-prs': 10,
+    'my-issues': 3,
+}
+
 async function fetchCount(url) {
+    if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+        const key = Object.keys(MOCK_COUNTS).find(k => url.includes(k))
+        return { count: key ? MOCK_COUNTS[key] : 0, hidden: false }
+    }
     try {
         const res = await fetch(url, { credentials: 'include' })
         // 401/403/404 → endpoint is gated or not available for this user; suppress the widget.

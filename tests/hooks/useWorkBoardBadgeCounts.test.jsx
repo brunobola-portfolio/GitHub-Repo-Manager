@@ -2,11 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 
 beforeEach(() => {
+    vi.stubEnv('VITE_MOCK_MODE', '')
     global.fetch = vi.fn()
     localStorage.clear()
 })
 afterEach(() => {
     vi.useRealTimers()
+    vi.unstubAllEnvs()
 })
 
 const { useWorkBoardBadgeCounts } = await import('../../src/hooks/useWorkBoardBadgeCounts')

@@ -36,6 +36,11 @@ export function TrackedReposProvider({ children }) {
         ;(async () => {
             try {
                 setIsLoading(true)
+                if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                    setRepos([])
+                    setPrefs({ defaultStaleDays: 7, muteArchivedRepos: false, showDraftPRs: true })
+                    return
+                }
                 await api.postPing()
                 await Promise.all([reload(), loadPrefs()])
             } catch (e) {
