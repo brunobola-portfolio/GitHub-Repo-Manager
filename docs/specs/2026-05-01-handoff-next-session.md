@@ -160,11 +160,24 @@ User said "todas". All three architectural items from the audit are now in main.
 - [x] ~~**Centralized `fetchApi()` wrapper with CSRF**~~ ✅ Commit `1419a57`. The wrapper already existed (`fetchWithRetry` + `apiCall` in `src/utils/api.js` — slice-1 era infrastructure). What was missing was migration of three hand-rolled call sites that bypassed it: MigrationHistory.loadJobs, WorkBoard AISummaryCard.fetchSummary, Settings LicenseActivationModal.handleValidate. All three now route through `fetchWithRetry`, getting CSRF injection + retry-on-5xx + session-expiry detection for free. AISummaryCard test rewired to mock `fetchWithRetry` directly via a MockApiError that mirrors the real ApiError contract.
 - [x] ~~**Keyboard shortcuts derive from registry**~~ ✅ Commit `48b99d5`. Catalog extracted from `useKeyboardShortcuts.js` to `src/config/keyboardShortcuts.js` (frozen `GLOBAL_SHORTCUTS` array + `collectRegistryShortcuts()` walker). The hook dispatches via a handler map keyed by the catalog's `action` field — no inline switch, no risk of catalog vs handler drift. Help modal renders a third "Repo Actions" group from `getAllShortcuts()` output. The `RepoAction.keyboardShortcut` field is documented in JSDoc; no action declares one yet — wiring per-context execution (focused-repo target) is a clean future extension that doesn't block the catalog work.
 
-### Optional follow-ups for the next session (registry adoption, all small)
+### Phase 3 adoption follow-ups — ✅ ALL THREE SHIPPED 2026-05-02 (later in same session)
 
-- **Wire App.jsx → palette `selectedRepoDetailEntities` prop.** Today the palette renders the PR/branch/issue groups only when this prop is populated. App.jsx needs to expose the active repo-detail's lists (already loaded by RepoDetail's tabs) — either via a shared context or by lifting them. Once wired, Cmd+K from inside a repo surfaces "Merge — #42 …" / "Delete branch — feature/x" / "Plan with AI — #7 …" automatically.
-- **Adopt the registry runners inside the existing tabs.** PullRequestsTab.handleMerge / handleClose, BranchesTab.handleDelete, IssuesTab handlers can be replaced with `prActions.merge_pr.run(pr, ctx)` etc. The confirm contracts already match (the existing setConfirmAction shape ↔ registry's `confirm` field).
-- **Bridge palette CustomEvents to App.jsx listeners.** `app:open-pr-detail`, `app:start-pr-review`, `app:generate-pr-description`, `app:open-issue-detail`, `app:plan-issue-with-ai` are dispatched by the palette but no listeners exist yet — Cmd+K commands that route through these will no-op until App.jsx subscribes.
+User asked for everything to be done end-to-end. All three follow-ups are now in main. 2 commits between `3868310` and `30240c1`. Suite still 3084 passing, zero failures.
+
+- [x] ~~**Wire App.jsx → palette `selectedRepoDetailEntities` prop**~~ ✅ Commit `3868310`. Tabs (PullRequestsTab / BranchesTab / IssuesTab) dispatch `repo-detail:prs-loaded` / `branches-loaded` / `issues-loaded` events whenever their data fetch resolves. App.jsx subscribes once, keeps a unified `repoDetailEntities` state, and passes a memo-derived `palettePropEntities` to `<CommandPalette>` (returns empty arrays when out of repo-detail context — avoids stale targets without needing a setState-in-effect reset). Tabs now derive their list arrays via `useMemo` so the CustomEvent useEffect dependency stays stable.
+- [x] ~~**Bridge palette CustomEvents to App.jsx listeners**~~ ✅ Same commit `3868310`. Five intents wired:
+  - `app:open-pr-detail` → re-emits `repo-detail:select-pr` (PullRequestsTab listens, calls setSelectedPR)
+  - `app:start-pr-review` → App.jsx setReviewingPR + view='pr-review'
+  - `app:generate-pr-description` → App.jsx openModalWithData(showDevToolkit)
+  - `app:open-issue-detail` → re-emits `repo-detail:select-issue` (IssuesTab listens)
+  - `app:plan-issue-with-ai` → re-emits `repo-detail:plan-issue` (IssuesTab listens)
+- [x] ~~**Adopt registry runners inside PullRequestsTab / BranchesTab / IssuesTab**~~ ✅ Commit `30240c1`. Each tab now delegates to its registry:
+  - **PullRequestsTab.handleMerge / handleClose** → `runPRAction(prActions.merge_pr | close_pr, pr)`. Helper consults `action.confirm(pr)` → if present, gates via existing `setConfirmAction` modal; if absent, runs directly.
+  - **BranchesTab.handleDelete** → adopts `branchActions.delete_branch` including the registry's type-name verification (`requiresInput: branch.name`), upgrading the existing single-click confirm to a stronger guard. Also passes the full branch object (was only name) so `isApplicable` can read `.protected`.
+  - **IssuesTab.handleClose / handleReopen** → `runIssueAction(issueActions.close_issue | reopen_issue, issue)`. Skips `close_issue.confirm` to preserve existing UX (no ConfirmModal in the tab); the gate stays available for the command-palette consumer that may opt in.
+  - Toast text evolved to the registry's more-specific shape (`Merged PR #42`, `Closed PR #42`, `Closed issue #N`, `Reopened issue #N`). Two tests updated to match.
+
+**Net result:** the PR / Branch / Issue action registries are now load-bearing in BOTH the inline tab handlers AND the command-palette enumeration. Single source of truth for what an action does, what its confirm shape is, and how the API is called. Adding a new entry surfaces it on every consumer automatically.
 
 ---
 
