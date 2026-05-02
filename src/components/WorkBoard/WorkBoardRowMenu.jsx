@@ -1,16 +1,25 @@
 import { useState } from 'react'
 import * as Popover from '@radix-ui/react-popover'
-import { MoreHorizontal, Pin, PinOff, Bell, BellOff, X, ExternalLink, Copy } from 'lucide-react'
+import { MoreHorizontal, Pin, PinOff, Bell, BellOff, X, ExternalLink, Copy, Eye } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useTrackedRepos } from '../../hooks/useTrackedRepos'
 import { useToast } from '../../hooks/useToast'
 
 /**
- * Per-row action menu for the Work Board page. Scoped to repo-level
- * operations (pin/mute/untrack + copy/open). Per-item actions (snooze,
+ * Per-row action menu for the Work Board page. Mirrors the RepoCard
+ * "menu do repo" pattern: in-app navigation first, GitHub-direct
+ * demoted to a secondary "Open on GitHub" entry, then repo-level state
+ * (pin / mute / untrack) below the divider. Per-item actions (snooze,
  * draft comment) stay in the existing ChipStrip components.
+ *
+ * @param {object} props
+ * @param {string} props.repoFullName    — owner/repo
+ * @param {string} props.itemUrl         — github.com URL for the row item
+ * @param {'pr'|'issue'} [props.itemType] — when present, surfaces a primary
+ *        "Open in app" action that navigates to the in-app PR/Issue detail.
+ * @param {number} [props.itemNumber]    — required when itemType is set.
  */
-export function WorkBoardRowMenu({ repoFullName, itemUrl }) {
+export function WorkBoardRowMenu({ repoFullName, itemUrl, itemType, itemNumber }) {
     const [open, setOpen] = useState(false)
     const hook = useTrackedRepos()
     const { toast } = useToast()
@@ -51,9 +60,16 @@ export function WorkBoardRowMenu({ repoFullName, itemUrl }) {
         toast.success('Link copied')
     }
 
-    const handleOpen = () => {
+    const handleOpenGitHub = () => {
         setOpen(false)
         window.open(itemUrl, '_blank', 'noopener')
+    }
+
+    const handleOpenInApp = () => {
+        setOpen(false)
+        if (!itemType || !Number.isFinite(itemNumber)) return
+        const eventName = itemType === 'pr' ? 'app:open-repo-pr' : 'app:open-repo-issue'
+        window.dispatchEvent(new CustomEvent(eventName, { detail: { repoFullName, number: itemNumber } }))
     }
 
     const stopBubble = (e) => {
@@ -80,8 +96,15 @@ export function WorkBoardRowMenu({ repoFullName, itemUrl }) {
                 onClick={(e) => e.stopPropagation()}
                 className="z-50 min-w-[220px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 shadow-xl"
             >
+                {itemType && Number.isFinite(itemNumber) && (
+                    <MenuItem
+                        icon={<Eye className="w-3.5 h-3.5" />}
+                        label={itemType === 'pr' ? 'Open PR in app' : 'Open issue in app'}
+                        onClick={handleOpenInApp}
+                    />
+                )}
                 <MenuItem icon={<Copy className="w-3.5 h-3.5" />} label="Copy link" onClick={handleCopy} />
-                <MenuItem icon={<ExternalLink className="w-3.5 h-3.5" />} label="Open in GitHub" onClick={handleOpen} />
+                <MenuItem icon={<ExternalLink className="w-3.5 h-3.5" />} label="Open on GitHub" onClick={handleOpenGitHub} />
                 <Separator />
                 {isPinned
                     ? <MenuItem icon={<PinOff className="w-3.5 h-3.5" />} label={`Unpin ${repoFullName}`} onClick={handleUnpin} />

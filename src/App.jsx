@@ -373,6 +373,67 @@ function AppContent() {
     return () => window.removeEventListener('app:open-repo-settings', handler)
   }, [repos, orgRepos, handleOpenRepo])
 
+  // Cross-surface "open this PR/issue inside the app" plumbing. The Work
+  // Board (and any future cross-repo surface) fires app:open-repo-pr or
+  // app:open-repo-issue with { repoFullName, number }; we navigate to
+  // RepoDetail with the right tab, then once the tab dispatches its
+  // *-loaded event we forward the matching item to the existing in-tab
+  // selector. This keeps tabs unaware of who triggered the open and
+  // means the existing repo-detail:select-pr / select-issue listeners
+  // continue to work unchanged.
+  const pendingItemRef = useRef(null)
+  useEffect(() => {
+    const open = (kind) => (ev) => {
+      const repoFullName = ev.detail?.repoFullName
+      const number = ev.detail?.number
+      if (!repoFullName || !Number.isFinite(number)) return
+      const [owner, repoName] = repoFullName.split('/')
+      if (!owner || !repoName) return
+      const found = (repos || []).concat(orgRepos || []).find(
+        (r) => r.full_name === repoFullName || (r.name === repoName && r.owner?.login === owner),
+      )
+      const target = found || { name: repoName, full_name: repoFullName, owner: { login: owner } }
+      pendingItemRef.current = { kind, number }
+      handleOpenRepo(target, { tab: kind === 'pr' ? 'pulls' : 'issues' })
+    }
+    const onPR = open('pr')
+    const onIssue = open('issue')
+    window.addEventListener('app:open-repo-pr', onPR)
+    window.addEventListener('app:open-repo-issue', onIssue)
+    return () => {
+      window.removeEventListener('app:open-repo-pr', onPR)
+      window.removeEventListener('app:open-repo-issue', onIssue)
+    }
+  }, [repos, orgRepos, handleOpenRepo])
+
+  // When the PR/Issue tab finishes loading its rows, fulfil the pending
+  // open intent (if any) by dispatching the same select-pr / select-issue
+  // event the command palette uses. The tab itself listens to that event
+  // and renders its detail panel.
+  useEffect(() => {
+    const fulfil = (kind) => (ev) => {
+      const pending = pendingItemRef.current
+      if (!pending || pending.kind !== kind) return
+      const items = Array.isArray(ev.detail) ? ev.detail : []
+      const match = items.find((i) => i?.number === pending.number)
+      pendingItemRef.current = null
+      if (!match) return
+      if (kind === 'pr') {
+        window.dispatchEvent(new CustomEvent('repo-detail:select-pr', { detail: match }))
+      } else {
+        window.dispatchEvent(new CustomEvent('repo-detail:select-issue', { detail: { issue: match } }))
+      }
+    }
+    const onPRs = fulfil('pr')
+    const onIssues = fulfil('issue')
+    window.addEventListener('repo-detail:prs-loaded', onPRs)
+    window.addEventListener('repo-detail:issues-loaded', onIssues)
+    return () => {
+      window.removeEventListener('repo-detail:prs-loaded', onPRs)
+      window.removeEventListener('repo-detail:issues-loaded', onIssues)
+    }
+  }, [])
+
   // Rate-limit toasts — one at a time, auto-dismisses after the countdown ends.
   const rateLimitToastIdRef = useRef(null)
   useEffect(() => {

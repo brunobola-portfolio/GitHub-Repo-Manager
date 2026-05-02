@@ -174,11 +174,14 @@ describe('WorkBoardPage', () => {
 
     it('My Reviews tab is active by default and shows PR data', () => {
         renderPage()
-        // The PR link should be present with the correct href
-        const link = screen.getByRole('link', { name: /fix the bug/i })
-        expect(link).toBeInTheDocument()
-        expect(link).toHaveAttribute('href', 'https://github.com/org/repo/pull/42')
-        expect(link).toHaveAttribute('target', '_blank')
+        // The row is now an in-app button (clicks open the PR detail panel
+        // via app:open-repo-pr); a secondary 'Open on GitHub' anchor stays
+        // for users who prefer github.com directly.
+        expect(screen.getByText(/fix the bug/i)).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /Open PR #42.*Fix the bug.*in app/i })).toBeInTheDocument()
+        const githubLink = screen.getAllByRole('link', { name: /open on github/i })[0]
+        expect(githubLink).toHaveAttribute('href', 'https://github.com/org/repo/pull/42')
+        expect(githubLink).toHaveAttribute('target', '_blank')
     })
 
     it('My Reviews: shows skeleton when loading', () => {
@@ -201,10 +204,13 @@ describe('WorkBoardPage', () => {
         expect(screen.getByText(/let's find your work/i)).toBeInTheDocument()
     })
 
-    it('My Reviews: clicking PR link has correct GitHub URL', () => {
+    it('My Reviews: secondary "Open on GitHub" link still points to the PR', () => {
         renderPage()
-        const link = screen.getByRole('link', { name: /fix the bug/i })
-        expect(link.href).toContain('github.com/org/repo/pull/42')
+        // Each row exposes a small icon-only link to github.com so users who
+        // prefer the GitHub UI keep their escape hatch — but the row's
+        // primary affordance opens in-app instead.
+        const githubLinks = screen.getAllByRole('link', { name: /open on github/i })
+        expect(githubLinks[0].href).toContain('github.com/org/repo/pull/42')
     })
 
     // ---------------------------------------------------------------------------

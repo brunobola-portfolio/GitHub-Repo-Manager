@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion'
-import { CircleDot, ExternalLink, Clock } from 'lucide-react'
+import { CircleDot, Clock } from 'lucide-react'
 import { useMyOpenIssues } from '../../../hooks/useWorkBoard'
 import { useWorkBoardFilters, applyFilters } from '../filters/filter-context-helpers'
 import { SkeletonList, UpsellCard } from '../shared/shared-ui'
 import { dayLabel } from '../shared/formatters'
 import { WorkBoardRowMenu } from '../WorkBoardRowMenu'
+import { WorkBoardRowLink } from '../WorkBoardRowLink'
 import { EmptyStateDiscovery } from '../EmptyStateDiscovery'
 
 export function MyIssuesTab() {
@@ -42,39 +43,47 @@ export function MyIssuesTab() {
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.03 }}
-                        className="group flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                     >
-                        <div className="mt-0.5 p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex-shrink-0">
-                            <CircleDot className="w-4 h-4" />
-                        </div>
-                        <a
-                            href={issueUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 min-w-0"
+                        <WorkBoardRowLink
+                            repoFullName={issue.repoFullName}
+                            number={issue.issueNumber}
+                            itemType="issue"
+                            itemUrl={issueUrl}
+                            ariaLabel={`Open issue #${issue.issueNumber} ${issue.title ? `— ${issue.title}` : ''} in app`}
                         >
-                            <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                {issue.title || `Issue #${issue.issueNumber}`}
+                            <div className="flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                <div className="mt-0.5 p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex-shrink-0">
+                                    <CircleDot className="w-4 h-4" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                        {issue.title || `Issue #${issue.issueNumber}`}
+                                    </div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
+                                        <span className="font-mono text-indigo-600 dark:text-indigo-400">{issue.repoFullName}</span>
+                                        #{issue.issueNumber}
+                                        {(issue.labels || []).map(label => (
+                                            <span
+                                                key={label}
+                                                className="px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-medium"
+                                            >
+                                                {label}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-xs text-slate-400 whitespace-nowrap flex-shrink-0">
+                                    <Clock className="w-3 h-3" />
+                                    {dayLabel(issue.ageDays)}
+                                    <WorkBoardRowMenu
+                                        repoFullName={issue.repoFullName}
+                                        itemUrl={issueUrl}
+                                        itemType="issue"
+                                        itemNumber={issue.issueNumber}
+                                    />
+                                </div>
                             </div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
-                                <span className="font-mono text-indigo-600 dark:text-indigo-400">{issue.repoFullName}</span>
-                                #{issue.issueNumber}
-                                {(issue.labels || []).map(label => (
-                                    <span
-                                        key={label}
-                                        className="px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-medium"
-                                    >
-                                        {label}
-                                    </span>
-                                ))}
-                            </div>
-                        </a>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-400 whitespace-nowrap flex-shrink-0">
-                            <Clock className="w-3 h-3" />
-                            {dayLabel(issue.ageDays)}
-                            <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <WorkBoardRowMenu repoFullName={issue.repoFullName} itemUrl={issueUrl} />
-                        </div>
+                        </WorkBoardRowLink>
                     </motion.div>
                 )
             })}

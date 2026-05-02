@@ -13,6 +13,7 @@ import { SkeletonList, UpsellCard } from '../shared/shared-ui'
 import { dayLabel } from '../shared/formatters'
 import { getCsrfToken } from '../../../utils/api'
 import { WorkBoardRowMenu } from '../WorkBoardRowMenu'
+import { WorkBoardRowLink } from '../WorkBoardRowLink'
 import { EmptyStateDiscovery } from '../EmptyStateDiscovery'
 
 // ---------------------------------------------------------------------------
@@ -179,41 +180,48 @@ function StalePRRow({ pr, idx, isFocused, onFocus, hasAI, onSnooze, onPing }) {
             {hasAI && showChips && (
                 <Sparkles className="absolute top-2 right-2 w-3 h-3 text-slate-500 pointer-events-none" />
             )}
-            <motion.a
-                href={githubUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+            <motion.div
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.03 }}
-                className="flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
             >
-                <div className="mt-0.5 p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex-shrink-0">
-                    <AlertTriangle className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                        {pr.title || `PR #${pr.prNumber}`}
-                    </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        <span className="font-mono text-indigo-600 dark:text-indigo-400">{pr.repoFullName}</span>
-                        {' '}#{pr.prNumber}
-                        {pr.authorLogin && <> by <strong>{pr.authorLogin}</strong></>}
-                    </div>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap flex-shrink-0">
-                    <Clock className="w-3 h-3" />
-                    {dayLabel(pr.ageDays)}
-                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <InlineActions
-                    onSnooze={(hours) => onSnooze(pr, hours)}
-                />
-                <WorkBoardRowMenu
+                <WorkBoardRowLink
                     repoFullName={pr.repoFullName}
+                    number={pr.prNumber}
+                    itemType="pr"
                     itemUrl={githubUrl}
-                />
-            </motion.a>
+                    ariaLabel={`Open stale PR #${pr.prNumber} ${pr.title ? `— ${pr.title}` : ''} in app`}
+                >
+                    <div className="flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <div className="mt-0.5 p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex-shrink-0">
+                            <AlertTriangle className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                {pr.title || `PR #${pr.prNumber}`}
+                            </div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                <span className="font-mono text-indigo-600 dark:text-indigo-400">{pr.repoFullName}</span>
+                                {' '}#{pr.prNumber}
+                                {pr.authorLogin && <> by <strong>{pr.authorLogin}</strong></>}
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap flex-shrink-0">
+                            <Clock className="w-3 h-3" />
+                            {dayLabel(pr.ageDays)}
+                        </div>
+                        <InlineActions
+                            onSnooze={(hours) => onSnooze(pr, hours)}
+                        />
+                        <WorkBoardRowMenu
+                            repoFullName={pr.repoFullName}
+                            itemUrl={githubUrl}
+                            itemType="pr"
+                            itemNumber={pr.prNumber}
+                        />
+                    </div>
+                </WorkBoardRowLink>
+            </motion.div>
             <AnimatePresence>
                 {showChips && (
                     <ChipStrip

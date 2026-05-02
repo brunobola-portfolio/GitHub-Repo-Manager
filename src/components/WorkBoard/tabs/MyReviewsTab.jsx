@@ -15,6 +15,7 @@ import { SkeletonList, UpsellCard } from '../shared/shared-ui'
 import { ageLabel } from '../shared/formatters'
 import { getCsrfToken } from '../../../utils/api'
 import { WorkBoardRowMenu } from '../WorkBoardRowMenu'
+import { WorkBoardRowLink } from '../WorkBoardRowLink'
 import { EmptyStateDiscovery } from '../EmptyStateDiscovery'
 
 // ---------------------------------------------------------------------------
@@ -176,40 +177,44 @@ function ReviewRow({ review, isFocused, onFocus, hasAI, onSnooze, onRequestChang
             {hasAI && showChips && (
                 <Sparkles className="absolute top-2 right-2 w-3 h-3 text-slate-500 pointer-events-none" />
             )}
-            <a
-                href={githubUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+            <WorkBoardRowLink
+                repoFullName={review.repoFullName}
+                number={review.prNumber}
+                itemType="pr"
+                itemUrl={githubUrl}
+                ariaLabel={`Open PR #${review.prNumber} ${review.title ? `— ${review.title}` : ''} in app`}
             >
-                <div className="mt-0.5 p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex-shrink-0">
-                    <GitPullRequest className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                        {review.title || `PR #${review.prNumber}`}
+                <div className="flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div className="mt-0.5 p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex-shrink-0">
+                        <GitPullRequest className="w-4 h-4" />
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        <span className="font-mono text-indigo-600 dark:text-indigo-400">{review.repoFullName}</span>
-                        {' '}#{review.prNumber}
-                        {review.authorLogin && <> by <strong>{review.authorLogin}</strong></>}
+                    <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                            {review.title || `PR #${review.prNumber}`}
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            <span className="font-mono text-indigo-600 dark:text-indigo-400">{review.repoFullName}</span>
+                            {' '}#{review.prNumber}
+                            {review.authorLogin && <> by <strong>{review.authorLogin}</strong></>}
+                        </div>
                     </div>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 whitespace-nowrap flex-shrink-0">
+                        <Clock className="w-3 h-3" />
+                        {ageLabel(review.ageHours)}
+                    </div>
+                    <InlineActions
+                        onApprove={() => {}}
+                        onRequestChanges={() => onOpenDraftModal(review)}
+                        onSnooze={(hours) => onSnooze(review, hours)}
+                    />
+                    <WorkBoardRowMenu
+                        repoFullName={review.repoFullName}
+                        itemUrl={githubUrl}
+                        itemType="pr"
+                        itemNumber={review.prNumber}
+                    />
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-400 whitespace-nowrap flex-shrink-0">
-                    <Clock className="w-3 h-3" />
-                    {ageLabel(review.ageHours)}
-                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <InlineActions
-                    onApprove={() => {}}
-                    onRequestChanges={() => onOpenDraftModal(review)}
-                    onSnooze={(hours) => onSnooze(review, hours)}
-                />
-                <WorkBoardRowMenu
-                    repoFullName={review.repoFullName}
-                    itemUrl={githubUrl}
-                />
-            </a>
+            </WorkBoardRowLink>
             <AnimatePresence>
                 {showChips && (
                     <ChipStrip
