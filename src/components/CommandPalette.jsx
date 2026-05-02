@@ -22,6 +22,9 @@ import { buildTeamsCommands } from './CommandPalette/teamsCommands'
 import { buildReposCommands } from './CommandPalette/reposCommands'
 import { buildRepoActionsCommands } from './CommandPalette/repoActionsCommands'
 import { useRepoActionContext } from '../actions/repoActionContext'
+import { buildPRActionCommands } from '../actions/prActions'
+import { buildBranchActionCommands } from '../actions/branchActions'
+import { buildIssueActionCommands } from '../actions/issueActions'
 import { readRecents, bumpRecent } from './CommandPalette/recents'
 
 const NAVIGATE_ITEMS = [
@@ -208,7 +211,21 @@ function useAskModeResults(translatedQueries, enabled) {
     return { results, loading }
 }
 
-export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChange, onOpenModal, onSelectRepo, isAdmin = false, selectedRepoDetail = null }) {
+export function CommandPalette({
+  isOpen,
+  onClose,
+  repos,
+  activeView,
+  onViewChange,
+  onOpenModal,
+  onSelectRepo,
+  isAdmin = false,
+  selectedRepoDetail = null,
+  // Optional opt-in: when the App provides the in-flight PR / branch / issue
+  // lists for the active repo, the palette enumerates the corresponding
+  // action registries. Empty / undefined = the group is hidden.
+  selectedRepoDetailEntities = null,
+}) {
   const [input, setInput] = useState('')
   const { askMode, askQuery } = parseAskMode(input)
   const displayRepos = repos.slice(0, 10)
@@ -229,6 +246,32 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
   // discovery — slice 1 unified the registry, this is the palette's consumer.
   const repoActionsCommands = activeView === 'repos'
     ? buildRepoActionsCommands(displayRepos, repoActionCtx, { reposLimit: 3 })
+    : []
+
+  // Repo-detail entity registries — adopted opt-in: the App passes
+  // `selectedRepoDetailEntities = { prs, branches, issues }` once it has
+  // them in scope. Registries that don't have a list stay hidden.
+  const entitiesCtx = {
+    api: repoActionCtx.api,
+    toast: repoActionCtx.toast,
+    openModal: repoActionCtx.openModal,
+    openModalWithData: repoActionCtx.openModalWithData,
+    refresh: repoActionCtx.refresh,
+    repoFullName: selectedRepoDetail?.full_name ?? null,
+    onSelectPR: (pr) => window.dispatchEvent(new CustomEvent('app:open-pr-detail', { detail: pr })),
+    onStartReview: (pr) => window.dispatchEvent(new CustomEvent('app:start-pr-review', { detail: pr })),
+    onGenerateDescription: (pr) => window.dispatchEvent(new CustomEvent('app:generate-pr-description', { detail: pr })),
+    onSelectIssue: (issue, opts) => window.dispatchEvent(new CustomEvent('app:open-issue-detail', { detail: { issue, ...opts } })),
+    onPlanWithAI: (issue) => window.dispatchEvent(new CustomEvent('app:plan-issue-with-ai', { detail: issue })),
+  }
+  const prCommands = activeView === 'repo-detail' && Array.isArray(selectedRepoDetailEntities?.prs)
+    ? buildPRActionCommands(selectedRepoDetailEntities.prs.slice(0, 3), entitiesCtx)
+    : []
+  const branchCommands = activeView === 'repo-detail' && Array.isArray(selectedRepoDetailEntities?.branches)
+    ? buildBranchActionCommands(selectedRepoDetailEntities.branches.slice(0, 3), entitiesCtx)
+    : []
+  const issueCommands = activeView === 'repo-detail' && Array.isArray(selectedRepoDetailEntities?.issues)
+    ? buildIssueActionCommands(selectedRepoDetailEntities.issues.slice(0, 3), entitiesCtx)
     : []
 
   async function runContextCommand(item) {
@@ -619,6 +662,51 @@ export function CommandPalette({ isOpen, onClose, repos, activeView, onViewChang
                   </Command.Item>
                 )
               })}
+            </Command.Group>
+          )}
+
+          {prCommands.length > 0 && (
+            <Command.Group heading="Pull request actions" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+              {prCommands.map((item) => (
+                <Command.Item
+                  key={item.id}
+                  value={item.label}
+                  onSelect={async () => { try { await item.run() } catch (e) { toast.errorFromException(e, { fallbackTitle: `${item.label} failed` }) } onClose() }}
+                  className={ITEM_CLASSES}
+                >
+                  {item.label}
+                </Command.Item>
+              ))}
+            </Command.Group>
+          )}
+
+          {branchCommands.length > 0 && (
+            <Command.Group heading="Branch actions" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+              {branchCommands.map((item) => (
+                <Command.Item
+                  key={item.id}
+                  value={item.label}
+                  onSelect={async () => { try { await item.run() } catch (e) { toast.errorFromException(e, { fallbackTitle: `${item.label} failed` }) } onClose() }}
+                  className={ITEM_CLASSES}
+                >
+                  {item.label}
+                </Command.Item>
+              ))}
+            </Command.Group>
+          )}
+
+          {issueCommands.length > 0 && (
+            <Command.Group heading="Issue actions" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+              {issueCommands.map((item) => (
+                <Command.Item
+                  key={item.id}
+                  value={item.label}
+                  onSelect={async () => { try { await item.run() } catch (e) { toast.errorFromException(e, { fallbackTitle: `${item.label} failed` }) } onClose() }}
+                  className={ITEM_CLASSES}
+                >
+                  {item.label}
+                </Command.Item>
+              ))}
             </Command.Group>
           )}
 
