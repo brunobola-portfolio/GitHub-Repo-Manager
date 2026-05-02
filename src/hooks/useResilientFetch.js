@@ -38,6 +38,20 @@ export function useResilientFetch(path, { skip = false } = {}) {
         setError(null)
         try {
             const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`
+
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                const { mockCommitsFetch } = await import('../__mocks__/mockRepoDetail.js')
+                const mocked = mockCommitsFetch(url)
+                if (mocked !== undefined) {
+                    if (!controller.signal.aborted) {
+                        setData(mocked)
+                        setStale(false)
+                        setFetchedAt(null)
+                    }
+                    return
+                }
+            }
+
             const res = await fetch(url, {
                 credentials: 'include',
                 signal: controller.signal,

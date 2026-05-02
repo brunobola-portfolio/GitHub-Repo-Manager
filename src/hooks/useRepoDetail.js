@@ -7,6 +7,13 @@ const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
 async function apiFetch(url, options = {}) {
     const method = (options.method || 'GET').toUpperCase()
+
+    if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true' && method === 'GET') {
+        const { mockRepoDetailFetch } = await import('../__mocks__/mockRepoDetail.js')
+        const mocked = mockRepoDetailFetch(url)
+        if (mocked !== undefined) return mocked
+    }
+
     const headers = {
         'Content-Type': 'application/json',
         ...options.headers
@@ -166,6 +173,9 @@ export function useRepoDetail(owner, repo) {
         apiFetch(`${base}/pulls/${number}/comments`), [base])
 
     const fetchPullDiff = useCallback(async (number) => {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+            return `diff --git a/src/example.jsx b/src/example.jsx\nindex abc123..def456 100644\n--- a/src/example.jsx\n+++ b/src/example.jsx\n@@ -1,5 +1,8 @@\n import React from 'react'\n+import { clsx } from 'clsx'\n \n-export function Example() {\n-  return <div>old</div>\n+export function Example({ className }) {\n+  return <div className={clsx('example', className)}>new</div>\n }`
+        }
         const r = await fetch(`${base}/pulls/${number}/diff`, {
             credentials: 'include',
         })
