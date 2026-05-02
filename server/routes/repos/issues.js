@@ -18,6 +18,8 @@ import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js'
 import { issueCreateSchema, issueUpdateSchema, issueCommentSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { readThrough, invalidate } from '../../lib/gh-cache.js';
+import { enqueueAndExecute, makeIdempotencyKey } from '../../lib/gh-outbox.js';
+import crypto from 'crypto';
 
 const router = express.Router();
 
@@ -102,21 +104,44 @@ router.post('/:owner/:repo/issues', requireAuth, validateBody(issueCreateSchema)
     }
 });
 
-// Update issue — invalidate cached row so the next read is fresh
+// Update issue — routes through gh-outbox so a transient GitHub 5xx queues
+// the mutation for retry instead of failing closed. Idempotency key is
+// (resource + body hash) so the same close-issue payload posted twice
+// resolves to one row, not two GitHub calls.
 router.patch('/:owner/:repo/issues/:issue_number', requireAuth, validateBody(issueUpdateSchema), async (req, res) => {
     try {
         const { owner, repo, issue_number } = req.params;
+        const url = `/repos/${owner}/${repo}/issues/${issue_number}`;
+        const body = req.validatedBody;
+        const bodyHash = crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex').slice(0, 16);
+        const idempotencyKey = makeIdempotencyKey('PATCH', url, bodyHash);
 
-        const { data } = await githubApi(`/repos/${owner}/${repo}/issues/${issue_number}`, req.session.accessToken, {
+        const result = await enqueueAndExecute({
+            userId: req.session.userId,
             method: 'PATCH',
-            body: JSON.stringify(req.validatedBody)
+            url,
+            body,
+            idempotencyKey,
+            token: req.session.accessToken,
         });
 
-        // Inline invalidation: the user just changed this issue, the next read
-        // shouldn't serve a 60s-stale cached copy.
+        // Inline invalidation: the user just changed this issue, the next
+        // read shouldn't serve a 60s-stale cached copy. Run regardless of
+        // queued state — when the mutation eventually lands, the cache is
+        // already free of the now-wrong rows.
         invalidate({ userId: req.session.userId, resourceType: 'issues', prefix: `${owner}/${repo}` });
 
-        res.json(data);
+        if (result.queued) {
+            // GitHub was unreachable; outbox worker will retry. The client
+            // shows a 'pending sync' banner via /api/v1/outbox/pending.
+            return res.status(202).json({
+                queued: true,
+                outboxId: result.outboxId,
+                message: 'Update queued — will sync to GitHub when it is reachable.',
+            });
+        }
+
+        res.json(result.data);
     } catch (error) {
         req.log.error({ err: error }, 'Update issue failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
