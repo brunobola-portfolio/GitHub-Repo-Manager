@@ -169,6 +169,13 @@ export function useRepoDetail(owner, repo) {
         withLoading(() => apiFetch(`${base}/pulls/${number}`, { method: 'PATCH', body: JSON.stringify(data) })),
         [base, withLoading])
 
+    // Submit a PR review — APPROVE / REQUEST_CHANGES / COMMENT.
+    // The server route is requireTier('pro') so free-tier callers will see the
+    // standard tierError flow surfaced via toasts.
+    const submitPullReview = useCallback((number, payload) =>
+        withLoading(() => apiFetch(`${base}/pulls/${number}/reviews`, { method: 'POST', body: JSON.stringify(payload) })),
+        [base, withLoading])
+
     // ---- Webhooks ----
     const fetchWebhooks = useCallback(() =>
         apiFetch(`${base}/hooks`), [base])
@@ -261,7 +268,7 @@ export function useRepoDetail(owner, repo) {
         fetchIssues, fetchIssue, fetchIssueComments, createIssue, updateIssue, commentOnIssue,
         // Pull Requests
         fetchPulls, fetchPull, fetchPullReviews, fetchPullFiles, fetchPullComments, fetchPullDiff,
-        createPull, mergePull, updatePull,
+        createPull, mergePull, updatePull, submitPullReview,
         // Webhooks
         fetchWebhooks, createWebhook, updateWebhook, deleteWebhook, pingWebhook,
         // Labels
@@ -287,7 +294,7 @@ export function useRepoDetail(owner, repo) {
         fetchReleases, createRelease, deleteRelease,
         fetchIssues, fetchIssue, fetchIssueComments, createIssue, updateIssue, commentOnIssue,
         fetchPulls, fetchPull, fetchPullReviews, fetchPullFiles, fetchPullComments, fetchPullDiff,
-        createPull, mergePull, updatePull,
+        createPull, mergePull, updatePull, submitPullReview,
         fetchWebhooks, createWebhook, updateWebhook, deleteWebhook, pingWebhook,
         fetchLabels, createLabel, deleteLabel,
         fetchCommits, compareBranches,

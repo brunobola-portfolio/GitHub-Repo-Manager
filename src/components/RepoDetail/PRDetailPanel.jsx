@@ -414,7 +414,10 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                         </div>
                     )}
 
-                    {/* Files tab */}
+                    {/* Files tab — inline-expandable diff per file. Heavy
+                        DiffRenderer review surface still lives behind
+                        onStartReview for full-screen mode; this is the
+                        in-detail "see what changed" view. */}
                     {activeTab === 'files' && (
                         <div className="space-y-2">
                             {/* Summary */}
@@ -424,38 +427,21 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                 </span>
                                 <span className="text-green-600 dark:text-green-400 font-medium">+{totalAdditions}</span>
                                 <span className="text-red-500 dark:text-red-400 font-medium">-{totalDeletions}</span>
+                                {onStartReview && files.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={onStartReview}
+                                        className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                                    >
+                                        <Eye className="w-3.5 h-3.5" />
+                                        Open full review
+                                    </button>
+                                )}
                             </Card>
 
-                            {/* File list */}
+                            {/* File list with expandable patches */}
                             {files.map((file, i) => (
-                                <Card key={i} className="p-3">
-                                    <div className="flex items-center gap-3">
-                                        {getFileIcon(file.status)}
-                                        <span className="font-mono text-sm text-slate-800 dark:text-slate-200 truncate flex-1 min-w-0">
-                                            {file.filename}
-                                        </span>
-                                        <div className="flex items-center gap-2 text-xs flex-shrink-0">
-                                            {file.additions > 0 && (
-                                                <span className="text-green-600 dark:text-green-400 font-medium">+{file.additions}</span>
-                                            )}
-                                            {file.deletions > 0 && (
-                                                <span className="text-red-500 dark:text-red-400 font-medium">-{file.deletions}</span>
-                                            )}
-                                        </div>
-                                        {/* Change bar */}
-                                        <div className="flex gap-px flex-shrink-0">
-                                            {Array.from({ length: Math.min(5, file.additions || 0) }).map((_, j) => (
-                                                <div key={`a${j}`} className="w-2 h-2 rounded-sm bg-green-500" />
-                                            ))}
-                                            {Array.from({ length: Math.min(5, file.deletions || 0) }).map((_, j) => (
-                                                <div key={`d${j}`} className="w-2 h-2 rounded-sm bg-red-500" />
-                                            ))}
-                                            {Array.from({ length: Math.max(0, 5 - Math.min(5, file.additions || 0) - Math.min(5, file.deletions || 0)) }).map((_, j) => (
-                                                <div key={`e${j}`} className="w-2 h-2 rounded-sm bg-slate-200 dark:bg-slate-700" />
-                                            ))}
-                                        </div>
-                                    </div>
-                                </Card>
+                                <PRFileDiff key={file.sha || file.filename || i} file={file} getFileIcon={getFileIcon} />
                             ))}
 
                             {files.length === 0 && (
@@ -509,11 +495,152 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                     </Card>
                                 )
                             })}
+
+                            {/* Review composer — Approve / Request changes /
+                                Comment. Hits POST /pulls/N/reviews which is
+                                tier-gated as Pro+; the toast layer handles
+                                the upgrade CTA when free-tier users try. */}
+                            <ReviewComposer
+                                api={api}
+                                prNumber={pr.number}
+                                onSubmitted={async () => {
+                                    const data = await api.fetchPullReviews(pr.number)
+                                    setReviews(Array.isArray(data) ? data : [])
+                                }}
+                            />
                         </div>
                     )}
                     </div>
                 </>
             )}
         </motion.div>
+    )
+}
+
+/**
+ * PRFileDiff — single-file row that expands to show its `patch` inline.
+ * The diff is rendered as a plain monospace block (mirrors CommitDetailPanel).
+ * For the full Linear-grade review surface (file tree + side-by-side +
+ * inline comments), `onStartReview` opens the dedicated PRReviewView.
+ */
+function PRFileDiff({ file, getFileIcon }) {
+    const [expanded, setExpanded] = useState(false)
+    const hasPatch = !!file.patch
+    return (
+        <Card className="overflow-hidden">
+            <button
+                type="button"
+                onClick={() => setExpanded(v => !v)}
+                disabled={!hasPatch}
+                className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors disabled:cursor-not-allowed disabled:opacity-70"
+            >
+                {getFileIcon(file.status)}
+                <span className="font-mono text-sm text-slate-800 dark:text-slate-200 truncate flex-1 min-w-0 text-left">
+                    {file.filename}
+                </span>
+                <div className="flex items-center gap-2 text-xs flex-shrink-0">
+                    {file.additions > 0 && (
+                        <span className="text-green-600 dark:text-green-400 font-medium">+{file.additions}</span>
+                    )}
+                    {file.deletions > 0 && (
+                        <span className="text-red-500 dark:text-red-400 font-medium">-{file.deletions}</span>
+                    )}
+                    {hasPatch && (
+                        <span className="ml-1 text-slate-400 text-[10px]">{expanded ? 'Hide' : 'Show'} diff</span>
+                    )}
+                </div>
+            </button>
+            {expanded && hasPatch && (
+                <pre className="text-xs font-mono leading-relaxed overflow-x-auto p-3 bg-slate-50/40 dark:bg-slate-900/40 max-h-[480px] border-t border-slate-200/60 dark:border-slate-700/40">
+                    {file.patch}
+                </pre>
+            )}
+        </Card>
+    )
+}
+
+/**
+ * ReviewComposer — bottom-of-Reviews-tab form. Approve / Request changes /
+ * Comment buttons + an optional message. The composer is intentionally
+ * narrow (no inline-comment threading): the heavy review surface lives in
+ * `PRReviewView` for full-screen review mode.
+ */
+function ReviewComposer({ api, prNumber, onSubmitted }) {
+    const { toast } = useToast()
+    const [body, setBody] = useState('')
+    const [submitting, setSubmitting] = useState(null) // 'APPROVE' | 'REQUEST_CHANGES' | 'COMMENT'
+
+    const submit = async (event) => {
+        if (event === 'COMMENT' && !body.trim()) {
+            toast.warning('Add a message to comment without approving')
+            return
+        }
+        setSubmitting(event)
+        try {
+            await api.submitPullReview(prNumber, { event, body: body.trim() || undefined })
+            setBody('')
+            toast.success(
+                event === 'APPROVE' ? 'Approved'
+                    : event === 'REQUEST_CHANGES' ? 'Changes requested'
+                    : 'Comment posted',
+            )
+            await onSubmitted?.()
+        } catch (e) {
+            toast.errorFromException(e, { fallbackTitle: 'Failed to submit review' })
+        } finally {
+            setSubmitting(null)
+        }
+    }
+
+    return (
+        <Card className="p-4 mt-4 space-y-3 border-2 border-dashed border-slate-200 dark:border-slate-700">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Submit review
+            </h4>
+            <textarea
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="Optional review message — supports markdown"
+                rows={3}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 resize-y"
+            />
+            <div className="flex flex-wrap items-center gap-2">
+                <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => submit('APPROVE')}
+                    disabled={!!submitting}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                    {submitting === 'APPROVE'
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <ShieldCheck className="w-3.5 h-3.5" />}
+                    Approve
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => submit('REQUEST_CHANGES')}
+                    disabled={!!submitting}
+                    className="bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40 border border-orange-200 dark:border-orange-800/50"
+                >
+                    {submitting === 'REQUEST_CHANGES'
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <ShieldAlert className="w-3.5 h-3.5" />}
+                    Request changes
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => submit('COMMENT')}
+                    disabled={!!submitting || !body.trim()}
+                >
+                    {submitting === 'COMMENT'
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <MessageCircle className="w-3.5 h-3.5" />}
+                    Comment
+                </Button>
+            </div>
+        </Card>
     )
 }
