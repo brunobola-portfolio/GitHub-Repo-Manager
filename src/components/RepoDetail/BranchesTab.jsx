@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
@@ -19,7 +19,14 @@ export function BranchesTab({ api, repoData }) {
         },
         [api],
     )
-    const branches = data || []
+    const branches = useMemo(() => data || [], [data])
+
+    // Hoist the branch list to App.jsx via a window CustomEvent so the
+    // command palette's "Branch actions" group can enumerate them.
+    useEffect(() => {
+        if (!Array.isArray(branches)) return
+        window.dispatchEvent(new CustomEvent('repo-detail:branches-loaded', { detail: branches }))
+    }, [branches])
 
     const [showCreate, setShowCreate] = useState(false)
     const [newBranch, setNewBranch] = useState('')

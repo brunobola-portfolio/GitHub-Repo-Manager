@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
@@ -21,7 +21,15 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
         },
         [api, filter],
     )
-    const pulls = data || []
+    const pulls = useMemo(() => data || [], [data])
+
+    // Hoist the current PR list to the App via a window CustomEvent so the
+    // command palette's "Pull request actions" group can enumerate them.
+    // Keeps the tab decoupled from App state — App.jsx listens once.
+    useEffect(() => {
+        if (!Array.isArray(pulls)) return
+        window.dispatchEvent(new CustomEvent('repo-detail:prs-loaded', { detail: pulls }))
+    }, [pulls])
 
     const [showCreate, setShowCreate] = useState(false)
     const [creating, setCreating] = useState(false)
@@ -30,6 +38,17 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
     const [selectedPR, setSelectedPR] = useState(null)
     const [branches, setBranches] = useState([])
     const [confirmAction, setConfirmAction] = useState(null)
+
+    // Bridge event from the command palette via App.jsx — selects a PR
+    // inside this tab so the detail panel renders.
+    useEffect(() => {
+        const handler = (ev) => {
+            const pr = ev.detail
+            if (pr && typeof pr.number === 'number') setSelectedPR(pr)
+        }
+        window.addEventListener('repo-detail:select-pr', handler)
+        return () => window.removeEventListener('repo-detail:select-pr', handler)
+    }, [])
 
     // Load branches when create form opens
     useEffect(() => {

@@ -110,6 +110,11 @@ function AppContent() {
   const [org, setOrg] = useState('')
   const [selectedRepoDetail, setSelectedRepoDetail] = useState(null)
   const [repoDetailInitialTab, setRepoDetailInitialTab] = useState('overview')
+  // Lifted from RepoDetail tabs via window CustomEvents (`repo-detail:*-loaded`).
+  // The command palette consumes these to enumerate the PR / branch / issue
+  // action registries inside the active repo. Reset whenever the user leaves
+  // the repo-detail view so the palette doesn't surface stale targets.
+  const [repoDetailEntities, setRepoDetailEntities] = useState({ prs: [], branches: [], issues: [] })
   const [reviewingPR, setReviewingPR] = useState(null)
   const [syncStatus, setSyncStatus] = useState({ lastSync: null, hasUpdates: false })
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -255,6 +260,83 @@ function AppContent() {
     window.addEventListener('app:open-settings', handler)
     return () => window.removeEventListener('app:open-settings', handler)
   }, [openModalWithData])
+
+  // Hoist PR / branch / issue lists from RepoDetail tabs so the command
+  // palette can enumerate the corresponding action registries (Phase 3 / item 16
+  // adoption). Tabs dispatch `repo-detail:*-loaded` whenever their data fetch
+  // resolves; we keep three lists in a single state object so the palette only
+  // re-renders once per change.
+  useEffect(() => {
+    const onPrs = (ev) => setRepoDetailEntities(s => ({ ...s, prs: Array.isArray(ev.detail) ? ev.detail : [] }))
+    const onBranches = (ev) => setRepoDetailEntities(s => ({ ...s, branches: Array.isArray(ev.detail) ? ev.detail : [] }))
+    const onIssues = (ev) => setRepoDetailEntities(s => ({ ...s, issues: Array.isArray(ev.detail) ? ev.detail : [] }))
+    window.addEventListener('repo-detail:prs-loaded', onPrs)
+    window.addEventListener('repo-detail:branches-loaded', onBranches)
+    window.addEventListener('repo-detail:issues-loaded', onIssues)
+    return () => {
+      window.removeEventListener('repo-detail:prs-loaded', onPrs)
+      window.removeEventListener('repo-detail:branches-loaded', onBranches)
+      window.removeEventListener('repo-detail:issues-loaded', onIssues)
+    }
+  }, [])
+
+  // Memo-derived prop for the palette: empty entity lists when the user is
+  // not inside repo-detail. We compute on render rather than reset state via
+  // an effect (which the react-hooks lint guard rightly flags as a cascading
+  // render). The actual entity state stays as-is from the last load — the
+  // palette simply receives empty lists when out of context.
+  const palettePropEntities = useMemo(
+    () => (selectedRepoDetail ? repoDetailEntities : { prs: [], branches: [], issues: [] }),
+    [selectedRepoDetail, repoDetailEntities],
+  )
+
+  // Bridge palette-dispatched intents to the existing RepoDetail handlers.
+  // The palette uses CustomEvents instead of prop callbacks so it stays
+  // decoupled from RepoDetail's internal state — App.jsx is the routing point.
+  useEffect(() => {
+    const onOpenPRDetail = (ev) => {
+      const pr = ev.detail
+      if (!pr) return
+      window.dispatchEvent(new CustomEvent('repo-detail:select-pr', { detail: pr }))
+    }
+    const onStartReview = (ev) => {
+      const pr = ev.detail
+      if (!pr) return
+      setReviewingPR(pr)
+      setActiveView('pr-review')
+    }
+    const onGenerateDescription = (ev) => {
+      const pr = ev.detail
+      if (!pr || !selectedRepoDetail) return
+      openModalWithData('showDevToolkit', {
+        initialTab: 'pr',
+        repo: selectedRepoDetail,
+        pr: { number: pr.number, head: pr.head?.ref, base: pr.base?.ref },
+      })
+    }
+    const onOpenIssueDetail = (ev) => {
+      const detail = ev.detail
+      if (!detail?.issue) return
+      window.dispatchEvent(new CustomEvent('repo-detail:select-issue', { detail }))
+    }
+    const onPlanIssueWithAI = (ev) => {
+      const issue = ev.detail
+      if (!issue) return
+      window.dispatchEvent(new CustomEvent('repo-detail:plan-issue', { detail: issue }))
+    }
+    window.addEventListener('app:open-pr-detail', onOpenPRDetail)
+    window.addEventListener('app:start-pr-review', onStartReview)
+    window.addEventListener('app:generate-pr-description', onGenerateDescription)
+    window.addEventListener('app:open-issue-detail', onOpenIssueDetail)
+    window.addEventListener('app:plan-issue-with-ai', onPlanIssueWithAI)
+    return () => {
+      window.removeEventListener('app:open-pr-detail', onOpenPRDetail)
+      window.removeEventListener('app:start-pr-review', onStartReview)
+      window.removeEventListener('app:generate-pr-description', onGenerateDescription)
+      window.removeEventListener('app:open-issue-detail', onOpenIssueDetail)
+      window.removeEventListener('app:plan-issue-with-ai', onPlanIssueWithAI)
+    }
+  }, [selectedRepoDetail, openModalWithData, setActiveView])
 
   // Open the per-repo Settings tab via the AI assistant action.
   // Lookup is best-effort: if the repo is loaded we use its full object
@@ -1207,6 +1289,7 @@ function AppContent() {
         onSelectRepo={handleOpenRepo}
         isAdmin={isAdmin}
         selectedRepoDetail={selectedRepoDetail}
+        selectedRepoDetailEntities={palettePropEntities}
       />
 
       {/* Mobile-only FAB to reach the command palette without a keyboard. */}

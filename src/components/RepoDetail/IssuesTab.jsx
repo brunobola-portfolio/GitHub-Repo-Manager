@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
@@ -21,13 +21,42 @@ export function IssuesTab({ api, repoFullName }) {
         },
         [api, filter],
     )
-    const issues = data || []
+    const issues = useMemo(() => data || [], [data])
+
+    // Hoist the issue list to App.jsx via a window CustomEvent so the
+    // command palette's "Issue actions" group can enumerate them.
+    useEffect(() => {
+        if (!Array.isArray(issues)) return
+        window.dispatchEvent(new CustomEvent('repo-detail:issues-loaded', { detail: issues }))
+    }, [issues])
 
     const [showCreate, setShowCreate] = useState(false)
     const [creating, setCreating] = useState(false)
     const [message, setMessage] = useState(null)
     const [form, setForm] = useState({ title: '', body: '' })
     const [selectedIssue, setSelectedIssue] = useState(null)
+
+    // Bridge events from the command palette via App.jsx. The palette emits
+    // `app:open-issue-detail` (App.jsx routes to `repo-detail:select-issue`)
+    // and `app:plan-issue-with-ai` (routed to `repo-detail:plan-issue`); we
+    // open the detail panel and let it auto-focus the planner / comment
+    // composer based on the bridge payload.
+    useEffect(() => {
+        const onSelect = (ev) => {
+            const issue = ev.detail?.issue
+            if (issue && typeof issue.number === 'number') setSelectedIssue(issue)
+        }
+        const onPlan = (ev) => {
+            const issue = ev.detail
+            if (issue && typeof issue.number === 'number') setSelectedIssue(issue)
+        }
+        window.addEventListener('repo-detail:select-issue', onSelect)
+        window.addEventListener('repo-detail:plan-issue', onPlan)
+        return () => {
+            window.removeEventListener('repo-detail:select-issue', onSelect)
+            window.removeEventListener('repo-detail:plan-issue', onPlan)
+        }
+    }, [])
 
     const handleCreate = async () => {
         if (!form.title) return
