@@ -19,6 +19,7 @@ import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage,
 import { auditLog } from '../../lib/audit.js';
 import { initSSE, streamToSSE } from '../ai-streaming.js';
 import { requireAI } from './shared.js';
+import { mapAIErrorToResponse } from '../../middleware/ai-error-mapper.js';
 
 const router = express.Router();
 
@@ -52,6 +53,7 @@ router.post('/ai/quality-report', requireAuth, requireAI, async (req, res) => {
 
     } catch (error) {
         req.log.error({ err: error }, 'Quality report generation failed');
+        if (mapAIErrorToResponse(res, error)) return;
         res.status(500).json({ error: safeError(error, 'Failed to generate quality report') });
     }
 });
@@ -163,6 +165,7 @@ File manifest: ${sanitizeForPrompt(JSON.stringify((fileManifest || []).map(f => 
         res.json({ success: true, summary });
     } catch (error) {
         req.log.error({ err: error }, 'AI PR review summary failed');
+        if (mapAIErrorToResponse(res, error)) return;
         res.status(500).json({ error: safeError(error, 'Failed to generate review summary') });
     }
 });
@@ -270,6 +273,7 @@ Rules:
         });
     } catch (error) {
         req.log.error({ err: error }, 'Generate commit message failed');
+        if (mapAIErrorToResponse(res, error)) return;
         res.status(500).json({ error: safeError(error, 'Failed to generate commit message') });
     }
 });
@@ -396,6 +400,7 @@ Rules:
         });
     } catch (error) {
         req.log.error({ err: error }, 'Generate PR description failed');
+        if (mapAIErrorToResponse(res, error)) return;
         res.status(500).json({ error: safeError(error, 'Failed to generate PR description') });
     }
 });
@@ -482,6 +487,7 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
         res.json({ refined_content: refined });
     } catch (error) {
         req.log.error({ err: error }, 'Refine content failed');
+        if (mapAIErrorToResponse(res, error)) return;
         res.status(500).json({ error: safeError(error, 'Failed to refine content') });
     }
 });
@@ -553,6 +559,7 @@ Stats: ${diff_summary.files} files, +${diff_summary.additions} -${diff_summary.d
         res.json(responseData);
     } catch (error) {
         req.log.error({ err: error }, 'Analyze context failed');
+        if (mapAIErrorToResponse(res, error)) return;
         res.status(500).json({ error: safeError(error, 'Failed to analyze context') });
     }
 });
@@ -629,6 +636,7 @@ router.post('/ai/chat-refine', requireAuth, requireAI, async (req, res) => {
     } catch (error) {
         req.log.error({ err: error }, 'Chat refine failed');
         if (!res.headersSent) {
+            if (mapAIErrorToResponse(res, error)) return;
             res.status(500).json({ error: safeError(error, 'Failed to chat refine') });
         }
     }

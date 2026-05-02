@@ -135,7 +135,9 @@ router.get('/ai/search', requireAuth, requireAI, async (req, res) => {
             return res.json({ mode: 'similar-by-id', similar })
         } catch (err) {
             req.log.error({ err }, 'similar-by-id lookup failed')
-            return res.status(500).json({ error: safeError(err, 'Similarity search failed') })
+            // Route AIError through the friendly mapper so quota / rate-limit /
+            // overload codes hit the UI as actionable JSON instead of raw text.
+            return handleAIError(res, err, 'Similarity search failed')
         }
     }
 
@@ -171,7 +173,9 @@ router.get('/ai/search', requireAuth, requireAI, async (req, res) => {
 
     } catch (error) {
         req.log.error({ err: error }, 'Semantic search failed');
-        res.status(500).json({ error: safeError(error, 'Search failed') });
+        // semanticSearch can throw AIError (embedding quota, rate-limit, etc.)
+        // — route through the same mapper used by other AI endpoints.
+        return handleAIError(res, error, 'Search failed');
     }
 });
 
