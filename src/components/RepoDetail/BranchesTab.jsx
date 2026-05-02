@@ -3,7 +3,7 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
-import { GitBranch, Shield, Trash2, Plus, Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { GitBranch, Shield, Trash2, Plus, Loader2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
@@ -97,9 +97,21 @@ export function BranchesTab({ api, repoData }) {
                     <GitBranch className="w-5 h-5 text-indigo-500" />
                     {branches.length} Branch{branches.length !== 1 ? 'es' : ''}
                 </h3>
-                <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
-                    <Plus className="w-4 h-4 mr-1" /> New Branch
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={loadBranches}
+                        disabled={loading}
+                        aria-label="Refresh branches"
+                        title="Refresh branches"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
+                        <Plus className="w-4 h-4 mr-1" /> New Branch
+                    </Button>
+                </div>
             </div>
 
             <BranchHygieneCard branches={branches} />
@@ -161,8 +173,9 @@ export function BranchesTab({ api, repoData }) {
                             </span>
                         )}
                         <Button variant="ghost" size="sm" onClick={() => handleDelete(b)}
-                            className="text-red-500 hover:text-red-700 dark:hover:text-red-400 opacity-0 group-hover:opacity-100"
-                            title="Delete branch">
+                            className="text-red-500 hover:text-red-700 dark:hover:text-red-400 md:opacity-0 md:group-hover:opacity-100"
+                            title="Delete branch"
+                            aria-label={`Delete branch ${b.name}`}>
                             <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                     </Card>

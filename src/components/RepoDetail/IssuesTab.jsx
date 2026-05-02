@@ -3,7 +3,7 @@ import { AnimatePresence } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
-import { CircleDot, Plus, Loader2, CheckCircle2, XCircle, MessageSquare, ExternalLink } from 'lucide-react'
+import { CircleDot, Plus, Loader2, CheckCircle2, XCircle, MessageSquare, ExternalLink, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { IssueDetailPanel } from './IssueDetailPanel'
 import { useTabData } from '../../hooks/useTabData'
@@ -131,6 +131,16 @@ export function IssuesTab({ api, repoFullName }) {
                             </button>
                         ))}
                     </div>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={loadIssues}
+                        disabled={loading}
+                        aria-label="Refresh issues"
+                        title="Refresh issues"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </Button>
                     <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
                         <Plus className="w-4 h-4 mr-1" /> New Issue
                     </Button>

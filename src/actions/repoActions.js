@@ -4,12 +4,7 @@ import {
 	Trash2, Wand2, GitPullRequest, BarChart3, GitCompare, ShieldAlert,
 	Upload, FlaskConical, Download, Sparkles, Heart,
 } from 'lucide-react'
-
-const copyToClipboard = (text) => {
-	if (typeof navigator !== 'undefined' && navigator.clipboard) {
-		return navigator.clipboard.writeText(text)
-	}
-}
+import { copyToClipboard } from '../utils/clipboard'
 
 /**
  * Repository action registry — single source of truth for what actions

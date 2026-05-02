@@ -4,7 +4,7 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
-import { GitPullRequest, Plus, Loader2, CheckCircle2, XCircle, GitMerge, ExternalLink, ChevronDown } from 'lucide-react'
+import { GitPullRequest, Plus, Loader2, CheckCircle2, XCircle, GitMerge, ExternalLink, ChevronDown, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { PRDetailPanel } from './PRDetailPanel'
 import { PRRiskBadges } from './PRRiskBadges'
@@ -157,6 +157,16 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                             </button>
                         ))}
                     </div>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={loadPulls}
+                        disabled={loading}
+                        aria-label="Refresh pull requests"
+                        title="Refresh pull requests"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </Button>
                     <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
                         <Plus className="w-4 h-4 mr-1" /> New PR
                     </Button>

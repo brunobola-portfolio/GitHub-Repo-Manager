@@ -11,12 +11,7 @@
  */
 
 import { Eye, Copy, Trash2, ShieldCheck } from 'lucide-react'
-
-const copyToClipboard = (text) => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        return navigator.clipboard.writeText(text)
-    }
-}
+import { copyToClipboard } from '../utils/clipboard'
 
 /**
  * @typedef {Object} BranchTarget

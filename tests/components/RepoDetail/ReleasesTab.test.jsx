@@ -255,11 +255,12 @@ describe('ReleasesTab — delete flow', () => {
       expect(screen.getByText(/3 Releases/)).toBeInTheDocument()
     )
 
-    // Each release row has a delete (Trash) button — click the first
+    // Each release row has a delete (Trash) button — click the first.
+    // Excludes the header Refresh button (which has aria-label="Refresh releases")
+    // so we only pick the per-row trash buttons that have no aria-label.
     const deleteButtons = screen
       .getAllByRole('button')
-      .filter(b => b.querySelector('svg') && !b.textContent?.trim())
-    // The New Release button has text, so trash buttons remain
+      .filter(b => !b.getAttribute('aria-label') && b.querySelector('svg') && !b.textContent?.trim())
     expect(deleteButtons.length).toBeGreaterThanOrEqual(3)
     await user.click(deleteButtons[0])
 
@@ -291,7 +292,7 @@ describe('ReleasesTab — delete flow', () => {
     )
     const deleteButtons = screen
       .getAllByRole('button')
-      .filter(b => b.querySelector('svg') && !b.textContent?.trim())
+      .filter(b => !b.getAttribute('aria-label') && b.querySelector('svg') && !b.textContent?.trim())
     await user.click(deleteButtons[0])
 
     const dialog = await screen.findByRole('dialog')

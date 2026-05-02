@@ -3,7 +3,7 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
-import { Tag, Plus, Trash2, Loader2, ExternalLink, CheckCircle2, XCircle, Package } from 'lucide-react'
+import { Tag, Plus, Trash2, Loader2, ExternalLink, CheckCircle2, XCircle, Package, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
@@ -74,9 +74,21 @@ export function ReleasesTab({ api }) {
                     <Tag className="w-5 h-5 text-indigo-500" />
                     {releases.length} Release{releases.length !== 1 ? 's' : ''}
                 </h3>
-                <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
-                    <Plus className="w-4 h-4 mr-1" /> New Release
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={loadReleases}
+                        disabled={loading}
+                        aria-label="Refresh releases"
+                        title="Refresh releases"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
+                        <Plus className="w-4 h-4 mr-1" /> New Release
+                    </Button>
+                </div>
             </div>
 
             {message && (

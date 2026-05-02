@@ -17,12 +17,7 @@
 import {
     Eye, ExternalLink, Copy, GitMerge, X, Wand2, MessageCircle,
 } from 'lucide-react'
-
-const copyToClipboard = (text) => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        return navigator.clipboard.writeText(text)
-    }
-}
+import { copyToClipboard } from '../utils/clipboard'
 
 /**
  * @typedef {Object} PRTarget

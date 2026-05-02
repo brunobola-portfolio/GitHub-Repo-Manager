@@ -167,7 +167,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
             </button>
 
             {/* Header */}
-            <Card className="p-5 border-l-4 border-l-transparent" style={{ borderLeftColor: isMerged ? '#a855f7' : isOpen ? '#22c55e' : '#ef4444' }}>
+            <Card className={`p-5 border-l-4 ${isMerged ? 'border-l-purple-500' : isOpen ? 'border-l-green-500' : 'border-l-red-500'}`}>
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">

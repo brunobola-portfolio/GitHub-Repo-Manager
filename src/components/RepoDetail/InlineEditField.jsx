@@ -115,7 +115,7 @@ export function InlineEditField({
         >
             <span className="flex-1 min-w-0 truncate">{display}</span>
             {!disabled && (
-                <Pencil className="w-3 h-3 shrink-0 text-slate-400 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity" aria-hidden="true" />
+                <Pencil className="w-3 h-3 shrink-0 text-slate-400 opacity-60 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 transition-opacity" aria-hidden="true" />
             )}
         </div>
     )

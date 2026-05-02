@@ -103,7 +103,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
             </button>
 
             {/* Header */}
-            <Card className="p-5 border-l-4 border-l-transparent" style={{ borderLeftColor: isOpen ? '#22c55e' : '#a855f7' }}>
+            <Card className={`p-5 border-l-4 ${isOpen ? 'border-l-green-500' : 'border-l-purple-500'}`}>
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">

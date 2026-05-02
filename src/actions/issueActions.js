@@ -13,12 +13,7 @@
 import {
     Eye, ExternalLink, Copy, CheckCircle2, RotateCcw, Sparkles, MessageSquare,
 } from 'lucide-react'
-
-const copyToClipboard = (text) => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        return navigator.clipboard.writeText(text)
-    }
-}
+import { copyToClipboard } from '../utils/clipboard'
 
 /**
  * @typedef {Object} IssueTarget
