@@ -29,6 +29,7 @@ import devToolkitRouter from './ai/dev-toolkit.js';
 import migrationRouter from './ai/migration.js';
 import suggestNameDescriptionRouter from './ai/suggest-name-description.js';
 import promptsRouter from './ai/prompts.js';
+import deepReviewRouter from './ai/deep-review.js';
 
 const router = express.Router();
 router.use(coreRouter);
@@ -37,5 +38,9 @@ router.use(devToolkitRouter);
 router.use(migrationRouter);
 router.use(suggestNameDescriptionRouter);
 router.use(promptsRouter);
+// Deep Review: full draft lifecycle (generate / get / patch / publish / delete).
+// Mounted under /api/ai/deep-review/* — keeps the engine + store + publish
+// builder behind a single namespace the frontend can hit.
+router.use('/ai/deep-review', deepReviewRouter);
 
 export default router;
