@@ -210,4 +210,47 @@ describe('resolvePromptForGenerate', () => {
         expect(readThroughMock).not.toHaveBeenCalled();
         expect(out.source).toBe('preset:security');
     });
+
+    it('caps oversized style guide content at 16KB', async () => {
+        // Style guide of 20000 chars — should be truncated at 16384.
+        const huge = 'x'.repeat(20000);
+        const base64 = Buffer.from(huge, 'utf-8').toString('base64');
+        readThroughMock.mockResolvedValue({ data: { content: base64, encoding: 'base64' } });
+
+        storeMocks.getPresetById.mockReturnValue({
+            id: 9,
+            name: 'Big-style',
+            systemPrompt: 'Apply: ${REPO_STYLE_GUIDE}',
+            severityFloor: null,
+            pathRules: [],
+        });
+
+        const out = await resolvePromptForGenerate({ ...baseCtx, presetKey: 9 });
+        expect(out.systemPrompt).toContain('[truncated');
+        expect(out.systemPrompt).not.toContain('${REPO_STYLE_GUIDE}');
+        // Bounded: base prompt + divider + preset body + 16KB style guide + truncation marker.
+        // The full untrimmed content (20000 chars of 'x') must NOT appear.
+        expect(out.systemPrompt).not.toContain('x'.repeat(20000));
+        // Sanity: total length < base + ~17KB padding for divider/marker.
+        expect(out.systemPrompt.length).toBeLessThan(20000);
+    });
+
+    it('strips newlines from preset name in the divider', async () => {
+        storeMocks.getPresetById.mockReturnValue({
+            id: 10,
+            name: 'Line1\nLine2\r\nLine3',
+            systemPrompt: 'BODY',
+            severityFloor: null,
+            pathRules: [],
+        });
+
+        const out = await resolvePromptForGenerate({ ...baseCtx, presetKey: 10 });
+        // Find the divider line and assert it has no embedded newlines inside the
+        // `--- Active preset: ... ---` segment.
+        const dividerMatch = out.systemPrompt.match(/--- Active preset: [^\n\r]* ---/);
+        expect(dividerMatch).not.toBeNull();
+        expect(dividerMatch[0]).toBe('--- Active preset: Line1 Line2 Line3 ---');
+        // The original output `name` field is unchanged (carries through verbatim).
+        expect(out.name).toBe('Line1\nLine2\r\nLine3');
+    });
 });

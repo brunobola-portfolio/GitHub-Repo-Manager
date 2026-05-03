@@ -114,7 +114,8 @@ export async function resolvePromptForGenerate(ctx) {
         author: ctx.author ?? '',
     });
 
-    let systemPrompt = `${basePrompt}\n\n--- Active preset: ${preset.name} ---\n${preset.body}`;
+    const safeName = String(preset.name || '').replace(/[\r\n]+/g, ' ').trim();
+    let systemPrompt = `${basePrompt}\n\n--- Active preset: ${safeName} ---\n${preset.body}`;
 
     // ${REPO_STYLE_GUIDE} substitution. We only pay the GitHub round-trip when
     // the preset body actually references the token.
@@ -153,7 +154,14 @@ async function fetchRepoStyleGuide({ session, userId, repoOwner, repoName }) {
             ),
         });
         if (data?.content) {
-            return Buffer.from(data.content, 'base64').toString('utf-8');
+            const decoded = Buffer.from(data.content, 'base64').toString('utf-8');
+            // Cap at 16KB so a runaway style-guide doesn't balloon prompt cost.
+            // 16KB matches 2× the system_prompt zod cap (8KB) — generous headroom.
+            const MAX_STYLE_GUIDE_CHARS = 16 * 1024;
+            if (decoded.length > MAX_STYLE_GUIDE_CHARS) {
+                return decoded.slice(0, MAX_STYLE_GUIDE_CHARS) + '\n\n[truncated — style guide exceeded 16KB cap]';
+            }
+            return decoded;
         }
         return '';
     } catch (err) {
