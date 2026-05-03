@@ -143,6 +143,8 @@ function postProcess(parsed, provider) {
     return {
         walkthrough,
         lineComments,
-        modelUsed: provider._modelName || provider.constructor?.name || 'unknown',
+        modelUsed: provider._modelName
+            || provider.getModelName?.()
+            || 'unknown',
     };
 }

@@ -28,10 +28,10 @@ export function CommentsListTab({ comments, onJumpToFile, onDismiss, onEdit: _on
                 </select>
             </div>
             <ul className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
-                {visible.map((c, idx) => {
-                    const realIdx = comments.indexOf(c);
+                {visible.map((c) => {
+                    const realIdx = c._idx;
                     return (
-                        <li key={`${c.path}-${c.line}-${idx}`} className="rounded border border-slate-200 dark:border-slate-700 p-2 text-xs">
+                        <li key={c._idx ?? `${c.path}-${c.line}`} className="rounded border border-slate-200 dark:border-slate-700 p-2 text-xs">
                             <div className="flex items-center gap-2 mb-1">
                                 <span className="font-semibold uppercase opacity-80">{c.severity}</span>
                                 <button

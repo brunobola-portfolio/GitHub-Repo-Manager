@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const EVENTS = [
     { key: 'COMMENT', label: 'Comment', tone: 'bg-blue-600 hover:bg-blue-700' },
@@ -8,6 +8,8 @@ const EVENTS = [
 
 export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishing }) {
     const [event, setEvent] = useState('COMMENT');
+    const closeButtonRef = useRef(null);
+    const previousFocusRef = useRef(null);
 
     useEffect(() => {
         if (!isOpen) return undefined;
@@ -15,6 +17,21 @@ export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishi
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
     }, [isOpen, onClose]);
+
+    // Initial focus on open + restore focus on close. A full Tab-cycle focus
+    // trap is intentionally out of scope for slice 1a.
+    useEffect(() => {
+        if (!isOpen) return undefined;
+        previousFocusRef.current = document.activeElement;
+        // Defer focus to next tick so the modal is mounted and focusable
+        const t = setTimeout(() => closeButtonRef.current?.focus(), 0);
+        return () => {
+            clearTimeout(t);
+            if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
+                previousFocusRef.current.focus();
+            }
+        };
+    }, [isOpen]);
 
     if (!isOpen || !draft) return null;
 
@@ -38,7 +55,7 @@ export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishi
             >
                 <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center">
                     <h3 id="publish-review-title" className="font-semibold">Publish AI review to GitHub</h3>
-                    <button type="button" onClick={onClose} aria-label="Close" className="ml-auto opacity-60 hover:opacity-100">×</button>
+                    <button type="button" ref={closeButtonRef} onClick={onClose} aria-label="Close" className="ml-auto opacity-60 hover:opacity-100">×</button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-5 space-y-4 text-sm">

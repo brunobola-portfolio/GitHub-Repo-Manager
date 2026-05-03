@@ -43,6 +43,7 @@ const router = express.Router();
 // for slice 1a (Redis-backed limiter is a slice 1a-2 concern).
 // ---------------------------------------------------------------------------
 
+// TODO(slice-1a-2): periodic LRU sweep + Redis-backed limiter for multi-instance deploys
 const generateRateBuckets = new Map(); // userId -> [timestamps]
 const RATE_WINDOW_MS = 60_000;
 const RATE_LIMIT_PER_WINDOW = 10;

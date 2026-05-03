@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { WalkthroughTab } from './WalkthroughTab';
 import { CommentsListTab } from './CommentsListTab';
 
@@ -14,6 +14,13 @@ export function AIReviewPanel({
     publishing,
 }) {
     const [tab, setTab] = useState('walkthrough');
+    // Stamp a stable `_idx` once at the source so CommentsListTab can use it
+    // as both React key and dismiss target — keys stay stable across filtering.
+    // Hoisted above the early returns to keep hook order stable across renders.
+    const lineComments = useMemo(
+        () => (draft?.lineComments ?? []).map((c, _idx) => ({ ...c, _idx })),
+        [draft?.lineComments],
+    );
 
     if (!draft && !loading) {
         return (
@@ -35,7 +42,6 @@ export function AIReviewPanel({
         return <div className="p-4 text-sm text-slate-500 dark:text-slate-400">Generating AI review…</div>;
     }
 
-    const lineComments = draft?.lineComments ?? [];
     const status = draft?.status;
     const isPublished = status === 'published';
     const isPublishing = status === 'publishing';
