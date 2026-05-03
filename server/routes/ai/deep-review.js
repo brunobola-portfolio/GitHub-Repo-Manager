@@ -24,6 +24,7 @@ import { readThrough } from '../../lib/gh-cache.js';
 import { executeViaOutbox } from '../../lib/outbox-helper.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
 import { runDeepReview } from '../../lib/ai-features/pr-deep-review.js';
+import { resolvePromptForGenerate } from '../../lib/ai-features/prompt-registry.js';
 import { buildGitHubReviewPayload } from '../../lib/ai-features/pr-deep-review-publish.js';
 import {
     saveDraft,
@@ -212,6 +213,32 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
         .map((f) => `--- ${f.filename}\n${f.patch || ''}`)
         .join('\n\n');
 
+    // Resolve which preset to use BEFORE the LLM round-trip. `?presetKey=`
+    // accepts either a built-in key (general/security/...) or a numeric id of
+    // an owned custom preset; the resolver falls back to repo-default →
+    // user-default → 'general' when no key is supplied. We surface
+    // PRESET_NOT_FOUND as a 404 so the UI can prompt the user to pick again
+    // rather than hiding the failure inside a generic 500.
+    const presetKey = typeof req.query.presetKey === 'string' ? req.query.presetKey : undefined;
+    let resolvedPrompt;
+    try {
+        resolvedPrompt = await resolvePromptForGenerate({
+            userId,
+            repoOwner: owner,
+            repoName: repo,
+            presetKey,
+            session: req.session,
+            prTitle: prData.title,
+            author: prData.user?.login,
+        });
+    } catch (err) {
+        if (err?.code === 'PRESET_NOT_FOUND') {
+            return errorResponse(res, 404, err.message, 'PRESET_NOT_FOUND');
+        }
+        logger.warn({ err: err?.message, owner, repo, pr }, 'resolvePromptForGenerate failed');
+        return errorResponse(res, 500, 'Failed to resolve preset', 'RESOLVE_FAILED');
+    }
+
     let result;
     try {
         result = await runDeepReview({
@@ -227,6 +254,7 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
             },
             fileManifest: files,
             diffPatch,
+            resolvedPrompt,
         });
     } catch (err) {
         logger.warn({ err: err?.message, code: err?.code, owner, repo, pr }, 'Deep review engine failed');
@@ -238,6 +266,13 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
     if (!result) {
         return errorResponse(res, 503, 'AI Deep Review is disabled on this server.', 'AI_DISABLED');
     }
+
+    // Stamp the resolver source on the result so the UI can render
+    // "Reviewed with: <preset name>" and the persisted draft remembers
+    // which preset produced it (useful when the user later edits a preset
+    // and wants to know which review used the old version).
+    result.presetSource = resolvedPrompt.source;
+    result.presetName = resolvedPrompt.name;
 
     const draftId = saveDraft(
         userId,
