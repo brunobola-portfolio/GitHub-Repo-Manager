@@ -248,24 +248,33 @@ export function generateMockPRReviews(repoName, prNumber) {
     }))
 }
 
+const RICH_PATCHES = [
+    // src/api/client.js
+    `@@ -1,12 +1,15 @@\n import axios from 'axios'\n \n-const BASE_URL = 'http://localhost:3000'\n+const BASE_URL = process.env.VITE_API_BASE || 'http://localhost:3000'\n+const PAGE_SIZE = 20\n \n export async function fetchRepos(page = 1) {\n-  const res = await axios.get(\`\${BASE_URL}/repos?page=\${page}\`)\n+  const res = await axios.get(\`\${BASE_URL}/repos\`, {\n+    params: { page, per_page: PAGE_SIZE },\n+  })\n   return res.data\n }\n \n+export async function fetchRepo(owner, name) {\n+  const res = await axios.get(\`\${BASE_URL}/repos/\${owner}/\${name}\`)\n+  return res.data\n+}\n`,
+    // src/components/Button/Button.jsx
+    `@@ -1,8 +1,10 @@\n import { clsx } from 'clsx'\n \n-export function Button({ children, onClick, disabled }) {\n+export function Button({ children, onClick, disabled, variant = 'primary', size = 'md' }) {\n+  const sizes = { sm: 'px-2 py-1 text-xs', md: 'px-4 py-2 text-sm', lg: 'px-6 py-3 text-base' }\n   return (\n     <button\n       onClick={onClick}\n       disabled={disabled}\n-      className="px-4 py-2 bg-indigo-600 text-white rounded-lg"\n+      className={clsx(sizes[size], variant === 'primary' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-800', 'rounded-lg transition-colors')}\n     >\n       {children}\n     </button>\n   )\n }`,
+    // src/hooks/useAuth.js
+    `@@ -12,7 +12,12 @@ import { useState, useEffect } from 'react'\n \n export function useAuth() {\n   const [user, setUser] = useState(null)\n+  const [loading, setLoading] = useState(true)\n \n   useEffect(() => {\n-    fetch('/api/user').then(r => r.json()).then(setUser)\n-  }, [])\n+    fetch('/api/user')\n+      .then(r => r.ok ? r.json() : Promise.reject(r.status))\n+      .then(setUser)\n+      .catch(() => setUser(null))\n+      .finally(() => setLoading(false))\n+  }, [])\n \n-  return { user }\n+  return { user, loading }\n }`,
+    // src/utils/formatters.js
+    `@@ -1,6 +1,20 @@\n+/** Format a number with locale-aware thousands separators */\n export function formatNumber(n) {\n-  return n.toLocaleString()\n+  if (n == null) return '—'\n+  if (n >= 1_000_000) return \`\${(n / 1_000_000).toFixed(1)}M\`\n+  if (n >= 1_000) return \`\${(n / 1_000).toFixed(1)}k\`\n+  return n.toLocaleString()\n }\n \n+/** Format an ISO date string as a relative time label */\n+export function formatRelativeTime(isoString) {\n+  if (!isoString) return ''\n+  const diff = Date.now() - new Date(isoString).getTime()\n+  const mins = Math.round(diff / 60_000)\n+  if (mins < 1) return 'just now'\n+  if (mins < 60) return \`\${mins}m ago\`\n+  const hrs = Math.round(mins / 60)\n+  if (hrs < 24) return \`\${hrs}h ago\`\n+  return \`\${Math.round(hrs / 24)}d ago\`\n+}`,
+]
+
 export function generateMockPRFiles(prNumber) {
     const s = seed(String(prNumber) + 'files')
-    const count = 1 + (s % 4)
-    const filenames = [
+    const fileNames = [
+        'src/api/client.js',
         'src/components/Button/Button.jsx',
         'src/hooks/useAuth.js',
         'src/utils/formatters.js',
-        'tests/components/Button.test.jsx',
-        'src/api/client.js',
     ]
-    return Array.from({ length: count }, (_, i) => ({
+    return fileNames.map((filename, i) => ({
         sha: SHAS[(s + i) % SHAS.length],
-        filename: filenames[(s + i) % filenames.length],
-        status: ['modified', 'added', 'modified', 'modified'][i % 4],
-        additions: 10 + (s + i) % 50,
-        deletions: 2 + (s + i) % 20,
-        changes: 12 + (s + i) % 70,
-        patch: `@@ -${10 + i},7 +${10 + i},${10 + i % 5} @@\n context line\n-old line ${i}\n+new line ${i}\n another context\n`,
+        filename,
+        status: 'modified',
+        additions: [39, 40, 41, 42][i],
+        deletions: [21, 2, 3, 4][i],
+        changes: [60, 42, 44, 46][i],
+        patch: RICH_PATCHES[i % RICH_PATCHES.length],
     }))
 }
 
