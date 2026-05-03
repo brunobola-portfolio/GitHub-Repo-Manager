@@ -13,6 +13,7 @@ const {
     saveDraft,
     getDraft,
     getDraftById,
+    updateDraftJson,
     markPublished,
     deleteDraft,
 } = await import('../lib/ai-pr-review-store.js');
@@ -62,5 +63,23 @@ describe('ai-pr-review-store', () => {
         const deleted = deleteDraft(userId, id);
         expect(deleted).toBe(1);
         expect(getDraftById(userId, id)).toBeNull();
+    });
+
+    it('updateDraftJson updates a draft in place', () => {
+        const id = saveDraft(userId, 'acme', 'api', 42, 'sha1', { walkthrough: { summary: 'orig' }, lineComments: [] }, 0, 'm');
+        const changes = updateDraftJson(userId, id, { walkthrough: { summary: 'edited' }, lineComments: [{ body: 'new' }] });
+        expect(changes).toBe(1);
+        const got = getDraftById(userId, id);
+        expect(got.draft.walkthrough.summary).toBe('edited');
+        expect(got.draft.lineComments).toHaveLength(1);
+    });
+
+    it('updateDraftJson refuses to update a published draft', () => {
+        const id = saveDraft(userId, 'acme', 'api', 42, 'sha1', { walkthrough: {}, lineComments: [] }, 0, 'm');
+        markPublished(userId, id, 12345);
+        const changes = updateDraftJson(userId, id, { walkthrough: { summary: 'should not stick' }, lineComments: [] });
+        expect(changes).toBe(0);
+        const got = getDraftById(userId, id);
+        expect(got.draft.walkthrough.summary).toBeUndefined();
     });
 });

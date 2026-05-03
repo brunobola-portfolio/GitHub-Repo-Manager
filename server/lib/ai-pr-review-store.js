@@ -45,7 +45,10 @@ function rowToDraft(row) {
  */
 export function saveDraft(userId, owner, repo, prNumber, sha, draftObj, costUsd, modelUsed) {
     const json = JSON.stringify(draftObj);
-    const result = db.prepare(`
+    // RETURNING id avoids an unsafe heuristic: better-sqlite3's `lastInsertRowid` on the
+    // UPDATE branch of INSERT...ON CONFLICT carries over the connection's prior insert id,
+    // so distinguishing insert vs update via changes/lastInsertRowid would return stale ids.
+    const row = db.prepare(`
         INSERT INTO ai_pr_reviews (user_id, repo_owner, repo_name, pr_number, last_reviewed_sha, draft_json, status, cost_usd, model_used, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, datetime('now'), datetime('now'))
         ON CONFLICT(user_id, repo_owner, repo_name, pr_number) DO UPDATE SET
@@ -56,12 +59,8 @@ export function saveDraft(userId, owner, repo, prNumber, sha, draftObj, costUsd,
             cost_usd = excluded.cost_usd,
             model_used = excluded.model_used,
             updated_at = datetime('now')
-    `).run(userId, owner, repo, prNumber, sha, json, costUsd ?? null, modelUsed ?? null);
-
-    if (result.lastInsertRowid && result.changes === 1) return Number(result.lastInsertRowid);
-    // ON CONFLICT path — re-read the existing id.
-    const row = db.prepare('SELECT id FROM ai_pr_reviews WHERE user_id = ? AND repo_owner = ? AND repo_name = ? AND pr_number = ?')
-        .get(userId, owner, repo, prNumber);
+        RETURNING id
+    `).get(userId, owner, repo, prNumber, sha, json, costUsd ?? null, modelUsed ?? null);
     return row?.id ?? null;
 }
 
