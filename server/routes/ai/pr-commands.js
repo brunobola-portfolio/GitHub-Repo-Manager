@@ -14,6 +14,7 @@
  */
 
 import express from 'express';
+import { createHash } from 'crypto';
 
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
 import { requireTier } from '../../middleware/require-tier.js';
@@ -55,10 +56,18 @@ export function _runRateLimitSweep() {
     }
 }
 
-const _sweepInterval = setInterval(_runRateLimitSweep, SWEEP_INTERVAL_MS);
-if (typeof _sweepInterval.unref === 'function') _sweepInterval.unref();
+// Lazily install the sweep interval on first rate-limited request so module
+// import (notably inside vitest workers) does not spawn a background timer
+// that keeps Node alive or fires across unrelated tests.
+let _sweepInterval = null;
+export function ensureSweepInterval() {
+    if (_sweepInterval || process.env.NODE_ENV === 'test') return;
+    _sweepInterval = setInterval(_runRateLimitSweep, SWEEP_INTERVAL_MS);
+    if (typeof _sweepInterval.unref === 'function') _sweepInterval.unref();
+}
 
 function generateRateLimit(req, res, next) {
+    ensureSweepInterval();
     const userId = req.session?.userId;
     if (!userId) return next();
     const now = Date.now();
@@ -315,6 +324,16 @@ router.post('/:owner/:repo/:pr/describe/publish', requireAuth, requireTier('pro'
     const payload = { body: newBody };
     if (newTitle) payload.title = newTitle;
 
+    // Include a hash of the published body in the idempotency key so a
+    // regenerate-then-republish cycle (same row id + same head SHA, but new
+    // body content) is treated as a NEW outbox row. Without this, the second
+    // publish would silently dedupe against the first one and the user's
+    // refreshed description would never reach GitHub.
+    const bodyHash = createHash('sha256')
+        .update(`${newTitle || ''}\n${newBody}`)
+        .digest('hex')
+        .slice(0, 12);
+
     let queuedInfo = null;
     let prResp;
     try {
@@ -322,7 +341,7 @@ router.post('/:owner/:repo/:pr/describe/publish', requireAuth, requireTier('pro'
             method: 'PATCH',
             url: `/repos/${owner}/${repo}/pulls/${pr}`,
             body: payload,
-            idempotencyKey: `pr-command-describe:${got.id}:${got.lastHeadSha}`,
+            idempotencyKey: `pr-command-describe:${got.id}:${got.lastHeadSha}:${bodyHash}`,
         });
         if (result.queued) {
             queuedInfo = { queued: true, outboxId: result.outboxId };

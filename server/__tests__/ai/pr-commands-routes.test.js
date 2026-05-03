@@ -95,6 +95,15 @@ vi.mock('../../lib/github-api.js', () => ({
     githubApi: (...args) => githubApiMock(...args),
 }));
 
+// --- Outbox helper mock ----------------------------------------------------
+// Capture every call so tests can assert on the idempotency key construction.
+const executeViaOutboxMock = vi.fn(async (_req, opts) => ({
+    data: { id: 9999, title: 'Improved title', body: opts?.body?.body ?? 'new body' },
+}));
+vi.mock('../../lib/outbox-helper.js', () => ({
+    executeViaOutbox: (...args) => executeViaOutboxMock(...args),
+}));
+
 const {
     default: prCommandsRouter,
     _resetRateLimits,
@@ -121,6 +130,7 @@ beforeEach(() => {
     testDb.prepare('INSERT OR IGNORE INTO users (id, username) VALUES (?, ?)').run(USER_ID, 'alice');
     githubApiMock.mockClear();
     mockGenerate.mockClear();
+    executeViaOutboxMock.mockClear();
     createProviderForUserMock.mockReset();
     createProviderForUserMock.mockResolvedValue(mockProvider);
     _resetRateLimits();
@@ -232,8 +242,10 @@ describe('POST /api/ai/pr-commands/:owner/:repo/:pr/describe/publish', () => {
         const res = await request(app).post('/api/ai/pr-commands/acme/api/42/describe/publish').send({});
         expect(res.status).toBe(200);
         expect(res.body.bodyApplied).toBe(true);
-        // Verify PATCH /repos/.../pulls/42 was called via the outbox
-        const patchCall = githubApiMock.mock.calls.find((c) => /\/pulls\/42$/.test(c[0]));
+        // Verify PATCH /repos/.../pulls/42 was dispatched through the outbox
+        const patchCall = executeViaOutboxMock.mock.calls.find(
+            ([, opts]) => opts?.method === 'PATCH' && /\/pulls\/42$/.test(opts?.url || ''),
+        );
         expect(patchCall).toBeTruthy();
     });
 
@@ -249,5 +261,39 @@ describe('POST /api/ai/pr-commands/:owner/:repo/:pr/describe/publish', () => {
         const app = makeApp();
         const res = await request(app).post('/api/ai/pr-commands/acme/api/42/describe/publish').send({});
         expect(res.status).toBe(403);
+    });
+
+    it('produces a different idempotency key when the describe body changes between publishes', async () => {
+        const app = makeApp();
+        // First generate + publish with body A.
+        mockGenerate.mockResolvedValueOnce({
+            parsed: { title: 'T1', body: '## First body content version A' },
+        });
+        await request(app).post('/api/ai/pr-commands/acme/api/42/describe').send({});
+        const pub1 = await request(app).post('/api/ai/pr-commands/acme/api/42/describe/publish').send({});
+        expect(pub1.status).toBe(200);
+
+        // Re-generate the SAME (owner, repo, pr, command) cell with a fresh
+        // body. The DB row id stays the same (UPSERT), and the head SHA from
+        // the GitHub mock is unchanged — so without a body-aware idempotency
+        // key, the second publish would silently dedupe.
+        mockGenerate.mockResolvedValueOnce({
+            parsed: { title: 'T2', body: '## Second body content version B - completely different' },
+        });
+        await request(app).post('/api/ai/pr-commands/acme/api/42/describe').send({});
+        const pub2 = await request(app).post('/api/ai/pr-commands/acme/api/42/describe/publish').send({});
+        expect(pub2.status).toBe(200);
+
+        // Both publishes reached the outbox helper.
+        const patchCalls = executeViaOutboxMock.mock.calls.filter(
+            ([, opts]) => opts?.method === 'PATCH' && /\/pulls\/42$/.test(opts?.url || ''),
+        );
+        expect(patchCalls).toHaveLength(2);
+
+        const key1 = patchCalls[0][1].idempotencyKey;
+        const key2 = patchCalls[1][1].idempotencyKey;
+        expect(key1).toMatch(/^pr-command-describe:\d+:[^:]+:[a-f0-9]{12}$/);
+        expect(key2).toMatch(/^pr-command-describe:\d+:[^:]+:[a-f0-9]{12}$/);
+        expect(key1).not.toBe(key2);
     });
 });
