@@ -22,6 +22,7 @@ const CONFIGURE_CTA_CODES = new Set([
     'INVALID_API_KEY',
     'AI_NOT_CONFIGURED',
     'NO_AI_PROVIDER',
+    'MODEL_NOT_FOUND',
 ])
 
 const WELCOME_MESSAGE = {
