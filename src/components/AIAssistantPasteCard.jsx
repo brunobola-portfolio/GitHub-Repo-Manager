@@ -5,7 +5,14 @@ import { Wand2, X, ArrowRight, Check, Cloud, GitBranch } from 'lucide-react'
 import { Button } from './ui/Button'
 
 /**
- * Inline chat card that drives the paste-URL dialog.
+ * Inline chat card that drives the paste-URL flow.
+ *
+ * Renders inline inside the AIAssistant chat scroll area — it is NOT an
+ * overlaid modal, so it intentionally has no `role="dialog"`, focus trap,
+ * or Escape handling. The cancel button (X) is the only dismissal vector.
+ * The state object is still called `dialog` for historical continuity with
+ * the assistant state machine.
+ *
  * Pure presentational + local input state only. All interaction goes through
  * the three callbacks so the parent component (AIAssistant) owns the state
  * machine.
@@ -24,7 +31,7 @@ import { Button } from './ui/Button'
  *   answers:    { targetOrg?, targetName? }
  *   nextField:  'targetOrg' | 'targetName' | null
  */
-export function AIAssistantPasteDialog({ dialog, onAnswer, onConfirm, onCancel }) {
+export function AIAssistantPasteCard({ dialog, onAnswer, onConfirm, onCancel }) {
   const [value, setValue] = useState('')
 
   const handleSubmit = (e) => {

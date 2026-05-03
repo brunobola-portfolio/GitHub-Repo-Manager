@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { AIAssistantPasteDialog } from '../../src/components/AIAssistantPasteDialog'
+import { AIAssistantPasteCard } from '../../src/components/AIAssistantPasteCard'
 
 function renderDialog(overrides = {}) {
   const props = {
@@ -16,10 +16,10 @@ function renderDialog(overrides = {}) {
     onConfirm: vi.fn(),
     ...overrides,
   }
-  return { props, ...render(<AIAssistantPasteDialog {...props} />) }
+  return { props, ...render(<AIAssistantPasteCard {...props} />) }
 }
 
-describe('AIAssistantPasteDialog', () => {
+describe('AIAssistantPasteCard', () => {
   it('renders the parsed Azure preview when collecting', () => {
     renderDialog()
     expect(screen.getByText(/azure devops/i)).toBeInTheDocument()
