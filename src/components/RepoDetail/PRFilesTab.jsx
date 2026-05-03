@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Columns2, AlignLeft, PanelRightClose, PanelRightOpen, ChevronLeft, ChevronRight } from 'lucide-react'
 import { FileTree } from '../PRReview/FileTree/FileTree'
 import { DiffRenderer } from '../PRReview/DiffPanel/DiffRenderer'
@@ -6,6 +6,27 @@ import { AISummaryPanel } from '../PRReview/AIInsights/AISummaryPanel'
 import { useReviewAI, sortFilesByRisk } from '../PRReview/hooks/useReviewAI'
 import { Spinner } from '../ui/Spinner'
 import { MOCK_MODE } from '../../config'
+
+// Persist the per-file "reviewed" state across tab switches and reloads.
+// Keyed by owner/repo/PR so each PR keeps its own checklist.
+function getStorageKey(owner, repo, prNumber) {
+  return `pr-reviewed:${owner}/${repo}#${prNumber}`
+}
+
+function loadReviewed(owner, repo, prNumber) {
+  try {
+    const raw = localStorage.getItem(getStorageKey(owner, repo, prNumber))
+    if (!raw) return new Set()
+    const arr = JSON.parse(raw)
+    return new Set(Array.isArray(arr) ? arr : [])
+  } catch { return new Set() }
+}
+
+function saveReviewed(owner, repo, prNumber, set) {
+  try {
+    localStorage.setItem(getStorageKey(owner, repo, prNumber), JSON.stringify([...set]))
+  } catch { /* quota — silent */ }
+}
 
 /**
  * PRFilesTab — premium 3-column code review surface.
@@ -15,15 +36,32 @@ import { MOCK_MODE } from '../../config'
  * Right:  AISummaryPanel (PR-level AI analysis, collapsible)
  */
 export function PRFilesTab({ files = [], owner, repo, pr }) {
+  const prNumber = pr?.number ?? 0
   const [activeIndex, setActiveIndex] = useState(0)
-  const [reviewed, setReviewed] = useState(() => new Set())
+  const [reviewed, setReviewedRaw] = useState(() => loadReviewed(owner, repo, prNumber))
   const [diffMode, setDiffMode] = useState('unified')
   const [aiCollapsed, setAiCollapsed] = useState(false)
   const [treeCollapsed, setTreeCollapsed] = useState(false)
 
+  // Wrap setter so every mutation persists to localStorage. Accepts either
+  // an updater function or a direct Set, mirroring the React useState API.
+  const setReviewed = useCallback((updater) => {
+    setReviewedRaw((current) => {
+      const next = typeof updater === 'function' ? updater(current) : updater
+      saveReviewed(owner, repo, prNumber, next)
+      return next
+    })
+  }, [owner, repo, prNumber])
+
+  // Re-load when navigating to a different PR — the storage key changes
+  // and we need a fresh Set rather than the previous PR's checklist.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot reset on PR change, mirrors useState initializer for new key
+    setReviewedRaw(loadReviewed(owner, repo, prNumber))
+  }, [owner, repo, prNumber])
+
   // Suppress AI fetch in mock mode — useReviewAI skips when headSha is empty
   const headSha = MOCK_MODE ? '' : (pr?.head?.sha ?? '')
-  const prNumber = pr?.number ?? 0
 
   const sortedFiles = useMemo(() => sortFilesByRisk(files, {}), [files])
 

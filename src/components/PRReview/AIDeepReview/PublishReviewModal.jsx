@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useFocusTrap } from '../../../hooks/useFocusTrap';
+import { SafeMarkdown } from '../../AIPrompts/SafeMarkdown';
 
 const EVENTS = [
     { key: 'COMMENT', label: 'Comment', tone: 'bg-blue-600 hover:bg-blue-700' },
@@ -56,8 +57,10 @@ export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishi
 
                     <div>
                         <h4 className="font-medium mb-2">Walkthrough preview</h4>
-                        <div className="rounded border border-slate-200 dark:border-slate-800 p-3 bg-slate-50 dark:bg-slate-950 max-h-48 overflow-y-auto whitespace-pre-wrap text-xs">
-                            {draft.walkthrough?.summary || '(no summary)'}
+                        <div className="rounded border border-slate-200 dark:border-slate-800 p-3 bg-slate-50 dark:bg-slate-950 max-h-48 overflow-y-auto">
+                            {draft.walkthrough?.summary
+                                ? <SafeMarkdown>{draft.walkthrough.summary}</SafeMarkdown>
+                                : <span className="text-xs opacity-60">(no summary)</span>}
                         </div>
                     </div>
 

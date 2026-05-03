@@ -220,12 +220,8 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     onPrevFile: handlePrevFile,
     onToggleReviewed: (filename) =>
       filename && dispatch({ type: 'TOGGLE_REVIEWED', filename }),
-    onOpenComment: () => {},
     onEscape: () => onBack?.(),
     onSubmitReview: handleSubmitReview,
-    onPrevHunk: () => {},
-    onNextHunk: () => {},
-    onToggleExpand: () => {},
     enabled: true,
   })
 

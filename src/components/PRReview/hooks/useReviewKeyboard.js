@@ -9,12 +9,12 @@ const DEBOUNCE_MS = 80
  *   j            → onNextFile
  *   k            → onPrevFile
  *   x            → onToggleReviewed(activeFile)
- *   c            → onOpenComment
- *   [            → onPrevHunk
- *   ]            → onNextHunk
- *   Enter        → onToggleExpand
  *   Escape       → onEscape (no debounce)
  *   Ctrl+Shift+Enter → onSubmitReview
+ *
+ * Note: hunk navigation, comment opening, and toggle-expand were removed —
+ * the underlying surfaces (DiffPanel) don't expose those handlers, so the
+ * keymap was wired to no-ops. Only ship shortcuts the call site can wire.
  *
  * @param {object} handlers
  * @param {string} activeFile
@@ -24,10 +24,6 @@ export function useReviewKeyboard({
     onNextFile,
     onPrevFile,
     onToggleReviewed,
-    onOpenComment,
-    onPrevHunk,
-    onNextHunk,
-    onToggleExpand,
     onEscape,
     onSubmitReview,
     activeFile,
@@ -87,22 +83,6 @@ export function useReviewKeyboard({
                     e.preventDefault()
                     onToggleReviewed?.(activeFile)
                     break
-                case 'c':
-                    e.preventDefault()
-                    onOpenComment?.()
-                    break
-                case '[':
-                    e.preventDefault()
-                    onPrevHunk?.()
-                    break
-                case ']':
-                    e.preventDefault()
-                    onNextHunk?.()
-                    break
-                case 'Enter':
-                    e.preventDefault()
-                    onToggleExpand?.()
-                    break
                 default:
                     break
             }
@@ -116,10 +96,6 @@ export function useReviewKeyboard({
         onNextFile,
         onPrevFile,
         onToggleReviewed,
-        onOpenComment,
-        onPrevHunk,
-        onNextHunk,
-        onToggleExpand,
         onEscape,
         onSubmitReview,
     ])

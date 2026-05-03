@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { SafeMarkdown } from '../../AIPrompts/SafeMarkdown';
 
 export function WalkthroughTab({ walkthrough }) {
     const mermaidRef = useRef(null);
@@ -61,8 +62,7 @@ export function WalkthroughTab({ walkthrough }) {
             </div>
 
             {walkthrough.summary ? (
-                /* TODO(slice-1b): when this becomes a real markdown renderer, add rehype-sanitize — AI output is untrusted */
-                <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">{walkthrough.summary}</div>
+                <SafeMarkdown>{walkthrough.summary}</SafeMarkdown>
             ) : null}
 
             {Array.isArray(walkthrough.perFileTable) && walkthrough.perFileTable.length > 0 ? (

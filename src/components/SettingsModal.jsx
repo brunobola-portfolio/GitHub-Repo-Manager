@@ -148,7 +148,30 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
                 />
             )}
             {activeTab === 'api-keys' && <div><ApiKeysSection /></div>}
-            {activeTab === 'ai' && <div><AIConfigSection /></div>}
+            {activeTab === 'ai' && (
+                <div>
+                    <a
+                        href="#/ai/prompts"
+                        onClick={(e) => {
+                            e.preventDefault()
+                            onClose()
+                            window.location.hash = '#/ai/prompts'
+                        }}
+                        className="block rounded-md border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-600 p-3 mb-3 transition-colors"
+                    >
+                        <div className="flex items-start gap-2">
+                            <div className="flex-1">
+                                <div className="font-medium text-sm">Prompt Studio</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Customize how the AI reviewer thinks. Built-in presets (Security, Performance, Accessibility…) plus your own custom prompts at user or repo scope.
+                                </div>
+                            </div>
+                            <span className="text-slate-400">→</span>
+                        </div>
+                    </a>
+                    <AIConfigSection />
+                </div>
+            )}
             {activeTab === 'ai-instructions' && <div><AIInstructionsSection /></div>}
             {activeTab === 'work-board' && <div><WorkBoardSettingsSection /></div>}
             {activeTab === 'license' && <div><LicensePlanSection /></div>}

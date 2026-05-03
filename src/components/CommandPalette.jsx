@@ -42,6 +42,7 @@ const ACTION_ITEMS = [
   { id: 'action-create-repo', label: 'Create Repository', modal: 'showCreateRepo', icon: Plus },
   { id: 'action-transfer', label: 'Transfer Repository', modal: 'showTransfer', icon: ArrowRightLeft },
   { id: 'action-settings', label: 'Open Settings', modal: 'showSettings', icon: Settings },
+  { id: 'action-prompt-studio', label: 'Open AI Prompt Studio', hash: '#/ai/prompts', icon: Sparkles, keywords: 'prompt studio ai preset review' },
 ]
 
 // Work Board group — only rendered when activeView === 'work-board'.
@@ -561,8 +562,15 @@ export function CommandPalette({
               return (
                 <Command.Item
                   key={item.id}
-                  value={item.label}
-                  onSelect={() => { onOpenModal(item.modal); onClose() }}
+                  value={item.keywords ? `${item.label} ${item.keywords}` : item.label}
+                  onSelect={() => {
+                    if (item.hash) {
+                      window.location.hash = item.hash
+                    } else if (item.modal) {
+                      onOpenModal(item.modal)
+                    }
+                    onClose()
+                  }}
                   className={ITEM_CLASSES}
                 >
                   <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />
