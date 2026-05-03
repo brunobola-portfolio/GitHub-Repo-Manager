@@ -161,6 +161,22 @@ describe('ai-prompt-store', () => {
         expect(allRepoBuckets).toHaveLength(2);
     });
 
+    it('savePreset is idempotent for user-scope (NULL scope_target)', () => {
+        const first = savePreset(userId, {
+            scope: 'user', scopeTarget: null, presetKey: 'mine',
+            name: 'My', systemPrompt: 'p1',
+        });
+        const second = savePreset(userId, {
+            scope: 'user', scopeTarget: null, presetKey: 'mine',
+            name: 'My v2', systemPrompt: 'p2',
+        });
+        expect(second).toBe(first); // same row id
+        const all = listPresets(userId, { scope: 'user', scopeTarget: null });
+        expect(all).toHaveLength(1);
+        expect(all[0].name).toBe('My v2');
+        expect(all[0].systemPrompt).toBe('p2');
+    });
+
     it('updatePreset can replace or null path rules', () => {
         const id = savePreset(userId, basePayload());
         updatePreset(userId, id, { pathRules: null });

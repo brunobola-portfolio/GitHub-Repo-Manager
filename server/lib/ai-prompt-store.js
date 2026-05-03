@@ -99,29 +99,33 @@ export function savePreset(userId, payload) {
 
     if (target === null) {
         // NULL scope_target: SQLite UNIQUE doesn't treat two NULLs as equal,
-        // so emulate the upsert ourselves.
-        const existing = db.prepare(
-            'SELECT id FROM ai_review_prompts WHERE user_id = ? AND scope = ? AND scope_target IS NULL AND preset_key = ?',
-        ).get(userId, scope, presetKey);
-        if (existing) {
-            db.prepare(`
-                UPDATE ai_review_prompts SET
-                    name = ?,
-                    system_prompt = ?,
-                    path_rules_json = ?,
-                    severity_floor = ?,
-                    is_default = ?,
-                    updated_at = datetime('now')
-                WHERE id = ? AND user_id = ?
-            `).run(name, systemPrompt, pathJson, sevFloor, isFlag, existing.id, userId);
-            return existing.id;
-        }
-        const inserted = db.prepare(`
-            INSERT INTO ai_review_prompts (user_id, scope, scope_target, preset_key, name, system_prompt, path_rules_json, severity_floor, is_default, created_at, updated_at)
-            VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-            RETURNING id
-        `).get(userId, scope, presetKey, name, systemPrompt, pathJson, sevFloor, isFlag);
-        return inserted?.id ?? null;
+        // so emulate the upsert ourselves. Wrap the SELECT + INSERT/UPDATE in
+        // a transaction so two concurrent callers can't both miss the existing
+        // row and both INSERT (TOCTOU race producing duplicate rows).
+        return db.transaction(() => {
+            const existing = db.prepare(
+                'SELECT id FROM ai_review_prompts WHERE user_id = ? AND scope = ? AND scope_target IS NULL AND preset_key = ?',
+            ).get(userId, scope, presetKey);
+            if (existing) {
+                db.prepare(`
+                    UPDATE ai_review_prompts SET
+                        name = ?,
+                        system_prompt = ?,
+                        path_rules_json = ?,
+                        severity_floor = ?,
+                        is_default = ?,
+                        updated_at = datetime('now')
+                    WHERE id = ? AND user_id = ?
+                `).run(name, systemPrompt, pathJson, sevFloor, isFlag, existing.id, userId);
+                return existing.id;
+            }
+            const inserted = db.prepare(`
+                INSERT INTO ai_review_prompts (user_id, scope, scope_target, preset_key, name, system_prompt, path_rules_json, severity_floor, is_default, created_at, updated_at)
+                VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+                RETURNING id
+            `).get(userId, scope, presetKey, name, systemPrompt, pathJson, sevFloor, isFlag);
+            return inserted?.id ?? null;
+        })();
     }
 
     const row = db.prepare(`
