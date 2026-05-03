@@ -52,10 +52,10 @@ export function useAIDeepReview(owner, repo, prNumber) {
         setLoading(true);
         setError(null);
         try {
-            const body = await fetchJSON(`/api/ai/deep-review/${owner}/${repo}/${prNumber}`);
+            const result = await fetchJSON(`/api/ai/deep-review/${owner}/${repo}/${prNumber}`);
             if (!aliveRef.current) return;
-            setDraftId(body.draftId);
-            setDraft(body.draft);
+            setDraftId(result.draftId);
+            setDraft(result.draft);
         } catch (err) {
             if (!aliveRef.current) return;
             if (err.status === 404) {
@@ -76,14 +76,14 @@ export function useAIDeepReview(owner, repo, prNumber) {
         setLoading(true);
         setError(null);
         try {
-            const body = await fetchJSON(`/api/ai/deep-review/${owner}/${repo}/${prNumber}`, {
+            const result = await fetchJSON(`/api/ai/deep-review/${owner}/${repo}/${prNumber}`, {
                 method: 'POST',
                 body: JSON.stringify({}),
             });
             if (!aliveRef.current) return;
-            setDraftId(body.draftId);
-            setDraft(body.draft);
-            return body;
+            setDraftId(result.draftId);
+            setDraft(result.draft);
+            return result;
         } catch (err) {
             if (aliveRef.current) setError(err.message);
             throw err;
@@ -94,28 +94,33 @@ export function useAIDeepReview(owner, repo, prNumber) {
 
     const dismiss = useCallback(async (idx) => {
         if (draftId == null) return;
-        const body = await fetchJSON(`/api/ai/deep-review/${draftId}/comments/${idx}`, {
+        const result = await fetchJSON(`/api/ai/deep-review/${draftId}/comments/${idx}`, {
             method: 'PATCH',
             body: JSON.stringify({ action: 'dismiss' }),
         });
-        if (aliveRef.current) setDraft(body.draft);
+        if (aliveRef.current) setDraft(result.draft);
     }, [draftId]);
 
     const edit = useCallback(async (idx, { body: newBody, suggestion }) => {
         if (draftId == null) return;
-        const body = await fetchJSON(`/api/ai/deep-review/${draftId}/comments/${idx}`, {
+        const result = await fetchJSON(`/api/ai/deep-review/${draftId}/comments/${idx}`, {
             method: 'PATCH',
             body: JSON.stringify({ action: 'edit', body: newBody, suggestion }),
         });
-        if (aliveRef.current) setDraft(body.draft);
+        if (aliveRef.current) setDraft(result.draft);
     }, [draftId]);
 
     const publish = useCallback(async (event = 'COMMENT') => {
         if (draftId == null) throw new Error('No draft to publish.');
-        return fetchJSON(`/api/ai/deep-review/${draftId}/publish`, {
+        const result = await fetchJSON(`/api/ai/deep-review/${draftId}/publish`, {
             method: 'POST',
             body: JSON.stringify({ event }),
         });
+        if (aliveRef.current) {
+            // Mark draft as published locally so the UI can disable the Publish CTA
+            setDraft((d) => (d ? { ...d, status: 'published', githubReviewId: result.githubReviewId } : d));
+        }
+        return result;
     }, [draftId]);
 
     const discard = useCallback(async () => {
