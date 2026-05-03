@@ -1,8 +1,8 @@
 # AI Deep Review — Design Spec
 
 **Date:** 2026-05-03
-**Status:** Draft — pending user review
-**Slice:** 1 of 5 (foundation; chat / slash-commands / GitHub App identity / style-guide ingestion deferred to subsequent slices)
+**Status:** Approved — ready for implementation planning
+**Slice:** 1a (free core) + 1b (premium Prompt Studio) of 5; chat / slash-commands / GitHub App identity / org-shared prompts deferred to slices 2–5
 **Related work:** [2026-05-03-pr-review-premium.md](2026-05-03-pr-review-premium.md) (3-column UI just landed); [project_resilient_pr_issue_commit.md](../../C:/Users/bruno/.claude/projects/s--Git-Hub-Repo-Manager/memory/project_resilient_pr_issue_commit.md) (gh-cache + gh-outbox patterns to consume)
 
 ---
@@ -201,7 +201,7 @@ All on `server/routes/ai/deep-review.js`:
 | `POST` | `/api/ai/deep-review/:owner/:repo/:pr` | Generate or refresh AI review (incremental-aware). Returns `{ draftId, draft }`. | requireAuth |
 | `GET` | `/api/ai/deep-review/:owner/:repo/:pr` | Get current draft (fast — no LLM call). | requireAuth |
 | `PATCH` | `/api/ai/deep-review/:draftId/comments/:commentId` | Edit / accept / dismiss a single AI comment. | requireAuth |
-| `POST` | `/api/ai/deep-review/:draftId/publish` | Publish to GitHub via existing `POST /reviews` machinery. | requireAuth + (see gating decision above) |
+| `POST` | `/api/ai/deep-review/:draftId/publish` | Publish to GitHub. Calls the GitHub `POST /repos/{o}/{r}/pulls/{n}/reviews` directly — does **not** go through the existing Pro-gated `POST /api/repos/.../reviews` route. | requireAuth (no tier check) |
 | `DELETE` | `/api/ai/deep-review/:draftId` | Discard draft. | requireAuth |
 
 Generation is wrapped in `gh-outbox.enqueueAndExecute` for retry. Reads use `gh-cache.readThrough` per the project pattern (memory: `project_resilient_pr_issue_commit`).
@@ -279,8 +279,7 @@ Three failure modes, all handled defensively:
 
 | Layer | Location | Coverage |
 |---|---|---|
-| Engine unit | `server/__tests__/ai-features/pr-deep-review.test.js` | Schema validation, incremental SHA logic, force-push fallback, prompt caching key construction, suggestion fence escape |
-| Provider unit | `server/__tests__/ai-providers/anthropic.test.js` | Generate shape, prompt caching headers, error paths |
+| Engine unit | `server/__tests__/ai-features/pr-deep-review.test.js` | Schema validation, incremental SHA logic, force-push fallback, prompt caching marker injection (Anthropic), suggestion fence escape |
 | Route unit | `server/__tests__/ai/deep-review-routes.test.js` | All 5 endpoints, gating, rate limit, sanitisation |
 | Publish flow | `server/__tests__/ai/deep-review-publish.test.js` | Batched payload construction, 422 retry, event types, suggestion block wrapping |
 | Hook unit | `tests/components/PRReview/AIDeepReview/useAIDeepReview.test.js` | Cache reads, optimistic updates, publish lifecycle |
