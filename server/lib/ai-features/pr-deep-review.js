@@ -1,5 +1,6 @@
 import { sanitizeForPrompt } from './sanitize.js';
 import { getResolvedPrompt } from '../ai-prompt-registry.js';
+import { AIError, AI_ERROR_CODE } from '../ai-provider.js';
 
 const MAX_LINE_COMMENTS = 25;
 const MAX_DIFF_CHARS = 80000;
@@ -15,7 +16,7 @@ export const DEEP_REVIEW_SCHEMA = {
                 summary: { type: 'string' },
                 perFileTable: {
                     type: 'array',
-                    maxItems: 50,
+                    maxItems: 30,
                     items: {
                         type: 'object',
                         properties: {
@@ -34,7 +35,7 @@ export const DEEP_REVIEW_SCHEMA = {
         },
         lineComments: {
             type: 'array',
-            maxItems: 50,
+            maxItems: 25,
             items: {
                 type: 'object',
                 properties: {
@@ -70,7 +71,11 @@ export const DEEP_REVIEW_SCHEMA = {
 export async function runDeepReview({ provider, userId, repoFullName, prMetadata, fileManifest, diffPatch }) {
     if (process.env.DISABLE_AI_REVIEW === 'true') return null;
     if (!provider?.model || typeof provider.generate !== 'function') {
-        throw new Error('AI provider not initialized for the calling user.');
+        throw new AIError({
+            code: AI_ERROR_CODE.AUTH,
+            message: 'AI provider not initialized for the calling user.',
+            status: 401,
+        });
     }
 
     const systemPrompt = getResolvedPrompt(userId, 'pr_deep_review', {
