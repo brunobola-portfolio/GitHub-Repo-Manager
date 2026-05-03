@@ -70,6 +70,12 @@ export function useAI() {
             err.cause = csrfErr
             throw err
         }
+        // 60s client-side timeout — keeps the chat surface from hanging
+        // forever when the provider stalls. We synthesize an err.code of
+        // AI_TIMEOUT so AIErrorState renders the correct CTA without
+        // depending on the server reporting it.
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 60_000)
         let r
         try {
             r = await fetch(`${API_BASE}/ai/chat`, {
@@ -77,12 +83,20 @@ export function useAI() {
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfHeader },
                 body: JSON.stringify({ message, context }),
                 credentials: 'include',
+                signal: controller.signal,
             })
         } catch (networkErr) {
+            if (networkErr?.name === 'AbortError') {
+                const err = new Error('AI request timed out after 60s. Please try again.')
+                err.code = 'AI_TIMEOUT'
+                throw err
+            }
             const err = new Error('Could not reach the AI service. Check your connection.')
             err.code = 'NETWORK_ERROR'
             err.cause = networkErr
             throw err
+        } finally {
+            clearTimeout(timeoutId)
         }
         if (!r.ok) {
             const body = await safeParseJson(r).catch(() => ({}))

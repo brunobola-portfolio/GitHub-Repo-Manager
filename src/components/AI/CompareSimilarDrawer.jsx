@@ -5,6 +5,7 @@ import { Sparkles, GitCompare } from 'lucide-react'
 import { EmptyState } from '../ui/EmptyState'
 import { SectionSpinner } from '../ui/Spinner'
 import { Card } from '../ui/Card'
+import { AIErrorState } from '../ui/AIErrorState'
 import { CompareDiffModal } from './CompareDiffModal'
 
 // `r.repoId` may be either a numeric ID ("42") or an "owner/name" full_name.
@@ -25,6 +26,11 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
   const [results, setResults] = useState([])
   const [notIndexed, setNotIndexed] = useState(false)
   const [indexing, setIndexing] = useState(false)
+  // Pre-C4 the failure path silently dropped to "no results". We now keep
+  // the full error so <AIErrorState /> can render the right CTA — the user
+  // is no longer left wondering whether the lookup failed or just returned
+  // an empty set.
+  const [error, setError] = useState(null)
   // The similar repo currently being diffed against `repo`. Shape:
   //   { owner, repo, label } | null
   const [diffTarget, setDiffTarget] = useState(null)
@@ -32,6 +38,7 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
   const loadResults = async () => {
     setLoading(true)
     setNotIndexed(false)
+    setError(null)
     try {
       const data = await aiApi.findSimilar(repo.id)
       if (data.notIndexed) {
@@ -41,6 +48,7 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
       }
     } catch (err) {
       console.error(err)
+      setError(err)
     } finally {
       setLoading(false)
     }
@@ -55,11 +63,13 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
 
   const handleIndex = async () => {
     setIndexing(true)
+    setError(null)
     try {
       await aiApi.indexRepo(repo)
       await loadResults()
     } catch (err) {
       console.error(err)
+      setError(err)
     } finally {
       setIndexing(false)
     }
@@ -69,6 +79,12 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
     <SidePanel isOpen={isOpen} onClose={onClose} title="Similar Repositories" subtitle={repo?.full_name}>
       {loading ? (
         <SectionSpinner label="Finding similar repos…" padding="py-12" />
+      ) : error ? (
+        <AIErrorState
+          error={error}
+          onRetry={loadResults}
+          context="Similar repos"
+        />
       ) : notIndexed ? (
         <EmptyState
           icon={Sparkles}

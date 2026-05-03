@@ -134,7 +134,10 @@ export function useReviewAI(owner, repo, pullNumber, headSha, files) {
 
             if (!res.ok) {
                 const errBody = await res.json().catch(() => null)
-                throw new Error(errBody?.error ?? `AI request failed: ${res.status}`)
+                const err = new Error(errBody?.error ?? `AI request failed: ${res.status}`)
+                err.status = res.status
+                err.code = errBody?.code
+                throw err
             }
 
             const result = await res.json()
@@ -143,7 +146,8 @@ export function useReviewAI(owner, repo, pullNumber, headSha, files) {
             saveCachedSummary(cacheKey, summaryData)
             setSummary(summaryData)
         } catch (e) {
-            setError(e.message ?? 'Failed to generate AI summary')
+            // Preserve the full err so AIErrorState can map .code → CTA.
+            setError(e)
         } finally {
             setLoading(false)
         }

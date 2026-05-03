@@ -92,41 +92,146 @@ export function getErrorInfo(error) {
 // rendering err.message directly. See toast.errorFromException for the
 // reference integration.
 
+// Action shape: `{ label, kind, type?, settingsTab?, target? }`
+//   - `kind`: legacy field consumed by toast/banner integrations
+//   - `type`: canonical AIErrorState dispatcher key — one of
+//             'configure' | 'upgrade' | 'retry' | 'dismiss'
+//   - `settingsTab`: hint for 'open-settings' kind
+//   - `target`: optional CustomEvent detail target (route)
+//
+// Both `kind` and `type` are emitted for every entry so the historical
+// toast helpers AND the new <AIErrorState /> component pull from one table.
 const KNOWN_ERRORS = {
     NETWORK_ERROR: {
         title: 'Could not reach the server',
         body: 'Check your connection and try again.',
-        action: { label: 'Retry', kind: 'retry' },
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
     },
     UNAUTHORIZED: {
         title: 'Session expired',
         body: 'Please sign in again to continue.',
-        action: { label: 'Sign in', kind: 'reauth' },
+        action: { label: 'Sign in', kind: 'reauth', type: 'configure' },
     },
     AI_KEY_INVALID: {
         title: 'AI key rejected',
         body: 'Your API key was not accepted by the provider.',
-        action: { label: 'Update key', kind: 'open-settings', settingsTab: 'ai' },
+        action: { label: 'Update key', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
     },
     AI_NOT_CONFIGURED: {
         title: 'AI is not configured',
         body: 'Configure a Gemini API key in Settings → AI to use this feature.',
-        action: { label: 'Open Settings', kind: 'open-settings', settingsTab: 'ai' },
+        action: { label: 'Open Settings', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
     },
     TIER_REQUIRED_PRO: {
         title: 'Pro feature',
         body: 'This feature is part of the Pro plan.',
-        action: { label: 'See plans', kind: 'open-pricing' },
+        action: { label: 'See plans', kind: 'open-pricing', type: 'upgrade' },
     },
     TIER_REQUIRED_ENTERPRISE: {
         title: 'Enterprise feature',
         body: 'This feature is part of the Enterprise plan.',
-        action: { label: 'Contact sales', kind: 'open-pricing' },
+        action: { label: 'Contact sales', kind: 'open-pricing', type: 'upgrade' },
     },
     QUOTA_EXCEEDED: {
         title: 'Quota reached',
         body: 'You have used your monthly allowance for this feature.',
-        action: { label: 'See options', kind: 'open-quota' },
+        action: { label: 'See options', kind: 'open-quota', type: 'upgrade' },
+    },
+    // -----------------------------------------------------------------
+    // Server AI vocabulary — every code emitted by handleAIError plus
+    // the route-specific codes thrown around the AI surface area.
+    // Keep this list in sync with server/routes/ai/shared.js and the
+    // adjacent route files (deep-review.js, core.js, ...).
+    // -----------------------------------------------------------------
+    INVALID_API_KEY: {
+        title: 'AI key rejected',
+        body: 'The provider rejected the configured API key. Update it in Settings → AI.',
+        action: { label: 'Update key', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
+    },
+    NO_AI_PROVIDER: {
+        title: 'No AI provider configured',
+        body: 'Set up a provider API key in Settings → AI to use this feature.',
+        action: { label: 'Open Settings', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
+    },
+    AI_DISABLED: {
+        title: 'AI is disabled on this server',
+        body: 'The administrator has turned off AI features.',
+        action: { label: 'Dismiss', kind: 'dismiss', type: 'dismiss' },
+    },
+    RATE_LIMITED: {
+        title: 'AI provider is rate-limited',
+        body: 'Too many requests in a short window. Try again shortly.',
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
+    },
+    AI_TIMEOUT: {
+        title: 'AI provider timed out',
+        body: 'The request did not complete in time. Try again.',
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
+    },
+    AI_NETWORK_ERROR: {
+        title: 'Could not reach the AI provider',
+        body: 'A network or upstream issue blocked the request.',
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
+    },
+    AI_OVERLOADED: {
+        title: 'AI provider is overloaded',
+        body: 'The model is briefly unavailable. Try again in a moment.',
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
+    },
+    AI_REQUEST_FAILED: {
+        title: 'AI request failed',
+        body: 'The provider returned an error. Try again or check your provider status.',
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
+    },
+    AI_PARSE_ERROR: {
+        title: 'AI returned an invalid response',
+        body: 'The model responded but the format could not be parsed. Retry to get a fresh response.',
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
+    },
+    MODEL_NOT_FOUND: {
+        title: 'AI model unavailable',
+        body: 'The configured model is not available. Verify the model setting in Settings → AI.',
+        action: { label: 'Open Settings', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
+    },
+    PRESET_NOT_FOUND: {
+        title: 'Prompt preset not found',
+        body: 'The selected prompt preset is no longer available. Pick a different one and retry.',
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
+    },
+    GITHUB_FETCH_FAILED: {
+        title: 'Could not load PR data from GitHub',
+        body: 'GitHub did not return the PR contents. Check your connection and retry.',
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
+    },
+    PUBLISH_FAILED: {
+        title: 'Could not publish to GitHub',
+        body: 'The review could not be posted. Try again — if it keeps failing the publish was queued and will retry automatically.',
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
+    },
+    AI_PROVIDER_UNAVAILABLE: {
+        title: 'AI provider unavailable',
+        body: 'The provider could not be reached. Try again shortly.',
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
+    },
+    AI_PROVIDER_ERROR: {
+        title: 'AI provider error',
+        body: 'The provider returned an unexpected error.',
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
+    },
+    AI_INVALID_RESPONSE: {
+        title: 'AI returned an invalid response',
+        body: 'The model output was not in the expected shape. Retry to get a fresh response.',
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
+    },
+    PROVIDER_LOOKUP_FAILED: {
+        title: 'Could not load AI configuration',
+        body: 'Failed to resolve your AI provider settings. Check Settings → AI.',
+        action: { label: 'Open Settings', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
+    },
+    AI_REVIEW_DISABLED: {
+        title: 'AI review is disabled',
+        body: 'This AI feature has been disabled by the administrator.',
+        action: { label: 'Dismiss', kind: 'dismiss', type: 'dismiss' },
     },
 }
 

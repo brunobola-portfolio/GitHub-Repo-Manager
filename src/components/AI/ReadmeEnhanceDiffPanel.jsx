@@ -5,6 +5,7 @@ import { aiApi } from '../../api/ai'
 import { Sparkles, Copy, Check } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { SectionSpinner } from '../ui/Spinner'
+import { AIErrorState } from '../ui/AIErrorState'
 
 export function ReadmeEnhanceDiffPanel({ repo }) {
   const [loading, setLoading] = useState(true)
@@ -13,6 +14,10 @@ export function ReadmeEnhanceDiffPanel({ repo }) {
   const [error, setError] = useState(null)
   const [copied, setCopied] = useState(false)
   const [lastRepoId, setLastRepoId] = useState(repo?.id)
+  // Bumped by retry() to force the parallel-fetch effect to re-run on the
+  // same repo. The repo-change reset above is the canonical state-reset path;
+  // refreshTick adds a fresh cache key for the same repo without breaking it.
+  const [refreshTick, setRefreshTick] = useState(0)
 
   // Reset state on repo change using the React-recommended "set state during
   // render of a different value" pattern. This avoids `setState` calls inside
@@ -50,11 +55,18 @@ export function ReadmeEnhanceDiffPanel({ repo }) {
       })
       .catch(err => {
         if (controller.signal.aborted || err?.name === 'AbortError') return
-        setError(err.message)
+        // Preserve the full err so AIErrorState can map .code → CTA.
+        setError(err)
         setLoading(false)
       })
     return () => controller.abort()
-  }, [repo])
+  }, [repo, refreshTick])
+
+  const retry = () => {
+    setError(null)
+    setLoading(true)
+    setRefreshTick((n) => n + 1)
+  }
 
   const handleCopy = () => {
     if (!enhanced) return
@@ -71,9 +83,7 @@ export function ReadmeEnhanceDiffPanel({ repo }) {
 
   if (error) {
     return (
-      <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900">
-        <p className="text-sm text-red-900 dark:text-red-300">Could not generate enhancement: {error}</p>
-      </div>
+      <AIErrorState error={error} onRetry={retry} context="README enhancement" />
     )
   }
 

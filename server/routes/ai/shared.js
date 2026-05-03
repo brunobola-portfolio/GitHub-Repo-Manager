@@ -36,7 +36,11 @@ export function handleAIError(res, error, fallbackMessage = 'Failed to generate 
         });
     }
     if (code === AI_ERROR_CODE.AUTH || (!code && (error.message?.includes('API key') || error.status === 401))) {
-        return res.status(401).json({
+        // Use HTTP 422 (Unprocessable Entity) — NOT 401 — so the frontend's
+        // session-expiry middleware doesn't treat an upstream provider key
+        // failure as a logged-out session and force a re-auth. The 401 status
+        // is reserved for our own session cookie expiry.
+        return res.status(422).json({
             error: 'Invalid or expired Gemini API key. Please check your GEMINI_API_KEY in .env file.',
             code: 'INVALID_API_KEY',
         });

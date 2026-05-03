@@ -3,6 +3,7 @@ import { WalkthroughTab } from './WalkthroughTab';
 import { CommentsListTab } from './CommentsListTab';
 import { usePromptStudio } from '../../../hooks/usePromptStudio';
 import { PromptPicker } from '../../AIPrompts/PromptPicker';
+import { AIErrorState } from '../../ui/AIErrorState';
 
 export function AIReviewPanel({
     draft,
@@ -37,7 +38,16 @@ export function AIReviewPanel({
                 >
                     Generate AI Review
                 </button>
-                {error ? <p className="mt-3 text-xs text-red-600 dark:text-red-400">{error}</p> : null}
+                {error ? (
+                    <div className="mt-3 w-full max-w-md">
+                        <AIErrorState
+                            error={error}
+                            onRetry={() => onGenerate(activePresetKey)}
+                            context="AI Deep Review"
+                            variant="inline"
+                        />
+                    </div>
+                ) : null}
             </div>
         );
     }
