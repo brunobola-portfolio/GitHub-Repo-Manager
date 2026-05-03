@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { mockDeepReviewDraft } from '../__mocks__/mockRepoDetail';
 
 async function fetchJSON(url, options = {}) {
     const res = await fetch(url, {
@@ -19,6 +20,13 @@ async function fetchJSON(url, options = {}) {
         throw err;
     }
     return body;
+}
+
+// Per the project's vite-inline-DCE-guard rule, inline both checks at every
+// callsite — do NOT extract to a const reused across callbacks (cross-module
+// constant folding can fail for dynamic-import paths).
+function isMockMode() {
+    return import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true';
 }
 
 /**
@@ -49,6 +57,12 @@ export function useAIDeepReview(owner, repo, prNumber) {
 
     const loadCached = useCallback(async () => {
         if (!owner || !repo || !prNumber) return;
+        if (isMockMode()) {
+            setDraftId(1);
+            setDraft(mockDeepReviewDraft);
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         setError(null);
         try {
@@ -73,6 +87,12 @@ export function useAIDeepReview(owner, repo, prNumber) {
     useEffect(() => { loadCached(); }, [loadCached]);
 
     const generate = useCallback(async () => {
+        if (isMockMode()) {
+            setDraftId(1);
+            setDraft(mockDeepReviewDraft);
+            setLoading(false);
+            return { draftId: 1, draft: mockDeepReviewDraft };
+        }
         setLoading(true);
         setError(null);
         try {
@@ -93,6 +113,10 @@ export function useAIDeepReview(owner, repo, prNumber) {
     }, [owner, repo, prNumber]);
 
     const dismiss = useCallback(async (idx) => {
+        if (isMockMode()) {
+            setDraft((d) => d ? { ...d, lineComments: d.lineComments.filter((_, i) => i !== idx) } : d);
+            return;
+        }
         if (draftId == null) return;
         const result = await fetchJSON(`/api/ai/deep-review/${draftId}/comments/${idx}`, {
             method: 'PATCH',
@@ -102,6 +126,19 @@ export function useAIDeepReview(owner, repo, prNumber) {
     }, [draftId]);
 
     const edit = useCallback(async (idx, { body: newBody, suggestion }) => {
+        if (isMockMode()) {
+            setDraft((d) => {
+                if (!d) return d;
+                const next = [...d.lineComments];
+                next[idx] = {
+                    ...next[idx],
+                    ...(typeof newBody === 'string' ? { body: newBody } : {}),
+                    ...(typeof suggestion === 'string' ? { suggestion } : {}),
+                };
+                return { ...d, lineComments: next };
+            });
+            return;
+        }
         if (draftId == null) return;
         const result = await fetchJSON(`/api/ai/deep-review/${draftId}/comments/${idx}`, {
             method: 'PATCH',
@@ -111,6 +148,12 @@ export function useAIDeepReview(owner, repo, prNumber) {
     }, [draftId]);
 
     const publish = useCallback(async (event = 'COMMENT') => {
+        if (isMockMode()) {
+            if (aliveRef.current) {
+                setDraft((d) => (d ? { ...d, status: 'published', githubReviewId: 12345 } : d));
+            }
+            return { draftId: 1, githubReviewId: 12345 };
+        }
         if (draftId == null) throw new Error('No draft to publish.');
         const result = await fetchJSON(`/api/ai/deep-review/${draftId}/publish`, {
             method: 'POST',
@@ -129,6 +172,11 @@ export function useAIDeepReview(owner, repo, prNumber) {
     }, [draftId]);
 
     const discard = useCallback(async () => {
+        if (isMockMode()) {
+            setDraftId(null);
+            setDraft(null);
+            return;
+        }
         if (draftId == null) return;
         await fetchJSON(`/api/ai/deep-review/${draftId}`, { method: 'DELETE' });
         if (aliveRef.current) {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useAIDeepReview } from '../../src/hooks/useAIDeepReview';
 
@@ -6,6 +6,13 @@ const sampleDraft = { walkthrough: { summary: 'ok' }, lineComments: [] };
 
 beforeEach(() => {
     global.fetch = vi.fn();
+    // .env.test pins VITE_MOCK_MODE=true so the dev MOCK_MODE branch fires by
+    // default. These tests exercise the real-server fetch path, so disable it.
+    vi.stubEnv('VITE_MOCK_MODE', 'false');
+});
+
+afterEach(() => {
+    vi.unstubAllEnvs();
 });
 
 function jsonResponse(status, body) {

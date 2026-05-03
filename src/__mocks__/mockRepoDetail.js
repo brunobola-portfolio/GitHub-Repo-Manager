@@ -385,6 +385,26 @@ export function mockRepoDetailFetch(url) {
     return undefined
 }
 
+export const mockDeepReviewDraft = {
+    walkthrough: {
+        summary: 'This PR adds OAuth token refresh logic to the auth module and updates the user session middleware to consume it.',
+        perFileTable: [
+            { path: 'server/auth/refresh.js', change: 'added', summary: 'New token refresh helper' },
+            { path: 'server/middleware/session.js', change: 'modified', summary: 'Wires refresh into session validation' },
+            { path: 'tests/auth/refresh.test.js', change: 'added', summary: 'Unit tests for the refresh helper' },
+        ],
+        mermaid: 'sequenceDiagram\n  Client->>Session: request\n  Session->>Refresh: maybe refresh\n  Refresh-->>Session: new token\n  Session-->>Client: ok',
+        estimatedReviewTime: '12 min',
+        riskLevel: 'medium',
+    },
+    lineComments: [
+        { path: 'server/auth/refresh.js', side: 'RIGHT', line: 14, severity: 'warning', body: 'Refresh response is not validated — a malformed JSON body would crash here.', suggestion: 'const body = await res.json().catch(() => null);\nif (!body?.access_token) throw new Error("Invalid refresh response");' },
+        { path: 'server/middleware/session.js', side: 'RIGHT', line: 27, severity: 'suggestion', body: 'Consider extracting the refresh check into a named function for readability.' },
+        { path: 'tests/auth/refresh.test.js', side: 'RIGHT', line: 8, severity: 'info', body: 'Nice — covers both success and 401 paths.' },
+    ],
+    modelUsed: 'gemini-2.5-flash (mock)',
+};
+
 // Interceptor for /api/v1/repos/:owner/:repo/commits (used by useResilientFetch)
 export function mockCommitsFetch(url) {
     const [path] = url.split('?')
