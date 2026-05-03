@@ -43,10 +43,38 @@ const router = express.Router();
 // for slice 1a (Redis-backed limiter is a slice 1a-2 concern).
 // ---------------------------------------------------------------------------
 
-// TODO(slice-1a-2): periodic LRU sweep + Redis-backed limiter for multi-instance deploys
+// TODO(slice-1a-2): Redis-backed limiter for multi-instance deploys.
+// LRU sweep below evicts buckets with no requests in the last RATE_WINDOW_MS
+// every 5 minutes so a long-running process can't accumulate one entry per
+// distinct user id forever.
 const generateRateBuckets = new Map(); // userId -> [timestamps]
 const RATE_WINDOW_MS = 60_000;
 const RATE_LIMIT_PER_WINDOW = 10;
+const SWEEP_INTERVAL_MS = 5 * 60_000;
+
+/**
+ * Drop bucket entries with no requests inside the active rate window.
+ * Cheap O(n) over the bucket count — runs every SWEEP_INTERVAL_MS.
+ *
+ * Exported (with `_` prefix) only so tests can drive it deterministically
+ * without needing to advance fake timers.
+ */
+export function _runRateLimitSweep() {
+    const cutoff = Date.now() - RATE_WINDOW_MS;
+    for (const [userId, bucket] of generateRateBuckets) {
+        const fresh = bucket.filter((t) => t > cutoff);
+        if (fresh.length === 0) {
+            generateRateBuckets.delete(userId);
+        } else if (fresh.length !== bucket.length) {
+            generateRateBuckets.set(userId, fresh);
+        }
+    }
+}
+
+const _sweepInterval = setInterval(_runRateLimitSweep, SWEEP_INTERVAL_MS);
+// Keep this timer from holding the Node event loop alive — tests and CLI
+// invocations should be able to exit cleanly without an explicit clearInterval.
+if (typeof _sweepInterval.unref === 'function') _sweepInterval.unref();
 
 function generateRateLimit(req, res, next) {
     const userId = req.session?.userId;
