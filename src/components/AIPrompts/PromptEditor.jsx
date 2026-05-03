@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+const MAX_PATH_RULES = 20;
+
 /**
  * Split-pane editor for a custom prompt preset.
  *
@@ -26,7 +28,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
     const isEdit = !!initial?.id;
 
     function addRule() {
-        setPathRules((r) => [...r, { glob: '', extraPrompt: '' }]);
+        setPathRules((r) => r.length >= MAX_PATH_RULES ? r : [...r, { glob: '', extraPrompt: '' }]);
     }
     function updateRule(idx, patch) {
         setPathRules((r) => r.map((rule, i) => i === idx ? { ...rule, ...patch } : rule));
@@ -154,7 +156,17 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                 <div>
                     <div className="flex items-center mb-1">
                         <span className="block text-xs font-medium flex-1">Path-scoped rules</span>
-                        <button type="button" onClick={addRule} className="text-xs px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800">+ Add</button>
+                        <button
+                            type="button"
+                            onClick={addRule}
+                            disabled={pathRules.length >= MAX_PATH_RULES}
+                            className="text-xs px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+                        >
+                            + Add
+                        </button>
+                        {pathRules.length >= MAX_PATH_RULES ? (
+                            <span className="text-[10px] text-amber-600 dark:text-amber-400 ml-2">Maximum {MAX_PATH_RULES} rules</span>
+                        ) : null}
                     </div>
                     {pathRules.length === 0 ? (
                         <div className="text-xs opacity-60">No path rules.</div>
