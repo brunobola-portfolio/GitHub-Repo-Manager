@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react'
 import { InlineComment } from './InlineComment'
+import { AIInlineComment } from '../AIDeepReview/AIInlineComment'
 
 // DiffRenderer pulls in @git-diff-view/react + shiki (~1 MB / ~332 KB gzipped).
 // Lazy-load so mounting the PR Review view itself doesn't trigger that download —
@@ -108,7 +109,19 @@ function getLang(filename) {
  * @param {Function}  [props.onReply]            - Called with { commentId, body }
  * @param {Function}  [props.onResolve]          - Called with comment id to toggle resolved state
  */
-export function DiffPanel({ file, viewMode, comments, pendingComments, resolvedComments = [], onAddComment, onReply, onResolve }) {
+export function DiffPanel({
+  file,
+  viewMode,
+  comments,
+  pendingComments,
+  resolvedComments = [],
+  onAddComment,
+  onReply,
+  onResolve,
+  aiComments = [],
+  onDismissAIComment,
+  onEditAIComment,
+}) {
   const [commentingLine, setCommentingLine] = useState(null) // { lineNumber, side }
   const [commentBody, setCommentBody] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -211,6 +224,23 @@ export function DiffPanel({ file, viewMode, comments, pendingComments, resolvedC
           />
         </Suspense>
       </div>
+
+      {/* AI Deep Review comments for this file (Strategy B: stacked under the diff
+          because the per-line render lives inside the lazy DiffRenderer chunk). */}
+      {aiComments.length > 0 ? (
+        <div className="border-t border-slate-200 dark:border-slate-800 px-3 py-2">
+          <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">AI comments for this file</div>
+          {aiComments.map((c) => (
+            <AIInlineComment
+              key={`ai-${c._idx}`}
+              comment={c}
+              idx={c._idx}
+              onDismiss={onDismissAIComment}
+              onEdit={onEditAIComment}
+            />
+          ))}
+        </div>
+      ) : null}
 
       {/* Submitted comment threads */}
       {commentThreads.length > 0 && (

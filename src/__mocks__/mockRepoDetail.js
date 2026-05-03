@@ -316,6 +316,19 @@ export function generateMockIssueTimeline(repoName, number) {
 // Only GET-safe patterns are matched here; mutations always go to the real server
 // (which in MOCK_MODE won't be called anyway since users can't sign in).
 
+// E2E test override: when the page URL carries `?mockPRNumber=N`, the mock
+// layer yields control for `/api/repos/:owner/:repo/pulls...` and `/issues...`
+// paths so Playwright's `page.route` stubs can supply test fixtures keyed on
+// that PR number. Read once at module load — tests set it before navigation.
+const _e2eOverridePRNumber = (() => {
+    if (typeof window === 'undefined') return null
+    try {
+        const params = new URLSearchParams(window.location.search)
+        const v = params.get('mockPRNumber')
+        return v ? Number.parseInt(v, 10) : null
+    } catch { return null }
+})()
+
 export function mockRepoDetailFetch(url) {
     // Strip query string for matching
     const [path] = url.split('?')
@@ -323,6 +336,13 @@ export function mockRepoDetailFetch(url) {
     // /api/repos/:owner/:repo/... patterns
     const base = '/api/repos/'
     if (!path.startsWith(base)) return undefined
+
+    // E2E override: defer pulls/issues fetches to Playwright stubs.
+    if (_e2eOverridePRNumber != null) {
+        const after = path.slice(base.length).split('/')
+        const res = after[2]
+        if (res === 'pulls' || res === 'issues') return undefined
+    }
 
     const rest = path.slice(base.length) // "owner/repo/resource/..."
     const parts = rest.split('/')
@@ -384,6 +404,26 @@ export function mockRepoDetailFetch(url) {
 
     return undefined
 }
+
+export const mockDeepReviewDraft = {
+    walkthrough: {
+        summary: 'This PR adds OAuth token refresh logic to the auth module and updates the user session middleware to consume it.',
+        perFileTable: [
+            { path: 'server/auth/refresh.js', change: 'added', summary: 'New token refresh helper' },
+            { path: 'server/middleware/session.js', change: 'modified', summary: 'Wires refresh into session validation' },
+            { path: 'tests/auth/refresh.test.js', change: 'added', summary: 'Unit tests for the refresh helper' },
+        ],
+        mermaid: 'sequenceDiagram\n  Client->>Session: request\n  Session->>Refresh: maybe refresh\n  Refresh-->>Session: new token\n  Session-->>Client: ok',
+        estimatedReviewTime: '12 min',
+        riskLevel: 'medium',
+    },
+    lineComments: [
+        { path: 'server/auth/refresh.js', side: 'RIGHT', line: 14, severity: 'warning', body: 'Refresh response is not validated — a malformed JSON body would crash here.', suggestion: 'const body = await res.json().catch(() => null);\nif (!body?.access_token) throw new Error("Invalid refresh response");' },
+        { path: 'server/middleware/session.js', side: 'RIGHT', line: 27, severity: 'suggestion', body: 'Consider extracting the refresh check into a named function for readability.' },
+        { path: 'tests/auth/refresh.test.js', side: 'RIGHT', line: 8, severity: 'info', body: 'Nice — covers both success and 401 paths.' },
+    ],
+    modelUsed: 'gemini-2.5-flash (mock)',
+};
 
 // Interceptor for /api/v1/repos/:owner/:repo/commits (used by useResilientFetch)
 export function mockCommitsFetch(url) {

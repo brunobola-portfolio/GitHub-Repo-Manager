@@ -13,7 +13,10 @@ import { DiffPanel } from './DiffPanel/DiffPanel'
 import { ReviewToolbar } from './ReviewToolbar/ReviewToolbar'
 import { ReviewStatusBar } from './ReviewToolbar/ReviewStatusBar'
 import { AISummaryPanel } from './AIInsights/AISummaryPanel'
+import { AIReviewPanel } from './AIDeepReview/AIReviewPanel'
+import { useAIDeepReview } from '../../hooks/useAIDeepReview'
 import { ConfirmModal } from '../ui/ConfirmModal'
+import { PublishReviewModal } from './AIDeepReview/PublishReviewModal'
 
 export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   const api = useRepoDetail(owner, repo)
@@ -45,6 +48,21 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   const { toast } = useToast()
   const [submitting, setSubmitting] = useState(false)
   const [sortMode, setSortMode] = useState('risk')
+
+  // AI Deep Review (Slice 1a) — generates a structured walkthrough + line
+  // comments draft that the user can edit and publish to GitHub as a single
+  // review. Lives alongside the existing AISummaryPanel for now; the legacy
+  // panel may be retired in a follow-up once the new flow is fully wired.
+  const deep = useAIDeepReview(owner, repo, pullNumber)
+  const [publishing, setPublishing] = useState(false)
+  const [publishOpen, setPublishOpen] = useState(false)
+
+  // Stamp original indices on the AI comments we hand to DiffPanel so child
+  // callbacks can map back to the canonical position before dismissing/editing.
+  const stampedAIComments = useMemo(
+    () => (deep.draft?.lineComments || []).map((c, _idx) => ({ ...c, _idx })),
+    [deep.draft]
+  )
   // State-driven confirm flow (replaces blocking window.confirm) so the PR
   // review surface stays keyboard-accessible and the rest of the app can
   // remain interactive while the prompt is shown.
@@ -303,6 +321,27 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
             onResolve={(commentId) =>
               dispatch({ type: 'TOGGLE_RESOLVED', commentId })
             }
+            aiComments={stampedAIComments.filter((c) => c.path === state.activeFile)}
+            onDismissAIComment={(idx) => deep.dismiss(idx)}
+            onEditAIComment={(idx, payload) => deep.edit(idx, payload)}
+          />
+        </div>
+
+        {/* Third column: AI Deep Review panel (walkthrough + comments draft +
+            Publish to GitHub). Sits alongside the existing AISummaryPanel which
+            stays in the centre column for now — duplication flagged for
+            follow-up cleanup once Slice 1b lands. */}
+        <div className="w-80 shrink-0 hidden lg:flex flex-col min-h-0">
+          <AIReviewPanel
+            draft={deep.draft}
+            loading={deep.loading}
+            error={deep.error}
+            onGenerate={deep.generate}
+            onPublish={() => setPublishOpen(true)}
+            onJumpToFile={(filename) => dispatch({ type: 'SET_ACTIVE_FILE', filename })}
+            onDismissComment={(idx) => deep.dismiss(idx)}
+            onEditComment={(idx, payload) => deep.edit(idx, payload)}
+            publishing={publishing}
           />
         </div>
       </div>
@@ -311,6 +350,35 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
         totalFiles={state.files?.length ?? 0}
         reviewedCount={state.reviewedFiles.length}
         pendingCommentCount={state.pendingComments.length}
+      />
+
+      <PublishReviewModal
+        isOpen={publishOpen}
+        onClose={() => setPublishOpen(false)}
+        draft={deep.draft}
+        onPublish={async (event) => {
+          setPublishing(true)
+          try {
+            const out = await deep.publish(event)
+            if (out.queued) {
+              toast.success?.({
+                title: 'Review queued for publishing',
+                message: 'GitHub will receive the review momentarily.',
+              })
+            } else {
+              toast.success?.({
+                title: 'Review published to GitHub',
+                message: out.githubReviewId ? `Review #${out.githubReviewId}` : undefined,
+              })
+            }
+            setPublishOpen(false)
+          } catch (err) {
+            toast.errorFromException?.(err, { fallbackTitle: 'Failed to publish review' })
+          } finally {
+            setPublishing(false)
+          }
+        }}
+        publishing={publishing}
       />
 
       <ConfirmModal

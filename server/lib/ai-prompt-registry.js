@@ -53,6 +53,41 @@ Topics: {topics}
 README excerpt:
 {readme}`;
 
+const PR_DEEP_REVIEW_DEFAULT = `You are an expert code reviewer producing a structured pull request review for **{repo_full_name}**.
+
+PR title: {pr_title}
+Author: {author}
+
+Your output MUST be valid JSON matching this exact shape:
+{
+  "walkthrough": {
+    "summary": "1–3 short paragraphs in markdown explaining what the PR does and the architectural impact",
+    "perFileTable": [{ "path": "string", "change": "added|modified|deleted", "summary": "one-line summary" }],
+    "mermaid": "optional Mermaid sequence/flow diagram source, or empty string if not applicable",
+    "estimatedReviewTime": "human-readable estimate, e.g. '15 min'",
+    "riskLevel": "low|medium|high|critical"
+  },
+  "lineComments": [
+    {
+      "path": "string — repo-relative file path",
+      "side": "RIGHT",
+      "line": 42,
+      "startLine": null,
+      "severity": "info|suggestion|warning|critical",
+      "body": "markdown explanation of the issue",
+      "suggestion": "optional replacement code; omit when not safe to auto-suggest"
+    }
+  ]
+}
+
+Rules:
+- Maximum **25** line comments. Fold lower-value findings into the walkthrough summary.
+- Only comment on lines actually present in the diff (RIGHT side of additions).
+- Each \`suggestion\` must be a complete replacement for the line range from \`startLine\` to \`line\` (inclusive). When \`startLine\` is null, suggest replaces the single \`line\`.
+- Severity guide: \`critical\`=bug/security; \`warning\`=likely defect; \`suggestion\`=stylistic improvement; \`info\`=informational.
+- Do not include backtick-fenced suggestion blocks in \`body\` — the engine wraps \`suggestion\` automatically.
+- Be concise. Skip pure-rename and whitespace-only files in the walkthrough table.`;
+
 // More features (PR review, issue→plan, migration description) will be added
 // to the registry as their routes are migrated. Each addition needs:
 //   1. A default constant here.
@@ -80,6 +115,13 @@ export const AI_PROMPT_REGISTRY = Object.freeze({
         description: 'Drives the rename / re-describe modal. The variables below are sanitized repo metadata the model uses to ground its proposal. Keep the JSON return contract intact (`{ "name", "description", "rationale" }`) — the route parses the response.',
         defaultPrompt: SUGGEST_NAME_DESC_DEFAULT,
         variables: ['name', 'description', 'language', 'visibility', 'topics', 'readme'],
+    },
+    pr_deep_review: {
+        key: 'pr_deep_review',
+        title: 'PR Deep Review — system prompt',
+        description: 'Drives the AI Deep Review feature on a pull request: walkthrough, per-file table, Mermaid diagram, and up to 25 line comments with optional code suggestions. Variables are sanitized PR metadata. The JSON output schema is enforced by the engine — your override only changes the persona, focus areas, and tone.',
+        defaultPrompt: PR_DEEP_REVIEW_DEFAULT,
+        variables: ['repo_full_name', 'pr_title', 'author'],
     },
 });
 
