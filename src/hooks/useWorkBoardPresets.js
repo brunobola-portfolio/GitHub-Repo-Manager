@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getCsrfToken } from '../utils/api'
+import { MOCK_MODE } from '../config'
 
 const BASE = '/api/v1/work-board/presets'
 
@@ -31,6 +32,7 @@ export function useWorkBoardPresets() {
     const [error, setError] = useState(null)
 
     const refresh = useCallback(async () => {
+        if (MOCK_MODE) { setLoading(false); return }
         setLoading(true)
         try {
             const json = await call(BASE)

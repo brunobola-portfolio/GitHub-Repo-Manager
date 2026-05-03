@@ -44,6 +44,7 @@ import { ReviewLoadTab } from './tabs/ReviewLoadTab'
 import { TechDebtTab } from './tabs/TechDebtTab'
 import { DORATab } from './tabs/DORATab'
 import { ManageReposButton } from './ManageReposButton'
+import { MOCK_MODE } from '../../config'
 
 // ---------------------------------------------------------------------------
 // Tab definitions
@@ -191,6 +192,7 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
 
     const [hasAI, setHasAI] = useState(false)
     useEffect(() => {
+        if (MOCK_MODE) return
         fetch('/api/user/ai-config', { credentials: 'include' })
             .then(r => r.json())
             .then(d => setHasAI(!!(d.hasCompletionKey || d.serverFallbackAvailable)))

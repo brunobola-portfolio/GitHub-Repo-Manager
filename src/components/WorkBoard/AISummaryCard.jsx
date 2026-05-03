@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { clsx } from 'clsx'
 import { Sparkles, RefreshCw, X, AlertTriangle } from 'lucide-react'
 import { fetchWithRetry } from '../../utils/api'
+import { MOCK_MODE } from '../../config'
 import { friendlyAiError } from '../../utils/aiErrorFriendly'
 import { Skeleton } from '../ui/Skeleton'
 
@@ -48,6 +49,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
     const [dismissed, setDismissed] = useState(false)
 
     const fetchSummary = useCallback(async () => {
+        if (MOCK_MODE) { setState({ status: 'hidden', data: null, error: null }); return }
         setState(s => ({ ...s, status: 'loading', error: null }))
         try {
             // fetchWithRetry handles CSRF injection, retry on transient 5xx,

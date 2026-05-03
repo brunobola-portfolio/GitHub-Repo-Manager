@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import * as api from '../api/workBoardAI'
+import { MOCK_MODE } from '../config'
 
 export function useWorkBoardAI() {
     const [suggestions, setSuggestions] = useState([])
@@ -10,6 +11,7 @@ export function useWorkBoardAI() {
     const [error, setError] = useState(null)
 
     const reload = useCallback(async () => {
+        if (MOCK_MODE) { setEnabled(false); setIsLoading(false); return }
         setIsLoading(true)
         setError(null)
         try {

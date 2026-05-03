@@ -112,6 +112,7 @@ export function generateMockPRs(repoName) {
         const user = pick(USERS, s + i)
         const label = LABELS[(s + i * 3) % LABELS.length]
         return {
+            id: 100000 + s + i,
             number: 100 + i + (s % 50),
             title: PR_TITLES[idx],
             state: 'open',

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { API_BASE_URL } from '../config'
+import { API_BASE_URL, MOCK_MODE } from '../config'
 
 /**
  * useLicense — fetches the current license/plan from the backend.
@@ -11,11 +11,12 @@ import { API_BASE_URL } from '../config'
  * consumer (typically defaulting to 'free').
  */
 export function useLicense() {
-    const [license, setLicense] = useState(null)
-    const [isLoading, setIsLoading] = useState(true)
+    const [license, setLicense] = useState(() => MOCK_MODE ? { tier: 'free' } : null)
+    const [isLoading, setIsLoading] = useState(!MOCK_MODE)
     const [error, setError] = useState(null)
 
     useEffect(() => {
+        if (MOCK_MODE) return
         let cancelled = false
         fetch(`${API_BASE_URL}/api/v1/usage`, { credentials: 'include' })
             .then(r => r.ok ? r.json() : Promise.reject(new Error('Failed to load license')))

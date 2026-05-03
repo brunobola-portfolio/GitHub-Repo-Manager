@@ -287,7 +287,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                 <div className="space-y-2">
                     {pulls.map((pr, idx) => (
                         <Card
-                            key={pr.id}
+                            key={pr.id ?? pr.number}
                             ref={(node) => { rowRefs.current[idx] = node }}
                             role="button"
                             tabIndex={0}

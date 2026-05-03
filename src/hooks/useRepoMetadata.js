@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { apiCall } from '../utils/api'
+import { MOCK_MODE } from '../config'
 
 const TTL_MS = 60_000
 
@@ -15,6 +16,7 @@ function notify() {
 }
 
 async function fetchAll() {
+    if (MOCK_MODE) return new Map()
     try {
         const rows = await apiCall('/api/ai/metadata')
         if (!Array.isArray(rows)) return new Map()

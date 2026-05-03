@@ -52,16 +52,18 @@ export function WorkBoardRowLink({
 
     return (
         <div className={`relative group ${className}`}>
-            <button
-                type="button"
+            {/* div+role instead of <button> so nested action buttons (InlineActions, menus) are valid HTML */}
+            <div
+                role="button"
+                tabIndex={0}
                 onClick={openInApp}
                 onAuxClick={openInApp}
                 onKeyDown={onKeyDown}
                 aria-label={ariaLabel || `Open ${itemType === 'pr' ? 'pull request' : 'issue'} #${number} in app`}
-                className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-xl"
+                className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-xl cursor-pointer"
             >
                 {children}
-            </button>
+            </div>
             <a
                 href={itemUrl}
                 target="_blank"

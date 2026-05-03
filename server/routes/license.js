@@ -4,7 +4,6 @@
 
 import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
-import { requireAuth } from '../middleware/auth.js'
 import { getLicenseInfo } from '../middleware/require-tier.js'
 import { validateLicenseKey } from '../lib/license.js'
 import { readFileSync, existsSync } from 'fs'
@@ -29,8 +28,8 @@ const validateLimiter = rateLimit({
 
 const router = Router()
 
-// GET /api/v1/license — current license info
-router.get('/', requireAuth, (req, res) => {
+// GET /api/v1/license — current license info (public: server-level info, no user data)
+router.get('/', (req, res) => {
   const info = getLicenseInfo()
   if (!info) {
     return res.json({
