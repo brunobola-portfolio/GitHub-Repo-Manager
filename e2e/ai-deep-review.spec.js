@@ -118,7 +118,11 @@ async function mockApi(page) {
 }
 
 async function openPRReview(page) {
-    await page.goto('/')
+    // ?mockPRNumber=42 tells the dev-mode mock layer (src/__mocks__/mockRepoDetail.js)
+    // to defer /api/repos/:owner/:repo/pulls* + /issues* fetches to our page.route
+    // stubs above. Without this, the mock layer short-circuits the network and the
+    // PR list shows generated PRs (#104..) instead of the fixture #42.
+    await page.goto(`/?mockPRNumber=${PR_NUMBER}`)
     await expect(page.getByAltText('dev-user')).toBeVisible({ timeout: 15000 })
 
     await page.getByRole('button', { name: 'Repositories' }).click()
@@ -131,18 +135,11 @@ async function openPRReview(page) {
 }
 
 test.describe('AI Deep Review (mock mode)', () => {
-    // FIXME(slice-1a): in mock mode `useRepoDetail` short-circuits to
-    // `mockRepoDetailFetch` (client-side resolver) before the network
-    // layer ever fires, so Playwright's `page.route` stubs for
-    // `/api/repos/...` are bypassed. As a result the PR list renders the
-    // generated mock PRs (#104..) rather than the fixture #42, and the
-    // navigation chain `Repositories -> Pull Requests -> #42 -> Review`
-    // can't reach PRReviewView. Same root cause failing the pre-existing
-    // `pr-review.spec.js` against this worktree. Slice 1b will introduce
-    // a deep-link-friendly PR review URL (#/repo/:owner/:repo/pulls/:n)
-    // and a small `mockPRDetail` fixture override hook so we can land
-    // this test green without depending on the navigation chain.
-    test.fixme('user can generate, see walkthrough, dismiss a comment, and open publish modal', async ({ page }) => {
+    // Unblocked via the `?mockPRNumber=N` URL hook — see openPRReview() and
+    // src/__mocks__/mockRepoDetail.js. With that flag set, the dev-mode
+    // mock layer yields control for /pulls + /issues paths so Playwright's
+    // page.route stubs supply the fixture PR #42.
+    test('user can generate, see walkthrough, dismiss a comment, and open publish modal', async ({ page }) => {
         await mockApi(page)
         await openPRReview(page)
 
@@ -156,9 +153,10 @@ test.describe('AI Deep Review (mock mode)', () => {
         // Switch to the Comments tab inside the AIReviewPanel
         await page.getByRole('button', { name: /comments \(\d+\)/i }).click()
 
-        // Verify a fixture comment is visible
+        // Verify a fixture comment is visible (multiple matches across panel
+        // and aria region — first() is enough for the smoke check).
         await expect(
-            page.getByText(/refresh response is not validated/i)
+            page.getByText(/refresh response is not validated/i).first()
         ).toBeVisible()
 
         // Open the publish modal

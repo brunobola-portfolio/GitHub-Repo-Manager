@@ -124,7 +124,11 @@ async function mockApi(page) {
 }
 
 async function openPRReview(page) {
-    await page.goto('/')
+    // ?mockPRNumber=42 tells the dev-mode mock layer (src/__mocks__/mockRepoDetail.js)
+    // to defer /api/repos/:owner/:repo/pulls* + /issues* fetches to our page.route
+    // stubs above. Without this, the mock layer short-circuits the network and the
+    // PR list shows generated PRs (#104..) instead of the fixture #42.
+    await page.goto(`/?mockPRNumber=${PR_NUMBER}`)
     await expect(page.getByAltText('dev-user')).toBeVisible({ timeout: 15000 })
 
     // Repositories -> first repo with matching name.
