@@ -5,9 +5,9 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { TabBar } from '../ui/TabBar'
 import {
-    GitPullRequest, GitMerge, X, MessageSquare, Clock,
+    GitPullRequest, GitMerge, MessageSquare, Clock,
     ExternalLink, Loader2, Send, CheckCircle2, XCircle,
-    ArrowLeft, FileText, FilePlus, FileMinus, FileEdit,
+    ArrowLeft, FileText,
     Eye, ShieldCheck, ShieldAlert, MessageCircle, GitBranch, Wand2
 } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
@@ -15,6 +15,8 @@ import { useToast } from '../../hooks/useToast'
 import { useAIStatus } from '../../hooks/useAIStatus'
 import { useDraftPersistence } from '../../hooks/useDraftPersistence'
 import { formatRelativeTime } from '../../utils/format'
+import { PRFilesTab } from './PRFilesTab'
+import { invalidatePRData } from '../../hooks/usePRData'
 
 const REVIEW_STATES = {
     APPROVED: { label: 'Approved', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', icon: ShieldCheck },
@@ -22,15 +24,6 @@ const REVIEW_STATES = {
     COMMENTED: { label: 'Commented', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', icon: MessageCircle },
     DISMISSED: { label: 'Dismissed', color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-50 dark:bg-slate-800', icon: Eye },
     PENDING: { label: 'Pending', color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-900/20', icon: Eye },
-}
-
-function getFileIcon(status) {
-    switch (status) {
-        case 'added': return <FilePlus className="w-4 h-4 text-green-500" />
-        case 'removed': return <FileMinus className="w-4 h-4 text-red-500" />
-        case 'renamed': return <FileEdit className="w-4 h-4 text-blue-500" />
-        default: return <FileEdit className="w-4 h-4 text-yellow-500" />
-    }
 }
 
 export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGenerateDescription }) {
@@ -109,6 +102,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
             // Reload detail
             const data = await api.fetchPull(pr.number)
             setDetail(data)
+            invalidatePRData(prOwner, prRepo, pr.number)
             onUpdate?.()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
@@ -124,6 +118,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
             setMessage({ type: 'success', text: 'Pull request closed' })
             toast.success('Pull request closed')
             if (detail) setDetail({ ...detail, state: 'closed' })
+            invalidatePRData(prOwner, prRepo, pr.number)
             onUpdate?.()
         } catch (e) {
             setMessage({ type: 'error', text: e.message })
@@ -132,6 +127,8 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
     }
 
     const current = detail || pr
+    const prOwner = pr?.base?.repo?.owner?.login ?? ''
+    const prRepo  = pr?.base?.repo?.name ?? ''
     const isOpen = current.state === 'open'
     const isMerged = current.merged || current.merged_at
 
@@ -421,34 +418,13 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                         onStartReview for full-screen mode; this is the
                         in-detail "see what changed" view. */}
                     {activeTab === 'files' && (
-                        <div className="space-y-2">
-                            {/* Summary */}
-                            <Card className="p-3 flex items-center gap-4 text-sm">
-                                <span className="text-slate-600 dark:text-slate-400">
-                                    {files.length} file{files.length !== 1 ? 's' : ''} changed
-                                </span>
-                                <span className="text-green-600 dark:text-green-400 font-medium">+{totalAdditions}</span>
-                                <span className="text-red-500 dark:text-red-400 font-medium">-{totalDeletions}</span>
-                                {onStartReview && files.length > 0 && (
-                                    <button
-                                        type="button"
-                                        onClick={onStartReview}
-                                        className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
-                                    >
-                                        <Eye className="w-3.5 h-3.5" />
-                                        Open full review
-                                    </button>
-                                )}
-                            </Card>
-
-                            {/* File list with expandable patches */}
-                            {files.map((file, i) => (
-                                <PRFileDiff key={file.sha || file.filename || i} file={file} getFileIcon={getFileIcon} />
-                            ))}
-
-                            {files.length === 0 && (
-                                <p className="text-sm text-slate-400 dark:text-slate-500 py-8 text-center">No files changed</p>
-                            )}
+                        <div style={{ height: 'calc(100vh - 280px)', minHeight: '400px' }}>
+                            <PRFilesTab
+                                files={files}
+                                owner={prOwner}
+                                repo={prRepo}
+                                pr={current}
+                            />
                         </div>
                     )}
 
@@ -516,48 +492,6 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                 </>
             )}
         </motion.div>
-    )
-}
-
-/**
- * PRFileDiff — single-file row that expands to show its `patch` inline.
- * The diff is rendered as a plain monospace block (mirrors CommitDetailPanel).
- * For the full Linear-grade review surface (file tree + side-by-side +
- * inline comments), `onStartReview` opens the dedicated PRReviewView.
- */
-function PRFileDiff({ file, getFileIcon }) {
-    const [expanded, setExpanded] = useState(false)
-    const hasPatch = !!file.patch
-    return (
-        <Card className="overflow-hidden">
-            <button
-                type="button"
-                onClick={() => setExpanded(v => !v)}
-                disabled={!hasPatch}
-                className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors disabled:cursor-not-allowed disabled:opacity-70"
-            >
-                {getFileIcon(file.status)}
-                <span className="font-mono text-sm text-slate-800 dark:text-slate-200 truncate flex-1 min-w-0 text-left">
-                    {file.filename}
-                </span>
-                <div className="flex items-center gap-2 text-xs flex-shrink-0">
-                    {file.additions > 0 && (
-                        <span className="text-green-600 dark:text-green-400 font-medium">+{file.additions}</span>
-                    )}
-                    {file.deletions > 0 && (
-                        <span className="text-red-500 dark:text-red-400 font-medium">-{file.deletions}</span>
-                    )}
-                    {hasPatch && (
-                        <span className="ml-1 text-slate-400 text-[10px]">{expanded ? 'Hide' : 'Show'} diff</span>
-                    )}
-                </div>
-            </button>
-            {expanded && hasPatch && (
-                <pre className="text-xs font-mono leading-relaxed overflow-x-auto p-3 bg-slate-50/40 dark:bg-slate-900/40 max-h-[480px] border-t border-slate-200/60 dark:border-slate-700/40">
-                    {file.patch}
-                </pre>
-            )}
-        </Card>
     )
 }
 
