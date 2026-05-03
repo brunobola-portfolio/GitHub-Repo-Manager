@@ -10,6 +10,7 @@ const mockApi = {
     fetchActivity: vi.fn().mockResolvedValue({ month: '2026-04', spent_cents: 0, cap_cents: 500 }),
 }
 vi.mock('../../src/api/workBoardAI', () => mockApi)
+vi.mock('../../src/config', () => ({ MOCK_MODE: false, API_BASE_URL: '', API_BASE: '/api' }))
 
 const { useWorkBoardAI } = await import('../../src/hooks/useWorkBoardAI')
 

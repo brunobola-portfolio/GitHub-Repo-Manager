@@ -21,6 +21,7 @@ class MockApiError extends Error {
 }
 
 const fetchWithRetryMock = vi.fn()
+vi.mock('../../../src/config', () => ({ MOCK_MODE: false, API_BASE_URL: '', API_BASE: '/api' }))
 vi.mock('@/utils/api', () => ({
     fetchWithRetry: (...args) => fetchWithRetryMock(...args),
 }))

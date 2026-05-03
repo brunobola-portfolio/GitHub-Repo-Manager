@@ -3,6 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 
 // Mutations now fetch a CSRF token; stub it so the test's global.fetch queue
 // isn't consumed by the auth/csrf-token request.
+vi.mock('../../src/config', () => ({ MOCK_MODE: false, API_BASE_URL: '', API_BASE: '/api' }))
 vi.mock('@/utils/api', async (importOriginal) => {
     const actual = await importOriginal()
     return { ...actual, getCsrfToken: vi.fn(async () => 'csrf-test-token') }
