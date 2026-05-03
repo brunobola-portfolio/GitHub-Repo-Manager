@@ -9,6 +9,7 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { AIRunButton } from '../ui/AIRunButton'
 import { AIUnavailableBanner } from '../ui/AIUnavailableBanner'
+import { AIErrorState } from '../ui/AIErrorState'
 import { aiApi } from '../../api/ai'
 
 const ACTION_META = {
@@ -57,9 +58,12 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
                     message: 'AI is not configured. Add a provider key in Settings → AI Configuration.',
                 })
             } else {
+                // Generic AI failures route through <AIErrorState> so they
+                // share the same vocabulary (formatUserError) + retry CTA
+                // pattern as every other AI surface in the app.
                 setError({
                     type: 'generic',
-                    message: err.message || 'Failed to generate plan. Please retry.',
+                    raw: err,
                 })
             }
         } finally {
@@ -130,7 +134,21 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
             )}
 
             <AnimatePresence>
-                {error && (
+                {error && error.type === 'generic' && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                    >
+                        <AIErrorState
+                            error={error.raw}
+                            onRetry={generate}
+                            variant="card"
+                            context="Issue plan"
+                        />
+                    </motion.div>
+                )}
+                {error && error.type !== 'generic' && (
                     <motion.div
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}

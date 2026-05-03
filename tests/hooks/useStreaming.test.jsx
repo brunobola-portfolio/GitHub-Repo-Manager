@@ -233,8 +233,30 @@ describe('useStreaming', () => {
             await result.current.startStream('/api/test', {})
         })
 
-        expect(result.current.error).toBe('AI service unavailable')
+        // Error is now an Error instance (not a bare string) so downstream
+        // surfaces can read .code / .retryAfterSec when the server supplies
+        // them. Message is still preserved for backwards-compatible reads.
+        expect(result.current.error).toBeInstanceOf(Error)
+        expect(result.current.error.message).toBe('AI service unavailable')
         expect(result.current.isStreaming).toBe(false)
+    })
+
+    // --- SSE stream error preserves machine code ---
+    it('preserves the machine code and retryAfter on SSE error events', async () => {
+        const mockResponse = createMockSSEResponse([
+            { error: true, message: 'Quota exceeded', code: 'QUOTA_EXCEEDED', retryAfterSec: 60 },
+        ])
+        fetchSpy.mockResolvedValue(mockResponse)
+
+        const { result } = renderHook(() => useStreaming())
+
+        await act(async () => {
+            await result.current.startStream('/api/test', {})
+        })
+
+        expect(result.current.error).toBeInstanceOf(Error)
+        expect(result.current.error.code).toBe('QUOTA_EXCEEDED')
+        expect(result.current.error.retryAfterSec).toBe(60)
     })
 
     // --- Malformed JSON lines are silently skipped ---

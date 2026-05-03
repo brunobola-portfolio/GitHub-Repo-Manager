@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { estimateCallCostCents, getPricingForModel, PROVIDER_PRICING } from '../lib/provider-pricing.js';
+import { estimateCallCostCents, getPricingForModel, computeCostUSD, PROVIDER_PRICING } from '../lib/provider-pricing.js';
 
 describe('getPricingForModel', () => {
     it('returns the exact entry when the model id matches', () => {
@@ -20,6 +20,41 @@ describe('getPricingForModel', () => {
     it('handles null/undefined gracefully', () => {
         expect(getPricingForModel(null).input).toBeGreaterThan(0);
         expect(getPricingForModel(undefined).input).toBeGreaterThan(0);
+    });
+
+    it('strips a leading <vendor>/ prefix when the bare model is known (OpenRouter)', () => {
+        // OpenRouter exposes models as `anthropic/claude-sonnet-4-6` — the
+        // PROVIDER_PRICING table is keyed by the bare model id, so without
+        // the vendor-prefix strip we'd fall back to the conservative
+        // estimate and under-report cost ~6×.
+        expect(getPricingForModel('anthropic/claude-sonnet-4-6'))
+            .toEqual(PROVIDER_PRICING['claude-sonnet-4-6']);
+        expect(getPricingForModel('openai/gpt-4o-mini'))
+            .toEqual(PROVIDER_PRICING['gpt-4o-mini']);
+    });
+});
+
+describe('computeCostUSD with OpenRouter vendor prefixes', () => {
+    it('normalises OpenRouter vendor prefix when computing cost', () => {
+        const cost = computeCostUSD({
+            modelName: 'anthropic/claude-sonnet-4-6',
+            inputTokens: 1000,
+            outputTokens: 500,
+        });
+        const fallback = computeCostUSD({
+            modelName: 'totally-unknown-model',
+            inputTokens: 1000,
+            outputTokens: 500,
+        });
+        expect(cost).toBeGreaterThan(0);
+        expect(cost).not.toBe(fallback);
+        // Sanity: should match the bare claude pricing exactly.
+        const bare = computeCostUSD({
+            modelName: 'claude-sonnet-4-6',
+            inputTokens: 1000,
+            outputTokens: 500,
+        });
+        expect(cost).toBe(bare);
     });
 });
 
