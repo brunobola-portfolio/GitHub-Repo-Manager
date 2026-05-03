@@ -30,7 +30,9 @@ import { validateBody } from '../../middleware/validate-request.js';
 import { promptPresetCreateSchema, promptPresetUpdateSchema } from '../../lib/validators.js';
 import {
     listPresets,
+    listOrgScopedPresets,
     getPresetById,
+    getOrgPresetById,
     savePreset,
     updatePreset,
     deletePreset,
@@ -40,6 +42,11 @@ import { BUILTIN_PRESETS, BUILTIN_KEYS, isBuiltinKey } from '../../lib/ai-featur
 import { resolvePromptForGenerate } from '../../lib/ai-features/prompt-registry.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
 import { runDeepReview } from '../../lib/ai-features/pr-deep-review.js';
+import {
+    isOrgMember,
+    getCurrentUserOrgs,
+    filterOrgsByMembership,
+} from '../../lib/github-org-membership.js';
 import logger from '../../lib/logger.js';
 
 const router = express.Router();
@@ -93,7 +100,7 @@ export function _resetTestBuckets() {
 // GET /presets — list visible presets for the caller
 // ---------------------------------------------------------------------------
 
-router.get('/presets', requireAuth, (req, res) => {
+router.get('/presets', requireAuth, async (req, res) => {
     const userId = req.session.userId;
     const builtins = BUILTIN_KEYS.map((k) => ({
         id: k,
@@ -111,15 +118,46 @@ router.get('/presets', requireAuth, (req, res) => {
         presetKey: p.presetKey,
         severityFloor: p.severityFloor,
         isDefault: p.isDefault,
+        ownedByUser: true,
     }));
-    res.json({ presets: [...builtins, ...custom] });
+
+    // Org-shared presets — visible to anyone who is an active member of the
+    // owning org, but only the AUTHOR can edit/delete (the `ownedByUser` flag
+    // tells the UI which actions to render). Other-author org rows are
+    // de-duplicated against the user's own custom rows since `listPresets`
+    // already returned any org rows the user authored themselves.
+    let orgPresets = [];
+    try {
+        const userOrgs = await getCurrentUserOrgs({ session: req.session });
+        const visibleOrgs = await filterOrgsByMembership({ session: req.session, orgs: userOrgs });
+        const ownedIds = new Set(custom.map((p) => p.id));
+        orgPresets = listOrgScopedPresets(visibleOrgs)
+            .filter((p) => !ownedIds.has(p.id))
+            .map((p) => ({
+                id: p.id,
+                builtin: false,
+                shared: true,
+                name: p.name,
+                scope: 'org',
+                scopeTarget: p.scopeTarget,
+                presetKey: p.presetKey,
+                severityFloor: p.severityFloor,
+                isDefault: p.isDefault,
+                ownedByUser: p.userId === userId,
+            }));
+    } catch (err) {
+        // Org membership lookups should never break the list — log and continue.
+        logger.warn({ err: err?.message, userId }, 'Failed to enrich presets with org-shared rows');
+    }
+
+    res.json({ presets: [...builtins, ...custom, ...orgPresets] });
 });
 
 // ---------------------------------------------------------------------------
 // GET /presets/:id — full preset body (built-in or owned custom)
 // ---------------------------------------------------------------------------
 
-router.get('/presets/:id', requireAuth, (req, res) => {
+router.get('/presets/:id', requireAuth, async (req, res) => {
     const id = req.params.id;
     if (isBuiltinKey(id)) {
         const b = BUILTIN_PRESETS[id];
@@ -132,11 +170,30 @@ router.get('/presets/:id', requireAuth, (req, res) => {
             scope: 'builtin',
         });
     }
-    const preset = getPresetById(req.session.userId, Number(id));
-    if (!preset) return errorResponse(res, 404, 'Preset not found', 'NOT_FOUND');
+    const numericId = Number(id);
+    const userId = req.session.userId;
+    let preset = getPresetById(userId, numericId);
+    let ownedByUser = !!preset;
+
+    // Fall back to org-shared lookup: the row may belong to another author in
+    // an org the caller is a member of. `getOrgPresetById` ignores user_id but
+    // returns null for non-org rows, so the IDOR guard remains tight — only
+    // org-scoped rows are reachable through this path.
+    if (!preset) {
+        const orgRow = getOrgPresetById(numericId);
+        if (!orgRow || !orgRow.scopeTarget) {
+            return errorResponse(res, 404, 'Preset not found', 'NOT_FOUND');
+        }
+        const isMember = await isOrgMember({ session: req.session, org: orgRow.scopeTarget });
+        if (!isMember) return errorResponse(res, 404, 'Preset not found', 'NOT_FOUND');
+        preset = orgRow;
+        ownedByUser = orgRow.userId === userId;
+    }
+
     res.json({
         id: preset.id,
         builtin: false,
+        shared: preset.scope === 'org',
         name: preset.name,
         body: preset.systemPrompt,
         scope: preset.scope,
@@ -145,6 +202,7 @@ router.get('/presets/:id', requireAuth, (req, res) => {
         pathRules: preset.pathRules,
         severityFloor: preset.severityFloor,
         isDefault: preset.isDefault,
+        ownedByUser,
     });
 });
 
@@ -152,11 +210,25 @@ router.get('/presets/:id', requireAuth, (req, res) => {
 // POST /presets — create a custom preset (Pro)
 // ---------------------------------------------------------------------------
 
-router.post('/presets', requireAuth, requireTier('pro'), validateBody(promptPresetCreateSchema), (req, res) => {
+router.post('/presets', requireAuth, requireTier('pro'), validateBody(promptPresetCreateSchema), async (req, res) => {
     const userId = req.session.userId;
     const { scope, scopeTarget, presetKey, name, systemPrompt, pathRules, severityFloor } = req.validatedBody;
     if (isBuiltinKey(presetKey)) {
         return errorResponse(res, 409, `presetKey "${presetKey}" is a built-in name`, 'RESERVED_KEY');
+    }
+    // Org-shared presets require an active membership in the target org. We
+    // verify via GitHub before persisting so non-members can't pollute another
+    // org's shared preset list. Membership check is cached for 5 min.
+    if (scope === 'org') {
+        const member = await isOrgMember({ session: req.session, org: scopeTarget });
+        if (!member) {
+            return errorResponse(
+                res,
+                403,
+                `You must be a member of ${scopeTarget} to create org-shared presets`,
+                'NOT_ORG_MEMBER',
+            );
+        }
     }
     try {
         const id = savePreset(userId, {
@@ -179,6 +251,11 @@ router.post('/presets', requireAuth, requireTier('pro'), validateBody(promptPres
 // ---------------------------------------------------------------------------
 // PATCH /presets/:id — partial update of an owned preset (Pro)
 // ---------------------------------------------------------------------------
+// NOTE (slice 5): edit/delete/set-default remain author-only even for
+// org-shared presets — the store's `WHERE user_id = ?` clause naturally
+// rejects non-author updates with 0 changes (→ 404 here). Org-admin override
+// is intentionally out of scope for this slice; non-author org members can
+// READ but cannot WRITE.
 
 router.patch('/presets/:id', requireAuth, requireTier('pro'), validateBody(promptPresetUpdateSchema), (req, res) => {
     const id = Number(req.params.id);

@@ -11,8 +11,11 @@ vi.mock('../db.js', () => ({ default: testDb }));
 
 const {
     listPresets,
+    listOrgScopedPresets,
     getPresetById,
+    getOrgPresetById,
     getDefaultForScope,
+    getOrgDefaultForScope,
     savePreset,
     updatePreset,
     deletePreset,
@@ -186,5 +189,76 @@ describe('ai-prompt-store', () => {
         updatePreset(userId, id, { pathRules: [{ glob: 'tests/**', extraPrompt: 'Test rigor' }] });
         got = getPresetById(userId, id);
         expect(got.pathRules).toEqual([{ glob: 'tests/**', extraPrompt: 'Test rigor' }]);
+    });
+
+    // --- Slice 5 — org-scoped presets -------------------------------------
+
+    describe('listOrgScopedPresets', () => {
+        it('returns only rows whose scope=org and scope_target is in the list', () => {
+            savePreset(userId, basePayload({ scope: 'org', scopeTarget: 'acme', presetKey: 'o-1', name: 'Acme A' }));
+            savePreset(otherUserId, basePayload({ scope: 'org', scopeTarget: 'acme', presetKey: 'o-2', name: 'Acme B' }));
+            savePreset(userId, basePayload({ scope: 'org', scopeTarget: 'globex', presetKey: 'o-3', name: 'Globex' }));
+            // A user-scope row that should not leak in.
+            savePreset(userId, basePayload({ scope: 'user', scopeTarget: null, presetKey: 'u-1', name: 'User row' }));
+
+            const acme = listOrgScopedPresets(['acme']);
+            expect(acme).toHaveLength(2);
+            expect(acme.map((r) => r.name).sort()).toEqual(['Acme A', 'Acme B']);
+
+            const both = listOrgScopedPresets(['acme', 'globex']);
+            expect(both).toHaveLength(3);
+
+            // Empty list → empty result, no SQL syntax break.
+            expect(listOrgScopedPresets([])).toEqual([]);
+            expect(listOrgScopedPresets(undefined)).toEqual([]);
+        });
+
+        it('does not return rows for orgs the caller did not list', () => {
+            savePreset(userId, basePayload({ scope: 'org', scopeTarget: 'private-org', presetKey: 'p-1', name: 'P' }));
+            const got = listOrgScopedPresets(['acme']);
+            expect(got).toHaveLength(0);
+        });
+    });
+
+    describe('getOrgDefaultForScope', () => {
+        it('returns the org default regardless of which member authored it', () => {
+            savePreset(userId, basePayload({ scope: 'org', scopeTarget: 'acme', presetKey: 'o-a', name: 'Not default', isDefault: false }));
+            const id = savePreset(otherUserId, basePayload({ scope: 'org', scopeTarget: 'acme', presetKey: 'o-b', name: 'The default', isDefault: true }));
+            const got = getOrgDefaultForScope('acme');
+            expect(got).toBeTruthy();
+            expect(got.id).toBe(id);
+            expect(got.name).toBe('The default');
+            // The author can be a different user than the lookup caller — that's
+            // the whole point: org defaults are visible to every member.
+            expect(got.userId).toBe(otherUserId);
+        });
+
+        it('returns null when no row in that org has is_default=1', () => {
+            savePreset(userId, basePayload({ scope: 'org', scopeTarget: 'acme', presetKey: 'o-x', name: 'X', isDefault: false }));
+            expect(getOrgDefaultForScope('acme')).toBeNull();
+        });
+
+        it('returns null for falsy/missing org login', () => {
+            expect(getOrgDefaultForScope('')).toBeNull();
+            expect(getOrgDefaultForScope(null)).toBeNull();
+            expect(getOrgDefaultForScope(undefined)).toBeNull();
+        });
+    });
+
+    describe('getOrgPresetById', () => {
+        it('returns the row regardless of author when scope=org', () => {
+            const id = savePreset(otherUserId, basePayload({ scope: 'org', scopeTarget: 'acme', presetKey: 'o-1', name: 'Theirs' }));
+            const got = getOrgPresetById(id);
+            expect(got).toBeTruthy();
+            expect(got.id).toBe(id);
+            expect(got.userId).toBe(otherUserId);
+        });
+
+        it('returns null for non-org rows (user or repo scope) — defence-in-depth IDOR guard', () => {
+            const userId1 = savePreset(otherUserId, basePayload({ scope: 'user', scopeTarget: null, presetKey: 'u-1', name: 'User row' }));
+            const repoId = savePreset(otherUserId, basePayload({ scope: 'repo', scopeTarget: 'acme/api', presetKey: 'r-1', name: 'Repo row' }));
+            expect(getOrgPresetById(userId1)).toBeNull();
+            expect(getOrgPresetById(repoId)).toBeNull();
+        });
     });
 });

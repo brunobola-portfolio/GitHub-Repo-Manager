@@ -80,6 +80,60 @@ export function getDefaultForScope(userId, scope, scopeTarget) {
 }
 
 /**
+ * List every preset row whose `scope='org'` and `scope_target` is one of the
+ * given org logins. Visibility is determined at the route layer by GitHub org
+ * membership — the row's `user_id` only tracks the AUTHOR for edit/delete
+ * gating, not who can read it.
+ *
+ * @param {string[]} orgLogins
+ * @returns {Array<ReturnType<typeof rowToPreset>>}
+ */
+export function listOrgScopedPresets(orgLogins) {
+    if (!Array.isArray(orgLogins) || orgLogins.length === 0) return [];
+    const placeholders = orgLogins.map(() => '?').join(',');
+    const rows = db.prepare(`
+        SELECT * FROM ai_review_prompts
+        WHERE scope = 'org' AND scope_target IN (${placeholders})
+        ORDER BY scope_target, name
+    `).all(...orgLogins);
+    return rows.map(rowToPreset);
+}
+
+/**
+ * Look up a single preset row by id, ignoring ownership. Intended ONLY for
+ * org-shared read paths where membership is verified separately by the
+ * caller. Mutations must continue to go through `getPresetById(userId, id)`
+ * so the `WHERE user_id = ?` IDOR guard stays in place.
+ */
+export function getOrgPresetById(id) {
+    const row = db.prepare(`
+        SELECT * FROM ai_review_prompts
+        WHERE id = ? AND scope = 'org'
+    `).get(id);
+    return rowToPreset(row);
+}
+
+/**
+ * Resolve the org-scoped default preset for a given org login. Unlike
+ * `getDefaultForScope`, this ignores `user_id` — org defaults are visible to
+ * every member, so any author's row counts as the org default. If multiple
+ * authors mark a row as default for the same org (race condition / setDefault
+ * is per-(user, scope, target) bucket) we return the first by row id.
+ *
+ * @param {string} orgLogin
+ */
+export function getOrgDefaultForScope(orgLogin) {
+    if (!orgLogin) return null;
+    const row = db.prepare(`
+        SELECT * FROM ai_review_prompts
+        WHERE scope = 'org' AND scope_target = ? AND is_default = 1
+        ORDER BY id
+        LIMIT 1
+    `).get(orgLogin);
+    return rowToPreset(row);
+}
+
+/**
  * Insert or replace a preset by `(user_id, scope, scope_target, preset_key)`.
  *
  * SQLite treats NULL values as distinct in a UNIQUE constraint, so the
