@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { WalkthroughTab } from './WalkthroughTab';
 import { CommentsListTab } from './CommentsListTab';
+import { PRCommandsTab } from './PRCommandsTab';
 import { usePromptStudio } from '../../../hooks/usePromptStudio';
 import { PromptPicker } from '../../AIPrompts/PromptPicker';
 import { AIErrorState } from '../../ui/AIErrorState';
@@ -15,6 +16,9 @@ export function AIReviewPanel({
     onDismissComment,
     onEditComment,
     publishing,
+    owner,
+    repo,
+    prNumber,
 }) {
     const [tab, setTab] = useState('walkthrough');
     const { presets } = usePromptStudio();
@@ -29,23 +33,31 @@ export function AIReviewPanel({
 
     if (!draft && !loading) {
         return (
-            <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-                <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">Generate an AI review to get a structured walkthrough, line comments, and one-click code suggestions you can publish to GitHub.</p>
-                <button
-                    type="button"
-                    onClick={() => onGenerate(activePresetKey)}
-                    className="px-3 py-1.5 text-sm font-medium rounded bg-blue-600 text-white hover:bg-blue-700"
-                >
-                    Generate AI Review
-                </button>
-                {error ? (
-                    <div className="mt-3 w-full max-w-md">
-                        <AIErrorState
-                            error={error}
-                            onRetry={() => onGenerate(activePresetKey)}
-                            context="AI Deep Review"
-                            variant="inline"
-                        />
+            <div className="flex flex-col h-full min-h-0 border-l border-slate-200 dark:border-slate-800">
+                <div className="flex flex-col items-center justify-center p-6 text-center border-b border-slate-200 dark:border-slate-800">
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">Generate an AI review to get a structured walkthrough, line comments, and one-click code suggestions you can publish to GitHub.</p>
+                    <button
+                        type="button"
+                        onClick={() => onGenerate(activePresetKey)}
+                        className="px-3 py-1.5 text-sm font-medium rounded bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                        Generate AI Review
+                    </button>
+                    {error ? (
+                        <div className="mt-3 w-full max-w-md">
+                            <AIErrorState
+                                error={error}
+                                onRetry={() => onGenerate(activePresetKey)}
+                                context="AI Deep Review"
+                                variant="inline"
+                            />
+                        </div>
+                    ) : null}
+                </div>
+                {owner && repo && prNumber ? (
+                    <div className="flex-1 min-h-0 overflow-y-auto">
+                        <div className="px-3 pt-3 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">PR commands</div>
+                        <PRCommandsTab owner={owner} repo={repo} prNumber={prNumber} />
                     </div>
                 ) : null}
             </div>
@@ -79,6 +91,16 @@ export function AIReviewPanel({
                 >
                     Comments ({lineComments.length})
                 </button>
+                {owner && repo && prNumber ? (
+                    <button
+                        type="button"
+                        onClick={() => setTab('commands')}
+                        aria-pressed={tab === 'commands'}
+                        className={`px-3 py-2 ${tab === 'commands' ? 'font-semibold border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'}`}
+                    >
+                        Commands
+                    </button>
+                ) : null}
                 <div className="ml-auto flex items-center gap-1 mr-1">
                     <PromptPicker
                         presets={presets}
@@ -98,9 +120,13 @@ export function AIReviewPanel({
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto">
-                {tab === 'walkthrough'
-                    ? <WalkthroughTab walkthrough={draft.walkthrough} />
-                    : <CommentsListTab comments={lineComments} onJumpToFile={onJumpToFile} onDismiss={onDismissComment} onEdit={onEditComment} />}
+                {tab === 'walkthrough' ? (
+                    <WalkthroughTab walkthrough={draft.walkthrough} />
+                ) : tab === 'comments' ? (
+                    <CommentsListTab comments={lineComments} onJumpToFile={onJumpToFile} onDismiss={onDismissComment} onEdit={onEditComment} />
+                ) : (
+                    <PRCommandsTab owner={owner} repo={repo} prNumber={prNumber} />
+                )}
             </div>
 
             <div className="border-t border-slate-200 dark:border-slate-800 p-3">

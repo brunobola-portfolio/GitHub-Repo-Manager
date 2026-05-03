@@ -31,6 +31,7 @@ import suggestNameDescriptionRouter from './ai/suggest-name-description.js';
 import promptsRouter from './ai/prompts.js';
 import deepReviewRouter from './ai/deep-review.js';
 import promptStudioRouter from './ai/prompt-studio.js';
+import prCommandsRouter from './ai/pr-commands.js';
 
 const router = express.Router();
 router.use(coreRouter);
@@ -46,5 +47,9 @@ router.use('/ai/deep-review', deepReviewRouter);
 // Prompt Studio (slice 1b): preset library + sandbox /test for the Deep
 // Review system prompt. GETs are free; mutations + /test are Pro-gated.
 router.use('/ai/prompt-studio', promptStudioRouter);
+// PR slash commands (slice 3 — Pro): /describe, /test_plan, /improve.
+// Generates structured PR-context artifacts and (for /describe) PATCHes the
+// PR body via GitHub. All endpoints are Pro-gated.
+router.use('/ai/pr-commands', prCommandsRouter);
 
 export default router;

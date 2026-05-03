@@ -338,6 +338,9 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
             onDismissComment={(idx) => deep.dismiss(idx)}
             onEditComment={(idx, payload) => deep.edit(idx, payload)}
             publishing={publishing}
+            owner={owner}
+            repo={repo}
+            prNumber={pullNumber}
           />
         </div>
       </div>

@@ -425,6 +425,124 @@ export const mockDeepReviewDraft = {
     modelUsed: 'gemini-2.5-flash (mock)',
 };
 
+// --- PR Slash Commands (slice 3) ---
+//
+// Fixtures for /describe, /test_plan, /improve so MOCK_MODE renders the new
+// Commands tab populated. Shapes mirror the engine output exactly.
+
+export const mockPRCommands = {
+    describe: {
+        title: 'Add OAuth token refresh + session integration',
+        body: `## Overview
+Adds a token-refresh helper to the auth module and wires it into the session middleware so sessions self-heal when the access token is close to expiry.
+
+## What changed
+- New \`server/auth/refresh.js\` exposes \`refreshAccessToken({ refreshToken })\` returning a fresh \`{ access_token, expires_in }\` pair.
+- \`server/middleware/session.js\` now consults the refresh helper when the cached access token has < 60s of TTL left.
+- Adds unit tests covering happy path, 401 response, and malformed JSON body.
+
+## Why
+Production sessions were dropping mid-request when the access token expired between request start and a downstream API call, returning a confusing 401 to the client. This change keeps the session valid until the refresh token itself expires.
+
+## Risks
+- Adds an extra outbound HTTP call on token boundaries; expected p95 ≤ 80ms based on the OAuth provider SLA.
+- Refresh failure short-circuits to the existing logout path — no behaviour change for that branch.
+
+## Test plan
+- See \`/test_plan\` output for the full case list.`,
+    },
+    test_plan: {
+        summary: 'Five high-priority unit cases cover the helper and middleware integration; one e2e smoke validates the end-to-end refresh on a near-expiry session.',
+        cases: [
+            {
+                name: 'refresh helper returns the new token on a 200 response',
+                type: 'unit',
+                steps: [
+                    'Given a stubbed OAuth endpoint that returns 200 with a valid token body',
+                    'When refreshAccessToken({ refreshToken: "rt" }) is invoked',
+                    'Then the resolved value matches the stubbed access_token and expires_in',
+                ],
+                priority: 'high',
+            },
+            {
+                name: 'refresh helper rejects on a 401 response',
+                type: 'unit',
+                steps: [
+                    'Given a stubbed OAuth endpoint that returns 401',
+                    'When refreshAccessToken({ refreshToken: "rt" }) is invoked',
+                    'Then the promise rejects with code "REFRESH_UNAUTHORIZED"',
+                ],
+                priority: 'high',
+            },
+            {
+                name: 'refresh helper rejects on a malformed JSON body',
+                type: 'unit',
+                steps: [
+                    'Given a stubbed OAuth endpoint that returns 200 with body "not-json"',
+                    'When refreshAccessToken is invoked',
+                    'Then the promise rejects with code "INVALID_REFRESH_RESPONSE"',
+                ],
+                priority: 'high',
+            },
+            {
+                name: 'session middleware refreshes when token TTL < 60s',
+                type: 'integration',
+                steps: [
+                    'Given a session whose access token expires in 30s',
+                    'When the middleware processes a request',
+                    'Then refreshAccessToken is called once and the request continues with the new token',
+                ],
+                priority: 'high',
+            },
+            {
+                name: 'session middleware skips refresh when TTL > 60s',
+                type: 'integration',
+                steps: [
+                    'Given a session whose access token expires in 600s',
+                    'When the middleware processes a request',
+                    'Then refreshAccessToken is NOT called',
+                ],
+                priority: 'medium',
+            },
+            {
+                name: 'session continues across token boundary in browser',
+                type: 'e2e',
+                steps: [
+                    'Given a logged-in user with a session about to expire',
+                    'When the user navigates to a page that triggers an API call',
+                    'Then the request succeeds and no logout redirect occurs',
+                ],
+                priority: 'medium',
+            },
+        ],
+    },
+    improve: {
+        summary: 'Three high-confidence improvements: response validation, error tagging, and a small naming nit.',
+        suggestions: [
+            {
+                path: 'server/auth/refresh.js',
+                line: 14,
+                severity: 'warning',
+                body: 'The refresh response is parsed without validation — a malformed JSON body would crash the helper. Catch and rethrow as a typed error.',
+                suggestion: 'const body = await res.json().catch(() => null);\nif (!body?.access_token) {\n  throw Object.assign(new Error("Invalid refresh response"), { code: "INVALID_REFRESH_RESPONSE" });\n}',
+            },
+            {
+                path: 'server/middleware/session.js',
+                line: 27,
+                severity: 'suggestion',
+                body: 'Extract the refresh-eligibility check into a named helper for readability and to centralise the 60s threshold.',
+                suggestion: 'function shouldRefresh(session) {\n  return session.expiresAt - Date.now() < 60_000;\n}',
+            },
+            {
+                path: 'tests/auth/refresh.test.js',
+                line: 8,
+                severity: 'info',
+                body: 'Nice — covers both success and 401 paths. Consider adding a malformed-body case to round out the trio.',
+            },
+        ],
+    },
+};
+
 // --- Prompt Studio ---
 //
 // Drives the Prompt Studio surface in MOCK_MODE so the page renders the full
