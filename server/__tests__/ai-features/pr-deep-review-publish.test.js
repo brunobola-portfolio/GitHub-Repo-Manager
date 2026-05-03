@@ -83,4 +83,53 @@ describe('buildGitHubReviewPayload', () => {
         const out = buildGitHubReviewPayload({ draft, meta: { ...meta, lastReviewedSha: 'deadbeef1234' }, event: 'COMMENT' });
         expect(out.body).toContain('deadbee');
     });
+
+    it('escapes \\r\\n in cell content (CRLF safety)', () => {
+        const crlfDraft = {
+            ...draft,
+            walkthrough: {
+                ...draft.walkthrough,
+                perFileTable: [{ path: 'a.js', change: 'modified', summary: 'line1\r\nline2' }],
+            },
+        };
+        const out = buildGitHubReviewPayload({ draft: crlfDraft, meta, event: 'COMMENT' });
+        expect(out.body).toContain('| a.js | modified | line1 line2 |');
+        expect(out.body).not.toMatch(/line1\r/);
+    });
+
+    it('escapes pipes in cell content', () => {
+        const pipeDraft = {
+            ...draft,
+            walkthrough: {
+                ...draft.walkthrough,
+                perFileTable: [{ path: 'a|b.js', change: 'added', summary: 'foo|bar' }],
+            },
+        };
+        const out = buildGitHubReviewPayload({ draft: pipeDraft, meta, event: 'COMMENT' });
+        expect(out.body).toContain('a\\|b.js');
+        expect(out.body).toContain('foo\\|bar');
+    });
+
+    it('uses a longer fence when suggestion contains triple backticks', () => {
+        const tickyDraft = {
+            ...draft,
+            lineComments: [
+                { path: 'a.js', side: 'RIGHT', line: 1, severity: 'info', body: 'b', suggestion: 'before\n```\ncode\n```\nafter' },
+            ],
+        };
+        const out = buildGitHubReviewPayload({ draft: tickyDraft, meta, event: 'COMMENT' });
+        const cmt = out.comments[0];
+        // Outer fence must be 4+ backticks
+        expect(cmt.body).toMatch(/````+suggestion\n/);
+        expect(cmt.body).toMatch(/\n````+$/);
+    });
+
+    it('uses a longer fence when mermaid source contains triple backticks', () => {
+        const tickyMermaid = {
+            ...draft,
+            walkthrough: { ...draft.walkthrough, mermaid: 'sequenceDiagram\n```\nA->>B: hi' },
+        };
+        const out = buildGitHubReviewPayload({ draft: tickyMermaid, meta, event: 'COMMENT' });
+        expect(out.body).toMatch(/````+mermaid\n/);
+    });
 });

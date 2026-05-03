@@ -40,9 +40,10 @@ function renderBody(draft, meta) {
     if (w.estimatedReviewTime) parts.push(`**Estimated review time:** ${w.estimatedReviewTime} · **Risk:** ${w.riskLevel}`);
 
     if (w.mermaid && w.mermaid.trim().length > 0) {
-        parts.push('```mermaid');
+        const fence = pickFence(w.mermaid);
+        parts.push(fence + 'mermaid');
         parts.push(w.mermaid);
-        parts.push('```');
+        parts.push(fence);
     }
 
     parts.push(buildFooter(draft, meta));
@@ -76,12 +77,30 @@ function toGithubComment(c) {
     }
     let body = c.body || '';
     if (c.suggestion) {
-        body = body + '\n\n```suggestion\n' + c.suggestion + '\n```';
+        const fence = pickFence(c.suggestion);
+        body = body + '\n\n' + fence + 'suggestion\n' + c.suggestion + '\n' + fence;
     }
     out.body = body;
     return out;
 }
 
 function escapeCell(s) {
-    return String(s || '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+    return String(s || '').replace(/\|/g, '\\|').replace(/\r\n|\r|\n/g, ' ');
+}
+
+/**
+ * Pick a backtick-fence at least one tick longer than the longest run of
+ * backticks inside `inner`. Returns a string of N backticks where N >= 3.
+ * Defends against ``` (and longer runs) inside suggestion/mermaid content
+ * terminating the outer fence — Task 3's engine drops 7+ backticks but
+ * 3-6 still slip through.
+ */
+function pickFence(inner) {
+    let maxRun = 0;
+    const re = /`+/g;
+    let m;
+    while ((m = re.exec(inner || '')) !== null) {
+        if (m[0].length > maxRun) maxRun = m[0].length;
+    }
+    return '`'.repeat(Math.max(3, maxRun + 1));
 }
