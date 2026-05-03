@@ -6,6 +6,7 @@ import { useReviewAI, heuristicRisk, sortFilesByRisk } from './hooks/useReviewAI
 import { useReviewKeyboard } from './hooks/useReviewKeyboard'
 import { useToast } from '../../hooks/useToast'
 import { Spinner } from '../ui/Spinner'
+import { usePRData } from '../../hooks/usePRData'
 
 import { FileTree } from './FileTree/FileTree'
 import { DiffPanel } from './DiffPanel/DiffPanel'
@@ -49,9 +50,34 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   // remain interactive while the prompt is shown.
   const [pendingSubmit, setPendingSubmit] = useState(null)
 
-  // Load PR data into state when it arrives
+  // Read from shared usePRData cache — if user came from PRFilesTab, data is
+  // already loaded and we can skip the loading spinner entirely.
+  const { detail: cachedPR, files: cachedFiles } = usePRData(api, {
+    owner,
+    repo,
+    number: pullNumber,
+    enabled: false,
+  })
+
+  // Pre-populate from cache for instant open (no spinner when cache is warm)
   useEffect(() => {
-    if (data && !state.pr) {
+    if (cachedPR && cachedFiles?.length && !state.pr) {
+      dispatch({
+        type: 'LOAD_DATA',
+        payload: {
+          pr: cachedPR,
+          headSha: cachedPR.head?.sha ?? null,
+          files: cachedFiles,
+          comments: {},
+        },
+      })
+    }
+  }, [cachedPR, cachedFiles, state.pr, dispatch])
+
+  // Load PR data into state when real fetch arrives — always dispatch so that
+  // inline comments and fresh state overwrite cached snapshot.
+  useEffect(() => {
+    if (data) {
       dispatch({
         type: 'LOAD_DATA',
         payload: {
@@ -62,7 +88,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
         },
       })
     }
-  }, [data, state.pr, dispatch])
+  }, [data, dispatch])
 
   // Trigger initial data fetch on mount
   useEffect(() => {
