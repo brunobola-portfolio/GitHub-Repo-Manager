@@ -46,22 +46,25 @@ const LANG_MAP = {
 }
 
 /**
- * Parse a unified diff patch string into an array of hunk strings,
- * where each hunk begins with @@ … @@.
+ * Parse a unified diff patch string into an array of hunk strings.
  *
- * GitHub PR file patches already start with @@ (they omit the --- / +++ header).
- * We split on each @@ boundary and keep the @@ prefix on each chunk.
+ * GitHub API patches start with @@ (no --- / +++ header). The underlying
+ * @git-diff-view/core DiffParser.parseDiffHeader() requires --- and +++ lines
+ * before it will process hunks, so we synthesise minimal headers per chunk.
  */
-function parsePatchToHunks(patch) {
+function parsePatchToHunks(patch, filename) {
   if (!patch) return []
 
-  // Split on @@ boundaries, keeping the delimiter
   const parts = patch.split(/(?=^@@)/m)
   const hunks = parts
     .map(p => p.trim())
     .filter(p => p.startsWith('@@'))
 
-  return hunks.length > 0 ? hunks : []
+  if (hunks.length === 0) return []
+
+  const a = `a/${filename || 'file'}`
+  const b = `b/${filename || 'file'}`
+  return hunks.map(h => `--- ${a}\n+++ ${b}\n${h}`)
 }
 
 /**
@@ -89,7 +92,7 @@ export function DiffRenderer({ filename, patch, viewMode, onAddComment, highligh
 
   const diffData = useMemo(() => {
     if (!patch) return null
-    const hunks = parsePatchToHunks(patch)
+    const hunks = parsePatchToHunks(patch, filename)
     if (hunks.length === 0) return null
     return {
       oldFile: { fileName: filename ?? null, fileLang: lang },
