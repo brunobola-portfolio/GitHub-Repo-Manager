@@ -24,6 +24,7 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import logger from './logger.js';
+import { computeCostUSD } from './provider-pricing.js';
 
 // ---------------------------------------------------------------------------
 // Gemini model defaults — single source of truth
@@ -399,7 +400,7 @@ export class GeminiProvider {
      * @param {object} [opts.generationConfig] — passed through to SDK
      * @param {string} [opts.systemPrompt]     — prepended to prompt (ignored when parts provided)
      * @param {string} [opts.modelOverride]    — use a different model for this call only
-     * @returns {Promise<{ text: string, parsed?: any }>}
+     * @returns {Promise<{ text: string, parsed?: any, usage: ({inputTokens: number|null, outputTokens: number|null, cachedInputTokens?: number}|null), costUSD: number|null }>}
      */
     async generate({ prompt, parts, schema, generationConfig, systemPrompt, modelOverride } = {}) {
         const modelName = modelOverride || this._modelName;
@@ -449,10 +450,27 @@ export class GeminiProvider {
             const raw = result.response.text();
             const text = stripMarkdownFences(raw);
 
+            // Surface usage + cost so callers can persist accurate spend.
+            // Gemini's usageMetadata is available since @google/generative-ai 0.12+.
+            // Defensive: missing/partial metadata returns null without crashing.
+            const meta = result?.response?.usageMetadata;
+            const usage = meta && (meta.promptTokenCount != null || meta.candidatesTokenCount != null)
+                ? {
+                    inputTokens: meta.promptTokenCount ?? null,
+                    outputTokens: meta.candidatesTokenCount ?? null,
+                    ...(meta.cachedContentTokenCount != null
+                        ? { cachedInputTokens: meta.cachedContentTokenCount }
+                        : {}),
+                }
+                : null;
+            const costUSD = usage
+                ? computeCostUSD({ modelName, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens })
+                : null;
+
             if (schema) {
                 try {
                     const parsed = JSON.parse(text);
-                    return { text, parsed };
+                    return { text, parsed, usage, costUSD };
                 } catch (parseErr) {
                     throw new AIError({
                         code: AI_ERROR_CODE.INVALID_RESPONSE,
@@ -462,7 +480,7 @@ export class GeminiProvider {
                 }
             }
 
-            return { text };
+            return { text, usage, costUSD };
         } catch (err) {
             if (err instanceof AIError) throw err;
             throw toAIError(err);

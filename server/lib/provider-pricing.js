@@ -95,3 +95,39 @@ export function estimateCallCostCents({
     // tiny prompts don't free-ride past the cap.
     return Math.max(1, Math.ceil(cents));
 }
+
+/**
+ * Compute the precise USD cost of a single call given exact token counts.
+ *
+ * Returns `null` when usage is unavailable (no input/output tokens) — callers
+ * should treat this as "cost unknown" rather than zero. Unlike
+ * estimateCallCostCents this does NOT round up to a 1¢ floor: it returns
+ * the raw fractional dollar cost so the caller can persist it precisely.
+ *
+ * Used by provider wrappers to surface `costUSD` alongside `usage` from
+ * `generate()`.
+ *
+ * @param {object} opts
+ * @param {string|null|undefined} opts.modelName
+ * @param {number|null|undefined} opts.inputTokens
+ * @param {number|null|undefined} opts.outputTokens
+ * @returns {number|null} dollars (fractional), or null when no usage data
+ */
+export function computeCostUSD({ modelName, inputTokens, outputTokens } = {}) {
+    const hasInput = Number.isFinite(inputTokens) && inputTokens >= 0;
+    const hasOutput = Number.isFinite(outputTokens) && outputTokens >= 0;
+    if (!hasInput && !hasOutput) return null;
+
+    // Fall back ONLY when the model is genuinely unknown — keep the user's
+    // signal honest. We still return the fallback estimate (rather than null)
+    // because the caller has real token counts; a coarse price is better than
+    // dropping the cost entirely.
+    const pricing = getPricingForModel(modelName);
+
+    const inDollars = hasInput ? (inputTokens / 1_000_000) * pricing.input : 0;
+    const outDollars = hasOutput && pricing.output != null
+        ? (outputTokens / 1_000_000) * pricing.output
+        : 0;
+
+    return inDollars + outDollars;
+}

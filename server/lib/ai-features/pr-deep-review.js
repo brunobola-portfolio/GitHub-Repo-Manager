@@ -103,7 +103,7 @@ ${sanitizeForPrompt(JSON.stringify(
         { text: 'Diff:\n```diff\n' + sanitizeForPrompt(diffPatch || '', MAX_DIFF_CHARS) + '\n```' },
     ];
 
-    const { parsed } = await provider.generate({
+    const { parsed, usage, costUSD } = await provider.generate({
         parts,
         schema: DEEP_REVIEW_SCHEMA,
         generationConfig: {
@@ -112,14 +112,18 @@ ${sanitizeForPrompt(JSON.stringify(
         },
     });
 
-    return postProcess(parsed, provider);
+    return postProcess(parsed, provider, { usage, costUSD });
 }
 
 /**
  * Cap, sanitise, and stamp metadata on the parsed response.
  * Pure function — easy to unit-test in isolation.
+ *
+ * @param {object} parsed
+ * @param {object} provider
+ * @param {{ usage?: ({inputTokens?: number|null, outputTokens?: number|null}|null), costUSD?: number|null }} [meta]
  */
-function postProcess(parsed, provider) {
+function postProcess(parsed, provider, meta = {}) {
     const walkthrough = { ...parsed.walkthrough };
     let lineComments = Array.isArray(parsed.lineComments) ? parsed.lineComments : [];
 
@@ -146,5 +150,12 @@ function postProcess(parsed, provider) {
         modelUsed: provider._modelName
             || provider.getModelName?.()
             || 'unknown',
+        // Defensive reads: providers that can't surface usage (local SDKs,
+        // some OpenAI-compatible passthroughs) return null for both fields.
+        // Persisting null is meaningful — "we ran but don't know the cost" —
+        // versus 0 which would falsely imply a free call.
+        costUsd: meta.costUSD ?? null,
+        inputTokens: meta.usage?.inputTokens ?? null,
+        outputTokens: meta.usage?.outputTokens ?? null,
     };
 }

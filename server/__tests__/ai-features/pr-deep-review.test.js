@@ -48,6 +48,23 @@ describe('runDeepReview', () => {
         expect(result.walkthrough.summary).toBe('Adds X.');
         expect(result.lineComments).toHaveLength(1);
         expect(result.modelUsed).toBeDefined();
+        // Provider returned no usage/costUSD — engine should surface nulls
+        // rather than crashing or substituting a 0 (which would imply free).
+        expect(result.costUsd).toBeNull();
+        expect(result.inputTokens).toBeNull();
+        expect(result.outputTokens).toBeNull();
+    });
+
+    it('threads usage + costUsd from provider onto the result', async () => {
+        const provider = buildProvider(async () => ({
+            parsed: sampleParsed,
+            usage: { inputTokens: 1000, outputTokens: 500 },
+            costUSD: 0.0125,
+        }));
+        const result = await runDeepReview({ provider, ...baseCtx });
+        expect(result.costUsd).toBe(0.0125);
+        expect(result.inputTokens).toBe(1000);
+        expect(result.outputTokens).toBe(500);
     });
 
     it('caps lineComments at 25 and folds overflow into the walkthrough', async () => {

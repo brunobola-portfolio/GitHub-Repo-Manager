@@ -77,6 +77,7 @@ vi.mock('../../lib/github-api.js', () => ({
 const {
     default: deepReviewRouter,
     _resetRateLimits,
+    _runRateLimitSweep,
 } = await import('../../routes/ai/deep-review.js');
 
 const USER_ID = 1;
@@ -206,5 +207,40 @@ describe('rate limiting on POST generate', () => {
         expect(overflow.status).toBe(429);
         expect(overflow.body.code).toBe('RATE_LIMITED');
         expect(overflow.headers['retry-after']).toBeDefined();
+    });
+
+    it('LRU sweep evicts stale buckets so requests succeed again', async () => {
+        const app = makeApp();
+        // Saturate the bucket — 10 requests in window
+        for (let i = 0; i < 10; i++) {
+            const r = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
+            expect(r.status).toBe(200);
+        }
+        // 11th would normally 429 — but if we age the bucket past the window
+        // and run the sweep, the entry should be dropped and the next request
+        // should succeed.
+        vi.useFakeTimers();
+        try {
+            // Travel past RATE_WINDOW_MS (60s) — now all timestamps are stale.
+            vi.setSystemTime(new Date(Date.now() + 61_000));
+            _runRateLimitSweep();
+        } finally {
+            vi.useRealTimers();
+        }
+        // After sweep clears the user's stale bucket, request 11 succeeds.
+        const after = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
+        expect(after.status).toBe(200);
+    });
+
+    it('_resetRateLimits clears all buckets', async () => {
+        const app = makeApp();
+        for (let i = 0; i < 10; i++) {
+            await request(app).post('/api/ai/deep-review/acme/api/42').send({});
+        }
+        const before = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
+        expect(before.status).toBe(429);
+        _resetRateLimits();
+        const after = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
+        expect(after.status).toBe(200);
     });
 });

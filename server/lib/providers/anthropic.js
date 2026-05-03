@@ -14,6 +14,7 @@
  */
 
 import { AIError, AI_ERROR_CODE, toAIError } from '../ai-provider.js';
+import { computeCostUSD } from '../provider-pricing.js';
 
 const ANTHROPIC_API_BASE = 'https://api.anthropic.com';
 const ANTHROPIC_VERSION = '2023-06-01';
@@ -205,7 +206,7 @@ export class AnthropicProvider {
      * @param {object} [opts.generationConfig] — max_tokens, temperature
      * @param {string} [opts.systemPrompt]     — system message
      * @param {string} [opts.modelOverride]    — override model for this call
-     * @returns {Promise<{ text: string, parsed?: any }>}
+     * @returns {Promise<{ text: string, parsed?: any, usage: ({inputTokens: number|null, outputTokens: number|null, cachedInputTokens?: number}|null), costUSD: number|null }>}
      */
     async generate({ prompt, parts, schema, generationConfig, systemPrompt, modelOverride } = {}) {
         const model = modelOverride || this._modelName;
@@ -252,10 +253,27 @@ export class AnthropicProvider {
             const raw = data?.content?.[0]?.text || '';
             const text = stripMarkdownFences(raw);
 
+            // Anthropic Messages API surfaces token usage on `data.usage` with
+            // input_tokens/output_tokens (always present) plus optional
+            // cache_creation_input_tokens / cache_read_input_tokens for prompt caching.
+            const u = data?.usage;
+            const usage = u && (u.input_tokens != null || u.output_tokens != null)
+                ? {
+                    inputTokens: u.input_tokens ?? null,
+                    outputTokens: u.output_tokens ?? null,
+                    ...(u.cache_read_input_tokens != null
+                        ? { cachedInputTokens: u.cache_read_input_tokens }
+                        : {}),
+                }
+                : null;
+            const costUSD = usage
+                ? computeCostUSD({ modelName: model, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens })
+                : null;
+
             if (schema) {
                 try {
                     const parsed = JSON.parse(text);
-                    return { text, parsed };
+                    return { text, parsed, usage, costUSD };
                 } catch (parseErr) {
                     throw new AIError({
                         code: AI_ERROR_CODE.INVALID_RESPONSE,
@@ -265,7 +283,7 @@ export class AnthropicProvider {
                 }
             }
 
-            return { text };
+            return { text, usage, costUSD };
         } catch (err) {
             if (err instanceof AIError) throw err;
             throw toAIError(err);

@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
+import { useFocusTrap } from '../../../hooks/useFocusTrap';
 
 const EVENTS = [
     { key: 'COMMENT', label: 'Comment', tone: 'bg-blue-600 hover:bg-blue-700' },
@@ -8,30 +9,8 @@ const EVENTS = [
 
 export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishing }) {
     const [event, setEvent] = useState('COMMENT');
-    const closeButtonRef = useRef(null);
-    const previousFocusRef = useRef(null);
-
-    useEffect(() => {
-        if (!isOpen) return undefined;
-        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, [isOpen, onClose]);
-
-    // Initial focus on open + restore focus on close. A full Tab-cycle focus
-    // trap is intentionally out of scope for slice 1a.
-    useEffect(() => {
-        if (!isOpen) return undefined;
-        previousFocusRef.current = document.activeElement;
-        // Defer focus to next tick so the modal is mounted and focusable
-        const t = setTimeout(() => closeButtonRef.current?.focus(), 0);
-        return () => {
-            clearTimeout(t);
-            if (previousFocusRef.current && typeof previousFocusRef.current.focus === 'function') {
-                previousFocusRef.current.focus();
-            }
-        };
-    }, [isOpen]);
+    // useFocusTrap handles Escape, Tab cycling, initial focus + restore.
+    const containerRef = useFocusTrap(isOpen, onClose);
 
     if (!isOpen || !draft) return null;
 
@@ -40,7 +19,7 @@ export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishi
     const hasMermaid = !!draft.walkthrough?.mermaid?.trim();
 
     return (
-        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- Escape key is handled in the keydown listener above; backdrop click is a non-essential affordance, role="dialog" is non-interactive by spec
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- Escape key is handled by useFocusTrap; backdrop click is a non-essential affordance, role="dialog" is non-interactive by spec
         <div
             role="dialog"
             aria-modal="true"
@@ -50,12 +29,13 @@ export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishi
         >
             {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- inner panel only stops propagation to keep clicks inside the dialog from closing it */}
             <div
+                ref={containerRef}
                 onClick={(e) => e.stopPropagation()}
                 className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-lg shadow-xl flex flex-col max-h-[90vh]"
             >
                 <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center">
                     <h3 id="publish-review-title" className="font-semibold">Publish AI review to GitHub</h3>
-                    <button type="button" ref={closeButtonRef} onClick={onClose} aria-label="Close" className="ml-auto opacity-60 hover:opacity-100">×</button>
+                    <button type="button" onClick={onClose} aria-label="Close" className="ml-auto opacity-60 hover:opacity-100">×</button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-5 space-y-4 text-sm">

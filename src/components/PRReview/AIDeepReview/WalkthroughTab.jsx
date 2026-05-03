@@ -1,15 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 
-// Module-level guard: mermaid.initialize is process-global. Re-running it on every
-// effect (last-call-wins) would clobber configs set by other consumers. Initialize
-// exactly once per page load.
-// TODO(slice-1a-2): re-init mermaid on theme toggle so dark mode applies live
-let _mermaidInitialized = false;
-
 export function WalkthroughTab({ walkthrough }) {
     const mermaidRef = useRef(null);
     const [mermaidError, setMermaidError] = useState(null);
+    const [theme, setTheme] = useState(() =>
+        typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'default'
+    );
 
+    // Observe <html class="dark"> changes so the diagram updates on theme toggle
+    useEffect(() => {
+        if (typeof MutationObserver === 'undefined') return undefined;
+        const root = document.documentElement;
+        const observer = new MutationObserver(() => {
+            const next = root.classList.contains('dark') ? 'dark' : 'default';
+            setTheme((current) => (current === next ? current : next));
+        });
+        observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
+    }, []);
+
+    // Render the diagram. Re-runs whenever the source OR theme changes.
     useEffect(() => {
         let cancelled = false;
         const src = walkthrough?.mermaid?.trim();
@@ -19,13 +29,9 @@ export function WalkthroughTab({ walkthrough }) {
         import('mermaid').then((mod) => {
             if (cancelled) return;
             const mermaid = mod.default || mod;
-            if (!_mermaidInitialized) {
-                mermaid.initialize({
-                    startOnLoad: false,
-                    theme: document.documentElement.classList.contains('dark') ? 'dark' : 'default',
-                });
-                _mermaidInitialized = true;
-            }
+            // Re-initialise per render so theme changes propagate. Mermaid's
+            // initialize is idempotent — this is cheap (~microseconds).
+            mermaid.initialize({ startOnLoad: false, theme });
             const id = `mermaid-${Math.random().toString(36).slice(2)}`;
             mermaid.render(id, src).then(({ svg }) => {
                 if (!cancelled && mermaidRef.current) mermaidRef.current.innerHTML = svg;
@@ -35,7 +41,7 @@ export function WalkthroughTab({ walkthrough }) {
         }).catch((err) => setMermaidError(err?.message || 'Failed to load mermaid'));
 
         return () => { cancelled = true; };
-    }, [walkthrough?.mermaid]);
+    }, [walkthrough?.mermaid, theme]);
 
     if (!walkthrough) {
         return (

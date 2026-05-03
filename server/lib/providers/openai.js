@@ -14,6 +14,7 @@
  */
 
 import { AIError, AI_ERROR_CODE, toAIError } from '../ai-provider.js';
+import { computeCostUSD } from '../provider-pricing.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -201,7 +202,7 @@ export class OpenAIProvider {
      * @param {object} [opts.generationConfig] — mapped to OpenAI params (max_tokens, temperature)
      * @param {string} [opts.systemPrompt]     — sent as a system message
      * @param {string} [opts.modelOverride]    — use a different model for this call only
-     * @returns {Promise<{ text: string, parsed?: any }>}
+     * @returns {Promise<{ text: string, parsed?: any, usage: ({inputTokens: number|null, outputTokens: number|null, cachedInputTokens?: number}|null), costUSD: number|null }>}
      */
     async generate({ prompt, parts, schema, generationConfig, systemPrompt, modelOverride } = {}) {
         const model = modelOverride || this._modelName;
@@ -258,10 +259,29 @@ export class OpenAIProvider {
             const raw = data?.choices?.[0]?.message?.content || '';
             const text = stripMarkdownFences(raw);
 
+            // OpenAI-compatible chat.completions response surfaces token usage
+            // on `data.usage` with prompt_tokens / completion_tokens. Some
+            // providers (notably OpenRouter passthroughs and local servers)
+            // omit the field entirely — `usage: null` then signals "unknown"
+            // to the caller without crashing.
+            const u = data?.usage;
+            const usage = u && (u.prompt_tokens != null || u.completion_tokens != null)
+                ? {
+                    inputTokens: u.prompt_tokens ?? null,
+                    outputTokens: u.completion_tokens ?? null,
+                    ...(u.prompt_tokens_details?.cached_tokens != null
+                        ? { cachedInputTokens: u.prompt_tokens_details.cached_tokens }
+                        : {}),
+                }
+                : null;
+            const costUSD = usage
+                ? computeCostUSD({ modelName: model, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens })
+                : null;
+
             if (schema) {
                 try {
                     const parsed = JSON.parse(text);
-                    return { text, parsed };
+                    return { text, parsed, usage, costUSD };
                 } catch (parseErr) {
                     throw new AIError({
                         code: AI_ERROR_CODE.INVALID_RESPONSE,
@@ -271,7 +291,7 @@ export class OpenAIProvider {
                 }
             }
 
-            return { text };
+            return { text, usage, costUSD };
         } catch (err) {
             if (err instanceof AIError) throw err;
             throw toAIError(err);
