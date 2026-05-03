@@ -16,6 +16,7 @@ import { AISummaryPanel } from './AIInsights/AISummaryPanel'
 import { AIReviewPanel } from './AIDeepReview/AIReviewPanel'
 import { useAIDeepReview } from '../../hooks/useAIDeepReview'
 import { ConfirmModal } from '../ui/ConfirmModal'
+import { PublishReviewModal } from './AIDeepReview/PublishReviewModal'
 
 export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   const api = useRepoDetail(owner, repo)
@@ -53,7 +54,8 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   // review. Lives alongside the existing AISummaryPanel for now; the legacy
   // panel may be retired in a follow-up once the new flow is fully wired.
   const deep = useAIDeepReview(owner, repo, pullNumber)
-  const [publishing, _setPublishing] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [publishOpen, setPublishOpen] = useState(false)
 
   // Stamp original indices on the AI comments we hand to DiffPanel so child
   // callbacks can map back to the canonical position before dismissing/editing.
@@ -335,7 +337,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
             loading={deep.loading}
             error={deep.error}
             onGenerate={deep.generate}
-            onPublish={() => {/* TODO: open PublishReviewModal — Task 12 */}}
+            onPublish={() => setPublishOpen(true)}
             onJumpToFile={(filename) => dispatch({ type: 'SET_ACTIVE_FILE', filename })}
             onDismissComment={(idx) => deep.dismiss(idx)}
             onEditComment={(idx, payload) => deep.edit(idx, payload)}
@@ -348,6 +350,25 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
         totalFiles={state.files?.length ?? 0}
         reviewedCount={state.reviewedFiles.length}
         pendingCommentCount={state.pendingComments.length}
+      />
+
+      <PublishReviewModal
+        isOpen={publishOpen}
+        onClose={() => setPublishOpen(false)}
+        draft={deep.draft}
+        onPublish={async (event) => {
+          setPublishing(true)
+          try {
+            const out = await deep.publish(event)
+            toast.success?.({ title: 'Review published to GitHub', message: `Review #${out.githubReviewId}` })
+            setPublishOpen(false)
+          } catch (err) {
+            toast.errorFromException?.(err, { fallbackTitle: 'Failed to publish review' })
+          } finally {
+            setPublishing(false)
+          }
+        }}
+        publishing={publishing}
       />
 
       <ConfirmModal
