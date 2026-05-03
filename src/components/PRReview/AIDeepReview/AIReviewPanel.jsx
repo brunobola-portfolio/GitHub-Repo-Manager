@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { WalkthroughTab } from './WalkthroughTab';
 import { CommentsListTab } from './CommentsListTab';
+import { usePromptStudio } from '../../../hooks/usePromptStudio';
+import { PromptPicker } from '../../AIPrompts/PromptPicker';
 
 export function AIReviewPanel({
     draft,
@@ -14,6 +16,8 @@ export function AIReviewPanel({
     publishing,
 }) {
     const [tab, setTab] = useState('walkthrough');
+    const { presets } = usePromptStudio();
+    const [activePresetKey, setActivePresetKey] = useState('general');
     // Stamp a stable `_idx` once at the source so CommentsListTab can use it
     // as both React key and dismiss target — keys stay stable across filtering.
     // Hoisted above the early returns to keep hook order stable across renders.
@@ -28,7 +32,7 @@ export function AIReviewPanel({
                 <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">Generate an AI review to get a structured walkthrough, line comments, and one-click code suggestions you can publish to GitHub.</p>
                 <button
                     type="button"
-                    onClick={onGenerate}
+                    onClick={() => onGenerate(activePresetKey)}
                     className="px-3 py-1.5 text-sm font-medium rounded bg-blue-600 text-white hover:bg-blue-700"
                 >
                     Generate AI Review
@@ -65,14 +69,22 @@ export function AIReviewPanel({
                 >
                     Comments ({lineComments.length})
                 </button>
-                <button
-                    type="button"
-                    onClick={onGenerate}
-                    title="Re-run review"
-                    className="ml-auto mr-1 p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
-                >
-                    ↻
-                </button>
+                <div className="ml-auto flex items-center gap-1 mr-1">
+                    <PromptPicker
+                        presets={presets}
+                        activeKey={activePresetKey}
+                        onChange={setActivePresetKey}
+                        disabled={loading}
+                    />
+                    <button
+                        type="button"
+                        onClick={() => onGenerate(activePresetKey)}
+                        title="Re-run review"
+                        className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                    >
+                        ↻
+                    </button>
+                </div>
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto">

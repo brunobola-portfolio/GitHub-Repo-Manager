@@ -86,7 +86,7 @@ export function useAIDeepReview(owner, repo, prNumber) {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- loadCached drives the on-mount fetch; setState is wrapped in alive-ref guard
     useEffect(() => { loadCached(); }, [loadCached]);
 
-    const generate = useCallback(async () => {
+    const generate = useCallback(async (presetKey) => {
         if (isMockMode()) {
             setDraftId(1);
             setDraft(mockDeepReviewDraft);
@@ -96,7 +96,8 @@ export function useAIDeepReview(owner, repo, prNumber) {
         setLoading(true);
         setError(null);
         try {
-            const result = await fetchJSON(`/api/ai/deep-review/${owner}/${repo}/${prNumber}`, {
+            const qs = presetKey ? `?presetKey=${encodeURIComponent(presetKey)}` : '';
+            const result = await fetchJSON(`/api/ai/deep-review/${owner}/${repo}/${prNumber}${qs}`, {
                 method: 'POST',
                 body: JSON.stringify({}),
             });
