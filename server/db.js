@@ -427,6 +427,33 @@ export function initDB(targetDb = db) {
         `);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_user_ai_prompts_user ON user_ai_prompts(user_id)`);
 
+        // AI Deep Review drafts — premium PR review surface.
+        // One row per (user, repo, pr_number). The draft_json blob holds the
+        // full structured review (walkthrough + line comments). last_reviewed_sha
+        // is the head SHA the AI saw — used to skip re-review when nothing
+        // changed and to compute incremental deltas via /compare.
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS ai_pr_reviews (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                repo_owner TEXT NOT NULL,
+                repo_name TEXT NOT NULL,
+                pr_number INTEGER NOT NULL,
+                last_reviewed_sha TEXT NOT NULL,
+                draft_json TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'draft',
+                github_review_id INTEGER,
+                cost_usd REAL,
+                model_used TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                UNIQUE(user_id, repo_owner, repo_name, pr_number),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_pr_reviews_lookup ON ai_pr_reviews(repo_owner, repo_name, pr_number)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_pr_reviews_user ON ai_pr_reviews(user_id, status)`);
+
         // -----------------------------------------------------------------------
         // Work Board — Premium UX Feature Tables
         // -----------------------------------------------------------------------
