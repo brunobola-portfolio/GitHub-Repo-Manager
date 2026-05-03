@@ -14,9 +14,10 @@
  */
 import { BUILTIN_PRESETS, isBuiltinKey } from './builtin-prompts.js';
 import { getResolvedPrompt } from '../ai-prompt-registry.js';
-import { getPresetById, getDefaultForScope } from '../ai-prompt-store.js';
+import { getPresetById, getDefaultForScope, getOrgDefaultForScope } from '../ai-prompt-store.js';
 import { readThrough } from '../gh-cache.js';
 import { githubApi } from '../github-api.js';
+import { getCurrentUserOrgs, filterOrgsByMembership } from '../github-org-membership.js';
 import logger from '../logger.js';
 
 const STYLE_GUIDE_TOKEN = '${REPO_STYLE_GUIDE}';
@@ -33,7 +34,9 @@ const STYLE_GUIDE_TTL_MS = 60 * 60 * 1000; // 1 h — review-rules.md changes ra
  *     - Anything else                              → throws PRESET_NOT_FOUND
  *  2. Repo-scoped default for `(userId, 'repo', '${owner}/${name}')`.
  *  3. User-scoped default for `(userId, 'user', null)`.
- *  4. Fallback: BUILTIN_PRESETS.general.
+ *  4. Org-scoped default for any org the session user is an active member of
+ *     (alphabetic-first when multiple orgs have defaults — stable tie-break).
+ *  5. Fallback: BUILTIN_PRESETS.general.
  *
  * @returns {Promise<{
  *   name: string,
@@ -98,9 +101,25 @@ export async function resolvePromptForGenerate(ctx) {
                 };
                 source = `user-default:${userDefault.id}`;
             } else {
-                const b = BUILTIN_PRESETS.general;
-                preset = { name: b.name, body: b.body, severityFloor: b.severityFloor, pathRules: [] };
-                source = 'fallback';
+                // Org-scoped default — only consult when no user/repo default
+                // is set. We list the user's GitHub orgs and pick the first
+                // (alphabetic) org that has a row marked as default. Sequential
+                // check keeps the cost bounded; both the org list and per-org
+                // membership are cached for 5 minutes via gh-cache.
+                const orgDefault = await resolveOrgDefault({ session });
+                if (orgDefault) {
+                    preset = {
+                        name: orgDefault.row.name,
+                        body: orgDefault.row.systemPrompt,
+                        severityFloor: orgDefault.row.severityFloor,
+                        pathRules: orgDefault.row.pathRules,
+                    };
+                    source = `org-default:${orgDefault.org}:${orgDefault.row.id}`;
+                } else {
+                    const b = BUILTIN_PRESETS.general;
+                    preset = { name: b.name, body: b.body, severityFloor: b.severityFloor, pathRules: [] };
+                    source = 'fallback';
+                }
             }
         }
     }
@@ -175,4 +194,27 @@ async function fetchRepoStyleGuide({ session, userId, repoOwner, repoName }) {
     }
 }
 
-export const _internals = { fetchRepoStyleGuide };
+/**
+ * Find the first org-scoped default visible to the session user. Returns
+ * `{org, row}` for the winning org or null.
+ *
+ * "First" = alphabetic by org login, so the choice is stable when a user
+ * belongs to multiple orgs that each have an org default. Each membership
+ * check goes through the 5-minute gh-cache, so the hot-loop cost is one
+ * cheap SQL hit per org per 5 min.
+ */
+async function resolveOrgDefault({ session }) {
+    if (!session?.userId || !session?.accessToken) return null;
+    const orgs = await getCurrentUserOrgs({ session });
+    if (orgs.length === 0) return null;
+    const visibleOrgs = await filterOrgsByMembership({ session, orgs });
+    if (visibleOrgs.length === 0) return null;
+    const sorted = visibleOrgs.slice().sort();
+    for (const org of sorted) {
+        const row = getOrgDefaultForScope(org);
+        if (row) return { org, row };
+    }
+    return null;
+}
+
+export const _internals = { fetchRepoStyleGuide, resolveOrgDefault };

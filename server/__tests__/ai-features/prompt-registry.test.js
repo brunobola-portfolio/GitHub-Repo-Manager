@@ -8,9 +8,18 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const storeMocks = {
     getPresetById: vi.fn(),
     getDefaultForScope: vi.fn(),
+    getOrgDefaultForScope: vi.fn(),
     listPresets: vi.fn(() => []),
 };
 vi.mock('../../lib/ai-prompt-store.js', () => storeMocks);
+
+// Org membership helper — drives the org-default branch.
+const orgMembershipMocks = {
+    getCurrentUserOrgs: vi.fn(async () => []),
+    filterOrgsByMembership: vi.fn(async ({ orgs }) => orgs ?? []),
+    isOrgMember: vi.fn(async () => false),
+};
+vi.mock('../../lib/github-org-membership.js', () => orgMembershipMocks);
 
 // readThrough: simulates the gh-cache layer wrapping the GitHub fetch.
 const readThroughMock = vi.fn();
@@ -52,7 +61,11 @@ const baseCtx = {
 beforeEach(() => {
     storeMocks.getPresetById.mockReset();
     storeMocks.getDefaultForScope.mockReset();
+    storeMocks.getOrgDefaultForScope.mockReset();
     storeMocks.listPresets.mockReset().mockReturnValue([]);
+    orgMembershipMocks.getCurrentUserOrgs.mockReset().mockResolvedValue([]);
+    orgMembershipMocks.filterOrgsByMembership.mockReset().mockImplementation(async ({ orgs }) => orgs ?? []);
+    orgMembershipMocks.isOrgMember.mockReset().mockResolvedValue(false);
     readThroughMock.mockReset();
 });
 
@@ -142,6 +155,92 @@ describe('resolvePromptForGenerate', () => {
         expect(out.source).toBe('fallback');
         expect(out.name).toBe(BUILTIN_PRESETS.general.name);
         expect(out.systemPrompt).toContain(BUILTIN_PRESETS.general.body.slice(0, 30));
+    });
+
+    // --- Slice 5 — org-default branch -------------------------------------
+
+    it('no user/repo defaults + org default → uses org-default with org-default:<org>:<id> source', async () => {
+        storeMocks.getDefaultForScope.mockReturnValue(null);
+        orgMembershipMocks.getCurrentUserOrgs.mockResolvedValue(['acme']);
+        orgMembershipMocks.filterOrgsByMembership.mockResolvedValue(['acme']);
+        storeMocks.getOrgDefaultForScope.mockImplementation((org) => org === 'acme' ? {
+            id: 21,
+            name: 'Acme org default',
+            systemPrompt: 'ACME_BODY',
+            severityFloor: 'warning',
+            pathRules: [],
+        } : null);
+
+        const out = await resolvePromptForGenerate(baseCtx);
+        expect(out.source).toBe('org-default:acme:21');
+        expect(out.name).toBe('Acme org default');
+        expect(out.systemPrompt).toContain('ACME_BODY');
+        expect(out.severityFloor).toBe('warning');
+    });
+
+    it('alphabetic-first when multiple member orgs each have defaults', async () => {
+        storeMocks.getDefaultForScope.mockReturnValue(null);
+        // Membership returns out-of-order → resolver should still pick alphabetic first.
+        orgMembershipMocks.getCurrentUserOrgs.mockResolvedValue(['zorp', 'acme', 'midco']);
+        orgMembershipMocks.filterOrgsByMembership.mockResolvedValue(['zorp', 'acme', 'midco']);
+        storeMocks.getOrgDefaultForScope.mockImplementation((org) => ({
+            id: { acme: 1, midco: 2, zorp: 3 }[org],
+            name: `${org} default`,
+            systemPrompt: `${org}_BODY`,
+            severityFloor: null,
+            pathRules: [],
+        }));
+
+        const out = await resolvePromptForGenerate(baseCtx);
+        expect(out.source).toBe('org-default:acme:1');
+        expect(out.name).toBe('acme default');
+    });
+
+    it('org defaults are ignored when the user is not a member of any org with one set', async () => {
+        storeMocks.getDefaultForScope.mockReturnValue(null);
+        // User belongs to acme on GitHub but membership-filter rejects it
+        // (e.g. 404 from /user/memberships) → resolver must fall through.
+        orgMembershipMocks.getCurrentUserOrgs.mockResolvedValue(['acme']);
+        orgMembershipMocks.filterOrgsByMembership.mockResolvedValue([]);
+        storeMocks.getOrgDefaultForScope.mockReturnValue({
+            id: 99, name: 'Stale org default', systemPrompt: 'X',
+            severityFloor: null, pathRules: [],
+        });
+
+        const out = await resolvePromptForGenerate(baseCtx);
+        expect(out.source).toBe('fallback');
+        expect(storeMocks.getOrgDefaultForScope).not.toHaveBeenCalled();
+    });
+
+    it('org default skipped when explicit presetKey is supplied (highest precedence still wins)', async () => {
+        orgMembershipMocks.getCurrentUserOrgs.mockResolvedValue(['acme']);
+        orgMembershipMocks.filterOrgsByMembership.mockResolvedValue(['acme']);
+        storeMocks.getOrgDefaultForScope.mockReturnValue({
+            id: 7, name: 'Org', systemPrompt: 'X', severityFloor: null, pathRules: [],
+        });
+
+        const out = await resolvePromptForGenerate({ ...baseCtx, presetKey: 'security' });
+        expect(out.source).toBe('preset:security');
+        // Org-default lookup should not have been consulted at all.
+        expect(orgMembershipMocks.getCurrentUserOrgs).not.toHaveBeenCalled();
+    });
+
+    it('repo default still wins over org default when both exist', async () => {
+        storeMocks.getDefaultForScope.mockImplementation((userId, scope, target) => {
+            if (scope === 'repo' && target === 'acme/api') {
+                return { id: 5, name: 'Repo wins', systemPrompt: 'REPO', severityFloor: null, pathRules: [] };
+            }
+            return null;
+        });
+        orgMembershipMocks.getCurrentUserOrgs.mockResolvedValue(['acme']);
+        orgMembershipMocks.filterOrgsByMembership.mockResolvedValue(['acme']);
+        storeMocks.getOrgDefaultForScope.mockReturnValue({
+            id: 8, name: 'Org default', systemPrompt: 'ORG', severityFloor: null, pathRules: [],
+        });
+
+        const out = await resolvePromptForGenerate(baseCtx);
+        expect(out.source).toBe('repo-default:5');
+        expect(orgMembershipMocks.getCurrentUserOrgs).not.toHaveBeenCalled();
     });
 
     it('${REPO_STYLE_GUIDE} substituted with fetched file content', async () => {

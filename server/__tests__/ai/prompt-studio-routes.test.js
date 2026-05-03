@@ -64,6 +64,16 @@ vi.mock('../../lib/ai-provider.js', async (importActual) => {
     return { ...actual, createProviderForUser: (...args) => createProviderForUserMock(...args) };
 });
 
+// --- Org membership mock ---------------------------------------------------
+// Slice 5: GET /presets and POST /presets (scope=org) consult these helpers
+// to gate visibility / write authorization. Tests drive them per-case.
+const orgMembershipMocks = {
+    isOrgMember: vi.fn(async () => false),
+    getCurrentUserOrgs: vi.fn(async () => []),
+    filterOrgsByMembership: vi.fn(async ({ orgs }) => orgs ?? []),
+};
+vi.mock('../../lib/github-org-membership.js', () => orgMembershipMocks);
+
 // --- Resolver mock ---------------------------------------------------------
 // We mock the resolver instead of `runDeepReview` so we can both:
 //   (a) assert the route plumbed the right preset key down to the resolver, and
@@ -109,6 +119,11 @@ beforeEach(() => {
     createProviderForUserMock.mockReset();
     createProviderForUserMock.mockResolvedValue(mockProvider);
     resolveMock.mockClear();
+    orgMembershipMocks.isOrgMember.mockReset().mockResolvedValue(false);
+    orgMembershipMocks.getCurrentUserOrgs.mockReset().mockResolvedValue([]);
+    orgMembershipMocks.filterOrgsByMembership
+        .mockReset()
+        .mockImplementation(async ({ orgs }) => orgs ?? []);
     setTier('pro');
     _resetTestBuckets();
 });
@@ -361,5 +376,162 @@ describe('POST /api/ai/prompt-studio/presets/:id/test', () => {
             .post('/api/ai/prompt-studio/presets/12345/test').send({});
         expect(res.status).toBe(404);
         expect(res.body.code).toBe('NOT_FOUND');
+    });
+});
+
+// --- Slice 5 — org-shared presets ----------------------------------------
+
+describe('GET /presets — org-shared rows', () => {
+    it('includes org rows the user is a member of, not those they are not', async () => {
+        // Author is OTHER_USER_ID. The session user is USER_ID and is only
+        // a member of `acme`, not `globex`.
+        savePreset(OTHER_USER_ID, {
+            scope: 'org', scopeTarget: 'acme', presetKey: 'shared-1',
+            name: 'Acme shared', systemPrompt: 'shared', pathRules: [],
+            severityFloor: null, isDefault: false,
+        });
+        savePreset(OTHER_USER_ID, {
+            scope: 'org', scopeTarget: 'globex', presetKey: 'shared-2',
+            name: 'Globex hidden', systemPrompt: 'x', pathRules: [],
+            severityFloor: null, isDefault: false,
+        });
+        orgMembershipMocks.getCurrentUserOrgs.mockResolvedValue(['acme']);
+        orgMembershipMocks.filterOrgsByMembership.mockResolvedValue(['acme']);
+
+        const res = await request(makeApp()).get('/api/ai/prompt-studio/presets');
+        expect(res.status).toBe(200);
+        const sharedRows = res.body.presets.filter((p) => p.scope === 'org');
+        expect(sharedRows).toHaveLength(1);
+        expect(sharedRows[0].name).toBe('Acme shared');
+        expect(sharedRows[0].scopeTarget).toBe('acme');
+        expect(sharedRows[0].shared).toBe(true);
+        expect(sharedRows[0].ownedByUser).toBe(false);
+    });
+
+    it('marks ownedByUser=true on org rows authored by the caller', async () => {
+        savePreset(USER_ID, {
+            scope: 'org', scopeTarget: 'acme', presetKey: 'mine-shared',
+            name: 'My shared', systemPrompt: 's', pathRules: [],
+            severityFloor: null, isDefault: false,
+        });
+        orgMembershipMocks.getCurrentUserOrgs.mockResolvedValue(['acme']);
+        orgMembershipMocks.filterOrgsByMembership.mockResolvedValue(['acme']);
+
+        const res = await request(makeApp()).get('/api/ai/prompt-studio/presets');
+        // The row should appear exactly once — once in the user's `custom`
+        // list (because listPresets returns user-owned rows of any scope) and
+        // de-duplicated out of the org-shared list.
+        const matches = res.body.presets.filter((p) => p.name === 'My shared');
+        expect(matches).toHaveLength(1);
+    });
+
+    it('does not crash when org-membership lookup throws', async () => {
+        orgMembershipMocks.getCurrentUserOrgs.mockRejectedValue(new Error('boom'));
+        const res = await request(makeApp()).get('/api/ai/prompt-studio/presets');
+        expect(res.status).toBe(200);
+        // Built-ins still surface even if org enrichment failed.
+        expect(res.body.presets.filter((p) => p.builtin)).toHaveLength(5);
+    });
+});
+
+describe('GET /presets/:id — org-shared rows', () => {
+    it('an org member CAN read a non-author org preset', async () => {
+        const id = savePreset(OTHER_USER_ID, {
+            scope: 'org', scopeTarget: 'acme', presetKey: 'shared',
+            name: 'Acme shared', systemPrompt: 'their body', pathRules: [],
+            severityFloor: null, isDefault: false,
+        });
+        orgMembershipMocks.isOrgMember.mockResolvedValue(true);
+
+        const res = await request(makeApp()).get(`/api/ai/prompt-studio/presets/${id}`);
+        expect(res.status).toBe(200);
+        expect(res.body.name).toBe('Acme shared');
+        expect(res.body.body).toBe('their body');
+        expect(res.body.shared).toBe(true);
+        expect(res.body.ownedByUser).toBe(false);
+    });
+
+    it('a non-member gets 404 (no leakage)', async () => {
+        const id = savePreset(OTHER_USER_ID, {
+            scope: 'org', scopeTarget: 'acme', presetKey: 'shared',
+            name: 'Acme shared', systemPrompt: 'x', pathRules: [],
+            severityFloor: null, isDefault: false,
+        });
+        orgMembershipMocks.isOrgMember.mockResolvedValue(false);
+
+        const res = await request(makeApp()).get(`/api/ai/prompt-studio/presets/${id}`);
+        expect(res.status).toBe(404);
+    });
+});
+
+describe('POST /presets — scope=org membership gate', () => {
+    const orgBody = {
+        scope: 'org',
+        scopeTarget: 'acme',
+        presetKey: 'team-style',
+        name: 'Team style',
+        systemPrompt: 'Be consistent',
+        pathRules: [],
+        severityFloor: null,
+    };
+
+    it('Pro user who IS a member → 201', async () => {
+        orgMembershipMocks.isOrgMember.mockResolvedValue(true);
+        const res = await request(makeApp())
+            .post('/api/ai/prompt-studio/presets').send(orgBody);
+        expect(res.status).toBe(201);
+        expect(res.body.id).toBeGreaterThan(0);
+        expect(orgMembershipMocks.isOrgMember).toHaveBeenCalledWith(
+            expect.objectContaining({ org: 'acme' }),
+        );
+    });
+
+    it('Pro user who IS NOT a member → 403 NOT_ORG_MEMBER', async () => {
+        orgMembershipMocks.isOrgMember.mockResolvedValue(false);
+        const res = await request(makeApp())
+            .post('/api/ai/prompt-studio/presets').send(orgBody);
+        expect(res.status).toBe(403);
+        expect(res.body.code).toBe('NOT_ORG_MEMBER');
+    });
+
+    it('rejects scope=org without a scopeTarget at validation → 400', async () => {
+        const res = await request(makeApp())
+            .post('/api/ai/prompt-studio/presets').send({ ...orgBody, scopeTarget: null });
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_failed');
+    });
+
+    it('rejects malformed org login (e.g. "invalid/slashes") at validation → 400', async () => {
+        const res = await request(makeApp())
+            .post('/api/ai/prompt-studio/presets').send({ ...orgBody, scopeTarget: 'inv/alid' });
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_failed');
+    });
+});
+
+describe('PATCH/DELETE /presets/:id — org rows still author-only', () => {
+    it('PATCH on another author\'s org row returns 404 even for org members', async () => {
+        const id = savePreset(OTHER_USER_ID, {
+            scope: 'org', scopeTarget: 'acme', presetKey: 'shared',
+            name: 'Theirs', systemPrompt: 'x', pathRules: [],
+            severityFloor: null, isDefault: false,
+        });
+        // Caller IS a member but is NOT the author → still cannot edit.
+        orgMembershipMocks.isOrgMember.mockResolvedValue(true);
+        const res = await request(makeApp(USER_ID))
+            .patch(`/api/ai/prompt-studio/presets/${id}`).send({ name: 'Hijacked' });
+        expect(res.status).toBe(404);
+    });
+
+    it('DELETE on another author\'s org row returns 404', async () => {
+        const id = savePreset(OTHER_USER_ID, {
+            scope: 'org', scopeTarget: 'acme', presetKey: 'shared',
+            name: 'Theirs', systemPrompt: 'x', pathRules: [],
+            severityFloor: null, isDefault: false,
+        });
+        orgMembershipMocks.isOrgMember.mockResolvedValue(true);
+        const res = await request(makeApp(USER_ID))
+            .delete(`/api/ai/prompt-studio/presets/${id}`);
+        expect(res.status).toBe(404);
     });
 });

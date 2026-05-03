@@ -8,12 +8,15 @@ import { useState } from 'react';
  * are hidden. Pro/Enterprise users get the full management surface.
  */
 export function PromptLibrary({ presets, loading, onNew, onEdit, onDelete, onSetDefault, currentTier }) {
-    const [filter, setFilter] = useState('all'); // all | builtin | custom
+    const [filter, setFilter] = useState('all'); // all | builtin | custom | org
     const isPro = currentTier === 'pro' || currentTier === 'enterprise';
 
     const visible = (presets || []).filter((p) => {
         if (filter === 'builtin') return p.builtin;
-        if (filter === 'custom') return !p.builtin;
+        if (filter === 'org') return !p.builtin && p.scope === 'org';
+        // 'custom' = user-authored non-org presets (org-shared rows live in
+        // the 'org' tab regardless of authorship, to make sharing explicit).
+        if (filter === 'custom') return !p.builtin && p.scope !== 'org';
         return true;
     });
 
@@ -25,7 +28,7 @@ export function PromptLibrary({ presets, loading, onNew, onEdit, onDelete, onSet
         <div className="space-y-4">
             <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-lg font-semibold flex-1">Prompt presets</h2>
-                {['all', 'builtin', 'custom'].map((f) => (
+                {['all', 'builtin', 'custom', 'org'].map((f) => (
                     <button
                         key={f}
                         type="button"
@@ -57,34 +60,49 @@ export function PromptLibrary({ presets, loading, onNew, onEdit, onDelete, onSet
                 {visible.length === 0 ? (
                     <li className="text-sm text-slate-500 dark:text-slate-400">No presets match this filter.</li>
                 ) : null}
-                {visible.map((p) => (
-                    <li key={p.id} className="rounded-md border border-slate-200 dark:border-slate-700 p-3 flex items-start gap-3">
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                                <span className="font-medium">{p.name}</span>
-                                {p.builtin ? <span className="text-[10px] uppercase tracking-wide opacity-50 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">built-in</span> : null}
-                                {p.isDefault ? <span className="text-[10px] uppercase tracking-wide text-emerald-600">default</span> : null}
+                {visible.map((p) => {
+                    // Edit/Delete/Set-default are author-only — for org-shared
+                    // rows authored by someone else, hide the actions and show
+                    // a read-only "shared" badge instead.
+                    const isOrgShared = !p.builtin && p.scope === 'org';
+                    const canManage = !p.builtin && isPro && p.ownedByUser !== false;
+                    return (
+                        <li key={p.id} className="rounded-md border border-slate-200 dark:border-slate-700 p-3 flex items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-medium">{p.name}</span>
+                                    {p.builtin ? <span className="text-[10px] uppercase tracking-wide opacity-50 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">built-in</span> : null}
+                                    {isOrgShared ? (
+                                        <span className="text-[10px] uppercase tracking-wide text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950">
+                                            shared · {p.scopeTarget}
+                                        </span>
+                                    ) : null}
+                                    {p.isDefault ? <span className="text-[10px] uppercase tracking-wide text-emerald-600">default</span> : null}
+                                    {isOrgShared && p.ownedByUser === false ? (
+                                        <span className="text-[10px] uppercase tracking-wide opacity-60">read-only</span>
+                                    ) : null}
+                                </div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    Scope: {p.scope}{p.scopeTarget && !isOrgShared ? ` (${p.scopeTarget})` : ''}
+                                    {p.severityFloor ? ` · ≥ ${p.severityFloor}` : ''}
+                                </div>
                             </div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Scope: {p.scope}{p.scopeTarget ? ` (${p.scopeTarget})` : ''}
-                                {p.severityFloor ? ` · ≥ ${p.severityFloor}` : ''}
-                            </div>
-                        </div>
-                        {!p.builtin && isPro ? (
-                            <div className="flex gap-1 text-xs">
-                                <button type="button" onClick={() => onSetDefault(p.id)} className="px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
-                                    Set default
-                                </button>
-                                <button type="button" onClick={() => onEdit(p.id)} className="px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
-                                    Edit
-                                </button>
-                                <button type="button" onClick={() => onDelete(p.id)} className="px-2 py-1 rounded hover:bg-red-50 text-red-700 dark:hover:bg-red-950 dark:text-red-300">
-                                    Delete
-                                </button>
-                            </div>
-                        ) : null}
-                    </li>
-                ))}
+                            {canManage ? (
+                                <div className="flex gap-1 text-xs">
+                                    <button type="button" onClick={() => onSetDefault(p.id)} className="px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+                                        Set default
+                                    </button>
+                                    <button type="button" onClick={() => onEdit(p.id)} className="px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+                                        Edit
+                                    </button>
+                                    <button type="button" onClick={() => onDelete(p.id)} className="px-2 py-1 rounded hover:bg-red-50 text-red-700 dark:hover:bg-red-950 dark:text-red-300">
+                                        Delete
+                                    </button>
+                                </div>
+                            ) : null}
+                        </li>
+                    );
+                })}
             </ul>
         </div>
     );

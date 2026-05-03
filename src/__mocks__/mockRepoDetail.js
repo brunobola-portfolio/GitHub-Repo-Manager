@@ -560,7 +560,9 @@ export const mockPromptStudioPresets = [
     { id: 'accessibility', builtin: true, name: 'Accessibility',    scope: 'builtin', severityFloor: null,         isDefault: false },
     { id: 'refactor',      builtin: true, name: 'Refactor coach',   scope: 'builtin', severityFloor: 'info',       isDefault: false },
     // Demo custom preset (numeric id mirrors a real DB row)
-    { id: 1, builtin: false, name: '[DEMO] Our team style', scope: 'user', presetKey: 'demo_team', severityFloor: 'suggestion', isDefault: false },
+    { id: 1, builtin: false, name: '[DEMO] Our team style', scope: 'user', presetKey: 'demo_team', severityFloor: 'suggestion', isDefault: false, ownedByUser: true },
+    // Demo org-shared preset (visible read-only — authored by another member)
+    { id: 2, builtin: false, shared: true, name: '[DEMO] Acme — internal style', scope: 'org', scopeTarget: 'acme', presetKey: 'demo_org', severityFloor: null, isDefault: false, ownedByUser: false },
 ];
 
 const BUILTIN_BODIES = {
@@ -595,6 +597,22 @@ export function mockGetPreset(id) {
             presetKey: 'demo_team',
             severityFloor: 'suggestion',
             isDefault: false,
+            ownedByUser: true,
+        };
+    }
+    if (Number(id) === 2) {
+        return {
+            id: 2,
+            builtin: false,
+            shared: true,
+            name: '[DEMO] Acme — internal style',
+            body: 'Acme review style: prefer pure functions, exhaustive switch with assertNever, and explicit error envelopes ({ ok, error, code }) over thrown exceptions in service layers.',
+            scope: 'org',
+            scopeTarget: 'acme',
+            presetKey: 'demo_org',
+            severityFloor: null,
+            isDefault: false,
+            ownedByUser: false,
         };
     }
     return null;

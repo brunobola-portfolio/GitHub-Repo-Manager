@@ -40,7 +40,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
     async function handleSave() {
         const payload = {
             scope,
-            scopeTarget: scope === 'repo' ? scopeTarget : null,
+            scopeTarget: (scope === 'repo' || scope === 'org') ? scopeTarget : null,
             presetKey,
             name,
             systemPrompt,
@@ -107,6 +107,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                         >
                             <option value="user">User (all repos)</option>
                             <option value="repo">Repo</option>
+                            <option value="org">Organization (all members)</option>
                         </select>
                     </div>
                     {scope === 'repo' ? (
@@ -123,7 +124,29 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                             />
                         </div>
                     ) : null}
+                    {scope === 'org' ? (
+                        <div>
+                            <label className="block text-xs font-medium mb-1" htmlFor="prompt-editor-scope-target">Organization (login)</label>
+                            <input
+                                id="prompt-editor-scope-target"
+                                type="text"
+                                value={scopeTarget}
+                                onChange={(e) => setScopeTarget(e.target.value)}
+                                placeholder="acme"
+                                required
+                                pattern="^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$"
+                                maxLength={39}
+                                title="GitHub org login (alphanumeric + . _ -, max 39 chars)"
+                                className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 px-2 py-1 text-sm font-mono"
+                            />
+                        </div>
+                    ) : null}
                 </div>
+                {scope === 'org' ? (
+                    <p className="text-[11px] opacity-70 -mt-1">
+                        Org-shared presets are visible to every active member of the organization. Only you (the author) can edit or delete this preset.
+                    </p>
+                ) : null}
                 <div>
                     <label className="block text-xs font-medium mb-1" htmlFor="prompt-editor-body">System prompt</label>
                     <textarea

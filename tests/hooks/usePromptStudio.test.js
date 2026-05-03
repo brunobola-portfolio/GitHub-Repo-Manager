@@ -123,4 +123,24 @@ describe('usePromptStudio (MOCK_MODE)', () => {
         expect(out.sample.walkthrough.summary).toMatch(/\[DEMO\]/);
         expect(out.sample.lineComments).toHaveLength(1);
     });
+
+    it('seed includes an org-shared preset (slice 5)', async () => {
+        const { result } = renderHook(() => usePromptStudio());
+        await waitFor(() => expect(result.current.loading).toBe(false));
+        const orgRow = result.current.presets.find((p) => p.scope === 'org');
+        expect(orgRow).toBeTruthy();
+        expect(orgRow.scopeTarget).toBe('acme');
+        expect(orgRow.shared).toBe(true);
+        expect(orgRow.ownedByUser).toBe(false);
+    });
+
+    it('getPreset returns body for the org-shared demo preset', async () => {
+        const { result } = renderHook(() => usePromptStudio());
+        await waitFor(() => expect(result.current.loading).toBe(false));
+        const preset = await result.current.getPreset(2);
+        expect(preset).toBeTruthy();
+        expect(preset.scope).toBe('org');
+        expect(preset.scopeTarget).toBe('acme');
+        expect(preset.body.length).toBeGreaterThan(0);
+    });
 });
