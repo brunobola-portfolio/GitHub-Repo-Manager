@@ -40,18 +40,45 @@ Validated cost (500-LOC, 8-file PR, with prompt caching):
 
 ---
 
-## Pricing & gating decision (open — needs user confirmation)
+## Pricing model — free core + premium "Prompt Studio"
 
-The user picked option **ii: "Free everything, monetise via BYOK / self-hosted licensing"**. There is one tension with current product policy:
+The whole AI Deep Review pipeline (engine + UI + publish + incremental + Mermaid + suggestions) is **free for every user** as long as they have a BYOK key configured in `user_ai_config`. This drives adoption and matches the existing pattern: the engine resolves credentials per-user via `createProviderForUser(userId, 'completion', { featureKey: 'PR_DEEP_REVIEW' })` ([server/lib/ai-provider.js:666](../../server/lib/ai-provider.js#L666)), which already supports Gemini / Anthropic / OpenAI / OpenRouter / Local out of the box.
 
-- Today: `POST /reviews` (publishing any review to GitHub) is gated `requireTier('pro')` at [server/routes/repos/pulls.js:381](../../server/routes/repos/pulls.js#L381). The new "Publish AI Review to GitHub" flow goes through this same route.
-- Three resolutions, ordered by my recommendation:
+**Free tier — everything works:**
 
-  1. **(recommended) Keep the gate as-is.** Generating and viewing the AI review in-app is free + BYOK; publishing to GitHub remains Pro. Aligns with existing policy, no migration risk, the WOW demo is fully free.
-  2. **Drop the gate for AI-generated reviews only.** Free generation + free publish; manual reviews stay Pro. Adds a `source: 'ai-deep-review'` exemption check.
-  3. **Drop the gate entirely.** Aligns 100% with "tudo free" but reverses an existing product policy decision — out of scope for this spec.
+- Full walkthrough + line comments + suggestions + Mermaid + publish to GitHub
+- All 5 BYOK providers (user provides their own key)
+- Server-wide `GEMINI_API_KEY` fallback when `AI_REQUIRE_USER_CONFIG !== 'true'` (existing demo / single-tenant pattern)
+- Incremental re-review on push
+- Per-feature model override via existing `featureOverrides.PR_DEEP_REVIEW` field
+- Default prompt curated for: bug detection, security smells, code quality, accessibility hints
 
-**Default for this spec:** option 1 unless the user reverses.
+**Premium tier — "Prompt Studio" (drives upgrades, doesn't gate the core):**
+
+| Feature | Free | Premium |
+|---|---|---|
+| Run AI Deep Review | ✅ default prompt | ✅ + custom prompts |
+| Pick provider (Gemini / Anthropic / OpenAI / OpenRouter / Local) | ✅ | ✅ |
+| Walkthrough + line comments + suggestions | ✅ | ✅ |
+| Publish to GitHub | ✅ | ✅ |
+| Incremental review | ✅ | ✅ |
+| **Per-repo system prompt override** | ❌ | ✅ "We're a TypeScript shop, focus on type-safety" |
+| **Path-scoped prompt rules** | ❌ | ✅ different prompt for `src/components/**` vs `server/**` |
+| **Style-guide ingestion** (auto-include `.repomanager/rules.md` from repo as context) | ❌ | ✅ |
+| **Prompt presets library** (Security audit / Performance / Refactor / Accessibility lenses) | 1 default | ✅ unlimited + custom |
+| **Severity & noise tuning** ("only post 'warning' and above", "skip pure-rename PRs") | ❌ | ✅ |
+| **Team-shared prompts** (org-level sync) | ❌ | ✅ |
+| **Slash commands** (`/test_plan`, `/describe`, `/improve`) | ❌ | ✅ — slice 3 |
+| **Prompt usage analytics** (which prompts → most accepted comments) | ❌ | ✅ |
+
+**Why this gating works:**
+
+- Free covers 100% of "I want to try this on a PR right now" — no friction, instant WOW
+- Premium is for **teams + power users who want their reviewer to *think like them*** — exactly the value proposition that justifies upgrade
+- The premium hook is *configuration of the AI*, not access to the AI — feels generous, not crippled
+- Aligns with the AGPL open-core monetisation: feature value lives in the prompt registry + sync, not in code that's copyable
+
+**Important policy note — `POST /reviews` Pro gate:** today [server/routes/repos/pulls.js:381](../../server/routes/repos/pulls.js#L381) gates *all* review submissions with `requireTier('pro')`. To make publish-to-GitHub free for the AI Deep Review path, this spec adds a **new free route** `POST /api/ai/deep-review/:draftId/publish` that calls the same GitHub API directly — bypassing the existing gate for AI-generated reviews specifically. The original `POST /reviews` gate stays in place for fully-manual reviews authored by the user (existing behaviour preserved).
 
 ---
 
@@ -93,12 +120,13 @@ Sits next to the existing [pr-review.js](../../server/lib/ai-features/pr-review.
 }
 ```
 
-**Provider strategy:**
-- Default: existing Gemini provider (no env changes for current users)
-- Opt-in: Anthropic when `ANTHROPIC_API_KEY` is set; user picks per-call via `provider` request param. Server-side selection: if user has BYOK both, prefer Anthropic Sonnet for Pro tier, else Gemini.
-- Add `anthropicApiKey` + `anthropicModel` (default `claude-sonnet-4-5`) to [server/config.js](../../server/config.js) zod schema.
-- New file `server/lib/ai-providers/anthropic.js` exposing the same `provider.generate({ parts, schema, generationConfig })` shape the existing engine uses, so [pr-review.js](../../server/lib/ai-features/pr-review.js) and the new engine can both swap providers transparently.
-- Use Anthropic prompt caching (`cache_control: { type: 'ephemeral' }`) on the system prompt + repo context to amortise the ~70% prefix on incremental reviews.
+**Provider strategy — reuse what exists, no new provider code:**
+
+- Resolve provider per-user via existing `createProviderForUser(userId, 'completion', { featureKey: 'PR_DEEP_REVIEW' })` ([server/lib/ai-provider.js:666](../../server/lib/ai-provider.js#L666))
+- All 5 providers already implemented and registered: `gemini`, `anthropic`, `openai`, `openrouter`, `local` ([server/lib/providers/](../../server/lib/providers/))
+- Per-user model override already supported via `featureOverrides.PR_DEEP_REVIEW` (just add the new key to the canonical list in [server/lib/user-ai-config.js](../../server/lib/user-ai-config.js) docs / validators)
+- Prompt caching: when the user's resolved provider is Anthropic, pass `cache_control: { type: 'ephemeral' }` markers on the system prompt + style guide segments. Engine code is provider-aware via `provider.constructor.name === 'AnthropicProvider'` (or expose a `provider.supportsCaching` flag in the registry — cleaner). For Gemini this is a no-op.
+- No `server/config.js` changes, no new provider files, no new env vars.
 
 **Sanitisation:** reuse `sanitizeForPrompt` from [server/lib/ai-features/sanitize.js](../../server/lib/ai-features/sanitize.js). Cap each suggestion at 4096 chars; reject any suggestion that contains backticks-of-7+ (defence against fence escape).
 
@@ -261,18 +289,91 @@ Three failure modes, all handled defensively:
 
 ---
 
+## Premium — Prompt Studio (slice 1b, ~5 days, ships immediately after free core)
+
+### Storage — new SQLite table `ai_review_prompts`
+
+```sql
+CREATE TABLE ai_review_prompts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,            -- owner of the prompt
+  scope TEXT NOT NULL,                 -- 'user' | 'repo' | 'org'
+  scope_target TEXT,                   -- '<owner>/<repo>' for scope='repo', null for 'user', org-id for 'org'
+  preset_key TEXT NOT NULL,            -- 'default' | 'security' | 'performance' | custom slug
+  name TEXT NOT NULL,                  -- display name
+  system_prompt TEXT NOT NULL,         -- the LLM system prompt body
+  path_rules_json TEXT,                -- [{glob: 'src/components/**', extraPrompt: '...'}, ...]
+  severity_floor TEXT,                 -- 'info'|'suggestion'|'warning'|'critical' (drop comments below)
+  is_default INTEGER NOT NULL DEFAULT 0, -- one per scope can be the auto-applied default
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  UNIQUE(user_id, scope, scope_target, preset_key)
+);
+```
+
+### Engine integration
+
+`pr-deep-review.js` resolves the active prompt at generate time:
+
+1. Look up `repo`-scoped default for `(repo_owner, repo_name)` → if found, use it
+2. Else look up `user`-scoped default for the calling user → if found, use it
+3. Else use the built-in default (free-tier prompt)
+4. Append any path-rule extras whose glob matches the current file being reviewed
+5. Apply `severity_floor` post-LLM (drop comments below the floor)
+
+Style-guide ingestion: when `system_prompt` references the literal token `${REPO_STYLE_GUIDE}`, the engine fetches `.repomanager/review-rules.md` from the repo head (cached 1h via gh-cache) and substitutes it inline. Empty-string substitution if file absent.
+
+### Premium gate
+
+Premium is checked **only at the prompt-CRUD endpoints**, not at the AI generation path:
+
+- `POST/PATCH/DELETE /api/ai/prompt-studio/*` → `requireTier('pro')`
+- `GET /api/ai/prompt-studio/*` → `requireAuth` (free can browse community presets to preview)
+- Free user can apply prompts during a single generate call via `?presetKey=security` URL param **only if `preset_key='security'` is a built-in preset** — custom presets require Pro to even reference
+
+This means: free users can use one of N built-in presets, premium users author + share their own.
+
+### UI — new top-level page `/ai/prompts`
+
+Three views:
+- **Library** — list of prompts the user can author / edit / delete (with scope filter); read-only built-in presets always visible at top
+- **Editor** — split-pane: prompt body on left, live "test on a sample diff" preview on right (uses the existing `/api/user/ai-config/test` rate-limit pattern — 1 call per 10s)
+- **Apply** — picker that surfaces in PR Deep Review toolbar: "Review with: [Default ▼]" → dropdown of available presets (built-ins always; custom only if Pro)
+
+### Routes
+
+| Method | Path | Purpose | Gate |
+|---|---|---|---|
+| `GET` | `/api/ai/prompt-studio/presets` | Built-in presets + user's custom presets visible to them | requireAuth |
+| `GET` | `/api/ai/prompt-studio/presets/:id` | Full prompt body | requireAuth |
+| `POST` | `/api/ai/prompt-studio/presets` | Create custom preset | requireAuth + requireTier('pro') |
+| `PATCH` | `/api/ai/prompt-studio/presets/:id` | Edit | requireAuth + requireTier('pro') |
+| `DELETE` | `/api/ai/prompt-studio/presets/:id` | Delete | requireAuth + requireTier('pro') |
+| `POST` | `/api/ai/prompt-studio/presets/:id/test` | Run on a fixed sample diff (rate-limited 1/10s) | requireAuth + requireTier('pro') |
+| `POST` | `/api/ai/prompt-studio/presets/:id/set-default` | Mark as scope default | requireAuth + requireTier('pro') |
+
+### Built-in presets shipped (free, read-only)
+
+1. **General** (default) — balanced bug + quality + style
+2. **Security audit** — OWASP top 10, secrets, injection, auth flaws — high severity bias
+3. **Performance** — N+1 queries, render thrashing, memo opportunities
+4. **Accessibility** — ARIA, semantic HTML, keyboard nav, contrast
+5. **Refactor coach** — dead code, duplication, abstraction opportunities — info severity bias
+
+---
+
 ## Files created / modified
+
+### Free core (slice 1a — ~7 days)
 
 | Action | Path | Purpose |
 |---|---|---|
 | CREATE | `server/lib/ai-features/pr-deep-review.js` | Deep review engine |
-| CREATE | `server/lib/ai-providers/anthropic.js` | Anthropic provider matching existing shape |
 | CREATE | `server/routes/ai/deep-review.js` | 5 new endpoints |
-| MODIFY | `server/config.js` | Add `anthropicApiKey`, `anthropicModel` |
 | MODIFY | `server/db.js` | Migration for `ai_pr_reviews` table |
 | MODIFY | `server/lib/provider-pricing.js` | Add Sonnet 4.5 + Flash entries (if not present) |
+| MODIFY | `server/lib/user-ai-config.js` | Document `PR_DEEP_REVIEW` as a featureKey |
 | CREATE | `server/__tests__/ai-features/pr-deep-review.test.js` | Engine tests |
-| CREATE | `server/__tests__/ai-providers/anthropic.test.js` | Provider tests |
 | CREATE | `server/__tests__/ai/deep-review-routes.test.js` | Route tests |
 | CREATE | `server/__tests__/ai/deep-review-publish.test.js` | Publish flow tests |
 | CREATE | `src/components/PRReview/AIDeepReview/DeepReviewProvider.jsx` | Draft state context |
@@ -280,7 +381,7 @@ Three failure modes, all handled defensively:
 | CREATE | `src/components/PRReview/AIDeepReview/WalkthroughTab.jsx` | Walkthrough + Mermaid render |
 | CREATE | `src/components/PRReview/AIDeepReview/CommentsListTab.jsx` | Filterable comment list |
 | CREATE | `src/components/PRReview/AIDeepReview/PublishReviewModal.jsx` | Publish preview modal |
-| CREATE | `src/components/PRReview/AIDeepReview/AIReviewPanel.jsx` | Tabbed right-side panel (replaces AISummaryPanel here) |
+| CREATE | `src/components/PRReview/AIDeepReview/AIReviewPanel.jsx` | Tabbed right-side panel |
 | CREATE | `src/components/PRReview/hooks/useAIDeepReview.js` | Endpoint hook |
 | MODIFY | `src/components/PRReview/PRReviewView.jsx` | Wire DeepReviewProvider + new panel |
 | MODIFY | `src/components/PRReview/DiffPanel/DiffPanel.jsx` | Accept aiComments prop, render overlays |
@@ -289,30 +390,51 @@ Three failure modes, all handled defensively:
 | CREATE | `tests/components/PRReview/AIDeepReview/AIInlineComment.test.jsx` | Component test |
 | CREATE | `e2e/ai-deep-review.spec.js` | E2E smoke |
 
+### Premium prompt studio (slice 1b — ~5 days)
+
+| Action | Path | Purpose |
+|---|---|---|
+| CREATE | `server/lib/ai-features/prompt-registry.js` | Prompt resolution logic |
+| CREATE | `server/lib/ai-features/builtin-prompts.js` | 5 built-in preset bodies |
+| CREATE | `server/routes/ai/prompt-studio.js` | 7 new endpoints |
+| MODIFY | `server/db.js` | Migration for `ai_review_prompts` table |
+| CREATE | `server/__tests__/ai-features/prompt-registry.test.js` | Prompt resolution tests (scope precedence) |
+| CREATE | `server/__tests__/ai/prompt-studio-routes.test.js` | Route tests |
+| CREATE | `src/components/AIPrompts/PromptLibrary.jsx` | List view |
+| CREATE | `src/components/AIPrompts/PromptEditor.jsx` | Split-pane editor |
+| CREATE | `src/components/AIPrompts/PromptPicker.jsx` | Toolbar dropdown for PR Deep Review |
+| CREATE | `src/components/AIPrompts/PromptStudioPage.jsx` | Page shell |
+| CREATE | `src/hooks/usePromptStudio.js` | Endpoint hook |
+| MODIFY | `src/App.jsx` | Add route `/ai/prompts` |
+| MODIFY | `src/components/PRReview/AIDeepReview/AIReviewPanel.jsx` | Add `<PromptPicker>` to toolbar |
+| CREATE | `tests/components/AIPrompts/PromptEditor.test.jsx` | Editor unit tests |
+| CREATE | `e2e/prompt-studio.spec.js` | E2E smoke |
+
 ---
 
 ## Slice plan (estimates, 1 dev)
 
-| Slice | Days | Deliverable |
-|---|---|---|
-| **1 — this spec** | ~10 | Engine + storage + 5 routes + UI + publish + tests |
-| 2 | ~7 | Chat-with-bot tab (`@bot ask...` Q&A on PR / file with tool use) |
-| 3 | ~7 | Slash commands (`/describe`, `/test_plan`, `/improve`) — drives PR description generation |
-| 4 | ~5 | GitHub App identity (`github-repo-manager[bot]`), proper bot user |
-| 5 | ~5 | Style guide ingestion (`.repomanager/review-rules.md` from repo) |
+| Slice | Days | Deliverable | Tier |
+|---|---|---|---|
+| **1a — free core** | ~7 | Engine + storage + 5 routes + UI + publish + tests; ships standalone | Free (BYOK) |
+| **1b — Prompt Studio** | ~5 | Prompt registry + 7 routes + Library/Editor/Picker UI + 5 built-in presets | Premium |
+| 2 | ~7 | Chat-with-bot tab (`@bot ask...` Q&A on PR / file with tool use) | Mostly free, advanced personas Premium |
+| 3 | ~7 | Slash commands (`/describe`, `/test_plan`, `/improve`) | Premium |
+| 4 | ~5 | GitHub App identity (`github-repo-manager[bot]`), proper bot user | Free, infra |
+| 5 | ~5 | Org-shared prompts + sync (extends Prompt Studio) | Premium |
 
 ---
 
-## Out of scope (slice 1)
+## Out of scope (slice 1a + 1b)
 
 - Chat / Q&A about the PR — slice 2
 - Slash commands — slice 3
 - GitHub App identity — slice 4 (publishes as OAuth user with disclosure footer in v1)
-- Style guide / `.coderabbit.yaml`-equivalent — slice 5
+- Org-shared prompts — slice 5
 - Conversation thread replies on existing AI comments
 - "Request changes" enforcement workflow
-- Auto-trigger on push (manual generate button only in slice 1)
-- Webhook-driven incremental review (manual refresh in slice 1)
+- Auto-trigger on push (manual generate button only)
+- Webhook-driven incremental review (manual refresh)
 - Cross-PR learning / memory
 - Cost dashboard / per-org spend tracking
 
@@ -320,14 +442,28 @@ Three failure modes, all handled defensively:
 
 ## Success criteria
 
-1. User opens a PR, clicks "Generate AI Review" → receives walkthrough + ≤25 line comments + per-file table in <15s on a 500-LOC PR (Gemini Flash)
-2. Walkthrough body renders Mermaid sequence diagram inline in the right panel
-3. Each AI comment can be Accepted / Edited / Dismissed; counts update live
-4. Clicking "Publish to GitHub" produces a single PR review on github.com containing the walkthrough + accepted comments + working "Commit suggestion" buttons
-5. Re-clicking "Generate" after a new push produces a delta review (only new comments) in <50% of the original time
-6. Force-push triggers full re-review (not 500 error)
-7. Stale-head publish is detected and surfaces re-anchoring UX (no silent failure)
-8. Footer with "Generated by GitHub Repo Manager" appears on every published review
-9. Free user with Gemini BYOK can generate + view AI review (publish gating per pricing decision above)
-10. Zero new console errors in MOCK_MODE; all e2e tests pass; bundle budget gate doesn't fail
-11. Anthropic provider works alongside Gemini without env-var changes for users who don't set it
+### Free core (slice 1a)
+
+1. User with **any** BYOK provider configured (Gemini / Anthropic / OpenAI / OpenRouter / Local) can generate an AI Deep Review with no tier check
+2. User opens a PR, clicks "Generate AI Review" → receives walkthrough + ≤25 line comments + per-file table in <15s on a 500-LOC PR (Gemini Flash)
+3. Walkthrough body renders Mermaid sequence diagram inline in the right panel
+4. Each AI comment can be Accepted / Edited / Dismissed; counts update live
+5. Clicking "Publish to GitHub" produces a single PR review on github.com containing the walkthrough + accepted comments + working "Commit suggestion" buttons — **no Pro tier required** for the AI publish path
+6. Re-clicking "Generate" after a new push produces a delta review (only new comments) in <50% of the original time
+7. Force-push triggers full re-review (not 500 error)
+8. Stale-head publish is detected and surfaces re-anchoring UX (no silent failure)
+9. Footer with "Generated by GitHub Repo Manager" appears on every published review
+10. Server-wide `GEMINI_API_KEY` fallback works for users without BYOK (when `AI_REQUIRE_USER_CONFIG !== 'true'`)
+11. Per-user model override via `featureOverrides.PR_DEEP_REVIEW` is honoured at generate time
+12. Zero new console errors in MOCK_MODE; all e2e tests pass; bundle budget gate doesn't fail
+
+### Premium prompt studio (slice 1b)
+
+13. Free user can pick from 5 built-in presets (General / Security / Performance / Accessibility / Refactor) and run AI Deep Review with that preset
+14. Pro user can author + save + edit + delete custom prompts at user, repo, or org scope
+15. Repo-scoped default preset auto-applies when generating a review for that repo without explicit picker selection
+16. Path-scoped extras append the right glob's extra prompt when the file matches (verified by unit test)
+17. `${REPO_STYLE_GUIDE}` token is substituted with `.repomanager/review-rules.md` content from the repo head when present
+18. `severity_floor` filtering drops below-threshold comments before the user sees them
+19. Prompt CRUD endpoints return 403 for non-Pro users; GET endpoints work for free users
+20. Test-prompt endpoint runs the active prompt against a fixed sample diff and returns expected output (rate-limited 1/10s per user)
