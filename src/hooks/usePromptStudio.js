@@ -66,7 +66,8 @@ export function usePromptStudio() {
             const body = await fetchJSON('/api/ai/prompt-studio/presets');
             if (aliveRef.current) setPresets(body?.presets ?? []);
         } catch (err) {
-            if (aliveRef.current) setError(err.message);
+            // Preserve full error so AIErrorState can read err.code (matches useAIDeepReview pattern)
+            if (aliveRef.current) setError(err);
         } finally {
             if (aliveRef.current) setLoading(false);
         }
