@@ -454,6 +454,31 @@ export function initDB(targetDb = db) {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_pr_reviews_lookup ON ai_pr_reviews(repo_owner, repo_name, pr_number)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_pr_reviews_user ON ai_pr_reviews(user_id, status)`);
 
+        // AI Deep Review — Prompt Studio (slice 1b premium feature).
+        // Multi-preset library at user/repo/org scope. The simpler single-prompt-
+        // per-user `user_ai_prompts` table from earlier slices stays for the
+        // built-in prompt overrides; this table holds the richer preset library.
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS ai_review_prompts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                scope TEXT NOT NULL CHECK(scope IN ('user', 'repo', 'org')),
+                scope_target TEXT,
+                preset_key TEXT NOT NULL,
+                name TEXT NOT NULL,
+                system_prompt TEXT NOT NULL,
+                path_rules_json TEXT,
+                severity_floor TEXT CHECK(severity_floor IS NULL OR severity_floor IN ('info','suggestion','warning','critical')),
+                is_default INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                UNIQUE(user_id, scope, scope_target, preset_key),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_review_prompts_lookup ON ai_review_prompts(scope, scope_target, is_default)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_review_prompts_user ON ai_review_prompts(user_id)`);
+
         // -----------------------------------------------------------------------
         // Work Board — Premium UX Feature Tables
         // -----------------------------------------------------------------------
