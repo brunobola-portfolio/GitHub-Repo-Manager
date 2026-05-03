@@ -27,6 +27,7 @@ import { useModal } from './hooks/useModal'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useSessionExpiry } from './hooks/useSessionExpiry'
 import { useIsAdmin } from './hooks/useIsAdmin'
+import { useLicense } from './hooks/useLicense'
 import { useCommandPalette } from './hooks/useCommandPalette'
 import { CommandPalette } from './components/CommandPalette'
 import { useResponsiveLayout } from './hooks/useResponsiveLayout'
@@ -77,6 +78,7 @@ const CompareSimilarDrawer = lazy(() => import('./components/AI/CompareSimilarDr
 const SecurityScanModal = lazy(() => import('./components/security/SecurityScanModal').then(m => ({ default: m.SecurityScanModal })))
 const LicenseActivationModal = lazy(() => import('./components/Settings/LicenseActivationModal').then(m => ({ default: m.LicenseActivationModal })))
 const AdminDLQPage = lazy(() => import('./components/Admin/AdminDLQPage').then(m => ({ default: m.AdminDLQPage })))
+const PromptStudioPage = lazy(() => import('./components/AIPrompts/PromptStudioPage').then(m => ({ default: m.PromptStudioPage })))
 
 // Loading fallback component (kept as local alias for legacy callsites below)
 const LoadingFallback = RouteFallback
@@ -206,6 +208,12 @@ function AppContent() {
   // expose the DLQ admin UI in the command palette + user menu.
   const { isAdmin } = useIsAdmin()
 
+  // Current license tier — drives the Prompt Studio's free/pro gating UI.
+  // Falls back to 'free' when the endpoint is unavailable (matches useLicense
+  // behaviour) so the page always renders something safe.
+  const { license } = useLicense()
+  const currentTier = license?.tier ?? 'free'
+
   const { showHelp, setShowHelp, shortcuts } = useKeyboardShortcuts({
     onSearch: () => {
       // Focus the search input in RepoList if on repos view
@@ -251,6 +259,23 @@ function AppContent() {
     }
     window.addEventListener('app:navigate-dashboard', handleNavigateDashboard)
     return () => window.removeEventListener('app:navigate-dashboard', handleNavigateDashboard)
+  }, [setActiveView])
+
+  // Hash-based route: #/ai/prompts opens the Prompt Studio. The app is
+  // otherwise state-routed via setActiveView, but the Prompt Studio is
+  // deep-linkable (Settings, docs, e2e) so we expose it via a hash. On hash
+  // clear we leave the active view alone — the user navigated elsewhere.
+  useEffect(() => {
+    const sync = () => {
+      if (window.location.hash === '#/ai/prompts') {
+        setSelectedRepoDetail(null)
+        setReviewingPR(null)
+        setActiveView('prompt-studio')
+      }
+    }
+    sync() // initial mount
+    window.addEventListener('hashchange', sync)
+    return () => window.removeEventListener('hashchange', sync)
   }, [setActiveView])
 
   // Quota-exceeded surfaces (QuotaExceededState etc) emit
@@ -1106,6 +1131,16 @@ function AppContent() {
                     onOpenSettings={() => openModalWithData('showSettings', { initialTab: 'work-board' })}
                     initialTab={viewParams?.initialTab}
                 />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
+        )}
+
+        {activeView === 'prompt-studio' && user && (
+          <div className="animate-in fade-in duration-500">
+            <ErrorBoundary fallback={<ViewErrorFallback viewName="Prompt Studio" onGoHome={() => setActiveView('dashboard')} />}>
+              <Suspense fallback={<LoadingFallback />}>
+                <PromptStudioPage currentTier={currentTier} />
               </Suspense>
             </ErrorBoundary>
           </div>
