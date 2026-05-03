@@ -1,5 +1,6 @@
-import { ChevronDown, ChevronRight, AlertTriangle, RefreshCw, Loader2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
+import { AIErrorState } from '../../ui/AIErrorState'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const RISK_TEXT = {
@@ -93,16 +94,12 @@ export function AISummaryPanel({ summary, loading, error, collapsed, onToggle, o
 
               {/* Error state */}
               {error && !loading && (
-                <div className="flex items-center gap-2">
-                  <span className="flex-1 text-red-600 dark:text-red-400">{error}</span>
-                  <button
-                    onClick={onRetry}
-                    className="flex items-center gap-1 px-2 py-1 rounded border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors text-xs"
-                  >
-                    <RefreshCw size={11} aria-hidden="true" />
-                    Retry
-                  </button>
-                </div>
+                <AIErrorState
+                  error={typeof error === 'string' ? { message: error } : error}
+                  onRetry={onRetry}
+                  context="PR review"
+                  variant="inline"
+                />
               )}
 
               {/* Summary content */}

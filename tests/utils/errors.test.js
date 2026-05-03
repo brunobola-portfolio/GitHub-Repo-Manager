@@ -77,4 +77,84 @@ describe('formatUserError', () => {
     const out = formatUserError({ code: 'AI_NOT_CONFIGURED' }, { fallbackTitle: 'Mirror failed' })
     expect(out.title).toBe('AI is not configured')
   })
+
+  // ---------------------------------------------------------------------
+  // Server AI vocabulary — every code in handleAIError + adjacent routes
+  // must round-trip into a presentational shape with action.type.
+  // ---------------------------------------------------------------------
+
+  it('maps INVALID_API_KEY to a configure action targeting the AI tab', () => {
+    const out = formatUserError({ code: 'INVALID_API_KEY' })
+    expect(out.title).toMatch(/key/i)
+    expect(out.action.type).toBe('configure')
+    expect(out.action.settingsTab).toBe('ai')
+  })
+
+  it('maps NO_AI_PROVIDER to a configure action', () => {
+    const out = formatUserError({ code: 'NO_AI_PROVIDER' })
+    expect(out.action.type).toBe('configure')
+  })
+
+  it('maps RATE_LIMITED to a retry action', () => {
+    const out = formatUserError({ code: 'RATE_LIMITED' })
+    expect(out.action.type).toBe('retry')
+  })
+
+  it('maps AI_TIMEOUT to a retry action', () => {
+    const out = formatUserError({ code: 'AI_TIMEOUT' })
+    expect(out.title).toMatch(/timed out/i)
+    expect(out.action.type).toBe('retry')
+  })
+
+  it('maps AI_NETWORK_ERROR to a retry action', () => {
+    expect(formatUserError({ code: 'AI_NETWORK_ERROR' }).action.type).toBe('retry')
+  })
+
+  it('maps AI_OVERLOADED to a retry action', () => {
+    expect(formatUserError({ code: 'AI_OVERLOADED' }).action.type).toBe('retry')
+  })
+
+  it('maps AI_REQUEST_FAILED to a retry action', () => {
+    expect(formatUserError({ code: 'AI_REQUEST_FAILED' }).action.type).toBe('retry')
+  })
+
+  it('maps AI_PARSE_ERROR to a retry action', () => {
+    expect(formatUserError({ code: 'AI_PARSE_ERROR' }).action.type).toBe('retry')
+  })
+
+  it('maps MODEL_NOT_FOUND to a configure action', () => {
+    expect(formatUserError({ code: 'MODEL_NOT_FOUND' }).action.type).toBe('configure')
+  })
+
+  it('maps AI_DISABLED to a dismiss action', () => {
+    expect(formatUserError({ code: 'AI_DISABLED' }).action.type).toBe('dismiss')
+  })
+
+  it('maps PRESET_NOT_FOUND to a retry action', () => {
+    expect(formatUserError({ code: 'PRESET_NOT_FOUND' }).action.type).toBe('retry')
+  })
+
+  it('maps GITHUB_FETCH_FAILED to a retry action', () => {
+    expect(formatUserError({ code: 'GITHUB_FETCH_FAILED' }).action.type).toBe('retry')
+  })
+
+  it('maps PUBLISH_FAILED to a retry action', () => {
+    expect(formatUserError({ code: 'PUBLISH_FAILED' }).action.type).toBe('retry')
+  })
+
+  it('reads code from server-style { error, code } body', () => {
+    // Mirrors the shape thrown by useAIDeepReview.fetchJSON (err.code set from body.code)
+    expect(formatUserError({ code: 'INVALID_API_KEY', message: 'Invalid key' }).code).toBe('INVALID_API_KEY')
+  })
+
+  it('every known action ships both a kind (legacy) and a type (canonical)', () => {
+    for (const code of [
+      'AI_NOT_CONFIGURED', 'INVALID_API_KEY', 'QUOTA_EXCEEDED', 'RATE_LIMITED',
+      'AI_TIMEOUT', 'AI_OVERLOADED', 'AI_NETWORK_ERROR', 'NETWORK_ERROR',
+    ]) {
+      const out = formatUserError({ code })
+      expect(out.action.kind, `kind for ${code}`).toBeTruthy()
+      expect(out.action.type, `type for ${code}`).toBeTruthy()
+    }
+  })
 })

@@ -18,6 +18,7 @@ import { Modal, ModalFooter } from '../ui/Modal'
 import { InsightCard } from '../ui/InsightCard'
 import { StatBar } from '../ui/StatBar'
 import { Button } from '../ui/Button'
+import { AIErrorState } from '../ui/AIErrorState'
 import { AINotConfiguredBanner } from './AINotConfiguredBanner'
 import { AINotHealthyBanner } from './AINotHealthyBanner'
 import { useAIStatus } from '../../hooks/useAIStatus'
@@ -150,8 +151,10 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
                 if (data.topics && !data.suggested_topics) data.suggested_topics = JSON.parse(data.topics)
             }
             if (!signal?.aborted) setAnalysis(data)
-        } catch {
-            if (!signal?.aborted) setError('Failed to generate insights. Please try again.')
+        } catch (err) {
+            // Preserve err.code so AIErrorState can render the right CTA
+            // (configure / upgrade / retry) instead of a generic fallback.
+            if (!signal?.aborted) setError(err || new Error('Failed to generate insights. Please try again.'))
         } finally {
             if (!signal?.aborted) setLoading(false)
         }
@@ -167,8 +170,8 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
         try {
             const indexResult = await aiApi.indexRepo(repo)
             if (!ctrl.signal.aborted) setAnalysis(indexResult.analysis)
-        } catch {
-            if (!ctrl.signal.aborted) setError('Re-analysis failed')
+        } catch (err) {
+            if (!ctrl.signal.aborted) setError(err || new Error('Re-analysis failed'))
         } finally {
             if (!ctrl.signal.aborted) setLoading(false)
         }
@@ -183,8 +186,8 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
         try {
             const result = await aiApi.getSuggestions(repo)
             if (!signal?.aborted) setSuggestionsData(result)
-        } catch {
-            if (!signal?.aborted) setSuggestionsError('Failed to generate suggestions. Please try again.')
+        } catch (err) {
+            if (!signal?.aborted) setSuggestionsError(err || new Error('Failed to generate suggestions. Please try again.'))
         } finally {
             if (!signal?.aborted) setSuggestionsLoading(false)
         }
@@ -242,7 +245,13 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
             {showNotConfigured && <AINotConfiguredBanner className="mb-4" />}
             {showNotHealthy && <AINotHealthyBanner state={keyHealth} className="mb-4" />}
             {loading && !analysis && <InsightsSkeletonGrid />}
-            {error && <InsightsErrorCard message={error} onRetry={startFetch} />}
+            {error && (
+                <AIErrorState
+                    error={error}
+                    onRetry={startFetch}
+                    context="AI Insights"
+                />
+            )}
             {analysis && !loading && activeTab === 'overview'    && <OverviewGrid    data={analysis} />}
             {analysis && !loading && activeTab === 'quality'     && <QualityGrid     data={analysis} />}
             {analysis && !loading && activeTab === 'readme'      && <ReadmeGrid      data={analysis} repo={repo} />}
@@ -613,7 +622,7 @@ function SuggestionsGrid({ data, loading, error, onRetry }) {
     }
 
     if (error) {
-        return <InsightsErrorCard message={error} onRetry={onRetry} />
+        return <AIErrorState error={error} onRetry={onRetry} context="Suggestions" />
     }
 
     const suggestions = data?.suggestions || []
@@ -709,18 +718,5 @@ function InsightsSkeletonGrid() {
     )
 }
 
-function InsightsErrorCard({ message, onRetry }) {
-    return (
-        <div role="alert">
-            <InsightCard tone="danger" hover={false}>
-                <p className="text-red-600 dark:text-red-400 mb-4">{message}</p>
-                <button
-                    onClick={onRetry}
-                    className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-600 dark:text-red-400 rounded-lg transition-colors"
-                >
-                    Retry
-                </button>
-            </InsightCard>
-        </div>
-    )
-}
+// InsightsErrorCard removed — replaced by the shared <AIErrorState /> which
+// reads action.type from formatUserError() and renders the right CTA per code.

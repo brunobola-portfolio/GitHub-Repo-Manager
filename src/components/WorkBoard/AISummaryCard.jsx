@@ -49,7 +49,10 @@ export function AISummaryCard({ meta: metaProp } = {}) {
     const [dismissed, setDismissed] = useState(false)
 
     const fetchSummary = useCallback(async () => {
-        if (MOCK_MODE) { setState({ status: 'hidden', data: null, error: null }); return }
+        // Demo mode: surface the card with an explained-empty placeholder
+        // instead of silently hiding the feature. Users should see what the
+        // production card looks like even when no AI provider is wired up.
+        if (MOCK_MODE) { setState({ status: 'demo', data: null, error: null }); return }
         setState(s => ({ ...s, status: 'loading', error: null }))
         try {
             // fetchWithRetry handles CSRF injection, retry on transient 5xx,
@@ -96,6 +99,34 @@ export function AISummaryCard({ meta: metaProp } = {}) {
 
     if (dismissed) return null
     if (state.status === 'hidden') return null
+    if (state.status === 'demo') {
+        return (
+            <div
+                role="status"
+                data-testid="ai-summary-demo"
+                className="rounded-2xl border border-dashed border-amber-300/70 dark:border-amber-700/50 p-4 bg-gradient-to-br from-amber-50/60 to-orange-50/40 dark:from-amber-950/20 dark:to-orange-950/15"
+            >
+                <div className="flex items-center gap-2 mb-1.5">
+                    <Sparkles className="w-4 h-4 text-amber-500" aria-hidden="true" />
+                    <span className="font-medium text-sm text-slate-800 dark:text-slate-200">AI Work Summary</span>
+                    <span className="text-[10px] uppercase tracking-wide opacity-60 text-amber-700 dark:text-amber-300">demo</span>
+                    <button
+                        type="button"
+                        onClick={() => setDismissed(true)}
+                        aria-label="Dismiss"
+                        title="Dismiss"
+                        className="ml-auto p-1 rounded-lg hover:bg-amber-100/60 dark:hover:bg-amber-900/30 text-slate-500 dark:text-slate-400 transition"
+                    >
+                        <X className="w-3.5 h-3.5" />
+                    </button>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                    In production, this card surfaces a daily AI summary of stale PRs,
+                    stuck issues, and review hotspots across your tracked repos.
+                </p>
+            </div>
+        )
+    }
     if (state.status === 'loading' && !state.data) {
         return (
             <div className="rounded-3xl border border-slate-200/60 dark:border-slate-700/50 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5" role="status" aria-live="polite">

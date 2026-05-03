@@ -43,6 +43,7 @@ import { OfflineBanner } from './components/ui/OfflineBanner'
 import { onRetryQueueEvent } from './utils/retry-queue'
 import { LandingPage } from './components/Landing/LandingPage'
 import { LegalFooter } from './components/LegalFooter'
+import { DemoModeBanner } from './components/DemoModeBanner'
 import { RouteFallback } from './components/ui/RouteFallback'
 import { ViewErrorFallback } from './components/ui/ViewErrorFallback'
 
@@ -816,6 +817,7 @@ function AppContent() {
   if (!user) {
     return (
       <>
+        <DemoModeBanner />
         {rateLimitBanner && (
           <RateLimitNotice
             variant="banner"
@@ -852,6 +854,7 @@ function AppContent() {
       )}
 
       <div className="min-h-screen bg-slate-50 text-slate-900 pb-12 font-sans dark:bg-slate-950 dark:text-slate-50">
+        <DemoModeBanner />
         <Header
         user={user}
         isMockMode={isMockMode}

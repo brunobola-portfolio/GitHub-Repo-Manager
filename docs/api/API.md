@@ -1792,7 +1792,7 @@ Chat with the AI assistant.
 
 **Error Codes:**
 - `400` (`MESSAGE_REQUIRED`) - Empty message
-- `401` (`INVALID_API_KEY`) - Invalid Gemini API key
+- `422` (`INVALID_API_KEY`) - Invalid Gemini API key
 - `404` (`MODEL_NOT_FOUND`) - AI model not available
 - `429` (`QUOTA_EXCEEDED`) - API quota exceeded
 - `503` (`MODEL_UNAVAILABLE`) - Model failed to load
@@ -1830,7 +1830,7 @@ Get AI-powered improvement suggestions for a repository.
 
 **Error Codes:**
 - `400` (`REPO_REQUIRED`) - Repository data is required
-- `401` (`INVALID_API_KEY`) - Invalid Gemini API key
+- `422` (`INVALID_API_KEY`) - Invalid Gemini API key
 - `404` (`MODEL_NOT_FOUND`) - AI model not available
 - `429` (`QUOTA_EXCEEDED`) - API quota exceeded
 - `503` (`MODEL_UNAVAILABLE`) - Model failed to load

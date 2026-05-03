@@ -8,7 +8,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap'
 import { motion, AnimatePresence } from 'framer-motion'
 import { sanitizeActions, dispatchAction } from '../utils/aiActions'
 import { detectRepoUrl } from '../utils/repoUrlDetector'
-import { AIAssistantPasteDialog } from './AIAssistantPasteDialog'
+import { AIAssistantPasteCard } from './AIAssistantPasteCard'
 import { buildWizardPayload } from '../utils/pasteDialogPayload'
 
 let msgIdCounter = 0
@@ -328,7 +328,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                                     />
                                                 ))}
                                                 {pasteDialog && (
-                                                  <AIAssistantPasteDialog
+                                                  <AIAssistantPasteCard
                                                     dialog={pasteDialog}
                                                     onAnswer={handlePasteAnswer}
                                                     onConfirm={handlePasteConfirm}

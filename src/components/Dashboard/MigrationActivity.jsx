@@ -27,9 +27,43 @@ export function MigrationActivity({ loading: parentLoading }) {
   // don't pass per-job context since the modal does its own listing + sort.
   const openHistory = () => openModal('showMigrationHistory')
 
+  /* eslint-disable react-hooks/set-state-in-effect -- one-shot data load on mount; demo branch is fully synchronous */
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') { setLoading(false); return }
+    // Demo mode: synthesize a small but representative stat blob so the
+    // dashboard tile shows what the feature looks like instead of a bare
+    // "no migrations yet" empty state. Recent jobs are tagged [DEMO] to
+    // make it unambiguous they aren't real.
+    if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+      setStats({
+        total: 3,
+        completed: 2,
+        running: 1,
+        failed: 0,
+        tfvc: 0,
+        recent: [
+          {
+            id: 'demo-1',
+            sourceName: '[DEMO] azure-org/payments-service',
+            targetFullName: 'demo-user/payments-service',
+            status: 'complete',
+            sourceType: 'azure-git',
+            startedAt: new Date(Date.now() - 86400000).toISOString(),
+            completedAt: new Date(Date.now() - 86000000).toISOString(),
+          },
+          {
+            id: 'demo-2',
+            sourceName: '[DEMO] github.com/acme/legacy-tools',
+            targetFullName: 'demo-user/legacy-tools',
+            status: 'running',
+            sourceType: 'github',
+            startedAt: new Date(Date.now() - 600000).toISOString(),
+            progressPct: 65,
+          },
+        ],
+      })
+      setLoading(false)
+      return
+    }
     let mounted = true
     fetch('/api/migrations/stats', { credentials: 'include' })
       .then(r => r.json())
@@ -41,6 +75,7 @@ export function MigrationActivity({ loading: parentLoading }) {
       .finally(() => { if (mounted) setLoading(false) })
     return () => { mounted = false }
   }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (loading || parentLoading) {
     return (

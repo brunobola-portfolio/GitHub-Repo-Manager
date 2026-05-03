@@ -42,6 +42,7 @@ const ACTION_ITEMS = [
   { id: 'action-create-repo', label: 'Create Repository', modal: 'showCreateRepo', icon: Plus },
   { id: 'action-transfer', label: 'Transfer Repository', modal: 'showTransfer', icon: ArrowRightLeft },
   { id: 'action-settings', label: 'Open Settings', modal: 'showSettings', icon: Settings },
+  { id: 'action-prompt-studio', label: 'Open AI Prompt Studio', hash: '#/ai/prompts', icon: Sparkles, keywords: 'prompt studio ai preset review' },
 ]
 
 // Work Board group — only rendered when activeView === 'work-board'.
@@ -411,6 +412,15 @@ export function CommandPalette({
                 : 'No results.'}
           </Command.Empty>
 
+          {MOCK_MODE && (
+            <div
+              data-testid="command-palette-demo-hint"
+              className="mx-1 mb-1 px-3 py-1.5 rounded-md text-[11px] text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/50"
+            >
+              <strong>[Demo]</strong> Live GitHub search and Ask mode (?) are disabled in demo mode.
+            </div>
+          )}
+
           {askMode && (askQuery.length < ASK_MIN_LEN ? (
             <div className="px-3 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
               Keep typing… ask a full question to get an interpretation.
@@ -561,8 +571,15 @@ export function CommandPalette({
               return (
                 <Command.Item
                   key={item.id}
-                  value={item.label}
-                  onSelect={() => { onOpenModal(item.modal); onClose() }}
+                  value={item.keywords ? `${item.label} ${item.keywords}` : item.label}
+                  onSelect={() => {
+                    if (item.hash) {
+                      window.location.hash = item.hash
+                    } else if (item.modal) {
+                      onOpenModal(item.modal)
+                    }
+                    onClose()
+                  }}
                   className={ITEM_CLASSES}
                 >
                   <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />

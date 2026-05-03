@@ -22,6 +22,26 @@ async function fetchJSON(url, options = {}) {
     return body;
 }
 
+// Wrap fetchJSON with a client-side timeout that synthesises a typed error
+// so consumers can map it through formatUserError without relying on the
+// server to report it.
+async function fetchJSONWithTimeout(url, options = {}, timeoutMs = 90_000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetchJSON(url, { ...options, signal: controller.signal });
+    } catch (err) {
+        if (err?.name === 'AbortError') {
+            const timeoutErr = new Error(`AI Deep Review timed out after ${Math.round(timeoutMs / 1000)}s.`);
+            timeoutErr.code = 'AI_TIMEOUT';
+            throw timeoutErr;
+        }
+        throw err;
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
+
 // Per the project's vite-inline-DCE-guard rule, inline both checks at every
 // callsite — do NOT extract to a const reused across callbacks (cross-module
 // constant folding can fail for dynamic-import paths).
@@ -76,7 +96,8 @@ export function useAIDeepReview(owner, repo, prNumber) {
                 setDraftId(null);
                 setDraft(null);
             } else {
-                setError(err.message);
+                // Preserve the full err so AIErrorState can map .code → CTA.
+                setError(err);
             }
         } finally {
             if (aliveRef.current) setLoading(false);
@@ -97,16 +118,19 @@ export function useAIDeepReview(owner, repo, prNumber) {
         setError(null);
         try {
             const qs = presetKey ? `?presetKey=${encodeURIComponent(presetKey)}` : '';
-            const result = await fetchJSON(`/api/ai/deep-review/${owner}/${repo}/${prNumber}${qs}`, {
-                method: 'POST',
-                body: JSON.stringify({}),
-            });
+            // 90s timeout — deep review is the heaviest LLM call we make.
+            const result = await fetchJSONWithTimeout(
+                `/api/ai/deep-review/${owner}/${repo}/${prNumber}${qs}`,
+                { method: 'POST', body: JSON.stringify({}) },
+                90_000,
+            );
             if (!aliveRef.current) return;
             setDraftId(result.draftId);
             setDraft(result.draft);
             return result;
         } catch (err) {
-            if (aliveRef.current) setError(err.message);
+            // Preserve the full err so AIErrorState can map .code → CTA.
+            if (aliveRef.current) setError(err);
             throw err;
         } finally {
             if (aliveRef.current) setLoading(false);
@@ -151,9 +175,17 @@ export function useAIDeepReview(owner, repo, prNumber) {
     const publish = useCallback(async (event = 'COMMENT') => {
         if (isMockMode()) {
             if (aliveRef.current) {
-                setDraft((d) => (d ? { ...d, status: 'published', githubReviewId: 12345 } : d));
+                // Mark the draft with a demo-only sentinel state so the UI can
+                // distinguish it from a real GitHub publish. We deliberately
+                // do NOT mint a fake `githubReviewId` — that would suggest a
+                // real review was created.
+                setDraft((d) => (d ? { ...d, status: 'demo-published' } : d));
             }
-            return { draftId: 1, githubReviewId: 12345 };
+            return {
+                draftId: 1,
+                demoOnly: true,
+                message: 'Demo mode — review is not published to GitHub.',
+            };
         }
         if (draftId == null) throw new Error('No draft to publish.');
         const result = await fetchJSON(`/api/ai/deep-review/${draftId}/publish`, {
