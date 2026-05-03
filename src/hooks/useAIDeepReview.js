@@ -175,9 +175,17 @@ export function useAIDeepReview(owner, repo, prNumber) {
     const publish = useCallback(async (event = 'COMMENT') => {
         if (isMockMode()) {
             if (aliveRef.current) {
-                setDraft((d) => (d ? { ...d, status: 'published', githubReviewId: 12345 } : d));
+                // Mark the draft with a demo-only sentinel state so the UI can
+                // distinguish it from a real GitHub publish. We deliberately
+                // do NOT mint a fake `githubReviewId` — that would suggest a
+                // real review was created.
+                setDraft((d) => (d ? { ...d, status: 'demo-published' } : d));
             }
-            return { draftId: 1, githubReviewId: 12345 };
+            return {
+                draftId: 1,
+                demoOnly: true,
+                message: 'Demo mode — review is not published to GitHub.',
+            };
         }
         if (draftId == null) throw new Error('No draft to publish.');
         const result = await fetchJSON(`/api/ai/deep-review/${draftId}/publish`, {

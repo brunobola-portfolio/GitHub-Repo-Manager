@@ -356,7 +356,12 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
           setPublishing(true)
           try {
             const out = await deep.publish(event)
-            if (out.queued) {
+            if (out.demoOnly) {
+              toast.success?.({
+                title: 'Demo: review not published',
+                message: out.message,
+              })
+            } else if (out.queued) {
               toast.success?.({
                 title: 'Review queued for publishing',
                 message: 'GitHub will receive the review momentarily.',

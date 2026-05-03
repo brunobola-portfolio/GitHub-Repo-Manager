@@ -425,6 +425,63 @@ export const mockDeepReviewDraft = {
     modelUsed: 'gemini-2.5-flash (mock)',
 };
 
+// --- Prompt Studio ---
+//
+// Drives the Prompt Studio surface in MOCK_MODE so the page renders the full
+// preset list (5 built-ins + 1 demo custom) instead of breaking on the 401
+// from /api/ai/prompt-studio/presets that demo mode otherwise produces.
+//
+// Mutating helpers (save/update/remove/setDefault/test) live in usePromptStudio's
+// MOCK_MODE branches — they operate on local component state only.
+
+export const mockPromptStudioPresets = [
+    // Built-ins (read-only, identified by string ids)
+    { id: 'general',       builtin: true, name: 'General',          scope: 'builtin', severityFloor: null,         isDefault: false },
+    { id: 'security',      builtin: true, name: 'Security audit',   scope: 'builtin', severityFloor: 'warning',    isDefault: false },
+    { id: 'performance',   builtin: true, name: 'Performance',      scope: 'builtin', severityFloor: null,         isDefault: false },
+    { id: 'accessibility', builtin: true, name: 'Accessibility',    scope: 'builtin', severityFloor: null,         isDefault: false },
+    { id: 'refactor',      builtin: true, name: 'Refactor coach',   scope: 'builtin', severityFloor: 'info',       isDefault: false },
+    // Demo custom preset (numeric id mirrors a real DB row)
+    { id: 1, builtin: false, name: '[DEMO] Our team style', scope: 'user', presetKey: 'demo_team', severityFloor: 'suggestion', isDefault: false },
+];
+
+const BUILTIN_BODIES = {
+    general:       'Review the diff for correctness, clarity, and maintainability. Flag obvious bugs, missing tests, and breaking-change risks.',
+    security:      'Audit for security issues — injection, deserialisation, secret leakage, weak crypto, missing authz/authn, and unsafe input handling. Floor at warning severity.',
+    performance:   'Look for hot paths, N+1 queries, redundant work, and big-O regressions. Suggest concrete fixes with rough cost estimates.',
+    accessibility: 'Check for WCAG violations: missing alt text, colour-only signals, keyboard traps, focus management, ARIA correctness.',
+    refactor:      'Coach on extracting helpers, eliminating duplication, simplifying control flow, and improving naming. Bias toward small, high-leverage suggestions.',
+};
+
+export function mockGetPreset(id) {
+    const key = String(id);
+    if (BUILTIN_BODIES[key]) {
+        const meta = mockPromptStudioPresets.find((p) => p.id === key);
+        return {
+            id: key,
+            builtin: true,
+            name: meta?.name ?? key,
+            body: BUILTIN_BODIES[key],
+            scope: 'builtin',
+            severityFloor: meta?.severityFloor ?? null,
+            isDefault: meta?.isDefault ?? false,
+        };
+    }
+    if (Number(id) === 1) {
+        return {
+            id: 1,
+            builtin: false,
+            name: '[DEMO] Our team style',
+            body: 'Focus on TypeScript-first patterns and avoid `any`. Prefer small composable hooks over large stateful components. Demand tests for any new public surface.',
+            scope: 'user',
+            presetKey: 'demo_team',
+            severityFloor: 'suggestion',
+            isDefault: false,
+        };
+    }
+    return null;
+}
+
 // Interceptor for /api/v1/repos/:owner/:repo/commits (used by useResilientFetch)
 export function mockCommitsFetch(url) {
     const [path] = url.split('?')

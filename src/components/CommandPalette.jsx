@@ -412,6 +412,15 @@ export function CommandPalette({
                 : 'No results.'}
           </Command.Empty>
 
+          {MOCK_MODE && (
+            <div
+              data-testid="command-palette-demo-hint"
+              className="mx-1 mb-1 px-3 py-1.5 rounded-md text-[11px] text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/50"
+            >
+              <strong>[Demo]</strong> Live GitHub search and Ask mode (?) are disabled in demo mode.
+            </div>
+          )}
+
           {askMode && (askQuery.length < ASK_MIN_LEN ? (
             <div className="px-3 py-6 text-center text-xs text-slate-500 dark:text-slate-400">
               Keep typing… ask a full question to get an interpretation.
