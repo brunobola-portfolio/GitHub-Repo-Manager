@@ -479,6 +479,28 @@ export function initDB(targetDb = db) {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_review_prompts_lookup ON ai_review_prompts(scope, scope_target, is_default)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_review_prompts_user ON ai_review_prompts(user_id)`);
 
+        // PR-context AI slash commands (slice 3): /describe, /test_plan, /improve
+        // Stores last result per (user, repo, PR#, command) for cache + UI review.
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS ai_pr_commands (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                repo_owner TEXT NOT NULL,
+                repo_name TEXT NOT NULL,
+                pr_number INTEGER NOT NULL,
+                command TEXT NOT NULL CHECK(command IN ('describe','test_plan','improve')),
+                last_head_sha TEXT NOT NULL,
+                result_json TEXT NOT NULL,
+                cost_usd REAL,
+                model_used TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                UNIQUE(user_id, repo_owner, repo_name, pr_number, command),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_pr_commands_lookup ON ai_pr_commands(repo_owner, repo_name, pr_number)`);
+
         // -----------------------------------------------------------------------
         // Work Board — Premium UX Feature Tables
         // -----------------------------------------------------------------------

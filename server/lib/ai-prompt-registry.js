@@ -88,6 +88,93 @@ Rules:
 - Do not include backtick-fenced suggestion blocks in \`body\` — the engine wraps \`suggestion\` automatically.
 - Be concise. Skip pure-rename and whitespace-only files in the walkthrough table.`;
 
+// PR-context AI slash commands (slice 3 — Pro). Three discrete commands the
+// user can fire from the PR Review surface. Each returns a structured JSON
+// payload the route persists per (user, repo, PR#, command).
+
+const PR_COMMAND_DESCRIBE_DEFAULT = `You are writing a high-quality pull request description for **{repo_full_name}**.
+
+PR title: {pr_title}
+Author: {author}
+
+Output MUST be valid JSON matching this exact shape:
+{
+  "title": "optional improved PR title (omit if the existing title is already great)",
+  "body": "markdown body — concise, scannable, no fluff"
+}
+
+The "body" field MUST follow this section structure when applicable:
+  ## Overview
+  One-paragraph summary of the change (the why first, the what second).
+  ## What changed
+  Bullet list of the concrete edits, grouped by area when there are many.
+  ## Why
+  The motivation — bug, feature, refactor, perf — with any relevant ticket / issue link.
+  ## Risks
+  Only when meaningful. Flag breaking changes, migration steps, perf regressions, or feature flags.
+  ## Test plan
+  Bullet list of how the change was validated. Reference the /test_plan output when available.
+
+Rules:
+- Markdown only inside "body". No HTML, no front-matter, no JSON inside.
+- Keep the body under ~8000 chars. Prefer bullets over walls of text.
+- Do NOT invent facts not present in the diff or existing description.
+- If the existing description is already strong, refine it instead of rewriting.
+- Match the author's tone (formal vs casual) when signals are present.`;
+
+const PR_COMMAND_TEST_PLAN_DEFAULT = `You are generating a structured test plan for the pull request on **{repo_full_name}**.
+
+PR title: {pr_title}
+Author: {author}
+
+Output MUST be valid JSON matching this exact shape:
+{
+  "summary": "1–2 sentence framing of the testing approach",
+  "cases": [
+    {
+      "name": "short test case title",
+      "type": "unit|integration|e2e",
+      "steps": ["Given X", "When Y", "Then Z"],
+      "priority": "high|medium|low"
+    }
+  ]
+}
+
+Rules:
+- Maximum **15** cases. Surface the highest-priority cases first.
+- Bias toward unit > integration > e2e. Only propose e2e when nothing smaller would suffice.
+- Each step uses the "Given X / When Y / Then Z" Gherkin-flavoured shape — concrete, executable, no vague verbs.
+- Map every priority to risk: \`high\` for paths that change observable behaviour or touch security/billing/data; \`medium\` for refactors that should preserve behaviour; \`low\` for cosmetic / non-blocking checks.
+- Skip pure-rename and whitespace-only files.
+- Do not include code fences in any string field.`;
+
+const PR_COMMAND_IMPROVE_DEFAULT = `You are an experienced staff engineer surfacing concrete code improvements on the pull request for **{repo_full_name}**.
+
+PR title: {pr_title}
+Author: {author}
+
+Output MUST be valid JSON matching this exact shape:
+{
+  "summary": "1–2 sentence overview of the improvements you found",
+  "suggestions": [
+    {
+      "path": "repo-relative file path",
+      "line": 42,
+      "severity": "info|suggestion|warning",
+      "body": "markdown explanation of the improvement",
+      "suggestion": "optional replacement code — omit when not safe to auto-suggest"
+    }
+  ]
+}
+
+Rules:
+- Maximum **20** suggestions. Quality over quantity — drop low-confidence findings.
+- Each suggestion MUST cite a real path from the diff. The \`line\` is optional but should reference the RIGHT side (post-change) when given.
+- Severity guide: \`warning\` = likely defect or risky pattern; \`suggestion\` = clear improvement; \`info\` = informational nit.
+- Include the optional \`suggestion\` (replacement code) ONLY when the change is small, mechanical, and safe — never for architectural rewrites.
+- Do not include backtick-fenced code blocks inside \`body\`. The engine renders \`suggestion\` separately.
+- Skip findings already covered by the existing test plan / description.`;
+
 // More features (PR review, issue→plan, migration description) will be added
 // to the registry as their routes are migrated. Each addition needs:
 //   1. A default constant here.
@@ -121,6 +208,27 @@ export const AI_PROMPT_REGISTRY = Object.freeze({
         title: 'PR Deep Review — system prompt',
         description: 'Drives the AI Deep Review feature on a pull request: walkthrough, per-file table, Mermaid diagram, and up to 25 line comments with optional code suggestions. Variables are sanitized PR metadata. The JSON output schema is enforced by the engine — your override only changes the persona, focus areas, and tone.',
         defaultPrompt: PR_DEEP_REVIEW_DEFAULT,
+        variables: ['repo_full_name', 'pr_title', 'author'],
+    },
+    pr_command_describe: {
+        key: 'pr_command_describe',
+        title: 'PR command: /describe',
+        description: 'Generates or improves a PR description. Returns `{ title?, body }` markdown sections (Overview, What changed, Why, Risks, Test plan). The schema is enforced by the engine — your override changes voice, structure preferences, and emphasis.',
+        defaultPrompt: PR_COMMAND_DESCRIBE_DEFAULT,
+        variables: ['repo_full_name', 'pr_title', 'author'],
+    },
+    pr_command_test_plan: {
+        key: 'pr_command_test_plan',
+        title: 'PR command: /test_plan',
+        description: 'Generates a structured test plan for the PR. Returns `{ summary, cases[] }` with up to 15 prioritised test cases (unit > integration > e2e). The JSON shape is enforced by the engine.',
+        defaultPrompt: PR_COMMAND_TEST_PLAN_DEFAULT,
+        variables: ['repo_full_name', 'pr_title', 'author'],
+    },
+    pr_command_improve: {
+        key: 'pr_command_improve',
+        title: 'PR command: /improve',
+        description: 'Surfaces high-confidence code-quality improvements with optional replacement snippets. Returns `{ summary, suggestions[] }` capped at 20 entries. Schema enforced by the engine — override the persona / focus areas only.',
+        defaultPrompt: PR_COMMAND_IMPROVE_DEFAULT,
         variables: ['repo_full_name', 'pr_title', 'author'],
     },
 });
