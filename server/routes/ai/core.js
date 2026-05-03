@@ -11,7 +11,7 @@
 
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
-import { requireAuth, safeError } from '../../middleware/auth.js';
+import { requireAuth } from '../../middleware/auth.js';
 import { aiChatSchema, attentionNarrativeSchema, aiTranslateSearchSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { aiService, sanitizeForPrompt } from '../../ai-service.js';
@@ -99,14 +99,12 @@ router.get('/config/ai-status', async (req, res) => {
 
 router.post('/ai/chat', requireAuth, validateBody(aiChatSchema), requireAI, async (req, res) => {
     try {
-        // Check usage limits
+        // Check usage limits — use the canonical quota response so the
+        // frontend's <QuotaExceededState /> primitive can render a uniform
+        // upgrade CTA (code: 'QUOTA_EXCEEDED' + structured fields).
         const usage = checkUsageLimit(req.session.userId, 'ai_queries');
         if (!usage.allowed) {
-            return res.status(429).json({
-                error: 'usage_limit_exceeded',
-                message: `You've used ${usage.current}/${usage.limit} AI queries this month`,
-                remaining: usage.remaining,
-            });
+            return res.status(429).json(quotaExceededResponse({ ...usage, metric: 'ai_queries' }));
         }
 
         const { message, context } = req.validatedBody;
@@ -290,12 +288,7 @@ router.post('/ai/suggest', requireAuth, requireAI, async (req, res) => {
     const userId = req.session.userId;
     const check = checkUsageLimit(userId, 'ai_queries');
     if (!check.allowed) {
-        return res.status(429).json({
-            error: 'AI query limit exceeded',
-            limit: check.limit,
-            current: check.current,
-            upgradeUrl: '/pricing'
-        });
+        return res.status(429).json(quotaExceededResponse({ ...check, metric: 'ai_queries' }));
     }
     try {
         const { repo } = req.body;
@@ -380,7 +373,7 @@ router.post('/ai/readme', requireAuth, requireAI, async (req, res) => {
         res.json({ success: true, readme: text, model: modelName });
     } catch (err) {
         req.log.error({ err }, 'AI README generation failed');
-        res.status(500).json({ error: safeError(err, 'Failed to generate README') });
+        handleAIError(res, err, 'Failed to generate README. Please try again later.');
     }
 });
 
@@ -428,7 +421,7 @@ router.post('/ai/readme/enhance', requireAuth, requireAI, async (req, res) => {
 
     } catch (error) {
         req.log.error({ err: error }, 'README enhancement failed');
-        res.status(500).json({ error: safeError(error, 'Failed to enhance README') });
+        handleAIError(res, error, 'Failed to enhance README. Please try again later.');
     }
 });
 

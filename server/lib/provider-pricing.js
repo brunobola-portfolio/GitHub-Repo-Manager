@@ -45,17 +45,39 @@ const CHARS_PER_TOKEN = 4;
  */
 export function getPricingForModel(modelName) {
     if (!modelName) return FALLBACK_PRICING;
-    if (PROVIDER_PRICING[modelName]) return PROVIDER_PRICING[modelName];
 
+    // Try the raw id first — both exact match and longest-prefix match.
+    const direct = lookupByPrefix(modelName);
+    if (direct) return direct;
+
+    // OpenRouter (and similar aggregators) prefix model ids with a vendor
+    // namespace, e.g. `anthropic/claude-sonnet-4-6`. Strip a single leading
+    // `<vendor>/` and re-attempt before falling back to the conservative
+    // estimate — otherwise we under-report cost ~6× for OpenRouter users.
+    const slashIdx = modelName.indexOf('/');
+    if (slashIdx > 0 && slashIdx < modelName.length - 1) {
+        const stripped = modelName.slice(slashIdx + 1);
+        const second = lookupByPrefix(stripped);
+        if (second) return second;
+    }
+
+    return FALLBACK_PRICING;
+}
+
+// Internal: exact match → longest-prefix match against PROVIDER_PRICING.
+// Returns null when nothing matches so the caller can decide between
+// further normalisation passes and the conservative fallback.
+function lookupByPrefix(name) {
+    if (PROVIDER_PRICING[name]) return PROVIDER_PRICING[name];
     let best = null;
     let bestLen = 0;
     for (const key of Object.keys(PROVIDER_PRICING)) {
-        if (modelName.startsWith(key) && key.length > bestLen) {
+        if (name.startsWith(key) && key.length > bestLen) {
             best = PROVIDER_PRICING[key];
             bestLen = key.length;
         }
     }
-    return best ?? FALLBACK_PRICING;
+    return best;
 }
 
 /**

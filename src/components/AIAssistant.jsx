@@ -14,6 +14,16 @@ import { buildWizardPayload } from '../utils/pasteDialogPayload'
 let msgIdCounter = 0
 const nextMsgId = () => `msg-${Date.now()}-${++msgIdCounter}`
 
+// Error codes that warrant a "Configure API key" deep link to AI Settings.
+// Drive this from the canonical machine code rather than substring-matching
+// the human message text — message wording is free to change without
+// breaking the CTA.
+const CONFIGURE_CTA_CODES = new Set([
+    'INVALID_API_KEY',
+    'AI_NOT_CONFIGURED',
+    'NO_AI_PROVIDER',
+])
+
 const WELCOME_MESSAGE = {
     id: 'welcome',
     role: 'assistant',
@@ -180,6 +190,9 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
             setMessages(prev => [...prev, {
                 id: nextMsgId(), role: 'assistant', isError: true,
                 text: err?.friendlyMessage || err?.message || 'Something went wrong talking to Gemini.',
+                // Preserve the machine code so MessageBubble can branch on it
+                // instead of substring-matching the human-readable text.
+                errorCode: err?.code || null,
                 retryText: text,
             }])
         } finally {
@@ -421,7 +434,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
                         </button>
                     </div>
                 )}
-                {isError && (message.text?.toLowerCase().includes('api key') || message.text?.toLowerCase().includes('gemini')) && (
+                {isError && CONFIGURE_CTA_CODES.has(message.errorCode) && (
                     <div className="flex gap-2">
                         <button
                             type="button"

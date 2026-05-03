@@ -69,7 +69,14 @@ export function useStreaming({ maxRetries = DEFAULT_MAX_RETRIES } = {}) {
                     try {
                         const data = JSON.parse(line.slice(6))
                         if (data.error) {
-                            setError(data.message || 'Stream error')
+                            // Preserve the machine code (and any retryAfter
+                            // hint) so downstream surfaces can route through
+                            // formatUserError / AIErrorState instead of
+                            // showing a generic "Stream error" toast.
+                            const streamErr = new Error(data.message || data.error || 'Stream error')
+                            if (data.code) streamErr.code = data.code
+                            if (data.retryAfterSec) streamErr.retryAfterSec = data.retryAfterSec
+                            setError(streamErr)
                             setIsStreaming(false)
                             return null
                         }

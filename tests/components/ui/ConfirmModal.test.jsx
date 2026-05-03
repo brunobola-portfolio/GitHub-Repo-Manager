@@ -133,8 +133,12 @@ describe('ConfirmModal', () => {
     )
     const dialog = screen.getByRole('dialog')
     expect(dialog).toHaveAttribute('aria-modal', 'true')
-    expect(dialog).toHaveAttribute('aria-labelledby', 'confirm-modal-title')
-    expect(dialog).toHaveAttribute('aria-describedby', 'confirm-modal-body')
+    // ConfirmModal now delegates to the shared <Modal> primitive, which
+    // generates per-instance ids via React.useId() rather than the
+    // hardcoded `confirm-modal-title`/`confirm-modal-body` ids the legacy
+    // scaffold used. Just assert the labels point at *something*.
+    expect(dialog.getAttribute('aria-labelledby')).toMatch(/^modal-title-/)
+    expect(dialog.getAttribute('aria-describedby')).toMatch(/^modal-body-/)
   })
 
   it('disables buttons while submitting', async () => {
