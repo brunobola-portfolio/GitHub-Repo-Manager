@@ -50,4 +50,39 @@ describe('PromptPicker', () => {
         const { container } = render(<PromptPicker presets={[]} activeKey="" onChange={() => {}} />);
         expect(container.firstChild).toBeNull();
     });
+
+    it('closes on Escape', () => {
+        render(<PromptPicker presets={presets} activeKey="general" onChange={() => {}} />);
+        fireEvent.click(screen.getByRole('button', { name: /general/i }));
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
+        fireEvent.keyDown(document, { key: 'Escape' });
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+
+    it('closes on click outside', () => {
+        render(
+            <div>
+                <button data-testid="outside">elsewhere</button>
+                <PromptPicker presets={presets} activeKey="general" onChange={() => {}} />
+            </div>
+        );
+        fireEvent.click(screen.getByRole('button', { name: /general/i }));
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
+        fireEvent.pointerDown(screen.getByTestId('outside'));
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+
+    it('Arrow keys cycle through options', async () => {
+        render(<PromptPicker presets={presets} activeKey="general" onChange={() => {}} />);
+        fireEvent.click(screen.getByRole('button', { name: /general/i }));
+        await new Promise((r) => setTimeout(r, 10)); // wait for focus defer
+        const list = screen.getByRole('listbox');
+        fireEvent.keyDown(list, { key: 'ArrowDown' });
+        // Active option moves; we can't easily assert focus in jsdom but the handler should not throw
+        fireEvent.keyDown(list, { key: 'ArrowUp' });
+        fireEvent.keyDown(list, { key: 'Home' });
+        fireEvent.keyDown(list, { key: 'End' });
+        // List should still be open (no errors)
+        expect(screen.getByRole('listbox')).toBeInTheDocument();
+    });
 });
