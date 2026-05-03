@@ -186,3 +186,23 @@ describe('AI prompt registry — rendering', () => {
         expect(out).toMatch(/kebab-case/)
     })
 })
+
+describe('pr_deep_review prompt', () => {
+    it('is registered with required fields', () => {
+        const entry = AI_PROMPT_REGISTRY.pr_deep_review;
+        expect(entry).toBeDefined();
+        expect(entry.key).toBe('pr_deep_review');
+        expect(typeof entry.defaultPrompt).toBe('string');
+        expect(entry.defaultPrompt.length).toBeGreaterThan(200);
+        expect(REGISTRY_KEYS).toContain('pr_deep_review');
+    });
+
+    it('renders {repo_full_name} and {pr_title} placeholders', () => {
+        const out = getResolvedPrompt(0, 'pr_deep_review', {
+            repo_full_name: 'acme/api',
+            pr_title: 'Add billing',
+        });
+        expect(out).toContain('acme/api');
+        expect(out).toContain('Add billing');
+    });
+});
