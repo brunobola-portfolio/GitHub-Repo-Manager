@@ -117,8 +117,13 @@ export function useAIDeepReview(owner, repo, prNumber) {
             body: JSON.stringify({ event }),
         });
         if (aliveRef.current) {
-            // Mark draft as published locally so the UI can disable the Publish CTA
-            setDraft((d) => (d ? { ...d, status: 'published', githubReviewId: result.githubReviewId } : d));
+            if (result.queued) {
+                // Outbox deferred the GitHub call — show "publishing" state
+                setDraft((d) => (d ? { ...d, status: 'publishing', outboxId: result.outboxId } : d));
+            } else {
+                // Mark draft as published locally so the UI can disable the Publish CTA
+                setDraft((d) => (d ? { ...d, status: 'published', githubReviewId: result.githubReviewId } : d));
+            }
         }
         return result;
     }, [draftId]);

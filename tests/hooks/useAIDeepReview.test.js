@@ -73,4 +73,17 @@ describe('useAIDeepReview', () => {
         expect(result.current.draft.status).toBe('published');
         expect(result.current.draft.githubReviewId).toBe(9999);
     });
+
+    it('publish() with queued response sets draft.status="publishing"', async () => {
+        global.fetch.mockReturnValueOnce(jsonResponse(200, { draftId: 1, draft: sampleDraft }));
+        const { result } = renderHook(() => useAIDeepReview('acme', 'api', 42));
+        await waitFor(() => expect(result.current.draft).toBeTruthy());
+
+        global.fetch.mockReturnValueOnce(jsonResponse(202, { draftId: 1, queued: true, outboxId: 42 }));
+        let pubResult;
+        await act(async () => { pubResult = await result.current.publish('COMMENT'); });
+        expect(pubResult.queued).toBe(true);
+        expect(result.current.draft.status).toBe('publishing');
+        expect(result.current.draft.outboxId).toBe(42);
+    });
 });

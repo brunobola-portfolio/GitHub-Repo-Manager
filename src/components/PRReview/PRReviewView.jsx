@@ -360,7 +360,17 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
           setPublishing(true)
           try {
             const out = await deep.publish(event)
-            toast.success?.({ title: 'Review published to GitHub', message: `Review #${out.githubReviewId}` })
+            if (out.queued) {
+              toast.success?.({
+                title: 'Review queued for publishing',
+                message: 'GitHub will receive the review momentarily.',
+              })
+            } else {
+              toast.success?.({
+                title: 'Review published to GitHub',
+                message: out.githubReviewId ? `Review #${out.githubReviewId}` : undefined,
+              })
+            }
             setPublishOpen(false)
           } catch (err) {
             toast.errorFromException?.(err, { fallbackTitle: 'Failed to publish review' })

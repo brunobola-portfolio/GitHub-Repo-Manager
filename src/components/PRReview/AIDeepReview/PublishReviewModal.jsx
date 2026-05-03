@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const EVENTS = [
     { key: 'COMMENT', label: 'Comment', tone: 'bg-blue-600 hover:bg-blue-700' },
@@ -9,6 +9,13 @@ const EVENTS = [
 export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishing }) {
     const [event, setEvent] = useState('COMMENT');
 
+    useEffect(() => {
+        if (!isOpen) return undefined;
+        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isOpen, onClose]);
+
     if (!isOpen || !draft) return null;
 
     const lineCount = (draft.lineComments || []).length;
@@ -16,10 +23,21 @@ export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishi
     const hasMermaid = !!draft.walkthrough?.mermaid?.trim();
 
     return (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-lg shadow-xl flex flex-col max-h-[90vh]">
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- Escape key is handled in the keydown listener above; backdrop click is a non-essential affordance, role="dialog" is non-interactive by spec
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="publish-review-title"
+            onClick={onClose}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+        >
+            {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- inner panel only stops propagation to keep clicks inside the dialog from closing it */}
+            <div
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-2xl bg-white dark:bg-gray-900 rounded-lg shadow-xl flex flex-col max-h-[90vh]"
+            >
                 <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center">
-                    <h3 className="font-semibold">Publish AI review to GitHub</h3>
+                    <h3 id="publish-review-title" className="font-semibold">Publish AI review to GitHub</h3>
                     <button type="button" onClick={onClose} aria-label="Close" className="ml-auto opacity-60 hover:opacity-100">×</button>
                 </div>
 
