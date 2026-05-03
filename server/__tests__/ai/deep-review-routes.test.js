@@ -76,6 +76,7 @@ vi.mock('../../lib/github-api.js', () => ({
 
 const {
     default: deepReviewRouter,
+    _resetRateLimits,
 } = await import('../../routes/ai/deep-review.js');
 
 const USER_ID = 1;
@@ -101,6 +102,7 @@ beforeEach(() => {
     mockGenerate.mockClear();
     createProviderForUserMock.mockReset();
     createProviderForUserMock.mockResolvedValue(mockProvider);
+    _resetRateLimits();
 });
 
 describe('POST /api/ai/deep-review/:owner/:repo/:pr', () => {
@@ -188,5 +190,21 @@ describe('DELETE /api/ai/deep-review/:draftId', () => {
         const created = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
         const res = await request(app).delete(`/api/ai/deep-review/${created.body.draftId}`);
         expect(res.status).toBe(204);
+    });
+});
+
+describe('rate limiting on POST generate', () => {
+    it('returns 429 after 10 generations per minute per user', async () => {
+        const app = makeApp();
+        // First 10 succeed
+        for (let i = 0; i < 10; i++) {
+            const r = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
+            expect(r.status).toBe(200);
+        }
+        // 11th hits the limit
+        const overflow = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
+        expect(overflow.status).toBe(429);
+        expect(overflow.body.code).toBe('RATE_LIMITED');
+        expect(overflow.headers['retry-after']).toBeDefined();
     });
 });

@@ -38,6 +38,45 @@ import logger from '../../lib/logger.js';
 const router = express.Router();
 
 // ---------------------------------------------------------------------------
+// In-memory per-user rate limiter for the LLM-triggering generate route.
+// 10 requests per 60 seconds per user. Resets on server restart — acceptable
+// for slice 1a (Redis-backed limiter is a slice 1a-2 concern).
+// ---------------------------------------------------------------------------
+
+const generateRateBuckets = new Map(); // userId -> [timestamps]
+const RATE_WINDOW_MS = 60_000;
+const RATE_LIMIT_PER_WINDOW = 10;
+
+function generateRateLimit(req, res, next) {
+    const userId = req.session?.userId;
+    if (!userId) return next();
+    const now = Date.now();
+    const bucket = (generateRateBuckets.get(userId) || []).filter((t) => now - t < RATE_WINDOW_MS);
+    if (bucket.length >= RATE_LIMIT_PER_WINDOW) {
+        const retryAfter = Math.ceil((RATE_WINDOW_MS - (now - bucket[0])) / 1000);
+        res.setHeader('Retry-After', String(retryAfter));
+        return errorResponse(
+            res,
+            429,
+            `Rate limit: max ${RATE_LIMIT_PER_WINDOW} AI reviews per minute. Retry in ${retryAfter}s.`,
+            'RATE_LIMITED',
+        );
+    }
+    bucket.push(now);
+    generateRateBuckets.set(userId, bucket);
+    next();
+}
+
+/**
+ * Test-only helper: clear the per-user rate-limit buckets between tests.
+ * Not exported via the router; consumers must `import { _resetRateLimits }`
+ * directly from this module.
+ */
+export function _resetRateLimits() {
+    generateRateBuckets.clear();
+}
+
+// ---------------------------------------------------------------------------
 // Param validators — fail fast and uniformly before any handler runs.
 // ---------------------------------------------------------------------------
 
@@ -78,7 +117,7 @@ router.param('commentIdx', (req, res, next, val) => {
 // POST — generate (or refresh) a draft for a PR
 // ---------------------------------------------------------------------------
 
-router.post('/:owner/:repo/:pr', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res) => {
     const { owner, repo, pr } = req.params;
     const userId = req.session.userId;
 
@@ -178,7 +217,7 @@ router.post('/:owner/:repo/:pr', requireAuth, async (req, res) => {
         Number(pr),
         prData.head.sha,
         result,
-        /* costUsd */ null,
+        result.costUsd ?? null,
         result.modelUsed,
     );
 
@@ -278,6 +317,10 @@ router.post('/:draftId/publish', requireAuth, async (req, res) => {
             method: 'POST',
             url: `/repos/${got.repoOwner}/${got.repoName}/pulls/${got.prNumber}/reviews`,
             body: payload,
+            // Stable per-(draft, event) key so two clicks of "Publish" — even
+            // across server restarts or retries by the worker — collapse into
+            // a single GitHub review row.
+            idempotencyKey: `pr-deep-review:${got.id}:${event}`,
         });
         if (result.queued) {
             queuedInfo = { queued: true, outboxId: result.outboxId };

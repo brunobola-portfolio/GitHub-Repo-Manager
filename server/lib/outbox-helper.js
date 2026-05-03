@@ -17,11 +17,16 @@
 import crypto from 'crypto'
 import { enqueueAndExecute, makeIdempotencyKey } from './gh-outbox.js'
 
-export async function executeViaOutbox(req, { method, url, body = null, githubOptions = {} }) {
+export async function executeViaOutbox(req, { method, url, body = null, githubOptions = {}, idempotencyKey: explicitKey } = {}) {
+    // Callers may pass an explicit `idempotencyKey` when they have a stable
+    // domain identifier (e.g. `pr-deep-review:<draftId>:<event>`) that should
+    // collapse retries across body-content edits. Otherwise we derive a stable
+    // key from `(method, url, sha256(body))` so duplicate clicks dedupe and
+    // genuine new payloads create new rows.
     const bodyHash = body
         ? crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex').slice(0, 16)
         : ''
-    const idempotencyKey = makeIdempotencyKey(method, url, bodyHash)
+    const idempotencyKey = explicitKey || makeIdempotencyKey(method, url, bodyHash)
     const result = await enqueueAndExecute({
         userId: req.session.userId,
         method,

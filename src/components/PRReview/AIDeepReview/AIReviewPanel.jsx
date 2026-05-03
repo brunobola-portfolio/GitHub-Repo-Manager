@@ -36,7 +36,9 @@ export function AIReviewPanel({
     }
 
     const lineComments = draft?.lineComments ?? [];
-    const isPublished = draft?.status === 'published';
+    const status = draft?.status;
+    const isPublished = status === 'published';
+    const isPublishing = status === 'publishing';
 
     return (
         <div className="flex flex-col h-full min-h-0 border-l border-slate-200 dark:border-slate-800">
@@ -77,10 +79,14 @@ export function AIReviewPanel({
                 <button
                     type="button"
                     onClick={onPublish}
-                    disabled={publishing || isPublished || (lineComments.length === 0 && !draft?.walkthrough?.summary)}
+                    disabled={publishing || isPublished || isPublishing || (lineComments.length === 0 && !draft?.walkthrough?.summary)}
                     className="w-full px-3 py-1.5 text-sm font-medium rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
                 >
-                    {isPublished ? 'Published ✓' : (publishing ? 'Publishing…' : 'Publish to GitHub →')}
+                    {isPublished
+                        ? 'Published ✓'
+                        : (isPublishing
+                            ? 'Publishing… (queued)'
+                            : (publishing ? 'Publishing…' : 'Publish to GitHub →'))}
                 </button>
             </div>
         </div>
