@@ -30,6 +30,7 @@ import migrationRouter from './ai/migration.js';
 import suggestNameDescriptionRouter from './ai/suggest-name-description.js';
 import promptsRouter from './ai/prompts.js';
 import deepReviewRouter from './ai/deep-review.js';
+import promptStudioRouter from './ai/prompt-studio.js';
 
 const router = express.Router();
 router.use(coreRouter);
@@ -42,5 +43,8 @@ router.use(promptsRouter);
 // Mounted under /api/ai/deep-review/* — keeps the engine + store + publish
 // builder behind a single namespace the frontend can hit.
 router.use('/ai/deep-review', deepReviewRouter);
+// Prompt Studio (slice 1b): preset library + sandbox /test for the Deep
+// Review system prompt. GETs are free; mutations + /test are Pro-gated.
+router.use('/ai/prompt-studio', promptStudioRouter);
 
 export default router;

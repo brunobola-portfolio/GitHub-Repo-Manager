@@ -302,6 +302,44 @@ export const migrationDescriptionSchema = z.object({
     }),
 });
 
+// --- AI Deep Review prompt presets (Prompt Studio, slice 1b) ---
+//
+// Slice 1b ships user/repo-scoped presets only — `org` is reserved for slice 5
+// when team scaffolding lands. `scopeTarget` is required for repo scope and
+// must match GitHub's `owner/repo` shape; we keep regex bounds tight so the
+// value can be safely interpolated into store WHERE clauses (which already use
+// parameter binding, but defence-in-depth is cheap).
+const PRESET_SEVERITY_FLOORS = ['info', 'suggestion', 'warning', 'critical'];
+const PRESET_SCOPES = ['user', 'repo'];
+const REPO_FULL_NAME_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\/[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$/;
+const PRESET_KEY_RE = /^[a-z0-9_-]{1,40}$/;
+
+export const promptPresetCreateSchema = z.object({
+    scope: z.enum(PRESET_SCOPES),
+    scopeTarget: z.string().max(140).regex(REPO_FULL_NAME_RE).nullable().optional(),
+    presetKey: z.string().regex(PRESET_KEY_RE),
+    name: z.string().min(1).max(100),
+    systemPrompt: z.string().min(1).max(8000),
+    pathRules: z.array(z.object({
+        glob: z.string().min(1).max(200),
+        extraPrompt: z.string().min(1).max(2000),
+    })).max(20).optional(),
+    severityFloor: z.enum(PRESET_SEVERITY_FLOORS).nullable().optional(),
+}).refine((v) => v.scope !== 'repo' || (v.scopeTarget && REPO_FULL_NAME_RE.test(v.scopeTarget)), {
+    message: 'scopeTarget required for scope=repo and must match owner/repo',
+    path: ['scopeTarget'],
+});
+
+export const promptPresetUpdateSchema = z.object({
+    name: z.string().min(1).max(100).optional(),
+    systemPrompt: z.string().min(1).max(8000).optional(),
+    pathRules: z.array(z.object({
+        glob: z.string().min(1).max(200),
+        extraPrompt: z.string().min(1).max(2000),
+    })).max(20).optional(),
+    severityFloor: z.enum(PRESET_SEVERITY_FLOORS).nullable().optional(),
+});
+
 // --- BYOK / User AI Config Schemas ---
 
 export const userAIConfigSchema = z.object({

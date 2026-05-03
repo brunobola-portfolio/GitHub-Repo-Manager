@@ -107,3 +107,86 @@ describe('runDeepReview', () => {
         ).rejects.toThrow(/provider/i);
     });
 });
+
+describe('runDeepReview with resolvedPrompt', () => {
+    it('uses resolvedPrompt.systemPrompt verbatim when provided', async () => {
+        let captured;
+        const provider = buildProvider(async (args) => {
+            captured = args.parts[0].text;
+            return { parsed: sampleParsed };
+        });
+        await runDeepReview({
+            provider, ...baseCtx,
+            resolvedPrompt: {
+                name: 'Custom',
+                systemPrompt: 'CUSTOM_SYSTEM_PROMPT_TOKEN',
+                severityFloor: null,
+                pathRules: [],
+            },
+        });
+        expect(captured).toContain('CUSTOM_SYSTEM_PROMPT_TOKEN');
+    });
+
+    it('applies severity floor to drop below-threshold comments', async () => {
+        const provider = buildProvider(async () => ({
+            parsed: {
+                walkthrough: { ...sampleParsed.walkthrough, summary: 'x' },
+                lineComments: [
+                    { path: 'a', side: 'RIGHT', line: 1, severity: 'info', body: 'i' },
+                    { path: 'a', side: 'RIGHT', line: 2, severity: 'suggestion', body: 's' },
+                    { path: 'a', side: 'RIGHT', line: 3, severity: 'warning', body: 'w' },
+                    { path: 'a', side: 'RIGHT', line: 4, severity: 'critical', body: 'c' },
+                ],
+            },
+        }));
+        const result = await runDeepReview({
+            provider, ...baseCtx,
+            resolvedPrompt: { name: 'X', systemPrompt: 'p', severityFloor: 'warning', pathRules: [] },
+        });
+        expect(result.lineComments).toHaveLength(2);
+        expect(result.lineComments.map((c) => c.severity)).toEqual(['warning', 'critical']);
+    });
+
+    it('appends path-rule extras for matching files', async () => {
+        let captured;
+        const provider = buildProvider(async (args) => {
+            captured = args.parts[0].text;
+            return { parsed: sampleParsed };
+        });
+        await runDeepReview({
+            provider, ...baseCtx,
+            fileManifest: [
+                { filename: 'src/components/Button.jsx', status: 'modified', additions: 1, deletions: 0, changes: 1 },
+                { filename: 'server/db.js', status: 'modified', additions: 1, deletions: 0, changes: 1 },
+            ],
+            resolvedPrompt: {
+                name: 'X', systemPrompt: 'p', severityFloor: null,
+                pathRules: [
+                    { glob: 'src/components/**', extraPrompt: 'A11Y_RULE_BUTTON' },
+                    { glob: 'server/**', extraPrompt: 'SQL_RULE_DB' },
+                ],
+            },
+        });
+        expect(captured).toContain('A11Y_RULE_BUTTON');
+        expect(captured).toContain('SQL_RULE_DB');
+        expect(captured).toContain('src/components/Button.jsx');
+        expect(captured).toContain('server/db.js');
+    });
+
+    it('skips path-rule extras when no files match', async () => {
+        let captured;
+        const provider = buildProvider(async (args) => {
+            captured = args.parts[0].text;
+            return { parsed: sampleParsed };
+        });
+        await runDeepReview({
+            provider, ...baseCtx,
+            fileManifest: [{ filename: 'README.md', status: 'modified', additions: 1, deletions: 0, changes: 1 }],
+            resolvedPrompt: {
+                name: 'X', systemPrompt: 'p', severityFloor: null,
+                pathRules: [{ glob: 'src/**', extraPrompt: 'NOT_APPLIED' }],
+            },
+        });
+        expect(captured).not.toContain('NOT_APPLIED');
+    });
+});
