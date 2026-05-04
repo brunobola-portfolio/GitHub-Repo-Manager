@@ -21,7 +21,7 @@
 ![LM Studio](https://img.shields.io/badge/LM_Studio-4B2DDC?style=for-the-badge)
 
 <!-- Quality -->
-![Tests](https://img.shields.io/badge/Tests-2782_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-3200%2B_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
 ![License](https://img.shields.io/badge/License-AGPL_v3-blue?style=for-the-badge&logo=gnu&logoColor=white)
 ![Release](https://img.shields.io/github/v/release/brunobola-portfolio/GitHub-Repo-Manager?style=for-the-badge&logo=github&logoColor=white)
 
@@ -299,6 +299,16 @@ Available on **every tier including Free** — the full AI product surface (Assi
 
 > Without any key configured, AI features return high-quality mock responses automatically.
 
+### AI Deep Review (NEW)
+
+A premium PR review experience that turns the in-app PR view into a tool developers actively choose over github.com — generating a structured walkthrough, line-level review comments with one-click code suggestions, PR-context slash commands, and a streaming Q&A chat. One click batches the whole thing into a single GitHub review with a clear AI-generated footer. See the [AI Deep Review feature guide](docs/features/ai-deep-review.md).
+
+- **Walkthrough tab** — markdown summary, per-file change table, and a Mermaid sequence diagram (Free).
+- **Comments tab** — up to 25 line comments with editable `suggestion` blocks; dismiss / edit before publishing (Free).
+- **Commands tab** — `/describe`, `/test_plan`, `/improve` PR-context slash commands with "Apply to PR" outbox-backed body PATCH (Pro).
+- **Chat tab** — streaming Q&A on the PR with per-`(user, PR)` persisted history, sanitised inputs, and cancellable SSE (Pro).
+- **Prompt Studio** — built-in presets plus custom presets at user / repo / org scope, path-scoped rules, severity floor, and a `${REPO_STYLE_GUIDE}` token that inlines `.repomanager/review-rules.md` (Pro for custom prompts; built-ins read-only on every tier).
+
 ---
 
 ## Plans & Pricing
@@ -315,7 +325,13 @@ The hosted product ships three tiers. The **Free tier includes the full AI produ
 | Repo Insights / Quality Report         | 10 / month      | Unlimited     | Unlimited  |
 | README Generator (AI)                  | 5 / month       | Unlimited     | Unlimited  |
 | Commit Generator (AI)                  | 50 / month      | Unlimited     | Unlimited  |
-| PR Review Experience                   | Read-only       | Full + write-back | Full + write-back |
+| PR Review Experience (read + browse)   | ✓               | ✓             | ✓          |
+| Manual PR review write-back            | ✗               | ✓             | ✓          |
+| AI Deep Review — walkthrough + comments + publish | ✓    | ✓             | ✓          |
+| AI Deep Review — Prompt Studio (custom presets, path rules, severity floor) | ✗ | ✓ | ✓ |
+| AI Deep Review — org-shared prompts    | ✗               | ✓             | ✓          |
+| AI Deep Review — PR slash commands (`/describe`, `/test_plan`, `/improve`) | ✗ | ✓ | ✓ |
+| AI Deep Review — PR Chat (streaming Q&A) | ✗             | ✓             | ✓          |
 | Basic bulk on own repos                | ✓               | ✓             | ✓          |
 | Advanced bulk (transfer, mirror, cross-org) | ✗          | ✓             | ✓          |
 | Azure DevOps Cloud migration           | ✗               | ✓             | ✓          |
@@ -536,7 +552,7 @@ For detailed architecture documentation, see [`docs/architecture/overview.md`](d
 | **AI (BYOK)** | Anthropic, OpenAI, Google Gemini, OpenRouter, LMStudio / local — per-user keys encrypted at rest |
 | **APIs** | GitHub REST API (v2022-11-28), Azure DevOps API (v7.1), Stripe Billing |
 | **Logging** | Pino (structured JSON, automatic credential redaction) + Sentry breadcrumbs |
-| **Testing** | Vitest 4 (2782 unit tests), Testing Library, Playwright |
+| **Testing** | Vitest 4 (3200+ unit tests), Testing Library, Playwright |
 | **Auth** | GitHub OAuth 2.0 (CSRF state), Azure DevOps OAuth |
 | **CI gates** | ESLint `max-warnings 0`, build-honesty test (no mock leaks), bundle-budget (≤ 415 KB gzip eager), README honesty regression guard |
 
@@ -762,6 +778,21 @@ A: No. Source repos are never modified. Use dry-run mode to test first.
 ---
 
 ## Recently Shipped
+
+### v4.0.0 — AI Deep Review (May 2026, unreleased)
+
+The full premium PR review surface. See the [AI Deep Review feature guide](docs/features/ai-deep-review.md) for end-user docs and the [spec](docs/specs/2026-05-03-ai-deep-review.md) / [slice 1a plan](docs/plans/2026-05-03-ai-deep-review-slice-1a.md) / [slice 1b plan](docs/plans/2026-05-04-ai-deep-review-slice-1b.md) for design depth.
+
+- **Slice 1a — free core engine.** `runDeepReview` produces a markdown walkthrough + per-file change table + Mermaid sequence diagram + up to 25 line comments with `suggestion` blocks. Drafts persist in `ai_pr_reviews`; new `<PRReviewView>` + `<AIReviewPanel>` (Walkthrough / Comments / Commands / Chat tabs) render them. One-click batched publish through the existing outbox with idempotency key `pr-deep-review:{draftId}:{event}` — double-clicks across server restarts collapse into a single GitHub review row. 5 routes under `/api/ai/deep-review/*`. Free with BYOK key. MOCK_MODE returns canned fixture; publish in mock mode is honest (no fabricated `githubReviewId`).
+- **Slice 1a-2 — production hardening.** Provider `usageMetadata` threading (Gemini / Anthropic / OpenAI / OpenRouter / local), unified `computeCostUSD` cost wiring, LRU sweep on the in-memory rate limiter, mermaid theme observer, modal focus trap via `useFocusTrap`.
+- **Slice 1b — Premium Prompt Studio.** `ai_review_prompts` table, 5 built-in presets (general / security / performance / accessibility / refactor), per-repo + per-user defaults, path-scoped rules, severity floor, `${REPO_STYLE_GUIDE}` token substitution from `.repomanager/review-rules.md`. 7 routes under `/api/ai/prompt-studio/*` (CRUD requires Pro; GET endpoints free so the picker renders for all tiers). New top-level `/ai/prompts` page with Library + Editor + PromptPicker.
+- **PR Slash Commands (Pro).** `/describe`, `/test_plan`, `/improve` invokable from a Commands tab in the AI Review Panel. `/describe` → "Apply to PR" PATCHes the body via the outbox with body-hash idempotency. 4 routes under `/api/ai/pr-commands/*`, all `requireTier('pro')`. Per-user 20/h rate limit. New `ai_pr_commands` table.
+- **PR Chat tab (Pro).** 4th tab in `<AIReviewPanel>` — streaming Q&A via SSE on `POST /api/ai/pr-chat/:owner/:repo/:pr` using the existing `useStreaming` infra. Per-`(user, PR)` history persisted in `ai_pr_chat_messages` with `MAX_HISTORY_TURNS = 10` collapse. Defence in depth: every PR-derived string sanitised via `sanitizeForPrompt`. AbortController on unmount + new send + cancel. MIN scope — server-side tool execution (`read_pr_file`, `list_pr_comments`) deferred; table columns are forward-compatible.
+- **Org-shared prompts (Pro).** `scope='org'` end-to-end. New `github-org-membership.js` helper (`isOrgMember`, `filterOrgsByMembership`, `getCurrentUserOrgs`, cached 5 min via gh-cache). Resolution chain: explicit `presetKey` → repo-default → user-default → **org-default** → built-in `general`. Org members read org-shared presets even when not authors; PATCH / DELETE / set-default still author-only. "shared · {org}" + "read-only" badges in the Prompt Library.
+- **Premium UX unification.** Unified AI error vocabulary (17 codes) and shared `<AIErrorState>` mounted in 5 high-traffic surfaces; 401→422 fix so AI provider auth errors stop colliding with session-expiry; 60 s / 90 s `AbortController` timeouts on `useAI.askAI` + `useAIDeepReview.generate`; new global `<DemoModeBanner>` for mock-mode signal; `<SafeMarkdown>` (react-markdown + rehype-sanitize) for every model-output surface; Prompt Studio reachable from Settings → AI + Command Palette; PRFilesTab "reviewed" state persisted to localStorage.
+- **AI polish sweep.** ConfirmModal ported to the `<Modal>` primitive; OpenRouter pricing prefix normalisation (`anthropic/claude-*` resolves to real Anthropic pricing); `core.js` endpoints (chat / suggest / readme / readme-enhance) unified through `quotaExceededResponse` + `handleAIError`; BatchIndexProgressModal per-chunk recovery; AIAssistant CTA branching by `err.code`; useStreaming preserves `err.code` + `retryAfterSec`.
+- **Surface uniformity.** 4 new shared primitives — `<SectionPanel>`, `<HeroHalo>`, `<CountUp>`, `<PageMount>` — applied across Dashboard / RepoDetail / WorkBoard. All honour `prefers-reduced-motion`. RepoDetail tabs upgraded from flat `<Card>` to `<SectionPanel>`.
+- **Drawer consolidation.** Unified `<Drawer side="left|right|bottom">` primitive replacing Sheet, MobileDrawer, SidePanel, and AutoFixDrawer's bespoke shell. Bottom variant adds drag handle + `safe-area-inset-bottom` + swipe-to-dismiss (drag-y > 100 px or velocity > 500). 10 consumers migrated; 3 primitives deleted. Fixed a pre-existing bug where `MobileDrawer side="bottom"` was silently routing to right (RepoFilterBar + SelectionSheet were sliding from the wrong edge).
 
 ### v3.8.0 (April 2026)
 
