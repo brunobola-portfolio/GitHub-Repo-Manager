@@ -11,7 +11,7 @@
  * Webhook entries include the full GitHub payload — usually JSON. We
  * pretty-print if parseable; otherwise show verbatim.
  */
-import { SidePanel } from '../ui/SidePanel'
+import { Drawer } from '../ui/Drawer'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
@@ -78,7 +78,8 @@ export function DLQDetailPanel({
     const resolved = !!entry?.resolved_at
 
     return (
-        <SidePanel isOpen={isOpen} onClose={onClose} title={title} subtitle={subtitle} width={560}>
+        <Drawer isOpen={isOpen} onClose={onClose} title={title} subtitle={subtitle} width={560}>
+            <div className="p-6">
             {loading && (
                 <SectionSpinner padding="py-12" tone="muted" />
             )}
@@ -151,6 +152,7 @@ export function DLQDetailPanel({
                     </div>
                 </div>
             )}
-        </SidePanel>
+            </div>
+        </Drawer>
     )
 }

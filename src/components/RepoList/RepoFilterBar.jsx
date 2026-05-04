@@ -6,7 +6,7 @@ import {
 import { Spinner } from '../ui/Spinner'
 import { Button } from '../ui/Button'
 import { Select } from '../ui/Select'
-import { MobileDrawer } from '../MobileDrawer'
+import { Drawer } from '../ui/Drawer'
 import { useMobileBreakpoint } from '../../hooks/useMobileBreakpoint'
 
 /**
@@ -311,12 +311,12 @@ export function RepoFilterBar({
 
 			{/* Mobile filter sheet — same selects, stacked vertically with full labels */}
 			{isMobile && (
-				<MobileDrawer
+				<Drawer
 					isOpen={filterSheetOpen}
 					onClose={() => setFilterSheetOpen(false)}
 					side="bottom"
 				>
-					<div className="flex flex-col gap-4 pb-2">
+					<div className="flex flex-col gap-4 px-4 py-3 pb-2">
 						<h3 className="text-sm font-semibold text-slate-900 dark:text-white">Filter repositories</h3>
 						<div className="flex flex-col gap-3">
 							<div>
@@ -387,7 +387,7 @@ export function RepoFilterBar({
 							</Button>
 						</div>
 					</div>
-				</MobileDrawer>
+				</Drawer>
 			)}
 		</div>
 

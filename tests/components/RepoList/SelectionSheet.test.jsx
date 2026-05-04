@@ -2,21 +2,22 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { SelectionSheet } from '../../../src/components/RepoList/SelectionSheet'
 
-// Stub framer-motion + the hooks used by MobileDrawer to avoid jsdom flakiness.
+// Stub framer-motion + the hooks used by Drawer to avoid jsdom flakiness.
+const stripMotionProps = (props) => {
+	const filtered = { ...props }
+	for (const key of [
+		'initial', 'animate', 'exit', 'transition', 'variants',
+		'whileHover', 'whileTap', 'drag', 'dragConstraints', 'dragElastic', 'onDragEnd',
+	]) delete filtered[key]
+	return filtered
+}
 vi.mock('framer-motion', () => ({
 	motion: {
-		div: ({ children, ...props }) => {
-			const filtered = { ...props }
-			delete filtered.initial
-			delete filtered.animate
-			delete filtered.exit
-			delete filtered.transition
-			delete filtered.whileHover
-			delete filtered.whileTap
-			return <div {...filtered}>{children}</div>
-		},
+		div: ({ children, ...props }) => <div {...stripMotionProps(props)}>{children}</div>,
+		aside: ({ children, ...props }) => <aside {...stripMotionProps(props)}>{children}</aside>,
 	},
 	AnimatePresence: ({ children }) => <>{children}</>,
+	useReducedMotion: () => false,
 }))
 
 vi.mock('../../../src/hooks/useFocusTrap', () => ({

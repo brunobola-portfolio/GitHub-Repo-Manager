@@ -14,7 +14,7 @@ import { useSystemHealth } from '../hooks/useSystemHealth.js'
 import { useRelativeTime } from '../hooks/useRelativeTime.js'
 import { useWorkBoardBadgeCounts } from '../hooks/useWorkBoardBadgeCounts'
 import { useNotificationsDigest } from '../hooks/useNotificationsDigest'
-import { Sheet } from './ui/Sheet'
+import { Drawer } from './ui/Drawer'
 import { MobileQuickActionsFab } from './MobileQuickActionsFab'
 
 export function Header({
@@ -329,8 +329,8 @@ export function Header({
               ))}
             </div>
           </nav>
-          <Sheet open={moreOpen} onOpenChange={setMoreOpen} title="More">
-            <div className="space-y-1">
+          <Drawer side="bottom" isOpen={moreOpen} onClose={() => setMoreOpen(false)} title="More">
+            <div className="space-y-1 px-4 py-3">
               <button
                 type="button"
                 onClick={() => { onViewChange?.('pricing'); setMoreOpen(false) }}
@@ -373,7 +373,7 @@ export function Header({
                 Logout
               </button>
             </div>
-          </Sheet>
+          </Drawer>
           <MobileQuickActionsFab
             onCreate={onCreateRepo}
             onImport={onImport}

@@ -1,4 +1,4 @@
-import { MobileDrawer } from '../MobileDrawer'
+import { Drawer } from '../ui/Drawer'
 import { repoActions } from '../../actions/repoActions'
 import {
 	Archive, ArrowRightLeft, Upload, FlaskConical, Download, Sparkles, Lock, Trash2,
@@ -36,8 +36,8 @@ export function SelectionSheet({ isOpen, repos, onAction, onClose }) {
 	if (!repos || repos.length === 0) return null
 
 	return (
-		<MobileDrawer isOpen={isOpen} onClose={onClose} side="bottom">
-			<div className="pb-4">
+		<Drawer isOpen={isOpen} onClose={onClose} side="bottom">
+			<div className="px-4 py-3 pb-4">
 				<div className="flex items-center justify-between mb-3">
 					<span className="text-sm font-medium text-slate-700 dark:text-slate-300">
 						{repos.length} selected
@@ -76,6 +76,6 @@ export function SelectionSheet({ isOpen, repos, onAction, onClose }) {
 					})}
 				</div>
 			</div>
-		</MobileDrawer>
+		</Drawer>
 	)
 }
