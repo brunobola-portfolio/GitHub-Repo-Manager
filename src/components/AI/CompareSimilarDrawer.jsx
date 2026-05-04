@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { SidePanel } from '../ui/SidePanel'
+import { Drawer } from '../ui/Drawer'
 import { aiApi } from '../../api/ai'
 import { Sparkles, GitCompare } from 'lucide-react'
 import { EmptyState } from '../ui/EmptyState'
@@ -76,7 +76,8 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
   }
 
   return (
-    <SidePanel isOpen={isOpen} onClose={onClose} title="Similar Repositories" subtitle={repo?.full_name}>
+    <Drawer isOpen={isOpen} onClose={onClose} title="Similar Repositories" subtitle={repo?.full_name}>
+      <div className="p-6">
       {loading ? (
         <SectionSpinner label="Finding similar repos…" padding="py-12" />
       ) : error ? (
@@ -172,6 +173,7 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
           targetLabel={diffTarget.label}
         />
       )}
-    </SidePanel>
+      </div>
+    </Drawer>
   )
 }

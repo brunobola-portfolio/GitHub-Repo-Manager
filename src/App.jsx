@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo, useRef, lazy, Suspense } fro
 import { useGitHub } from './hooks/useGitHub'
 import { Header } from './components/Header'
 import { Sidebar } from './components/Sidebar'
-import { MobileDrawer } from './components/MobileDrawer'
+import { Drawer } from './components/ui/Drawer'
 import { RepoList } from './components/RepoList'
 import { OrgPanel } from './components/OrgPanel'
 import { ConfirmModal } from './components/ui/ConfirmModal'
@@ -1476,23 +1476,27 @@ function AppContent() {
             <Menu className="w-6 h-6" />
           </button>
 
-          <MobileDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)}>
-            <Sidebar {...sidebarProps} />
-          </MobileDrawer>
+          <Drawer side="right" mobileOnly isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} width={320}>
+            <div className="p-4">
+              <Sidebar {...sidebarProps} />
+            </div>
+          </Drawer>
 
-          <MobileDrawer isOpen={orgDrawerOpen} onClose={() => setOrgDrawerOpen(false)} side="left">
-            <OrgPanel
-              orgs={orgs}
-              selectedOrg={selectedOrg}
-              onSelectOrg={(org) => {
-                handleOrgSelect(org)
-                setOrgDrawerOpen(false)
-              }}
-              user={user}
-              stats={stats}
-              onCreateOrg={handleOpenOrgManager}
-            />
-          </MobileDrawer>
+          <Drawer side="left" mobileOnly isOpen={orgDrawerOpen} onClose={() => setOrgDrawerOpen(false)} width={320}>
+            <div className="p-4">
+              <OrgPanel
+                orgs={orgs}
+                selectedOrg={selectedOrg}
+                onSelectOrg={(org) => {
+                  handleOrgSelect(org)
+                  setOrgDrawerOpen(false)
+                }}
+                user={user}
+                stats={stats}
+                onCreateOrg={handleOpenOrgManager}
+              />
+            </div>
+          </Drawer>
         </>
       )}
       <LegalFooter />

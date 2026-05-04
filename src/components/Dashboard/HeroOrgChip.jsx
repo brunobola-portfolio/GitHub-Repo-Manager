@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import { Building2, Check } from 'lucide-react'
 import { HeroChip } from './HeroChip'
-import { Sheet } from '../ui/Sheet'
+import { Drawer } from '../ui/Drawer'
 
 // TODO: consolidate with src/hooks/useMobileBreakpoint.jsx — that hook uses
 // (max-width: 767px) for md; this chip needs sm (639px). Should grow into a
@@ -83,9 +83,11 @@ export function HeroOrgChip({ orgs = [], selectedOrg, onSelectOrg, loading }) {
                     onClick={() => setOpen(true)}
                     aria-label={ariaLabel}
                 />
-                <Sheet open={open} onOpenChange={setOpen} title="Filter by organization">
-                    <OrgList orgs={orgs} selectedOrg={selectedOrg} onSelect={handleSelect} />
-                </Sheet>
+                <Drawer side="bottom" isOpen={open} onClose={() => setOpen(false)} title="Filter by organization">
+                    <div className="px-4 py-3">
+                        <OrgList orgs={orgs} selectedOrg={selectedOrg} onSelect={handleSelect} />
+                    </div>
+                </Drawer>
             </>
         )
     }

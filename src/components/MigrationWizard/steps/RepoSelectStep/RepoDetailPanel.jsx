@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ExternalLink, ChevronUp, ChevronDown } from 'lucide-react'
-import { SidePanel } from '../../../ui/SidePanel'
+import { Drawer } from '../../../ui/Drawer'
 import { RepoMetaBadges } from '../../ui/repo/RepoMetaBadges'
 import { RepoRiskReport } from '../../ui/repo/RepoRiskReport'
 import { getCsrfToken } from '../../../../utils/api'
@@ -47,7 +47,7 @@ export function RepoDetailPanel({ repo, source, onClose, onPrev, onNext, onRiskA
 
   if (!repo) return null
   return (
-    <SidePanel
+    <Drawer
       isOpen={!!repo}
       onClose={onClose}
       title={repo.name}
@@ -113,7 +113,7 @@ export function RepoDetailPanel({ repo, source, onClose, onPrev, onNext, onRiskA
           </section>
         )}
       </div>
-    </SidePanel>
+    </Drawer>
   )
 }
 
