@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
-import { motion, useMotionValue, useSpring } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { clsx } from 'clsx'
 import { GitPullRequest, AlertTriangle, CircleDot, Wrench } from 'lucide-react'
 import { ageLabel, dayLabel } from './shared/formatters'
 import { Skeleton } from '../ui/Skeleton'
+import { CountUp } from '../ui/CountUp'
 
 function computeDelta(history) {
     if (!Array.isArray(history) || history.length < 2) return null
@@ -60,27 +60,6 @@ function DeltaBadge({ pct }) {
     )
 }
 
-function CountUp({ target, className }) {
-    const motionVal = useMotionValue(0)
-    const spring = useSpring(motionVal, { stiffness: 80, damping: 20 })
-    const [display, setDisplay] = useState(0)
-
-    useEffect(() => {
-        motionVal.set(target)
-    }, [target, motionVal])
-
-    useEffect(() => {
-        const unsub = spring.on('change', v => setDisplay(Math.round(v)))
-        return unsub
-    }, [spring])
-
-    return (
-        <span className={className}>
-            {display > 999 ? '999+' : display}
-        </span>
-    )
-}
-
 const KPI_ACCENTS = {
     purple:  { ring: 'from-purple-500/20',  dot: 'bg-purple-500',  text: 'text-purple-600 dark:text-purple-300',  sparkColor: '#a78bfa' },
     amber:   { ring: 'from-amber-500/20',   dot: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-300',    sparkColor: '#fbbf24' },
@@ -115,7 +94,8 @@ function KpiTile({ icon: Icon, label, value, hint, loading, accent = 'indigo', o
             <div className="relative mt-4">
                 <div className="flex items-end gap-2">
                     <CountUp
-                        target={loading ? 0 : (value ?? 0)}
+                        value={loading ? 0 : (value ?? 0)}
+                        format={(n) => (n > 999 ? '999+' : String(n))}
                         className="text-3xl font-bold tabular-nums text-slate-900 dark:text-slate-50 ds-font-display leading-none"
                     />
                     {loading && (

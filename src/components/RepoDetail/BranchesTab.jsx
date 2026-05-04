@@ -3,6 +3,7 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
+import { SectionPanel } from '../ui/SectionPanel'
 import { GitBranch, Shield, Trash2, Plus, Loader2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { useTabData } from '../../hooks/useTabData'
@@ -91,13 +92,12 @@ export function BranchesTab({ api, repoData }) {
     }
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                    <GitBranch className="w-5 h-5 text-indigo-500" />
-                    {branches.length} Branch{branches.length !== 1 ? 'es' : ''}
-                </h3>
-                <div className="flex items-center gap-2">
+        <SectionPanel
+            icon={GitBranch}
+            title={`${branches.length} Branch${branches.length !== 1 ? 'es' : ''}`}
+            subtitle="Manage branches, protection rules, and hygiene"
+            actions={
+                <>
                     <Button
                         size="sm"
                         variant="ghost"
@@ -111,9 +111,10 @@ export function BranchesTab({ api, repoData }) {
                     <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
                         <Plus className="w-4 h-4 mr-1" /> New Branch
                     </Button>
-                </div>
-            </div>
-
+                </>
+            }
+        >
+        <div className="space-y-4">
             <BranchHygieneCard branches={branches} />
 
             {repoData?.default_branch && (
@@ -199,5 +200,6 @@ export function BranchesTab({ api, repoData }) {
                 variant="danger"
             />
         </div>
+        </SectionPanel>
     )
 }

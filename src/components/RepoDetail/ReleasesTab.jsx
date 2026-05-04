@@ -3,6 +3,7 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
+import { SectionPanel } from '../ui/SectionPanel'
 import { Tag, Plus, Trash2, Loader2, ExternalLink, CheckCircle2, XCircle, Package, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { useTabData } from '../../hooks/useTabData'
@@ -68,13 +69,12 @@ export function ReleasesTab({ api }) {
     }
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                    <Tag className="w-5 h-5 text-indigo-500" />
-                    {releases.length} Release{releases.length !== 1 ? 's' : ''}
-                </h3>
-                <div className="flex items-center gap-2">
+        <SectionPanel
+            icon={Tag}
+            title={`${releases.length} Release${releases.length !== 1 ? 's' : ''}`}
+            subtitle="Tag and publish versioned releases"
+            actions={
+                <>
                     <Button
                         size="sm"
                         variant="ghost"
@@ -88,9 +88,10 @@ export function ReleasesTab({ api }) {
                     <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
                         <Plus className="w-4 h-4 mr-1" /> New Release
                     </Button>
-                </div>
-            </div>
-
+                </>
+            }
+        >
+        <div className="space-y-4">
             {message && (
                 <div className={`flex items-center gap-2 p-2 rounded-lg text-sm ${
                     message.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
@@ -197,5 +198,6 @@ export function ReleasesTab({ api }) {
                 variant="danger"
             />
         </div>
+        </SectionPanel>
     )
 }

@@ -1,6 +1,6 @@
-import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
-import { FileText, BookOpen, Sparkles } from 'lucide-react'
+import { SectionPanel } from '../ui/SectionPanel'
+import { FileText, BookOpen, Sparkles, Info } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { useModal } from '../../hooks/useModal'
 import { useTabData } from '../../hooks/useTabData'
@@ -75,10 +75,7 @@ export function OverviewTab({ api, repoData, onUpdate }) {
 
             {/* README */}
             <div className="lg:col-span-2">
-                <Card className="p-6">
-                    <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-4">
-                        <BookOpen className="w-4 h-4 text-indigo-500" /> README
-                    </h3>
+                <SectionPanel title="README" icon={BookOpen}>
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
                             <Spinner size="lg" />
@@ -118,13 +115,12 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                             description="This repository doesn't have a README yet."
                         />
                     )}
-                </Card>
+                </SectionPanel>
             </div>
 
             {/* Sidebar info */}
             <div className="space-y-4">
-                <Card className="p-4">
-                    <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 mb-3">About</h3>
+                <SectionPanel title="About" icon={Info}>
                     <dl className="space-y-2 text-sm">
                         <div>
                             <dt className="text-xs text-slate-500 dark:text-slate-400">Description</dt>
@@ -181,11 +177,10 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                             </div>
                         )}
                     </dl>
-                </Card>
+                </SectionPanel>
 
                 {repoData.topics?.length > 0 && (
-                    <Card className="p-4">
-                        <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 mb-3">Topics</h3>
+                    <SectionPanel title="Topics">
                         <div className="flex flex-wrap gap-1.5">
                             {repoData.topics.map(topic => (
                                 <span key={topic} className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300">
@@ -193,7 +188,7 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                                 </span>
                             ))}
                         </div>
-                    </Card>
+                    </SectionPanel>
                 )}
             </div>
         </div>

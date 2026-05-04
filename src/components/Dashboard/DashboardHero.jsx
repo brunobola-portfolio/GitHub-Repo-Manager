@@ -4,6 +4,7 @@ import { HeroOrgChip } from './HeroOrgChip'
 import { HeroTimeRangeChip } from './HeroTimeRangeChip'
 import { HeroSyncChip } from './HeroSyncChip'
 import { WhatNeedsYouGrid } from './WhatNeedsYouGrid'
+import { HeroHalo } from '../ui/HeroHalo'
 import { useRelativeTime } from '../../hooks/useRelativeTime.js'
 import {
     getGreeting,
@@ -55,9 +56,10 @@ export function DashboardHero({
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="space-y-5"
+            className="relative space-y-5"
             aria-label="Dashboard hero"
         >
+            <HeroHalo palette="indigo" intensity="default" position="top" />
             <motion.p
                 variants={childVariants}
                 className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300"

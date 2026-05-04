@@ -4,6 +4,7 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
+import { SectionPanel } from '../ui/SectionPanel'
 import { GitPullRequest, Plus, Loader2, CheckCircle2, XCircle, GitMerge, ExternalLink, ChevronDown, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { PRDetailPanel } from './PRDetailPanel'
@@ -150,13 +151,12 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
     }
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-                <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                    <GitPullRequest className="w-5 h-5 text-indigo-500" />
-                    Pull Requests
-                </h3>
-                <div className="flex items-center gap-2">
+        <SectionPanel
+            icon={GitPullRequest}
+            title="Pull Requests"
+            subtitle="Review, merge, and create requests for this repository"
+            actions={
+                <>
                     <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
                         {['open', 'closed', 'all'].map(f => (
                             <button key={f} onClick={() => setFilter(f)}
@@ -182,9 +182,10 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                     <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
                         <Plus className="w-4 h-4 mr-1" /> New PR
                     </Button>
-                </div>
-            </div>
-
+                </>
+            }
+        >
+        <div className="space-y-4">
             {message && (
                 <div className={`flex items-center gap-2 p-2 rounded-lg text-sm ${
                     message.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
@@ -365,5 +366,6 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                 variant={confirmAction?.variant || 'danger'}
             />
         </div>
+        </SectionPanel>
     )
 }

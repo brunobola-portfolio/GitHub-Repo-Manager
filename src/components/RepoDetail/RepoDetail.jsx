@@ -18,6 +18,8 @@ import { Spinner } from '../ui/Spinner'
 import { TabBar } from '../ui/TabBar'
 import { TrackedChip } from '../WorkBoard/TrackedChip'
 import { PageHeader } from '../ui/PageHeader'
+import { PageMount } from '../ui/PageMount'
+import { HeroHalo } from '../ui/HeroHalo'
 
 const TABS = [
     { id: 'overview', label: 'Overview', icon: FileText },
@@ -81,14 +83,15 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
     const r = repoData
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
+        <PageMount className="space-y-6 relative">
+            <HeroHalo palette="indigo" intensity="subtle" position="top" />
             {isStaleData && (
                 <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-sm text-amber-700 dark:text-amber-400">
                     <span>Could not refresh repo data. Showing cached version.</span>
                 </div>
             )}
             {/* Header */}
-            <div className="flex items-start gap-4">
+            <div className="relative flex items-start gap-4">
                 <Button variant="ghost" size="sm" onClick={onBack} className="mt-1 shrink-0">
                     <ArrowLeft className="w-4 h-4 mr-1" /> Back
                 </Button>
@@ -177,6 +180,6 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
                 {activeTab === 'pulls' && <PullRequestsTab api={api} onStartReview={onStartReview} onGenerateDescription={onGenerateDescription} />}
                 {activeTab === 'settings' && <SettingsTab owner={owner} repo={repoName} api={api} repoData={r} onUpdate={handleRepoMutated} />}
             </div>
-        </div>
+        </PageMount>
     )
 }

@@ -29,6 +29,10 @@ import { useRelativeTime } from '../../hooks/useRelativeTime'
 import { useUrlParams } from '../../hooks/useUrlParams'
 import { PageShell } from '../ui/PageShell'
 import { PageHeader } from '../ui/PageHeader'
+import { PageMount } from '../ui/PageMount'
+import { HeroHalo } from '../ui/HeroHalo'
+import { EmptyState as SharedEmptyState } from '../ui/EmptyState'
+import { Inbox } from 'lucide-react'
 import { WorkBoardFilterBar } from './filters/WorkBoardFilterBar'
 import { PresetDropdown } from './filters/PresetDropdown'
 import { FilterProvider } from './filters/filter-context'
@@ -60,21 +64,23 @@ const TABS = [
 ]
 
 // ---------------------------------------------------------------------------
-// EmptyState — shown when live data has no activity yet
+// WorkBoardEmptyState — shared <EmptyState> + an inline webhook checklist.
+//
+// The shared primitive owns the icon / title / description / primary CTA;
+// the webhook checklist stays here because it's load-bearing for first-run
+// onboarding (Connect webhook + Open a PR/issue) and doesn't generalize.
 // ---------------------------------------------------------------------------
 
-function EmptyState({ webhookConnected, onRefresh }) {
+function WorkBoardEmptyState({ webhookConnected, onRefresh }) {
     return (
-        <div data-testid="empty-state" className="flex flex-col items-center justify-center mt-16 mx-auto max-w-md text-center px-4">
-            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" className="mb-6 opacity-40" aria-hidden="true">
-                <rect x="8" y="16" width="64" height="48" rx="6" stroke="#94a3b8" strokeWidth="2" />
-                <path d="M24 40h32M32 48h16" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
-                <path d="M40 16V8M32 8h16" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <h2 className="ds-font-display text-[18px] font-semibold text-slate-800 dark:text-white mb-2">Your Work Board is ready</h2>
-            <p className="text-[14px] text-slate-500 dark:text-slate-400 mb-6">Connect a webhook to see your real-time engineering data.</p>
-
-            <div className="w-full space-y-2 mb-6">
+        <div className="flex flex-col items-center mt-4">
+            <SharedEmptyState
+                icon={Inbox}
+                title="Your Work Board is ready"
+                description="Connect a webhook to see your real-time engineering data."
+                action={{ label: 'Already connected? Pull fresh data', onClick: onRefresh }}
+            />
+            <div className="w-full max-w-md -mt-4 space-y-2">
                 <div className={clsx(
                     'flex items-center gap-3 rounded-xl border p-3 text-left text-sm',
                     webhookConnected
@@ -104,13 +110,6 @@ function EmptyState({ webhookConnected, onRefresh }) {
                     Open a PR or issue
                 </div>
             </div>
-
-            <button
-                onClick={onRefresh}
-                className="text-sm text-indigo-500 hover:text-indigo-400 underline"
-            >
-                Already connected? Pull fresh data →
-            </button>
         </div>
     )
 }
@@ -285,7 +284,8 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
     const showEmptyState = allZero && reviews?.meta?.source === 'live'
 
     return (
-        <PageShell maxWidth="2xl" padding="tight" className="space-y-7 animate-in fade-in duration-500">
+        <PageMount>
+        <PageShell maxWidth="2xl" padding="tight" className="space-y-7">
             <PageHeader
                 eyebrow="Cross-repo activity"
                 title="Work Board"
@@ -349,14 +349,14 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
             </WorkBoardFilterBar>
 
             {showEmptyState ? (
-                <EmptyState
+                <WorkBoardEmptyState
                     webhookConnected={!!reviews?.meta?.webhookConnected}
                     onRefresh={refreshAll}
                 />
             ) : (
             /* Main card */
             <div className="relative rounded-3xl border border-slate-200/60 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-xl shadow-slate-300/20 dark:shadow-black/40 overflow-hidden">
-                <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[520px] h-[220px] rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-transparent blur-3xl" />
+                <HeroHalo palette="indigo" intensity="subtle" position="top" />
 
                 {/* Tab bar */}
                 <LayoutGroup>
@@ -423,5 +423,6 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
 
             <KeyboardHelpModal open={helpOpen} onClose={() => closeModal('workBoardHelp')} />
         </PageShell>
+        </PageMount>
     )
 }

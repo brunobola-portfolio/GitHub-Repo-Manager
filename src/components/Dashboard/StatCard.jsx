@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
+import { CountUp } from '../ui/CountUp'
 import { formatNumber, formatCompact } from '../../utils/format'
 
 /**
@@ -30,9 +31,9 @@ export const StatCard = memo(function StatCard({
         return <Skeleton className="h-32 rounded-2xl" />
     }
 
-    const formattedValue = typeof value === 'number'
-        ? (compact ? formatCompact(value) : formatNumber(value))
-        : value
+    const isNumeric = typeof value === 'number'
+    const formatFn = compact ? formatCompact : formatNumber
+    const formattedValue = isNumeric ? formatFn(value) : value
 
     const interactive = typeof onClick === 'function'
     const handleKeyDown = (e) => {
@@ -81,7 +82,11 @@ export const StatCard = memo(function StatCard({
                             whileHover={{ scale: 1.05 }}
                             transition={{ type: "spring", stiffness: 400 }}
                         >
-                            {formattedValue}
+                            {isNumeric ? (
+                                <CountUp value={value} format={formatFn} />
+                            ) : (
+                                formattedValue
+                            )}
                         </motion.h3>
                         {trend && (
                             <motion.p
