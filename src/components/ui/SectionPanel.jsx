@@ -1,11 +1,18 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 
 /**
  * SectionPanel — Premium section container with gradient bg, 2px border,
  * optional collapse chevron. Replaces the local CategorySection in Dashboard
  * and the bare `<Card className="p-6">` pattern in RepoDetail tabs.
+ *
+ * Honors `prefers-reduced-motion`: collapsible content swaps instantly
+ * (no height tween) when the user has requested reduced motion.
+ *
+ * Accessibility: when `collapsible`, the toggle button exposes
+ * `aria-expanded` + `aria-controls` pointing at the content region, and
+ * the content region carries `id` + `role="region"`.
  *
  * Props:
  *  - eyebrow?: string         uppercase tracking-[0.2em] indigo label above title
@@ -32,6 +39,8 @@ export function SectionPanel({
     ...rest
 }) {
     const [open, setOpen] = useState(defaultOpen)
+    const reduced = useReducedMotion()
+    const contentId = useId()
 
     const bg = tone === 'muted'
         ? 'bg-gradient-to-br from-slate-50/40 to-white/40 dark:from-slate-900/30 dark:to-slate-950/30'
@@ -83,6 +92,7 @@ export function SectionPanel({
                         type="button"
                         onClick={() => setOpen((o) => !o)}
                         aria-expanded={open}
+                        aria-controls={contentId}
                         className="w-full text-left flex items-start gap-3 px-5 py-4"
                     >
                         {headerCommon}
@@ -97,10 +107,12 @@ export function SectionPanel({
                 {(!collapsible || open) ? (
                     <motion.div
                         key="content"
-                        initial={collapsible ? { height: 0, opacity: 0 } : false}
-                        animate={collapsible ? { height: 'auto', opacity: 1 } : undefined}
-                        exit={collapsible ? { height: 0, opacity: 0 } : undefined}
-                        transition={{ duration: 0.2 }}
+                        id={contentId}
+                        role={collapsible ? 'region' : undefined}
+                        initial={collapsible && !reduced ? { height: 0, opacity: 0 } : false}
+                        animate={collapsible && !reduced ? { height: 'auto', opacity: 1 } : undefined}
+                        exit={collapsible && !reduced ? { height: 0, opacity: 0 } : undefined}
+                        transition={{ duration: reduced ? 0 : 0.2 }}
                         className={`px-5 pb-5 ${hasHeader ? '' : 'pt-5'}`.trim()}
                     >
                         {children}

@@ -69,6 +69,21 @@ describe('SectionPanel', () => {
         expect(screen.getByText('secret-content')).toBeInTheDocument()
     })
 
+    it('wires aria-controls on toggle button to the content region id', () => {
+        render(
+            <SectionPanel title="Pull Requests" collapsible defaultOpen={true}>
+                <span>region body</span>
+            </SectionPanel>
+        )
+        const toggle = screen.getByRole('button', { name: /pull requests/i })
+        expect(toggle).toHaveAttribute('aria-expanded', 'true')
+        const controlsId = toggle.getAttribute('aria-controls')
+        expect(controlsId).toBeTruthy()
+        const region = screen.getByRole('region')
+        expect(region.id).toBe(controlsId)
+        expect(region.textContent).toContain('region body')
+    })
+
     it('renders without header when no header props provided', () => {
         render(
             <SectionPanel>

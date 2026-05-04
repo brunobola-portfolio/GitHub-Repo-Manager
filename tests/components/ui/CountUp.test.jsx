@@ -9,9 +9,12 @@ import { CountUp } from '../../../src/components/ui/CountUp'
 // Returning a fresh object on every render would break the subscription model
 // (set + on land on different instances). We memoize via React's useRef so
 // the spring object is stable per component instance.
+//
+// We also stub `useReducedMotion` -> false so the spring path is exercised.
 vi.mock('framer-motion', async () => {
     const { useRef } = await import('react')
     return {
+        useReducedMotion: () => false,
         useSpring: () => {
             const ref = useRef(null)
             if (!ref.current) {
@@ -46,17 +49,15 @@ describe('CountUp', () => {
     })
 
     it('formats integer values with toLocaleString by default', async () => {
-        const { container } = render(<CountUp value={0} />)
-        await act(async () => {
-            // trigger spring set via re-render with a large number
-        })
-        const { rerender } = render(<CountUp value={0} />)
+        const { container, rerender } = render(<CountUp value={0} />)
+        expect(container.textContent).toBe('0')
         await act(async () => {
             rerender(<CountUp value={12345} />)
         })
-        // Default formatter is toLocaleString, which should include a separator
-        // for 12345 in most locales (en-US: 12,345).
-        expect(container.textContent).toBe('0')
+        // Default formatter is toLocaleString. Different runtimes use
+        // different group separators (en-US comma, others NBSP/space), so
+        // assert the digits are present and grouped (length > 5).
+        expect(container.textContent).toBe((12345).toLocaleString())
     })
 
     it('uses a custom format function when provided', async () => {
