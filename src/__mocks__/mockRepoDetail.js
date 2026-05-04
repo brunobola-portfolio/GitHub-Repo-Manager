@@ -552,6 +552,13 @@ Production sessions were dropping mid-request when the access token expired betw
 // Mutating helpers (save/update/remove/setDefault/test) live in usePromptStudio's
 // MOCK_MODE branches — they operate on local component state only.
 
+// PR Chat (slice 2) — canned conversation history for MOCK_MODE.
+// Returned by usePRChat on load; send() simulates a streamed reply.
+export const mockChatMessages = [
+    { id: 1, role: 'user', content: 'What does this PR change?' },
+    { id: 2, role: 'assistant', content: '[DEMO] This PR adds OAuth token refresh logic. The key changes are in `server/auth/refresh.js` (new helper) and `server/middleware/session.js` (consumer wiring). It keeps sessions valid until the refresh token expires instead of dropping mid-request.' },
+];
+
 export const mockPromptStudioPresets = [
     // Built-ins (read-only, identified by string ids)
     { id: 'general',       builtin: true, name: 'General',          scope: 'builtin', severityFloor: null,         isDefault: false },

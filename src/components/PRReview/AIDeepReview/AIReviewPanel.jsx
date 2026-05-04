@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { WalkthroughTab } from './WalkthroughTab';
 import { CommentsListTab } from './CommentsListTab';
 import { PRCommandsTab } from './PRCommandsTab';
+import { ChatTab } from './ChatTab';
 import { usePromptStudio } from '../../../hooks/usePromptStudio';
 import { PromptPicker } from '../../AIPrompts/PromptPicker';
 import { AIErrorState } from '../../ui/AIErrorState';
@@ -101,6 +102,16 @@ export function AIReviewPanel({
                         Commands
                     </button>
                 ) : null}
+                {owner && repo && prNumber ? (
+                    <button
+                        type="button"
+                        onClick={() => setTab('chat')}
+                        aria-pressed={tab === 'chat'}
+                        className={`px-3 py-2 ${tab === 'chat' ? 'font-semibold border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'}`}
+                    >
+                        Chat
+                    </button>
+                ) : null}
                 <div className="ml-auto flex items-center gap-1 mr-1">
                     <PromptPicker
                         presets={presets}
@@ -124,6 +135,8 @@ export function AIReviewPanel({
                     <WalkthroughTab walkthrough={draft.walkthrough} />
                 ) : tab === 'comments' ? (
                     <CommentsListTab comments={lineComments} onJumpToFile={onJumpToFile} onDismiss={onDismissComment} onEdit={onEditComment} />
+                ) : tab === 'chat' ? (
+                    <ChatTab owner={owner} repo={repo} prNumber={prNumber} headSha={draft?.lastReviewedSha} />
                 ) : (
                     <PRCommandsTab owner={owner} repo={repo} prNumber={prNumber} />
                 )}

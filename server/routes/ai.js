@@ -32,6 +32,7 @@ import promptsRouter from './ai/prompts.js';
 import deepReviewRouter from './ai/deep-review.js';
 import promptStudioRouter from './ai/prompt-studio.js';
 import prCommandsRouter from './ai/pr-commands.js';
+import prChatRouter from './ai/pr-chat.js';
 
 const router = express.Router();
 router.use(coreRouter);
@@ -51,5 +52,8 @@ router.use('/ai/prompt-studio', promptStudioRouter);
 // Generates structured PR-context artifacts and (for /describe) PATCHes the
 // PR body via GitHub. All endpoints are Pro-gated.
 router.use('/ai/pr-commands', prCommandsRouter);
+// PR chat (slice 2 — Pro): streaming Q&A about a PR with persisted history.
+// Uses SSE on POST and JSON on GET / DELETE. Pro-gated.
+router.use('/ai/pr-chat', prChatRouter);
 
 export default router;
