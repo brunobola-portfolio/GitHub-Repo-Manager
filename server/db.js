@@ -501,6 +501,28 @@ export function initDB(targetDb = db) {
         `);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_pr_commands_lookup ON ai_pr_commands(repo_owner, repo_name, pr_number)`);
 
+        // PR-context AI chat (slice 2): conversation history per (user, PR)
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS ai_pr_chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                repo_owner TEXT NOT NULL,
+                repo_name TEXT NOT NULL,
+                pr_number INTEGER NOT NULL,
+                role TEXT NOT NULL CHECK(role IN ('user','assistant','tool')),
+                content TEXT NOT NULL,
+                tool_name TEXT,
+                tool_input_json TEXT,
+                tool_output_json TEXT,
+                input_tokens INTEGER,
+                output_tokens INTEGER,
+                model_used TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_ai_pr_chat_lookup ON ai_pr_chat_messages(user_id, repo_owner, repo_name, pr_number, id)`);
+
         // -----------------------------------------------------------------------
         // Work Board — Premium UX Feature Tables
         // -----------------------------------------------------------------------
