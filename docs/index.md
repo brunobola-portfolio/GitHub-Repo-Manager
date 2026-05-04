@@ -9,8 +9,10 @@ below links to the canonical page for that topic.
 | ------------ | ---- |
 | Understand the system at a glance | [Architecture overview](architecture/overview.md) |
 | Run a production instance | [Operations runbook](operations.md) |
-| Call the API | [API reference](api/API.md) (~200 endpoints) |
+| Call the API | [API reference](api/API.md) (~220 endpoints) |
 | Configure an AI provider | [AI Providers (BYOK)](ai-providers.md) |
+| Use the AI Deep Review experience | [AI Deep Review feature guide](features/ai-deep-review.md) |
+| Register a GitHub App for bot identity (roadmap) | [GitHub App setup](setup/github-app.md) |
 | Wire a GitHub webhook | [Webhook setup guide](guides/github-webhook-setup.md) |
 | Set up Stripe billing | [Stripe setup guide](guides/stripe-setup.md) |
 | Harden a deployment | [Security hardening (G1–G9)](security-hardening.md) |
@@ -21,6 +23,21 @@ below links to the canonical page for that topic.
 
 Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.0.0 (May 2026, unreleased)** — **AI Deep Review.** Slice 1a free
+  core engine (walkthrough + line comments + `suggestion` blocks +
+  Mermaid + batched publish through outbox); slice 1a-2 hardening
+  (provider `usageMetadata` threading, `computeCostUSD`, rate-limiter
+  LRU sweep, `useFocusTrap`); slice 1b Prompt Studio (5 built-ins +
+  user/repo/org custom presets, path-scoped rules, severity floor,
+  `${REPO_STYLE_GUIDE}` token); PR slash commands (`/describe`,
+  `/test_plan`, `/improve`); PR Chat tab (streaming SSE Q&A with
+  per-`(user, PR)` history + `MAX_HISTORY_TURNS = 10`). Plus org-shared
+  prompts, premium UX unification (17-code AI error vocabulary,
+  `<AIErrorState>`, `<SafeMarkdown>`, honest mock-mode publish), AI
+  polish sweep, surface uniformity primitives (`<SectionPanel>`,
+  `<HeroHalo>`, `<CountUp>`, `<PageMount>`), and drawer consolidation
+  (unified `<Drawer>` primitive — fixed `side="bottom"` routing bug).
+  See [feature guide](features/ai-deep-review.md).
 - **v3.8.0 (2026-04-28)** — Dashboard hero redesign (`DashboardHero`,
   `WhatNeedsYouGrid`, `AIPromoStrip`, `AttentionFeed`); mobile UX overhaul
   (bottom-nav, `MobileQuickActionsFab`, drawer); Work Board tracked-repos
@@ -55,6 +72,10 @@ Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
 
 ## Feature guides
 
+- [AI Deep Review](features/ai-deep-review.md) — walkthrough, line
+  comments with `suggestion` blocks, Prompt Studio (Pro), PR slash
+  commands (Pro), streaming PR Chat (Pro), org-shared prompts, BYOK
+  provider matrix, mock-mode behaviour, privacy & data handling.
 - [AI Providers (BYOK)](ai-providers.md) — Anthropic, OpenAI, Gemini,
   OpenRouter, Ollama, LMStudio. Per-feature overrides + cost hints.
 - [Cross-Repo Work Board](work-board.md) — review load, stale PRs, DORA
@@ -67,6 +88,15 @@ Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
   license keys, self-hosted Pro/Enterprise.
 - [Stripe Setup](guides/stripe-setup.md) — Stripe product + webhook
   configuration.
+
+## Setup guides
+
+- [GitHub App identity](setup/github-app.md) **(roadmap)** — register a
+  GitHub App so AI Deep Review publishes under `github-repo-manager[bot]`
+  instead of the OAuth user. Documents the planned env vars
+  (`GITHUB_APP_ID`, `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`,
+  `GITHUB_APP_PRIVATE_KEY_PEM`, optional `GITHUB_APP_INSTALLATION_ID`)
+  so operators can pre-register their App today.
 
 ## Operations
 

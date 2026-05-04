@@ -3900,6 +3900,65 @@ Receive and process Stripe webhook events for subscription lifecycle management.
 
 ---
 
+## AI Deep Review (`/api/ai/deep-review/*`)
+
+Drives the premium PR review surface. See the [AI Deep Review feature
+guide](../features/ai-deep-review.md) and the
+[slice 1a plan](../plans/2026-05-03-ai-deep-review-slice-1a.md) for end-to-end design.
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/api/ai/deep-review/:owner/:repo/:pr` | requireAuth | Generate (or refresh) the AI review draft for a PR. Persists to `ai_pr_reviews`. Rate-limited 10/min/user. Honours `?presetKey=` to apply a Prompt Studio preset. |
+| `GET` | `/api/ai/deep-review/:owner/:repo/:pr` | requireAuth | Fetch the latest persisted draft (no LLM call). 404 when none. |
+| `PATCH` | `/api/ai/deep-review/:draftId/comments/:idx` | requireAuth | `{action:'dismiss'\|'edit', body?, suggestion?}` — surgical edit of a single line comment in the draft. |
+| `POST` | `/api/ai/deep-review/:draftId/publish` | requireAuth | `{event:'COMMENT'\|'APPROVE'\|'REQUEST_CHANGES'}` — batched publish to GitHub via `executeViaOutbox` with idempotency key `pr-deep-review:{draftId}:{event}`. Returns `202 {queued, outboxId}` on async path. **No tier gate** — AI publish is free with BYOK key. |
+| `DELETE` | `/api/ai/deep-review/:draftId` | requireAuth | Discard the draft. |
+
+## AI Prompt Studio (`/api/ai/prompt-studio/*`)
+
+Backs the premium Prompt Studio (`/ai/prompts` page). All mutating
+endpoints require `requireTier('pro')`; GETs are free so the picker
+renders for every tier with the 5 built-in presets visible. See the
+[slice 1b plan](../plans/2026-05-04-ai-deep-review-slice-1b.md).
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/ai/prompt-studio/presets` | requireAuth | List visible presets: 5 built-ins + the caller's user/repo customs + org-shared presets visible to the caller via `getCurrentUserOrgs` + `isOrgMember`. Each row tagged with `builtin`, `shared`, `ownedByUser`. |
+| `GET` | `/api/ai/prompt-studio/presets/:id` | requireAuth | Full preset body. Built-in keys (`general`, `security`, …) served from code; numeric ids enforce ownership unless the row is `scope='org'` and the caller is a member. |
+| `POST` | `/api/ai/prompt-studio/presets` | requireAuth + Pro | Create a custom preset at `scope='user'` / `'repo'` / `'org'`. Org scope checks membership before saving (403 `NOT_ORG_MEMBER`). Rejects built-in keys (409 `RESERVED_KEY`). Validated by `promptPresetCreateSchema`. |
+| `PATCH` | `/api/ai/prompt-studio/presets/:id` | requireAuth + Pro | Author-only edit (`WHERE user_id = ?`); other org members get 404. |
+| `DELETE` | `/api/ai/prompt-studio/presets/:id` | requireAuth + Pro | Author-only. |
+| `POST` | `/api/ai/prompt-studio/presets/:id/test` | requireAuth + Pro | Run the preset against a fixed sample diff and return the structured output. Per-user 1/10s rate limit. |
+| `POST` | `/api/ai/prompt-studio/presets/:id/set-default` | requireAuth + Pro | Mark the preset as the default for its scope; clears `is_default` on siblings inside the same `(user_id, scope, scope_target)` group. |
+
+## AI PR Slash Commands (`/api/ai/pr-commands/*`)
+
+Backs the Commands tab in `<AIReviewPanel>` — `/describe`, `/test_plan`,
+`/improve`. All routes require `requireTier('pro')`. Per-user 20/h
+rate limit with LRU sweep. Results persist in `ai_pr_commands`.
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/api/ai/pr-commands/:owner/:repo/:pr/:command` | requireAuth + Pro | Generate (or refresh). `:command` ∈ `{describe, test_plan, improve}`. Returns `{id, output, modelUsed, costUsd}`. |
+| `GET` | `/api/ai/pr-commands/:owner/:repo/:pr/:command` | requireAuth + Pro | Cached result (no LLM). 404 when none. |
+| `DELETE` | `/api/ai/pr-commands/:owner/:repo/:pr/:command` | requireAuth + Pro | Discard. |
+| `POST` | `/api/ai/pr-commands/:owner/:repo/:pr/describe/publish` | requireAuth + Pro | Apply the `/describe` output by PATCHing the PR body via `executeViaOutbox`. Idempotency key includes a SHA-256 hash of `${title}\n${body}` so a regenerate-then-republish produces a fresh key (silent dedupe was a bug fixed in commit `c90eeb0`). |
+
+## AI PR Chat (`/api/ai/pr-chat/*`)
+
+Backs the streaming Q&A tab. **MIN scope** — server-side tool execution
+(`read_pr_file`, `list_pr_comments`) is forward-compatible in the
+`ai_pr_chat_messages` schema (`tool_name`, `tool_input_json`,
+`tool_output_json` columns) but not yet wired. Per-user 30 messages/hour.
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/ai/pr-chat/:owner/:repo/:pr` | requireAuth | Persisted message history (no LLM call). |
+| `POST` | `/api/ai/pr-chat/:owner/:repo/:pr` | requireAuth | SSE-stream a new turn. Body: `{message: string}`. Persists user msg + assistant reply. Compacts history at `MAX_HISTORY_TURNS = 10`. Streams via `initSSE` + `streamToSSE` with client-disconnect AbortSignal piped into `provider.generateStream({ signal })`. |
+| `DELETE` | `/api/ai/pr-chat/:owner/:repo/:pr` | requireAuth | Clear conversation. |
+
+---
+
 ## Common Error Responses
 
 All endpoints may return the following common error shapes:
