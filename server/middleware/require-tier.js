@@ -9,6 +9,7 @@ import db from '../db.js'
 import { getTierOrder } from '../lib/feature-flags.js'
 import { validateLicenseKey, isLicenseExpired } from '../lib/license.js'
 import { config } from '../config.js'
+import { getStoredLicense } from '../lib/license-store.js'
 import logger from '../lib/logger.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -23,10 +24,13 @@ const PUBLIC_KEY = existsSync(publicKeyPath)
 // public key. Phase 2+ replaces this with a real multi-key lookup.
 const singleKeyResolver = (pem) => () => pem
 
-// Cache validated license to avoid re-parsing on every request
+// Cache validated license to avoid re-parsing on every request.
+// `cachedLicenseSource` distinguishes 'env' (LICENSE_KEY in .env, requires
+// restart to change) from 'db' (installed_license table, hot-reloadable via
+// refreshLicenseCache()).
 let cachedLicenseTier = null
-let cachedLicenseKey = null
 let cachedLicensePayload = null
+let cachedLicenseSource = null
 
 /**
  * Resolve the effective tier from Stripe subscription and/or license key.
@@ -59,26 +63,18 @@ export function getUserTier(userId) {
   const stripeTier = getStripeTier(userId)
   if (stripeTier && stripeTier !== 'free') return stripeTier
 
-  const envKey = config.licenseKey || null
-  if (envKey && PUBLIC_KEY) {
-    // Use cache if warm AND the cached payload hasn't expired since startup.
-    // Without this expiry recheck, a license that expires while the process
-    // is running would keep unlocking gated features until the next restart.
-    if (cachedLicenseTier && envKey === cachedLicenseKey) {
-      if (cachedLicensePayload && isLicenseExpired(cachedLicensePayload)) {
-        // Cache the exp before we null the payload so the log line shows the
-        // real expiration timestamp instead of `undefined` (caught in review).
-        const expiredAt = cachedLicensePayload.exp
-        cachedLicenseTier = null
-        cachedLicensePayload = null
-        logger.warn({ exp: expiredAt }, 'Cached license expired — downgrading to free')
-        return 'free'
-      }
-      return cachedLicenseTier
+  if (cachedLicenseTier && PUBLIC_KEY) {
+    if (cachedLicensePayload && isLicenseExpired(cachedLicensePayload)) {
+      // Cache the exp before we null the payload so the log line shows the
+      // real expiration timestamp instead of `undefined` (caught in review).
+      const expiredAt = cachedLicensePayload.exp
+      cachedLicenseTier = null
+      cachedLicensePayload = null
+      cachedLicenseSource = null
+      logger.warn({ exp: expiredAt }, 'Cached license expired — downgrading to free')
+      return 'free'
     }
-    // Cold start: return free until initLicenseCache() populates the cache
-    // Avoids using unverified JWT parsing as a fallback
-    return 'free'
+    return cachedLicenseTier
   }
 
   return 'free'
@@ -86,6 +82,10 @@ export function getUserTier(userId) {
 
 export function getLicenseInfo() {
   return cachedLicensePayload
+}
+
+export function getLicenseSource() {
+  return cachedLicenseSource
 }
 
 export function requireTier(minTier) {
@@ -108,20 +108,69 @@ export function attachTier(req, res, next) {
   next()
 }
 
-// Warm the license cache at startup (async)
-async function initLicenseCache() {
+/**
+ * Validate a key and update the in-memory cache. Used at startup AND after
+ * a hot install/uninstall so subsequent requests see the new tier without
+ * a server restart.
+ *
+ * Source precedence: env LICENSE_KEY beats DB-stored license. Operators
+ * can pin a deployment to a specific license via env and the in-app
+ * activation flow won't override it.
+ */
+export async function refreshLicenseCache() {
+  if (!PUBLIC_KEY) {
+    cachedLicenseTier = null
+    cachedLicensePayload = null
+    cachedLicenseSource = null
+    return null
+  }
+
   const envKey = config.licenseKey || null
-  if (envKey && PUBLIC_KEY) {
+  if (envKey) {
     const payload = await validateLicenseKey(envKey, singleKeyResolver(PUBLIC_KEY))
-    if (payload && payload.tier) {
-      cachedLicenseKey = envKey
+    if (payload && payload.tier && !isLicenseExpired(payload)) {
       cachedLicenseTier = payload.tier
       cachedLicensePayload = payload
-      logger.info({ tier: payload.tier, org: payload.org || 'N/A', expires: new Date(payload.exp * 1000).toISOString().split('T')[0] }, 'License validated')
-    } else {
-      logger.warn('LICENSE_KEY is set but invalid or expired.')
+      cachedLicenseSource = 'env'
+      return payload
     }
+    logger.warn('LICENSE_KEY env var is set but invalid or expired.')
+    cachedLicenseTier = null
+    cachedLicensePayload = null
+    cachedLicenseSource = null
+    return null
   }
+
+  // Fall back to DB-installed license (hot activation).
+  const stored = getStoredLicense()
+  if (stored?.licenseKey) {
+    const payload = await validateLicenseKey(stored.licenseKey, singleKeyResolver(PUBLIC_KEY))
+    if (payload && payload.tier && !isLicenseExpired(payload)) {
+      cachedLicenseTier = payload.tier
+      cachedLicensePayload = payload
+      cachedLicenseSource = 'db'
+      return payload
+    }
+    logger.warn('Stored license is invalid or expired — ignoring.')
+  }
+
+  cachedLicenseTier = null
+  cachedLicensePayload = null
+  cachedLicenseSource = null
+  return null
 }
 
-initLicenseCache().catch(() => {})
+// Warm the license cache at startup. Test envs skip the implicit boot
+// (NODE_ENV === 'test') so unit tests can call refreshLicenseCache()
+// explicitly with a controlled DB state.
+if (process.env.NODE_ENV !== 'test') {
+  refreshLicenseCache().then((payload) => {
+    if (payload) {
+      logger.info(
+        { tier: payload.tier, org: payload.org || 'N/A', source: cachedLicenseSource,
+          expires: payload.exp ? new Date(payload.exp * 1000).toISOString().split('T')[0] : 'never' },
+        'License validated'
+      )
+    }
+  }).catch(() => {})
+}

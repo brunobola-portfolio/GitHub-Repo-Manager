@@ -20,8 +20,8 @@ describe('LicenseActivationModal — sticky-footer contract (slice 5 row 13)', (
 
     it('renders the action row via Modal.footer, not inline in body', () => {
         // Multiline match: Modal must receive a footer prop containing the
-        // Validate button (the primary action).
-        expect(source).toMatch(/footer=\{[\s\S]*Validate License[\s\S]*\}[\s\S]*>/m)
+        // primary action button (Activate License).
+        expect(source).toMatch(/footer=\{[\s\S]*Activate License[\s\S]*\}[\s\S]*>/m)
     })
 
     it('uses the ModalFooter primitive for consistent button-row spacing', () => {

@@ -270,54 +270,72 @@ export function LicensePlanSection() {
     const [portalError, setPortalError] = useState(null)
     const { openModal } = useModal()
 
-    useEffect(() => {
-        const fetchSubscription = async () => {
-            setLoading(true)
-            setError(null)
-            setBillingUnavailable(false)
+    const fetchSubscription = useCallback(async () => {
+        setLoading(true)
+        setError(null)
+        setBillingUnavailable(false)
+        // Reset license + subscription before refetch so a hot-uninstall
+        // doesn't leave the panel showing the prior tier.
+        setLicense(null)
+        setSubscription(null)
 
-            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
-                setBillingUnavailable(true)
-                setLoading(false)
-                return
-            }
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+            setBillingUnavailable(true)
+            setLoading(false)
+            return
+        }
 
-            // Check license first
-            try {
-                const licRes = await fetch(`${API_BASE_URL}/api/v1/license`, { credentials: 'include' })
-                if (licRes.ok) {
-                    const licData = await licRes.json()
-                    if (licData.active && licData.source === 'license_key') {
-                        setLicense(licData)
-                        setLoading(false)
-                        return
-                    }
-                }
-            } catch {
-                // License endpoint not available, continue with Stripe
-            }
-
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/v1/billing/subscription`, { credentials: 'include' })
-                if (res.status === 503 || res.status === 501) {
-                    setBillingUnavailable(true)
+        // Check license first. `source` is one of 'env', 'db', or
+        // 'license_key' (legacy alias) — all signal an active license,
+        // distinct from a Stripe subscription.
+        try {
+            const licRes = await fetch(`${API_BASE_URL}/api/v1/license`, { credentials: 'include' })
+            if (licRes.ok) {
+                const licData = await licRes.json()
+                if (licData.active && licData.source !== 'none') {
+                    setLicense(licData)
+                    setLoading(false)
                     return
                 }
-                if (!res.ok) throw new Error('Failed to load subscription')
-                const data = await res.json()
-                setSubscription(data)
-            } catch (err) {
-                if (err.message?.toLowerCase().includes('stripe') || err.message?.toLowerCase().includes('not configured')) {
-                    setBillingUnavailable(true)
-                } else {
-                    setError(err.message)
-                }
-            } finally {
-                setLoading(false)
             }
+        } catch {
+            // License endpoint not available, continue with Stripe
         }
-        fetchSubscription()
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/billing/subscription`, { credentials: 'include' })
+            if (res.status === 503 || res.status === 501) {
+                setBillingUnavailable(true)
+                return
+            }
+            if (!res.ok) throw new Error('Failed to load subscription')
+            const data = await res.json()
+            setSubscription(data)
+        } catch (err) {
+            if (err.message?.toLowerCase().includes('stripe') || err.message?.toLowerCase().includes('not configured')) {
+                setBillingUnavailable(true)
+            } else {
+                setError(err.message)
+            }
+        } finally {
+            setLoading(false)
+        }
     }, [])
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time data load, identical to the pre-refactor pattern
+        fetchSubscription()
+    }, [fetchSubscription])
+
+    // Hot-activation refresh: when the modal completes an install/uninstall
+    // it dispatches `app:license-changed`, and useLicense() re-reads the
+    // tier. This panel listens on the same event so the visible plan card
+    // updates without a manual refresh.
+    useEffect(() => {
+        const handler = () => fetchSubscription()
+        window.addEventListener('app:license-changed', handler)
+        return () => window.removeEventListener('app:license-changed', handler)
+    }, [fetchSubscription])
 
     const handleManageSubscription = useCallback(async () => {
         setPortalLoading(true)

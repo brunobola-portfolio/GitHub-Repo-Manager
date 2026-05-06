@@ -1027,6 +1027,29 @@ export function initDB(targetDb = db) {
              ON gh_outbox(status, next_retry_at)
              WHERE status = 'pending'`);
 
+    // Migration 021 (License hot-activation): single-row table holding the
+    // currently installed license key. Lets an operator activate a license
+    // through the UI without restarting the server. CHECK (id = 1)
+    // enforces a singleton. require-tier.js reads this when no LICENSE_KEY
+    // env var is set; env always wins so deployment-time overrides take
+    // precedence.
+    const installedLicenseSchema = `
+        CREATE TABLE IF NOT EXISTS installed_license (
+            id            INTEGER PRIMARY KEY CHECK (id = 1),
+            license_key   TEXT    NOT NULL,
+            tier          TEXT    NOT NULL,
+            org           TEXT,
+            email         TEXT,
+            seats         INTEGER,
+            issued_at     DATETIME,
+            expires_at    DATETIME,
+            installed_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            installed_by  INTEGER,
+            FOREIGN KEY (installed_by) REFERENCES users(id) ON DELETE SET NULL
+        )
+    `;
+    db.exec(installedLicenseSchema);
+
     logger.info('SQLite Database initialized successfully');
 }
 
