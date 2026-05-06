@@ -110,7 +110,7 @@ export function Header({
                     onClick={onOpenCommandPalette}
                     aria-label="Open command palette (Ctrl+K)"
                     title="Open command palette (Ctrl+K)"
-                    className="hidden md:inline-flex items-center gap-1.5 px-2 h-[28px] rounded-lg text-[11px] font-medium text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/50 bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
+                    className="hidden min-[1340px]:inline-flex items-center gap-1.5 px-2 h-[28px] rounded-lg text-[11px] font-medium text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/50 bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
                 >
                     <kbd className="font-mono">⌘K</kbd>
                 </button>
@@ -159,7 +159,7 @@ export function Header({
                     {user ? (
                         <>
                             {/* Quick Actions Container */}
-                            <div className="hidden sm:flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
+                            <div className="hidden min-[1340px]:flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
                                 <HeaderIconButton onClick={onCreateRepo} label="Create new repository" title="New repo">
                                     <Plus className="w-[15px] h-[15px]" />
                                 </HeaderIconButton>
@@ -441,13 +441,15 @@ function NavButton({ active, onClick, icon, label, badge }) {
             type="button"
             onClick={onClick}
             aria-current={active ? 'page' : undefined}
-            className={`relative flex items-center gap-1.5 px-3.5 h-[34px] rounded-[9px] text-[13px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ds-font-display ${active
+            aria-label={label}
+            title={label}
+            className={`relative flex items-center gap-1.5 px-2.5 lg:px-3.5 h-[34px] rounded-[9px] text-[13px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ds-font-display ${active
                 ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-600/40'
                 }`}
         >
             {IconComponent && <IconComponent className="w-[15px] h-[15px]" />}
-            {label}
+            <span className="hidden min-[1340px]:inline">{label}</span>
             {badge > 0 && (
                 <span
                     aria-label={`${badge} items need attention`}

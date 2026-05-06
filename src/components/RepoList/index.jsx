@@ -95,7 +95,7 @@ export function RepoList({
 	const canGoNext = totalPages ? page < totalPages : repos.length === perPage
 
 	return (
-		<div className="space-y-6 relative min-h-[600px]">
+		<div className="flex flex-col gap-6 relative min-h-[600px] h-full">
 			<RepoFilterBar
 				allFilteredSelected={allFilteredSelected}
 				someFilteredSelected={someFilteredSelected}

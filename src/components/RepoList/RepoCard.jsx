@@ -23,7 +23,7 @@ function RepoCardQuickActions({ repo, onAction, onContextMenu }) {
 		.slice(0, QUICK_LIMIT)
 
 	return (
-		<div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300">
+		<div className="flex items-center gap-0.5 ml-auto flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300">
 			{top.map((a) => {
 				const Icon = resolveValue(a.icon, repo)
 				const label = resolveValue(a.label, repo)
@@ -192,35 +192,34 @@ export const RepoCard = memo(function RepoCard({
 
 				{/* Description */}
 				{isGrid && (
-					<p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-1 sm:line-clamp-2 xl:line-clamp-3 min-h-[2.5em] mt-1">
+					<p className="w-full text-sm text-slate-600 dark:text-slate-400 line-clamp-1 sm:line-clamp-2 xl:line-clamp-3 min-h-[2.5em] mt-1 break-words [overflow-wrap:anywhere]">
 						{repo.description || <span className="italic opacity-50">No description provided</span>}
 					</p>
 				)}
 			</div>
 
 			{/* Stats & Meta */}
-			<div className={`flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 ${isGrid ? 'mt-auto pt-3 border-t border-slate-200/50 dark:border-slate-700/30' : ''}`}>
+			<div className={`flex items-center flex-wrap gap-x-3 gap-y-2 text-xs text-slate-500 dark:text-slate-400 ${isGrid ? 'mt-auto pt-3 border-t border-slate-200/50 dark:border-slate-700/30' : ''}`}>
 				{repo.language && (
-					<div className="flex items-center gap-1.5">
-						<span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+					<div className="flex items-center gap-1.5 min-w-0">
+						<span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0"></span>
 						<span className="truncate max-w-[80px]">{repo.language}</span>
 					</div>
 				)}
-				<div className="flex items-center gap-1">
+				<div className="flex items-center gap-1 flex-shrink-0">
 					<Star className="w-3.5 h-3.5" />
 					{formatCompact(repo.stargazers_count)}
 				</div>
-				<div className="flex items-center gap-1">
+				<div className="flex items-center gap-1 flex-shrink-0">
 					<GitFork className="w-3.5 h-3.5" />
 					{formatCompact(repo.forks_count)}
 				</div>
 				{isGrid && repo.open_issues_count > 0 && (
-					<div className="hidden sm:flex items-center gap-1 text-amber-500 dark:text-amber-400">
+					<div className="hidden sm:flex items-center gap-1 flex-shrink-0 text-amber-500 dark:text-amber-400">
 						<AlertCircle className="w-3.5 h-3.5" />
 						{formatCompact(repo.open_issues_count)}
 					</div>
 				)}
-				<div className="flex-1"></div>
 
 				{/* Actions (Grid: Bottom Right, List: Right Side) */}
 				<RepoCardQuickActions repo={repo} onAction={onAction} onContextMenu={onContextMenu} />

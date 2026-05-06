@@ -104,12 +104,12 @@ export function RepoFilterBar({
 
 	return (
 		<div className="sticky z-10 p-2 md:p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-2xl shadow-xl shadow-slate-200/50 dark:shadow-black/50 transition-all duration-300" style={{ top: 'calc(var(--header-height) + var(--layout-py))' }}>
-			<div className="flex flex-wrap md:flex-nowrap gap-2 items-center">
+			<div className="flex flex-wrap min-[1700px]:flex-nowrap gap-x-2 gap-y-2.5 items-center">
 
 			{/* Search & View Toggle */}
-			<div className="flex items-center gap-2 w-full md:w-auto md:flex-1 flex-wrap sm:flex-nowrap min-w-0">
+			<div className="flex items-center gap-2 w-full min-[1700px]:w-auto min-[1700px]:flex-1 flex-wrap sm:flex-nowrap min-w-0">
 				{/* Advanced Selection Menu */}
-				<div className="relative z-40">
+				<div className="relative z-40 flex-shrink-0">
 					<div className="flex items-center rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-1">
 						<div
 							role="checkbox"
@@ -163,7 +163,7 @@ export function RepoFilterBar({
 					)}
 				</div>
 
-				<div className="relative min-w-0 basis-full sm:basis-auto sm:flex-1 group order-first sm:order-none">
+				<div className="relative min-w-0 sm:min-w-[260px] basis-full sm:basis-auto sm:flex-1 group order-first sm:order-none">
 					<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
 					<input
 						type="text"
@@ -192,7 +192,7 @@ export function RepoFilterBar({
 						<p className="absolute -bottom-6 left-0 text-xs text-red-500 dark:text-red-400">{aiSearchError}</p>
 					)}
 				</div>
-				<div className="flex bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl p-1 border border-slate-200/70 dark:border-slate-700/50 shadow-sm">
+				<div className="flex flex-shrink-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl p-1 border border-slate-200/70 dark:border-slate-700/50 shadow-sm">
 					<button
 						onClick={() => setViewMode('grid')}
 						aria-label="Grid view"
@@ -242,7 +242,7 @@ export function RepoFilterBar({
 					</Button>
 				</div>
 			) : (
-				<div className="flex items-center gap-1.5 w-full md:w-auto flex-wrap md:flex-nowrap min-w-0">
+				<div className="flex items-center gap-2 w-full min-[1700px]:w-auto flex-wrap lg:flex-nowrap min-w-0">
 					<Select
 						value={typeFilter}
 						onChange={setTypeFilter}
@@ -294,7 +294,7 @@ export function RepoFilterBar({
 						className="flex-1 min-w-[140px]"
 					/>
 
-					<div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block"></div>
+					<div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block flex-shrink-0"></div>
 
 					<Button
 						variant="ghost"
@@ -302,7 +302,7 @@ export function RepoFilterBar({
 						onClick={onRefresh}
 						disabled={loading}
 						aria-label="Refresh repositories"
-						className="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
+						className="flex-shrink-0 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
 					>
 						<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
 					</Button>

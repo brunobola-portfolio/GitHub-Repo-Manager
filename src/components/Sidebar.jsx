@@ -79,7 +79,7 @@ function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRe
       aria-expanded={isActive || undefined}
     >
       <Icon className="w-5 h-5" />
-      <span className="absolute left-full ml-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+      <span className="absolute right-full mr-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
         {label}
       </span>
     </button>
@@ -211,7 +211,7 @@ function SidebarBase({
     const hasSelection = selectedCount > 0
 
     return (
-        <aside className="space-y-6 min-w-0">
+        <aside className="flex flex-col gap-6 min-w-0 h-full">
             {/* Quick Actions Panel */}
             <QuickActions
                 hasSelection={hasSelection}
@@ -232,7 +232,9 @@ function SidebarBase({
                 message={message}
             />
 
-            {/* Recent Activity */}
+            {/* Recent Activity — flex-1 so its bottom aligns pixel-perfect
+                with the OrgPanel's footer on the left (both panels share the
+                same sticky maxHeight). */}
             <ActivityList activity={activity} />
         </aside>
     )
@@ -243,7 +245,7 @@ function QuickActions({
     onTransfer, onArchive, onDelete, selectedRepos, onImport
 }) {
     return (
-        <Card hover={true} className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl">
+        <Card hover={true} className="flex-shrink-0 overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl">
             <div className="px-5 py-4 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center justify-between">
                 <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
                     <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md shadow-amber-500/20">
@@ -405,7 +407,7 @@ function ActionButton({ icon: IconComp, label, subLabel, onClick, disabled, vari
 
 function ActionHistory({ results, isPerforming, message }) {
     return (
-        <Card hover={true} className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl flex flex-col max-h-[300px]">
+        <Card hover={true} className="flex-shrink-0 overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl flex flex-col max-h-[300px]">
             <div className="px-5 py-3.5 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center justify-between sticky top-0">
                 <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
                     <div className="p-1.5 rounded-lg bg-gradient-to-br from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-600 text-white shadow-md shadow-slate-400/20">
@@ -484,8 +486,8 @@ function ActivityList({ activity }) {
     // sidebar reads as one cohesive premium column instead of three loose
     // panels with the activity feed dangling borderless underneath.
     return (
-        <Card hover={true} className="overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl">
-            <div className="px-5 py-4 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center gap-2.5">
+        <Card hover={true} className="flex-1 min-h-0 flex flex-col overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl">
+            <div className="flex-shrink-0 px-5 py-4 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center gap-2.5">
                 <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 text-white shadow-md shadow-indigo-500/20">
                     <Clock className="w-3.5 h-3.5" />
                 </div>
@@ -499,7 +501,7 @@ function ActivityList({ activity }) {
 function ActivityListBody({ activity, now }) {
     if (!Array.isArray(activity) || activity.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+            <div className="flex-1 flex flex-col items-center justify-center py-10 text-slate-400">
                 <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
                     <Clock className="w-5 h-5 opacity-40" />
                 </div>
@@ -509,7 +511,7 @@ function ActivityListBody({ activity, now }) {
     }
 
     return (
-        <div className="divide-y divide-slate-100 dark:divide-slate-800/60 max-h-[420px] overflow-y-auto custom-scrollbar">
+        <div className="flex-1 min-h-0 divide-y divide-slate-100 dark:divide-slate-800/60 overflow-y-auto custom-scrollbar">
             {activity.map((event) => {
                 if (!event) return null
                 const EventIcon = getEventIcon(event.type)

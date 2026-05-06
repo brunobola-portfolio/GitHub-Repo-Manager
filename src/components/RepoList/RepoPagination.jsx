@@ -12,7 +12,7 @@ export function RepoPagination({
 	loading,
 }) {
 	return (
-		<div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 pb-20">
+		<div className="mt-auto flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 pb-20">
 			<div className="text-sm text-slate-500 dark:text-slate-400">
 				Showing <span className="font-medium text-slate-900 dark:text-white">{visibleCount}</span> repositories
 			</div>
