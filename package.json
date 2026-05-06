@@ -127,6 +127,9 @@
     "vite": "^8.0.8",
     "vitest": "^4.0.18"
   },
+  "overrides": {
+    "ip-address": "^10.1.1"
+  },
   "lint-staged": {
     "src/**/*.{js,jsx}": [
       "eslint --fix --max-warnings 0",
