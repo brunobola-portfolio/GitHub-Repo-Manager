@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useTier, isProOrAbove } from './useTier'
 
 const CACHE_KEY = 'work_board_badge_count'
 const POLL_MS = 5 * 60 * 1000
@@ -39,21 +40,26 @@ async function fetchJsonCount(url) {
 }
 
 export function useWorkBoardBadgeCounts() {
+    const tier = useTier()
     const cached = readCached()
     const [count, setCount] = useState(cached ?? 0)
     const [isLoading, setIsLoading] = useState(cached === null)
     const intervalRef = useRef()
 
     const refresh = useCallback(async () => {
-        const [reviews, stale] = await Promise.all([
-            fetchJsonCount('/api/v1/work-board/my-reviews?limit=50'),
-            fetchJsonCount('/api/v1/work-board/stale-prs?limit=50'),
-        ])
-        const total = reviews + stale
+        // Stale PRs is Pro+ — skip the call on Free to avoid a 403 in the
+        // browser console (the JS already handles it, but the network log
+        // can't be suppressed any other way).
+        const tasks = [fetchJsonCount('/api/v1/work-board/my-reviews?limit=50')]
+        if (isProOrAbove(tier)) {
+            tasks.push(fetchJsonCount('/api/v1/work-board/stale-prs?limit=50'))
+        }
+        const counts = await Promise.all(tasks)
+        const total = counts.reduce((a, b) => a + b, 0)
         setCount(total)
         writeCached(total)
         setIsLoading(false)
-    }, [])
+    }, [tier])
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect

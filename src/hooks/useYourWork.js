@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useTier, isProOrAbove } from './useTier'
 
 const ENDPOINTS = {
     reviews: '/api/v1/work-board/my-reviews?limit=50',
@@ -60,6 +61,7 @@ function buildCategoryState(key, currentCount) {
 }
 
 export function useYourWork() {
+    const tier = useTier()
     const [state, setState] = useState({
         status: 'loading',
         hidden: false,
@@ -73,9 +75,16 @@ export function useYourWork() {
 
     const refresh = useCallback(async () => {
         const id = ++fetchIdRef.current
+        // Stale PRs is Pro+ — keep the slot in the result so the UI can
+        // still render a "hidden" tile, but avoid the 403 network log on
+        // Free by short-circuiting here instead of relying on the server.
+        const stalePromise = () =>
+            isProOrAbove(tier)
+                ? fetchCount(ENDPOINTS.stale)
+                : Promise.resolve({ count: 0, hidden: true })
         const [r, s, i] = await Promise.all([
             fetchCount(ENDPOINTS.reviews),
-            fetchCount(ENDPOINTS.stale),
+            stalePromise(),
             fetchCount(ENDPOINTS.issues),
         ])
         if (id !== fetchIdRef.current) return // a newer call has taken over
@@ -92,7 +101,7 @@ export function useYourWork() {
         const fetchedAt = Date.now()
         lastFetchRef.current = fetchedAt
         setState({ status: 'ready', hidden, reviews, stale, issues, lastFetchedAt: fetchedAt })
-    }, [])
+    }, [tier])
 
     useEffect(() => {
         let cancelled = false

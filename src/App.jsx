@@ -22,6 +22,7 @@ import { trackBreadcrumb, mark } from './lib/observability'
 import { SelectionProvider } from './contexts/SelectionContext'
 import { ModalProvider } from './contexts/ModalContext'
 import { TrackedReposProvider } from './contexts/TrackedReposContext'
+import { TierContext } from './contexts/contexts'
 import { useSelection } from './hooks/useSelection'
 import { useModal } from './hooks/useModal'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
@@ -605,13 +606,17 @@ function AppContent() {
   }
 
   const fetchTeams = useCallback(async () => {
-    // listTeams() wraps /api/teams with MOCK_MODE short-circuit and
-    // graceful free-tier handling — see src/api/teams.js. This
-    // replaces a raw fetch that produced a 403 console error on every
-    // mount for free-tier users (teams are a pro-gated feature).
+    // Teams is Pro+ — skip the network call entirely on Free so the
+    // browser doesn't log a 403 to the console. listTeams() already
+    // returns gracefully on 403, but the network log can't be suppressed
+    // any other way; client-side gating is the only premium fix.
+    if (currentTier !== 'pro' && currentTier !== 'enterprise' && !MOCK_MODE) {
+      setTeams([])
+      return
+    }
     const { teams: loaded } = await listTeams()
     setTeams(loaded)
-  }, [])
+  }, [currentTier])
 
   // Fetch teams when user becomes available
   useEffect(() => {
@@ -835,6 +840,7 @@ function AppContent() {
   }
 
   return (
+    <TierContext.Provider value={currentTier}>
     <TrackedReposProvider>
     <>
       {/* Skip Links - WCAG 2.1 requirement */}
@@ -1503,6 +1509,7 @@ function AppContent() {
       </div>
     </>
     </TrackedReposProvider>
+    </TierContext.Provider>
   )
 }
 
