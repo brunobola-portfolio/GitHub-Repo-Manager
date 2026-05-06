@@ -284,7 +284,7 @@ function DraftCommentModal({ review, intent, onConfirm, onClose }) {
             title={title}
             icon={MessageSquare}
             iconGradient="primary"
-            size="md"
+            size="lg"
             isBusy={draftLoading}
             footer={
                 <ModalFooter align="right">

@@ -63,6 +63,7 @@ export function LicenseActivationModal({ isOpen, onClose }) {
       isOpen={isOpen}
       onClose={handleClose}
       title="Activate License"
+      size="lg"
       data-testid="license-activation-modal"
       footer={
         <ModalFooter align="between">
@@ -101,8 +102,8 @@ export function LicenseActivationModal({ isOpen, onClose }) {
               value={keyInput}
               onChange={(e) => setKeyInput(e.target.value)}
               placeholder="grm_lic_eyJ..."
-              className="mt-1 w-full px-3 py-2 text-xs font-mono border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent ds-focus-ring"
-              rows={4}
+              className="mt-1 w-full px-3 py-2.5 text-xs font-mono border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent ds-focus-ring"
+              rows={5}
               autoFocus
             />
           </div>
