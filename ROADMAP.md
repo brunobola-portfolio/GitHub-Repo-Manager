@@ -28,6 +28,19 @@ A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is either
 - **Dependabot Aggregation** — Pro.
 - **Custom Workflow Templates** — Pro.
 
+## Recently Shipped (v4.0.0, unreleased — May 2026)
+
+- **AI Deep Review — slice 1a (free).** `runDeepReview` engine producing a markdown walkthrough, per-file change table, Mermaid sequence diagram, and up to 25 line comments with editable `suggestion` blocks; one-click batched publish through the outbox with idempotency-key collapse; 5 routes under `/api/ai/deep-review/*`; honest MOCK_MODE publish.
+- **AI Deep Review — slice 1a-2 hardening.** Provider `usageMetadata` threading across Gemini / Anthropic / OpenAI / OpenRouter / local; unified `computeCostUSD`; LRU sweep on the rate limiter; mermaid theme observer; shared `useFocusTrap`.
+- **Premium Prompt Studio (Pro).** 5 built-in preset lenses + per-user / per-repo / per-org custom presets, path-scoped rules, severity floor, `${REPO_STYLE_GUIDE}` token from `.repomanager/review-rules.md`. `/ai/prompts` page with Library + Editor + PromptPicker.
+- **PR Slash Commands (Pro).** `/describe`, `/test_plan`, `/improve` from a Commands tab in the AI Review Panel; `/describe → Apply to PR` PATCHes the body via the outbox with body-hash + `updatedAt` idempotency.
+- **PR Chat tab (Pro).** Streaming SSE Q&A on the PR with per-`(user, PR)` history persisted in `ai_pr_chat_messages` (`MAX_HISTORY_TURNS = 10`); every PR-derived string sanitised via `sanitizeForPrompt`; cancellable AbortController on unmount + new send.
+- **Org-shared prompts (Pro).** `scope='org'` end-to-end with GitHub org-membership gating cached 5 min; resolution chain extends to `org-default`. Read-only badges in the Library.
+- **Premium UX unification.** Unified 17-code AI error vocabulary + shared `<AIErrorState>`; global `<DemoModeBanner>`; `<SafeMarkdown>` for every model-output surface; 401→422 fix decoupling AI auth from session expiry; PRFilesTab "reviewed" state persisted.
+- **Surface uniformity primitives.** `<SectionPanel>`, `<HeroHalo>`, `<CountUp>`, `<PageMount>` applied across Dashboard / RepoDetail / WorkBoard, all honouring `prefers-reduced-motion`.
+- **Drawer consolidation.** Unified `<Drawer side="left|right|bottom">` replacing Sheet, MobileDrawer, SidePanel and AutoFixDrawer's bespoke shells. Bottom variant adds drag handle + `safe-area-inset-bottom` + swipe-to-dismiss. Fixes a pre-existing bug where `MobileDrawer side="bottom"` silently routed to `right`.
+- **Suggest Name & Description.** Dedicated modal proposing name + description for a repository; field-by-field accept / edit / reject; deterministic fallback when no AI key is configured.
+
 ## Recently Shipped (v3.8.0 — April 2026)
 
 - **Dashboard hero redesign** — `DashboardHero`, `WhatNeedsYouGrid`, `AIPromoStrip`, `AttentionFeed` with AI narrative on the lead item.

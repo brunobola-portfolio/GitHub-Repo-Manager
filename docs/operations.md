@@ -183,6 +183,24 @@ Fixed in v3.7.1 — `useRepoDetail` returned a non-memoised object, so
 symptom appears elsewhere, check that any hook returning multiple callbacks
 wraps the return in `useMemo` with all callback refs as deps.
 
+### `dev:server` exits with `Port is already in use` (local dev only)
+
+Pattern: `npm run dev:all` fails with `FATAL: Port is already in use` on
+3001, or Vite reports `Port 5173 is in use, trying another one...` and
+cascades to 5174 / 5175. A previous dev run left a node process bound to
+the port — common after a hung Ctrl+C, a crashed terminal, or a switch
+between machines without clean shutdown.
+
+```bash
+npm run dev:kill   # cross-platform: 3001 + 5173–5180
+npm run dev:all    # re-run
+```
+
+The script (`scripts/kill-dev-ports.js`) uses `netstat`+`taskkill` on
+Windows and `lsof`+`kill` elsewhere; it only kills processes in `LISTEN`
+state on the dev ports, so it's safe to run any time. Manual fallback is
+documented in the README troubleshooting section.
+
 ### CSRF 403 on every mutation after a deployment
 
 Symptoms: every POST/PATCH/PUT/DELETE returns 403 `csrf_invalid` right

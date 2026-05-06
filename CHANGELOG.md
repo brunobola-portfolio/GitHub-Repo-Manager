@@ -5,18 +5,149 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased] — AI Deep Review (targets v4.0.0)
 
-### Added
+The full premium PR review surface lands in this cycle, alongside a sweep
+of premium UX consolidation (unified error vocabulary, surface primitives,
+single drawer system) and the long-promised Suggest Name & Description
+modal. End-user docs: [`docs/features/ai-deep-review.md`](docs/features/ai-deep-review.md).
 
-- **Suggest Name & Description** now delivers on its label: a dedicated modal
-  proposes a concrete name and description for a repository, lets you accept,
-  edit, or reject each field independently, and applies the change via the
-  existing repos `PATCH` endpoint. Works with or without an AI key — falls
-  back silently to a deterministic generator that draws from indexed AI
-  metadata, README h1 + first sentence, topics, and primary language.
-  Available from the repo context menu and from a new "Suggest with AI"
-  button in the Settings tab.
+### Added — AI Deep Review (slice 1a, free core)
+
+- **`runDeepReview` engine** produces a markdown walkthrough, per-file
+  change table, Mermaid sequence diagram, and up to 25 line-level review
+  comments with editable `suggestion` blocks. Drafts persist in
+  `ai_pr_reviews`; `<PRReviewView>` + `<AIReviewPanel>` render Walkthrough
+  / Comments / Commands / Chat tabs with diff overlays.
+- **One-click batched publish** through the existing outbox with
+  idempotency key `pr-deep-review:{draftId}:{event}` — double-clicks across
+  server restarts collapse into a single GitHub review row.
+- **5 routes under `/api/ai/deep-review/*`** with rate limiting on
+  generate, cost wiring, and a Playwright E2E smoke that exercises the
+  full happy path.
+- **MOCK_MODE** returns canned fixture; publish in mock mode is honest
+  (no fabricated `githubReviewId`) and surfaces a `<DemoModeBanner>`.
+
+### Added — AI Deep Review (slice 1a-2, production hardening)
+
+- **Provider `usageMetadata` threading** across Gemini / Anthropic /
+  OpenAI / OpenRouter / local backends.
+- **Unified `computeCostUSD`** cost wiring; OpenRouter pricing prefix
+  normalisation so `anthropic/claude-*` resolves to real Anthropic
+  pricing rather than fallback.
+- **LRU sweep** on the in-memory rate limiter to prevent unbounded growth;
+  Mermaid theme observer for dark-mode parity; modal focus trap via
+  shared `useFocusTrap` hook.
+
+### Added — AI Deep Review (slice 1b, Premium Prompt Studio — Pro)
+
+- **`ai_review_prompts` table** + 5 built-in preset lenses (general,
+  security, performance, accessibility, refactor).
+- **Preset store + resolver** with scope precedence
+  (explicit `presetKey` → repo-default → user-default → org-default →
+  built-in `general`) and `${REPO_STYLE_GUIDE}` token substitution from
+  `.repomanager/review-rules.md` (capped at 16 KB).
+- **Path-scoped rules** (capped at 20 in editor) and **severity floor**
+  threading into the engine.
+- **7 routes under `/api/ai/prompt-studio/*`** — CRUD requires Pro; GET
+  endpoints are free so the picker renders for every tier.
+- **`/ai/prompts` page** with Library + Editor + `PromptPicker` dropdown
+  wired into `<AIReviewPanel>`. PromptPicker a11y: Escape / click-outside
+  dismiss, arrow nav, `aria-controls`.
+
+### Added — PR Slash Commands (Pro)
+
+- **`/describe`, `/test_plan`, `/improve`** invokable from a Commands tab
+  in the AI Review Panel.
+- **`/describe` → "Apply to PR"** PATCHes the PR body via the outbox with
+  body-hash + `updatedAt` idempotency key (guards double-publish across
+  test-env retries).
+- **4 routes under `/api/ai/pr-commands/*`**, all `requireTier('pro')`.
+  Per-user 20/h rate limit. New `ai_pr_commands` table.
+
+### Added — PR Chat tab (Pro)
+
+- **Streaming Q&A** via SSE on `POST /api/ai/pr-chat/:owner/:repo/:pr`
+  using the existing `useStreaming` infra (preserves `err.code` +
+  `retryAfterSec` on failure).
+- **Per-`(user, PR)` history** persisted in `ai_pr_chat_messages` with
+  `MAX_HISTORY_TURNS = 10` collapse.
+- **Defence in depth** — every PR-derived string sanitised via
+  `sanitizeForPrompt`. AbortController on unmount + new-send + cancel.
+
+### Added — Org-shared prompts (Pro)
+
+- **`scope='org'`** end-to-end. New `github-org-membership.js` helper
+  (`isOrgMember`, `filterOrgsByMembership`, `getCurrentUserOrgs`) cached
+  5 min via gh-cache.
+- **Resolution chain** extended to include `org-default` between
+  user-default and built-in.
+- **Org members read org-shared presets** even when not authors;
+  PATCH / DELETE / set-default still author-only. `shared · {org}` and
+  `read-only` badges in the Prompt Library.
+
+### Added — Premium UX unification
+
+- **Unified AI error vocabulary** (17 codes) and shared `<AIErrorState>`
+  mounted on 5 high-traffic AI surfaces.
+- **`<SafeMarkdown>`** (react-markdown + rehype-sanitize + remark-gfm)
+  for every model-output surface.
+- **Global `<DemoModeBanner>`** for honest mock-mode signal across the
+  app shell.
+- **`PromptPicker` discoverability** — surfaced in AI Review Panel and
+  reachable from Settings → AI + Command Palette.
+- **PRFilesTab "reviewed" state** persisted to `localStorage` per
+  `(user, PR)`.
+
+### Added — Surface uniformity primitives
+
+- **`<SectionPanel>`, `<HeroHalo>`, `<CountUp>`, `<PageMount>`** — four
+  shared primitives applied across Dashboard / RepoDetail / WorkBoard.
+  All honour `prefers-reduced-motion` and hit the WCAG contrast bar.
+- **RepoDetail tabs** upgraded from flat `<Card>` to `<SectionPanel>`.
+
+### Added — Suggest Name & Description
+
+- **Dedicated modal** proposes a concrete name and description for a
+  repository; users accept / edit / reject each field independently and
+  the change is applied via the existing repos `PATCH` endpoint.
+- **Works with or without an AI key** — falls back to a deterministic
+  generator that draws from indexed AI metadata, README h1 + first
+  sentence, topics, and primary language.
+- Available from the repo context menu and from a new **"Suggest with
+  AI"** button in the Settings tab.
+
+### Changed — Drawer consolidation
+
+- **Unified `<Drawer side="left|right|bottom">` primitive** replacing
+  `Sheet`, `MobileDrawer`, `SidePanel`, and `AutoFixDrawer`'s bespoke
+  shells. Bottom variant adds drag handle + `safe-area-inset-bottom` +
+  swipe-to-dismiss (drag-y > 100 px or velocity > 500). 10 consumers
+  migrated; 3 primitives deleted.
+
+### Fixed
+
+- **`MobileDrawer side="bottom"` was silently routing to `right`** —
+  `RepoFilterBar` and `SelectionSheet` were sliding from the wrong edge
+  before the Drawer consolidation. Bottom-anchored sheets now actually
+  anchor to the bottom on mobile.
+- **AI provider auth errors** (`401`) collided with session-expiry
+  handling — remapped to `422` so the AI Configuration modal reopens
+  instead of triggering a logout flow.
+- **`ConfirmModal` ported to `<Modal>`** primitive — fixes scrollbar
+  shift and inconsistent focus return on close.
+- **`AIAssistantPasteDialog`** dialog semantics — proper `role="dialog"`
+  + `aria-labelledby` + Escape handler.
+- **`core.js` AI endpoints** (chat / suggest / readme / readme-enhance)
+  unified through `quotaExceededResponse` + `handleAIError`.
+- **Prompt Studio preset upsert** — wrap NULL-scope-target case in a
+  transaction to close a TOCTOU window.
+
+### Security
+
+- **`sanitizeForPrompt`** applied to every PR-derived string fed into
+  AI Chat to neutralise prompt-injection attempts in PR bodies, comments,
+  and file paths.
 
 ## [3.8.0] - 2026-04-28
 

@@ -42,6 +42,13 @@ npm run dev:all
 
 The frontend runs at `http://localhost:5173` and the backend at `http://localhost:3001` (proxied through Vite).
 
+If a previous run left a stale process on `3001` or any of `5173–5180` (Vite cascades through them), use the cross-platform cleanup script:
+
+```bash
+npm run dev:kill   # kills anything listening on 3001 + 5173–5180
+npm run dev:all    # then re-run
+```
+
 ## Code Style
 
 ### Language and Framework
