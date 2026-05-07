@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+# Cancel any in-progress run on the same ref when a new push lands. Without
+# this, fast successive pushes (typical during a review back-and-forth) double
+# our CI minutes on commits that are already superseded.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -15,7 +22,14 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - name: Cache node_modules
+        id: nm
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-22-${{ hashFiles('package-lock.json') }}
+      - if: steps.nm.outputs.cache-hit != 'true'
+        run: npm ci --no-audit --no-fund
       - run: npm run lint
 
   test:
@@ -33,7 +47,14 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - name: Cache node_modules
+        id: nm
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-22-${{ hashFiles('package-lock.json') }}
+      - if: steps.nm.outputs.cache-hit != 'true'
+        run: npm ci --no-audit --no-fund
       - run: npx vitest run
 
   build:
@@ -44,7 +65,14 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - name: Cache node_modules
+        id: nm
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-22-${{ hashFiles('package-lock.json') }}
+      - if: steps.nm.outputs.cache-hit != 'true'
+        run: npm ci --no-audit --no-fund
       - run: npm run build
 
   e2e:
@@ -60,8 +88,26 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - name: Cache node_modules
+        id: nm
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-22-${{ hashFiles('package-lock.json') }}
+      - if: steps.nm.outputs.cache-hit != 'true'
+        run: npm ci --no-audit --no-fund
+      - name: Cache Playwright browsers
+        id: pw
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.pw.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.pw.outputs.cache-hit == 'true'
+        # Browsers are cached; system deps (libnss, libgbm, …) still need
+        # apt installation each run because they live on the runner image.
+        run: npx playwright install-deps chromium
       - run: npm run test:e2e
       - if: always()
         uses: actions/upload-artifact@v7
