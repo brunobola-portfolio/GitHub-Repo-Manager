@@ -194,8 +194,10 @@ test.describe('PR Review view', () => {
         await openPRReview(page)
 
         // Wait until we're definitely inside PRReviewView
+        // Inherits expect.timeout (25s on CI). PRReviewView is lazy-loaded
+        // and the breadcrumb appears once the chunk lands.
         await expect(page.getByRole('navigation', { name: /breadcrumb/i }))
-            .toBeVisible({ timeout: 15000 })
+            .toBeVisible()
 
         // Escape calls onBack -> setReviewingPR(null), setActiveView('repo-detail')
         await page.keyboard.press('Escape')
@@ -209,8 +211,10 @@ test.describe('PR Review view', () => {
         await mockApi(page)
         await openPRReview(page)
 
+        // Inherits expect.timeout (25s on CI). PRReviewView is lazy-loaded
+        // and the breadcrumb appears once the chunk lands.
         await expect(page.getByRole('navigation', { name: /breadcrumb/i }))
-            .toBeVisible({ timeout: 15000 })
+            .toBeVisible()
 
         // Click the "Pull Requests" crumb — it's a button with onClick=onBack.
         // CI runners flap on the actionability heuristic; calling the DOM

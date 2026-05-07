@@ -8,16 +8,19 @@ export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.spec.{js,ts}',
 
-  // Maximum time one test can run. Bumped from 30s → 60s on CI because the
+  // Maximum time one test can run. Bumped from 30s → 90s on CI because the
   // GitHub Actions runner is consistently slower than dev machines for
   // first-mount tests (Vite dev compile + mock data dynamic import + React
-  // hydration adds 5-15s of cold-start overhead before hover/click are usable).
-  timeout: process.env.CI ? 60 * 1000 : 30 * 1000,
+  // hydration adds 5-15s of cold-start overhead before hover/click are usable);
+  // tests that lazy-load a whole panel (PR Review, AI Deep Review) routinely
+  // need more than 60s end-to-end on CI even though every individual assertion
+  // is well under its own timeout.
+  timeout: process.env.CI ? 90 * 1000 : 30 * 1000,
 
   // Per-action assertion timeout. Most CI failures were "expect(...).toBeVisible
-  // timeout" on the default 5s; bumping to 15s soaks up cold-mount latency
-  // without hiding genuine bugs.
-  expect: { timeout: process.env.CI ? 15 * 1000 : 5 * 1000 },
+  // timeout" on the default 5s; 25s on CI absorbs cold-mount latency for
+  // lazy-loaded panels without hiding genuine bugs.
+  expect: { timeout: process.env.CI ? 25 * 1000 : 5 * 1000 },
 
   // Run tests in files in parallel
   fullyParallel: true,

@@ -146,9 +146,11 @@ test.describe('AI Deep Review (mock mode)', () => {
         // The AIReviewPanel is the third column inside PRReviewView. The hook
         // (in mock mode) loads the fixture immediately on mount, so the
         // walkthrough summary should be visible without clicking "Generate".
+        // Inherits expect.timeout (25s on CI) — lazy-loaded chunks add ~10s
+        // before the panel renders.
         await expect(
             page.getByText(/oauth token refresh logic/i).first()
-        ).toBeVisible({ timeout: 15000 })
+        ).toBeVisible()
 
         // Switch to the Comments tab inside the AIReviewPanel. Calling the
         // DOM .click() in the page context bypasses Playwright's
