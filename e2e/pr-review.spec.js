@@ -179,8 +179,9 @@ test.describe('PR Review view', () => {
         await mockApi(page)
         await openPRReview(page)
 
-        // File tree shows the mock filenames
-        await expect(page.getByText('rate-limit.js', { exact: false }).first()).toBeVisible({ timeout: 15000 })
+        // File tree shows the mock filenames. Inherits expect.timeout (25s
+        // on CI) — the file tree renders after the diff chunk loads.
+        await expect(page.getByText('rate-limit.js', { exact: false }).first()).toBeVisible()
         await expect(page.getByText('auth.js', { exact: false }).first()).toBeVisible()
 
         // Status bar progressbar ("X of Y files reviewed")
