@@ -24,8 +24,8 @@ import {
 } from '../lib/user-ai-config.js';
 import { createProviderForUser } from '../lib/ai-provider.js';
 import { invalidate as invalidateAIHealth, recordState as recordAIHealth } from '../lib/ai-health-probe.js';
+import { formatAIErrorForUser, getProviderLabel } from '../lib/ai-error-format.js';
 import logger from '../lib/logger.js';
-import { redactSecrets } from '../lib/redact-secrets.js';
 
 const router = express.Router();
 
@@ -181,16 +181,45 @@ router.post('/test', requireAuth, testRateLimiter, validateBody(testAIConfigSche
         provider = await createProviderForUser(userId, kind, { noServerFallback: true });
     } catch (err) {
         logger.warn({ err, userId, kind }, 'createProviderForUser threw during /test');
-        return res.json({ ok: false, error: 'Failed to build provider', code: 'PROVIDER_ERROR' });
+        return res.json({
+            ok: false,
+            code: 'PROVIDER_ERROR',
+            error: 'Failed to build provider',
+            title: 'Provider could not be constructed',
+            message: 'Failed to build provider',
+            hint: 'Open the configuration above, re-check the provider, model, and API key, save, then retry.',
+            httpStatus: null,
+            providerName: null,
+            model: null,
+            kind,
+            upstreamProvider: null,
+            upstreamRaw: null,
+            errorType: null,
+        });
     }
 
     if (!provider) {
         return res.json({
             ok: false,
-            error: 'No AI provider configured for this user. Save your API key first, then retry.',
             code: 'NOT_CONFIGURED',
+            error: 'No AI provider configured for this user. Save your API key first, then retry.',
+            title: 'No provider configured',
+            message: 'No AI provider configured for this user. Save your API key first, then retry.',
+            hint: 'Pick a provider above, paste your API key, click Save, then run Test Connection again.',
+            httpStatus: null,
+            providerName: null,
+            model: null,
+            kind,
+            upstreamProvider: null,
+            upstreamRaw: null,
+            errorType: null,
         });
     }
+
+    const providerName = getProviderLabel(provider);
+    const modelUsed = (kind === 'embedding'
+        ? provider._embeddingModelName
+        : provider.getModelName?.()) || null;
 
     const t0 = Date.now();
 
@@ -207,7 +236,8 @@ router.post('/test', requireAuth, testRateLimiter, validateBody(testAIConfigSche
             return res.json({
                 ok: true,
                 latencyMs,
-                modelUsed: provider.getModelName?.() || null,
+                modelUsed,
+                providerName,
                 response: text?.slice(0, 100),
             });
         }
@@ -218,7 +248,8 @@ router.post('/test', requireAuth, testRateLimiter, validateBody(testAIConfigSche
             return res.json({
                 ok: true,
                 latencyMs,
-                modelUsed: provider._embeddingModelName || provider.getModelName?.() || null,
+                modelUsed,
+                providerName,
                 dimensions: embedding.length,
             });
         }
@@ -226,9 +257,6 @@ router.post('/test', requireAuth, testRateLimiter, validateBody(testAIConfigSche
         return res.status(400).json({ ok: false, error: 'Invalid kind', code: 'INVALID_KIND' });
     } catch (err) {
         const latencyMs = Date.now() - t0;
-
-        // Redact first — do NOT include the raw err object (may carry auth headers in err.cause)
-        const safeMessage = redactSecrets(err?.message || 'Test call failed').slice(0, 200) || 'Test call failed';
 
         // Record health state from the test failure so /config/ai-status
         // reflects what we just learned without re-probing.
@@ -239,20 +267,18 @@ router.post('/test', requireAuth, testRateLimiter, validateBody(testAIConfigSche
             recordAIHealth(userId, 'unreachable');
         }
 
+        const payload = formatAIErrorForUser(err, { providerName, model: modelUsed, kind });
+
         logger.warn({
-            code: err?.code,
-            status: err?.status,
-            message: safeMessage,
+            code: payload.code,
+            status: payload.httpStatus,
+            message: payload.message,
+            upstreamProvider: payload.upstreamProvider,
             userId,
             kind,
         }, 'AI config test call failed');
 
-        return res.json({
-            ok: false,
-            error: safeMessage,
-            code: err?.code || 'UNKNOWN',
-            latencyMs,
-        });
+        return res.json({ ...payload, latencyMs });
     }
 });
 

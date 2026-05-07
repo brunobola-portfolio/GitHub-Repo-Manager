@@ -49,22 +49,24 @@ function stripMarkdownFences(text) {
  * @returns {AIError}
  */
 function mapAnthropicError(status, message, errorType, cause) {
+    const details = errorType ? { errorType } : undefined;
+    const opts = { message, cause, ...(details ? { details } : {}) };
     if (status === 401 || errorType === 'authentication_error') {
-        return new AIError({ code: AI_ERROR_CODE.AUTH, message, status: 401, cause });
+        return new AIError({ ...opts, code: AI_ERROR_CODE.AUTH, status: 401 });
     }
     if (status === 429 || errorType === 'rate_limit_error') {
-        return new AIError({ code: AI_ERROR_CODE.QUOTA, message, status: 429, cause });
+        return new AIError({ ...opts, code: AI_ERROR_CODE.QUOTA, status: 429 });
     }
     if (status === 529 || errorType === 'overloaded_error') {
-        return new AIError({ code: AI_ERROR_CODE.OVERLOAD, message, status: 529, cause });
+        return new AIError({ ...opts, code: AI_ERROR_CODE.OVERLOAD, status: 529 });
     }
     if (status === 404 || errorType === 'not_found_error') {
-        return new AIError({ code: AI_ERROR_CODE.NOT_FOUND, message, status: 404, cause });
+        return new AIError({ ...opts, code: AI_ERROR_CODE.NOT_FOUND, status: 404 });
     }
     if (status === 400 || errorType === 'invalid_request_error') {
-        return new AIError({ code: AI_ERROR_CODE.INVALID_RESPONSE, message, status: 400, cause });
+        return new AIError({ ...opts, code: AI_ERROR_CODE.INVALID_RESPONSE, status: 400 });
     }
-    return new AIError({ code: AI_ERROR_CODE.UNKNOWN, message, status, cause });
+    return new AIError({ ...opts, code: AI_ERROR_CODE.UNKNOWN, status });
 }
 
 // ---------------------------------------------------------------------------

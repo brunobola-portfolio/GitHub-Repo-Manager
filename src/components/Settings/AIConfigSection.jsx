@@ -282,10 +282,25 @@ export function AIConfigSection() {
             if (err?.type === 'RATE_LIMIT') {
                 startCountdown()
                 const message = err?.data?.error || 'Rate limited. Please wait.'
-                setTestResult({ ok: false, error: message })
+                setTestResult({
+                    ok: false,
+                    code: 'RATE_LIMITED',
+                    error: message,
+                    title: 'Rate limited',
+                    message,
+                    hint: 'You can run Test Connection at most once every 10 seconds. The countdown above will let you try again shortly.',
+                })
                 toast.warning('Rate limited — please wait before retrying')
             } else {
-                setTestResult({ ok: false, error: 'Network error. Please try again.' })
+                const message = 'Could not reach the server. Check your connection and try again.'
+                setTestResult({
+                    ok: false,
+                    code: 'NETWORK',
+                    error: message,
+                    title: 'Network error',
+                    message,
+                    hint: 'This is a problem reaching this app’s server, not the AI provider. If the page itself stays unresponsive, refresh.',
+                })
                 toast.error('Network error — try again')
             }
         } finally {

@@ -86,13 +86,16 @@ export class AIError extends Error {
      * @param {number} [opts.status]       — HTTP status hint (for middleware mapping)
      * @param {number} [opts.retryAfterMs] — backoff hint from Retry-After (capped by caller)
      * @param {unknown} [opts.cause]       — original error (preserved for logging)
+     * @param {object} [opts.details]      — structured upstream context (provider name, raw body, etc.)
+     *                                       Used by the /test endpoint to render rich, actionable errors.
      */
-    constructor({ code, message, status, retryAfterMs, cause } = {}) {
+    constructor({ code, message, status, retryAfterMs, cause, details } = {}) {
         super(message || code, cause ? { cause } : undefined);
         this.name = 'AIError';
         this.code = code || AI_ERROR_CODE.UNKNOWN;
         this.status = status;
         if (retryAfterMs !== undefined) this.retryAfterMs = retryAfterMs;
+        if (details !== undefined) this.details = details;
     }
 }
 

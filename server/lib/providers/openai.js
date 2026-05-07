@@ -32,30 +32,73 @@ function stripMarkdownFences(text) {
 }
 
 /**
+ * Pull structured upstream context out of an OpenAI / OpenRouter error body.
+ *
+ * OpenRouter shape:
+ *   { error: { code, message, metadata: { provider_name, raw } } }
+ *
+ * OpenAI shape:
+ *   { error: { message, type, code, param } }
+ *
+ * Returns `undefined` when nothing useful is present so AIError stays clean.
+ *
+ * @param {unknown} errBody — parsed JSON body from a non-2xx response
+ * @returns {object|undefined}
+ */
+function extractUpstreamDetails(errBody) {
+    const err = errBody?.error;
+    if (!err || typeof err !== 'object') return undefined;
+
+    const out = {};
+    const meta = err.metadata;
+    if (meta && typeof meta === 'object') {
+        if (typeof meta.provider_name === 'string') out.upstreamProvider = meta.provider_name;
+        // `raw` may be a string or an object; stringify objects so the UI gets one shape.
+        if (meta.raw != null) {
+            out.upstreamRaw = typeof meta.raw === 'string' ? meta.raw : safeStringify(meta.raw);
+        }
+    }
+    if (typeof err.type === 'string') out.errorType = err.type;
+    if (typeof err.code === 'string' || typeof err.code === 'number') out.upstreamCode = String(err.code);
+    if (typeof err.param === 'string') out.param = err.param;
+
+    return Object.keys(out).length ? out : undefined;
+}
+
+function safeStringify(value) {
+    try {
+        return JSON.stringify(value).slice(0, 500);
+    } catch {
+        return String(value).slice(0, 500);
+    }
+}
+
+/**
  * Map an HTTP status from the OpenAI / OpenAI-compatible API to an AIError.
  *
  * @param {number} status
  * @param {string} message
  * @param {unknown} [cause]
+ * @param {object} [details] — structured upstream context (e.g. OpenRouter
+ *                              `error.metadata` carrying `provider_name` + `raw`).
+ *                              Surfaced to the UI by the /test endpoint.
  * @returns {AIError}
  */
-function mapHttpError(status, message, cause) {
+function mapHttpError(status, message, cause, details) {
+    const opts = { message, status, cause, ...(details ? { details } : {}) };
     if (status === 401 || status === 403) {
-        return new AIError({ code: AI_ERROR_CODE.AUTH, message, status, cause });
+        return new AIError({ ...opts, code: AI_ERROR_CODE.AUTH });
     }
     if (status === 429) {
-        return new AIError({ code: AI_ERROR_CODE.QUOTA, message, status, cause });
+        return new AIError({ ...opts, code: AI_ERROR_CODE.QUOTA });
     }
     if (status === 404) {
-        return new AIError({ code: AI_ERROR_CODE.NOT_FOUND, message, status, cause });
+        return new AIError({ ...opts, code: AI_ERROR_CODE.NOT_FOUND });
     }
     if (status === 503 || status === 529) {
-        return new AIError({ code: AI_ERROR_CODE.OVERLOAD, message, status, cause });
+        return new AIError({ ...opts, code: AI_ERROR_CODE.OVERLOAD });
     }
-    if (status === 500) {
-        return new AIError({ code: AI_ERROR_CODE.UNKNOWN, message, status, cause });
-    }
-    return new AIError({ code: AI_ERROR_CODE.UNKNOWN, message, status, cause });
+    return new AIError({ ...opts, code: AI_ERROR_CODE.UNKNOWN });
 }
 
 // ---------------------------------------------------------------------------
@@ -138,13 +181,15 @@ export class OpenAIProvider {
 
         if (!res.ok) {
             let errMessage = `HTTP ${res.status}`;
+            let details;
             try {
                 const errBody = await res.json();
                 errMessage = errBody?.error?.message || errBody?.message || errMessage;
+                details = extractUpstreamDetails(errBody);
             } catch {
                 // non-JSON body; keep status message
             }
-            throw mapHttpError(res.status, errMessage, undefined);
+            throw mapHttpError(res.status, errMessage, undefined, details);
         }
 
         return res.json();
@@ -176,13 +221,15 @@ export class OpenAIProvider {
 
         if (!res.ok) {
             let errMessage = `HTTP ${res.status}`;
+            let details;
             try {
                 const errBody = await res.json();
                 errMessage = errBody?.error?.message || errBody?.message || errMessage;
+                details = extractUpstreamDetails(errBody);
             } catch {
                 // non-JSON body
             }
-            throw mapHttpError(res.status, errMessage, undefined);
+            throw mapHttpError(res.status, errMessage, undefined, details);
         }
 
         return res;

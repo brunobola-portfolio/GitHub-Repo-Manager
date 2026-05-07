@@ -267,7 +267,9 @@ describe('AIConfigSection — Test Connection button', () => {
         })
 
         await waitFor(() => {
-            expect(screen.getByText(/rate limited/i)).toBeInTheDocument()
+            // The premium error card shows the title and the message both
+            // matching /rate limited/i, so use the exact message string.
+            expect(screen.getByText('Rate limited. Please wait.')).toBeInTheDocument()
         })
     })
 })

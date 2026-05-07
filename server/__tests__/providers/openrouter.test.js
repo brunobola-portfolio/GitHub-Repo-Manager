@@ -122,6 +122,36 @@ describe('OpenRouterProvider.generate()', () => {
         await expect(provider.generate({ prompt: 'test' }))
             .rejects.toMatchObject({ code: AI_ERROR_CODE.AUTH });
     });
+
+    it('captures upstream metadata into AIError.details', async () => {
+        // Real OpenRouter shape when an upstream model fails. The endpoint
+        // returns 200 OK at the HTTP layer for routed errors? No — it returns
+        // 5xx with the error envelope below. Make sure `provider_name` and
+        // `raw` survive the trip into the thrown AIError so the UI can
+        // surface "via Together — out of memory" instead of just "Provider
+        // returned error".
+        vi.stubGlobal('fetch', () => jsonResponse({
+            error: {
+                code: 500,
+                message: 'Provider returned error',
+                metadata: {
+                    provider_name: 'Together',
+                    raw: 'gpu out of memory',
+                },
+            },
+        }, 500));
+
+        await expect(provider.generate({ prompt: 'test' })).rejects.toMatchObject({
+            code: AI_ERROR_CODE.UNKNOWN,
+            status: 500,
+            message: 'Provider returned error',
+            details: {
+                upstreamProvider: 'Together',
+                upstreamRaw: 'gpu out of memory',
+                upstreamCode: '500',
+            },
+        });
+    });
 });
 
 // ---------------------------------------------------------------------------
