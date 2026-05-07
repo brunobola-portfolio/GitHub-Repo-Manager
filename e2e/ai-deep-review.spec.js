@@ -150,12 +150,15 @@ test.describe('AI Deep Review (mock mode)', () => {
             page.getByText(/oauth token refresh logic/i).first()
         ).toBeVisible({ timeout: 15000 })
 
-        // Switch to the Comments tab inside the AIReviewPanel. CI runners
-        // are slow enough that Playwright's normal click flaps with timeout.
-        // Use dispatchEvent to fire the click directly — equivalent to a
-        // user pressing the button, just without waiting for the actionability
-        // heuristic.
-        await page.getByRole('button', { name: /comments \(\d+\)/i }).dispatchEvent('click')
+        // Switch to the Comments tab inside the AIReviewPanel. Calling the
+        // DOM .click() in the page context bypasses Playwright's
+        // actionability gate (which flaps on slow CI runners as the
+        // animation settles) while still firing a bubbling MouseEvent that
+        // React's delegated onClick picks up.
+        await page.evaluate(() => {
+            const btn = [...document.querySelectorAll('button')].find(b => /^Comments \(\d+\)$/.test((b.textContent || '').trim()))
+            btn?.click()
+        })
 
         // Verify a fixture comment is visible (multiple matches across panel
         // and aria region — first() is enough for the smoke check).

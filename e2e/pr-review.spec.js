@@ -213,9 +213,13 @@ test.describe('PR Review view', () => {
             .toBeVisible({ timeout: 15000 })
 
         // Click the "Pull Requests" crumb — it's a button with onClick=onBack.
-        // CI runners flap on the actionability heuristic; dispatchEvent
-        // fires the click handler directly without waiting for stability.
-        await page.getByRole('button', { name: /^pull requests$/i }).first().dispatchEvent('click')
+        // CI runners flap on the actionability heuristic; calling the DOM
+        // .click() in the page context fires a bubbling MouseEvent that
+        // React's delegated onClick handles, with no actionability gate.
+        await page.evaluate(() => {
+            const btn = [...document.querySelectorAll('button')].find(b => (b.textContent || '').trim() === 'Pull Requests')
+            btn?.click()
+        })
 
         await expect(page.getByRole('tab', { name: /pull requests/i }))
             .toBeVisible({ timeout: 10000 })
