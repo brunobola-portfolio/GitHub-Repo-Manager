@@ -6,7 +6,7 @@ import {
     PROVIDER_CAPABILITIES,
     PROVIDER_DEFAULTS,
 } from '../../../utils/providerCapabilities'
-import { getEmbeddingModels } from '../../../utils/providerModels'
+import { useEmbeddingModels } from '../../../hooks/useProviderModels'
 import { PROVIDERS_NEEDING_EMBEDDING_OVERRIDE, INPUT_CLS, LABEL_CLS } from './constants'
 import { PriceHint } from './PriceHint'
 import { ModelCombobox } from './ModelCombobox'
@@ -19,6 +19,7 @@ export function EmbeddingSection({ form, onChange }) {
     const [showOverride, setShowOverride] = useState(
         !!form.embeddingProvider
     )
+    const embeddingModels = useEmbeddingModels(form.embeddingProvider)
 
     const needsEmbedding = PROVIDERS_NEEDING_EMBEDDING_OVERRIDE.includes(form.completionProvider)
 
@@ -113,7 +114,7 @@ export function EmbeddingSection({ form, onChange }) {
                             id="embedding-model"
                             value={form.embeddingModel ?? ''}
                             onChange={(v) => onChange('embeddingModel', v)}
-                            options={getEmbeddingModels(form.embeddingProvider)}
+                            options={embeddingModels}
                             placeholder={
                                 form.embeddingProvider === 'openai'
                                     ? 'text-embedding-3-small'

@@ -1,6 +1,16 @@
 import { useEffect, useState } from 'react';
 
-function format(date) {
+// Accept Date | string | number — API responses arrive as ISO strings, not
+// Date instances, so calling date.getTime() on a string throws.
+function toDate(input) {
+    if (input == null) return null;
+    if (input instanceof Date) return Number.isNaN(input.getTime()) ? null : input;
+    const d = new Date(input);
+    return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function format(input) {
+    const date = toDate(input);
     if (!date) return '';
     const diffMs = Date.now() - date.getTime();
     const secs = Math.max(0, Math.round(diffMs / 1000));

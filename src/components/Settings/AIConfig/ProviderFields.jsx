@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { PROVIDER_DEFAULTS } from '../../../utils/providerCapabilities'
-import { getCompletionModels } from '../../../utils/providerModels'
+import { useCompletionModels } from '../../../hooks/useProviderModels'
 import { INPUT_CLS, LABEL_CLS } from './constants'
 import { PriceHint } from './PriceHint'
 import { ModelCombobox } from './ModelCombobox'
@@ -10,6 +10,7 @@ import { ModelCombobox } from './ModelCombobox'
 // ---------------------------------------------------------------------------
 
 export function ProviderFields({ provider, form, onChange, errors }) {
+    const completionModels = useCompletionModels(provider)
     if (!provider) return null
     const defaults = PROVIDER_DEFAULTS[provider]
     if (!defaults) return null
@@ -77,7 +78,7 @@ export function ProviderFields({ provider, form, onChange, errors }) {
                     id="completion-model"
                     value={form.completionModel ?? ''}
                     onChange={(v) => onChange('completionModel', v)}
-                    options={getCompletionModels(provider)}
+                    options={completionModels}
                     placeholder={defaults.modelPlaceholder}
                     catalogueHref={defaults.modelHelpUrl}
                     catalogueLabel={defaults.modelHelp}

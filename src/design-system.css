@@ -160,7 +160,13 @@
  * modal truly needs something different. */
 
 .ds-modal-body {
-  padding: 1.5rem; /* p-6 */
+  padding: 1rem; /* p-4 — base for narrow screens */
+}
+
+@media (min-width: 768px) {
+  .ds-modal-body {
+    padding: 1.25rem; /* md:p-5 — premium density without wasted gutters */
+  }
 }
 
 /* ===== OPT-IN CARD SHIMMER ===== */

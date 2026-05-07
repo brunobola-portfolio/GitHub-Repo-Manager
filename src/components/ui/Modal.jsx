@@ -228,7 +228,7 @@ export function Modal({
                             {/* Footer */}
                             {footer && (
                                 <div
-                                    className={`flex-shrink-0 flex items-center min-h-[72px] px-6 md:px-8 bg-white/80 dark:bg-slate-900/70 ds-glass border-t border-slate-200/50 dark:border-slate-800/40 ${mobileVariant === 'sheet' ? 'pb-[calc(1rem+env(safe-area-inset-bottom))] md:pb-0' : ''}`}
+                                    className={`flex-shrink-0 flex items-center min-h-[64px] md:min-h-[68px] px-4 md:px-5 bg-white/80 dark:bg-slate-900/70 ds-glass border-t border-slate-200/50 dark:border-slate-800/40 ${mobileVariant === 'sheet' ? 'pb-[calc(1rem+env(safe-area-inset-bottom))] md:pb-0' : ''}`}
                                 >
                                     <div className="w-full">
                                         {footer}

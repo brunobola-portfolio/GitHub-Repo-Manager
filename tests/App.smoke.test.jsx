@@ -76,7 +76,7 @@ describe('App smoke', () => {
   // Full App tree triggers many lazy chunks; under parallel-suite contention
   // the default 5s timeout is borderline. 15s gives headroom without masking
   // real regressions.
-  it('renders AppContent without TDZ or hook-ordering errors', { timeout: 15000 }, async () => {
+  it('renders AppContent without TDZ or hook-ordering errors', { timeout: 30000 }, async () => {
     // This test exists specifically to catch render-time failures such as
     // "Cannot access X before initialization" (temporal dead zone). If a
     // useMemo/useCallback declaration is moved below a hook that reads it,

@@ -6,7 +6,7 @@ import {
     FEATURE_KEYS,
     FEATURE_KEY_LABELS,
 } from '../../../utils/providerCapabilities'
-import { getCompletionModels, getEmbeddingModels } from '../../../utils/providerModels'
+import { useCompletionModels, useEmbeddingModels } from '../../../hooks/useProviderModels'
 import { LABEL_CLS } from './constants'
 import { PriceHint } from './PriceHint'
 import { ModelCombobox } from './ModelCombobox'
@@ -33,6 +33,8 @@ export function PerFeatureOverrideSection({
 }) {
     const [open, setOpen] = useState(false)
     const activeOverrides = Object.values(featureOverrides || {}).filter(Boolean).length
+    const completionCatalogue = useCompletionModels(completionProvider)
+    const embeddingCatalogue = useEmbeddingModels(embeddingProvider || completionProvider)
 
     return (
         <InsightCard tone="default" hover={false}>
@@ -78,9 +80,7 @@ export function PerFeatureOverrideSection({
                             <ul className="space-y-3">
                                 {FEATURE_KEYS.map((key) => {
                                     const isEmbedding = key === 'EMBED'
-                                    const catalogue = isEmbedding
-                                        ? getEmbeddingModels(embeddingProvider || completionProvider)
-                                        : getCompletionModels(completionProvider)
+                                    const catalogue = isEmbedding ? embeddingCatalogue : completionCatalogue
                                     const value = featureOverrides[key] ?? ''
                                     const isOverridden = !!value
 
