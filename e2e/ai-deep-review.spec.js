@@ -168,8 +168,13 @@ test.describe('AI Deep Review (mock mode)', () => {
             page.getByText(/refresh response is not validated/i).first()
         ).toBeVisible()
 
-        // Open the publish modal
-        await page.getByRole('button', { name: /publish to github/i }).click()
+        // Open the publish modal — page.evaluate native click for the same
+        // CI-stability reason as the Comments tab above (animations re-mount
+        // the button briefly while the panel finishes settling).
+        await page.evaluate(() => {
+            const btn = [...document.querySelectorAll('button')].find(b => /publish to github/i.test((b.textContent || '').trim()))
+            btn?.click()
+        })
 
         // Modal opens with walkthrough preview
         await expect(page.getByRole('dialog')).toBeVisible()

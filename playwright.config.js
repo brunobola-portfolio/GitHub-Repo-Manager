@@ -58,8 +58,9 @@ export default defineConfig({
 
     // Per-action timeout for click/hover/etc — same logic as `expect.timeout`.
     // Default Playwright is "no timeout" which is too permissive in dev;
-    // explicit value gives deterministic failures and absorbs CI lag.
-    actionTimeout: process.env.CI ? 15 * 1000 : 10 * 1000,
+    // 25s on CI absorbs the same lazy-chunk cold-load lag that affects
+    // expect.timeout above.
+    actionTimeout: process.env.CI ? 25 * 1000 : 10 * 1000,
 
     // Navigation timeout for page.goto() — Vite dev cold-start can take
     // up to 30s on CI runners as the entry chunks compile.
