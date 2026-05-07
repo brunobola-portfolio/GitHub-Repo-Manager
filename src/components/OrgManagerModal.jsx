@@ -131,7 +131,7 @@ export function OrgManagerModal({
             subtitle={org?.login ? `@${org.login}` : undefined}
             icon={isPersonal ? User : Building2}
             iconGradient="primary"
-            size="lg"
+            size="3xl"
             tabs={tabs}
             activeTab={activeTab}
             onTabChange={setActiveTab}
