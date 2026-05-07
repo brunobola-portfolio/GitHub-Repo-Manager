@@ -7,10 +7,13 @@ import {
     Flame,
     ChevronRight,
     RefreshCw,
+    Gauge,
 } from 'lucide-react'
 import { fetchAttentionFeed } from '../../api/attentionFeed'
 import { fetchAttentionNarrative } from '../../api/attentionNarrative'
+import { AIQuotaExceededError } from '../../api/aiFetch'
 import { useAIStatus } from '../../hooks/useAIStatus'
+import { useAIQuotaState } from '../../hooks/useAIQuotaState'
 import { Spinner } from '../ui/Spinner'
 
 const SEVERITY_RING = {
@@ -81,6 +84,10 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
     const [refreshTick, setRefreshTick] = useState(0)
     const [narratives, setNarratives] = useState({})
     const { configured, keyOk } = useAIStatus()
+    // Global quota gate (set when ANY AI call returns 429+QUOTA_EXCEEDED).
+    // We render a single, polished inline notice instead of letting parallel
+    // narrative fan-outs spam the devtools console with 429s.
+    const quota = useAIQuotaState()
 
     /* eslint-disable react-hooks/set-state-in-effect -- mount + refresh-tick fetch */
     useEffect(() => {
@@ -119,6 +126,16 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
             setNarratives({})
             return undefined
         }
+        // If the quota gate is already closed when we get here, do not
+        // even attempt to fan out — the inline notice above the list will
+        // explain why narratives are absent.
+        if (quota) {
+            const settled = {}
+            for (const it of topItems) settled[it.id] = { text: null, loading: false }
+            setNarratives(settled)
+            return undefined
+        }
+
         const ctrl = new AbortController()
         let cancelled = false
         // Mark all loading up-front so the rows render their shimmer
@@ -127,31 +144,49 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
         for (const it of topItems) loadingMap[it.id] = { text: null, loading: true }
         setNarratives(loadingMap)
 
-        Promise.all(topItems.map((it) =>
-            fetchAttentionNarrative({
-                repo: it.repoFullName,
-                kind: it.kind,
-                signalPayload: {
-                    title: it.title,
-                    hint: it.hint,
-                    since: it.since,
-                    severity: it.severity,
-                },
-                abortSignal: ctrl.signal,
-            }).then((data) => ({ id: it.id, text: data?.narrative ?? null }))
-        )).then((results) => {
-            if (cancelled) return
+        // Sequential fan-out: as soon as one request reveals an exhausted
+        // quota, the rest are short-circuited. The aiFetch quota gate
+        // already pre-empts before the network, so the savings are mostly
+        // about the FIRST hit in a session — but the loop is also where we
+        // decide to settle the remaining rows to "no narrative" without
+        // showing an indefinite shimmer.
+        ;(async () => {
             const next = {}
-            for (const r of results) next[r.id] = { text: r.text, loading: false }
-            setNarratives(next)
-        })
+            let bailed = false
+            for (const it of topItems) {
+                if (cancelled) return
+                if (bailed) {
+                    next[it.id] = { text: null, loading: false }
+                    continue
+                }
+                try {
+                    const data = await fetchAttentionNarrative({
+                        repo: it.repoFullName,
+                        kind: it.kind,
+                        signalPayload: {
+                            title: it.title,
+                            hint: it.hint,
+                            since: it.since,
+                            severity: it.severity,
+                        },
+                        abortSignal: ctrl.signal,
+                    })
+                    next[it.id] = { text: data?.narrative ?? null, loading: false }
+                } catch (err) {
+                    if (err instanceof AIQuotaExceededError) {
+                        bailed = true
+                    }
+                    next[it.id] = { text: null, loading: false }
+                }
+            }
+            if (!cancelled) setNarratives(next)
+        })()
 
         return () => {
             cancelled = true
             ctrl.abort()
         }
-    }, [topKeysJoined, configured, keyOk]) // eslint-disable-line react-hooks/exhaustive-deps -- topKeysJoined captures meaningful identity
-    /* eslint-enable react-hooks/set-state-in-effect */
+    }, [topKeysJoined, configured, keyOk, quota]) // eslint-disable-line react-hooks/exhaustive-deps -- topKeysJoined captures meaningful identity
 
     if (!loading && items.length === 0) return null
 
@@ -187,19 +222,64 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
                         <Spinner size="lg" tone="primary" label="Loading attention feed" />
                     </div>
                 ) : (
-                    <ul className="divide-y divide-slate-200/60 dark:divide-slate-800">
-                        {items.map((item, idx) => (
-                            <AttentionRow
-                                key={item.id}
-                                item={item}
-                                narrative={idx < NARRATIVE_TOP_N ? (narratives[item.id] ?? null) : null}
-                                onClick={() => onSelectRepo?.(item.repoFullName, item)}
-                            />
-                        ))}
-                    </ul>
+                    <>
+                        {quota && configured && keyOk && (
+                            <QuotaNotice quota={quota} />
+                        )}
+                        <ul className="divide-y divide-slate-200/60 dark:divide-slate-800">
+                            {items.map((item, idx) => (
+                                <AttentionRow
+                                    key={item.id}
+                                    item={item}
+                                    narrative={idx < NARRATIVE_TOP_N ? (narratives[item.id] ?? null) : null}
+                                    onClick={() => onSelectRepo?.(item.repoFullName, item)}
+                                />
+                            ))}
+                        </ul>
+                    </>
                 )}
             </div>
         </section>
+    )
+}
+
+// Format the server's `resetAt` ISO into a user-friendly relative string.
+// "in 3 days" reads better than "2026-06-01T00:00:00Z" in a dashboard pill.
+function formatReset(iso) {
+    if (!iso) return null
+    const ms = new Date(iso).getTime() - Date.now()
+    if (Number.isNaN(ms) || ms <= 0) return null
+    const m = Math.round(ms / 60_000)
+    if (m < 60) return `in ${m} min`
+    const h = Math.round(m / 60)
+    if (h < 24) return `in ${h}h`
+    const d = Math.round(h / 24)
+    return `in ${d} day${d === 1 ? '' : 's'}`
+}
+
+function QuotaNotice({ quota }) {
+    const reset = formatReset(quota?.resetAt)
+    return (
+        <div className="px-5 py-3 border-b border-amber-200/60 dark:border-amber-800/40 bg-gradient-to-r from-amber-50 via-amber-50/60 to-transparent dark:from-amber-900/20 dark:via-amber-900/10">
+            <div className="flex items-start gap-2.5">
+                <span className="mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-200">
+                    <Gauge className="w-3.5 h-3.5" aria-hidden="true" />
+                </span>
+                <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold text-amber-800 dark:text-amber-200 leading-tight">
+                        AI insights paused — monthly quota reached
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-amber-700/90 dark:text-amber-300/90">
+                        {quota.limit != null && quota.used != null
+                            ? `${quota.used} / ${quota.limit} requests used`
+                            : 'Your plan limit was reached'}
+                        {reset ? ` · resets ${reset}` : ''}
+                        {quota.upgradeTo ? ` · upgrade to ${quota.upgradeTo} for more` : ''}
+                        . The repo signals below are still live — only the AI narrative is muted.
+                    </p>
+                </div>
+            </div>
+        </div>
     )
 }
 

@@ -16,14 +16,25 @@ vi.mock('../../../src/hooks/useAIStatus', () => ({
     useAIStatus: () => mockAIStatus(),
 }))
 
+const mockQuotaState = vi.fn()
+vi.mock('../../../src/hooks/useAIQuotaState', () => ({
+    useAIQuotaState: () => mockQuotaState(),
+}))
+
+// Real AIQuotaExceededError so `instanceof` checks in the component work.
+const { AIQuotaExceededError } = await import('../../../src/api/aiFetch')
+
 const { AttentionFeed } = await import('../../../src/components/Dashboard/AttentionFeed')
 
 beforeEach(() => {
     mockFetch.mockReset()
     mockNarrative.mockReset()
     mockAIStatus.mockReset()
+    mockQuotaState.mockReset()
     // Default: AI not configured → narrative path stays silent.
     mockAIStatus.mockReturnValue({ configured: false, keyOk: false })
+    // Default: quota gate is open.
+    mockQuotaState.mockReturnValue(null)
 })
 
 const SAMPLE = {
@@ -146,5 +157,54 @@ describe('AttentionFeed', () => {
         await screen.findByText('acme/blocker')
         // Sanity: no garnish text rendered, layout stays intact.
         expect(screen.queryByText(/Sparkles|narrative/i)).toBeNull()
+    })
+
+    // ---------------------------------------------------------------------
+    // Premium quota handling: gate closed → no fan-out, single inline notice
+    // ---------------------------------------------------------------------
+
+    it('does NOT fire narrative requests when the quota gate is already closed', async () => {
+        mockFetch.mockResolvedValue(SAMPLE)
+        mockAIStatus.mockReturnValue({ configured: true, keyOk: true })
+        // Future reset so formatReset returns a sane string.
+        mockQuotaState.mockReturnValue({
+            feature: 'ai_queries',
+            limit: 50,
+            used: 50,
+            resetAt: new Date(Date.now() + 3 * 86_400_000).toISOString(),
+            upgradeTo: 'pro',
+            until: Date.now() + 60_000,
+            recordedAt: Date.now(),
+        })
+        render(<AttentionFeed />)
+        await screen.findByText('acme/blocker')
+        expect(mockNarrative).not.toHaveBeenCalled()
+        // Premium notice is rendered above the list.
+        expect(screen.getByText(/AI insights paused/i)).toBeInTheDocument()
+        expect(screen.getByText(/50 \/ 50 requests used/)).toBeInTheDocument()
+        expect(screen.getByText(/upgrade to pro/i)).toBeInTheDocument()
+    })
+
+    it('bails out the remaining narrative requests when one returns AIQuotaExceededError', async () => {
+        // SAMPLE has 2 items. First call throws quota; second should be skipped.
+        mockFetch.mockResolvedValue(SAMPLE)
+        mockAIStatus.mockReturnValue({ configured: true, keyOk: true })
+        mockQuotaState.mockReturnValue(null) // gate open at render-time
+        const quotaErr = new AIQuotaExceededError({
+            feature: 'ai_queries',
+            limit: 100,
+            used: 100,
+            resetAt: new Date(Date.now() + 60_000).toISOString(),
+        })
+        mockNarrative
+            .mockRejectedValueOnce(quotaErr)
+            .mockResolvedValueOnce({ narrative: 'should never render', cached: false, model: 'x' })
+
+        render(<AttentionFeed />)
+        await screen.findByText('acme/blocker')
+
+        // Only the first call goes out — the loop bails after seeing the error.
+        await waitFor(() => expect(mockNarrative).toHaveBeenCalledTimes(1))
+        expect(screen.queryByText(/should never render/)).not.toBeInTheDocument()
     })
 })
