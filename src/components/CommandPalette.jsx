@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Command } from 'cmdk'
+import * as Dialog from '@radix-ui/react-dialog'
 import {
   GitFork, LayoutDashboard, Users, Tag, Map, Wand2, History, Plus,
   ArrowRightLeft, Settings, Kanban, GitPullRequest, CircleDot, Loader2,
@@ -374,6 +375,13 @@ export function CommandPalette({
       contentClassName="fixed left-1/2 top-[20%] z-[9999] -translate-x-1/2 w-full max-w-[640px] px-4"
       shouldFilter={true}
     >
+      {/* Radix Dialog requires Title + Description for screen readers; cmdk
+          renders Command.Dialog through Radix Dialog.Content. We hide them
+          visually with `sr-only` so the visible UI stays clean. */}
+      <Dialog.Title className="sr-only">Command Palette</Dialog.Title>
+      <Dialog.Description className="sr-only">
+        Search commands, repositories, pull requests and issues. Type to filter, press Enter to run, Escape to close. Start with a question mark to ask the AI.
+      </Dialog.Description>
       <div className={`overflow-hidden rounded-xl border bg-white dark:bg-slate-900 shadow-2xl transition-colors ${
         askMode
           ? 'border-indigo-400 dark:border-indigo-500 ring-1 ring-indigo-400/30'
