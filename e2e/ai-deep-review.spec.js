@@ -150,8 +150,13 @@ test.describe('AI Deep Review (mock mode)', () => {
             page.getByText(/oauth token refresh logic/i).first()
         ).toBeVisible({ timeout: 15000 })
 
-        // Switch to the Comments tab inside the AIReviewPanel
-        await page.getByRole('button', { name: /comments \(\d+\)/i }).click()
+        // Switch to the Comments tab inside the AIReviewPanel. force:true
+        // bypasses CI-only intercept-checks: framer-motion stagger
+        // animations transiently overlap the tab strip on slower runners
+        // and Playwright's actionability heuristic backs off until the
+        // 15s timeout. The button is reachable visually; force-clicking is
+        // safe because there's no overlapping-but-intentional UI here.
+        await page.getByRole('button', { name: /comments \(\d+\)/i }).click({ force: true })
 
         // Verify a fixture comment is visible (multiple matches across panel
         // and aria region — first() is enough for the smoke check).

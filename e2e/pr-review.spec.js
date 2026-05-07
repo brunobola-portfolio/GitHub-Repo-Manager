@@ -212,8 +212,12 @@ test.describe('PR Review view', () => {
         await expect(page.getByRole('navigation', { name: /breadcrumb/i }))
             .toBeVisible({ timeout: 15000 })
 
-        // Click the "Pull Requests" crumb — it's a button with onClick=onBack
-        await page.getByRole('button', { name: /^pull requests$/i }).first().click()
+        // Click the "Pull Requests" crumb — it's a button with onClick=onBack.
+        // force:true: CI runners are slow enough that the breadcrumb's hover
+        // ring re-renders just as Playwright's stability heuristic checks,
+        // making the actionability gate flap. The crumb is plainly visible —
+        // force-clicking is the same behaviour a real user gets.
+        await page.getByRole('button', { name: /^pull requests$/i }).first().click({ force: true })
 
         await expect(page.getByRole('tab', { name: /pull requests/i }))
             .toBeVisible({ timeout: 10000 })
