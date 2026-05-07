@@ -105,8 +105,9 @@ test.describe('Migration Auto-Fix Drawer', () => {
     // Click Next to advance to repoSelect
     await page.getByRole('button', { name: /Next/i }).click()
 
-    // Step 3: repoSelect — wait for the "Select Repositories" heading
-    await expect(page.getByRole('heading', { name: /Select Repositories/i })).toBeVisible({ timeout: 15000 })
+    // Step 3: repoSelect — the step title is rendered as a paragraph in the
+    // wizard's stepInfo block, not as an ARIA heading, so match by text.
+    await expect(page.getByText(/Select Repositories/i).first()).toBeVisible({ timeout: 15000 })
 
     // Select both repos. The RepoList renders checkboxes (or rows with toggle).
     // Try checkbox role first, fall back to clicking the row.
@@ -123,8 +124,8 @@ test.describe('Migration Auto-Fix Drawer', () => {
     await expect(fixButton).toBeVisible({ timeout: 5000 })
     await fixButton.click()
 
-    // AutoFixDrawer opens (role=dialog, labelled "Fix issues")
-    const drawer = page.locator('[role="dialog"][aria-labelledby="autofix-drawer-title"]')
+    // AutoFixDrawer opens — Drawer primitive uses aria-label, not aria-labelledby.
+    const drawer = page.locator('[role="dialog"][aria-label="Fix issues"]')
     await expect(drawer).toBeVisible({ timeout: 5000 })
 
     // Accept the AI suggestion for the large repo ("huge")

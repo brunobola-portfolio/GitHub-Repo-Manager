@@ -10,7 +10,9 @@ test.describe('Dashboard hero', () => {
     test('renders greeting headline', async ({ page }) => {
         const heading = page.getByRole('heading', { level: 1 })
         await expect(heading).toBeVisible()
-        await expect(heading).toContainText(/bom dia|boa tarde|boa noite|olá/i)
+        // Greeting locale follows navigator.language: PT for pt-* locales,
+        // EN otherwise. CI runs en-US so we accept both.
+        await expect(heading).toContainText(/bom dia|boa tarde|boa noite|olá|good morning|good afternoon|good evening|hello/i)
     })
 
     test('renders the org filter chip', async ({ page }) => {
@@ -23,7 +25,8 @@ test.describe('Dashboard hero', () => {
 
     test('time range chip changes the selected value', async ({ page }) => {
         await page.getByLabel(/time range/i).click()
-        await page.getByRole('button', { name: /últimos 30 dias/i }).click()
+        // Option label is locale-aware (Últimos 30 dias / Last 30 days).
+        await page.getByRole('button', { name: /(últimos|last) 30 (dias|days)/i }).click()
         await expect(page.getByLabel(/time range/i)).toContainText(/30/)
     })
 

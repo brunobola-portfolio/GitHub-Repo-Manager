@@ -22,20 +22,23 @@ test.describe('Suggest Name & Description', () => {
       })
     )
 
-    // Intercept the PATCH that applies the suggestion. The first mock repo is
-    // "fintech-dashboard" (owner: dev-user). mockSuggestNameDescription returns
-    // noChange.name=true for this repo (slug already matches), so only description
-    // changes and no rename-ack checkbox is required before Apply becomes enabled.
-    await page.route('**/api/v1/repos/dev-user/fintech-dashboard', (route) => {
+    // Intercept the PATCH that applies the suggestion. The first card after
+    // sort A→Z is whichever repo comes first alphabetically (currently
+    // "ai-analytics-platform"); we match any /api/v1/repos/dev-user/<name>
+    // PATCH so the test stays robust when the mock list changes.
+    await page.route(/\/api\/v1\/repos\/dev-user\/[^/?]+(\?.*)?$/, (route) => {
       if (route.request().method() === 'PATCH') {
+        const url = new URL(route.request().url())
+        const segments = url.pathname.split('/')
+        const name = segments[segments.length - 1]
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
             id: 1,
-            name: 'fintech-dashboard',
-            full_name: 'dev-user/fintech-dashboard',
-            description: 'TypeScript project for react',
+            name,
+            full_name: `dev-user/${name}`,
+            description: 'Updated description',
             owner: { login: 'dev-user' },
           }),
         })
