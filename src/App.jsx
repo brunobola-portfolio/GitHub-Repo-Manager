@@ -1166,7 +1166,7 @@ function AppContent() {
         )}
       </main>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Create Repository" onGoHome={() => closeModal('showCreateRepo')} />}>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Create Repository" variant="modal" onGoHome={() => closeModal('showCreateRepo')} />}>
         <Suspense fallback={null}>
           <CreateRepoModal
             isOpen={modalStates.showCreateRepo}
@@ -1179,7 +1179,7 @@ function AppContent() {
         </Suspense>
       </ErrorBoundary>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Transfer" onGoHome={() => closeModal('showTransfer')} />}>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Transfer" variant="modal" onGoHome={() => closeModal('showTransfer')} />}>
       <Suspense fallback={null}>
         <TransferModal
           isOpen={modalStates.showTransfer}
@@ -1234,7 +1234,7 @@ function AppContent() {
         isLoading={isPerforming}
       />
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Organization Manager" onGoHome={() => closeModal('showOrgManager')} />}>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Organization Manager" variant="modal" onGoHome={() => closeModal('showOrgManager')} />}>
         <Suspense fallback={null}>
           <OrgManagerModal
             isOpen={modalStates.showOrgManager}
@@ -1248,7 +1248,7 @@ function AppContent() {
         </Suspense>
       </ErrorBoundary>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Dev Toolkit" onGoHome={() => closeModal('showDevToolkit')} />}>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Dev Toolkit" variant="modal" onGoHome={() => closeModal('showDevToolkit')} />}>
         <Suspense fallback={null}>
           <DevToolkitPanel
             isOpen={modalStates.showDevToolkit}
@@ -1264,7 +1264,7 @@ function AppContent() {
         </Suspense>
       </ErrorBoundary>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Settings" onGoHome={() => closeModal('showSettings')} />}>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Settings" variant="modal" onGoHome={() => closeModal('showSettings')} />}>
         <Suspense fallback={null}>
           <SettingsModal
             isOpen={modalStates.showSettings}
@@ -1283,7 +1283,7 @@ function AppContent() {
         const insightsRepo = insightsPayload?.repo ?? insightsPayload
         const insightsInitialTab = insightsPayload?.initialTab
         return (
-          <ErrorBoundary fallback={<ViewErrorFallback viewName="Repository Insights" onGoHome={() => closeModal('showRepoInsights')} />}>
+          <ErrorBoundary fallback={<ViewErrorFallback viewName="Repository Insights" variant="modal" onGoHome={() => closeModal('showRepoInsights')} />}>
             <Suspense fallback={null}>
               <RepoInsightsModal
                 isOpen={modalStates.showRepoInsights}
@@ -1301,7 +1301,7 @@ function AppContent() {
         const sndRepo = sndPayload?.repo ?? null
         const sndOnApplied = sndPayload?.onApplied
         return (
-          <ErrorBoundary fallback={<ViewErrorFallback viewName="Suggest Name & Description" onGoHome={() => closeModal('suggestNameDescription')} />}>
+          <ErrorBoundary fallback={<ViewErrorFallback viewName="Suggest Name & Description" variant="modal" onGoHome={() => closeModal('suggestNameDescription')} />}>
             <Suspense fallback={null}>
               <SuggestNameDescriptionModal
                 isOpen={modalStates.suggestNameDescription}
@@ -1318,7 +1318,7 @@ function AppContent() {
       })()}
 
       {modalStates.showCommunityHealth && (
-        <ErrorBoundary fallback={<ViewErrorFallback viewName="Community Health" onGoHome={() => closeModal('showCommunityHealth')} />}>
+        <ErrorBoundary fallback={<ViewErrorFallback viewName="Community Health" variant="modal" onGoHome={() => closeModal('showCommunityHealth')} />}>
           <Suspense fallback={null}>
             <CommunityHealthDashboard
               repo={getModalData('showCommunityHealth')}
@@ -1328,7 +1328,7 @@ function AppContent() {
         </ErrorBoundary>
       )}
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Migration History" onGoHome={() => closeModal('showMigrationHistory')} />}>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Migration History" variant="modal" onGoHome={() => closeModal('showMigrationHistory')} />}>
         <Suspense fallback={null}>
           <MigrationHistory
             isOpen={modalStates.showMigrationHistory}
@@ -1338,7 +1338,7 @@ function AppContent() {
       </ErrorBoundary>
 
       {modalStates.showMigrationWizard && (
-        <ErrorBoundary fallback={<ViewErrorFallback viewName="Migration Wizard" onGoHome={() => closeModal('showMigrationWizard')} />}>
+        <ErrorBoundary fallback={<ViewErrorFallback viewName="Migration Wizard" variant="modal" onGoHome={() => closeModal('showMigrationWizard')} />}>
           <Suspense fallback={null}>
             <MigrationWizard
               onClose={() => closeModal('showMigrationWizard')}
@@ -1352,7 +1352,7 @@ function AppContent() {
         </ErrorBoundary>
       )}
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Keyboard Shortcuts" onGoHome={() => setShowHelp(false)} />}>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Keyboard Shortcuts" variant="modal" onGoHome={() => setShowHelp(false)} />}>
         <Suspense fallback={null}>
           <KeyboardShortcutsHelp
             isOpen={showHelp}
@@ -1362,7 +1362,7 @@ function AppContent() {
         </Suspense>
       </ErrorBoundary>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Batch Index" onGoHome={() => closeModal('showBatchIndex')} />}>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Batch Index" variant="modal" onGoHome={() => closeModal('showBatchIndex')} />}>
         <Suspense fallback={null}>
           <BatchIndexProgressModal
             isOpen={modalStates.showBatchIndex}
@@ -1372,7 +1372,7 @@ function AppContent() {
         </Suspense>
       </ErrorBoundary>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Compare Repositories" onGoHome={() => closeModal('showCompare')} />}>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Compare Repositories" variant="modal" onGoHome={() => closeModal('showCompare')} />}>
         <Suspense fallback={null}>
           <CompareSimilarDrawer
             isOpen={modalStates.showCompare}
@@ -1382,7 +1382,7 @@ function AppContent() {
         </Suspense>
       </ErrorBoundary>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Security Scan" onGoHome={() => closeModal('showSecurityScan')} />}>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Security Scan" variant="modal" onGoHome={() => closeModal('showSecurityScan')} />}>
         <Suspense fallback={null}>
           <SecurityScanModal
             isOpen={modalStates.showSecurityScan}
@@ -1392,7 +1392,7 @@ function AppContent() {
         </Suspense>
       </ErrorBoundary>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="License Activation" onGoHome={() => closeModal('showLicenseActivation')} />}>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="License Activation" variant="modal" onGoHome={() => closeModal('showLicenseActivation')} />}>
         <Suspense fallback={null}>
           <LicenseActivationModal
             isOpen={modalStates.showLicenseActivation}

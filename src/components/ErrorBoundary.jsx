@@ -22,13 +22,14 @@ class ErrorBoundary extends Component {
           method: 'POST',
           credentials: 'include',
           headers,
+          // Schema is .strict() server-side — only send fields it accepts.
           body: JSON.stringify({
-            message: error?.message,
+            message: (error?.message ?? 'Unknown error').slice(0, 1000),
             // eslint-disable-next-line no-restricted-syntax -- legitimate telemetry POST, not UI surface
             stack: error?.stack?.slice(0, 5000),
             componentStack: errorInfo?.componentStack?.slice(0, 5000),
-            url: window.location.href,
-            timestamp: new Date().toISOString()
+            url: window.location.href.slice(0, 2000),
+            userAgent: navigator.userAgent?.slice(0, 500)
           })
         })
       } catch {
