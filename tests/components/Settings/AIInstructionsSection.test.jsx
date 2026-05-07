@@ -134,4 +134,70 @@ describe('AIInstructionsSection', () => {
         expect(screen.getAllByText('{name}').length).toBeGreaterThanOrEqual(1)
         expect(screen.getAllByText('{description}').length).toBeGreaterThanOrEqual(1)
     })
+
+    // ---------------------------------------------------------------------
+    // Premium UI: stats card, search, tabs (Editor / Default / Preview)
+    // ---------------------------------------------------------------------
+
+    it('renders the stats card with override count + total', async () => {
+        apiCall.mockResolvedValueOnce(CATALOG)
+        render(<AIInstructionsSection />)
+        await waitFor(() => expect(screen.getByText(/with overrides/i)).toBeInTheDocument())
+        // CATALOG has 1 hasOverride out of 2 total.
+        expect(screen.getByText(/1 of 2 with overrides/i)).toBeInTheDocument()
+        // Search box is part of the stats card.
+        expect(screen.getByRole('searchbox', { name: /search prompts/i })).toBeInTheDocument()
+    })
+
+    it('filters the list by query and shows an empty state when nothing matches', async () => {
+        const user = userEvent.setup()
+        apiCall.mockResolvedValueOnce(CATALOG)
+        render(<AIInstructionsSection />)
+        await waitFor(() => expect(screen.getByText(/Assistant chat — persona/)).toBeInTheDocument())
+
+        const search = screen.getByRole('searchbox', { name: /search prompts/i })
+        await user.type(search, 'suggest')
+        // Title match — 'Assistant chat — persona' should be filtered out.
+        await waitFor(() => {
+            expect(screen.queryByText(/Assistant chat — persona/)).not.toBeInTheDocument()
+        })
+        expect(screen.getByText(/Suggest name & description/)).toBeInTheDocument()
+
+        // Type something that matches nothing.
+        await user.clear(search)
+        await user.type(search, 'zzz-nope')
+        await waitFor(() => {
+            expect(screen.getByText(/No prompts match/i)).toBeInTheDocument()
+        })
+    })
+
+    it('switches between Editor, Default, and Preview tabs', async () => {
+        const user = userEvent.setup()
+        const catalogWithSamples = {
+            prompts: [
+                {
+                    ...CATALOG.prompts[1],
+                    sampleVars: { name: 'logflow', description: 'Sample.' },
+                },
+            ],
+        }
+        apiCall.mockResolvedValueOnce(catalogWithSamples)
+        render(<AIInstructionsSection />)
+        await waitFor(() => expect(screen.getByText(/Suggest name & description/)).toBeInTheDocument())
+
+        await user.click(screen.getByText(/Suggest name & description/))
+        // Editor tab is the default → textarea visible.
+        expect(screen.getByLabelText(/Your prompt/i)).toBeInTheDocument()
+
+        // Switch to Default tab → read-only default text.
+        await user.click(screen.getByRole('tab', { name: /^Default$/i }))
+        expect(screen.getByText(/Built-in default — used when you have no override/i)).toBeInTheDocument()
+
+        // Switch to Preview tab → variables are substituted.
+        await user.click(screen.getByRole('tab', { name: /^Preview$/i }))
+        expect(screen.getByText(/Preview with sample data/i)).toBeInTheDocument()
+        // The sampleVars.name="logflow" should appear inside the rendered preview.
+        const previews = screen.getAllByText(/logflow/)
+        expect(previews.length).toBeGreaterThanOrEqual(1)
+    })
 })

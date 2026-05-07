@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react'
-import { Sparkles, Save, Undo2, RotateCcw, ChevronDown, ChevronRight, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+    Sparkles, Save, Undo2, RotateCcw, ChevronDown, ChevronRight,
+    AlertTriangle, CheckCircle2, Loader2, Search, Copy, Check, Wand2,
+} from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
@@ -9,9 +12,112 @@ import { apiCall } from '../../utils/api'
 
 const TEXTAREA_CLASSES = 'w-full px-3 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm font-mono leading-relaxed placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50'
 
+const READONLY_CLASSES = 'w-full px-3 py-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-mono leading-relaxed whitespace-pre-wrap break-words overflow-auto'
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Mirror of server's renderPrompt — replaces every `{var}` token with its
+ * supplied value. Uses literal split/join so values containing `{…}` won't
+ * be re-expanded into placeholder loops.
+ */
+function renderPromptClient(template, vars = {}) {
+    if (typeof template !== 'string') return ''
+    let out = template
+    for (const [key, value] of Object.entries(vars || {})) {
+        const token = `{${key}}`
+        const replacement = value === undefined || value === null ? '' : String(value)
+        out = out.split(token).join(replacement)
+    }
+    return out
+}
+
+/**
+ * Cheap line-level diff metric — counts lines whose content differs between
+ * the two inputs (unequal length counts as a difference). Good enough to drive
+ * the "N changes" chip without pulling in a real diff library.
+ */
+function countLineDifferences(a, b) {
+    if (a === b) return 0
+    const aLines = (a || '').split('\n')
+    const bLines = (b || '').split('\n')
+    const max = Math.max(aLines.length, bLines.length)
+    let diffs = 0
+    for (let i = 0; i < max; i++) {
+        if ((aLines[i] || '') !== (bLines[i] || '')) diffs++
+    }
+    return diffs
+}
+
+function CategoryBadge({ category }) {
+    if (!category || category === 'General') return null
+    return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/40">
+            {category}
+        </span>
+    )
+}
+
+function CopyButton({ getText, label = 'Copy' }) {
+    const [copied, setCopied] = useState(false)
+    const onClick = async () => {
+        const text = getText()
+        if (!text) return
+        try {
+            await navigator.clipboard.writeText(text)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 1500)
+        } catch {
+            // Clipboard API can fail in iframes / insecure contexts. Silent —
+            // the user still has the text visible to copy manually.
+        }
+    }
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        >
+            {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+            {copied ? 'Copied' : label}
+        </button>
+    )
+}
+
+// ---------------------------------------------------------------------------
+// Per-prompt editor — Editor / Default / Preview tabs
+// ---------------------------------------------------------------------------
+
+const TABS = [
+    { id: 'editor', label: 'Your prompt' },
+    { id: 'default', label: 'Default' },
+    { id: 'preview', label: 'Preview' },
+]
+
+function TabButton({ active, onClick, children }) {
+    return (
+        <button
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={onClick}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                active
+                    ? 'bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/15 dark:text-indigo-200'
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+        >
+            {children}
+        </button>
+    )
+}
+
 function PromptEditor({ entry, onSaved, onReset }) {
     const { toast } = useToast()
     const [expanded, setExpanded] = useState(false)
+    const [tab, setTab] = useState('editor')
     // Editing buffer; falls back to the user's current override or '' (which
     // shows the default as placeholder).
     const [draft, setDraft] = useState(entry.userPrompt || '')
@@ -29,6 +135,18 @@ function PromptEditor({ entry, onSaved, onReset }) {
     const isDirty = trimmed !== (entry.userPrompt || '').trim()
     const willCustomize = !entry.hasOverride && trimmed.length > 0
     const canSave = trimmed.length > 0 && trimmed.length <= 8000 && (isDirty || willCustomize)
+
+    // Effective text the model would actually receive: user override when set
+    // (or being edited), else the default. Used by the Preview tab.
+    const effectivePrompt = (trimmed.length > 0 ? trimmed : entry.defaultPrompt) || ''
+    const previewText = useMemo(
+        () => renderPromptClient(effectivePrompt, entry.sampleVars || {}),
+        [effectivePrompt, entry.sampleVars],
+    )
+    const diffCount = useMemo(
+        () => countLineDifferences(effectivePrompt, entry.defaultPrompt || ''),
+        [effectivePrompt, entry.defaultPrompt],
+    )
 
     const handleSave = async () => {
         if (!canSave) return
@@ -63,7 +181,10 @@ function PromptEditor({ entry, onSaved, onReset }) {
         }
     }
 
-    const fillFromDefault = () => setDraft(entry.defaultPrompt)
+    const fillFromDefault = () => {
+        setDraft(entry.defaultPrompt)
+        setTab('editor')
+    }
 
     return (
         <Card className="p-5 space-y-3">
@@ -88,6 +209,7 @@ function PromptEditor({ entry, onSaved, onReset }) {
                                 Default
                             </span>
                         )}
+                        <CategoryBadge category={entry.category} />
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{entry.description}</p>
                 </div>
@@ -95,6 +217,31 @@ function PromptEditor({ entry, onSaved, onReset }) {
 
             {expanded && (
                 <div className="space-y-3 pt-2 border-t border-slate-200/60 dark:border-slate-700/50">
+                    {/* Tab strip */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div role="tablist" aria-label="Prompt views" className="inline-flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800/60">
+                            {TABS.map(t => (
+                                <TabButton key={t.id} active={tab === t.id} onClick={() => setTab(t.id)}>
+                                    {t.label}
+                                </TabButton>
+                            ))}
+                        </div>
+                        <div className="flex items-center gap-1">
+                            {diffCount > 0 && (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
+                                    {diffCount} line{diffCount === 1 ? '' : 's'} differ
+                                </span>
+                            )}
+                            <CopyButton
+                                getText={() => {
+                                    if (tab === 'default') return entry.defaultPrompt
+                                    if (tab === 'preview') return previewText
+                                    return draft || entry.defaultPrompt
+                                }}
+                            />
+                        </div>
+                    </div>
+
                     {entry.variables?.length > 0 && (
                         <div className="text-xs text-slate-500 dark:text-slate-400">
                             Variables you can use:&nbsp;
@@ -107,32 +254,65 @@ function PromptEditor({ entry, onSaved, onReset }) {
                         </div>
                     )}
 
-                    <div>
-                        <label htmlFor={`prompt-editor-${entry.key}`} className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">Your prompt</label>
-                        <textarea
-                            id={`prompt-editor-${entry.key}`}
-                            rows={Math.min(20, Math.max(8, (draft.match(/\n/g)?.length ?? 0) + 4))}
-                            value={draft}
-                            onChange={(e) => setDraft(e.target.value)}
-                            placeholder={entry.defaultPrompt}
-                            disabled={saving || resetting}
-                            className={TEXTAREA_CLASSES}
-                            maxLength={8000}
-                        />
-                        <div className="flex items-center justify-between mt-1.5">
-                            <p className="text-[11px] text-slate-400">
-                                {draft.length}/8000 chars
-                                {!entry.hasOverride && draft.length === 0 && ' · placeholder shows the default prompt'}
-                            </p>
-                            <button
-                                type="button"
-                                onClick={fillFromDefault}
-                                className="text-[11px] text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300"
-                            >
-                                Copy default into editor
-                            </button>
+                    {/* Tab panels */}
+                    {tab === 'editor' && (
+                        <div>
+                            <label htmlFor={`prompt-editor-${entry.key}`} className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">Your prompt</label>
+                            <textarea
+                                id={`prompt-editor-${entry.key}`}
+                                rows={Math.min(20, Math.max(8, (draft.match(/\n/g)?.length ?? 0) + 4))}
+                                value={draft}
+                                onChange={(e) => setDraft(e.target.value)}
+                                placeholder={entry.defaultPrompt}
+                                disabled={saving || resetting}
+                                className={TEXTAREA_CLASSES}
+                                maxLength={8000}
+                            />
+                            <div className="flex items-center justify-between mt-1.5 gap-2 flex-wrap">
+                                <p className="text-[11px] text-slate-400">
+                                    {draft.length}/8000 chars
+                                    {!entry.hasOverride && draft.length === 0 && ' · placeholder shows the default prompt'}
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={fillFromDefault}
+                                    className="inline-flex items-center gap-1 text-[11px] text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300"
+                                >
+                                    <Wand2 className="w-3 h-3" /> Copy default into editor
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
+
+                    {tab === 'default' && (
+                        <div>
+                            <p className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
+                                Built-in default — used when you have no override.
+                            </p>
+                            <pre className={READONLY_CLASSES} style={{ maxHeight: 480 }}>
+                                {entry.defaultPrompt}
+                            </pre>
+                            <p className="text-[11px] text-slate-400 mt-1.5">
+                                {(entry.defaultPrompt || '').length} chars · read-only reference
+                            </p>
+                        </div>
+                    )}
+
+                    {tab === 'preview' && (
+                        <div>
+                            <p className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
+                                Preview with sample data — exactly what the model would receive.
+                            </p>
+                            <pre className={READONLY_CLASSES} style={{ maxHeight: 480 }}>
+                                {previewText}
+                            </pre>
+                            <p className="text-[11px] text-slate-400 mt-1.5">
+                                {entry.variables?.length
+                                    ? `Sample values shown for ${entry.variables.map(v => `{${v}}`).join(', ')}.`
+                                    : 'No variables for this prompt — preview matches the prompt verbatim.'}
+                            </p>
+                        </div>
+                    )}
 
                     {trimmed.length > 8000 && (
                         <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
@@ -177,11 +357,16 @@ function PromptEditor({ entry, onSaved, onReset }) {
     )
 }
 
+// ---------------------------------------------------------------------------
+// Section shell — search, stats, list
+// ---------------------------------------------------------------------------
+
 export function AIInstructionsSection() {
     const { toast } = useToast()
     const [prompts, setPrompts] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [query, setQuery] = useState('')
 
     const load = async () => {
         setLoading(true)
@@ -215,19 +400,67 @@ export function AIInstructionsSection() {
             : p))
     }
 
+    // Lower-case match across title, description, and category. Search is
+    // local — the registry has a small bounded set of entries so debouncing
+    // would just add jitter for no benefit.
+    const filteredPrompts = useMemo(() => {
+        const q = query.trim().toLowerCase()
+        if (!q) return prompts
+        return prompts.filter(p =>
+            (p.title || '').toLowerCase().includes(q)
+            || (p.description || '').toLowerCase().includes(q)
+            || (p.category || '').toLowerCase().includes(q)
+            || (p.key || '').toLowerCase().includes(q),
+        )
+    }, [prompts, query])
+
+    const customizedCount = prompts.filter(p => p.hasOverride).length
+    const totalCount = prompts.length
+
     return (
         <div className="space-y-4">
             <div className="flex items-start gap-3">
                 <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500/15 to-purple-500/15">
                     <Sparkles className="w-5 h-5 text-indigo-500" />
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                     <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Custom AI Instructions</h2>
                     <p className="text-sm text-slate-500 dark:text-slate-400 max-w-2xl mt-0.5">
                         Override the system prompts for individual AI features. Your customization replaces the default text the model receives. Tone, formatting, and language all become yours to control. The structural parts that the app needs (action whitelist, JSON schemas) are always preserved automatically.
                     </p>
                 </div>
             </div>
+
+            {!loading && !error && totalCount > 0 && (
+                <Card className="p-3.5">
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center gap-2 flex-1 min-w-[180px]">
+                            <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/30">
+                                <Sparkles className="w-4 h-4 text-indigo-500 dark:text-indigo-300" />
+                            </span>
+                            <div className="min-w-0">
+                                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 leading-tight">
+                                    {customizedCount} of {totalCount} with overrides
+                                </p>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                    {totalCount - customizedCount} feature{totalCount - customizedCount === 1 ? '' : 's'} using built-in defaults
+                                </p>
+                            </div>
+                        </div>
+                        <div className="relative w-full sm:w-auto sm:flex-1 sm:max-w-sm">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                            <input
+                                type="search"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder="Search prompts…"
+                                aria-label="Search prompts"
+                                className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
+                            />
+                        </div>
+                    </div>
+                </Card>
+            )}
 
             {loading ? (
                 <Card className="p-8"><div className="flex justify-center"><Spinner size="lg" /></div></Card>
@@ -245,8 +478,21 @@ export function AIInstructionsSection() {
                 <Card className="p-8 text-center">
                     <p className="text-sm text-slate-500 dark:text-slate-400">No customizable prompts available.</p>
                 </Card>
+            ) : filteredPrompts.length === 0 ? (
+                <Card className="p-8 text-center">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        No prompts match <span className="font-medium text-slate-700 dark:text-slate-200">&quot;{query}&quot;</span>.
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => setQuery('')}
+                        className="mt-2 text-xs text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300"
+                    >
+                        Clear search
+                    </button>
+                </Card>
             ) : (
-                prompts.map(p => (
+                filteredPrompts.map(p => (
                     <PromptEditor key={p.key} entry={p} onSaved={handleSaved} onReset={handleReset} />
                 ))
             )}

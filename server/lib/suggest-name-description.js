@@ -27,16 +27,97 @@ function clamp(s, min, max) {
     return t.length > max ? t.slice(0, max) : t;
 }
 
+/**
+ * Strip noise from a README excerpt before sentence extraction:
+ *   - HTML tags (<img …>, <p>, <a …>, …) — common in README-as-landing-page
+ *   - Markdown image syntax `![alt](url)`
+ *   - Markdown links — keep label, drop the URL
+ *   - Fenced code blocks ``` … ```
+ *   - Inline code spans `…`
+ *   - HTML comments
+ *   - Shields.io / badge URLs and bare URLs
+ *   - YAML / TOML front-matter at the top
+ *
+ * Returns plain prose lines suitable for a "first sentence about the project".
+ */
+function stripReadmeNoise(text) {
+    if (!text) return '';
+    let s = String(text);
+
+    // YAML front-matter at file start: --- ... ---
+    s = s.replace(/^---\n[\s\S]*?\n---\s*/m, '');
+    // HTML comments
+    s = s.replace(/<!--[\s\S]*?-->/g, '');
+    // Fenced code blocks (```lang … ```)
+    s = s.replace(/```[\s\S]*?```/g, '');
+    // HTML tags including self-closing <img …>, <a href …>, <p>, <br/>, …
+    s = s.replace(/<[^>]+>/g, '');
+    // Markdown images ![alt](url) — drop entirely
+    s = s.replace(/!\[[^\]]*\]\([^)]*\)/g, '');
+    // Markdown links [label](url) — keep label only
+    s = s.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+    // Inline code `…`
+    s = s.replace(/`[^`\n]*`/g, '');
+    // Reference-style link definitions: [name]: url
+    s = s.replace(/^\s*\[[^\]]+\]:\s*\S+.*$/gm, '');
+    // Bare URLs
+    s = s.replace(/https?:\/\/\S+/gi, '');
+    // Collapse whitespace
+    s = s.replace(/[ \t]+/g, ' ');
+    return s;
+}
+
+/**
+ * A line is "prose-like" when it has at least 4 alphabetic words and no
+ * leftover markup characters (after stripReadmeNoise these should be rare,
+ * but defensive: skip anything that still smells like HTML / markup).
+ */
+function isProseLine(line) {
+    if (!line) return false;
+    const t = line.trim();
+    if (t.length < 20) return false;
+    if (/[<>{}|]/.test(t)) return false;          // residual markup
+    if (/^[#>*+\-=_]/.test(t)) return false;       // markdown structural lines
+    if (/^[A-Za-z0-9_-]+:\s/.test(t)) return false; // YAML-ish / "Key: value"
+    const words = t.match(/[A-Za-zÀ-ÿ]{2,}/g) || [];
+    return words.length >= 4;
+}
+
 function descriptionFromReadme(name, excerpt) {
     if (!excerpt) return null;
-    // First H1 heading
-    const h1Match = excerpt.match(/^#\s+(.+?)\s*$/m);
-    const heading = h1Match ? h1Match[1].trim() : null;
-    // First sentence after the heading (or anywhere if no heading)
-    const after = h1Match ? excerpt.slice(h1Match.index + h1Match[0].length) : excerpt;
-    const sentenceMatch = after.match(/[^\n.!?]{20,160}[.!?]/);
-    if (!sentenceMatch) return null;
-    const sentence = sentenceMatch[0].trim().replace(/\s+/g, ' ');
+    const cleaned = stripReadmeNoise(excerpt);
+    if (!cleaned.trim()) return null;
+
+    // Heading: first H1 from the cleaned text
+    const h1Match = cleaned.match(/^#\s+(.+?)\s*$/m);
+    const heading = h1Match ? h1Match[1].trim().replace(/\s+/g, ' ') : null;
+    const after = h1Match ? cleaned.slice(h1Match.index + h1Match[0].length) : cleaned;
+
+    // Walk paragraph by paragraph until we find a prose sentence. This avoids
+    // the old behaviour of grabbing the first 20–160 char run regardless of
+    // whether it was an attribute list, a sidebar caption, or HTML residue.
+    const blocks = after.split(/\n\s*\n/);
+    let sentence = null;
+    for (const block of blocks) {
+        const flat = block.replace(/\s+/g, ' ').trim();
+        if (!isProseLine(flat)) continue;
+        const m = flat.match(/[^.!?]{20,200}[.!?]/);
+        if (m && isProseLine(m[0])) {
+            sentence = m[0].trim();
+            break;
+        }
+        // No sentence terminator? Fall back to a clamped 120-char clean phrase.
+        if (flat.length >= 30) {
+            sentence = flat.slice(0, 140).trim();
+            // Avoid mid-word truncation for the fallback
+            const cut = sentence.lastIndexOf(' ');
+            if (cut > 60) sentence = sentence.slice(0, cut);
+            break;
+        }
+    }
+
+    if (!sentence) return null;
+    sentence = sentence.replace(/\s+/g, ' ');
     if (heading) {
         return `${heading}: ${sentence}`;
     }
