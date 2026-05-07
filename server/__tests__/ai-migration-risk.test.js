@@ -72,16 +72,13 @@ vi.mock('../middleware/validate-request.js', () => ({
     validateQuery: () => (req, _res, next) => { req.validatedQuery = req.query; next(); },
     validateParams: () => (req, _res, next) => { req.validatedParams = req.params; next(); },
 }))
-vi.mock('../lib/validators.js', () => ({
-    validate: () => (req, res, next) => next(),
-    aiChatSchema: {},
-    aiIndexSchema: {},
-    aiIssueToPlanSchema: {},
-    migrationSizeStrategySchema: {},
-    migrationDescriptionSchema: {},
-    attentionNarrativeSchema: {},
-    aiTranslateSearchSchema: {},
-}))
+vi.mock('../lib/validators.js', async (importOriginal) => {
+    const actual = await importOriginal()
+    return {
+        ...actual,
+        validate: () => (req, res, next) => next(),
+    }
+})
 
 async function buildApp() {
     const app = express()

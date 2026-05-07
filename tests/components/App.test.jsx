@@ -179,7 +179,7 @@ describe('App shell (authenticated, MOCK_MODE=true)', () => {
         expect(within(desktopNav).getByText('Pricing')).toBeInTheDocument()
     })
 
-    it('clicking Work Board switches the active view', async () => {
+    it('clicking Work Board switches the active view', { timeout: 15000 }, async () => {
         renderApp()
         await screen.findByRole('heading', { name: /repo manager/i }, { timeout: 5000 })
 

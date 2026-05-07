@@ -94,22 +94,11 @@ vi.mock('../middleware/validate-request.js', () => ({
 // teams.js migrated to the new validateBody middleware, which calls
 // schema.safeParse(); stub the handful of schemas it consumes with a
 // permissive Zod schema so validation is a no-op in these tests.
-vi.mock('../lib/validators.js', async () => {
-    const { z } = await import('zod')
-    const permissive = z.any()
+vi.mock('../lib/validators.js', async (importOriginal) => {
+    const actual = await importOriginal()
     return {
+        ...actual,
         validate: () => (req, res, next) => next(),
-        teamCreateSchema: permissive,
-        teamMemberSchema: permissive,
-        teamRepoSchema: permissive,
-        aiChatSchema: {},
-        aiSuggestSchema: {},
-        aiIndexSchema: {},
-        aiIssueToPlanSchema: {},
-        migrationSizeStrategySchema: {},
-        migrationDescriptionSchema: {},
-        attentionNarrativeSchema: {},
-        aiTranslateSearchSchema: {},
     }
 })
 
