@@ -87,7 +87,7 @@
 @layer utilities {
 
 	/* Smart Glass Overlay Scrollbar */
-	.custom-scrollbar {
+	.ds-scrollbar {
 		scrollbar-width: thin;
 		scrollbar-color: transparent transparent;
 		/* Hidden by default for Firefox */
@@ -95,22 +95,22 @@
 	}
 
 	/* Show on hover */
-	.custom-scrollbar:hover {
+	.ds-scrollbar:hover {
 		scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
 		/* Slate-400/50 */
 	}
 
 	/* Webkit (Chrome, Edge, Safari) */
-	.custom-scrollbar::-webkit-scrollbar {
+	.ds-scrollbar::-webkit-scrollbar {
 		width: 6px;
 		height: 6px;
 	}
 
-	.custom-scrollbar::-webkit-scrollbar-track {
+	.ds-scrollbar::-webkit-scrollbar-track {
 		background: transparent;
 	}
 
-	.custom-scrollbar::-webkit-scrollbar-thumb {
+	.ds-scrollbar::-webkit-scrollbar-thumb {
 		background-color: transparent;
 		border-radius: 20px;
 		border: 2px solid transparent;
@@ -119,40 +119,40 @@
 		transition: background-color 0.3s ease;
 	}
 
-	.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+	.ds-scrollbar:hover::-webkit-scrollbar-thumb {
 		background-color: rgba(148, 163, 184, 0.5);
 		/* Slate-400/50 */
 	}
 
-	.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+	.ds-scrollbar::-webkit-scrollbar-thumb:hover {
 		background-color: rgba(148, 163, 184, 0.8);
 		/* Slate-400/80 */
 	}
 
 	/* Dark mode adjustments */
-	.dark .custom-scrollbar:hover {
+	.dark .ds-scrollbar:hover {
 		scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 	}
 
-	.dark .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+	.dark .ds-scrollbar:hover::-webkit-scrollbar-thumb {
 		background-color: rgba(255, 255, 255, 0.2);
 	}
 
-	.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+	.dark .ds-scrollbar::-webkit-scrollbar-thumb:hover {
 		background-color: rgba(255, 255, 255, 0.4);
 	}
 
 	/* Hide scrollbar while keeping scroll functionality */
-	.no-scrollbar {
+	.ds-no-scrollbar {
 		-ms-overflow-style: none;
 		scrollbar-width: none;
 	}
-	.no-scrollbar::-webkit-scrollbar {
+	.ds-no-scrollbar::-webkit-scrollbar {
 		display: none;
 	}
 
 	/* Slow spin animation for loading indicators */
-	.animate-spin-slow {
+	.ds-animate-spin-slow {
 		animation: spin 2s linear infinite;
 	}
 

@@ -28,9 +28,19 @@ const singleKeyResolver = (pem) => () => pem
 // `cachedLicenseSource` distinguishes 'env' (LICENSE_KEY in .env, requires
 // restart to change) from 'db' (installed_license table, hot-reloadable via
 // refreshLicenseCache()).
+//
+// LICENSE_CACHE_TTL_MS bounds how long a stale cached payload is honoured
+// when the DB-backed license is revoked or rotated without a restart. After
+// the TTL elapses the next `getUserTier()` call triggers a background
+// `refreshLicenseCache()`; the current request still serves the cached
+// value (so a slow DB doesn't stall every authenticated route) but
+// subsequent requests see the fresh state.
 let cachedLicenseTier = null
 let cachedLicensePayload = null
 let cachedLicenseSource = null
+let cachedLicenseRefreshedAt = 0
+let licenseRefreshInFlight = null
+const LICENSE_CACHE_TTL_MS = 5 * 60_000
 
 /**
  * Resolve the effective tier from Stripe subscription and/or license key.
@@ -59,6 +69,15 @@ function getStripeTier(userId) {
   return row?.tier || null
 }
 
+function maybeKickLicenseRefresh() {
+  if (cachedLicenseSource !== 'db') return
+  if (Date.now() - cachedLicenseRefreshedAt < LICENSE_CACHE_TTL_MS) return
+  if (licenseRefreshInFlight) return
+  licenseRefreshInFlight = refreshLicenseCache()
+    .catch((err) => logger.warn({ err: err?.message }, 'Background license refresh failed'))
+    .finally(() => { licenseRefreshInFlight = null })
+}
+
 export function getUserTier(userId) {
   const stripeTier = getStripeTier(userId)
   if (stripeTier && stripeTier !== 'free') return stripeTier
@@ -74,6 +93,10 @@ export function getUserTier(userId) {
       logger.warn({ exp: expiredAt }, 'Cached license expired — downgrading to free')
       return 'free'
     }
+    // Best-effort revalidation for DB-sourced licences: a hot-revoked key
+    // would otherwise be honoured indefinitely. The refresh runs in the
+    // background — the current request still serves the cached tier.
+    maybeKickLicenseRefresh()
     return cachedLicenseTier
   }
 
@@ -122,6 +145,7 @@ export async function refreshLicenseCache() {
     cachedLicenseTier = null
     cachedLicensePayload = null
     cachedLicenseSource = null
+    cachedLicenseRefreshedAt = Date.now()
     return null
   }
 
@@ -132,12 +156,14 @@ export async function refreshLicenseCache() {
       cachedLicenseTier = payload.tier
       cachedLicensePayload = payload
       cachedLicenseSource = 'env'
+      cachedLicenseRefreshedAt = Date.now()
       return payload
     }
     logger.warn('LICENSE_KEY env var is set but invalid or expired.')
     cachedLicenseTier = null
     cachedLicensePayload = null
     cachedLicenseSource = null
+    cachedLicenseRefreshedAt = Date.now()
     return null
   }
 
@@ -149,6 +175,7 @@ export async function refreshLicenseCache() {
       cachedLicenseTier = payload.tier
       cachedLicensePayload = payload
       cachedLicenseSource = 'db'
+      cachedLicenseRefreshedAt = Date.now()
       return payload
     }
     logger.warn('Stored license is invalid or expired — ignoring.')
@@ -157,6 +184,7 @@ export async function refreshLicenseCache() {
   cachedLicenseTier = null
   cachedLicensePayload = null
   cachedLicenseSource = null
+  cachedLicenseRefreshedAt = Date.now()
   return null
 }
 

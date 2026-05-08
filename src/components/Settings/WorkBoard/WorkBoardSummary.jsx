@@ -1,18 +1,6 @@
 import { Activity, Pin, VolumeX, Clock, Crown, Sparkles } from 'lucide-react'
 import { useWorkBoardAI } from '../../../hooks/useWorkBoardAI'
-
-function relativeTime(iso) {
-    if (!iso) return 'never'
-    const ms = Date.now() - new Date(iso).getTime()
-    if (ms < 0) return 'just now'
-    const minutes = Math.floor(ms / 60000)
-    if (minutes < 1) return 'just now'
-    if (minutes < 60) return `${minutes} min ago`
-    const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `${hours}h ago`
-    const days = Math.floor(hours / 24)
-    return `${days}d ago`
-}
+import { formatRelativeTime } from '../../../utils/format'
 
 const TIER_LABEL = {
     free: 'Free',
@@ -49,7 +37,7 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
                     <Clock className="w-3 h-3" aria-hidden="true" />
                     <span>Last sync</span>
                     <span className="ml-auto font-medium text-slate-700 dark:text-slate-200">
-                        {relativeTime(prefs?.last_discovery_at)}
+                        {formatRelativeTime(prefs?.last_discovery_at) || 'never'}
                     </span>
                 </div>
 

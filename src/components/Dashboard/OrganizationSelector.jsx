@@ -60,7 +60,7 @@ export function OrganizationSelector({ orgs = [], selectedOrg, onSelectOrg, load
                         className="w-[300px] p-3 bg-gradient-to-br from-white/95 to-slate-50/95 dark:from-slate-900/95 dark:to-slate-800/95 backdrop-blur-2xl border-2 border-slate-200/60 dark:border-slate-700/60 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 z-50"
                         sideOffset={12}
                     >
-                        <div className="max-h-[340px] overflow-y-auto space-y-1.5 custom-scrollbar pr-1">
+                        <div className="max-h-[340px] overflow-y-auto space-y-1.5 ds-scrollbar pr-1">
                             <button
                                 onClick={() => handleSelect('')}
                                 className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 ${!selectedOrg

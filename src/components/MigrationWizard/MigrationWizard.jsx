@@ -168,7 +168,7 @@ function SidebarStepper({ steps, currentStepIndex, onGoToStep, source, selectedC
       </div>
 
       {/* Step list */}
-      <nav aria-label="Wizard steps" className="flex-1 px-3 py-2 overflow-y-auto custom-scrollbar">
+      <nav aria-label="Wizard steps" className="flex-1 px-3 py-2 overflow-y-auto ds-scrollbar">
         <ol className="relative">
           {/* Vertical track line */}
           <div

@@ -284,6 +284,9 @@ function AppContent() {
   // 'app:navigate-pricing' instead of mutating window.location.hash. Routing
   // through React state preserves browser-history behaviour and avoids the
   // hash-only navigation anti-pattern that breaks deep-linkable URLs.
+  // The 'app:open-billing' alias is dispatched by AIErrorState whenever an
+  // error's action is `type: 'upgrade'` — same destination, kept distinct so
+  // future flows (e.g. plan management) can split them cleanly.
   useEffect(() => {
     const handler = () => {
       setSelectedRepoDetail(null)
@@ -291,7 +294,11 @@ function AppContent() {
       setActiveView('pricing')
     }
     window.addEventListener('app:navigate-pricing', handler)
-    return () => window.removeEventListener('app:navigate-pricing', handler)
+    window.addEventListener('app:open-billing', handler)
+    return () => {
+      window.removeEventListener('app:navigate-pricing', handler)
+      window.removeEventListener('app:open-billing', handler)
+    }
   }, [setActiveView])
 
   // Open Settings modal to a specific tab via custom event (e.g. from CommandPalette AI commands)

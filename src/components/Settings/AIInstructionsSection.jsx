@@ -90,18 +90,25 @@ function CopyButton({ getText, label = 'Copy' }) {
 // Per-prompt editor — Editor / Default / Preview tabs
 // ---------------------------------------------------------------------------
 
+// Tab labels are intentionally distinct from the in-panel form `<label>` text
+// (e.g. the editor's own "Your prompt" textarea label) so testing-library's
+// getByLabelText returns the form control, not the tabpanel's aria-labelledby
+// chain that would otherwise collide.
 const TABS = [
-    { id: 'editor', label: 'Your prompt' },
+    { id: 'editor', label: 'Editor' },
     { id: 'default', label: 'Default' },
     { id: 'preview', label: 'Preview' },
 ]
 
-function TabButton({ active, onClick, children }) {
+function TabButton({ active, onClick, children, id, controls }) {
     return (
         <button
             type="button"
             role="tab"
+            id={id}
             aria-selected={active}
+            aria-controls={controls}
+            tabIndex={active ? 0 : -1}
             onClick={onClick}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                 active
@@ -221,7 +228,13 @@ function PromptEditor({ entry, onSaved, onReset }) {
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                         <div role="tablist" aria-label="Prompt views" className="inline-flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800/60">
                             {TABS.map(t => (
-                                <TabButton key={t.id} active={tab === t.id} onClick={() => setTab(t.id)}>
+                                <TabButton
+                                    key={t.id}
+                                    id={`prompt-tab-${entry.key}-${t.id}`}
+                                    controls={`prompt-tabpanel-${entry.key}-${t.id}`}
+                                    active={tab === t.id}
+                                    onClick={() => setTab(t.id)}
+                                >
                                     {t.label}
                                 </TabButton>
                             ))}
@@ -256,7 +269,11 @@ function PromptEditor({ entry, onSaved, onReset }) {
 
                     {/* Tab panels */}
                     {tab === 'editor' && (
-                        <div>
+                        <div
+                            role="tabpanel"
+                            id={`prompt-tabpanel-${entry.key}-editor`}
+                            aria-labelledby={`prompt-tab-${entry.key}-editor`}
+                        >
                             <label htmlFor={`prompt-editor-${entry.key}`} className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">Your prompt</label>
                             <textarea
                                 id={`prompt-editor-${entry.key}`}
@@ -285,7 +302,11 @@ function PromptEditor({ entry, onSaved, onReset }) {
                     )}
 
                     {tab === 'default' && (
-                        <div>
+                        <div
+                            role="tabpanel"
+                            id={`prompt-tabpanel-${entry.key}-default`}
+                            aria-labelledby={`prompt-tab-${entry.key}-default`}
+                        >
                             <p className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
                                 Built-in default — used when you have no override.
                             </p>
@@ -299,7 +320,11 @@ function PromptEditor({ entry, onSaved, onReset }) {
                     )}
 
                     {tab === 'preview' && (
-                        <div>
+                        <div
+                            role="tabpanel"
+                            id={`prompt-tabpanel-${entry.key}-preview`}
+                            aria-labelledby={`prompt-tab-${entry.key}-preview`}
+                        >
                             <p className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
                                 Preview with sample data — exactly what the model would receive.
                             </p>
@@ -383,8 +408,24 @@ export function AIInstructionsSection() {
     }
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time fetch
-        load()
+        let cancelled = false
+        const run = async () => {
+            setLoading(true)
+            setError(null)
+            try {
+                const data = await apiCall('/api/ai/prompts')
+                if (cancelled) return
+                setPrompts(Array.isArray(data?.prompts) ? data.prompts : [])
+            } catch (err) {
+                if (cancelled) return
+                setError(err)
+                toast.errorFromException(err, { fallbackTitle: 'Failed to load prompts' })
+            } finally {
+                if (!cancelled) setLoading(false)
+            }
+        }
+        run()
+        return () => { cancelled = true }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 

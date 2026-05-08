@@ -39,30 +39,10 @@ import {
     collaboratorAddSchema,
 } from '../../lib/validators.js';
 import { auditLog } from '../../lib/audit.js';
+import { clampPerPage, applyOwnerRepoParamValidators } from './_shared.js';
 
 const router = express.Router();
-
-function clampPerPage(value, defaultVal = 30) {
-    return Math.min(Math.max(parseInt(value) || defaultVal, 1), 100);
-}
-
-// Validate :owner and :repo URL params (replicated per sub-router — Express
-// param validators are local to the router they're attached to).
-const GITHUB_NAME_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$/;
-
-router.param('owner', (req, res, next, val) => {
-    if (!GITHUB_NAME_RE.test(val) || val.length > 39) {
-        return errorResponse(res, 400, 'Invalid owner name', 'INVALID_PARAM');
-    }
-    next();
-});
-
-router.param('repo', (req, res, next, val) => {
-    if (!GITHUB_NAME_RE.test(val) || val.length > 100) {
-        return errorResponse(res, 400, 'Invalid repository name', 'INVALID_PARAM');
-    }
-    next();
-});
+applyOwnerRepoParamValidators(router);
 
 /**
  * Validate a file path to prevent path traversal attacks.

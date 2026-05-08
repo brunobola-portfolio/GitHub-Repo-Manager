@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useCallback, useEffect, useState } from 'react'
-import { Sparkles, AlertTriangle, CheckCircle, ExternalLink, Settings as SettingsIcon } from 'lucide-react'
+import { Sparkles, CheckCircle, ExternalLink, Settings as SettingsIcon } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
-import { friendlyAiError } from '../../utils/aiErrorFriendly'
+import { AIErrorState } from '../ui/AIErrorState'
 import { getCsrfToken } from '../../utils/api'
 
 /**
@@ -60,7 +60,11 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 					setState('error')
 					return
 				}
-				setError(friendlyAiError({ status: res.status, body: json }))
+				const err = new Error(json.error || `status ${res.status}`)
+				err.status = res.status
+				err.code = json.code
+				err.data = json
+				setError(err)
 				setState('error')
 				return
 			}
@@ -69,7 +73,7 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 			setCommitMessage(json.suggestedCommitMessage || `chore: add ${fileType}`)
 			setState('preview')
 		} catch (e) {
-			setError({ headline: 'Could not reach the server.', detail: e.message || 'fetch failed' })
+			setError(e)
 			setState('error')
 		}
 	}, [repo, fileType])
@@ -103,7 +107,11 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 			})
 			const json = await res.json().catch(() => ({}))
 			if (!res.ok) {
-				setError({ headline: 'Commit failed', detail: json.error || `status ${res.status}` })
+				const err = new Error(json.error || `status ${res.status}`)
+				err.status = res.status
+				err.code = json.code
+				err.data = json
+				setError(err)
 				setState('error')
 				return
 			}
@@ -111,7 +119,7 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 			setState('committed')
 			onCommitted?.(json)
 		} catch (e) {
-			setError({ headline: 'Could not reach the server.', detail: e.message || 'fetch failed' })
+			setError(e)
 			setState('error')
 		}
 	}, [content, filePath, commitMessage, repo, onCommitted])
@@ -155,13 +163,12 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 
 		if (state === 'error') {
 			return (
-				<div role="alert" className="flex items-start gap-3 p-4 rounded-xl border border-rose-200/60 dark:border-rose-900/40 bg-rose-50/60 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300">
-					<AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
-					<div className="flex-1 min-w-0">
-						<div className="font-semibold">{error?.headline || 'Something went wrong'}</div>
-						{error?.detail && <div className="text-xs opacity-90 mt-1">{error.detail}</div>}
-					</div>
-				</div>
+				<AIErrorState
+					error={error}
+					onRetry={() => callGenerate(fileType === 'license' ? { licenseId } : {})}
+					context="Community health"
+					variant="card"
+				/>
 			)
 		}
 

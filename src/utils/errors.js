@@ -133,7 +133,7 @@ const KNOWN_ERRORS = {
         action: { label: 'Contact sales', kind: 'open-pricing', type: 'upgrade' },
     },
     QUOTA_EXCEEDED: {
-        title: 'Quota reached',
+        title: 'Quota exceeded',
         body: 'You have used your monthly allowance for this feature.',
         action: { label: 'See options', kind: 'open-quota', type: 'upgrade' },
     },
@@ -238,27 +238,102 @@ const KNOWN_ERRORS = {
 const FALLBACK = {
     title: 'Something went wrong',
     body: 'Please try again. If the problem persists, contact bruno@bolalabs.pt.',
-    action: { label: 'Retry', kind: 'retry' },
+    action: { label: 'Retry', kind: 'retry', type: 'retry' },
 }
 
 function pickCode(err, ctx) {
-    return err?.code || err?.response?.data?.code || ctx?.code || null
+    return err?.code
+        || err?.data?.code
+        || err?.response?.data?.code
+        || ctx?.code
+        || null
+}
+
+// Server-side AI error codes are emitted in lowercase (ai_quota_exceeded,
+// ai_rate_limited, …) by `mapAIErrorToResponse`; the client KNOWN_ERRORS
+// table is keyed by the canonical UPPERCASE forms shared with handleAIError.
+// Map the lowercase aliases here so callers don't need to know which codepath
+// produced the error envelope.
+const CODE_ALIASES = {
+    ai_quota_exceeded: 'QUOTA_EXCEEDED',
+    ai_rate_limited: 'RATE_LIMITED',
+    ai_overload: 'AI_OVERLOADED',
+    ai_timeout: 'AI_TIMEOUT',
+    ai_auth: 'INVALID_API_KEY',
+    ai_network: 'AI_NETWORK_ERROR',
+    ai_not_configured: 'AI_NOT_CONFIGURED',
+    ai_invalid_response: 'AI_INVALID_RESPONSE',
+    ai_provider_unavailable: 'AI_PROVIDER_UNAVAILABLE',
+    ai_provider_error: 'AI_PROVIDER_ERROR',
+    ai_request_failed: 'AI_REQUEST_FAILED',
+    ai_disabled: 'AI_DISABLED',
+}
+
+function pickRetryAfterSec(err) {
+    const v = err?.retryAfterSec
+        ?? err?.data?.retryAfterSec
+        ?? err?.response?.data?.retryAfterSec
+        ?? null
+    const n = Number(v)
+    return Number.isFinite(n) && n > 0 ? Math.ceil(n) : null
+}
+
+function pickRawMessage(err) {
+    return err?.data?.error
+        || err?.response?.data?.error
+        || (typeof err?.message === 'string' ? err.message : '')
+        || ''
+}
+
+function pickStatus(err) {
+    return err?.status ?? err?.response?.status ?? null
 }
 
 export function formatUserError(err, ctx = {}) {
     if (!err) return { ...FALLBACK, code: null, raw: null }
 
-    const code = pickCode(err, ctx)
+    const rawCode = pickCode(err, ctx)
+    const code = rawCode && (KNOWN_ERRORS[rawCode] ? rawCode : CODE_ALIASES[rawCode] || null)
+    const retryAfterSec = pickRetryAfterSec(err)
+
     if (code && KNOWN_ERRORS[code]) {
-        return { ...KNOWN_ERRORS[code], code, raw: null }
+        const base = KNOWN_ERRORS[code]
+        // Rate-limit envelopes carry a server-supplied retry hint — surface it
+        // in the body so the user sees a concrete countdown instead of the
+        // generic "try again shortly" copy.
+        if (code === 'RATE_LIMITED' && retryAfterSec) {
+            return {
+                ...base,
+                body: `Too many requests in a short window. Retry in ${retryAfterSec}s.`,
+                code,
+                raw: null,
+            }
+        }
+        return { ...base, code, raw: null }
     }
 
     if (err.name === 'TypeError' && /fetch|network/i.test(err.message || '')) {
         return { ...KNOWN_ERRORS.NETWORK_ERROR, code: 'NETWORK_ERROR', raw: null }
     }
 
-    if (err.status === 401 || err.response?.status === 401) {
+    const status = pickStatus(err)
+    if (status === 401) {
         return { ...KNOWN_ERRORS.UNAUTHORIZED, code: 'UNAUTHORIZED', raw: null }
+    }
+
+    // Pre-machine-code legacy server responses leak the raw provider string.
+    // Detect quota/rate-limit keywords in the body so we never paste the
+    // full Google RPC dump into the UI.
+    const raw = pickRawMessage(err)
+    if (/quota/i.test(raw)) {
+        return { ...KNOWN_ERRORS.QUOTA_EXCEEDED, code: 'QUOTA_EXCEEDED', raw: null }
+    }
+    if (status === 429 || /rate.?limit/i.test(raw)) {
+        const base = KNOWN_ERRORS.RATE_LIMITED
+        if (retryAfterSec) {
+            return { ...base, body: `Too many requests in a short window. Retry in ${retryAfterSec}s.`, code: 'RATE_LIMITED', raw: null }
+        }
+        return { ...base, code: 'RATE_LIMITED', raw: null }
     }
 
     if (import.meta.env?.DEV) {

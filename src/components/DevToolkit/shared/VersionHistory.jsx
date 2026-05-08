@@ -28,7 +28,7 @@ export function VersionHistory({ versions = [], onRestore }) {
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden"
                     >
-                        <div className="mt-2 space-y-1 max-h-40 overflow-y-auto custom-scrollbar">
+                        <div className="mt-2 space-y-1 max-h-40 overflow-y-auto ds-scrollbar">
                             {versions.map((v) => (
                                 <button
                                     key={v.id}

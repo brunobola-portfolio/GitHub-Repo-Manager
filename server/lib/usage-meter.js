@@ -118,22 +118,27 @@ export function quotaExceededResponse(check, fallbackLabel = 'AI') {
 }
 
 // ---------------------------------------------------------------------------
-// Uniform 429/403 payload helpers (Wave 3 of the honesty audit).
+// Uniform 429/403 payload helpers.
 //
-// quotaErrorPayload() builds the standard 429 shape that the frontend
-// recognises via { code: 'QUOTA_EXCEEDED', ... } and routes through the
-// <QuotaExceededState /> primitive instead of a generic toast.
+// `quotaExceededResponse()` (above) is the canonical 429 builder — every AI
+// route uses it and the frontend's <QuotaExceededState /> primitive is
+// gated on its `code: 'QUOTA_EXCEEDED'` envelope.
 //
-// tierRequiredPayload() builds the standard 403 shape with
-// { code: 'TIER_REQUIRED_<TIER>', ... } so formatUserError() in the frontend
-// can map it to a "Pro feature" / "Enterprise feature" toast with a
-// "See plans" CTA.
+// `quotaErrorPayload()` was an earlier draft that emitted a slightly
+// different shape (`used` vs `current`, no `message`/`upgradeUrl`). It has
+// no production callers — kept exported for the dedicated test suite that
+// pins its shape. New callers MUST prefer `quotaExceededResponse`.
 //
-// Existing callers using quotaExceededResponse() above continue to work —
-// new callers should prefer these because they include reset-date and
-// upgradeTo hints the new UI surfaces directly.
+// `tierRequiredPayload()` builds the 403 envelope used by the require-tier
+// middleware so formatUserError() can map it to a "Pro feature" /
+// "Enterprise feature" toast with a "See plans" CTA.
 // ---------------------------------------------------------------------------
 
+/**
+ * @deprecated Use {@link quotaExceededResponse} for new callers — this helper
+ * is kept solely for backwards compatibility with the legacy shape pinned
+ * by `usage-meter-quota-payload.test.js`.
+ */
 export function quotaErrorPayload(check, { feature, upgradeTo = null, tier }) {
     const now = new Date();
     const resetAt = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();

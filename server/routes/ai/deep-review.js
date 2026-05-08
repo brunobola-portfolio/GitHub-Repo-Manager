@@ -19,6 +19,8 @@
 import express from 'express';
 
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
+import { requireTier } from '../../middleware/require-tier.js';
+import { createInMemoryRateLimiter } from '../../lib/in-memory-rate-limiter.js';
 import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
 import { executeViaOutbox } from '../../lib/outbox-helper.js';
@@ -39,72 +41,23 @@ import logger from '../../lib/logger.js';
 const router = express.Router();
 
 // ---------------------------------------------------------------------------
-// In-memory per-user rate limiter for the LLM-triggering generate route.
-// 10 requests per 60 seconds per user. Resets on server restart — acceptable
-// for slice 1a (Redis-backed limiter is a slice 1a-2 concern).
+// Per-user rate limiter for the LLM-triggering generate route. 10 requests
+// per minute. Backed by the shared in-memory limiter; multi-instance
+// deployments need a Redis-backed substitute (see TODO below).
 // ---------------------------------------------------------------------------
 
 // TODO(slice-1a-2): Redis-backed limiter for multi-instance deploys.
-// LRU sweep below evicts buckets with no requests in the last RATE_WINDOW_MS
-// every 5 minutes so a long-running process can't accumulate one entry per
-// distinct user id forever.
-const generateRateBuckets = new Map(); // userId -> [timestamps]
-const RATE_WINDOW_MS = 60_000;
-const RATE_LIMIT_PER_WINDOW = 10;
-const SWEEP_INTERVAL_MS = 5 * 60_000;
+const generateLimiter = createInMemoryRateLimiter({
+    windowMs: 60_000,
+    max: 10,
+    label: 'AI reviews',
+});
 
-/**
- * Drop bucket entries with no requests inside the active rate window.
- * Cheap O(n) over the bucket count — runs every SWEEP_INTERVAL_MS.
- *
- * Exported (with `_` prefix) only so tests can drive it deterministically
- * without needing to advance fake timers.
- */
-export function _runRateLimitSweep() {
-    const cutoff = Date.now() - RATE_WINDOW_MS;
-    for (const [userId, bucket] of generateRateBuckets) {
-        const fresh = bucket.filter((t) => t > cutoff);
-        if (fresh.length === 0) {
-            generateRateBuckets.delete(userId);
-        } else if (fresh.length !== bucket.length) {
-            generateRateBuckets.set(userId, fresh);
-        }
-    }
-}
+const generateRateLimit = generateLimiter.middleware;
 
-const _sweepInterval = setInterval(_runRateLimitSweep, SWEEP_INTERVAL_MS);
-// Keep this timer from holding the Node event loop alive — tests and CLI
-// invocations should be able to exit cleanly without an explicit clearInterval.
-if (typeof _sweepInterval.unref === 'function') _sweepInterval.unref();
-
-function generateRateLimit(req, res, next) {
-    const userId = req.session?.userId;
-    if (!userId) return next();
-    const now = Date.now();
-    const bucket = (generateRateBuckets.get(userId) || []).filter((t) => now - t < RATE_WINDOW_MS);
-    if (bucket.length >= RATE_LIMIT_PER_WINDOW) {
-        const retryAfter = Math.ceil((RATE_WINDOW_MS - (now - bucket[0])) / 1000);
-        res.setHeader('Retry-After', String(retryAfter));
-        return errorResponse(
-            res,
-            429,
-            `Rate limit: max ${RATE_LIMIT_PER_WINDOW} AI reviews per minute. Retry in ${retryAfter}s.`,
-            'RATE_LIMITED',
-        );
-    }
-    bucket.push(now);
-    generateRateBuckets.set(userId, bucket);
-    next();
-}
-
-/**
- * Test-only helper: clear the per-user rate-limit buckets between tests.
- * Not exported via the router; consumers must `import { _resetRateLimits }`
- * directly from this module.
- */
-export function _resetRateLimits() {
-    generateRateBuckets.clear();
-}
+// Test-only helpers preserved for the existing test suite.
+export function _runRateLimitSweep() { generateLimiter.runSweep(); }
+export function _resetRateLimits() { generateLimiter.reset(); }
 
 // ---------------------------------------------------------------------------
 // Param validators — fail fast and uniformly before any handler runs.
@@ -147,7 +100,7 @@ router.param('commentIdx', (req, res, next, val) => {
 // POST — generate (or refresh) a draft for a PR
 // ---------------------------------------------------------------------------
 
-router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res) => {
+router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLimit, async (req, res) => {
     const { owner, repo, pr } = req.params;
     const userId = req.session.userId;
 
@@ -292,7 +245,7 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
 // GET — fetch cached draft for this PR
 // ---------------------------------------------------------------------------
 
-router.get('/:owner/:repo/:pr', requireAuth, (req, res) => {
+router.get('/:owner/:repo/:pr', requireAuth, requireTier('pro'), (req, res) => {
     const { owner, repo, pr } = req.params;
     const got = getDraft(req.session.userId, owner, repo, Number(pr));
     if (!got) return errorResponse(res, 404, 'No draft found.', 'NOT_FOUND');
@@ -310,7 +263,7 @@ router.get('/:owner/:repo/:pr', requireAuth, (req, res) => {
 // PATCH — edit / dismiss a single line comment in the draft
 // ---------------------------------------------------------------------------
 
-router.patch('/:draftId/comments/:commentIdx', requireAuth, (req, res) => {
+router.patch('/:draftId/comments/:commentIdx', requireAuth, requireTier('pro'), (req, res) => {
     const draftId = Number(req.params.draftId);
     const idx = Number(req.params.commentIdx);
     const { action, body, suggestion } = req.body || {};
@@ -350,7 +303,7 @@ router.patch('/:draftId/comments/:commentIdx', requireAuth, (req, res) => {
 // POST — publish the draft as a GitHub PR review
 // ---------------------------------------------------------------------------
 
-router.post('/:draftId/publish', requireAuth, async (req, res) => {
+router.post('/:draftId/publish', requireAuth, requireTier('pro'), async (req, res) => {
     const draftId = Number(req.params.draftId);
     const event = String(req.body?.event || 'COMMENT').toUpperCase();
     if (!['COMMENT', 'APPROVE', 'REQUEST_CHANGES'].includes(event)) {
@@ -416,7 +369,7 @@ router.post('/:draftId/publish', requireAuth, async (req, res) => {
 // DELETE — discard the draft
 // ---------------------------------------------------------------------------
 
-router.delete('/:draftId', requireAuth, (req, res) => {
+router.delete('/:draftId', requireAuth, requireTier('pro'), (req, res) => {
     const changes = deleteDraft(req.session.userId, Number(req.params.draftId));
     if (changes === 0) return errorResponse(res, 404, 'Draft not found.', 'NOT_FOUND');
     res.status(204).end();

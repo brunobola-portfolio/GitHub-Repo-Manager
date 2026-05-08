@@ -1,22 +1,11 @@
 import { RefreshCw, Info } from 'lucide-react'
+import { formatRelativeTime } from '../../../utils/format'
 
 const WINDOW_OPTIONS = [30, 60, 90, 180]
 
 function windowLabel(days) {
     if (days === 30) return '4 weeks'
     return `${days} days`
-}
-
-function relativeTime(iso) {
-    if (!iso) return 'never'
-    const ms = Date.now() - new Date(iso).getTime()
-    const minutes = Math.floor(ms / 60000)
-    if (minutes < 1) return 'just now'
-    if (minutes < 60) return `${minutes} min ago`
-    const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `${hours}h ago`
-    const days = Math.floor(hours / 24)
-    return `${days}d ago`
 }
 
 export function DiscoveryPanel({
@@ -32,7 +21,7 @@ export function DiscoveryPanel({
         <div className="space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="text-xs text-slate-600 dark:text-slate-400">
-                    {`Last synced ${relativeTime(prefs?.last_discovery_at)} · ${totalCount} tracked · ${mutedCount} muted · ${pinnedCount} pinned`}
+                    {`Last synced ${formatRelativeTime(prefs?.last_discovery_at) || 'never'} · ${totalCount} tracked · ${mutedCount} muted · ${pinnedCount} pinned`}
                 </p>
                 <button
                     type="button"

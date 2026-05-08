@@ -4,25 +4,41 @@ import db from '../../db.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
 import { githubApi } from '../../lib/github-api.js';
 import logger from '../../lib/logger.js';
-import { importSchema } from '../../lib/validators.js';
+import {
+    importSchema,
+    importValidateUrlSchema,
+    importCheckDuplicatesSchema,
+} from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
-import { assertSafeExternalUrl } from '../../lib/url-validator.js';
+import { assertSafeExternalUrl, resolveAndValidateHost } from '../../lib/url-validator.js';
 import { updateJobProgress } from './_shared.js';
 
 const router = express.Router();
 
-router.post('/import/validate-url', requireAuth, async (req, res) => {
+// Run both the synchronous SSRF guard AND the DNS-resolution check so a
+// hostname that resolves to a private IP (DNS rebinding) cannot smuggle past
+// the string-level allow-list. Returns the parsed URL on success or sends
+// a 400 response and returns null on failure.
+async function ensureSafePublicUrl(rawUrl, res) {
     try {
-        const { url, credentials } = req.body;
-        if (!url) {
-            return errorResponse(res, 400, 'URL is required', 'MISSING_URL');
-        }
-        try {
-            assertSafeExternalUrl(url);
-        } catch (guardErr) {
-            const reason = String(guardErr.message || '').replace(/^ssrf_guard:\s*/, '');
-            return res.status(400).json({ code: 'invalid_source_url', error: reason });
-        }
+        assertSafeExternalUrl(rawUrl);
+    } catch (guardErr) {
+        const reason = String(guardErr.message || '').replace(/^ssrf_guard:\s*/, '');
+        res.status(400).json({ code: 'invalid_source_url', error: reason });
+        return null;
+    }
+    const dnsOk = await resolveAndValidateHost(rawUrl);
+    if (!dnsOk) {
+        res.status(400).json({ code: 'invalid_source_url', error: 'Hostname resolves to a non-public address' });
+        return null;
+    }
+    return rawUrl;
+}
+
+router.post('/import/validate-url', requireAuth, validateBody(importValidateUrlSchema), async (req, res) => {
+    try {
+        const { url, credentials } = req.validatedBody;
+        if (!(await ensureSafePublicUrl(url, res))) return;
         const result = await importService.validateSourceUrl(url, credentials);
         res.json(result);
     } catch (error) {
@@ -32,20 +48,10 @@ router.post('/import/validate-url', requireAuth, async (req, res) => {
 
 router.post('/import/url', requireAuth, validateBody(importSchema), async (req, res) => {
     try {
-        const { sourceUrl, credentials, targetOrg, targetName, makePrivate, description } = req.validatedBody;
+        const { sourceUrl, credentials, targetOrg, targetName, makePrivate, isPrivate, description } = req.validatedBody;
 
-        if (!sourceUrl) {
-            return errorResponse(res, 400, 'Source URL is required', 'MISSING_URL');
-        }
-
-        // SSRF guard: reject internal / link-local / loopback / credential-embedded URLs
-        // before we hand the string to git.
-        try {
-            assertSafeExternalUrl(sourceUrl);
-        } catch (guardErr) {
-            const reason = String(guardErr.message || '').replace(/^ssrf_guard:\s*/, '');
-            return res.status(400).json({ code: 'invalid_source_url', error: reason });
-        }
+        // SSRF + DNS-rebinding guard before git ever sees the URL.
+        if (!(await ensureSafePublicUrl(sourceUrl, res))) return;
 
         // Extract repo name from URL if not provided
         const urlParts = sourceUrl.replace(/\.git$/, '').split('/');
@@ -75,13 +81,18 @@ router.post('/import/url', requireAuth, validateBody(importSchema), async (req, 
         }
         const jobId = jobResult.id;
 
+        // Default-private when neither flag is provided. Honour the explicit
+        // `makePrivate: false` (preferred) and `isPrivate: false` (legacy) forms
+        // so import-from-public-mirror flows still produce public repos.
+        const wantsPrivate = makePrivate ?? isPrivate ?? true;
+
         // Run import asynchronously
         importService.importRepository({
             sourceUrl,
             credentials: credentials || undefined,
             targetOwner: owner || undefined,
             targetName: repoName,
-            isPrivate: makePrivate !== false,
+            isPrivate: wantsPrivate,
             description,
             githubToken: req.session.accessToken,
             onProgress: (status, message, pct) => {
@@ -132,16 +143,9 @@ router.post('/import/url', requireAuth, validateBody(importSchema), async (req, 
 // ------------------------------------------------------------------
 // Check if repos already exist on GitHub target
 // ------------------------------------------------------------------
-router.post('/import/check-duplicates', requireAuth, async (req, res) => {
+router.post('/import/check-duplicates', requireAuth, validateBody(importCheckDuplicatesSchema), async (req, res) => {
     try {
-        const { repos, targetOwner } = req.body;
-        if (!Array.isArray(repos) || repos.length === 0) {
-            return errorResponse(res, 400, 'Repos array is required', 'MISSING_REPOS');
-        }
-        if (!targetOwner) {
-            return errorResponse(res, 400, 'Target owner is required', 'MISSING_OWNER');
-        }
-
+        const { repos, targetOwner } = req.validatedBody;
         const token = req.session.accessToken;
         const duplicates = {};
 

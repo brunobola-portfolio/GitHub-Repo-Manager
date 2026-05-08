@@ -5,17 +5,37 @@ import db from '../../../db.js';
 import { requireAuth, safeError, errorResponse } from '../../../middleware/auth.js';
 import logger from '../../../lib/logger.js';
 import { updateJobProgress } from '../_shared.js';
+import { assertSafeExternalUrl, resolveAndValidateHost } from '../../../lib/url-validator.js';
+import { validateBody } from '../../../middleware/validate-request.js';
+import { azureImportSchema, azureImportBatchSchema } from '../../../lib/validators.js';
 
 const router = express.Router();
 
-router.post('/import/azure', requireAuth, async (req, res) => {
+// Azure-supplied clone URLs are not implicitly safe — Azure orgs the user
+// controls (or compromises) can return remoteUrl values that target internal
+// addresses. Run the same SSRF + DNS-rebinding pair we use on the public
+// /import/url path so neither vector reaches `git clone`.
+async function ensureSafeAzureClone(sourceUrl, res) {
     try {
-        const { azureOrg, azureProject, azureRepo, azurePat: bodyPat, targetOrg, targetName, makePrivate, description } = req.body;
+        assertSafeExternalUrl(sourceUrl);
+    } catch (guardErr) {
+        const reason = String(guardErr.message || '').replace(/^ssrf_guard:\s*/, '');
+        res.status(400).json({ code: 'invalid_source_url', error: reason });
+        return false;
+    }
+    const dnsOk = await resolveAndValidateHost(sourceUrl);
+    if (!dnsOk) {
+        res.status(400).json({ code: 'invalid_source_url', error: 'Hostname resolves to a non-public address' });
+        return false;
+    }
+    return true;
+}
+
+router.post('/import/azure', requireAuth, validateBody(azureImportSchema), async (req, res) => {
+    try {
+        const { azureOrg, azureProject, azureRepo, azurePat: bodyPat, targetOrg, targetName, makePrivate, isPrivate, description } = req.validatedBody;
         const azurePat = azureService.resolvePat(bodyPat, req.session);
 
-        if (!azureOrg || !azureProject || !azureRepo) {
-            return errorResponse(res, 400, 'Azure organization, project, and repository are required', 'MISSING_PARAMS');
-        }
         if (!azurePat) {
             return errorResponse(res, 400, 'No PAT provided and no server PAT configured', 'MISSING_PAT');
         }
@@ -27,6 +47,7 @@ router.post('/import/azure', requireAuth, async (req, res) => {
         if (!sourceUrl) {
             return errorResponse(res, 400, 'Could not obtain clone URL from Azure DevOps', 'MISSING_CLONE_URL');
         }
+        if (!(await ensureSafeAzureClone(sourceUrl, res))) return;
 
         const repoName = importService.sanitizeRepoName(targetName || azureRepo);
         const owner = targetOrg || '';
@@ -54,13 +75,15 @@ router.post('/import/azure', requireAuth, async (req, res) => {
         }
         const jobId = jobResult.id;
 
+        const wantsPrivate = makePrivate ?? isPrivate ?? true;
+
         // Run import asynchronously
         importService.importRepository({
             sourceUrl,
             credentials: { type: 'pat', token: azurePat },
             targetOwner: owner || undefined,
             targetName: repoName,
-            isPrivate: makePrivate !== false,
+            isPrivate: wantsPrivate,
             description: description || `Imported from Azure DevOps: ${azureOrg}/${azureProject}/${azureRepo}`,
             githubToken: req.session.accessToken,
             onProgress: (status, message, pct) => {
@@ -115,19 +138,13 @@ router.post('/import/azure', requireAuth, async (req, res) => {
 // ------------------------------------------------------------------
 // Batch Azure import — imports multiple repos with concurrency limit
 // ------------------------------------------------------------------
-router.post('/import/azure/batch', requireAuth, async (req, res) => {
+router.post('/import/azure/batch', requireAuth, validateBody(azureImportBatchSchema), async (req, res) => {
     try {
-        const { azureOrg, azureProject, azurePat: bodyPat, targetOrg, makePrivate, repos } = req.body;
+        const { azureOrg, azureProject, azurePat: bodyPat, targetOrg, makePrivate, repos } = req.validatedBody;
         const azurePat = azureService.resolvePat(bodyPat, req.session);
 
-        if (!azureOrg || !azureProject || !Array.isArray(repos) || repos.length === 0) {
-            return errorResponse(res, 400, 'Azure org, project, and repos array are required', 'MISSING_PARAMS');
-        }
         if (!azurePat) {
             return errorResponse(res, 400, 'No PAT provided and no server PAT configured', 'MISSING_PAT');
-        }
-        if (repos.length > 20) {
-            return errorResponse(res, 400, 'Maximum 20 repos per batch import', 'TOO_MANY_REPOS');
         }
 
         const owner = targetOrg || '';
@@ -161,6 +178,19 @@ router.post('/import/azure/batch', requireAuth, async (req, res) => {
             const sourceUrl = repoDetails.remoteUrl;
             if (!sourceUrl) {
                 jobResults.push({ repoName: azureRepo, targetName: repoName, jobId: null, error: 'No clone URL available', skipped: true });
+                continue;
+            }
+            // Per-repo SSRF + DNS-rebinding guard: an Azure org we don't trust
+            // could return a clone URL pointing at an internal address.
+            try {
+                assertSafeExternalUrl(sourceUrl);
+                if (!(await resolveAndValidateHost(sourceUrl))) {
+                    jobResults.push({ repoName: azureRepo, targetName: repoName, jobId: null, error: 'Clone URL resolves to a non-public address', skipped: true });
+                    continue;
+                }
+            } catch (guardErr) {
+                const reason = String(guardErr.message || '').replace(/^ssrf_guard:\s*/, '');
+                jobResults.push({ repoName: azureRepo, targetName: repoName, jobId: null, error: reason, skipped: true });
                 continue;
             }
 

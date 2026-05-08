@@ -13,24 +13,39 @@
 
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
-import { requireAuth, safeError } from '../../middleware/auth.js';
+import { requireAuth, safeError, isValidGitHubFullName } from '../../middleware/auth.js';
 import { aiService, sanitizeForPrompt } from '../../ai-service.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
 import { initSSE, streamToSSE } from '../ai-streaming.js';
 import { requireAI } from './shared.js';
 import { mapAIErrorToResponse } from '../../middleware/ai-error-mapper.js';
+import { validateBody } from '../../middleware/validate-request.js';
+import {
+    aiQualityReportSchema,
+    aiReviewSummarySchema,
+    aiGenerateCommitSchema,
+    aiGeneratePrSchema,
+    aiRefineSchema,
+    aiChatRefineSchema,
+    aiAnalyzeContextSchema,
+    REFINE_INSTRUCTIONS,
+} from '../../lib/validators.js';
+import { createCache } from '../../lib/memory-cache.js';
 
 const router = express.Router();
 
 // Quality Report - Comprehensive repo health analysis
-router.post('/ai/quality-report', requireAuth, requireAI, async (req, res) => {
+router.post('/ai/quality-report', requireAuth, validateBody(aiQualityReportSchema), requireAI, async (req, res) => {
     const userId = req.session.userId;
     const check = checkAIFeatureLimit(userId, 'ai_insights');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
     try {
-        const { repo } = req.body;
-        if (!repo) return res.status(400).json({ error: 'Repo data required' });
+        const { repo } = req.validatedBody;
+        if (!isValidGitHubFullName(repo.full_name)) {
+            return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+        }
+        const safeFullName = encodeURI(repo.full_name);
 
         // Fetch README. 404 means no README exists yet — that's expected, the
         // AI report just runs without it. Anything else (401/403 token issue,
@@ -38,7 +53,7 @@ router.post('/ai/quality-report', requireAuth, requireAI, async (req, res) => {
         // mask a real auth failure.
         let readmeContent = '';
         try {
-            const { data } = await githubApi(`/repos/${repo.full_name}/readme`, req.session.accessToken);
+            const { data } = await githubApi(`/repos/${safeFullName}/readme`, req.session.accessToken);
             readmeContent = Buffer.from(data.content, 'base64').toString('utf-8');
         } catch (e) {
             if (e?.status !== 404) req.log.warn({ err: e, repo: repo.full_name }, 'Quality report: README fetch failed');
@@ -48,7 +63,7 @@ router.post('/ai/quality-report', requireAuth, requireAI, async (req, res) => {
         // else is worth a warn.
         let fileStructure = [];
         try {
-            const { data } = await githubApi(`/repos/${repo.full_name}/contents`, req.session.accessToken);
+            const { data } = await githubApi(`/repos/${safeFullName}/contents`, req.session.accessToken);
             fileStructure = data.map(f => ({ name: f.name, type: f.type }));
         } catch (e) {
             if (e?.status !== 404) req.log.warn({ err: e, repo: repo.full_name }, 'Quality report: contents fetch failed');
@@ -71,34 +86,26 @@ router.post('/ai/quality-report', requireAuth, requireAI, async (req, res) => {
 // ------------------------------------------------------------------
 
 // Generate an AI-powered PR review summary
-router.post('/ai/review-summary', requireAuth, requireAI, async (req, res) => {
-    const userId = req.session.userId;
-    const check = checkUsageLimit(userId, 'ai_queries');
-    if (!check.allowed) {
-        return res.status(429).json({
-            error: 'AI query limit exceeded',
-            limit: check.limit,
-            current: check.current,
-            upgradeUrl: '/pricing'
+router.post('/ai/review-summary', requireAuth, validateBody(aiReviewSummarySchema), requireAI, async (req, res) => {
+    // Feature toggle BEFORE the quota check — disabling the feature should
+    // never burn the user's quota or look like a 429.
+    if (process.env.DISABLE_AI_REVIEW === 'true') {
+        return res.status(404).json({
+            error: 'AI review summaries are disabled on this server.',
+            code: 'AI_REVIEW_DISABLED'
         });
     }
 
+    const userId = req.session.userId;
+    const check = checkUsageLimit(userId, 'ai_queries');
+    if (!check.allowed) {
+        // Use the canonical quota envelope so the client's <QuotaExceededState />
+        // primitive (gated on `code === 'QUOTA_EXCEEDED'`) renders correctly.
+        return res.status(429).json(quotaExceededResponse({ ...check, metric: 'ai_queries' }));
+    }
+
     try {
-        if (process.env.DISABLE_AI_REVIEW === 'true') {
-            return res.status(404).json({
-                error: 'AI review summaries are disabled on this server.',
-                code: 'AI_REVIEW_DISABLED'
-            });
-        }
-
-        const { fileManifest, topFilePatches, prMetadata } = req.body;
-
-        if (!fileManifest || !prMetadata) {
-            return res.status(400).json({
-                error: 'fileManifest and prMetadata are required.',
-                code: 'VALIDATION_ERROR'
-            });
-        }
+        const { fileManifest, topFilePatches, prMetadata } = req.validatedBody;
 
         if (req.query.stream === 'true') {
             // Streaming branch: build prompt inline, stream raw text, parse on completion
@@ -182,13 +189,9 @@ File manifest: ${sanitizeForPrompt(JSON.stringify((fileManifest || []).map(f => 
 // Dev Toolkit — Generate Commit Message
 // ------------------------------------------------------------------
 
-router.post('/ai/generate-commit', requireAuth, requireAI, async (req, res) => {
+router.post('/ai/generate-commit', requireAuth, validateBody(aiGenerateCommitSchema), requireAI, async (req, res) => {
     try {
-        const { diff, format = 'conventional', repo_style, repo_context } = req.body;
-
-        if (!diff || typeof diff !== 'string' || diff.trim().length === 0) {
-            return res.status(400).json({ error: 'diff is required' });
-        }
+        const { diff, format = 'conventional', repo_style, repo_context } = req.validatedBody;
 
         const userId = req.session.userId;
         const limit = checkAIFeatureLimit(userId, 'ai_commit');
@@ -290,22 +293,17 @@ Rules:
 // Dev Toolkit — Generate PR Description
 // ------------------------------------------------------------------
 
-router.post('/ai/generate-pr', requireAuth, requireAI, async (req, res) => {
+router.post('/ai/generate-pr', requireAuth, validateBody(aiGeneratePrSchema), requireAI, async (req, res) => {
     try {
-        const { commits, diff_summary, top_patches, template, repo_context } = req.body;
-
-        if (!commits || !Array.isArray(commits) || commits.length === 0) {
-            return res.status(400).json({ error: 'commits array is required' });
-        }
+        const { commits, diff_summary, top_patches, template, repo_context } = req.validatedBody;
 
         const userId = req.session.userId;
         const limit = checkUsageLimit(userId, 'ai_queries');
         if (!limit.allowed) {
-            return res.status(429).json({
-                error: 'usage_limit_exceeded',
-                message: `AI query limit reached. Resets ${limit.resetDate || 'next month'}.`,
-                remaining: 0,
-            });
+            // Canonical quota envelope so the frontend's <QuotaExceededState />
+            // surfaces a real reset date instead of the previous "next month"
+            // hardcode driven by a non-existent `resetDate` field.
+            return res.status(429).json(quotaExceededResponse({ ...limit, metric: 'ai_queries' }));
         }
 
         const commitList = commits.map(c => `- ${c.message}`).join('\n');
@@ -417,43 +415,38 @@ Rules:
 // Dev Toolkit — Refine Content
 // ------------------------------------------------------------------
 
-router.post('/ai/refine', requireAuth, requireAI, async (req, res) => {
-    try {
-        const { original_content, original_diff, instruction, content_type } = req.body;
+// Refinement instruction allow-list: every accepted key maps to a safe,
+// server-controlled prompt fragment. We never fall through to the raw user
+// string — the schema's `enum` already rejects unknown values, but this
+// table is the single source of truth for what a key actually expands to.
+const REFINEMENT_INSTRUCTIONS = {
+    shorter: 'Make this shorter and more concise. Remove the body if present, keep only the subject line.',
+    more_detail: 'Add more detail. Include a multi-line body with bullet points explaining the changes.',
+    add_body: 'Keep the subject line as-is but add an explanatory body paragraph below it.',
+    breaking_change: 'Add a BREAKING CHANGE: footer explaining what breaks and how to migrate.',
+    more_cases: 'Add more test cases to cover additional scenarios.',
+    edge_cases: 'Add edge case test scenarios (empty inputs, boundary values, error conditions).',
+    e2e_focus: 'Rewrite the test plan focusing on end-to-end user workflows.',
+    architecture_notes: 'Add a section about the architectural decisions and technical approach.',
+    more_context: 'Add more context about what changed and why. Include background information and motivation.',
+};
 
-        if (!original_content || typeof original_content !== 'string') {
-            return res.status(400).json({ error: 'original_content is required' });
-        }
-        if (!instruction || typeof instruction !== 'string') {
-            return res.status(400).json({ error: 'instruction is required' });
-        }
+router.post('/ai/refine', requireAuth, validateBody(aiRefineSchema), requireAI, async (req, res) => {
+    try {
+        const { original_content, original_diff, instruction, content_type } = req.validatedBody;
 
         const userId = req.session.userId;
         const limit = checkUsageLimit(userId, 'ai_queries');
         if (!limit.allowed) {
-            return res.status(429).json({
-                error: 'usage_limit_exceeded',
-                message: `AI query limit reached. Resets ${limit.resetDate || 'next month'}.`,
-                remaining: 0,
-            });
+            return res.status(429).json(quotaExceededResponse({ ...limit, metric: 'ai_queries' }));
         }
 
-        const refinementInstructions = {
-            shorter: 'Make this shorter and more concise. Remove the body if present, keep only the subject line.',
-            more_detail: 'Add more detail. Include a multi-line body with bullet points explaining the changes.',
-            add_body: 'Keep the subject line as-is but add an explanatory body paragraph below it.',
-            breaking_change: 'Add a BREAKING CHANGE: footer explaining what breaks and how to migrate.',
-            more_cases: 'Add more test cases to cover additional scenarios.',
-            edge_cases: 'Add edge case test scenarios (empty inputs, boundary values, error conditions).',
-            e2e_focus: 'Rewrite the test plan focusing on end-to-end user workflows.',
-            architecture_notes: 'Add a section about the architectural decisions and technical approach.',
-            more_context: 'Add more context about what changed and why. Include background information and motivation.',
-        };
-
-        const ALLOWED_CONTENT_TYPES = ['commit', 'pr_summary', 'pr_test_plan'];
-        const safeContentType = ALLOWED_CONTENT_TYPES.includes(content_type) ? content_type : 'content';
-
-        const instructionText = refinementInstructions[instruction] || instruction;
+        const safeContentType = content_type || 'content';
+        // The schema's z.enum() guarantees `instruction` is in REFINE_INSTRUCTIONS,
+        // so the table lookup never returns undefined. Defensive default kept
+        // so a future schema relaxation can't bypass the allow-list.
+        const instructionText = REFINEMENT_INSTRUCTIONS[instruction] || REFINEMENT_INSTRUCTIONS.more_context;
+        const safeOriginal = sanitizeForPrompt(original_content, 6000);
         const safeDiff = original_diff ? sanitizeForPrompt(original_diff, 8000) : '';
         const diffContext = safeDiff ? `\n\nOriginal diff for context:\n${safeDiff}` : '';
 
@@ -463,7 +456,7 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
         // Provider-neutral path via req.aiProvider — see /ai/generate-commit
         // above for the rationale. The old "Ready." dummy reply priming is
         // now a single prompt passed through the abstraction.
-        const userMessage = `Refinement instruction: ${instructionText}\n\nOriginal content:\n${original_content}${diffContext}`;
+        const userMessage = `Refinement instruction: ${instructionText}\n\nOriginal content:\n${safeOriginal}${diffContext}`;
 
         if (req.query.stream === 'true') {
             const sse = initSSE(res);
@@ -504,27 +497,25 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
 // Dev Toolkit — Analyze Context (Smart Bar)
 // ------------------------------------------------------------------
 
-const contextCache = new Map();
-const CONTEXT_CACHE_TTL = 30000;
+// Bounded LRU cache (TTL + maxSize) so the analyze-context cache cannot
+// grow unbounded across long-running deploys. Keys MUST embed userId so two
+// users with the same repo+diff stats never see each other's analysis.
+const contextCache = createCache({ ttlMs: 30_000, maxSize: 500 });
 
-router.post('/ai/analyze-context', requireAuth, requireAI, async (req, res) => {
+router.post('/ai/analyze-context', requireAuth, validateBody(aiAnalyzeContextSchema), requireAI, async (req, res) => {
     try {
-        const { repo, diff_summary, commits, file_list } = req.body;
-
-        if (!repo || !diff_summary) {
-            return res.status(400).json({ error: 'repo and diff_summary are required' });
-        }
-
-        const cacheKey = `${repo}_${diff_summary.files}_${diff_summary.additions}_${diff_summary.deletions}`;
-        const cached = contextCache.get(cacheKey);
-        if (cached && Date.now() - cached.timestamp < CONTEXT_CACHE_TTL) {
-            return res.json(cached.data);
-        }
-
+        const { repo, diff_summary, commits, file_list } = req.validatedBody;
         const userId = req.session.userId;
+
+        const cacheKey = `${userId}:${repo}:${diff_summary.files}:${diff_summary.additions}:${diff_summary.deletions}`;
+        const cached = contextCache.get(cacheKey);
+        if (cached) {
+            return res.json(cached);
+        }
+
         const limit = checkUsageLimit(userId, 'ai_queries');
         if (!limit.allowed) {
-            return res.status(429).json({ error: 'usage_limit_exceeded', message: 'AI query limit reached.' });
+            return res.status(429).json(quotaExceededResponse({ ...limit, metric: 'ai_queries' }));
         }
 
         const commitMessages = (commits || []).map(c => c.message).join('\n');
@@ -562,7 +553,7 @@ Stats: ${diff_summary.files} files, +${diff_summary.additions} -${diff_summary.d
         };
 
         incrementUsage(userId, 'ai_queries');
-        contextCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
+        contextCache.set(cacheKey, responseData);
 
         res.json(responseData);
     } catch (error) {
@@ -576,18 +567,14 @@ Stats: ${diff_summary.files} files, +${diff_summary.additions} -${diff_summary.d
 // Dev Toolkit — Conversational Refine (always streaming)
 // ------------------------------------------------------------------
 
-router.post('/ai/chat-refine', requireAuth, requireAI, async (req, res) => {
+router.post('/ai/chat-refine', requireAuth, validateBody(aiChatRefineSchema), requireAI, async (req, res) => {
     try {
-        const { message, current_output, original_diff, content_type, history } = req.body;
-
-        if (!message || typeof message !== 'string') {
-            return res.status(400).json({ error: 'message is required' });
-        }
+        const { message, current_output, original_diff, content_type, history } = req.validatedBody;
 
         const userId = req.session.userId;
         const limit = checkUsageLimit(userId, 'ai_queries');
         if (!limit.allowed) {
-            return res.status(429).json({ error: 'usage_limit_exceeded', message: 'AI query limit reached.' });
+            return res.status(429).json(quotaExceededResponse({ ...limit, metric: 'ai_queries' }));
         }
 
         const CONTENT_TYPE_LABELS = {
@@ -609,6 +596,8 @@ router.post('/ai/chat-refine', requireAuth, requireAI, async (req, res) => {
         // so we emit "User:" / "Assistant:" markers for history turns and
         // end with the latest user message. This is what replaces the old
         // Gemini-specific startChat({ history }) path.
+        // The schema enforces role ∈ {'user','assistant'} so role spoofing
+        // (System: …) is structurally rejected before this code runs.
         const safeHistory = Array.isArray(history) ? history.slice(-10) : [];
         const historyBlock = safeHistory
             .map((entry) => {

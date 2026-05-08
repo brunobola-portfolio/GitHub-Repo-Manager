@@ -1,15 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Wallet, ArrowRight, AlertTriangle } from 'lucide-react'
-
-const MOTION_VARIANTS = {
-    hidden: { opacity: 0, y: -8 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] } },
-}
-
-const REDUCED_VARIANTS = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.15 } },
-}
+import { BANNER_VARIANTS, BANNER_REDUCED_VARIANTS } from '../../../AI/bannerMotion'
 
 function formatCents(cents) {
     if (cents == null) return null
@@ -24,7 +15,7 @@ function formatCents(cents) {
  */
 export function WorkBoardCapReachedBanner({ spentCents, capCents, className = '' }) {
     const reduced = useReducedMotion()
-    const variants = reduced ? REDUCED_VARIANTS : MOTION_VARIANTS
+    const variants = reduced ? BANNER_REDUCED_VARIANTS : BANNER_VARIANTS
 
     return (
         <motion.div
@@ -49,23 +40,35 @@ export function WorkBoardCapReachedBanner({ spentCents, capCents, className = ''
                     <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                         Work Board AI is paused for the rest of this month. Raise the cap below or wait for the next billing window.
                     </p>
-                    {(spentCents != null && capCents != null) && (
-                        <div className="mt-3">
-                            <div className="flex items-center justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
-                                <span>Spent this month</span>
-                                <span className="text-slate-700 dark:text-slate-200">
-                                    {formatCents(spentCents)} <span className="text-slate-400">/ {formatCents(capCents)}</span>
-                                </span>
-                            </div>
-                            <div className="h-1.5 rounded-full bg-rose-100 dark:bg-rose-900/40 overflow-hidden">
+                    {(spentCents != null && capCents != null) && (() => {
+                        const pct = capCents > 0
+                            ? Math.min(100, Math.max(0, (spentCents / capCents) * 100))
+                            : 100
+                        return (
+                            <div className="mt-3">
+                                <div className="flex items-center justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                                    <span>Spent this month</span>
+                                    <span className="text-slate-700 dark:text-slate-200">
+                                        {formatCents(spentCents)} <span className="text-slate-400">/ {formatCents(capCents)}</span>
+                                    </span>
+                                </div>
                                 <div
-                                    className="h-full bg-gradient-to-r from-rose-500 to-amber-500"
-                                    style={{ width: '100%' }}
-                                    aria-hidden="true"
-                                />
+                                    className="h-1.5 rounded-full bg-rose-100 dark:bg-rose-900/40 overflow-hidden"
+                                    role="progressbar"
+                                    aria-valuemin={0}
+                                    aria-valuemax={100}
+                                    aria-valuenow={Math.round(pct)}
+                                    aria-label={`${Math.round(pct)}% of monthly AI cap used`}
+                                >
+                                    <div
+                                        className="h-full bg-gradient-to-r from-rose-500 to-amber-500"
+                                        style={{ width: `${pct}%` }}
+                                        aria-hidden="true"
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )
+                    })()}
                     <div className="mt-3 flex items-center gap-2">
                         <a
                             href="#ai-cap"

@@ -14,6 +14,7 @@ import { fetchAttentionNarrative } from '../../api/attentionNarrative'
 import { AIQuotaExceededError } from '../../api/aiFetch'
 import { useAIStatus } from '../../hooks/useAIStatus'
 import { useAIQuotaState } from '../../hooks/useAIQuotaState'
+import { formatRelativeTime } from '../../utils/format'
 import { Spinner } from '../ui/Spinner'
 
 const SEVERITY_RING = {
@@ -47,19 +48,6 @@ const KIND_LABEL = {
     stale_pinned: 'Pinned but quiet',
     abandoned: 'Abandoned',
     hot: 'Active today',
-}
-
-function relativeTime(iso) {
-    if (!iso) return null
-    const ms = Date.now() - new Date(iso).getTime()
-    if (Number.isNaN(ms)) return null
-    if (ms < 60_000) return 'just now'
-    const m = Math.floor(ms / 60_000)
-    if (m < 60) return `${m}m ago`
-    const h = Math.floor(m / 60)
-    if (h < 24) return `${h}h ago`
-    const d = Math.floor(h / 24)
-    return `${d}d ago`
 }
 
 /**
@@ -288,7 +276,7 @@ function AttentionRow({ item, onClick, narrative = null }) {
     const ringClass = SEVERITY_RING[item.severity] ?? SEVERITY_RING.low
     const badgeClass = SEVERITY_BADGE[item.severity] ?? SEVERITY_BADGE.low
     const accentClass = KIND_ACCENT[item.kind] ?? 'text-indigo-500'
-    const ago = relativeTime(item.since)
+    const ago = formatRelativeTime(item.since)
 
     return (
         <li>

@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react'
 import { Trash2, Edit3, SkipForward } from 'lucide-react'
 import { formatFileSize, formatDate as formatDateBase } from '../utils/format'
+import { MS_PER_DAY } from '../utils/time'
 import { Button } from './ui/Button'
 
 // --- Helper functions ---
@@ -25,7 +26,7 @@ function compareSummary(source, target) {
     }
 
     const diffMs = srcDate - tgtDate
-    const diffDays = Math.round(Math.abs(diffMs) / (1000 * 60 * 60 * 24))
+    const diffDays = Math.round(Math.abs(diffMs) / MS_PER_DAY)
 
     if (diffMs > 0) {
         return {

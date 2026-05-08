@@ -36,7 +36,7 @@ export default function CollapsiblePanel({
     ? 'overflow-hidden'
     : mode === 'slim'
       ? 'overflow-visible'
-      : 'overflow-y-auto custom-scrollbar'
+      : 'overflow-y-auto ds-scrollbar'
 
   return (
     <div
@@ -50,7 +50,7 @@ export default function CollapsiblePanel({
       onTransitionEnd={handleTransitionEnd}
     >
       {mode === 'expanded' && (
-        <div className="h-full overflow-y-auto custom-scrollbar">
+        <div className="h-full overflow-y-auto ds-scrollbar">
           {children}
         </div>
       )}

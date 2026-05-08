@@ -63,6 +63,7 @@ export function AIRunButton({
             size={size}
             onClick={onClick}
             disabled={isDisabled}
+            aria-busy={loading}
             title={title}
             {...rest}
         >

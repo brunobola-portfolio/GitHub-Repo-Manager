@@ -14,6 +14,21 @@ const testDb = makeIntegrationDb(initDB);
 
 vi.mock('../../db.js', () => ({ default: testDb }));
 
+// requireTier mock — deep-review routes are gated to 'pro'. Default test
+// users to 'pro' tier; flip via `setTier('free')` to exercise the gate.
+let currentTier = 'pro';
+const TIER_ORDER = { free: 0, pro: 1, enterprise: 2 };
+vi.mock('../../middleware/require-tier.js', () => ({
+    requireTier: (minTier) => (req, res, next) => {
+        const min = TIER_ORDER[minTier] ?? 0;
+        const have = TIER_ORDER[currentTier] ?? 0;
+        if (have >= min) return next();
+        return res.status(403).json({ error: 'upgrade_required', requiredTier: minTier });
+    },
+    getUserTier: () => currentTier,
+    attachTier: (req, _res, next) => { req.userTier = currentTier; next(); },
+}));
+
 // Provider mock — minimal duck-typed AIProvider
 const mockGenerate = vi.fn(async () => ({
     parsed: {

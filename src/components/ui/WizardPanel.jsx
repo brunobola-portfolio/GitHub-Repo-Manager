@@ -148,7 +148,7 @@ export function WizardPanel({
                   {/* Sidebar atmospheric glow */}
                   <div className="absolute -bottom-20 -left-10 w-40 h-40 bg-indigo-400/[0.06] dark:bg-indigo-400/[0.08] rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
                   <div className="absolute -top-10 -right-10 w-32 h-32 bg-violet-400/[0.04] dark:bg-violet-400/[0.06] rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
-                  <div className="relative h-full overflow-y-auto custom-scrollbar">
+                  <div className="relative h-full overflow-y-auto ds-scrollbar">
                     {sidebar}
                   </div>
                 </motion.aside>
@@ -163,7 +163,7 @@ export function WizardPanel({
                 </div>
 
                 {/* Content scrollable area */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+                <div className="flex-1 overflow-y-auto ds-scrollbar relative">
                   {children}
                 </div>
 

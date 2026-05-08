@@ -129,11 +129,19 @@ router.get('/:org/repos', requireAuth, async (req, res) => {
         const perPage = Math.min(Math.max(parseInt(req.query.per_page) || 30, 1), 100);
         const orgLogin = req.params.org;
 
-        // Get current user to check if this is their personal account
-        const { data: user } = await githubApi('/user', req.session.accessToken);
+        // Use the cached login from the OAuth callback instead of issuing a
+        // fresh /user round-trip on every page load. Falls back to a single
+        // /user fetch only if the session was created before this field was
+        // captured (legacy session mid-deploy).
+        let userLogin = req.session.userLogin;
+        if (!userLogin) {
+            const { data: user } = await githubApi('/user', req.session.accessToken);
+            userLogin = user?.login;
+            if (userLogin) req.session.userLogin = userLogin;
+        }
 
         let endpoint;
-        if (orgLogin === user.login) {
+        if (orgLogin === userLogin) {
             // Personal account - fetch user's personal repos
             endpoint = `/user/repos?affiliation=owner&page=${page}&per_page=${perPage}&sort=updated`;
         } else {

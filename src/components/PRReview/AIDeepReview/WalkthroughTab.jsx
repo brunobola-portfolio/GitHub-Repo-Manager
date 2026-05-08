@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { SafeMarkdown } from '../../AIPrompts/SafeMarkdown';
+import { parseAndSanitizeSvg } from '../../../utils/sanitizeSvg';
 
 export function WalkthroughTab({ walkthrough }) {
     const mermaidRef = useRef(null);
@@ -30,12 +31,23 @@ export function WalkthroughTab({ walkthrough }) {
         import('mermaid').then((mod) => {
             if (cancelled) return;
             const mermaid = mod.default || mod;
-            // Re-initialise per render so theme changes propagate. Mermaid's
-            // initialize is idempotent — this is cheap (~microseconds).
-            mermaid.initialize({ startOnLoad: false, theme });
+            // securityLevel: 'strict' is the v11 default — pinned explicitly so
+            // a future major version flip is a visible change rather than a
+            // silent regression.
+            mermaid.initialize({ startOnLoad: false, theme, securityLevel: 'strict' });
             const id = `mermaid-${Math.random().toString(36).slice(2)}`;
             mermaid.render(id, src).then(({ svg }) => {
-                if (!cancelled && mermaidRef.current) mermaidRef.current.innerHTML = svg;
+                if (cancelled || !mermaidRef.current) return;
+                // Defence in depth on top of mermaid's own DOMPurify pass:
+                // strip <script>/<foreignObject>/event-handler attributes and
+                // adopt the resulting Node directly, so we never hand a
+                // string back to the HTML parser via innerHTML.
+                const node = parseAndSanitizeSvg(svg);
+                if (!node) {
+                    setMermaidError('Diagram failed to render safely');
+                    return;
+                }
+                mermaidRef.current.replaceChildren(document.importNode(node, true));
             }).catch((err) => {
                 if (!cancelled) setMermaidError(err?.message || 'Failed to render diagram');
             });

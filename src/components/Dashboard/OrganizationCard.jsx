@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Building2, Star, GitFork, GitPullRequest, AlertCircle, Lock, Globe, TrendingUp } from 'lucide-react'
 import { formatCompact } from '../../utils/format'
+import { MS_PER_DAY } from '../../utils/time'
 
 /**
  * OrganizationCard - Rich card showing organization details and metrics
@@ -23,7 +24,7 @@ export const OrganizationCard = memo(function OrganizationCard({ org, repos = []
             publicCount: filtered.filter(r => !r.private).length,
             privateCount: filtered.filter(r => r.private).length,
             hasRecentActivity: filtered.some(r => {
-                const daysSinceUpdate = (now - new Date(r.updated_at).getTime()) / (1000 * 60 * 60 * 24)
+                const daysSinceUpdate = (now - new Date(r.updated_at).getTime()) / MS_PER_DAY
                 return daysSinceUpdate < 7
             })
         }

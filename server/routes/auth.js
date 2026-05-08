@@ -13,6 +13,12 @@ const router = express.Router();
 // and replay of authorization codes. 20 req / 15 min per IP in prod.
 const authRouteLimiter = createAuthRouteLimiter();
 
+// /session-info is polled every 5 min by the SPA — re-read users.is_admin
+// at most once per TTL so the flag still propagates after a grant/revoke
+// while keeping the polling cost bounded. Long enough that the synchronous
+// SQLite read isn't on the polling hot path.
+const ADMIN_FLAG_TTL_MS = 10 * 60_000;
+
 // Initiates the GitHub OAuth flow
 router.get('/login', authRouteLimiter, (req, res) => {
     const { GITHUB_CLIENT_ID } = process.env;
@@ -235,21 +241,28 @@ router.get('/session-info', (req, res) => {
         ? Math.max(0, Math.floor((createdAt + ABSOLUTE_TIMEOUT_MS - Date.now()) / 1000))
         : null;
 
-    // isAdmin — read the users.is_admin flag (Migration 016). The DLQ
-    // operator UI gates an admin-only navigation item on this flag so
-    // non-admins don't see (or attempt to hit) /api/v1/admin/dlq/*.
+    // isAdmin — cached on the session so the polling client (every 5 min)
+    // doesn't trigger a synchronous SQLite read on every poll. The flag is
+    // refreshed at most once per ADMIN_FLAG_TTL_MS so a freshly granted
+    // admin role still propagates within minutes, and falls back to a fresh
+    // DB read if the cache hasn't been populated yet.
     // Fail-closed: any DB error returns false rather than exposing the
     // admin UI to a user we couldn't verify.
     let isAdmin = false;
     if (typeof req.session.userId === 'number') {
-        try {
-            const row = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(req.session.userId);
-            isAdmin = !!row?.is_admin;
-        } catch (err) {
-            // Fail-closed: any DB error treats the caller as non-admin so we
-            // never expose the admin UI to someone we couldn't verify. Log so
-            // a real outage isn't invisible.
-            req.log?.warn({ err: err?.message, userId: req.session.userId }, 'Failed to read users.is_admin — treating as non-admin');
+        const cached = req.session.isAdminCache;
+        const fresh = cached && typeof cached.checkedAt === 'number'
+            && Date.now() - cached.checkedAt < ADMIN_FLAG_TTL_MS;
+        if (fresh) {
+            isAdmin = !!cached.value;
+        } else {
+            try {
+                const row = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(req.session.userId);
+                isAdmin = !!row?.is_admin;
+                req.session.isAdminCache = { value: isAdmin, checkedAt: Date.now() };
+            } catch (err) {
+                req.log?.warn({ err: err?.message, userId: req.session.userId }, 'Failed to read users.is_admin — treating as non-admin');
+            }
         }
     }
 

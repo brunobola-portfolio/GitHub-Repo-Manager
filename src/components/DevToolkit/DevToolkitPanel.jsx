@@ -261,7 +261,7 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                         />
 
                         {/* Tab content */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto ds-scrollbar">
                             {content}
                         </div>
                     </motion.aside>

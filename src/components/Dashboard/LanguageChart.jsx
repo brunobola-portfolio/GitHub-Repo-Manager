@@ -177,7 +177,7 @@ export function LanguageChart({ data = [], loading }) {
                             </div>
 
                             {/* Language Legend - Dynamic and scrollable */}
-                            <div className="flex-1 w-full lg:w-auto overflow-y-auto max-h-[340px] custom-scrollbar pr-2">
+                            <div className="flex-1 w-full lg:w-auto overflow-y-auto max-h-[340px] ds-scrollbar pr-2">
                                 <div
                                     className="grid gap-3"
                                     style={{

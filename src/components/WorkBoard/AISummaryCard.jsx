@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { clsx } from 'clsx'
-import { Sparkles, RefreshCw, X, AlertTriangle } from 'lucide-react'
+import { Sparkles, RefreshCw, X } from 'lucide-react'
 import { fetchWithRetry } from '../../utils/api'
 import { MOCK_MODE } from '../../config'
-import { friendlyAiError } from '../../utils/aiErrorFriendly'
+import { AIErrorState } from '../ui/AIErrorState'
 import { Skeleton } from '../ui/Skeleton'
 
 function bulletHref(link) {
@@ -80,9 +80,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
             setState({
                 status: 'error',
                 data: null,
-                error: status
-                    ? friendlyAiError({ status, body: e?.data || {} })
-                    : { headline: 'Could not reach the server.', detail: e?.message || 'fetch failed' },
+                error: e,
             })
         }
     }, [])
@@ -139,31 +137,14 @@ export function AISummaryCard({ meta: metaProp } = {}) {
         )
     }
     if (state.status === 'error') {
-        // Tolerate legacy string errors (e.g. tests, older callers) and the new
-        // { headline, detail } shape produced by friendlyAiError.
-        const err = typeof state.error === 'string'
-            ? { headline: 'AI summary failed', detail: state.error }
-            : (state.error || { headline: 'AI summary failed', detail: '' })
         return (
-            <div
-                role="alert"
-                className="rounded-2xl border border-rose-200/60 dark:border-rose-900/40 bg-rose-50/60 dark:bg-rose-950/20 p-3 text-sm text-rose-700 dark:text-rose-300 flex items-start gap-3"
-            >
-                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                <div className="flex-1 min-w-0">
-                    <div className="font-medium">{err.headline}</div>
-                    {err.detail && (
-                        <div className="text-xs opacity-90 mt-0.5">{err.detail}</div>
-                    )}
-                </div>
-                <button
-                    type="button"
-                    onClick={fetchSummary}
-                    className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold text-rose-700 dark:text-rose-300 bg-white/60 dark:bg-slate-900/40 hover:bg-white dark:hover:bg-slate-900 transition"
-                >
-                    Retry
-                </button>
-            </div>
+            <AIErrorState
+                error={state.error}
+                onRetry={fetchSummary}
+                context="AI summary"
+                variant="card"
+                className="rounded-2xl"
+            />
         )
     }
 

@@ -341,7 +341,7 @@ export function Select({
                             </div>
                         )}
 
-                        <div id={listboxId} ref={listRef} role="listbox" aria-label={label} aria-busy={loading} className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
+                        <div id={listboxId} ref={listRef} role="listbox" aria-label={label} aria-busy={loading} className="max-h-60 overflow-y-auto py-1 ds-scrollbar">
                             {/* Loading skeleton */}
                             {loading && (
                                 Array.from({ length: skeletonCount }).map((_, i) => (

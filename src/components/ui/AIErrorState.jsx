@@ -1,5 +1,6 @@
 import { AlertCircle, Settings, Crown, RotateCcw, X } from 'lucide-react'
 import { formatUserError } from '../../utils/errors'
+import { openAppSettings, openBilling } from '../../utils/appEvents'
 
 /**
  * Reusable error display for any AI surface. Drives the action button from
@@ -29,14 +30,10 @@ export function AIErrorState({ error, onRetry, onDismiss, context, variant = 'ca
                 onRetry?.()
                 break
             case 'configure':
-                window.dispatchEvent(
-                    new CustomEvent('app:open-settings', {
-                        detail: { tab: action.settingsTab || 'ai' },
-                    }),
-                )
+                openAppSettings(action.settingsTab || 'ai')
                 break
             case 'upgrade':
-                window.dispatchEvent(new CustomEvent('app:open-billing'))
+                openBilling()
                 break
             case 'dismiss':
                 onDismiss?.()

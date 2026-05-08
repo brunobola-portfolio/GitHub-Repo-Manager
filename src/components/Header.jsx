@@ -12,6 +12,7 @@ import LicenseBadge from './LicenseBadge'
 import { useTheme } from '../hooks/useTheme.jsx'
 import { useSystemHealth } from '../hooks/useSystemHealth.js'
 import { useRelativeTime } from '../hooks/useRelativeTime.js'
+import { formatRelativeTime } from '../utils/format'
 import { useWorkBoardBadgeCounts } from '../hooks/useWorkBoardBadgeCounts'
 import { useNotificationsDigest } from '../hooks/useNotificationsDigest'
 import { Drawer } from './ui/Drawer'
@@ -486,7 +487,7 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
                 <div className="px-2 py-1 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                     Organizations ({orgs.length})
                 </div>
-                <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                <div className="max-h-64 overflow-y-auto ds-scrollbar">
                     {orgs.length === 0 ? (
                         <div className="px-2 py-2 text-sm text-slate-500 dark:text-slate-400">No organizations</div>
                     ) : (
@@ -572,27 +573,15 @@ const CATEGORY_META = {
     stale_pinned:      { label: 'Stale pinned',     Icon: Pin,            accent: 'text-slate-500 dark:text-slate-400',     dot: 'bg-slate-400' },
 }
 
-function relativeTimeShort(iso) {
-    if (!iso) return null
-    const ms = Date.now() - new Date(iso).getTime()
-    if (Number.isNaN(ms)) return null
-    if (ms < 60_000) return 'now'
-    const m = Math.floor(ms / 60_000)
-    if (m < 60) return `${m}m`
-    const h = Math.floor(m / 60)
-    if (h < 24) return `${h}h`
-    return `${Math.floor(h / 24)}d`
-}
-
 function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen, onClose }) {
-    const sinceLabel = relativeTimeShort(digest.since)
+    const sinceLabel = formatRelativeTime(digest.since)
 
     return (
         <div className="absolute right-0 top-full mt-2 w-96 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-40 ds-animate-scale-in">
             <div className="px-4 pt-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <div className="min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
-                        {sinceLabel ? `Since ${sinceLabel} ago` : 'Activity digest'}
+                        {sinceLabel ? `Since ${sinceLabel}` : 'Activity digest'}
                     </p>
                     <h3 className="mt-0.5 text-sm font-bold text-slate-900 dark:text-slate-100 ds-font-display">
                         {totalCount > 0 ? `${totalCount} new` : 'You\'re all caught up'}
@@ -675,7 +664,7 @@ function DigestCategory({ kind, count, items, onItemClick }) {
 }
 
 function DigestItemRow({ kind, item, onClick }) {
-    const ago = relativeTimeShort(item.since)
+    const ago = formatRelativeTime(item.since)
     const url = item.url
         ?? (kind === 'failed_migrations' ? null : `https://github.com/${item.repo}`)
 

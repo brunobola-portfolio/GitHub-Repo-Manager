@@ -10,7 +10,7 @@ export function LoadingState() {
 				<div className="w-16 h-16 rounded-full border-4 border-indigo-100 dark:border-indigo-900/30 animate-pulse"></div>
 				<div className="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
 				<div className="absolute inset-0 flex items-center justify-center">
-					<RefreshCw className="w-6 h-6 text-indigo-500 animate-spin-slow" />
+					<RefreshCw className="w-6 h-6 text-indigo-500 ds-animate-spin-slow" />
 				</div>
 			</div>
 			<p className="mt-4 text-slate-600 dark:text-slate-300 font-medium animate-pulse">

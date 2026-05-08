@@ -19,33 +19,14 @@
 
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
-import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
+import { requireAuth, safeError } from '../../middleware/auth.js';
 import { releaseCreateSchema, branchCreateSchema, branchProtectionSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { auditLog } from '../../lib/audit.js';
+import { clampPerPage, applyOwnerRepoParamValidators } from './_shared.js';
 
 const router = express.Router();
-
-function clampPerPage(value, defaultVal = 30) {
-    return Math.min(Math.max(parseInt(value) || defaultVal, 1), 100);
-}
-
-// Replicated param validators — router-local per Express semantics.
-const GITHUB_NAME_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$/;
-
-router.param('owner', (req, res, next, val) => {
-    if (!GITHUB_NAME_RE.test(val) || val.length > 39) {
-        return errorResponse(res, 400, 'Invalid owner name', 'INVALID_PARAM');
-    }
-    next();
-});
-
-router.param('repo', (req, res, next, val) => {
-    if (!GITHUB_NAME_RE.test(val) || val.length > 100) {
-        return errorResponse(res, 400, 'Invalid repository name', 'INVALID_PARAM');
-    }
-    next();
-});
+applyOwnerRepoParamValidators(router);
 
 // ------------------------------------------------------------------
 // Branch Management

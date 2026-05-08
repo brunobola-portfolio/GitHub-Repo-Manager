@@ -12,7 +12,15 @@
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth } from '../../middleware/auth.js';
-import { aiChatSchema, attentionNarrativeSchema, aiTranslateSearchSchema } from '../../lib/validators.js';
+import {
+    aiChatSchema,
+    attentionNarrativeSchema,
+    aiTranslateSearchSchema,
+    aiSuggestSchema,
+    aiReadmeSchema,
+    aiReadmeEnhanceSchema,
+} from '../../lib/validators.js';
+import { isValidGitHubFullName } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { aiService, sanitizeForPrompt } from '../../ai-service.js';
 import { safeJsonParse } from '../../lib/utils.js';
@@ -85,9 +93,22 @@ router.get('/config/ai-status', async (req, res) => {
         ? await probeAndCache({ userId, resolveProvider, feature })
         : getKeyHealth({ userId, resolveProvider, feature });
 
+    // Resolve the actual provider id so BYOK users see their configured
+    // provider in the Settings UI (Anthropic, OpenAI, OpenRouter, …) instead
+    // of a stale "gemini" label. We probe the resolver synchronously: BYOK
+    // resolvers cache the per-user record, so the cost is a single DB read.
+    let providerId = aiService?.provider?.id || aiService?.provider?.name || 'gemini';
+    try {
+        const resolved = await resolveProvider(feature);
+        if (resolved?.id) providerId = resolved.id;
+        else if (resolved?.name) providerId = resolved.name;
+    } catch {
+        // Fall through to the server-wide default — never block the status call.
+    }
+
     res.json({
         configured: true,
-        provider: 'gemini',
+        provider: providerId,
         keyHealth: health.state,
         lastCheckedAt: health.checkedAt,
     });
@@ -284,26 +305,35 @@ router.post('/ai/translate-search', requireAuth, validateBody(aiTranslateSearchS
 // AI Suggestions
 // ------------------------------------------------------------------
 
-router.post('/ai/suggest', requireAuth, requireAI, async (req, res) => {
+router.post('/ai/suggest', requireAuth, validateBody(aiSuggestSchema), requireAI, async (req, res) => {
     const userId = req.session.userId;
     const check = checkUsageLimit(userId, 'ai_queries');
     if (!check.allowed) {
         return res.status(429).json(quotaExceededResponse({ ...check, metric: 'ai_queries' }));
     }
     try {
-        const { repo } = req.body;
+        const { repo } = req.validatedBody;
 
-        if (!repo) {
-            return res.status(400).json({
-                error: 'Repository data is required for suggestions.',
-                code: 'REPO_REQUIRED'
-            });
-        }
+        // Whitelist + sanitize the fields that go into the prompt. Never
+        // serialize the raw repo object — that surface is a prompt-injection
+        // sink. Each field is length-capped and stripped of control chars
+        // by `sanitizeForPrompt`.
+        const safeRepo = {
+            name: sanitizeForPrompt(repo.name || '', 200),
+            full_name: sanitizeForPrompt(repo.full_name || '', 200),
+            description: sanitizeForPrompt(repo.description || '', 1000),
+            language: sanitizeForPrompt(repo.language || '', 100),
+            topics: sanitizeForPrompt(Array.isArray(repo.topics) ? repo.topics.join(', ') : '', 500),
+            license: sanitizeForPrompt(typeof repo.license === 'string' ? repo.license : (repo.license?.name || repo.license?.spdx_id || ''), 100),
+            visibility: sanitizeForPrompt(repo.visibility || (repo.private ? 'private' : 'public'), 20),
+            stargazers_count: Number.isFinite(repo.stargazers_count) ? repo.stargazers_count : 0,
+            open_issues_count: Number.isFinite(repo.open_issues_count) ? repo.open_issues_count : 0,
+        };
 
         const prompt = `Analyze this GitHub repository metadata and suggest 3 concrete improvements.
     Focus on: Description clarity, Topics (SEO), and Community standards (License, Contributing).
 
-    Repository: ${JSON.stringify(repo, null, 2)}
+    Repository: ${JSON.stringify(safeRepo, null, 2)}
 
     Return the response as a JSON object with this structure:
     {
@@ -333,19 +363,20 @@ router.post('/ai/suggest', requireAuth, requireAI, async (req, res) => {
 // AI README Generation
 // ------------------------------------------------------------------
 
-router.post('/ai/readme', requireAuth, requireAI, async (req, res) => {
+router.post('/ai/readme', requireAuth, validateBody(aiReadmeSchema), requireAI, async (req, res) => {
     const userId = req.session.userId;
     const check = checkAIFeatureLimit(userId, 'ai_readme');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
     try {
-        const repo = req.body.repo || req.body;
-        const repoName = repo?.name || req.body.name;
+        const body = req.validatedBody;
+        const repo = body.repo || {};
+        const repoName = repo.name || body.name;
         if (!repoName) return res.status(400).json({ error: 'repo required' });
 
         const cleanName = sanitizeForPrompt(repoName, 200);
-        const cleanDescription = sanitizeForPrompt(repo?.description || req.body.description || '', 500);
-        const cleanLanguage = sanitizeForPrompt(repo?.language || req.body.language || '', 100);
-        const rawTopics = repo?.topics || req.body.topics;
+        const cleanDescription = sanitizeForPrompt(repo.description || body.description || '', 500);
+        const cleanLanguage = sanitizeForPrompt(repo.language || body.language || '', 100);
+        const rawTopics = repo.topics || body.topics;
         const cleanTopics = sanitizeForPrompt(Array.isArray(rawTopics) ? rawTopics.join(', ') : (rawTopics || ''), 500);
 
         const prompt = `Generate a professional, high-quality README.md for a GitHub repository.
@@ -378,20 +409,26 @@ router.post('/ai/readme', requireAuth, requireAI, async (req, res) => {
 });
 
 // Enhanced README endpoint - Improve existing README
-router.post('/ai/readme/enhance', requireAuth, requireAI, async (req, res) => {
+router.post('/ai/readme/enhance', requireAuth, validateBody(aiReadmeEnhanceSchema), requireAI, async (req, res) => {
     const userId = req.session.userId;
     const check = checkAIFeatureLimit(userId, 'ai_readme');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
     try {
-        const { repo } = req.body;
-        if (!repo) return res.status(400).json({ error: 'Repo data required' });
+        const { repo } = req.validatedBody;
+        // Defence in depth — Zod already validates `repo.full_name` against
+        // the GitHub-shape regex, but we also reject anything that fails the
+        // canonical username/repo validator before it touches GitHub URLs.
+        if (!isValidGitHubFullName(repo.full_name)) {
+            return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+        }
+        const safeFullName = encodeURI(repo.full_name);
 
         // Fetch current README. 404 is expected ("no README yet") and fine;
         // any other failure (401, 429, 5xx) means the prompt context will be
         // degraded, so distinguish and log at the right level.
         let readmeContent = '';
         try {
-            const { data } = await githubApi(`/repos/${repo.full_name}/readme`, req.session.accessToken);
+            const { data } = await githubApi(`/repos/${safeFullName}/readme`, req.session.accessToken);
             readmeContent = Buffer.from(data.content, 'base64').toString('utf-8');
         } catch (e) {
             if (e?.status === 404) {
@@ -404,7 +441,7 @@ router.post('/ai/readme/enhance', requireAuth, requireAI, async (req, res) => {
         // Fetch file structure — same pattern.
         let fileStructure = [];
         try {
-            const { data } = await githubApi(`/repos/${repo.full_name}/contents`, req.session.accessToken);
+            const { data } = await githubApi(`/repos/${safeFullName}/contents`, req.session.accessToken);
             fileStructure = data.map(f => ({ name: f.name, type: f.type }));
         } catch (e) {
             if (e?.status === 404) {

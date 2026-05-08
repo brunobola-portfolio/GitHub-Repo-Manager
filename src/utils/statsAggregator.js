@@ -2,6 +2,8 @@
  * Utility functions for aggregating statistics across repositories, organizations, and teams
  */
 
+import { MS_PER_DAY } from './time'
+
 /**
  * Calculate if a category should be shown based on data availability
  */
@@ -97,7 +99,7 @@ export function groupByUpdateTime(repos = []) {
     }
 
     const updated = new Date(repo.updated_at)
-    const daysDiff = Math.floor((now - updated) / (1000 * 60 * 60 * 24))
+    const daysDiff = Math.floor((now - updated) / MS_PER_DAY)
 
     if (daysDiff === 0) buckets.today.push(repo)
     else if (daysDiff <= 7) buckets.thisWeek.push(repo)

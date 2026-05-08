@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { FlaskConical, Crown, Gem, AlertTriangle } from 'lucide-react'
 import { MOCK_MODE } from '../config'
+import { MS_PER_DAY } from '../utils/time'
 
 /**
  * LicenseBadge — visible evidence of the active license tier in the header.
@@ -54,7 +55,7 @@ export default function LicenseBadge() {
   const Icon = spec.icon
 
   const daysUntilExpiry = info?.expiresAt
-    ? Math.ceil((new Date(info.expiresAt).getTime() - now) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((new Date(info.expiresAt).getTime() - now) / MS_PER_DAY)
     : null
 
   const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry > 0

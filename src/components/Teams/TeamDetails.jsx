@@ -346,7 +346,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-2 ds-scrollbar">
                                     {availableRepos
                                         .filter(r => r.full_name.toLowerCase().includes(selectedRepoToAssign.toLowerCase()))
                                         .map(repo => {

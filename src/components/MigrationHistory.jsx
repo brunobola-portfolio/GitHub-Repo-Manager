@@ -181,7 +181,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                 )}
 
                 {/* Content area */}
-                <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar" role="tabpanel" id={`tabpanel-migration-tabs-${activeTab}`} aria-labelledby={`tab-migration-tabs-${activeTab}`}>
+                <div className="flex-1 overflow-y-auto space-y-2 ds-scrollbar" role="tabpanel" id={`tabpanel-migration-tabs-${activeTab}`} aria-labelledby={`tab-migration-tabs-${activeTab}`}>
                     {loading ? (
                         <SectionSpinner padding="py-12" />
                     ) : activeTab === 'plans' ? (

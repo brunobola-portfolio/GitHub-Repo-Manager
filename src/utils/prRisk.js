@@ -13,6 +13,8 @@
  * panel summary, so we want one place to evolve them.
  */
 
+import { MS_PER_DAY } from './time'
+
 const STALE_DAYS = 7
 const VERY_STALE_DAYS = 21
 const SHORT_BODY_THRESHOLD = 40
@@ -27,7 +29,7 @@ const TONE = {
 }
 
 function daysBetween(later, earlier) {
-    return Math.floor((later - earlier) / (1000 * 60 * 60 * 24))
+    return Math.floor((later - earlier) / MS_PER_DAY)
 }
 
 /**

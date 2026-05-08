@@ -423,7 +423,7 @@ function ActionHistory({ results, isPerforming, message }) {
                 )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-0 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-0 ds-scrollbar">
                 {results.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-8 text-slate-400">
                         <History className="w-8 h-8 mb-2 opacity-20" />
@@ -511,7 +511,7 @@ function ActivityListBody({ activity, now }) {
     }
 
     return (
-        <div className="flex-1 min-h-0 divide-y divide-slate-100 dark:divide-slate-800/60 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 min-h-0 divide-y divide-slate-100 dark:divide-slate-800/60 overflow-y-auto ds-scrollbar">
             {activity.map((event) => {
                 if (!event) return null
                 const EventIcon = getEventIcon(event.type)

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 /**
- * @deprecated Use `formatUserError` from `utils/errors.js` (consumed by
- * `<AIErrorState />`) — that helper covers the full server vocabulary
+ * @deprecated FULLY DEPRECATED — no remaining call sites in `src/`. All
+ * production callers have migrated to `formatUserError` from `utils/errors.js`
+ * (consumed by `<AIErrorState />`), which covers the full server vocabulary
  * (INVALID_API_KEY, AI_TIMEOUT, AI_OVERLOADED, ...) and returns the canonical
  * `{ title, body, action }` shape used everywhere else in the app.
  *
- * Kept exported for backwards compatibility with the legacy AIInsights/PR
- * review-summary error renderer (lowercase `ai_*` codes). Call sites should
- * migrate to `formatUserError(err)` and `<AIErrorState error={err} />`.
+ * This file is kept only because `tests/utils/aiErrorFriendly.test.js` still
+ * exercises it. Do NOT import this from new code — use `formatUserError(err)`
+ * and `<AIErrorState error={err} />` instead.
  *
  * Translate a server error response into a UI-friendly { headline, detail }.
  *

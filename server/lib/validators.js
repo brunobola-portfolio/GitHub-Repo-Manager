@@ -80,20 +80,59 @@ export const teamRepoSchema = z.object({
     repoId: z.number().int().positive().optional()
 });
 
+// Basic-auth credentials for git clone of private mirrors. Both fields are
+// optional so callers may submit an empty object or omit the field entirely.
+const importCredentialsSchema = z.object({
+    username: z.string().max(100).optional(),
+    password: z.string().max(500).optional(),
+    type: z.enum(['basic', 'pat']).optional(),
+    token: z.string().max(500).optional(),
+}).strict();
+
 export const importSchema = z.object({
     sourceUrl: z.string().url().max(2000),
     targetOrg: orgNameSchema.optional(),
     targetName: repoNameSchema.optional(),
-    isPrivate: z.boolean().optional().default(false)
+    // Both kept for backwards compatibility — callers may send either name.
+    // The route prefers `makePrivate` and falls back to `isPrivate`.
+    makePrivate: z.boolean().optional(),
+    isPrivate: z.boolean().optional(),
+    description: z.string().max(500).optional(),
+    credentials: importCredentialsSchema.optional(),
+});
+
+export const importValidateUrlSchema = z.object({
+    url: z.string().url().max(2000),
+    credentials: importCredentialsSchema.optional(),
+});
+
+export const importCheckDuplicatesSchema = z.object({
+    repos: z.array(z.string().min(1).max(200)).min(1).max(100),
+    targetOwner: z.string().min(1).max(100),
 });
 
 export const azureImportSchema = z.object({
     azureOrg: z.string().min(1).max(100),
     azureProject: z.string().min(1).max(100),
     azureRepo: z.string().min(1).max(100),
+    azurePat: z.string().min(1).max(500).optional(),
     targetOrg: orgNameSchema.optional(),
     targetName: repoNameSchema.optional(),
-    isPrivate: z.boolean().optional().default(false)
+    makePrivate: z.boolean().optional(),
+    isPrivate: z.boolean().optional(),
+    description: z.string().max(500).optional(),
+});
+
+export const azureImportBatchSchema = z.object({
+    azureOrg: z.string().min(1).max(100),
+    azureProject: z.string().min(1).max(100),
+    azurePat: z.string().min(1).max(500).optional(),
+    targetOrg: orgNameSchema.optional(),
+    makePrivate: z.boolean().optional(),
+    repos: z.array(z.object({
+        azureRepo: z.string().min(1).max(100),
+        targetName: z.string().min(1).max(100).optional(),
+    })).min(1).max(20),
 });
 
 export const aiChatSchema = z.object({
@@ -113,6 +152,152 @@ export const attentionNarrativeSchema = z.object({
 
 export const aiTranslateSearchSchema = z.object({
     q: z.string().min(1).max(500),
+});
+
+// ---------------------------------------------------------------------------
+// Shared repo metadata schema for AI endpoints that take a repository object
+// in the body (suggest, readme/enhance, quality-report). Whitelisted, length-
+// capped fields only — anything outside the allow-list is stripped by Zod
+// before the prompt builder ever sees it. This is the structural defence
+// against prompt injection via large/exotic body payloads.
+// ---------------------------------------------------------------------------
+
+const repoFullNameRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\/[a-zA-Z0-9_-][a-zA-Z0-9._-]{0,99}$/;
+
+export const aiRepoMetadataSchema = z.object({
+    id: z.number().int().positive().optional(),
+    name: z.string().min(1).max(100).optional(),
+    full_name: z.string().min(3).max(200).regex(repoFullNameRegex).optional(),
+    description: z.string().max(2000).nullable().optional(),
+    language: z.string().max(50).nullable().optional(),
+    topics: z.array(z.string().max(50)).max(50).optional(),
+    license: z.union([
+        z.string().max(100).nullable(),
+        z.object({ name: z.string().max(100).optional(), spdx_id: z.string().max(50).optional() }).passthrough(),
+    ]).optional(),
+    default_branch: z.string().max(255).optional(),
+    visibility: z.string().max(20).optional(),
+    private: z.boolean().optional(),
+    fork: z.boolean().optional(),
+    archived: z.boolean().optional(),
+    stargazers_count: z.number().int().nonnegative().optional(),
+    forks_count: z.number().int().nonnegative().optional(),
+    open_issues_count: z.number().int().nonnegative().optional(),
+    size: z.number().int().nonnegative().optional(),
+}).passthrough(); // allow extra unknown keys but those are NEVER read by handlers
+
+export const aiSuggestSchema = z.object({
+    repo: aiRepoMetadataSchema,
+});
+
+export const aiReadmeSchema = z.object({
+    repo: aiRepoMetadataSchema.optional(),
+    name: z.string().min(1).max(100).optional(),
+    description: z.string().max(2000).optional(),
+    language: z.string().max(50).optional(),
+    topics: z.union([
+        z.array(z.string().max(50)).max(50),
+        z.string().max(500),
+    ]).optional(),
+}).refine((v) => v.repo?.name || v.name, { message: 'repo.name or name is required' });
+
+export const aiReadmeEnhanceSchema = z.object({
+    repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
+});
+
+export const aiQualityReportSchema = z.object({
+    repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
+});
+
+// ---------------------------------------------------------------------------
+// Dev Toolkit endpoints (refine / chat-refine / analyze-context / generate-*)
+// ---------------------------------------------------------------------------
+
+export const REFINE_INSTRUCTIONS = [
+    'shorter', 'more_detail', 'add_body', 'breaking_change',
+    'more_cases', 'edge_cases', 'e2e_focus', 'architecture_notes', 'more_context',
+];
+
+export const aiRefineSchema = z.object({
+    original_content: z.string().min(1).max(20000),
+    original_diff: z.string().max(20000).optional(),
+    instruction: z.enum(REFINE_INSTRUCTIONS),
+    content_type: z.enum(['commit', 'pr_summary', 'pr_test_plan']).optional(),
+});
+
+export const aiChatRefineSchema = z.object({
+    message: z.string().min(1).max(4000),
+    current_output: z.string().max(20000).optional(),
+    original_diff: z.string().max(20000).optional(),
+    content_type: z.enum(['commit', 'pr_summary', 'pr_test_plan', 'review_qa']).optional(),
+    history: z.array(z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string().min(1).max(8000),
+    })).max(20).optional(),
+});
+
+export const aiAnalyzeContextSchema = z.object({
+    repo: z.string().min(3).max(200).regex(repoFullNameRegex),
+    diff_summary: z.object({
+        files: z.number().int().nonnegative().max(10000),
+        additions: z.number().int().nonnegative().max(10_000_000),
+        deletions: z.number().int().nonnegative().max(10_000_000),
+    }),
+    commits: z.array(z.object({
+        message: z.string().max(2000),
+    })).max(200).optional(),
+    file_list: z.array(z.string().max(500)).max(500).optional(),
+});
+
+export const aiGenerateCommitSchema = z.object({
+    diff: z.string().min(1).max(60000),
+    format: z.enum(['conventional', 'gitmoji', 'descriptive', 'repo-convention']).optional(),
+    repo_style: z.object({
+        pattern: z.string().max(200).optional(),
+        examples: z.array(z.string().max(200)).max(20).optional(),
+    }).optional(),
+    repo_context: z.object({
+        name: z.string().max(200).optional(),
+        description: z.string().max(500).optional(),
+    }).optional(),
+});
+
+export const aiGeneratePrSchema = z.object({
+    commits: z.array(z.object({
+        message: z.string().min(1).max(2000),
+    })).min(1).max(200),
+    diff_summary: z.object({
+        files: z.array(z.object({
+            filename: z.string().max(500),
+            additions: z.number().int().nonnegative().max(10_000_000).optional(),
+            deletions: z.number().int().nonnegative().max(10_000_000).optional(),
+        })).max(500).optional(),
+    }).optional(),
+    top_patches: z.string().max(60000).optional(),
+    template: z.string().max(8000).optional(),
+    repo_context: z.object({
+        name: z.string().max(200).optional(),
+    }).optional(),
+});
+
+export const aiReviewSummarySchema = z.object({
+    fileManifest: z.array(z.object({
+        filename: z.string().max(500),
+        status: z.string().max(50).optional(),
+        additions: z.number().int().nonnegative().max(10_000_000).optional(),
+        deletions: z.number().int().nonnegative().max(10_000_000).optional(),
+    })).max(500),
+    topFilePatches: z.array(z.object({
+        filename: z.string().max(500),
+        patch: z.string().max(120000).optional(),
+    })).max(50).optional(),
+    prMetadata: z.object({
+        title: z.string().max(500).optional(),
+        number: z.number().int().nonnegative().optional(),
+        repo: z.string().max(200).optional(),
+        additions: z.number().int().nonnegative().max(10_000_000).optional(),
+        deletions: z.number().int().nonnegative().max(10_000_000).optional(),
+    }),
 });
 
 export const aiIndexSchema = z.object({

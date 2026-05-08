@@ -471,7 +471,7 @@ function QualityGrid({ data }) {
                     <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
                         Detected Features
                     </h3>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-2 max-h-[240px] overflow-y-auto custom-scrollbar pr-1">
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-2 max-h-[240px] overflow-y-auto ds-scrollbar pr-1">
                         {featureEntries.map(([key, value]) => (
                             <div
                                 key={key}

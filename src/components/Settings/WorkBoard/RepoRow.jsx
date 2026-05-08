@@ -2,6 +2,7 @@ import { useState } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import { MoreHorizontal, Pin, PinOff, Bell, BellOff, X, ExternalLink, Copy } from 'lucide-react'
 import { clsx } from 'clsx'
+import { formatRelativeTime } from '../../../utils/format'
 
 const SIGNAL_LABELS = {
     review_requested: 'review requested',
@@ -11,17 +12,6 @@ const SIGNAL_LABELS = {
     recent_commit: 'recent commit',
     pinned: 'pinned',
     webhook: 'webhook',
-}
-
-function relativeTime(iso) {
-    if (!iso) return ''
-    const ms = Date.now() - new Date(iso).getTime()
-    const days = Math.floor(ms / 86400000)
-    if (days < 1) return 'today'
-    if (days === 1) return '1d ago'
-    if (days < 30) return `${days}d ago`
-    const months = Math.floor(days / 30)
-    return `${months}mo ago`
 }
 
 export function RepoRow({ repo, onAction, selected = false, onSelectionChange }) {
@@ -74,7 +64,7 @@ export function RepoRow({ repo, onAction, selected = false, onSelectionChange })
                 <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     <span className="capitalize">{SIGNAL_LABELS[repo.source_signal] ?? repo.source_signal}</span>
                     <span>·</span>
-                    <span>{relativeTime(repo.last_activity_at)}</span>
+                    <span>{formatRelativeTime(repo.last_activity_at)}</span>
                 </div>
             </div>
 

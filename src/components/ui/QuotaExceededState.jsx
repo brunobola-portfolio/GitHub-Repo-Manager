@@ -1,18 +1,8 @@
 import { Gauge, ArrowRight, Key } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { openAISettings, navigateToPricing } from '../../utils/appEvents'
 
 const TIER_LABEL = { pro: 'Pro', enterprise: 'Enterprise', free: 'Free' }
-
-function openAISettings() {
-  window.dispatchEvent(new CustomEvent('app:open-settings', { detail: { tab: 'ai' } }))
-}
-
-function navigateToPricing(focus) {
-  // Mirrors the existing 'app:navigate-dashboard' contract — App.jsx listens
-  // and routes via setActiveView('pricing'). Avoids the legacy
-  // window.location.hash anti-pattern (no history entry, breaks back button).
-  window.dispatchEvent(new CustomEvent('app:navigate-pricing', { detail: { focus } }))
-}
 
 /**
  * QuotaExceededState — uniform CTA when a user hits a tier-bound quota.
@@ -39,6 +29,8 @@ export function QuotaExceededState({
   return (
     <motion.div
       data-testid="quota-exceeded"
+      role="status"
+      aria-live="polite"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}

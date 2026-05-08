@@ -389,7 +389,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
       )}
 
       {/* ── Repo Card-Rows ──────────────────────────────────────── */}
-      <div className="space-y-3 max-h-[calc(100vh-420px)] overflow-y-auto pr-1 custom-scrollbar">
+      <div className="space-y-3 max-h-[calc(100vh-420px)] overflow-y-auto pr-1 ds-scrollbar">
         <AnimatePresence initial={false}>
           {repos.map((repo, index) => {
             const conflictStatus = conflicts[repo.name] || 'idle'

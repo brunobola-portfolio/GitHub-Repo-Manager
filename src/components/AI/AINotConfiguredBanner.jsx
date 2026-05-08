@@ -1,22 +1,8 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Sparkles, Key, ArrowRight, X } from 'lucide-react'
 import { useState } from 'react'
-
-const MOTION_VARIANTS = {
-    hidden: { opacity: 0, y: -8 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] } },
-    exit: { opacity: 0, y: -4, transition: { duration: 0.18 } },
-}
-
-const REDUCED_VARIANTS = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { duration: 0.15 } },
-    exit: { opacity: 0, transition: { duration: 0.1 } },
-}
-
-function openAISettings() {
-    window.dispatchEvent(new CustomEvent('app:open-settings', { detail: { tab: 'ai' } }))
-}
+import { BANNER_VARIANTS, BANNER_REDUCED_VARIANTS } from './bannerMotion'
+import { openAISettings } from '../../utils/appEvents'
 
 /**
  * AINotConfiguredBanner — premium inline banner shown on AI surfaces when
@@ -39,7 +25,7 @@ export function AINotConfiguredBanner({
     className = '',
 }) {
     const reduced = useReducedMotion()
-    const variants = reduced ? REDUCED_VARIANTS : MOTION_VARIANTS
+    const variants = reduced ? BANNER_REDUCED_VARIANTS : BANNER_VARIANTS
     const [dismissed, setDismissed] = useState(false)
 
     if (dismissed) return null

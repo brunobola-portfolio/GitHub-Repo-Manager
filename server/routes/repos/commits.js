@@ -19,25 +19,12 @@ import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
 import { readThrough } from '../../lib/gh-cache.js';
+import { applyOwnerRepoParamValidators } from './_shared.js';
 
 const router = express.Router();
+applyOwnerRepoParamValidators(router);
 
-const GITHUB_NAME_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$/;
 const SHA_RE = /^[a-f0-9]{4,40}$/i;
-
-router.param('owner', (req, res, next, val) => {
-    if (!GITHUB_NAME_RE.test(val) || val.length > 39) {
-        return errorResponse(res, 400, 'Invalid owner name', 'INVALID_PARAM');
-    }
-    next();
-});
-
-router.param('repo', (req, res, next, val) => {
-    if (!GITHUB_NAME_RE.test(val) || val.length > 100) {
-        return errorResponse(res, 400, 'Invalid repository name', 'INVALID_PARAM');
-    }
-    next();
-});
 
 router.param('sha', (req, res, next, val) => {
     if (!SHA_RE.test(val)) {

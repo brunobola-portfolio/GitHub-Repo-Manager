@@ -42,22 +42,16 @@ import { auditLog } from '../../lib/audit.js';
 import { FILE_GENERATORS, commitOrOpenPR } from '../../lib/ai-features/community-health-fix.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
 import { mapAIErrorToResponse } from '../../middleware/ai-error-mapper.js';
+import { applyOwnerRepoParamValidators } from './_shared.js';
 
 const router = express.Router();
+applyOwnerRepoParamValidators(router);
 
-// Replicated param validators — router-local per Express semantics.
-const GITHUB_NAME_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$/;
-
-router.param('owner', (req, res, next, val) => {
-    if (!GITHUB_NAME_RE.test(val) || val.length > 39) {
-        return errorResponse(res, 400, 'Invalid owner name', 'INVALID_PARAM');
-    }
-    next();
-});
-
-router.param('repo', (req, res, next, val) => {
-    if (!GITHUB_NAME_RE.test(val) || val.length > 100) {
-        return errorResponse(res, 400, 'Invalid repository name', 'INVALID_PARAM');
+// hook_id is interpolated into GitHub API URLs — keep it strictly numeric so
+// a crafted value cannot rewrite the path/querystring on its way to GitHub.
+router.param('hook_id', (req, res, next, val) => {
+    if (!/^\d{1,15}$/.test(val)) {
+        return errorResponse(res, 400, 'Invalid hook_id', 'INVALID_PARAM');
     }
     next();
 });
