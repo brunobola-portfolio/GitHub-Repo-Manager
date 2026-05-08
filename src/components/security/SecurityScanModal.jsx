@@ -68,7 +68,7 @@ export function SecurityScanModal({ isOpen, onClose, repo }) {
   }, [isOpen, repo])
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Security & Secrets Scan" subtitle={repo?.full_name} size="lg" data-testid="security-scan-modal">
+    <Modal isOpen={isOpen} onClose={onClose} title="Security & Secrets Scan" subtitle={repo?.full_name} size="lg" closeOnBackdrop={false} data-testid="security-scan-modal">
       <div>
         {loading ? (
           <SectionSpinner label="Scanning…" />

@@ -64,6 +64,7 @@ export function LicenseActivationModal({ isOpen, onClose }) {
       onClose={handleClose}
       title="Activate License"
       size="lg"
+      closeOnBackdrop={false}
       data-testid="license-activation-modal"
       footer={
         <ModalFooter align="between">

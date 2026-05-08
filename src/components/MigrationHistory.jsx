@@ -146,6 +146,7 @@ export function MigrationHistory({ isOpen, onClose }) {
             icon={History}
             iconGradient="primary"
             size="3xl"
+            closeOnBackdrop={false}
             tabs={MIGRATION_TABS}
             activeTab={activeTab}
             onTabChange={setActiveTab}

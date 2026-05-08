@@ -66,7 +66,7 @@ export function BatchIndexProgressModal({ isOpen, onClose, repos = [] }) {
   const failCount = results.filter(r => !r.success).length
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Batch Index Progress" size="lg" data-testid="batch-index-modal">
+    <Modal isOpen={isOpen} onClose={onClose} title="Batch Index Progress" size="lg" closeOnBackdrop={false} data-testid="batch-index-modal">
       <div className="space-y-4">
         <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2">
           <div

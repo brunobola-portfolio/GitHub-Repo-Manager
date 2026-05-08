@@ -220,6 +220,7 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
             icon={Sparkles}
             iconGradient="primary"
             size="3xl"
+            closeOnBackdrop={false}
             tabs={showTabs ? TABS : undefined}
             activeTab={activeTab}
             onTabChange={setActiveTab}

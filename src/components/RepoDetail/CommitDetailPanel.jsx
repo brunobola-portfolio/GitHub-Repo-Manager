@@ -30,6 +30,7 @@ export function CommitDetailPanel({ owner, repo, sha, onClose }) {
             icon={GitCommit}
             iconGradient="primary"
             size="2xl"
+            closeOnBackdrop={false}
             mobileVariant="sheet"
             isBusy={loading}
         >

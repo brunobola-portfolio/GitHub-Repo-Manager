@@ -137,6 +137,7 @@ export function CompareDiffModal({ isOpen, onClose, source, target, targetLabel 
             title="Compare with existing"
             subtitle={sourceLabel && targetDisplay ? `${sourceLabel}  ↔  ${targetDisplay}` : ''}
             size="xl"
+            closeOnBackdrop={false}
             icon={FileCode2}
             footer={
                 <ModalFooter>

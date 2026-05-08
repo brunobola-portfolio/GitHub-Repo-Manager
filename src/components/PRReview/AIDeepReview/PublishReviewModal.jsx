@@ -28,6 +28,7 @@ export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishi
             iconGradient="success"
             variant="success"
             size="lg"
+            closeOnBackdrop={false}
             footer={
                 <div className="flex justify-end gap-2">
                     <button

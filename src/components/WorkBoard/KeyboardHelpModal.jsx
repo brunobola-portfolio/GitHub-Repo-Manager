@@ -33,6 +33,7 @@ export function KeyboardHelpModal({ open, onClose }) {
             icon={Keyboard}
             iconGradient="primary"
             size="lg"
+            closeOnBackdrop={false}
         >
             <div className="grid gap-5">
                 {ROWS.map(section => (

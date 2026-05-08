@@ -85,6 +85,7 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
             title={title}
             subtitle={subtitle}
             size="lg"
+            closeOnBackdrop={false}
             footer={
                 <ModalFooter>
                     <Button variant="ghost" onClick={onClose}>Close</Button>

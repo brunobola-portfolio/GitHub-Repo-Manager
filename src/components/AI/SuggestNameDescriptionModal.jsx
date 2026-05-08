@@ -286,6 +286,7 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
             icon={Sparkles}
             iconGradient="primary"
             size="2xl"
+            closeOnBackdrop={false}
             mobileVariant="sheet"
             isBusy={applying}
             footer={

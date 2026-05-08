@@ -180,6 +180,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
             icon={Heart}
             iconGradient="primary"
             size="2xl"
+            closeOnBackdrop={false}
             isBusy={loading || refreshing}
         >
             <div className="flex items-center justify-end mb-4 gap-2">

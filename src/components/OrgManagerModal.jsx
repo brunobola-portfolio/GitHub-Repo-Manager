@@ -132,6 +132,7 @@ export function OrgManagerModal({
             icon={isPersonal ? User : Building2}
             iconGradient="primary"
             size="3xl"
+            closeOnBackdrop={false}
             tabs={tabs}
             activeTab={activeTab}
             onTabChange={setActiveTab}
