@@ -282,6 +282,21 @@ export function useRepos(user) {
     }
 
     /**
+     * Patch a single repo in the local list without refetching.
+     * Matches by id first, then by full_name. No-op if the repo isn't loaded
+     * (e.g. user is on a different page) — the next page fetch will pick up
+     * the server-side state.
+     */
+    const patchRepoLocal = useCallback((updatedRepo) => {
+        if (!updatedRepo) return
+        setRepos(prev => prev.map(r => {
+            const sameId = updatedRepo.id != null && r.id === updatedRepo.id
+            const sameName = !sameId && updatedRepo.full_name && r.full_name === updatedRepo.full_name
+            return (sameId || sameName) ? { ...r, ...updatedRepo } : r
+        }))
+    }, [])
+
+    /**
      * Refresh the current page
      */
     const refresh = useCallback(() => {
@@ -522,6 +537,7 @@ export function useRepos(user) {
         results,
         setPage,
         refresh,
+        patchRepoLocal,
         performAction,
         fetchRepos,
         archiveRepos,

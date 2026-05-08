@@ -16,6 +16,7 @@
  * Licensed under the MIT License. See LICENSE in the project root.
  */
 
+import { useCallback } from 'react'
 import { useAuth } from './useAuth'
 import { useRepos } from './useRepos'
 import { useOrgs } from './useOrgs'
@@ -53,6 +54,7 @@ export function useGitHub() {
         results,
         setPage,
         refresh,
+        patchRepoLocal,
         performAction,
         archiveRepos,
         deleteRepos,
@@ -71,7 +73,8 @@ export function useGitHub() {
         activity,
         fetchOrgs,
         fetchOrgRepos,
-        fetchStats
+        fetchStats,
+        patchOrgRepoLocal
     } = useOrgs(user)
 
     // ---- AI ----
@@ -86,6 +89,14 @@ export function useGitHub() {
     const error = authError || reposError
     const errorInfo = authErrorInfo || reposErrorInfo
     const message = authMessage || reposMessage
+
+    // Apply a patch to whichever lists currently hold the repo (personal +
+    // org-scoped). Lets RepoDetail mutations propagate to the visible list
+    // without a full refetch — described in docs/specs as the "premium" flow.
+    const patchRepoEverywhere = useCallback((updatedRepo) => {
+        patchRepoLocal(updatedRepo)
+        patchOrgRepoLocal(updatedRepo)
+    }, [patchRepoLocal, patchOrgRepoLocal])
 
     // ---- Return the exact same shape the old monolith exposed ----
     return {
@@ -103,6 +114,9 @@ export function useGitHub() {
         isMockMode: MOCK_MODE,
         setPage,
         refresh,
+        patchRepoLocal,
+        patchOrgRepoLocal,
+        patchRepoEverywhere,
         performAction,
         fetchUser,
         createRepo,

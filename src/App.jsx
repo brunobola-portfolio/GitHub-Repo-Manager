@@ -184,6 +184,7 @@ function AppContent() {
     performAction,
     fetchUser: fetchGitHubUser,
     refresh,
+    patchRepoEverywhere,
     orgs,
     selectedOrg,
     orgRepos,
@@ -236,6 +237,22 @@ function AppContent() {
     setRepoDetailInitialTab(tab)
     setActiveView('repo-detail')
   }, [setActiveView])
+
+  // RepoDetail mutations land here. When the child has the new repo shape
+  // (description edits, archive, visibility, topics, …) we patch the matching
+  // entry in both the personal `repos` list and any loaded `orgRepos` list —
+  // instant, no refetch. We also keep `selectedRepoDetail` in sync so the
+  // header chips/title reflect changes the moment the user navigates back.
+  // When the child can only signal "something changed" (null), fall back to
+  // a full page refresh so the data isn't silently stale.
+  const handleSelectedRepoMutated = useCallback((updatedRepo) => {
+    if (updatedRepo) {
+      patchRepoEverywhere(updatedRepo)
+      setSelectedRepoDetail(prev => (prev ? { ...prev, ...updatedRepo } : prev))
+    } else {
+      refresh()
+    }
+  }, [patchRepoEverywhere, refresh])
 
   const loading = appLoading || githubLoading
   const initCalled = useRef(false)
@@ -1073,7 +1090,7 @@ function AppContent() {
                 <RepoDetail
                   repo={selectedRepoDetail}
                   initialTab={repoDetailInitialTab}
-                  onRepoMutated={refresh}
+                  onRepoMutated={handleSelectedRepoMutated}
                   onBack={() => {
                     setSelectedRepoDetail(null)
                     setActiveView('repos')

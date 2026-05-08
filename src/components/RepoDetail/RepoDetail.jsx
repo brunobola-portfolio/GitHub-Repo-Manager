@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRepoDetail } from '../../hooks/useRepoDetail'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
@@ -42,20 +42,30 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
     const repoName = repo.name
     const api = useRepoDetail(owner, repoName)
 
+    // Mirror of repoData kept in sync via setRepoData wrapper — lets
+    // handleRepoMutated compute the next shape from the latest committed
+    // value without depending on `repoData` in its useCallback deps (which
+    // would invalidate the callback identity on every fetch).
+    const repoDataRef = useRef(repo)
+    const updateRepoData = useCallback((value) => {
+        repoDataRef.current = value
+        setRepoData(value)
+    }, [])
+
     // Fetch fresh repo data on mount
     const loadRepo = useCallback(async () => {
         setLoadingRepo(true)
         setIsStaleData(false)
         try {
             const data = await api.fetchRepo()
-            setRepoData(data.data || data)
+            updateRepoData(data.data || data)
         } catch {
             // Fallback to prop data, but indicate it may be stale
             setIsStaleData(true)
         } finally {
             setLoadingRepo(false)
         }
-    }, [api])
+    }, [api, updateRepoData])
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -63,22 +73,25 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
     }, [loadRepo])
 
     // Local repo-data setter that also notifies the App-level repos list
-    // so RepoList / Dashboard cards reflect the change after the user
-    // navigates back. Functional updates (prev => ({...prev, ...updated}))
-    // are forwarded as-is; calls without arguments are intercepted and
-    // trigger a forced server refetch instead of clobbering local state.
+    // so RepoList / Dashboard cards reflect the change without a refetch.
+    // Forwards the freshly computed repo object up so the parent can patch
+    // its lists in-place; falls back to a server refetch when the caller
+    // doesn't have the new shape (signal-only call).
     const handleRepoMutated = useCallback((updater) => {
-        if (typeof updater === 'function') {
-            setRepoData(updater)
-        } else if (updater && typeof updater === 'object') {
-            setRepoData(prev => ({ ...prev, ...updater }))
+        const prev = repoDataRef.current
+        let next = null
+        if (typeof updater === 'function') next = updater(prev)
+        else if (updater && typeof updater === 'object') next = { ...prev, ...updater }
+
+        if (next) {
+            updateRepoData(next)
+            onRepoMutated?.(next)
         } else {
-            // Caller signaled "I changed something but don't have the new
-            // shape" — pull a fresh copy from the server.
+            // Signal-only: re-fetch detail and let parent decide via fallback.
             loadRepo()
+            onRepoMutated?.(null)
         }
-        onRepoMutated?.()
-    }, [loadRepo, onRepoMutated])
+    }, [loadRepo, onRepoMutated, updateRepoData])
 
     const r = repoData
 

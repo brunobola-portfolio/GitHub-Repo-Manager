@@ -77,6 +77,11 @@ describe('useGitHub', () => {
       expect(result.current).toHaveProperty('isPerforming')
       expect(result.current).toHaveProperty('results')
       expect(result.current).toHaveProperty('isMockMode')
+
+      // Local patch helpers (in-place updates after RepoDetail mutations)
+      expect(result.current).toHaveProperty('patchRepoLocal')
+      expect(result.current).toHaveProperty('patchOrgRepoLocal')
+      expect(result.current).toHaveProperty('patchRepoEverywhere')
     })
 
     it('populates mock user in mock mode', async () => {
@@ -221,6 +226,49 @@ describe('useGitHub', () => {
 
       const languages = new Set(result.current.repos.map(r => r.language))
       expect(languages.size).toBeGreaterThanOrEqual(3)
+    })
+  })
+
+  describe('Local repo patching', () => {
+    it('patchRepoEverywhere mutates the personal list in place by id', async () => {
+      const { result } = renderHook(() => useGitHub())
+
+      await waitFor(() => {
+        expect(result.current.repos.length).toBeGreaterThan(0)
+      })
+
+      const target = result.current.repos[0]
+      const originalDescription = target.description
+
+      act(() => {
+        result.current.patchRepoEverywhere({ id: target.id, description: 'patched description' })
+      })
+
+      const updated = result.current.repos.find(r => r.id === target.id)
+      expect(updated.description).toBe('patched description')
+      // Other fields preserved
+      expect(updated.full_name).toBe(target.full_name)
+      // Other repos untouched
+      const others = result.current.repos.filter(r => r.id !== target.id)
+      expect(others.every(r => r.description !== 'patched description')).toBe(true)
+      // Sanity: the original description actually changed
+      expect(updated.description).not.toBe(originalDescription)
+    })
+
+    it('patchRepoEverywhere is a no-op when nothing matches', async () => {
+      const { result } = renderHook(() => useGitHub())
+
+      await waitFor(() => {
+        expect(result.current.repos.length).toBeGreaterThan(0)
+      })
+
+      const before = result.current.repos
+      act(() => {
+        result.current.patchRepoEverywhere({ id: -999, description: 'ghost' })
+      })
+      // Same shape, no description leaked
+      expect(result.current.repos).toHaveLength(before.length)
+      expect(result.current.repos.every(r => r.description !== 'ghost')).toBe(true)
     })
   })
 })

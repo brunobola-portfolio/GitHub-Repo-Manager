@@ -96,6 +96,21 @@ export function useOrgs(user) {
     }
 
     /**
+     * Patch a single repo inside the loaded org-scoped list without refetching.
+     * Matches by id first, then by full_name. Mirrors patchRepoLocal in useRepos
+     * so RepoDetail mutations can stay in sync regardless of which list the
+     * user is currently viewing.
+     */
+    const patchOrgRepoLocal = useCallback((updatedRepo) => {
+        if (!updatedRepo) return
+        setOrgRepos(prev => prev.map(r => {
+            const sameId = updatedRepo.id != null && r.id === updatedRepo.id
+            const sameName = !sameId && updatedRepo.full_name && r.full_name === updatedRepo.full_name
+            return (sameId || sameName) ? { ...r, ...updatedRepo } : r
+        }))
+    }, [])
+
+    /**
      * Fetch dashboard statistics
      */
     const fetchStats = useCallback(async (org = '') => {
@@ -202,6 +217,7 @@ export function useOrgs(user) {
         fetchOrgs,
         fetchOrgRepos,
         fetchStats,
-        fetchActivity
+        fetchActivity,
+        patchOrgRepoLocal
     }
 }
