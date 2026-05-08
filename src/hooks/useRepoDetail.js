@@ -30,6 +30,10 @@ async function apiFetch(url, options = {}) {
         const body = await res.json().catch(() => null)
         const err = new Error(body?.error || `API error: ${res.status}`)
         err.status = res.status
+        // Forward the optional structured code so callers can branch on a
+        // stable identifier (e.g. 'GITHUB_PRO_REQUIRED') instead of regex-
+        // matching the human message — which gets sanitised in production.
+        if (body?.code) err.code = body.code
         throw err
     }
     return res.json()

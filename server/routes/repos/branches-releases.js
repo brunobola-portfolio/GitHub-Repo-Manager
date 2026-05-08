@@ -107,6 +107,18 @@ router.get('/:owner/:repo/branches/:branch/protection', requireAuth, async (req,
     } catch (error) {
         if (error.status === 404) {
             res.json({ protected: false });
+        } else if (error.status === 403 && /upgrade.*github pro|make this repository public/i.test(error?.message || '')) {
+            // GitHub returns 403 for branch protection on private repos that
+            // are on the free plan. The literal HTTP status alone is
+            // ambiguous (could be a real perms issue) — sniff the message to
+            // disambiguate, then forward a structured code so the client can
+            // render an inline upgrade state instead of a generic error
+            // toast. The user-facing message is hardcoded so it survives
+            // safeError()'s prod sanitisation.
+            res.status(403).json({
+                error: 'Branch protection requires GitHub Pro on private repositories.',
+                code: 'GITHUB_PRO_REQUIRED',
+            });
         } else {
             req.log.error({ err: error }, 'Get branch protection failed');
             res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
