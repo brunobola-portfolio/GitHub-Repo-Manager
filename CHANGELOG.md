@@ -5,12 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — AI Deep Review (targets v4.0.0)
+## [4.0.0] - 2026-05-08
 
 The full premium PR review surface lands in this cycle, alongside a sweep
 of premium UX consolidation (unified error vocabulary, surface primitives,
 single drawer system) and the long-promised Suggest Name & Description
 modal. End-user docs: [`docs/features/ai-deep-review.md`](docs/features/ai-deep-review.md).
+
+A multi-agent audit at the end of the cycle hardened the AI/import
+surface (input validation, prompt-injection guards, SSRF + DNS-rebinding
+defence, cross-user cache isolation), repaired several silently-broken
+UX flows (upgrade CTA, quota reset date, BYOK provider label), and
+deduplicated ~600 lines of copy-pasted plumbing. **1740 server tests +
+3501 frontend tests pass; ESLint clean.**
 
 ### Added — AI Deep Review (slice 1a, free core)
 
@@ -142,6 +149,132 @@ modal. End-user docs: [`docs/features/ai-deep-review.md`](docs/features/ai-deep-
   unified through `quotaExceededResponse` + `handleAIError`.
 - **Prompt Studio preset upsert** — wrap NULL-scope-target case in a
   transaction to close a TOCTOU window.
+- **`app:open-billing` had no listener** in `App.jsx` — the upgrade CTA
+  on every `<AIErrorState>` whose action was `type: 'upgrade'` was a
+  no-op. Now routes through the same `setActiveView('pricing')` path as
+  `app:navigate-pricing`.
+- **`limit.resetDate` was always undefined** — the dev-toolkit endpoints
+  fell back to a hardcoded "Resets next month" string instead of the
+  real reset date. Replaced four inline 429 envelopes with
+  `quotaExceededResponse` so users now see the actual UTC reset date.
+- **`/ai/review-summary` 429 missed `code: 'QUOTA_EXCEEDED'`** —
+  client-side quota gate (`aiFetch`) didn't fire for that endpoint, so
+  the UI kept retrying instead of surfacing `<QuotaExceededState>`.
+- **`/config/ai-status` hard-coded `provider: 'gemini'`** — BYOK users
+  on Anthropic / OpenAI / OpenRouter saw "Gemini" in Settings. Now
+  resolves and reports the actual provider id.
+- **`importSchema` silently stripped `makePrivate` / `credentials` /
+  `description`** — `makePrivate: false` was being ignored (every
+  import forced private) and basic-auth credentials never reached
+  `importService`. Schema now declares the fields explicitly.
+- **`WorkBoardCapReachedBanner` progress bar was hard-coded to 100 %**
+  — now reflects `spentCents / capCents` and exposes `role="progressbar"`
+  with `aria-valuenow`.
+- **AIInstructionsSection setState after unmount** — added a
+  `cancelled` flag to the load `useEffect`.
+- **Modal accidental dismiss** — `closeOnBackdrop=true` was the default
+  on every large modal (Settings, RepoInsights, OrgManager, Migration
+  History, Compare Diff, Suggest Name & Description, Community Health,
+  Commit Detail, Codeowners, Batch Index, Publish Review,
+  PatternSelect, License Activation, Security Scan, Keyboard Help,
+  My Reviews) — accidental clicks outside discarded in-progress edits.
+  All 16 large modals now require an explicit X-button or Escape
+  dismiss. Drawer gains the same `closeOnBackdrop` opt-out, applied to
+  AutoFix migration drawer + DLQ admin detail panel. ConfirmModal /
+  shortcuts overlays / mobile sidebars retain backdrop close because
+  they are transient or navigation-only.
+
+### Security — multi-agent audit fixes
+
+- **Prompt-injection hardening on `/ai/suggest`, `/ai/readme`,
+  `/ai/readme/enhance`, `/ai/quality-report`** — replaced
+  `JSON.stringify(req.body.repo)` (raw user-supplied object inlined into
+  the LLM prompt) with `validateBody(...Schema)` + per-field
+  `sanitizeForPrompt`. Added `aiRepoMetadataSchema` allow-list of
+  whitelisted repo fields.
+- **Cross-user data leak in `/ai/analyze-context`** — the in-memory
+  `contextCache` keyed entries by `repo:files:additions:deletions`
+  without `userId`, so two users with the same repo + diff stats could
+  receive each other's AI analysis. Key now includes `userId` and the
+  Map is replaced by the bounded `createCache` LRU+TTL primitive.
+- **Mermaid SVG XSS defence** — `WalkthroughTab` no longer assigns the
+  model-derived SVG via `innerHTML`. New `parseAndSanitizeSvg`
+  (`src/utils/sanitizeSvg.js`) parses with `DOMParser`, strips
+  `<script>` / `<foreignObject>` / `<iframe>` / `on*` attributes /
+  `javascript:` hrefs, and adopts the result via `replaceChildren`.
+  Mermaid `securityLevel: 'strict'` is pinned explicitly.
+- **`requireTier('pro')` on every `/api/ai/deep-review` route** — five
+  handlers (POST generate, GET draft, PATCH comment, POST publish,
+  DELETE) were free for any authenticated user with BYOK; gating now
+  matches `pr-chat` / `pr-commands`.
+- **DNS-rebinding defence on import routes** — `/import/url`,
+  `/import/validate-url`, `/import/azure`, `/import/azure/batch` now run
+  both `assertSafeExternalUrl` (string-level) **and**
+  `resolveAndValidateHost` (DNS-resolution) before handing the URL to
+  git. The Azure import paths previously skipped both, so an Azure org
+  could return a clone URL pointing at internal addresses.
+- **Zod schemas on every AI / import endpoint** — `aiReviewSummarySchema`,
+  `aiGenerateCommitSchema`, `aiGeneratePrSchema`, `aiRefineSchema`,
+  `aiChatRefineSchema`, `aiAnalyzeContextSchema`,
+  `azureImportSchema`, `azureImportBatchSchema`,
+  `importValidateUrlSchema`, `importCheckDuplicatesSchema`. Allow-list
+  enforcement on `/ai/refine` instruction (drops the
+  `|| instruction` raw fallback). History `role` enum on
+  `/ai/chat-refine` blocks role-spoofing.
+- **`hook_id` route-param validator** in `repos/actions-community.js`
+  (`^\d{1,15}$`) — the value was previously interpolated into GitHub
+  API URLs verbatim.
+- **License-cache TTL** — `getUserTier` now best-effort-refreshes the
+  in-memory license cache after 5 min for DB-sourced licences, so
+  hot-revoked keys propagate without a server restart.
+- **`req.session.isAdmin` cached for 10 min** — `/session-info` polled
+  every 5 min and triggered a synchronous `SELECT is_admin FROM users`
+  on each call.
+- **`/api/import/check-duplicates` Zod-bounded to 100 repos** so a
+  single request can no longer fan out unbounded GitHub API calls.
+
+### Changed — multi-agent audit cleanup
+
+- **`src/utils/appEvents.js`** centralises `openAISettings`,
+  `openAppSettings`, `navigateToPricing`, `openBilling` — replaces four
+  divergent local `window.dispatchEvent(...)` copies across
+  `AINotConfiguredBanner`, `AINotHealthyBanner`, `QuotaExceededState`,
+  `AIErrorState`.
+- **`src/components/AI/bannerMotion.js`** — `BANNER_VARIANTS` +
+  `BANNER_REDUCED_VARIANTS` shared by four banners (`AINotConfigured`,
+  `AINotHealthy`, `WorkBoardCapReached`, etc.) instead of three byte-
+  identical local copies.
+- **`server/lib/in-memory-rate-limiter.js`** — `createInMemoryRateLimiter`
+  + `createCooldownLimiter` factories. `deep-review.js` migrated; the
+  pattern is ready for `pr-chat`, `pr-commands`, `prompt-studio`,
+  `user-ai-config`. Each previously held its own near-identical
+  sliding-window `Map` implementation.
+- **`server/routes/repos/_shared.js`** — `GITHUB_NAME_RE`,
+  `clampPerPage`, and `applyOwnerRepoParamValidators` lifted from six
+  sub-routers (`crud`, `pulls`, `issues`, `commits`, `branches-releases`,
+  `actions-community`).
+- **`formatRelativeTime`** consolidated into five components that each
+  carried a local `relativeTime()` (`AttentionFeed`, `Header`,
+  `WorkBoardSummary`, `RepoRow`, `DiscoveryPanel`).
+- **`MS_PER_DAY`** from `src/utils/time.js` adopted in five inline
+  date-math sites (`prRisk`, `statsAggregator`, `ConflictPanel`,
+  `OrganizationCard`, `LicenseBadge`).
+- **`friendlyAiError`** marked fully `@deprecated` after `AISummaryCard`
+  and `CommunityHealthFixModal` migrated to `formatUserError` +
+  `<AIErrorState />`. `formatUserError` now accepts the lowercase
+  server aliases (`ai_quota_exceeded`, `ai_rate_limited`, …) and
+  surfaces the server-supplied `retryAfterSec`.
+- **`ds-*` prefix** applied to `.ds-scrollbar`, `.ds-no-scrollbar`,
+  `.ds-animate-spin-slow` (19 call-site updates), restoring the
+  CLAUDE.md design-system contract.
+- **`quotaErrorPayload`** marked `@deprecated` — every production caller
+  uses `quotaExceededResponse` (the canonical envelope the frontend
+  parses).
+- **A11y polish** — `FALLBACK.action.type: 'retry'`,
+  `aria-busy={loading}` on `<AIRunButton>`, `role="status"` +
+  `aria-live="polite"` on `<QuotaExceededState>`, roving `tabIndex` +
+  `role="tabpanel"` + `aria-labelledby` in `<AIInstructionsSection>`
+  tabs.
 
 ### Security
 

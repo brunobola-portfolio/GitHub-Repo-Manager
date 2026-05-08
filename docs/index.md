@@ -23,12 +23,12 @@ below links to the canonical page for that topic.
 
 Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
 
-- **v4.0.0 (May 2026, unreleased)** — **AI Deep Review.** Slice 1a free
-  core engine (walkthrough + line comments + `suggestion` blocks +
-  Mermaid + batched publish through outbox); slice 1a-2 hardening
-  (provider `usageMetadata` threading, `computeCostUSD`, rate-limiter
-  LRU sweep, `useFocusTrap`); slice 1b Prompt Studio (5 built-ins +
-  user/repo/org custom presets, path-scoped rules, severity floor,
+- **v4.0.0 (2026-05-08)** — **AI Deep Review.** Slice 1a free core
+  engine (walkthrough + line comments + `suggestion` blocks + Mermaid +
+  batched publish through outbox); slice 1a-2 hardening (provider
+  `usageMetadata` threading, `computeCostUSD`, rate-limiter LRU sweep,
+  `useFocusTrap`); slice 1b Prompt Studio (5 built-ins + user/repo/org
+  custom presets, path-scoped rules, severity floor,
   `${REPO_STYLE_GUIDE}` token); PR slash commands (`/describe`,
   `/test_plan`, `/improve`); PR Chat tab (streaming SSE Q&A with
   per-`(user, PR)` history + `MAX_HISTORY_TURNS = 10`). Plus org-shared
@@ -37,7 +37,13 @@ Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
   polish sweep, surface uniformity primitives (`<SectionPanel>`,
   `<HeroHalo>`, `<CountUp>`, `<PageMount>`), and drawer consolidation
   (unified `<Drawer>` primitive — fixed `side="bottom"` routing bug).
-  See [feature guide](features/ai-deep-review.md).
+  Closes with a multi-agent audit pass: prompt-injection guards on
+  every `/ai/*` body, DNS-rebinding defence on import, cross-user
+  cache isolation, license-cache TTL, `closeOnBackdrop=false` on every
+  state-bearing modal/drawer (no more accidental dismiss), and 600+
+  lines of dedup (shared rate limiter, repos `_shared.js`, banner
+  motion, `appEvents`). **5241 tests pass** (1740 server + 3501
+  frontend). See [feature guide](features/ai-deep-review.md).
 - **v3.8.0 (2026-04-28)** — Dashboard hero redesign (`DashboardHero`,
   `WhatNeedsYouGrid`, `AIPromoStrip`, `AttentionFeed`); mobile UX overhaul
   (bottom-nav, `MobileQuickActionsFab`, drawer); Work Board tracked-repos

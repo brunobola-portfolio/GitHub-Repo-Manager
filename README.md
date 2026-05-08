@@ -27,7 +27,7 @@
 
 **A full-stack AI-powered dashboard for managing repositories, teams, CI/CD, and migrating from Azure DevOps — all in one beautiful interface.**
 
-[Try Demo Mode](#quick-start-demo-mode) | [Features](#features-overview) | [Installation](#installation) | [Documentation](docs/) | [What's new in v3.8.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v3.8.0)
+[Try Demo Mode](#quick-start-demo-mode) | [Features](#features-overview) | [Installation](#installation) | [Documentation](docs/) | [What's new in v4.0.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v4.0.0)
 
 **Production-hardened** — AES-256-GCM BYOK, rolling sessions + CSRF double-submit, GitHub API circuit breaker, SSRF guard on import-from-URL.
 
@@ -779,7 +779,7 @@ A: No. Source repos are never modified. Use dry-run mode to test first.
 
 ## Recently Shipped
 
-### v4.0.0 — AI Deep Review (May 2026, unreleased)
+### v4.0.0 — AI Deep Review (2026-05-08)
 
 The full premium PR review surface. See the [AI Deep Review feature guide](docs/features/ai-deep-review.md) for end-user docs and the [spec](docs/specs/2026-05-03-ai-deep-review.md) / [slice 1a plan](docs/plans/2026-05-03-ai-deep-review-slice-1a.md) / [slice 1b plan](docs/plans/2026-05-04-ai-deep-review-slice-1b.md) for design depth.
 
@@ -793,6 +793,7 @@ The full premium PR review surface. See the [AI Deep Review feature guide](docs/
 - **AI polish sweep.** ConfirmModal ported to the `<Modal>` primitive; OpenRouter pricing prefix normalisation (`anthropic/claude-*` resolves to real Anthropic pricing); `core.js` endpoints (chat / suggest / readme / readme-enhance) unified through `quotaExceededResponse` + `handleAIError`; BatchIndexProgressModal per-chunk recovery; AIAssistant CTA branching by `err.code`; useStreaming preserves `err.code` + `retryAfterSec`.
 - **Surface uniformity.** 4 new shared primitives — `<SectionPanel>`, `<HeroHalo>`, `<CountUp>`, `<PageMount>` — applied across Dashboard / RepoDetail / WorkBoard. All honour `prefers-reduced-motion`. RepoDetail tabs upgraded from flat `<Card>` to `<SectionPanel>`.
 - **Drawer consolidation.** Unified `<Drawer side="left|right|bottom">` primitive replacing Sheet, MobileDrawer, SidePanel, and AutoFixDrawer's bespoke shell. Bottom variant adds drag handle + `safe-area-inset-bottom` + swipe-to-dismiss (drag-y > 100 px or velocity > 500). 10 consumers migrated; 3 primitives deleted. Fixed a pre-existing bug where `MobileDrawer side="bottom"` was silently routing to right (RepoFilterBar + SelectionSheet were sliding from the wrong edge).
+- **Multi-agent audit pass.** Closed the cycle with a security + code-health sweep: prompt-injection guards on every `/ai/*` body (Zod schema + `sanitizeForPrompt` whitelist), DNS-rebinding defence on import (`assertSafeExternalUrl` + `resolveAndValidateHost`), cross-user cache isolation (`contextCache` keyed by userId, bounded LRU), `requireTier('pro')` on every deep-review handler, license-cache TTL, hook_id route-param validator, Mermaid SVG XSS hardening (`parseAndSanitizeSvg` + `replaceChildren`), and `closeOnBackdrop=false` across 16 large modals + 2 state-bearing drawers (Settings, Migration AutoFix, DLQ admin, etc.) so accidental backdrop clicks no longer discard in-progress edits. ~600 LoC of duplicated plumbing extracted into shared modules (`appEvents`, `bannerMotion`, `in-memory-rate-limiter`, `repos/_shared.js`, `time.js`/`format.js` adoption).
 
 ### v3.8.0 (April 2026)
 
