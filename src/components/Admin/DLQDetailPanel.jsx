@@ -78,7 +78,7 @@ export function DLQDetailPanel({
     const resolved = !!entry?.resolved_at
 
     return (
-        <Drawer isOpen={isOpen} onClose={onClose} title={title} subtitle={subtitle} width={560}>
+        <Drawer isOpen={isOpen} onClose={onClose} title={title} subtitle={subtitle} width={560} closeOnBackdrop={false}>
             <div className="p-6">
             {loading && (
                 <SectionSpinner padding="py-12" tone="muted" />

@@ -129,6 +129,7 @@ export function AutoFixDrawer({
       title="Fix issues"
       icon={Wand2}
       width={576}
+      closeOnBackdrop={false}
       footer={footer}
     >
       {error?.type === 'auth' && (

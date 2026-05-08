@@ -32,6 +32,11 @@ const POSITION_CLASSES = {
  *   showCloseButton?: boolean                — default true
  *   showDragHandle?: boolean                 — default true for side='bottom', else false
  *   swipeToDismiss?: boolean                 — drag-y to close (bottom only); default true on bottom
+ *   closeOnBackdrop?: boolean                — clicking the dimmed area dismisses (default true);
+ *                                              set to false on drawers that hold edit state
+ *                                              (forms, multi-step pickers) so an accidental
+ *                                              click outside the panel can't discard the user's
+ *                                              progress. The X button and Escape always work.
  *   className?: string
  *   children
  */
@@ -48,6 +53,7 @@ export function Drawer({
     showCloseButton = true,
     showDragHandle,
     swipeToDismiss,
+    closeOnBackdrop = true,
     className = '',
     children,
 }) {
@@ -72,7 +78,7 @@ export function Drawer({
                         exit={{ opacity: 0 }}
                         transition={reduced ? REDUCED_TRANSITION : { duration: 0.18 }}
                         className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-50 ${mobileOnly ? 'xl:hidden' : ''}`}
-                        onClick={onClose}
+                        onClick={closeOnBackdrop ? onClose : undefined}
                         aria-hidden="true"
                     />
                     {/* Panel */}
