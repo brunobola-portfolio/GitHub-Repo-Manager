@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import { getCsrfToken } from '../utils/api'
 
 const API_BASE = '/api/repos'
@@ -36,304 +36,124 @@ async function apiFetch(url, options = {}) {
 }
 
 export function useRepoDetail(owner, repo) {
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState(null)
-    const base = `${API_BASE}/${owner}/${repo}`
+    // Anchor the entire api surface on `base`. Previous versions exposed
+    // `loading`/`error` state and rebuilt the object whenever those flipped,
+    // which silently churned the object identity on every fetch — consumers
+    // keying effects on `[api]` (RepoDetail.loadRepo, useTabData) were
+    // re-firing forever and flooding the network. Identity now changes only
+    // when owner/repo change, which is the actual contract.
+    return useMemo(() => {
+        const base = `${API_BASE}/${owner}/${repo}`
 
-    const withLoading = useCallback(async (fn) => {
-        setLoading(true)
-        setError(null)
-        try {
-            const result = await fn()
-            return result
-        } catch (e) {
-            setError(e.message)
-            throw e
-        } finally {
-            setLoading(false)
+        return {
+            // Repo
+            fetchRepo: () => apiFetch(base),
+            updateRepo: (updates) => apiFetch(base, { method: 'PATCH', body: JSON.stringify(updates) }),
+            updateTopics: (names) => apiFetch(`${base}/topics`, { method: 'PUT', body: JSON.stringify({ names }) }),
+
+            // README
+            fetchReadme: () => apiFetch(`${base}/readme`),
+
+            // Branches
+            fetchBranches: () => apiFetch(`${base}/branches`),
+            fetchBranch: (branch) => apiFetch(`${base}/branches/${encodeURIComponent(branch)}`),
+            createBranch: (branchName, sha) => apiFetch(`${base}/branches`, {
+                method: 'POST', body: JSON.stringify({ branch: branchName, sha })
+            }),
+            deleteBranch: (branch) => apiFetch(`${base}/branches/${encodeURIComponent(branch)}`, { method: 'DELETE' }),
+            fetchBranchProtection: (branch) => apiFetch(`${base}/branches/${encodeURIComponent(branch)}/protection`),
+            updateBranchProtection: (branch, rules) => apiFetch(`${base}/branches/${encodeURIComponent(branch)}/protection`, {
+                method: 'PUT', body: JSON.stringify(rules)
+            }),
+            deleteBranchProtection: (branch) => apiFetch(`${base}/branches/${encodeURIComponent(branch)}/protection`, { method: 'DELETE' }),
+
+            // Releases
+            fetchReleases: () => apiFetch(`${base}/releases`),
+            createRelease: (data) => apiFetch(`${base}/releases`, { method: 'POST', body: JSON.stringify(data) }),
+            deleteRelease: (releaseId) => apiFetch(`${base}/releases/${releaseId}`, { method: 'DELETE' }),
+
+            // Issues
+            fetchIssues: (params = {}) => {
+                const query = new URLSearchParams(params).toString()
+                return apiFetch(`${base}/issues${query ? '?' + query : ''}`)
+            },
+            fetchIssue: (number) => apiFetch(`${base}/issues/${number}`),
+            fetchIssueComments: (number) => apiFetch(`${base}/issues/${number}/comments`),
+            createIssue: (data) => apiFetch(`${base}/issues`, { method: 'POST', body: JSON.stringify(data) }),
+            updateIssue: (number, data) => apiFetch(`${base}/issues/${number}`, { method: 'PATCH', body: JSON.stringify(data) }),
+            commentOnIssue: (number, body) => apiFetch(`${base}/issues/${number}/comments`, { method: 'POST', body: JSON.stringify({ body }) }),
+            setIssueLabels: (number, labels) => apiFetch(`${base}/issues/${number}/labels`, { method: 'PUT', body: JSON.stringify({ labels }) }),
+            addIssueAssignees: (number, assignees) => apiFetch(`${base}/issues/${number}/assignees`, { method: 'POST', body: JSON.stringify({ assignees }) }),
+            removeIssueAssignees: (number, assignees) => apiFetch(`${base}/issues/${number}/assignees`, { method: 'DELETE', body: JSON.stringify({ assignees }) }),
+            fetchAssignees: () => apiFetch(`${base}/assignees`),
+            fetchIssueTimeline: (number) => apiFetch(`${base}/issues/${number}/timeline`),
+
+            // Pull Requests
+            fetchPulls: (params = {}) => {
+                const query = new URLSearchParams(params).toString()
+                return apiFetch(`${base}/pulls${query ? '?' + query : ''}`)
+            },
+            fetchPull: (number) => apiFetch(`${base}/pulls/${number}`),
+            fetchPullReviews: (number) => apiFetch(`${base}/pulls/${number}/reviews`),
+            fetchPullFiles: (number) => apiFetch(`${base}/pulls/${number}/files`),
+            fetchPullComments: (number) => apiFetch(`${base}/pulls/${number}/comments`),
+            fetchPullDiff: async (number) => {
+                if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                    return `diff --git a/src/example.jsx b/src/example.jsx\nindex abc123..def456 100644\n--- a/src/example.jsx\n+++ b/src/example.jsx\n@@ -1,5 +1,8 @@\n import React from 'react'\n+import { clsx } from 'clsx'\n \n-export function Example() {\n-  return <div>old</div>\n+export function Example({ className }) {\n+  return <div className={clsx('example', className)}>new</div>\n }`
+                }
+                const r = await fetch(`${base}/pulls/${number}/diff`, { credentials: 'include' })
+                if (!r.ok) {
+                    const err = new Error(`API error: ${r.status}`)
+                    err.status = r.status
+                    throw err
+                }
+                return r.text()
+            },
+            createPull: (data) => apiFetch(`${base}/pulls`, { method: 'POST', body: JSON.stringify(data) }),
+            mergePull: (number, data = {}) => apiFetch(`${base}/pulls/${number}/merge`, { method: 'PUT', body: JSON.stringify(data) }),
+            updatePull: (number, data) => apiFetch(`${base}/pulls/${number}`, { method: 'PATCH', body: JSON.stringify(data) }),
+            submitPullReview: (number, payload) => apiFetch(`${base}/pulls/${number}/reviews`, { method: 'POST', body: JSON.stringify(payload) }),
+
+            // Webhooks
+            fetchWebhooks: () => apiFetch(`${base}/hooks`),
+            createWebhook: (data) => apiFetch(`${base}/hooks`, { method: 'POST', body: JSON.stringify(data) }),
+            updateWebhook: (hookId, data) => apiFetch(`${base}/hooks/${hookId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+            deleteWebhook: (hookId) => apiFetch(`${base}/hooks/${hookId}`, { method: 'DELETE' }),
+            pingWebhook: (hookId) => apiFetch(`${base}/hooks/${hookId}/pings`, { method: 'POST' }),
+
+            // Labels
+            fetchLabels: () => apiFetch(`${base}/labels`),
+            createLabel: (data) => apiFetch(`${base}/labels`, { method: 'POST', body: JSON.stringify(data) }),
+            deleteLabel: (name) => apiFetch(`${base}/labels/${encodeURIComponent(name)}`, { method: 'DELETE' }),
+
+            // Commits
+            fetchCommits: (params = {}) => {
+                const query = new URLSearchParams(params).toString()
+                return apiFetch(`${base}/commits${query ? '?' + query : ''}`)
+            },
+            compareBranches: (basehead) => apiFetch(`${base}/compare/${encodeURIComponent(basehead)}`),
+
+            // Contents
+            fetchContents: (path = '') => {
+                const query = path ? `?path=${encodeURIComponent(path)}` : ''
+                return apiFetch(`${base}/contents${query}`)
+            },
+
+            // Collaborators
+            fetchCollaborators: () => apiFetch(`${base}/collaborators`),
+            addCollaborator: (username, permission = 'push') => apiFetch(`${base}/collaborators/${username}`, {
+                method: 'PUT', body: JSON.stringify({ permission })
+            }),
+
+            // Actions
+            fetchWorkflows: () => apiFetch(`${base}/actions/workflows`),
+            fetchRuns: () => apiFetch(`${base}/actions/runs`),
+
+            // Community Health
+            fetchCommunityHealth: () => apiFetch(`${base}/community-health`),
+
+            // Fork
+            forkRepo: (data = {}) => apiFetch(`${base}/forks`, { method: 'POST', body: JSON.stringify(data) }),
         }
-    }, [])
-
-    // ---- Repo Details ----
-    const fetchRepo = useCallback(() =>
-        withLoading(() => apiFetch(base)), [base, withLoading])
-
-    const updateRepo = useCallback((updates) =>
-        withLoading(() => apiFetch(base, { method: 'PATCH', body: JSON.stringify(updates) })),
-        [base, withLoading])
-
-    const updateTopics = useCallback((names) =>
-        withLoading(() => apiFetch(`${base}/topics`, { method: 'PUT', body: JSON.stringify({ names }) })),
-        [base, withLoading])
-
-    // ---- README ----
-    const fetchReadme = useCallback(() =>
-        apiFetch(`${base}/readme`), [base])
-
-    // ---- Branches ----
-    const fetchBranches = useCallback(() =>
-        apiFetch(`${base}/branches`), [base])
-
-    const fetchBranch = useCallback((branch) =>
-        apiFetch(`${base}/branches/${encodeURIComponent(branch)}`), [base])
-
-    const createBranch = useCallback((branchName, sha) =>
-        withLoading(() => apiFetch(`${base}/branches`, {
-            method: 'POST', body: JSON.stringify({ branch: branchName, sha })
-        })), [base, withLoading])
-
-    const deleteBranch = useCallback((branch) =>
-        withLoading(() => apiFetch(`${base}/branches/${encodeURIComponent(branch)}`, { method: 'DELETE' })),
-        [base, withLoading])
-
-    const fetchBranchProtection = useCallback((branch) =>
-        apiFetch(`${base}/branches/${encodeURIComponent(branch)}/protection`), [base])
-
-    const updateBranchProtection = useCallback((branch, rules) =>
-        withLoading(() => apiFetch(`${base}/branches/${encodeURIComponent(branch)}/protection`, {
-            method: 'PUT', body: JSON.stringify(rules)
-        })), [base, withLoading])
-
-    const deleteBranchProtection = useCallback((branch) =>
-        withLoading(() => apiFetch(`${base}/branches/${encodeURIComponent(branch)}/protection`, { method: 'DELETE' })),
-        [base, withLoading])
-
-    // ---- Releases ----
-    const fetchReleases = useCallback(() =>
-        apiFetch(`${base}/releases`), [base])
-
-    const createRelease = useCallback((data) =>
-        withLoading(() => apiFetch(`${base}/releases`, { method: 'POST', body: JSON.stringify(data) })),
-        [base, withLoading])
-
-    const deleteRelease = useCallback((releaseId) =>
-        withLoading(() => apiFetch(`${base}/releases/${releaseId}`, { method: 'DELETE' })),
-        [base, withLoading])
-
-    // ---- Issues ----
-    const fetchIssues = useCallback((params = {}) => {
-        const query = new URLSearchParams(params).toString()
-        return apiFetch(`${base}/issues${query ? '?' + query : ''}`)
-    }, [base])
-
-    const fetchIssue = useCallback((number) =>
-        apiFetch(`${base}/issues/${number}`), [base])
-
-    const fetchIssueComments = useCallback((number) =>
-        apiFetch(`${base}/issues/${number}/comments`), [base])
-
-    const createIssue = useCallback((data) =>
-        withLoading(() => apiFetch(`${base}/issues`, { method: 'POST', body: JSON.stringify(data) })),
-        [base, withLoading])
-
-    const updateIssue = useCallback((number, data) =>
-        withLoading(() => apiFetch(`${base}/issues/${number}`, { method: 'PATCH', body: JSON.stringify(data) })),
-        [base, withLoading])
-
-    const commentOnIssue = useCallback((number, body) =>
-        withLoading(() => apiFetch(`${base}/issues/${number}/comments`, { method: 'POST', body: JSON.stringify({ body }) })),
-        [base, withLoading])
-
-    // Issue parity (Phase 3): labels, assignees, timeline. Reads through the
-    // server's gh-cache so they survive GitHub flakes.
-    const setIssueLabels = useCallback((number, labels) =>
-        withLoading(() => apiFetch(`${base}/issues/${number}/labels`, { method: 'PUT', body: JSON.stringify({ labels }) })),
-        [base, withLoading])
-
-    const addIssueAssignees = useCallback((number, assignees) =>
-        withLoading(() => apiFetch(`${base}/issues/${number}/assignees`, { method: 'POST', body: JSON.stringify({ assignees }) })),
-        [base, withLoading])
-
-    const removeIssueAssignees = useCallback((number, assignees) =>
-        withLoading(() => apiFetch(`${base}/issues/${number}/assignees`, { method: 'DELETE', body: JSON.stringify({ assignees }) })),
-        [base, withLoading])
-
-    const fetchAssignees = useCallback(() =>
-        apiFetch(`${base}/assignees`), [base])
-
-    const fetchIssueTimeline = useCallback((number) =>
-        apiFetch(`${base}/issues/${number}/timeline`), [base])
-
-    // ---- Pull Requests ----
-    const fetchPulls = useCallback((params = {}) => {
-        const query = new URLSearchParams(params).toString()
-        return apiFetch(`${base}/pulls${query ? '?' + query : ''}`)
-    }, [base])
-
-    const fetchPull = useCallback((number) =>
-        apiFetch(`${base}/pulls/${number}`), [base])
-
-    const fetchPullReviews = useCallback((number) =>
-        apiFetch(`${base}/pulls/${number}/reviews`), [base])
-
-    const fetchPullFiles = useCallback((number) =>
-        apiFetch(`${base}/pulls/${number}/files`), [base])
-
-    const fetchPullComments = useCallback((number) =>
-        apiFetch(`${base}/pulls/${number}/comments`), [base])
-
-    const fetchPullDiff = useCallback(async (number) => {
-        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
-            return `diff --git a/src/example.jsx b/src/example.jsx\nindex abc123..def456 100644\n--- a/src/example.jsx\n+++ b/src/example.jsx\n@@ -1,5 +1,8 @@\n import React from 'react'\n+import { clsx } from 'clsx'\n \n-export function Example() {\n-  return <div>old</div>\n+export function Example({ className }) {\n+  return <div className={clsx('example', className)}>new</div>\n }`
-        }
-        const r = await fetch(`${base}/pulls/${number}/diff`, {
-            credentials: 'include',
-        })
-        if (!r.ok) {
-            const err = new Error(`API error: ${r.status}`)
-            err.status = r.status
-            throw err
-        }
-        return r.text()
-    }, [base])
-
-    const createPull = useCallback((data) =>
-        withLoading(() => apiFetch(`${base}/pulls`, { method: 'POST', body: JSON.stringify(data) })),
-        [base, withLoading])
-
-    const mergePull = useCallback((number, data = {}) =>
-        withLoading(() => apiFetch(`${base}/pulls/${number}/merge`, { method: 'PUT', body: JSON.stringify(data) })),
-        [base, withLoading])
-
-    const updatePull = useCallback((number, data) =>
-        withLoading(() => apiFetch(`${base}/pulls/${number}`, { method: 'PATCH', body: JSON.stringify(data) })),
-        [base, withLoading])
-
-    // Submit a PR review — APPROVE / REQUEST_CHANGES / COMMENT.
-    // The server route is requireTier('pro') so free-tier callers will see the
-    // standard tierError flow surfaced via toasts.
-    const submitPullReview = useCallback((number, payload) =>
-        withLoading(() => apiFetch(`${base}/pulls/${number}/reviews`, { method: 'POST', body: JSON.stringify(payload) })),
-        [base, withLoading])
-
-    // ---- Webhooks ----
-    const fetchWebhooks = useCallback(() =>
-        apiFetch(`${base}/hooks`), [base])
-
-    const createWebhook = useCallback((data) =>
-        withLoading(() => apiFetch(`${base}/hooks`, { method: 'POST', body: JSON.stringify(data) })),
-        [base, withLoading])
-
-    const updateWebhook = useCallback((hookId, data) =>
-        withLoading(() => apiFetch(`${base}/hooks/${hookId}`, { method: 'PATCH', body: JSON.stringify(data) })),
-        [base, withLoading])
-
-    const deleteWebhook = useCallback((hookId) =>
-        withLoading(() => apiFetch(`${base}/hooks/${hookId}`, { method: 'DELETE' })),
-        [base, withLoading])
-
-    const pingWebhook = useCallback((hookId) =>
-        withLoading(() => apiFetch(`${base}/hooks/${hookId}/pings`, { method: 'POST' })),
-        [base, withLoading])
-
-    // ---- Labels ----
-    const fetchLabels = useCallback(() =>
-        apiFetch(`${base}/labels`), [base])
-
-    const createLabel = useCallback((data) =>
-        withLoading(() => apiFetch(`${base}/labels`, { method: 'POST', body: JSON.stringify(data) })),
-        [base, withLoading])
-
-    const deleteLabel = useCallback((name) =>
-        withLoading(() => apiFetch(`${base}/labels/${encodeURIComponent(name)}`, { method: 'DELETE' })),
-        [base, withLoading])
-
-    // ---- Commits ----
-    const fetchCommits = useCallback((params = {}) => {
-        const query = new URLSearchParams(params).toString()
-        return apiFetch(`${base}/commits${query ? '?' + query : ''}`)
-    }, [base])
-
-    const compareBranches = useCallback((basehead) =>
-        apiFetch(`${base}/compare/${encodeURIComponent(basehead)}`), [base])
-
-    // ---- Contents ----
-    const fetchContents = useCallback((path = '') => {
-        const query = path ? `?path=${encodeURIComponent(path)}` : ''
-        return apiFetch(`${base}/contents${query}`)
-    }, [base])
-
-    // ---- Collaborators ----
-    const fetchCollaborators = useCallback(() =>
-        apiFetch(`${base}/collaborators`), [base])
-
-    const addCollaborator = useCallback((username, permission = 'push') =>
-        withLoading(() => apiFetch(`${base}/collaborators/${username}`, {
-            method: 'PUT', body: JSON.stringify({ permission })
-        })), [base, withLoading])
-
-    // ---- Actions ----
-    const fetchWorkflows = useCallback(() =>
-        apiFetch(`${base}/actions/workflows`), [base])
-
-    const fetchRuns = useCallback(() =>
-        apiFetch(`${base}/actions/runs`), [base])
-
-    // ---- Community Health ----
-    const fetchCommunityHealth = useCallback(() =>
-        apiFetch(`${base}/community-health`), [base])
-
-    // ---- Fork ----
-    const forkRepo = useCallback((data = {}) =>
-        withLoading(() => apiFetch(`${base}/forks`, { method: 'POST', body: JSON.stringify(data) })),
-        [base, withLoading])
-
-    // Stabilise the returned object across renders. Every callback inside is
-    // already memoised on [base]; without useMemo the wrapper object itself is
-    // new on each render, which churns `useTabData` (deps include `api`) into
-    // an abort-retry loop that never lets any tab settle. Downstream consumers
-    // rely on referential stability — treat this as part of the public contract.
-    return useMemo(() => ({
-        loading, error,
-        // Repo
-        fetchRepo, updateRepo, updateTopics,
-        // README
-        fetchReadme,
-        // Branches
-        fetchBranches, fetchBranch, createBranch, deleteBranch,
-        fetchBranchProtection, updateBranchProtection, deleteBranchProtection,
-        // Releases
-        fetchReleases, createRelease, deleteRelease,
-        // Issues
-        fetchIssues, fetchIssue, fetchIssueComments, createIssue, updateIssue, commentOnIssue,
-        setIssueLabels, addIssueAssignees, removeIssueAssignees, fetchAssignees, fetchIssueTimeline,
-        // Pull Requests
-        fetchPulls, fetchPull, fetchPullReviews, fetchPullFiles, fetchPullComments, fetchPullDiff,
-        createPull, mergePull, updatePull, submitPullReview,
-        // Webhooks
-        fetchWebhooks, createWebhook, updateWebhook, deleteWebhook, pingWebhook,
-        // Labels
-        fetchLabels, createLabel, deleteLabel,
-        // Commits
-        fetchCommits, compareBranches,
-        // Contents
-        fetchContents,
-        // Collaborators
-        fetchCollaborators, addCollaborator,
-        // Actions
-        fetchWorkflows, fetchRuns,
-        // Community Health
-        fetchCommunityHealth,
-        // Fork
-        forkRepo
-    }), [
-        loading, error,
-        fetchRepo, updateRepo, updateTopics,
-        fetchReadme,
-        fetchBranches, fetchBranch, createBranch, deleteBranch,
-        fetchBranchProtection, updateBranchProtection, deleteBranchProtection,
-        fetchReleases, createRelease, deleteRelease,
-        fetchIssues, fetchIssue, fetchIssueComments, createIssue, updateIssue, commentOnIssue,
-        setIssueLabels, addIssueAssignees, removeIssueAssignees, fetchAssignees, fetchIssueTimeline,
-        fetchPulls, fetchPull, fetchPullReviews, fetchPullFiles, fetchPullComments, fetchPullDiff,
-        createPull, mergePull, updatePull, submitPullReview,
-        fetchWebhooks, createWebhook, updateWebhook, deleteWebhook, pingWebhook,
-        fetchLabels, createLabel, deleteLabel,
-        fetchCommits, compareBranches,
-        fetchContents,
-        fetchCollaborators, addCollaborator,
-        fetchWorkflows, fetchRuns,
-        fetchCommunityHealth,
-        forkRepo
-    ])
+    }, [owner, repo])
 }
