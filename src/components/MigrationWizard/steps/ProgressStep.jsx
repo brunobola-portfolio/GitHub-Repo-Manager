@@ -229,6 +229,14 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
 
       if (type === 'plan-complete' || type === 'plan-interrupted') {
         setPlanStatus(data.status || 'completed')
+        // Surface the migrated repo list to anything else in the app that
+        // wants to react — the AI Assistant uses this to offer a follow-up
+        // polish flow without blocking the wizard's auto-advance.
+        if (type === 'plan-complete' && Array.isArray(data.createdRepos) && data.createdRepos.length > 0) {
+          window.dispatchEvent(new CustomEvent('migration:complete', {
+            detail: { createdRepos: data.createdRepos, planId: data.planId },
+          }))
+        }
       }
     }
   }, [events])

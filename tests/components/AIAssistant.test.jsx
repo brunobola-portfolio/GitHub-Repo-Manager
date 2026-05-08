@@ -19,7 +19,15 @@ async function openAssistant() {
 }
 
 describe('AIAssistant', () => {
-    beforeEach(() => vi.clearAllMocks())
+    beforeEach(() => {
+        vi.clearAllMocks()
+        // The component persists chat history to sessionStorage; without
+        // clearing it we leak state across tests in the same file and the
+        // welcome-message bootstrap doesn't re-run.
+        if (typeof window !== 'undefined') {
+            window.sessionStorage.clear()
+        }
+    })
 
     it('renders the welcome message when opened', async () => {
         renderAssistant({ askAI: vi.fn() })
@@ -250,5 +258,74 @@ describe('AIAssistant', () => {
     // targetName question should NOT appear — we should go directly to ready
     expect(screen.queryByRole('textbox', { name: /nome final.*repo/i })).not.toBeInTheDocument()
     expect(await screen.findByRole('button', { name: /abrir wizard/i })).toBeInTheDocument()
+  })
+
+  describe('System message injection (ai-assistant:inject-message)', () => {
+    it('appends an injected message and renders its validated actions', async () => {
+      renderAssistant({ askAI: vi.fn() })
+
+      // Dispatch the inject event before opening — it should both pop the
+      // panel open AND append the message.
+      await act(async () => {
+        window.dispatchEvent(new CustomEvent('ai-assistant:inject-message', {
+          detail: {
+            text: 'Migrei 3 repos. Polimos?',
+            actions: [{
+              type: 'open_ai_polish',
+              label: 'Polish 3 repos',
+              payload: { repoFullNames: ['acme/r1', 'acme/r2', 'acme/r3'] },
+            }],
+          },
+        }))
+      })
+
+      // Panel auto-opened
+      await screen.findByRole('dialog', { name: /ai assistant/i })
+
+      // Message text rendered
+      expect(await screen.findByText(/Migrei 3 repos\. Polimos\?/)).toBeInTheDocument()
+
+      // Validated action chip rendered with the right data attribute
+      const chip = await screen.findByRole('button', { name: /Polish 3 repos/ })
+      expect(chip).toHaveAttribute('data-action', 'open_ai_polish')
+    })
+
+    it('runs injected actions through sanitizeActions (drops unknown types)', async () => {
+      renderAssistant({ askAI: vi.fn() })
+
+      await act(async () => {
+        window.dispatchEvent(new CustomEvent('ai-assistant:inject-message', {
+          detail: {
+            text: 'Hello there',
+            actions: [
+              // Unknown action type — must be dropped
+              { type: 'delete_universe', label: 'NukeAll' },
+              // Valid action — must render
+              { type: 'open_ai_polish', label: 'KeepThis', payload: { repoFullNames: ['acme/api'] } },
+            ],
+          },
+        }))
+      })
+
+      await screen.findByText('Hello there')
+      expect(screen.queryByRole('button', { name: /NukeAll/ })).not.toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: /KeepThis/ })).toHaveAttribute('data-action', 'open_ai_polish')
+    })
+
+    it('ignores events with empty/missing text', async () => {
+      renderAssistant({ askAI: vi.fn() })
+
+      await act(async () => {
+        window.dispatchEvent(new CustomEvent('ai-assistant:inject-message', {
+          detail: { text: '   ', actions: [] },
+        }))
+        window.dispatchEvent(new CustomEvent('ai-assistant:inject-message', {
+          detail: { actions: [] },
+        }))
+      })
+
+      // Panel should NOT have auto-opened — no valid messages were injected.
+      expect(screen.queryByRole('dialog', { name: /ai assistant/i })).not.toBeInTheDocument()
+    })
   })
 })

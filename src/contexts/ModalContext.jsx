@@ -18,6 +18,7 @@ const MODAL_NAMES = [
   'showLicenseActivation',
   'workBoardHelp',
   'suggestNameDescription',
+  'aiPolish',
 ]
 
 function createClosedState() {

@@ -401,4 +401,27 @@ export const aiApi = {
 
     // Check AI configuration status (uses shared cache)
     checkStatus: () => getAIStatus(),
+
+    // Post-migration polish — thin wrappers around existing endpoints, grouped
+    // so useAIPolish can stay free of fetch wiring and stays easy to mock in
+    // tests. See docs/specs/2026-05-08-post-migration-ai-polish.md for the
+    // wider design.
+    polish: {
+        getDescription: async (repoId) => aiApi.suggestNameDescription(repoId),
+        getTopics: async (repoId) => aiApi.getMetadata(repoId),
+        generateReadme: async (repo) => {
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                const { mockReadmeEnhancement } = await import('../__mocks__/mockAI.js')
+                await new Promise(r => setTimeout(r, 1200))
+                return { success: true, ...mockReadmeEnhancement(repo) }
+            }
+            const res = await fetch(`${API_BASE}/ai/readme`, {
+                method: 'POST',
+                headers: await mutationHeaders(),
+                credentials: 'include',
+                body: JSON.stringify({ repo }),
+            })
+            return handleAIResponse(res, 'generate README')
+        },
+    },
 };

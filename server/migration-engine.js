@@ -373,13 +373,32 @@ export class MigrationEngine extends EventEmitter {
 
     const finalStatus = summary.failed > 0 ? 'failed' : 'completed'
 
+    // Aggregate the GitHub repo info for tasks that imported a repo. Powers
+    // the post-migration AI Polish flow — the client uses these full_names
+    // to seed the batch suggestion modal. Additive, backward-compatible.
+    const createdRepoRows = this.db.prepare(
+      `SELECT metadata FROM migration_tasks
+       WHERE plan_id = ? AND status = 'completed' AND metadata IS NOT NULL`
+    ).all(planId)
+    const createdRepos = createdRepoRows
+      .map(row => {
+        try {
+          const meta = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata
+          if (meta && meta.targetFullName) {
+            return { full_name: meta.targetFullName, html_url: meta.repoUrl || null }
+          }
+        } catch { /* malformed metadata — skip */ }
+        return null
+      })
+      .filter(Boolean)
+
     this.db.prepare(
       'UPDATE migration_plans SET status = ?, completed_at = datetime(?), summary = ? WHERE id = ?'
     ).run(finalStatus, new Date().toISOString(), JSON.stringify(summary), planId)
     this._cancelledPlans.delete(planId)
     this._pausedPlans.delete(planId)
     this.emit('plan-status', { planId, status: finalStatus })
-    this.emit('plan-complete', { planId, status: finalStatus, summary })
+    this.emit('plan-complete', { planId, status: finalStatus, summary, createdRepos })
   }
 
   /**

@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added — Post-migration AI Polish (Phase A)
+
+- **Batch description suggestions for migrated repos.** When a migration
+  plan completes, the SSE `plan-complete` payload now carries
+  `createdRepos[]` (full_name + html_url) aggregated from successful task
+  metadata. `ProgressStep` re-emits this as a `migration:complete` window
+  event so anything in the app can react.
+- **Assistant proactive nudge.** A bridge in `App.jsx` injects a system
+  message into the AI Assistant ("Migrei N repos — queres polir?") with
+  an `open_ai_polish` action chip. Discoverable even if the wizard was
+  closed before clicking.
+- **`open_ai_polish` action.** New entry in `aiActions.js` with payload
+  validation (`repoFullNames` array, max 50, owner/repo regex). Same
+  whitelist + sanitisation as model-generated actions.
+- **`AIPolishModal` + `PolishReview`.** Batch table with one row per
+  migrated repo: per-row include checkbox, editable description input
+  pre-filled with the AI suggestion, status pill (loading / ready /
+  applying / done / error / quota), Framer Motion stagger on row arrival.
+  `useAIPolish` hook handles concurrency-3 fetch + apply + 429 short-
+  circuit + per-row retry.
+- **Instant repo-list propagation.** Apply runs in parallel with
+  concurrency 3; each successful PATCH funnels through
+  `patchRepoEverywhere` so the personal + org-scoped repo lists update
+  in-place without refetch.
+- **`AIAssistant.jsx` system message injection.** New `window` event
+  `ai-assistant:inject-message` lets any caller append a validated
+  assistant message + actions to the chat history (subject to
+  `sanitizeActions`).
+
+### Fixed
+
+- **Repo description / topics edits no longer go stale.** When the user
+  was viewing an organisation, the repo list (`orgRepos`) was never
+  refreshed after a `RepoDetail` mutation — the user had to switch orgs
+  to see their own change. Replaced the post-mutation `refresh()` with a
+  surgical `patchRepoEverywhere(updatedRepo)` helper that mutates the
+  matching item in both `repos` and `orgRepos` in place. No refetch,
+  instant feedback.
+
+### Tests — Post-migration AI Polish
+
+- 5 hook tests for `useAIPolish` (mount/fetch/ready, apply with included
+  rows only, 429 quota state, edited proposal sent on apply, empty input
+  no-op).
+- 3 component tests for `AIAssistant` system message injection (validates
+  through `sanitizeActions`, renders chips, ignores empty events).
+- 2 server tests for `migration-engine` `createdRepos[]` aggregation
+  (happy path, excludes failed + non-repo tasks).
+- 2 hook tests for `useGitHub` exposing `patchRepoLocal` /
+  `patchOrgRepoLocal` / `patchRepoEverywhere`.
+
+Spec: [`docs/specs/2026-05-08-post-migration-ai-polish.md`](docs/specs/2026-05-08-post-migration-ai-polish.md). Phase A
+is description-only; topics + README columns + summary-step card +
+wizard step ship in Phase B/C.
+
 ## [4.0.0] - 2026-05-08
 
 The full premium PR review surface lands in this cycle, alongside a sweep

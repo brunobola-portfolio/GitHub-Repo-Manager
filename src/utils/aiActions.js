@@ -38,6 +38,16 @@ export const AI_ACTIONS = {
       repo: (v) => typeof v === 'string' && /^[A-Za-z0-9._-]{1,100}$/.test(v),
     },
   },
+  open_ai_polish: {
+    event: 'app:open-ai-polish',
+    defaultLabel: 'Polish repos with AI',
+    payloadShape: {
+      repoFullNames: (v) => Array.isArray(v)
+        && v.length > 0
+        && v.length <= 50
+        && v.every(s => typeof s === 'string' && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(s)),
+    },
+  },
 }
 
 export const AI_ACTION_TYPES = Object.keys(AI_ACTIONS)

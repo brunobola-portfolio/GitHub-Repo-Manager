@@ -81,6 +81,7 @@ const SecurityScanModal = lazy(() => import('./components/security/SecurityScanM
 const LicenseActivationModal = lazy(() => import('./components/Settings/LicenseActivationModal').then(m => ({ default: m.LicenseActivationModal })))
 const AdminDLQPage = lazy(() => import('./components/Admin/AdminDLQPage').then(m => ({ default: m.AdminDLQPage })))
 const PromptStudioPage = lazy(() => import('./components/AIPrompts/PromptStudioPage').then(m => ({ default: m.PromptStudioPage })))
+const AIPolishModal = lazy(() => import('./components/AIPolish/AIPolishModal').then(m => ({ default: m.AIPolishModal })))
 
 // Loading fallback component (kept as local alias for legacy callsites below)
 const LoadingFallback = RouteFallback
@@ -423,6 +424,45 @@ function AppContent() {
     window.addEventListener('app:open-repo-settings', handler)
     return () => window.removeEventListener('app:open-repo-settings', handler)
   }, [repos, orgRepos, handleOpenRepo])
+
+  // ── Post-migration AI Polish bridge ─────────────────────────────────────
+  // ProgressStep dispatches `migration:complete` with the freshly-imported
+  // repos. We turn that into (a) an Assistant nudge so users who closed the
+  // wizard still discover the polish flow, and (b) a direct trigger when the
+  // user clicks the action button. Both routes converge on the same modal.
+  useEffect(() => {
+    const onMigrationComplete = (ev) => {
+      const createdRepos = Array.isArray(ev.detail?.createdRepos) ? ev.detail.createdRepos : []
+      if (createdRepos.length === 0) return
+      const fullNames = createdRepos.map(r => r.full_name).filter(Boolean)
+      if (fullNames.length === 0) return
+      window.dispatchEvent(new CustomEvent('ai-assistant:inject-message', {
+        detail: {
+          text: `Acabei de detectar ${fullNames.length} repo${fullNames.length === 1 ? '' : 's'} migrado${fullNames.length === 1 ? '' : 's'}. Queres que sugira descriptions com AI para todos de uma vez?`,
+          actions: [{
+            type: 'open_ai_polish',
+            label: `✨ Polir ${fullNames.length} repo${fullNames.length === 1 ? '' : 's'}`,
+            payload: { repoFullNames: fullNames },
+          }],
+        },
+      }))
+    }
+    window.addEventListener('migration:complete', onMigrationComplete)
+    return () => window.removeEventListener('migration:complete', onMigrationComplete)
+  }, [])
+
+  // Action-driven entry: clicking the Assistant action validates the payload
+  // through aiActions.js and dispatches `app:open-ai-polish`. We open the
+  // shared modal here.
+  useEffect(() => {
+    const handler = (ev) => {
+      const fullNames = Array.isArray(ev.detail?.repoFullNames) ? ev.detail.repoFullNames : []
+      if (fullNames.length === 0) return
+      openModalWithData('aiPolish', { repoFullNames: fullNames })
+    }
+    window.addEventListener('app:open-ai-polish', handler)
+    return () => window.removeEventListener('app:open-ai-polish', handler)
+  }, [openModalWithData])
 
   // Cross-surface "open this PR/issue inside the app" plumbing. The Work
   // Board (and any future cross-repo surface) fires app:open-repo-pr or
@@ -1340,6 +1380,19 @@ function AppContent() {
           </ErrorBoundary>
         )
       })()}
+
+      {modalStates.aiPolish && (
+        <ErrorBoundary fallback={<ViewErrorFallback viewName="AI Polish" variant="modal" onGoHome={() => closeModal('aiPolish')} />}>
+          <Suspense fallback={null}>
+            <AIPolishModal
+              isOpen={modalStates.aiPolish}
+              onClose={() => closeModal('aiPolish')}
+              repoFullNames={getModalData('aiPolish')?.repoFullNames || []}
+              onAppliedRepo={patchRepoEverywhere}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      )}
 
       {modalStates.showCommunityHealth && (
         <ErrorBoundary fallback={<ViewErrorFallback viewName="Community Health" variant="modal" onGoHome={() => closeModal('showCommunityHealth')} />}>

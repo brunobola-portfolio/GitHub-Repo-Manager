@@ -122,6 +122,32 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
         return () => window.removeEventListener('ai-assistant:open', handler)
     }, [])
 
+    // System-level message injection — used when other parts of the app want
+    // to nudge the user into an AI flow they wouldn't otherwise discover
+    // (e.g. post-migration polish suggestion). Goes through sanitizeActions
+    // so injected actions are validated against the same allow-list as
+    // model-generated ones.
+    useEffect(() => {
+        const onInject = (ev) => {
+            const detail = ev?.detail || {}
+            const text = typeof detail.text === 'string' ? detail.text.trim() : ''
+            if (!text) return
+            const actions = sanitizeActions(detail.actions)
+            setMessages(prev => [...prev, {
+                id: nextMsgId(),
+                role: 'assistant',
+                text,
+                actions,
+                injected: true,
+            }])
+            // Pop the panel open so the message is visible right away.
+            setIsOpen(true)
+            setIsMinimized(false)
+        }
+        window.addEventListener('ai-assistant:inject-message', onInject)
+        return () => window.removeEventListener('ai-assistant:inject-message', onInject)
+    }, [])
+
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages, isOpen])

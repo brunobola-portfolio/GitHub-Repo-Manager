@@ -548,6 +548,77 @@ describe('MigrationEngine', () => {
       const completed = plan.tasks.filter(t => t.status === 'completed')
       expect(completed.length).toBe(1)
     })
+
+    it('emits plan-complete with createdRepos aggregated from completed task metadata', async () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [
+          { type: 'repo', sourceRef: 'src/r1', targetRef: 'gh/r1', config: {} },
+          { type: 'repo', sourceRef: 'src/r2', targetRef: 'gh/r2', config: {} },
+        ]
+      )
+
+      // Mock executor returns the GitHub-side info that the real
+      // import-service produces. Aggregation reads targetFullName + repoUrl
+      // from this metadata payload.
+      let counter = 0
+      engine._executeTask = async () => {
+        counter += 1
+        return {
+          success: true,
+          targetFullName: `acme/r${counter}`,
+          repoUrl: `https://github.com/acme/r${counter}`,
+          branchCount: 1,
+        }
+      }
+
+      const completeEvents = []
+      engine.on('plan-complete', e => completeEvents.push(e))
+
+      await engine.executePlan(planId)
+
+      expect(completeEvents).toHaveLength(1)
+      const evt = completeEvents[0]
+      expect(evt.planId).toBe(planId)
+      expect(evt.status).toBe('completed')
+      expect(Array.isArray(evt.createdRepos)).toBe(true)
+      expect(evt.createdRepos).toHaveLength(2)
+      expect(evt.createdRepos.map(r => r.full_name).sort()).toEqual(['acme/r1', 'acme/r2'])
+      expect(evt.createdRepos.every(r => r.html_url?.startsWith('https://github.com/'))).toBe(true)
+    })
+
+    it('plan-complete createdRepos excludes failed tasks and tasks without targetFullName', async () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [
+          { type: 'repo', sourceRef: 'src/r1', targetRef: 'gh/r1', config: {} },
+          { type: 'wiki', sourceRef: 'src/wiki', targetRef: 'gh/r1', config: {} },
+          { type: 'repo', sourceRef: 'src/bad', targetRef: 'gh/bad', config: {} },
+        ]
+      )
+
+      // Wiki returns metadata without targetFullName; r1 returns the full
+      // shape; the third throws so it ends up failed.
+      engine._executeTask = async (task) => {
+        if (task.source_ref === 'src/wiki') return { wikiPages: 5 }
+        if (task.source_ref === 'src/bad') throw new Error('boom')
+        return {
+          success: true,
+          targetFullName: 'acme/r1',
+          repoUrl: 'https://github.com/acme/r1',
+        }
+      }
+
+      const completeEvents = []
+      engine.on('plan-complete', e => completeEvents.push(e))
+
+      await engine.executePlan(planId)
+
+      expect(completeEvents).toHaveLength(1)
+      const evt = completeEvents[0]
+      expect(evt.createdRepos).toHaveLength(1)
+      expect(evt.createdRepos[0].full_name).toBe('acme/r1')
+    })
   })
 
   describe('cancelPlan', () => {
