@@ -425,6 +425,29 @@ function AppContent() {
     return () => window.removeEventListener('app:open-repo-settings', handler)
   }, [repos, orgRepos, handleOpenRepo])
 
+  // Mirror of the settings listener for the "Open Details" context-menu
+  // action. The action explicitly attaches the full repo object as
+  // ev.detail.repoObject so we don't have to look it up — but we still
+  // fall back to the loaded lists / a synthetic stub if it's missing,
+  // matching the resilience of app:open-repo-settings.
+  useEffect(() => {
+    const handler = (ev) => {
+      const owner = ev.detail?.owner
+      const repoName = ev.detail?.repo
+      if (!owner || !repoName) return
+      const fullName = `${owner}/${repoName}`
+      const repoObject = ev.detail?.repoObject
+      const found = repoObject
+        || (repos || []).concat(orgRepos || []).find(
+          (r) => r.full_name === fullName || (r.name === repoName && (r.owner?.login === owner)),
+        )
+      const target = found || { name: repoName, full_name: fullName, owner: { login: owner } }
+      handleOpenRepo(target, { tab: ev.detail?.tab || 'overview' })
+    }
+    window.addEventListener('app:open-repo-detail', handler)
+    return () => window.removeEventListener('app:open-repo-detail', handler)
+  }, [repos, orgRepos, handleOpenRepo])
+
   // ── Post-migration AI Polish bridge ─────────────────────────────────────
   // ProgressStep dispatches `migration:complete` with the freshly-imported
   // repos. We turn that into (a) an Assistant nudge so users who closed the
