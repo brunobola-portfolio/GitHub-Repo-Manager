@@ -354,17 +354,24 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
         )}
 
         <div className="flex-1 flex flex-col min-w-0">
-          <AISummaryPanel
-            summary={state.aiSummary}
-            loading={aiLoading}
-            error={aiError}
-            collapsed={state.aiSummaryCollapsed}
-            onToggle={() => dispatch({ type: 'TOGGLE_AI_SUMMARY' })}
-            onRetry={retryAI}
-            onFileClick={(filename) =>
-              dispatch({ type: 'SET_ACTIVE_FILE', filename })
-            }
-          />
+          {/* AISummaryPanel is the lightweight heuristic summary. Once the
+              user has generated an AI Deep Review draft (richer walkthrough
+              + per-line comments), the deep panel supersedes this one and
+              we hide it to avoid duplicate AI affordances on the same
+              surface. Cleanup of #1 from the 2026-05-09 follow-ups review. */}
+          {!deep.draft && (
+            <AISummaryPanel
+              summary={state.aiSummary}
+              loading={aiLoading}
+              error={aiError}
+              collapsed={state.aiSummaryCollapsed}
+              onToggle={() => dispatch({ type: 'TOGGLE_AI_SUMMARY' })}
+              onRetry={retryAI}
+              onFileClick={(filename) =>
+                dispatch({ type: 'SET_ACTIVE_FILE', filename })
+              }
+            />
+          )}
 
           <DiffPanel
             file={activeFileObj}

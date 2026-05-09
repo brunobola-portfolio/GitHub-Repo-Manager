@@ -259,6 +259,21 @@ const RICH_PATCHES = [
     `@@ -1,6 +1,20 @@\n+/** Format a number with locale-aware thousands separators */\n export function formatNumber(n) {\n-  return n.toLocaleString()\n+  if (n == null) return '—'\n+  if (n >= 1_000_000) return \`\${(n / 1_000_000).toFixed(1)}M\`\n+  if (n >= 1_000) return \`\${(n / 1_000).toFixed(1)}k\`\n+  return n.toLocaleString()\n }\n \n+/** Format an ISO date string as a relative time label */\n+export function formatRelativeTime(isoString) {\n+  if (!isoString) return ''\n+  const diff = Date.now() - new Date(isoString).getTime()\n+  const mins = Math.round(diff / 60_000)\n+  if (mins < 1) return 'just now'\n+  if (mins < 60) return \`\${mins}m ago\`\n+  const hrs = Math.round(mins / 60)\n+  if (hrs < 24) return \`\${hrs}h ago\`\n+  return \`\${Math.round(hrs / 24)}d ago\`\n+}`,
 ]
 
+/**
+ * Build a synthetic unified-diff patch with the requested number of
+ * added/removed lines. The shape is valid input for our DiffRenderer's
+ * parsePatchToHunks. Used to seed an in-mock "large file" for e2e
+ * coverage of the DiffCollapser fold-by-default path.
+ */
+function makeLargePatch(additions, deletions) {
+    const oldRange = Math.max(deletions, 1)
+    const newRange = Math.max(additions, 1)
+    const lines = [`@@ -1,${oldRange} +1,${newRange} @@`]
+    for (let i = 0; i < deletions; i++) lines.push(`-old line ${i}`)
+    for (let i = 0; i < additions; i++) lines.push(`+new line ${i}`)
+    return lines.join('\n')
+}
+
 export function generateMockPRFiles(prNumber) {
     const s = seed(String(prNumber) + 'files')
     const fileNames = [
@@ -267,7 +282,7 @@ export function generateMockPRFiles(prNumber) {
         'src/hooks/useAuth.js',
         'src/utils/formatters.js',
     ]
-    return fileNames.map((filename, i) => ({
+    const baseFiles = fileNames.map((filename, i) => ({
         sha: SHAS[(s + i) % SHAS.length],
         filename,
         status: 'modified',
@@ -276,6 +291,23 @@ export function generateMockPRFiles(prNumber) {
         changes: [60, 42, 44, 46][i],
         patch: RICH_PATCHES[i % RICH_PATCHES.length],
     }))
+    // Plus one large file (>500 changed lines) so the DiffCollapser
+    // fold-by-default path is exercisable in mock mode and can be
+    // covered by an e2e (mobile + desktop). The line counts match what
+    // makeLargePatch emits, so the renderer's preview is consistent
+    // with the file metadata.
+    const bigAdd = 600
+    const bigDel = 200
+    baseFiles.push({
+        sha: SHAS[(s + 99) % SHAS.length],
+        filename: 'src/big-refactor.js',
+        status: 'modified',
+        additions: bigAdd,
+        deletions: bigDel,
+        changes: bigAdd + bigDel,
+        patch: makeLargePatch(bigAdd, bigDel),
+    })
+    return baseFiles
 }
 
 export function generateMockAssignees(repoName) {
