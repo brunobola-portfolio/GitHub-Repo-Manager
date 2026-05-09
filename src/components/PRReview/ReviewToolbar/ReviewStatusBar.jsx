@@ -25,14 +25,21 @@ export function ReviewStatusBar({
 }) {
     const reducedMotion = useReducedMotion()
 
+    // Session-scoped hint counter — sessionStorage flag avoids the previous
+    // bug where remounts (file navigation, view-mode toggles) inflated
+    // the localStorage count once per render-mount instead of once per
+    // tab session. Now: increment exactly once per tab session.
     const [showHints] = useState(() => {
-        const count = parseInt(localStorage.getItem('pr-review-hint-sessions') || '0')
+        const count = parseInt(localStorage.getItem('pr-review-hint-sessions') || '0', 10)
         return count < 3
     })
 
     useEffect(() => {
         const key = 'pr-review-hint-sessions'
-        const count = parseInt(localStorage.getItem(key) || '0')
+        const sessionFlag = 'pr-review-hint-counted-this-session'
+        if (sessionStorage.getItem(sessionFlag)) return
+        sessionStorage.setItem(sessionFlag, '1')
+        const count = parseInt(localStorage.getItem(key) || '0', 10)
         localStorage.setItem(key, String(count + 1))
     }, [])
 

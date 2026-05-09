@@ -5,6 +5,7 @@ export function CodeReviewToolbar({
     activeIndex,
     treeCollapsed, onToggleTree,
     onOpenMobileTree,
+    mobileTreeButtonRef,
     onPrev, onNext,
     mode, onToggleMode,
     wrap, onToggleWrap,
@@ -24,6 +25,7 @@ export function CodeReviewToolbar({
                 </button>
                 {onOpenMobileTree && (
                     <button
+                        ref={mobileTreeButtonRef}
                         type="button"
                         onClick={onOpenMobileTree}
                         className="md:hidden inline-flex items-center gap-1 px-3 min-h-11 text-sm font-medium text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"

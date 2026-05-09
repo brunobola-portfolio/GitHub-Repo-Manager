@@ -15,7 +15,7 @@ import { Sparkles } from 'lucide-react'
  * <AIReviewPanel> backed by the same useAIDeepReview hook instance,
  * so state stays consistent across the two mounts.
  */
-export function MobileAIPanelDrawer({ isOpen, onClose, children }) {
+export function MobileAIPanelDrawer({ isOpen, onClose, children, restoreFocusRef }) {
     return (
         <Modal
             isOpen={isOpen}
@@ -26,6 +26,7 @@ export function MobileAIPanelDrawer({ isOpen, onClose, children }) {
             size="lg"
             mobileVariant="sheet"
             bodyClassName="!p-0"
+            restoreFocusRef={restoreFocusRef}
         >
             {children}
         </Modal>

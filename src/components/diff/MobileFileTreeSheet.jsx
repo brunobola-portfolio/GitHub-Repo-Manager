@@ -17,6 +17,7 @@ export function MobileFileTreeSheet({
     reviewedFiles,
     aiFileRisks,
     onFileSelect,
+    restoreFocusRef,
 }) {
     const handleSelect = (filename) => {
         onFileSelect?.(filename)
@@ -33,6 +34,7 @@ export function MobileFileTreeSheet({
             size="lg"
             mobileVariant="sheet"
             bodyClassName="!p-0"
+            restoreFocusRef={restoreFocusRef}
         >
             <FileTree
                 files={files ?? []}

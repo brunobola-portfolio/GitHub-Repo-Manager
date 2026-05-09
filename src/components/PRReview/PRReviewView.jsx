@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback, useState } from 'react'
+import { useEffect, useMemo, useCallback, useRef, useState } from 'react'
 import { useRepoDetail } from '../../hooks/useRepoDetail'
 import { useReviewState } from './hooks/useReviewState'
 import { useReviewData } from './hooks/useReviewData'
@@ -63,6 +63,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   // the previous `hidden lg:flex` behaviour that hid AI affordances
   // entirely below lg.
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
+  const aiFabRef = useRef(null)  // restore focus to FAB when drawer closes
   // Keyboard help overlay — toggled by `?`.
   const [helpOpen, setHelpOpen] = useState(false)
   // True while the floating composer in DiffPanel is open. We hide the
@@ -471,6 +472,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
           dismissing/editing in one updates the other. */}
       {!composerOpen && (
         <button
+          ref={aiFabRef}
           type="button"
           onClick={() => setAiDrawerOpen(true)}
           className="lg:hidden fixed z-30 bottom-24 right-4 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 via-cyan-500 to-pink-500 text-white shadow-[0_8px_24px_-4px_rgba(99,102,241,0.5)] flex items-center justify-center motion-safe:hover:scale-105 motion-safe:active:scale-95 motion-safe:transition-transform motion-reduce:transition-none"
@@ -495,7 +497,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
 
       <KeyboardHelpOverlay isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
 
-      <MobileAIPanelDrawer isOpen={aiDrawerOpen} onClose={() => setAiDrawerOpen(false)}>
+      <MobileAIPanelDrawer isOpen={aiDrawerOpen} onClose={() => setAiDrawerOpen(false)} restoreFocusRef={aiFabRef}>
         <AIReviewPanel
           draft={deep.draft}
           loading={deep.loading}

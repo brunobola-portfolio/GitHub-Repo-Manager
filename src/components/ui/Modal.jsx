@@ -83,13 +83,20 @@ export function Modal({
     // Signal that async content is loading — forwarded to the body's aria-busy
     // so screen readers hear a "busy" state while skeletons show.
     isBusy = false,
+    // Optional refs for focus management — see useFocusTrap docs. Most
+    // modals don't need these (the focus trap defaults to first-focusable
+    // → close-X, restore to whatever opened the modal). Sheets that want
+    // to land focus on a specific row, or that are opened by a FAB which
+    // unmounts when the sheet opens, can override.
+    initialFocusRef,
+    restoreFocusRef,
     ...rest
 }) {
     // Use module-level lookup tables so Tailwind's JIT discovers every class.
     const sizeClass = (mobileVariant === 'sheet' ? SHEET_SIZE_CLASSES[size] : SIZE_CLASSES[size]) || SIZE_CLASSES.md
     const styles = VARIANT_STYLES[variant] || VARIANT_STYLES.default
 
-    const modalRef = useFocusTrap(isOpen, onClose, { disableEscape })
+    const modalRef = useFocusTrap(isOpen, onClose, { disableEscape, initialFocusRef, restoreFocusRef })
     useBodyScrollLock(isOpen)
     useMobileKeyboardFix(isOpen, modalRef)
     const reducedMotion = useReducedMotion()

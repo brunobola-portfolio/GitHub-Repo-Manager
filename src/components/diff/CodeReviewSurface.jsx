@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FileTree } from '../PRReview/FileTree/FileTree'
 import { DiffRenderer } from '../PRReview/DiffPanel/DiffRenderer'
 import { Spinner } from '../ui/Spinner'
@@ -38,6 +38,9 @@ export function CodeReviewSurface({
     // file tree is reachable via the toolbar's "Files" button as a
     // bottom sheet. State purely UI; no persistence.
     const [mobileSheetOpen, setMobileSheetOpen] = useState(false)
+    // Ref for the toolbar "Files" button so the sheet can return focus
+    // to it when dismissed (a11y fix for FAB-driven sheet lifecycle).
+    const filesButtonRef = useRef(null)
     const { prefs, setMode, setWrap, setTabWidth } = useDiffPreferences()
 
     // Re-hydrate viewed set when storageKey changes (commit/PR navigation)
@@ -102,6 +105,7 @@ export function CodeReviewSurface({
                 treeCollapsed={treeCollapsed}
                 onToggleTree={() => setTreeCollapsed(c => !c)}
                 onOpenMobileTree={() => setMobileSheetOpen(true)}
+                mobileTreeButtonRef={filesButtonRef}
                 onPrev={() => setActiveIndex(i => Math.max(0, i - 1))}
                 onNext={() => setActiveIndex(i => Math.min(sortedFiles.length - 1, i + 1))}
                 mode={prefs.mode}
@@ -123,6 +127,7 @@ export function CodeReviewSurface({
                 reviewedFiles={[...reviewed]}
                 aiFileRisks={fileMeta?.aiFileRisks ?? []}
                 onFileSelect={handleFileSelect}
+                restoreFocusRef={filesButtonRef}
             />
 
             <div className="flex flex-1 min-h-0 overflow-hidden">

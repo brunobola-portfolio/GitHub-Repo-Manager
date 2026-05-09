@@ -2,8 +2,24 @@ import { useEffect, useRef } from 'react'
 
 const FOCUSABLE = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
+/**
+ * Focus trap with configurable initial + restore targets.
+ *
+ * @param {boolean} isOpen
+ * @param {() => void} onClose
+ * @param {object}  [options]
+ * @param {boolean} [options.disableEscape=false]   - Block Escape closing
+ * @param {React.RefObject<HTMLElement>} [options.initialFocusRef]
+ *        - When set, focus this element on open instead of the first
+ *          focusable inside the trap. If the ref is null at mount, the
+ *          hook falls back to first-focusable.
+ * @param {React.RefObject<HTMLElement>} [options.restoreFocusRef]
+ *        - When set, return focus to this element on close instead of
+ *          whatever was focused before opening. Same null-fallback.
+ * @returns {React.RefObject<HTMLElement>} - Ref to attach to the trap root
+ */
 export function useFocusTrap(isOpen, onClose, options = {}) {
-    const { disableEscape = false } = options
+    const { disableEscape = false, initialFocusRef, restoreFocusRef } = options
     const ref = useRef(null)
     const previouslyFocusedRef = useRef(null)
 
@@ -11,6 +27,11 @@ export function useFocusTrap(isOpen, onClose, options = {}) {
         if (!isOpen) return
 
         previouslyFocusedRef.current = document.activeElement
+        // Snapshot the caller-provided restore target NOW so the cleanup
+        // closure sees the value present at open-time (the React eslint
+        // rule reasonably warns that ref.current may have changed by
+        // cleanup; for restore-on-close we want the open-time value).
+        const restoreTargetAtOpen = restoreFocusRef?.current ?? null
 
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') {
@@ -44,6 +65,13 @@ export function useFocusTrap(isOpen, onClose, options = {}) {
         document.addEventListener('keydown', handleKeyDown)
 
         const timer = setTimeout(() => {
+            // Caller-provided initialFocusRef takes precedence — used by
+            // sheets to land focus on the active row instead of the close-X.
+            const initial = initialFocusRef?.current
+            if (initial && typeof initial.focus === 'function') {
+                initial.focus()
+                return
+            }
             const firstFocusable = ref.current?.querySelector(FOCUSABLE)
             if (firstFocusable) {
                 firstFocusable.focus()
@@ -56,11 +84,15 @@ export function useFocusTrap(isOpen, onClose, options = {}) {
         return () => {
             document.removeEventListener('keydown', handleKeyDown)
             clearTimeout(timer)
-            if (previouslyFocusedRef.current?.focus) {
-                previouslyFocusedRef.current.focus()
+            // Caller-provided restoreFocusRef takes precedence — used by
+            // FAB-driven sheets to return focus to the FAB rather than to
+            // <body>. Falls back to whatever was focused before opening.
+            const restore = restoreTargetAtOpen ?? previouslyFocusedRef.current
+            if (restore?.focus) {
+                restore.focus()
             }
         }
-    }, [isOpen, onClose, disableEscape])
+    }, [isOpen, onClose, disableEscape, initialFocusRef, restoreFocusRef])
 
     return ref
 }
