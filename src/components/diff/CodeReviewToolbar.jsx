@@ -1,9 +1,10 @@
-import { Columns2, AlignLeft, ChevronLeft, ChevronRight, ChevronsDown, ChevronsUp, PanelRightClose, PanelRightOpen, WrapText } from 'lucide-react'
+import { Columns2, AlignLeft, ChevronLeft, ChevronRight, ChevronsDown, ChevronsUp, Files, PanelRightClose, PanelRightOpen, WrapText } from 'lucide-react'
 
 export function CodeReviewToolbar({
     filesCount, additions, deletions, reviewedCount,
     activeIndex,
     treeCollapsed, onToggleTree,
+    onOpenMobileTree,
     onPrev, onNext,
     mode, onToggleMode,
     wrap, onToggleWrap,
@@ -16,11 +17,21 @@ export function CodeReviewToolbar({
                 <button
                     type="button"
                     onClick={onToggleTree}
-                    className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    className="hidden md:inline-flex p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                     aria-label={treeCollapsed ? 'Show file tree' : 'Hide file tree'}
                 >
                     {treeCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
                 </button>
+                {onOpenMobileTree && (
+                    <button
+                        type="button"
+                        onClick={onOpenMobileTree}
+                        className="md:hidden inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        aria-label={`Open files list (${filesCount})`}
+                    >
+                        <Files className="w-3.5 h-3.5" /> Files ({filesCount})
+                    </button>
+                )}
                 <span>
                     <span className="font-semibold text-slate-700 dark:text-slate-200">{filesCount}</span> files changed
                     {' · '}<span className="text-green-600 dark:text-green-400">+{additions}</span>{' '}

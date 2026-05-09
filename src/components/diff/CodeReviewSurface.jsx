@@ -3,6 +3,7 @@ import { FileTree } from '../PRReview/FileTree/FileTree'
 import { DiffRenderer } from '../PRReview/DiffPanel/DiffRenderer'
 import { Spinner } from '../ui/Spinner'
 import { CodeReviewToolbar } from './CodeReviewToolbar'
+import { MobileFileTreeSheet } from './MobileFileTreeSheet'
 import { useDiffPreferences } from '../../hooks/useDiffPreferences'
 
 function loadReviewed(storageKey) {
@@ -33,6 +34,10 @@ export function CodeReviewSurface({
     const [reviewed, setReviewedRaw] = useState(() => loadReviewed(storageKey))
     const [treeCollapsed, setTreeCollapsed] = useState(false)
     const [rightCollapsed, setRightCollapsed] = useState(false)
+    // Below the `md` breakpoint, the desktop left column is hidden and the
+    // file tree is reachable via the toolbar's "Files" button as a
+    // bottom sheet. State purely UI; no persistence.
+    const [mobileSheetOpen, setMobileSheetOpen] = useState(false)
     const { prefs, setMode, setWrap, setTabWidth } = useDiffPreferences()
 
     // Re-hydrate viewed set when storageKey changes (commit/PR navigation)
@@ -96,6 +101,7 @@ export function CodeReviewSurface({
                 activeIndex={activeIndex}
                 treeCollapsed={treeCollapsed}
                 onToggleTree={() => setTreeCollapsed(c => !c)}
+                onOpenMobileTree={() => setMobileSheetOpen(true)}
                 onPrev={() => setActiveIndex(i => Math.max(0, i - 1))}
                 onNext={() => setActiveIndex(i => Math.min(sortedFiles.length - 1, i + 1))}
                 mode={prefs.mode}
@@ -109,9 +115,19 @@ export function CodeReviewSurface({
                 onToggleRight={() => setRightCollapsed(c => !c)}
             />
 
+            <MobileFileTreeSheet
+                isOpen={mobileSheetOpen}
+                onClose={() => setMobileSheetOpen(false)}
+                files={sortedFiles}
+                activeFile={activeFile?.filename ?? ''}
+                reviewedFiles={[...reviewed]}
+                aiFileRisks={fileMeta?.aiFileRisks ?? []}
+                onFileSelect={handleFileSelect}
+            />
+
             <div className="flex flex-1 min-h-0 overflow-hidden">
                 {!treeCollapsed && (
-                    <div className="w-[220px] flex-shrink-0 border-r border-slate-200 dark:border-slate-700 overflow-y-auto bg-slate-50/40 dark:bg-slate-800/20">
+                    <div className="hidden md:block w-[220px] flex-shrink-0 border-r border-slate-200 dark:border-slate-700 overflow-y-auto bg-slate-50/40 dark:bg-slate-800/20">
                         <FileTree
                             files={sortedFiles}
                             activeFile={activeFile?.filename ?? ''}
