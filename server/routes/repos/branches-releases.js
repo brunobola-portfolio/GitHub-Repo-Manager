@@ -119,6 +119,16 @@ router.get('/:owner/:repo/branches/:branch/protection', requireAuth, async (req,
                 error: 'Branch protection requires GitHub Pro on private repositories.',
                 code: 'GITHUB_PRO_REQUIRED',
             });
+        } else if (error.status === 403) {
+            // Plain 403 from GitHub with no Pro-upgrade hint. Most common
+            // cause: the authenticated user is a collaborator without admin
+            // on the repo, and branch protection requires admin. Surface a
+            // structured code so the client renders a quiet "admin required"
+            // affordance instead of an alarming generic error toast.
+            res.status(403).json({
+                error: 'Admin access on this repository is required to view branch protection.',
+                code: 'INSUFFICIENT_PERMISSIONS',
+            });
         } else {
             req.log.error({ err: error }, 'Get branch protection failed');
             res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });

@@ -78,14 +78,20 @@ describe('GET /:owner/:repo/branches/:branch/protection', () => {
     expect(res.body.code).toBe('GITHUB_PRO_REQUIRED')
   })
 
-  it('does NOT mark generic 403 (e.g. lack of admin perms) as upgrade required', async () => {
+  it('classifies generic 403 (lack of admin perms) as INSUFFICIENT_PERMISSIONS', async () => {
+    // Most common cause: the authenticated user is a collaborator without
+    // admin on the repo, and branch protection requires admin. Surface a
+    // structured code so the client renders a quiet "admin required"
+    // affordance instead of a generic error toast.
     githubApiMock.mockRejectedValueOnce(Object.assign(
       new Error('Resource not accessible by integration'),
       { status: 403 },
     ))
     const res = await request(app).get('/alice/private-repo/branches/main/protection')
     expect(res.status).toBe(403)
-    expect(res.body.code).toBeUndefined()
+    expect(res.body.code).toBe('INSUFFICIENT_PERMISSIONS')
+    // Hardcoded user-facing message — survives prod's safeError sanitisation.
+    expect(res.body.error).toMatch(/admin/i)
   })
 
   it('forwards 500-class errors as generic failures (no upgrade code)', async () => {
