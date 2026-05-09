@@ -16,7 +16,7 @@ function Avatar({ login, size = 6 }) {
   const sizeClass = avatarSizeClasses[size] || avatarSizeClasses[6]
   return (
     <span
-      className={`inline-flex items-center justify-center ${sizeClass} rounded-full bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold shrink-0 select-none`}
+      className={`inline-flex items-center justify-center ${sizeClass} rounded-full bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold shrink-0 select-none`}
       aria-hidden="true"
     >
       {letter}
@@ -30,11 +30,11 @@ function Avatar({ login, size = 6 }) {
 function ReplyItem({ reply }) {
   const login = reply.user?.login ?? 'unknown'
   return (
-    <div className="ml-4 pl-3 border-l-2 border-gray-200 dark:border-gray-700 mt-2">
+    <div className="ml-4 pl-3 border-l-2 border-slate-200 dark:border-slate-700 mt-2">
       <div className="flex items-center gap-2 mb-1">
         <Avatar login={login} size={5} />
-        <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{login}</span>
-        <span className="text-xs text-gray-400 dark:text-gray-500">{formatRelativeTime(reply.created_at)}</span>
+        <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{login}</span>
+        <span className="text-xs text-slate-400 dark:text-slate-500">{formatRelativeTime(reply.created_at)}</span>
       </div>
       <div className="prose prose-sm dark:prose-invert max-w-none text-xs">
         <ReactMarkdown>{reply.body ?? ''}</ReactMarkdown>
@@ -113,10 +113,13 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
     onResolve?.()
   }, [onResolve])
 
-  // Pending: dashed amber border; submitted: solid gray border
-  const containerClass = isPending
-    ? 'border border-dashed border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-900/20 rounded-md'
-    : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-md'
+  // Unified card style for all three comment treatments (synced, pending,
+  // AI-suggested). The visual distinction is now a small status badge in
+  // the header rather than a different border colour — single neutral
+  // container keeps file-scrolling visually calm. See unified-comment
+  // refactor 2026-05-09 (#2).
+  const containerClass =
+    'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-md'
 
   const resolvedClass = resolvedLocally
     ? 'opacity-60'
@@ -125,11 +128,11 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
   return (
     <div className={`text-sm ${containerClass} ${resolvedClass} overflow-hidden`}>
       {/* Header row */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100 dark:border-slate-700">
         {/* Collapse toggle */}
         <button
           onClick={() => setCollapsed(c => !c)}
-          className="shrink-0 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 rounded"
+          className="shrink-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 rounded"
           aria-label={collapsed ? 'Expand comment' : 'Collapse comment'}
           aria-expanded={!collapsed}
         >
@@ -140,8 +143,8 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
 
         <Avatar login={login} />
 
-        <span className="font-semibold text-gray-700 dark:text-gray-200 text-xs">{login}</span>
-        <span className="text-xs text-gray-400 dark:text-gray-500">{formatRelativeTime(comment.created_at)}</span>
+        <span className="font-semibold text-slate-700 dark:text-slate-200 text-xs">{login}</span>
+        <span className="text-xs text-slate-400 dark:text-slate-500">{formatRelativeTime(comment.created_at)}</span>
 
         {/* Pending badge */}
         {isPending && (
@@ -152,7 +155,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
 
         {/* Line number */}
         {lineNumber != null && (
-          <span className={`${isPending ? '' : 'ml-auto'} shrink-0 text-xs font-mono text-gray-400 dark:text-gray-500`}>
+          <span className={`${isPending ? '' : 'ml-auto'} shrink-0 text-xs font-mono text-slate-400 dark:text-slate-500`}>
             L{lineNumber}
           </span>
         )}
@@ -177,7 +180,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
 
           {/* Action row */}
           {!isPending && (
-            <div className="flex items-center gap-3 mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+            <div className="flex items-center gap-3 mt-3 pt-2 border-t border-slate-100 dark:border-slate-700">
               {!showReply && (
                 <button
                   onClick={() => setShowReply(true)}
@@ -190,7 +193,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
               {!resolvedLocally && (
                 <button
                   onClick={handleResolve}
-                  className="ml-auto flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 rounded"
+                  className="ml-auto flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 rounded"
                 >
                   <CheckCircle size={13} />
                   Resolve
@@ -217,13 +220,13 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
                 rows={3}
                 placeholder="Reply… (Ctrl+Enter to submit, Esc to cancel)"
                 aria-label="Reply to comment"
-                className="w-full resize-y rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full resize-y rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <div className="flex gap-2 mt-1.5 justify-end">
                 <button
                   onClick={handleCancelReply}
                   disabled={submitting}
-                  className="px-2.5 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 >
                   Cancel
                 </button>

@@ -241,29 +241,15 @@ export function DiffPanel({
         </Suspense>
       </div>
 
-      {/* AI Deep Review comments for this file (Strategy B: stacked under the diff
-          because the per-line render lives inside the lazy DiffRenderer chunk). */}
-      {aiComments.length > 0 ? (
-        <div className="border-t border-slate-200 dark:border-slate-800 px-3 py-2">
-          <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">AI comments for this file</div>
-          {aiComments.map((c) => (
-            <AIInlineComment
-              key={`ai-${c._idx}`}
-              comment={c}
-              idx={c._idx}
-              onDismiss={onDismissAIComment}
-              onEdit={onEditAIComment}
-            />
-          ))}
-        </div>
-      ) : null}
-
-      {/* Submitted comment threads */}
-      {commentThreads.length > 0 && (
-        <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-3 space-y-2 max-h-64 overflow-y-auto">
+      {/* Unified comment stack — synced threads + pending drafts + AI
+          suggestions all share one neutral container. Each card carries
+          its own status badge (none / pending / ai). See unified-comment
+          refactor 2026-05-09 (#2). */}
+      {(aiComments.length > 0 || commentThreads.length > 0 || (pendingComments?.length ?? 0) > 0) && (
+        <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/60 px-4 py-3 space-y-2 max-h-72 overflow-y-auto">
           {commentThreads.map(thread => (
             <InlineComment
-              key={thread.id}
+              key={`sync-${thread.id}`}
               comment={thread}
               replies={thread.replies}
               onReply={onReply}
@@ -271,17 +257,20 @@ export function DiffPanel({
               onResolve={() => onResolve?.(thread.id)}
             />
           ))}
-        </div>
-      )}
-
-      {/* Pending (unsaved) comments */}
-      {pendingComments?.length > 0 && (
-        <div className="border-t border-slate-200 dark:border-slate-700 bg-amber-50 dark:bg-amber-900/10 px-4 py-3 space-y-2 max-h-40 overflow-y-auto">
-          {pendingComments.map((c, i) => (
+          {pendingComments?.map((c, i) => (
             <InlineComment
-              key={i}
+              key={`pending-${i}`}
               comment={{ id: `pending-${i}`, user: { login: 'you' }, body: c.body, line: c.line, created_at: null }}
               isPending
+            />
+          ))}
+          {aiComments.map((c) => (
+            <AIInlineComment
+              key={`ai-${c._idx}`}
+              comment={c}
+              idx={c._idx}
+              onDismiss={onDismissAIComment}
+              onEdit={onEditAIComment}
             />
           ))}
         </div>

@@ -24,6 +24,27 @@
   --ds-ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ds-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
+  /* ===== Z-INDEX SCALE (documented contract) =====
+   * The PR-review surface stacks several fixed-position layers. The
+   * implicit Tailwind values previously drifted (FAB z-30, composer
+   * z-40, modal backdrop z-[60]) — easy to break with one careless
+   * number. Tokens make the contract explicit and reviewable.
+   *
+   *   surface  (10): in-flow sticky bars (status bar, file header)
+   *   floating (30): floating action buttons that sit ABOVE content
+   *                  but BELOW the inline composer
+   *   composer (40): the inline floating comment composer
+   *   overlay  (50): toasts, tooltips, popovers
+   *   modal    (60): modal backdrop + sheet (matches Modal.jsx)
+   *   ceiling  (70): hard-stop overlays (auth-gate, fatal-error)
+   */
+  --ds-z-surface: 10;
+  --ds-z-floating: 30;
+  --ds-z-composer: 40;
+  --ds-z-overlay: 50;
+  --ds-z-modal: 60;
+  --ds-z-ceiling: 70;
+
   --ds-transition-standard: 0.2s var(--ds-ease-out-expo);
   --ds-transition-fast: 0.12s var(--ds-ease-out-expo);
   --ds-transition-slow: 0.35s var(--ds-ease-spring);
