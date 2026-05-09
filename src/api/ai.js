@@ -246,7 +246,7 @@ export const aiApi = {
             // In mock-mode the modal still passes the full repo object,
             // so we emulate the lookup here for the test fixture.
             const fakeRepo = { id: repoId, name: `repo-${repoId}`, language: 'JavaScript', topics: ['demo'] };
-            return mockSuggestNameDescription(fakeRepo);
+            return mockSuggestNameDescription(fakeRepo, options.context);
         }
 
         const body = { repoId };

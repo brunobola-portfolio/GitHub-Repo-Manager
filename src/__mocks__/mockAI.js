@@ -90,7 +90,7 @@ export const mockIssuePlan = ({ repoFullName, issueNumber }) => ({
   mock: true,
 })
 
-export const mockSuggestNameDescription = (repo) => {
+export const mockSuggestNameDescription = (repo, context) => {
     const currentName = repo?.name || 'unnamed-repo';
     const slug = String(currentName).toLowerCase().replace(/[_\s]+/g, '-').replace(/[^a-z0-9-]+/g, '').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
     const language = repo?.language || 'Code';
@@ -98,14 +98,35 @@ export const mockSuggestNameDescription = (repo) => {
     const description = topic
         ? `${language} project for ${topic}`
         : `${language} repository`;
+
+    // Synthesize the enriched response shape consumed by <PremiumRationale />.
+    // Confidence and signalsUsed mirror what the real builder would emit so
+    // mock-mode shows the same premium UI as production.
+    const signals = context?.signals || {};
+    const customFiles = Array.isArray(context?.customFiles) ? context.customFiles : [];
+    const signalsUsed = [];
+    if (signals.readme !== false) signalsUsed.push({ kind: 'readme', label: 'README', bytes: 1432 });
+    if (signals.manifest !== false) signalsUsed.push({ kind: 'manifest', label: 'package.json', bytes: 612 });
+    if (signals.entrypoints) signalsUsed.push({ kind: 'entrypoints', label: 'src/index.js', bytes: 480 });
+    if (signals.folderStructure) signalsUsed.push({ kind: 'folderStructure', label: 'top-level dirs', bytes: 96 });
+    if (signals.topics !== false && (repo?.topics?.length ?? 0) > 0) signalsUsed.push({ kind: 'topicsLanguage', label: `topics + language`, bytes: 64 });
+    customFiles.slice(0, 5).forEach((p) => signalsUsed.push({ kind: 'customFile', label: p, bytes: 800 }));
+
+    const hasReadme = signals.readme !== false;
+    const hasManifest = signals.manifest !== false;
+    const confidence = hasReadme && hasManifest ? 'high' : (hasReadme || hasManifest) ? 'medium' : 'low';
+
     return {
         source: 'deterministic',
         current: { name: currentName, description: repo?.description || '' },
         proposed: { name: slug || currentName, description },
-        rationale: 'Mock-mode deterministic suggestion based on language and topics.',
+        rationale: 'Mock-mode suggestion based on language and topics. Live AI provider returns the same shape with richer reasoning.',
         noChange: {
             name: (slug || currentName) === currentName,
             description: description === (repo?.description || ''),
         },
+        confidence,
+        signalsUsed,
+        redactions: [],
     };
 };
