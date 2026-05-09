@@ -168,3 +168,62 @@ describe('buildContext — README and metadata signals', () => {
         expect(ctx.confidence).toBe('low');
     });
 });
+
+describe('buildContext — entrypoints and folder structure', () => {
+    it('fetches up to 3 entrypoint candidates (head only)', async () => {
+        mockContents({
+            'src/index.js': '// large file '.repeat(200),
+            'src/main.js': null,
+            'src/app.js': null,
+            'app/__init__.py': null,
+            'cmd/main.go': null,
+            'main.py': null,
+        });
+        const ctx = await buildContext({
+            accessToken: 't', owner: 'o', repo: 'r',
+            signals: { entrypoints: true },
+            customFiles: [],
+            topicsLanguageInputs: { topics: [], language: null },
+        });
+        const ep = ctx.sections.find((s) => s.kind === 'entrypoints');
+        expect(ep).toBeTruthy();
+        expect(ep.bytes).toBeLessThanOrEqual(1536);
+        expect(ep.label).toBe('src/index.js'); // single match in this case
+    });
+
+    it('skips entrypoint signal entirely when off (no GitHub calls)', async () => {
+        mockContents({ 'src/index.js': 'x' });
+        const ctx = await buildContext({
+            accessToken: 't', owner: 'o', repo: 'r',
+            signals: { entrypoints: false },
+            customFiles: [],
+            topicsLanguageInputs: { topics: [], language: null },
+        });
+        expect(ctx.sections.find((s) => s.kind === 'entrypoints')).toBeUndefined();
+        expect(mockGithubApi.mock.calls.find((c) => c[0].includes('src/index.js'))).toBeUndefined();
+    });
+
+    it('emits folderStructure section listing top-level directories', async () => {
+        mockGithubApi.mockImplementation(async (url) => {
+            // Top-level listing — `path` portion empty.
+            if (url.match(/\/contents\/?$/) || url.match(/\/contents\/\?/)) {
+                return { data: [
+                    { name: 'src', type: 'dir' },
+                    { name: 'tests', type: 'dir' },
+                    { name: 'README.md', type: 'file' },
+                ] };
+            }
+            const err = new Error('Not Found'); err.status = 404; throw err;
+        });
+        const ctx = await buildContext({
+            accessToken: 't', owner: 'o', repo: 'r',
+            signals: { folderStructure: true },
+            customFiles: [],
+            topicsLanguageInputs: { topics: [], language: null },
+        });
+        const folder = ctx.sections.find((s) => s.kind === 'folderStructure');
+        expect(folder.content).toContain('src');
+        expect(folder.content).toContain('tests');
+        expect(folder.content).not.toContain('README.md');
+    });
+});

@@ -14,6 +14,19 @@ const MANIFEST_CANDIDATES = [
     'composer.json',
 ];
 
+const ENTRYPOINT_CANDIDATES = [
+    'src/index.js', 'src/index.ts', 'src/main.js', 'src/main.ts',
+    'src/app.js', 'src/app.ts',
+    'index.js', 'index.ts',
+    'main.py', 'app.py', 'app/__init__.py',
+    'cmd/main.go', 'main.go',
+    'src/main/java/Main.java',
+    'src/main.rs',
+];
+
+const ENTRYPOINT_PER_FILE_CAP = 512;
+const ENTRYPOINT_MAX_FILES = 3;
+
 const SIGNAL_BUDGETS = {
     readme: 3072,
     manifest: 1536,
@@ -53,6 +66,28 @@ async function fetchManifest(owner, repo, accessToken) {
         if (typeof content === 'string') return { label: candidate, content };
     }
     return null;
+}
+
+async function fetchEntrypoints(owner, repo, accessToken) {
+    const found = [];
+    for (const path of ENTRYPOINT_CANDIDATES) {
+        if (found.length >= ENTRYPOINT_MAX_FILES) break;
+        const content = await fetchTextFile(owner, repo, path, accessToken);
+        if (typeof content === 'string') found.push({ path, content });
+    }
+    return found;
+}
+
+async function fetchTopLevelDirs(owner, repo, accessToken) {
+    try {
+        const { data } = await githubApi(`/repos/${owner}/${repo}/contents/`, accessToken);
+        if (Array.isArray(data)) {
+            return data.filter((e) => e?.type === 'dir').map((e) => e.name);
+        }
+    } catch (e) {
+        if (e?.status !== 404) logger.warn({ err: e, owner, repo }, 'repo-context-builder: top-level listing failed');
+    }
+    return [];
 }
 
 function pushSection(sections, { kind, label, content, byteCap }) {
@@ -115,6 +150,33 @@ export async function buildContext({
                 label: manifest.label,
                 content: manifest.content,
                 byteCap: SIGNAL_BUDGETS.manifest,
+            });
+        }
+    }
+
+    if (signals.entrypoints) {
+        const entries = await fetchEntrypoints(owner, repo, accessToken);
+        if (entries.length > 0) {
+            const combined = entries
+                .map((e) => `--- ${e.path} ---\n${e.content.slice(0, ENTRYPOINT_PER_FILE_CAP)}`)
+                .join('\n\n');
+            pushSection(sections, {
+                kind: 'entrypoints',
+                label: entries.length === 1 ? entries[0].path : `${entries.length} entrypoints`,
+                content: combined,
+                byteCap: SIGNAL_BUDGETS.entrypoints,
+            });
+        }
+    }
+
+    if (signals.folderStructure) {
+        const dirs = await fetchTopLevelDirs(owner, repo, accessToken);
+        if (dirs.length > 0) {
+            pushSection(sections, {
+                kind: 'folderStructure',
+                label: 'top-level dirs',
+                content: dirs.slice(0, 50).join('\n'),
+                byteCap: SIGNAL_BUDGETS.folderStructure,
             });
         }
     }
