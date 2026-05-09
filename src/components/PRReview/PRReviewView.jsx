@@ -122,6 +122,14 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     refetch()
   }, [refetch])
 
+  // Announce the surface to the global CommandPalette so PR-scoped
+  // commands (Approve, Request changes, Mark viewed, ...) appear in
+  // cmd+k while the user is here. Loose coupling via window events.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('pr-review:focused'))
+    return () => window.dispatchEvent(new CustomEvent('pr-review:blurred'))
+  }, [])
+
   // Dispatch AI summary when it arrives
   useEffect(() => {
     if (aiSummary && !state.aiSummary) {
@@ -234,6 +242,35 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     onShowHelp: () => setHelpOpen(true),
     enabled: true,
   })
+
+  // Listen for CommandPalette events and route them to the surface's
+  // handlers. Lives below handleSubmitReview to avoid a TDZ on the
+  // useCallback. PR-scoped command items are emitted by the palette.
+  useEffect(() => {
+    const onToggleReviewed = () => {
+      if (state.activeFile) dispatch({ type: 'TOGGLE_REVIEWED', filename: state.activeFile })
+    }
+    const onApprove = () => handleSubmitReview({ event: 'APPROVE' })
+    const onRequestChanges = () => handleSubmitReview({ event: 'REQUEST_CHANGES' })
+    const onComment = () => handleSubmitReview({ event: 'COMMENT' })
+    const onToggleTree = () => dispatch({ type: 'TOGGLE_FILE_TREE' })
+    const onShowHelp = () => setHelpOpen(true)
+
+    window.addEventListener('pr-review:toggle-reviewed', onToggleReviewed)
+    window.addEventListener('pr-review:approve', onApprove)
+    window.addEventListener('pr-review:request-changes', onRequestChanges)
+    window.addEventListener('pr-review:comment', onComment)
+    window.addEventListener('pr-review:toggle-tree', onToggleTree)
+    window.addEventListener('pr-review:show-help', onShowHelp)
+    return () => {
+      window.removeEventListener('pr-review:toggle-reviewed', onToggleReviewed)
+      window.removeEventListener('pr-review:approve', onApprove)
+      window.removeEventListener('pr-review:request-changes', onRequestChanges)
+      window.removeEventListener('pr-review:comment', onComment)
+      window.removeEventListener('pr-review:toggle-tree', onToggleTree)
+      window.removeEventListener('pr-review:show-help', onShowHelp)
+    }
+  }, [state.activeFile, handleSubmitReview, dispatch])
 
   // Loading state
   if (loading && !state.pr) {

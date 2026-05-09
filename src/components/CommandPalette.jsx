@@ -7,6 +7,7 @@ import {
   AlertTriangle, Wrench, BarChart3, Sparkles, Bookmark, ShieldAlert,
   Pin, PinOff, Bell, BellOff, X, RefreshCw, RotateCw, Eraser,
   ExternalLink, Copy, FileText, GitBranch, Star, Clock, Archive, ArrowDownAZ,
+  Check, ShieldCheck, MessageCircle,
 } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { searchApi } from '../api/search'
@@ -19,6 +20,7 @@ import { buildTrackedRepoCommands } from './CommandPalette/trackedRepoCommands'
 import { WORK_BOARD_GLOBAL_COMMANDS } from './CommandPalette/workBoardGlobalCommands'
 import { buildAICommands } from './CommandPalette/aiCommands'
 import { buildRepoDetailCommands } from './CommandPalette/repoDetailCommands'
+import { buildPRReviewCommands } from './CommandPalette/prReviewCommands'
 import { buildTeamsCommands } from './CommandPalette/teamsCommands'
 import { buildReposCommands } from './CommandPalette/reposCommands'
 import { buildRepoActionsCommands } from './CommandPalette/repoActionsCommands'
@@ -73,11 +75,11 @@ const WORK_BOARD_CMD_ICONS = {
     Pin, PinOff, Bell, BellOff, X, RefreshCw, RotateCw, Eraser, Sparkles,
 }
 
-// Used by the contextual command groups (repo-detail / teams / repos).
+// Used by the contextual command groups (repo-detail / teams / repos / pr-review).
 const CONTEXT_CMD_ICONS = {
     ExternalLink, Copy, ShieldAlert, FileText, GitBranch, Tag, CircleDot,
     GitPullRequest, Settings, Plus, RefreshCw, Pin, Archive, Eraser, Star,
-    Clock, ArrowDownAZ,
+    Clock, ArrowDownAZ, Check, ShieldCheck, MessageCircle,
 }
 
 const GROUP_HEADING_CLASSES = '[&>[cmdk-group-heading]]:px-2 [&>[cmdk-group-heading]]:py-1.5 [&>[cmdk-group-heading]]:text-xs [&>[cmdk-group-heading]]:font-semibold [&>[cmdk-group-heading]]:text-slate-500 [&>[cmdk-group-heading]]:dark:text-slate-400 [&>[cmdk-group-heading]]:uppercase [&>[cmdk-group-heading]]:tracking-wider'
@@ -229,6 +231,20 @@ export function CommandPalette({
   selectedRepoDetailEntities = null,
 }) {
   const [input, setInput] = useState('')
+  // Track whether a PRReviewView is currently mounted + focused. PRReviewView
+  // dispatches `pr-review:focused` on mount and `pr-review:blurred` on unmount;
+  // the palette renders the PR-scoped commands group only while this is true.
+  const [prReviewFocused, setPrReviewFocused] = useState(false)
+  useEffect(() => {
+    const onFocused = () => setPrReviewFocused(true)
+    const onBlurred = () => setPrReviewFocused(false)
+    window.addEventListener('pr-review:focused', onFocused)
+    window.addEventListener('pr-review:blurred', onBlurred)
+    return () => {
+      window.removeEventListener('pr-review:focused', onFocused)
+      window.removeEventListener('pr-review:blurred', onBlurred)
+    }
+  }, [])
   const { askMode, askQuery } = parseAskMode(input)
   const displayRepos = repos.slice(0, 10)
   const liveEnabled = isOpen && !MOCK_MODE && !askMode
@@ -242,6 +258,10 @@ export function CommandPalette({
   const trackedRepoCommands = buildTrackedRepoCommands(trackedHook.repos)
   const aiCommands = buildAICommands({ enabled: trackedHook.prefs?.ai_assistant_enabled === 1 })
   const repoDetailCommands = activeView === 'repo-detail' ? buildRepoDetailCommands(selectedRepoDetail) : []
+  // PR-review-scoped commands: appear only while a PRReviewView is mounted
+  // and has fired pr-review:focused. PRReviewView fires pr-review:blurred
+  // on unmount. State subscription installed in a useEffect below.
+  const prReviewCommands = prReviewFocused ? buildPRReviewCommands() : []
   const teamsCommands = activeView === 'teams' ? buildTeamsCommands() : []
   const reposCommands = activeView === 'repos' ? buildReposCommands() : []
   // Top-3 repo actions surfaced when the user is on the repos list. Cross-surface
@@ -674,6 +694,25 @@ export function CommandPalette({
           {repoDetailCommands.length > 0 && (
             <Command.Group heading={`Repo: ${selectedRepoDetail?.full_name ?? ''}`} className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
               {repoDetailCommands.map((item) => {
+                const Icon = CONTEXT_CMD_ICONS[item.icon]
+                return (
+                  <Command.Item
+                    key={item.id}
+                    value={item.searchValue}
+                    onSelect={() => { runContextCommand(item); onClose() }}
+                    className={ITEM_CLASSES}
+                  >
+                    {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
+                    {item.label}
+                  </Command.Item>
+                )
+              })}
+            </Command.Group>
+          )}
+
+          {prReviewCommands.length > 0 && (
+            <Command.Group heading="PR review" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+              {prReviewCommands.map((item) => {
                 const Icon = CONTEXT_CMD_ICONS[item.icon]
                 return (
                   <Command.Item
