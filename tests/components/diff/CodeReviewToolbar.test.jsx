@@ -50,3 +50,29 @@ describe('CodeReviewToolbar', () => {
         expect(options).toEqual(expect.arrayContaining(['2', '4', '8']))
     })
 })
+
+describe('CodeReviewToolbar — expand/collapse all', () => {
+    it('dispatches diff-collapser:expand-all when "Expand all" is clicked', () => {
+        const spy = vi.fn()
+        window.addEventListener('diff-collapser:expand-all', spy)
+        try {
+            render(<CodeReviewToolbar {...BASE_PROPS} />)
+            fireEvent.click(screen.getByRole('button', { name: /expand all/i }))
+            expect(spy).toHaveBeenCalledTimes(1)
+        } finally {
+            window.removeEventListener('diff-collapser:expand-all', spy)
+        }
+    })
+
+    it('dispatches diff-collapser:collapse-all when "Collapse all" is clicked', () => {
+        const spy = vi.fn()
+        window.addEventListener('diff-collapser:collapse-all', spy)
+        try {
+            render(<CodeReviewToolbar {...BASE_PROPS} />)
+            fireEvent.click(screen.getByRole('button', { name: /collapse all/i }))
+            expect(spy).toHaveBeenCalledTimes(1)
+        } finally {
+            window.removeEventListener('diff-collapser:collapse-all', spy)
+        }
+    })
+})

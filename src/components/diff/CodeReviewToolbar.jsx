@@ -1,4 +1,4 @@
-import { Columns2, AlignLeft, ChevronLeft, ChevronRight, PanelRightClose, PanelRightOpen, WrapText } from 'lucide-react'
+import { Columns2, AlignLeft, ChevronLeft, ChevronRight, ChevronsDown, ChevronsUp, PanelRightClose, PanelRightOpen, WrapText } from 'lucide-react'
 
 export function CodeReviewToolbar({
     filesCount, additions, deletions, reviewedCount,
@@ -45,6 +45,27 @@ export function CodeReviewToolbar({
                     className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 transition-colors"
                     aria-label="Next file">
                     <ChevronRight className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                </button>
+
+                <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1" />
+
+                <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new CustomEvent('diff-collapser:expand-all'))}
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
+                    title="Expand all collapsed diffs"
+                    aria-label="Expand all"
+                >
+                    <ChevronsDown className="w-3.5 h-3.5" /> Expand all
+                </button>
+                <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new CustomEvent('diff-collapser:collapse-all'))}
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
+                    title="Collapse all large diffs"
+                    aria-label="Collapse all"
+                >
+                    <ChevronsUp className="w-3.5 h-3.5" /> Collapse all
                 </button>
 
                 <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1" />
