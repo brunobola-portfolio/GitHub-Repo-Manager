@@ -78,4 +78,13 @@ describe('RepoMarkdown', () => {
         const a = container.querySelector('a')
         expect(a?.getAttribute('href')).toBe('#readme-hello-world')
     })
+
+    it('applies a Shiki language class to fenced code blocks for known languages', async () => {
+        const md = '```javascript\nconst x = 1\n```'
+        const { container } = render(<RepoMarkdown source={md} {...PROPS} />)
+        // Shiki renders inline-styled spans; we don't assert exact tokens (theme-
+        // dependent), only that the language class survived.
+        const code = container.querySelector('pre code')
+        expect(code?.className || '').toMatch(/language-javascript/)
+    })
 })

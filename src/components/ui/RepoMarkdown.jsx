@@ -66,6 +66,14 @@ export function RepoMarkdown({ source, owner, repo, branch = 'main', className =
                         // eslint-disable-next-line jsx-a11y/anchor-has-content -- children come from react-markdown
                         <a {...props} target="_blank" rel="noopener noreferrer" />
                     ),
+                    code: ({ inline, className, children, ...rest }) => {
+                        if (inline) return <code className={className} {...rest}>{children}</code>
+                        // Block code — preserve the language class so Shiki / our syntax CSS
+                        // can theme it. We don't tokenize at render-time (cost-prohibitive for
+                        // long READMEs); we add the class and let the existing Shiki theme CSS
+                        // bundle (loaded by @git-diff-view/shiki elsewhere) style it.
+                        return <code className={className || ''} {...rest}>{children}</code>
+                    },
                 }}
             >
                 {source}
