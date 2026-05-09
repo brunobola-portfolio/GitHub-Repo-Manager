@@ -444,3 +444,23 @@
   white-space: pre-wrap !important;
   word-break: break-all;
 }
+
+/* Diff renderer paint optimisation — see
+ * docs/specs/2026-05-09-pr-review-perf-and-polish-design.md (Slice 2.1).
+ *
+ * `content-visibility: auto` lets the browser skip rendering for the
+ * diff wrapper when it sits outside the viewport (e.g. multiple files
+ * stacked in a long page). `contain-intrinsic-size` reserves a
+ * believable initial height so the scroll bar doesn't jump as users
+ * scroll past unrendered diffs.
+ *
+ * Per-row containment was investigated but skipped: applying
+ * `content-visibility` to <tr> elements has known table-layout edge
+ * cases. The wrapper-level rule is the safe pragmatic win.
+ */
+@supports (content-visibility: auto) {
+  .diff-renderer {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 600px;
+  }
+}
