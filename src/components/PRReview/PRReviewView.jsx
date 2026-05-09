@@ -355,6 +355,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
         totalFiles={state.files?.length ?? 0}
         reviewedCount={state.reviewedFiles.length}
         pendingCommentCount={state.pendingComments.length}
+        onSubmitReview={handleSubmitReview}
       />
 
       <PublishReviewModal
