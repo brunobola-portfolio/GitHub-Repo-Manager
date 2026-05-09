@@ -57,6 +57,37 @@ describe('DiffRenderer — tabWidth + wrap', () => {
     })
 })
 
+describe('DiffRenderer — render strategy routing', () => {
+    it('passes through to the lib for small files (<= 500 lines)', () => {
+        const { container } = render(
+            <DiffRenderer filename="x.js" patch={PATCH_WITH_TABS} viewMode="unified"
+                additions={10} deletions={5} />,
+        )
+        expect(container.querySelector('[data-testid="diff-view"]')).not.toBeNull()
+        expect(container.querySelector('.diff-collapser')).toBeNull()
+        expect(container.querySelector('.diff-compute-on-demand')).toBeNull()
+    })
+
+    it('wraps in DiffCollapser for medium files (501–50k lines)', () => {
+        const { container } = render(
+            <DiffRenderer filename="x.js" patch={PATCH_WITH_TABS} viewMode="unified"
+                additions={1200} deletions={300} />,
+        )
+        expect(container.querySelector('.diff-collapser')).not.toBeNull()
+        // Folded by default — the actual <DiffView> is not in the tree yet.
+        expect(container.querySelector('[data-testid="diff-view"]')).toBeNull()
+    })
+
+    it('wraps in DiffComputeOnDemand for extreme files (> 50k lines)', () => {
+        const { container } = render(
+            <DiffRenderer filename="x.lock" patch={PATCH_WITH_TABS} viewMode="unified"
+                additions={120_000} deletions={0} />,
+        )
+        expect(container.querySelector('.diff-compute-on-demand')).not.toBeNull()
+        expect(container.querySelector('[data-testid="diff-view"]')).toBeNull()
+    })
+})
+
 describe('DiffRenderer — console hygiene', () => {
     // Importing DiffRenderer at the top of this file installs a module-level
     // console.warn filter that swallows '[@git-diff-view/core] Mismatch

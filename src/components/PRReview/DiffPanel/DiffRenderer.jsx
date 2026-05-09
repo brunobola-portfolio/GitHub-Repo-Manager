@@ -1,9 +1,12 @@
-import { useMemo } from 'react'
+import { useDeferredValue, useMemo } from 'react'
 import { DiffView, DiffModeEnum } from '@git-diff-view/react'
 // NOTE: This imports global CSS from the diff library. If upgrading @git-diff-view,
 // check for class name conflicts with Tailwind or the design system.
 import '@git-diff-view/react/styles/diff-view-pure.css'
 import { useTheme } from '../../../hooks/useTheme'
+import { pickRenderStrategy } from './diffSize'
+import { DiffCollapser } from './DiffCollapser'
+import { DiffComputeOnDemand } from './DiffComputeOnDemand'
 
 // Silence a dev-only sanity warning from @git-diff-view/core that fires
 // because we feed it GitHub patch fragments (no full file content). The
@@ -114,10 +117,26 @@ function parsePatchToHunks(patch, filename) {
  * @param {number}   [props.tabWidth=4]      - Number of spaces each tab character expands to
  * @param {boolean}  [props.wrap=false]      - When true, long lines wrap instead of scrolling horizontally
  */
-export function DiffRenderer({ filename, patch, viewMode, onAddComment, highlightLanguage, tabWidth = 4, wrap = false }) {
+export function DiffRenderer({
+  filename,
+  patch,
+  viewMode,
+  onAddComment,
+  highlightLanguage,
+  tabWidth = 4,
+  wrap = false,
+  additions = 0,
+  deletions = 0,
+  storageKey,
+}) {
   const { isDark } = useTheme()
 
-  const expanded = useMemo(() => expandTabs(patch, tabWidth), [patch, tabWidth])
+  // Defer tab-width re-application — on a 5k-line patch the tab→spaces
+  // pass blocks paint for hundreds of ms. useDeferredValue lets React
+  // keep the previous patch on screen while the next renders, freeing
+  // the main thread for input.
+  const deferredTabWidth = useDeferredValue(tabWidth)
+  const expanded = useMemo(() => expandTabs(patch, deferredTabWidth), [patch, deferredTabWidth])
 
   const lang = useMemo(() => {
     if (highlightLanguage) return highlightLanguage
@@ -150,7 +169,8 @@ export function DiffRenderer({ filename, patch, viewMode, onAddComment, highligh
     )
   }
 
-  return (
+  // The lib's actual diff. Wrapped or unwrapped depending on file size.
+  const diffElement = (
     <div className={`diff-renderer overflow-auto text-sm font-mono${wrap ? ' diff-wrap-on' : ''}`}>
       <DiffView
         data={diffData}
@@ -166,4 +186,21 @@ export function DiffRenderer({ filename, patch, viewMode, onAddComment, highligh
       />
     </div>
   )
+
+  const strategy = pickRenderStrategy({ additions, deletions })
+  if (strategy === 'compute') {
+    return (
+      <DiffComputeOnDemand filename={filename} additions={additions} deletions={deletions}>
+        {diffElement}
+      </DiffComputeOnDemand>
+    )
+  }
+  if (strategy === 'collapse') {
+    return (
+      <DiffCollapser filename={filename} additions={additions} deletions={deletions} storageKey={storageKey}>
+        {({ collapsed }) => collapsed ? null : diffElement}
+      </DiffCollapser>
+    )
+  }
+  return diffElement
 }

@@ -151,6 +151,9 @@ export function CodeReviewSurface({
                                     viewMode={prefs.mode}
                                     tabWidth={prefs.tabWidth}
                                     wrap={prefs.wrap}
+                                    additions={activeFile.additions || 0}
+                                    deletions={activeFile.deletions || 0}
+                                    storageKey={storageKey}
                                 />
                             ) : (
                                 <div className="p-6 text-sm text-slate-500 dark:text-slate-400">

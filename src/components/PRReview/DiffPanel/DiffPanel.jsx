@@ -221,6 +221,12 @@ export function DiffPanel({
             viewMode={viewMode}
             onAddComment={handleAddComment}
             highlightLanguage={lang}
+            additions={additions}
+            deletions={deletions}
+            // No storageKey here — DiffPanel is used inside PRReviewView whose
+            // own state machine drives reviewed/expanded tracking. Falling back
+            // to undefined makes DiffCollapser a session-only fold (acceptable
+            // for the focused review surface).
           />
         </Suspense>
       </div>
