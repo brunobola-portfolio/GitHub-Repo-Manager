@@ -32,4 +32,8 @@ describe('rehypeSlugInline', () => {
             expect(out).toContain('id="sec"')
         }
     })
+    it('strips leading and trailing hyphens from the slug', async () => {
+        const out = await process('<h2>- Leading and trailing -</h2>')
+        expect(out).toContain('id="leading-and-trailing"')
+    })
 })

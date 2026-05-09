@@ -10,6 +10,7 @@ function slugify(text) {
         .trim()
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '')
         .slice(0, 80)
 }
 
