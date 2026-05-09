@@ -190,6 +190,8 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
         setUseDesc(true)
         setAckRename(false)
         setConfirmingRegenerate(false)
+        setCustomFiles([])
+        setPickerOpen(false)
         // eslint-disable-next-line react-hooks/exhaustive-deps -- only the repo identity matters
     }, [isOpen, repo?.id])
     /* eslint-enable react-hooks/set-state-in-effect */
