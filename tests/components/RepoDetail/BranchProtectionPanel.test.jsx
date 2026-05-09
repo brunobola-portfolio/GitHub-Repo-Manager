@@ -68,3 +68,83 @@ describe('BranchProtectionPanel — upgrade-required state', () => {
         expect(screen.queryByText(/requires GitHub Pro/i)).not.toBeInTheDocument()
     })
 })
+
+describe('BranchProtectionPanel — inline variant', () => {
+    it('renders an inline upgrade strip when variant="inline" is set and GITHUB_PRO_REQUIRED', async () => {
+        const err = Object.assign(
+            new Error('Branch protection requires GitHub Pro on private repositories.'),
+            { status: 403, code: 'GITHUB_PRO_REQUIRED' },
+        )
+        const api = makeApi({ fetchBranchProtection: vi.fn().mockRejectedValue(err) })
+        renderWithProviders(
+            <BranchProtectionPanel api={api} branch="main" archived={false} variant="inline" />
+        )
+
+        await waitFor(() => {
+            // Inline variant: NO large card heading
+            expect(screen.queryByRole('heading', { name: /Branch protection requires GitHub Pro/i })).toBeNull()
+        })
+
+        // Inline variant: a short Pro-protect chip is visible
+        expect(screen.getByText(/Pro to protect/i)).toBeInTheDocument()
+    })
+
+    it('renders the existing full card when variant is unset (default)', async () => {
+        const err = Object.assign(
+            new Error('Branch protection requires GitHub Pro on private repositories.'),
+            { status: 403, code: 'GITHUB_PRO_REQUIRED' },
+        )
+        const api = makeApi({ fetchBranchProtection: vi.fn().mockRejectedValue(err) })
+        renderWithProviders(
+            <BranchProtectionPanel api={api} branch="main" archived={false} />
+        )
+
+        await waitFor(() => {
+            expect(screen.getByRole('heading', { name: /Branch protection requires GitHub Pro/i })).toBeInTheDocument()
+        })
+    })
+
+    it('renders "unprotected" status in inline mode when protection is disabled', async () => {
+        const api = makeApi({ fetchBranchProtection: vi.fn().mockResolvedValue({ protected: false }) })
+        renderWithProviders(
+            <BranchProtectionPanel api={api} branch="main" archived={false} variant="inline" />
+        )
+
+        await waitFor(() => {
+            expect(screen.getByText(/unprotected/i)).toBeInTheDocument()
+        })
+        // Card-mode button should NOT appear
+        expect(screen.queryByRole('button', { name: /enable protection/i })).not.toBeInTheDocument()
+    })
+
+    it('renders "protected" status in inline mode when protection is enabled', async () => {
+        const api = makeApi({
+            fetchBranchProtection: vi.fn().mockResolvedValue({
+                protected: true,
+                required_pull_request_reviews: {
+                    required_approving_review_count: 1,
+                    dismiss_stale_reviews: false,
+                    require_code_owner_reviews: false,
+                },
+            }),
+        })
+        renderWithProviders(
+            <BranchProtectionPanel api={api} branch="main" archived={false} variant="inline" />
+        )
+
+        await waitFor(() => {
+            expect(screen.getByText(/protected/i)).toBeInTheDocument()
+        })
+    })
+
+    it('renders loading state in inline mode during fetch', async () => {
+        const api = makeApi({
+            fetchBranchProtection: vi.fn(() => new Promise(() => {})), // Never resolves
+        })
+        renderWithProviders(
+            <BranchProtectionPanel api={api} branch="main" archived={false} variant="inline" />
+        )
+
+        expect(screen.getByText(/Checking protection/i)).toBeInTheDocument()
+    })
+})

@@ -57,7 +57,7 @@ function rulesEqual(a, b) {
     return Object.keys(a).every((k) => a[k] === b[k])
 }
 
-export function BranchProtectionPanel({ api, branch, archived }) {
+export function BranchProtectionPanel({ api, branch, archived, variant = 'card' }) {
     const { toast } = useToast()
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -137,6 +137,23 @@ export function BranchProtectionPanel({ api, branch, archived }) {
     }
 
     if (!branch) return null
+
+    // Inline variant: compact status chip for per-branch rows
+    if (variant === 'inline') {
+        if (loading) return <span className="text-xs text-slate-400">Checking protection…</span>
+        if (upgradeRequired) {
+            return (
+                <a href="https://github.com/pricing" target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/50 hover:underline">
+                    ⚠ Pro to protect
+                </a>
+            )
+        }
+        if (!savedRules) {
+            return <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500">unprotected</span>
+        }
+        return <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">protected</span>
+    }
 
     return (
         <Card className="p-5 space-y-4">
