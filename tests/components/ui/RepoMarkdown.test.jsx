@@ -37,11 +37,11 @@ describe('RepoMarkdown', () => {
         )
     })
 
-    it('lets absolute URLs and anchors pass through unchanged', () => {
+    it('lets absolute URLs pass through unchanged (fragment hrefs get readme- prefix)', () => {
         const md = '[anchor](#section) and [absolute](https://example.com/x)'
         const { container } = render(<RepoMarkdown source={md} {...PROPS} />)
         const links = container.querySelectorAll('a')
-        expect(links[0]?.getAttribute('href')).toBe('#section')
+        expect(links[0]?.getAttribute('href')).toBe('#readme-section')
         expect(links[1]?.getAttribute('href')).toBe('https://example.com/x')
     })
 
@@ -58,9 +58,24 @@ describe('RepoMarkdown', () => {
         expect(container.querySelector('script')).toBeNull()
     })
 
-    it('adds id slugs to headings', () => {
+    it('adds id slugs to headings (namespaced via readme- prefix)', () => {
         const md = '# Hello World'
         const { container } = render(<RepoMarkdown source={md} {...PROPS} />)
-        expect(container.querySelector('h1')?.id).toBe('hello-world')
+        expect(container.querySelector('h1')?.id).toBe('readme-hello-world')
+    })
+
+    it('namespaces HTML-supplied ids so they cannot collide with app shell ids', () => {
+        const md = '<h1 id="root">Trying to clobber</h1>'
+        const { container } = render(<RepoMarkdown source={md} {...PROPS} />)
+        const h1 = container.querySelector('h1')
+        expect(h1?.id).toBe('readme-root') // NOT just "root"
+        expect(h1?.id).not.toBe('root')
+    })
+
+    it('prefixes fragment-link hrefs so in-README anchors keep working', () => {
+        const md = '[jump](#hello-world)\n\n# Hello World'
+        const { container } = render(<RepoMarkdown source={md} {...PROPS} />)
+        const a = container.querySelector('a')
+        expect(a?.getAttribute('href')).toBe('#readme-hello-world')
     })
 })

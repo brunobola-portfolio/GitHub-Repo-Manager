@@ -7,11 +7,11 @@ import { rehypeSlugInline } from './__rehype-slug-inline'
 
 // Sanitize schema: defaults + relax a handful of attributes that GitHub
 // READMEs habitually use. Tag/attribute lists are explicit-allow only.
-// clobberPrefix is cleared so that id slugs from rehypeSlugInline are
-// preserved as-is rather than being prefixed with "user-content-".
+// clobberPrefix: 'readme-' namespaces ALL ids and fragment hrefs so README
+// content can never collide with app-shell ids (e.g. id="root").
 const SCHEMA = {
     ...defaultSchema,
-    clobberPrefix: '',
+    clobberPrefix: 'readme-',
     attributes: {
         ...defaultSchema.attributes,
         div: [...(defaultSchema.attributes?.div || []), 'align'],
@@ -27,17 +27,20 @@ const SCHEMA = {
 }
 
 function isAbsolute(url) {
-    return /^[a-z]+:\/\//i.test(url) || url.startsWith('#') || url.startsWith('mailto:')
+    return /^[a-z]+:\/\//i.test(url) || url.startsWith('mailto:')
 }
 
 function rewriteImageUri(uri, owner, repo, branch) {
-    if (!uri || isAbsolute(uri)) return uri
+    if (!uri || isAbsolute(uri) || uri.startsWith('#')) return uri
     const clean = uri.replace(/^\.\//, '').replace(/^\//, '')
     return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${clean}`
 }
 
 function rewriteLinkUri(uri, owner, repo, branch) {
-    if (!uri || isAbsolute(uri)) return uri
+    if (!uri) return uri
+    // Fragment links: prefix the anchor to match the readme- namespace on heading ids.
+    if (uri.startsWith('#')) return `#readme-${uri.slice(1)}`
+    if (isAbsolute(uri)) return uri
     const clean = uri.replace(/^\.\//, '').replace(/^\//, '')
     return `https://github.com/${owner}/${repo}/blob/${branch}/${clean}`
 }
