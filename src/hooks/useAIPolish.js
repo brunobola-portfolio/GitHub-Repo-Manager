@@ -35,6 +35,7 @@ const CONCURRENCY = 3
  * @property {boolean} edited        user has edited the proposal manually
  * @property {'idle'|'resolving'|'loading'|'ready'|'applying'|'done'|'error'|'quota'} status
  * @property {string|null} error
+ * @property {'high'|'medium'|'low'|null} confidence  AI confidence from the suggestion response
  */
 
 function makeInitialRow(fullName) {
@@ -50,6 +51,7 @@ function makeInitialRow(fullName) {
         edited: false,
         status: 'idle',
         error: null,
+        confidence: null,
     }
 }
 
@@ -71,8 +73,10 @@ async function runWithLimit(items, limit, worker) {
 
 /**
  * @param {string[]} repoFullNames
+ * @param {Object|null} contextOptions  Optional context payload forwarded to the AI
+ *                                      endpoint (signals, customFiles, etc.).
  */
-export function useAIPolish(repoFullNames) {
+export function useAIPolish(repoFullNames, contextOptions = null) {
     const [rows, setRows] = useState(() =>
         (Array.isArray(repoFullNames) ? repoFullNames : []).map(makeInitialRow),
     )
@@ -83,6 +87,14 @@ export function useAIPolish(repoFullNames) {
     // immediately when any row trips a 429 — closure-captured `quotaHit`
     // would be stale until the next render.
     const quotaHitRef = useRef(false)
+    // Stabilize contextOptions so fetchSuggestion's identity doesn't change
+    // when the caller re-renders with a new object literal. Each row's API
+    // call reads .current at call time, so it always uses the latest prefs
+    // without causing the useEffect to re-run and abort in-flight rows.
+    const contextOptionsRef = useRef(contextOptions)
+    useEffect(() => {
+        contextOptionsRef.current = contextOptions
+    }, [contextOptions])
 
     const updateRow = useCallback((fullName, patch) => {
         setRows(prev => prev.map(r =>
@@ -125,12 +137,17 @@ export function useAIPolish(repoFullNames) {
         }
 
         try {
-            const suggestion = await aiApi.polish.getDescription(latest.repoId)
+            const ctxOpts = contextOptionsRef.current
+            const suggestion = await aiApi.polish.getDescription(
+                latest.repoId,
+                ctxOpts ? { context: ctxOpts } : {},
+            )
             if (abortSignal?.aborted) return
             const proposed = suggestion?.proposed?.description ?? suggestion?.description ?? ''
             updateRow(row.fullName, {
                 proposedDescription: proposed,
                 status: 'ready',
+                confidence: suggestion?.confidence ?? null,
             })
         } catch (e) {
             if (e?.status === 429 || e?.tierError) {

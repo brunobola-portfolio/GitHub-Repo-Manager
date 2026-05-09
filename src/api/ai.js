@@ -239,7 +239,7 @@ export const aiApi = {
     // Suggest a concrete name + description for the repo. The server returns a
     // unified shape (source: 'ai' | 'deterministic'); the modal renders the
     // same UI either way and decides what to display via `source`.
-    suggestNameDescription: async (repoId) => {
+    suggestNameDescription: async (repoId, options = {}) => {
         if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             const { mockSuggestNameDescription } = await import('../__mocks__/mockAI.js');
             await new Promise(r => setTimeout(r, 600));
@@ -249,11 +249,14 @@ export const aiApi = {
             return mockSuggestNameDescription(fakeRepo);
         }
 
+        const body = { repoId };
+        if (options.context) body.context = options.context;
+
         const res = await fetch(`${API_BASE}/ai/suggest-name-description`, {
             method: 'POST',
             headers: await mutationHeaders(),
             credentials: 'include',
-            body: JSON.stringify({ repoId }),
+            body: JSON.stringify(body),
         });
         return handleAIResponse(res, 'suggest-name-description');
     },
@@ -407,7 +410,7 @@ export const aiApi = {
     // tests. See docs/specs/2026-05-08-post-migration-ai-polish.md for the
     // wider design.
     polish: {
-        getDescription: async (repoId) => aiApi.suggestNameDescription(repoId),
+        getDescription: async (repoId, options = {}) => aiApi.suggestNameDescription(repoId, options),
         getTopics: async (repoId) => aiApi.getMetadata(repoId),
         generateReadme: async (repo) => {
             if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {

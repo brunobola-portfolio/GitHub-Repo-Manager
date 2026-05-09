@@ -21,37 +21,29 @@ import { safeJsonParse } from '../../lib/utils.js';
 import { generateDeterministic } from '../../lib/suggest-name-description.js';
 import { sanitizeForPrompt } from '../../ai-service.js';
 import { getResolvedPrompt } from '../../lib/ai-prompt-registry.js';
+import { buildContext } from '../../lib/repo-context-builder.js';
 import db from '../../db.js';
 
 const router = express.Router();
 
 const bodySchema = z.object({
     repoId: z.coerce.number().int().positive(),
+    context: z.object({
+        signals: z.object({
+            readme: z.boolean().default(true),
+            manifest: z.boolean().default(true),
+            entrypoints: z.boolean().default(false),
+            folderStructure: z.boolean().default(false),
+            topics: z.boolean().default(true),
+            language: z.boolean().default(true),
+        }).default({}),
+        customFiles: z.array(z.string().min(1).max(255)).max(5).default([]),
+    }).default({}),
 });
-
-const README_EXCERPT_BYTES = 1500;
 
 async function fetchRepoMetadata(repoId, accessToken) {
     const { data } = await githubApi(`/repositories/${repoId}`, accessToken);
     return data;
-}
-
-// GitHub's canonical README endpoint resolves README.md / README / readme.md /
-// Readme.markdown / etc. transparently, so we don't have to probe candidates.
-async function fetchReadmeExcerpt(owner, name, accessToken) {
-    try {
-        const { data } = await githubApi(`/repos/${owner}/${name}/readme`, accessToken);
-        if (data?.content && data?.encoding === 'base64') {
-            const decoded = Buffer.from(data.content, 'base64').toString('utf8');
-            return decoded.slice(0, README_EXCERPT_BYTES);
-        }
-    } catch (e) {
-        // 404 is the expected "no README yet" path. Anything else (token
-        // expired, GitHub 5xx) is logged so the silent fallback to empty
-        // string doesn't mask a real auth failure.
-        if (e?.status !== 404) logger.warn({ err: e, owner, name }, 'suggest-name-description: README fetch failed');
-    }
-    return '';
 }
 
 // Returns the indexed AI metadata row for (userId, repoId), or null when the
@@ -73,7 +65,7 @@ function loadIndexedAiMetadata(userId, repoId) {
     }
 }
 
-function buildAIPrompt(userId, { name, description, language, isPrivate, topics, readmeExcerpt }) {
+function buildAIPrompt(userId, { name, description, language, isPrivate, topics, readmeExcerpt, signalsBlock }) {
     return getResolvedPrompt(userId, 'suggest_name_description', {
         name: sanitizeForPrompt(name, 100),
         description: sanitizeForPrompt(description || 'none', 500),
@@ -81,6 +73,7 @@ function buildAIPrompt(userId, { name, description, language, isPrivate, topics,
         visibility: isPrivate ? 'private' : 'public',
         topics: sanitizeForPrompt(topics?.length ? topics.join(', ') : 'none', 200),
         readme: sanitizeForPrompt(readmeExcerpt || 'none', 1500),
+        signals_block: sanitizeForPrompt(signalsBlock || 'none', 8192),
     });
 }
 
@@ -141,15 +134,37 @@ router.post(
 
         const owner = repo.owner?.login;
         const name = repo.name;
-        const readmeExcerpt = await fetchReadmeExcerpt(owner, name, req.session.accessToken).catch(() => '');
         const aiMetadata = loadIndexedAiMetadata(userId, repoId);
+
+        let ctx;
+        try {
+            ctx = await buildContext({
+                accessToken: req.session.accessToken,
+                owner: repo.owner?.login,
+                repo: repo.name,
+                signals: req.validatedBody.context.signals,
+                customFiles: req.validatedBody.context.customFiles,
+                topicsLanguageInputs: {
+                    topics: Array.isArray(repo.topics) ? repo.topics : [],
+                    language: repo.language || null,
+                },
+            });
+        } catch (err) {
+            // Builder throws on budget violations — surface as 400.
+            return res.status(400).json({ error: err.message });
+        }
+
+        // Build a concatenated signals block for the prompt template.
+        const signalsBlock = ctx.sections.length === 0
+            ? '(no signals selected)'
+            : ctx.sections.map((s) => `--- ${s.label} (${s.kind}, ${s.bytes}B) ---\n${s.content}`).join('\n\n');
 
         const generatorInput = {
             name,
             description: repo.description || '',
             language: repo.language || null,
             topics: Array.isArray(repo.topics) ? repo.topics : [],
-            readmeExcerpt,
+            readmeExcerpt: (ctx.sections.find((s) => s.kind === 'readme')?.content) || '',
             aiMetadata,
         };
 
@@ -173,8 +188,9 @@ router.post(
                     description: repo.description,
                     language: repo.language,
                     isPrivate: !!repo.private,
-                    topics: generatorInput.topics,
-                    readmeExcerpt,
+                    topics: ctx.sections.find((s) => s.kind === 'topicsLanguage') ? Array.isArray(repo.topics) ? repo.topics : [] : [],
+                    readmeExcerpt: (ctx.sections.find((s) => s.kind === 'readme')?.content) || '',
+                    signalsBlock,
                 });
                 const { text } = await provider.generate({ prompt, maxTokens: 200 });
                 const parsed = safeJsonParse(text);
@@ -205,7 +221,11 @@ router.post(
             current: { name, description: repo.description || '' },
             generated,
         });
-        auditLog(req, 'ai.suggest_name_description', 'repo', `${owner}/${name}`, { source });
+        body.confidence = ctx.confidence;
+        body.signalsUsed = ctx.signalsUsed;
+        body.redactions = ctx.redactions;
+        if (ctx.skippedCustomFiles.length > 0) body.skippedCustomFiles = ctx.skippedCustomFiles;
+        auditLog(req, 'ai.suggest_name_description', 'repo', `${owner}/${name}`, { source, confidence: ctx.confidence });
         return res.json(body);
     },
 );

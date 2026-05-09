@@ -33,6 +33,7 @@ import issuesRouter from './repos/issues.js';
 import commitsRouter from './repos/commits.js';
 import branchesReleasesRouter from './repos/branches-releases.js';
 import actionsCommunityRouter from './repos/actions-community.js';
+import treeRouter from './repos/tree.js';
 
 const router = express.Router();
 
@@ -42,5 +43,6 @@ router.use(issuesRouter);
 router.use(commitsRouter);
 router.use(branchesReleasesRouter);
 router.use(actionsCommunityRouter);
+router.use(treeRouter);
 
 export default router;
