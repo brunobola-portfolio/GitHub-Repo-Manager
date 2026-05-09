@@ -17,16 +17,13 @@ vi.mock('../lib/github-api.js', () => ({
   githubApi: (...args) => githubApiMock(...args),
 }))
 
-vi.mock('../middleware/auth.js', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    requireAuth: (req, res, next) => {
-      if (!req.session?.accessToken) return res.status(401).json({ error: 'unauth' })
-      next()
-    },
-  }
-})
+vi.mock('../middleware/auth.js', () => ({
+  requireAuth: (req, res, next) => {
+    if (!req.session?.accessToken) return res.status(401).json({ error: 'unauth' })
+    next()
+  },
+  safeError: (err, fallback) => err?.message || fallback,
+}))
 
 vi.mock('../lib/audit.js', () => ({ auditLog: vi.fn() }))
 

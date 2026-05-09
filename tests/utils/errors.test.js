@@ -157,4 +157,28 @@ describe('formatUserError', () => {
       expect(out.action.type, `type for ${code}`).toBeTruthy()
     }
   })
+
+  // -----------------------------------------------------------------------
+  // GITHUB_PRO_REQUIRED — branch protection on free tier
+  // -----------------------------------------------------------------------
+
+  it('maps a code: GITHUB_PRO_REQUIRED error to a calm message and never falls through to FALLBACK', () => {
+    const err = Object.assign(new Error('Upgrade to GitHub Pro or make this repository public to enable this feature.'), {
+      status: 403,
+      code: 'GITHUB_PRO_REQUIRED',
+    })
+    const result = formatUserError(err)
+    expect(result.code).toBe('GITHUB_PRO_REQUIRED')
+    expect(result.title).toMatch(/branch protection|github pro/i)
+    // Must not be the generic fallback title
+    expect(result.title).not.toBe('Something went wrong')
+  })
+
+  it('does not log "unmapped error" warn for a known GITHUB_PRO_REQUIRED code', () => {
+    const err = Object.assign(new Error('Upgrade to GitHub Pro'), { status: 403, code: 'GITHUB_PRO_REQUIRED' })
+    formatUserError(err)
+    const warnSpy = console.warn
+    const unmappedCalls = warnSpy.mock.calls.filter(c => String(c[0]).includes('[formatUserError] unmapped'))
+    expect(unmappedCalls).toHaveLength(0)
+  })
 })

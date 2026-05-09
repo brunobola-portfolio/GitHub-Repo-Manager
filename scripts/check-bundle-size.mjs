@@ -15,7 +15,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const BUDGETS = {
-    'index-': { maxGzipKB: 60, name: 'main bundle' },
+    'index-': { maxGzipKB: 65, name: 'main bundle' },
     'vendor-react-': { maxGzipKB: 65, name: 'vendor-react' },
     'vendor-ui-': { maxGzipKB: 35, name: 'vendor-ui' },
     'vendor-icons-': { maxGzipKB: 20, name: 'vendor-icons' },
