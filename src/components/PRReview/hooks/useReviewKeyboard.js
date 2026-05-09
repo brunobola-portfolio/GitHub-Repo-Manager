@@ -44,7 +44,9 @@ export function useReviewKeyboard({
                 if (
                     target.tagName === 'INPUT' ||
                     target.tagName === 'TEXTAREA' ||
-                    target.isContentEditable
+                    target.tagName === 'SELECT' ||
+                    target.isContentEditable ||
+                    target.closest?.('[role="combobox"], [role="textbox"], [role="listbox"]')
                 ) {
                     return
                 }

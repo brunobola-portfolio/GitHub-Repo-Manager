@@ -26,10 +26,10 @@ export function CodeReviewToolbar({
                     <button
                         type="button"
                         onClick={onOpenMobileTree}
-                        className="md:hidden inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        className="md:hidden inline-flex items-center gap-1 px-3 min-h-11 text-sm font-medium text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                         aria-label={`Open files list (${filesCount})`}
                     >
-                        <Files className="w-3.5 h-3.5" /> Files ({filesCount})
+                        <Files className="w-4 h-4" /> Files ({filesCount})
                     </button>
                 )}
                 <span>

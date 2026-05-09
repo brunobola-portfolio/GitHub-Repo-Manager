@@ -117,7 +117,7 @@ export function ReviewStatusBar({
                     <button
                         type="button"
                         onClick={() => onSubmitReview({ event: 'APPROVE' })}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
                         aria-label="Approve"
                     >
                         <ShieldCheck className="w-3.5 h-3.5" /> Approve
@@ -125,7 +125,7 @@ export function ReviewStatusBar({
                     <button
                         type="button"
                         onClick={() => onSubmitReview({ event: 'COMMENT' })}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                         aria-label="Comment"
                     >
                         <MessageCircle className="w-3.5 h-3.5" /> Comment
@@ -133,7 +133,7 @@ export function ReviewStatusBar({
                     <button
                         type="button"
                         onClick={() => onSubmitReview({ event: 'REQUEST_CHANGES' })}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 hover:bg-orange-200 transition-colors"
+                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 hover:bg-orange-200 transition-colors"
                         aria-label="Request changes"
                     >
                         <ShieldAlert className="w-3.5 h-3.5" /> Request changes

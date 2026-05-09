@@ -65,6 +65,22 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
   // Keyboard help overlay — toggled by `?`.
   const [helpOpen, setHelpOpen] = useState(false)
+  // True while the floating composer in DiffPanel is open. We hide the
+  // FAB during composing to avoid the documented overlap collision
+  // (FAB rounded corner pokes through composer's rounded corner) — see
+  // mobile-UX review 2026-05-09. DiffPanel emits these events on the
+  // composer's mount/unmount lifecycle.
+  const [composerOpen, setComposerOpen] = useState(false)
+  useEffect(() => {
+    const onOpen = () => setComposerOpen(true)
+    const onClose = () => setComposerOpen(false)
+    window.addEventListener('pr-review:composer-open', onOpen)
+    window.addEventListener('pr-review:composer-close', onClose)
+    return () => {
+      window.removeEventListener('pr-review:composer-open', onOpen)
+      window.removeEventListener('pr-review:composer-close', onClose)
+    }
+  }, [])
 
   // Stamp original indices on the AI comments we hand to DiffPanel so child
   // callbacks can map back to the canonical position before dismissing/editing.
@@ -302,7 +318,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-gray-950">
+    <div className="flex flex-col h-[100dvh] bg-white dark:bg-gray-950">
       <ReviewToolbar
         pr={state.pr}
         repoName={repoName}
@@ -453,15 +469,17 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
           Visible below lg, where the third-column AIReviewPanel is hidden.
           Both mounts share the same useAIDeepReview hook instance, so
           dismissing/editing in one updates the other. */}
-      <button
-        type="button"
-        onClick={() => setAiDrawerOpen(true)}
-        className="lg:hidden fixed z-30 bottom-20 right-4 w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 via-cyan-500 to-pink-500 text-white shadow-2xl flex items-center justify-center hover:scale-105 transition-transform"
-        aria-label="Open AI insights"
-        title="AI insights"
-      >
-        <Sparkles className="w-5 h-5" strokeWidth={2.25} />
-      </button>
+      {!composerOpen && (
+        <button
+          type="button"
+          onClick={() => setAiDrawerOpen(true)}
+          className="lg:hidden fixed z-30 bottom-24 right-4 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 via-cyan-500 to-pink-500 text-white shadow-[0_8px_24px_-4px_rgba(99,102,241,0.5)] flex items-center justify-center motion-safe:hover:scale-105 motion-safe:active:scale-95 motion-safe:transition-transform motion-reduce:transition-none"
+          aria-label="Open AI insights"
+          title="AI insights"
+        >
+          <Sparkles className="w-6 h-6" strokeWidth={2.25} />
+        </button>
+      )}
 
       <KeyboardHelpOverlay isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
 

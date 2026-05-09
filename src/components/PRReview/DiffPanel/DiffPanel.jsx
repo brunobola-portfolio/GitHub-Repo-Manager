@@ -140,6 +140,16 @@ export function DiffPanel({
     }
   }, [commentingLine])
 
+  // Announce composer open/close so PRReviewView can hide the FAB to
+  // avoid overlap collision (rounded corners cross). See mobile-UX
+  // review 2026-05-09 (Onda 1.2).
+  useEffect(() => {
+    if (commentingLine) {
+      window.dispatchEvent(new CustomEvent('pr-review:composer-open'))
+      return () => window.dispatchEvent(new CustomEvent('pr-review:composer-close'))
+    }
+  }, [commentingLine])
+
   const handleAddComment = useCallback(({ lineNumber, side }) => {
     setCommentingLine({ lineNumber, side })
     setCommentBody('')
