@@ -1,4 +1,5 @@
 import { EmptyState } from '../ui/EmptyState'
+import { RepoMarkdown } from '../ui/RepoMarkdown'
 import { SectionPanel } from '../ui/SectionPanel'
 import { FileText, BookOpen, Sparkles, Info } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
@@ -103,11 +104,12 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                             </div>
                         )
                     ) : readme?.content ? (
-                        <div className="prose dark:prose-invert prose-sm max-w-none overflow-auto">
-                            <pre className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
-                                {decodeBase64ReadmeUtf8(readme.content)}
-                            </pre>
-                        </div>
+                        <RepoMarkdown
+                            source={decodeBase64ReadmeUtf8(readme.content)}
+                            owner={repoData.owner?.login || repoData.full_name?.split('/')[0]}
+                            repo={repoData.name}
+                            branch={repoData.default_branch || 'main'}
+                        />
                     ) : (
                         <EmptyState
                             icon={BookOpen}
