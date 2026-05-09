@@ -52,6 +52,7 @@ describe('useAIPolish (description-only)', () => {
         getDescriptionMock.mockImplementation(async (repoId) => ({
             source: 'ai',
             proposed: { description: `Suggested for repo ${repoId}` },
+            confidence: 'high',
         }))
 
         const { result } = renderHook(() => useAIPolish(['acme/r1', 'acme/r2']))
@@ -64,6 +65,35 @@ describe('useAIPolish (description-only)', () => {
         expect(r1.proposedDescription).toBe('Suggested for repo 101')
         expect(r2.proposedDescription).toBe('Suggested for repo 102')
         expect(r1.currentDescription).toBe('current r1')
+        // confidence is threaded from the AI response into the row
+        expect(r1.confidence).toBe('high')
+    })
+
+    it('threads contextOptions to getDescription and exposes confidence on the row', async () => {
+        apiCallMock.mockImplementation(async (url) => {
+            const m = url.match(/\/api\/repos\/([^/]+)\/([^/]+)$/)
+            const repo = m?.[2] ?? 'r1'
+            return { id: 101, description: `current ${repo}` }
+        })
+        getDescriptionMock.mockImplementation(async (_repoId, _opts) => ({
+            source: 'ai',
+            proposed: { description: 'Context-aware suggestion' },
+            confidence: 'medium',
+        }))
+
+        const contextOptions = { signals: { readme: true, manifest: false }, customFiles: [] }
+        const { result } = renderHook(() => useAIPolish(['acme/r1'], contextOptions))
+
+        await waitFor(() => expect(result.current.phase).toBe('ready'))
+
+        // The hook must forward contextOptions wrapped in { context: ... }
+        expect(getDescriptionMock).toHaveBeenCalledWith(
+            expect.any(Number),
+            expect.objectContaining({ context: expect.objectContaining({ signals: expect.any(Object) }) }),
+        )
+
+        const r1 = result.current.rows.find(r => r.fullName === 'acme/r1')
+        expect(r1.confidence).toBe('medium')
     })
 
     it('apply() PATCHes only included ready rows with non-empty changed proposals + invokes onPatched per success', async () => {

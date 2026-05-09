@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, CheckCircle2, AlertCircle, Lock, RotateCcw, Ban } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { useAIPolish } from '../../hooks/useAIPolish'
+import { ContextPicker } from '../AI/ContextPicker'
+import { useContextPrefs } from '../../hooks/useContextPrefs'
 
 /**
  * Batch table for post-migration AI polish.
@@ -17,7 +19,11 @@ import { useAIPolish } from '../../hooks/useAIPolish'
  * the global repo lists in-place via `patchRepoEverywhere`.
  */
 export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onApplyComplete }) {
-    const { rows, phase, stats, quotaHit, setProposedDescription, toggleInclude, retryRow, apply } = useAIPolish(repoFullNames)
+    const { prefs, setSignal, reset: resetPrefs } = useContextPrefs()
+    const { rows, phase, stats, quotaHit, setProposedDescription, toggleInclude, retryRow, apply } = useAIPolish(
+        repoFullNames,
+        { signals: prefs.signals, customFiles: [] },
+    )
 
     const handleApply = useCallback(async () => {
         const result = await apply(onAppliedRepo)
@@ -53,6 +59,14 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                     </div>
                 </div>
             )}
+
+            {/* Context picker */}
+            <ContextPicker
+                mode="batch"
+                signals={prefs.signals}
+                onSignalChange={setSignal}
+                onReset={resetPrefs}
+            />
 
             {/* Table */}
             <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
@@ -134,7 +148,18 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                             </div>
 
                             {/* Status pill */}
-                            <div className="flex justify-end">
+                            <div className="flex justify-end items-center">
+                                {row.confidence && (
+                                    <span
+                                        aria-label={`Confidence ${row.confidence}`}
+                                        title={`Confidence: ${row.confidence}`}
+                                        className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                                            row.confidence === 'high' ? 'bg-emerald-500'
+                                            : row.confidence === 'medium' ? 'bg-amber-500'
+                                            : 'bg-rose-500'
+                                        }`}
+                                    />
+                                )}
                                 {row.status === 'resolving' || row.status === 'loading' ? (
                                     <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                                         <Spinner size="xs" />

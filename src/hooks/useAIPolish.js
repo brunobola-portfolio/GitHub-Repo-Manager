@@ -35,6 +35,7 @@ const CONCURRENCY = 3
  * @property {boolean} edited        user has edited the proposal manually
  * @property {'idle'|'resolving'|'loading'|'ready'|'applying'|'done'|'error'|'quota'} status
  * @property {string|null} error
+ * @property {'high'|'medium'|'low'|null} confidence  AI confidence from the suggestion response
  */
 
 function makeInitialRow(fullName) {
@@ -50,6 +51,7 @@ function makeInitialRow(fullName) {
         edited: false,
         status: 'idle',
         error: null,
+        confidence: null,
     }
 }
 
@@ -71,8 +73,10 @@ async function runWithLimit(items, limit, worker) {
 
 /**
  * @param {string[]} repoFullNames
+ * @param {Object|null} contextOptions  Optional context payload forwarded to the AI
+ *                                      endpoint (signals, customFiles, etc.).
  */
-export function useAIPolish(repoFullNames) {
+export function useAIPolish(repoFullNames, contextOptions = null) {
     const [rows, setRows] = useState(() =>
         (Array.isArray(repoFullNames) ? repoFullNames : []).map(makeInitialRow),
     )
@@ -97,6 +101,9 @@ export function useAIPolish(repoFullNames) {
      * additional quota. Per-row failures don't poison sibling rows.
      */
     const fetchSuggestion = useCallback(async (row, abortSignal) => {
+        // contextOptions is captured from the outer scope on each render-stable
+        // callback. Closed over intentionally — the batch runner always uses the
+        // prefs that were active when the batch started.
         if (abortSignal?.aborted) return
         updateRow(row.fullName, { status: 'resolving' })
         try {
@@ -125,12 +132,16 @@ export function useAIPolish(repoFullNames) {
         }
 
         try {
-            const suggestion = await aiApi.polish.getDescription(latest.repoId)
+            const suggestion = await aiApi.polish.getDescription(
+                latest.repoId,
+                contextOptions ? { context: contextOptions } : {},
+            )
             if (abortSignal?.aborted) return
             const proposed = suggestion?.proposed?.description ?? suggestion?.description ?? ''
             updateRow(row.fullName, {
                 proposedDescription: proposed,
                 status: 'ready',
+                confidence: suggestion?.confidence ?? null,
             })
         } catch (e) {
             if (e?.status === 429 || e?.tierError) {
@@ -141,7 +152,7 @@ export function useAIPolish(repoFullNames) {
             }
             updateRow(row.fullName, { status: 'error', error: e?.friendlyMessage || e?.message || 'AI suggestion failed' })
         }
-    }, [updateRow])
+    }, [updateRow, contextOptions])
 
     // Kick off batch generation on mount. We key on the joined full-name list
     // so a parent passing a fresh array every render doesn't restart the batch
