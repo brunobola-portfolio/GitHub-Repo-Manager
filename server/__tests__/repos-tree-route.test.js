@@ -18,13 +18,13 @@ const { default: router } = await import('../routes/repos/tree.js');
 function makeApp() {
     const app = express();
     app.use(express.json());
-    app.use(router);
+    app.use('/api/repos', router);
     return app;
 }
 
 beforeEach(() => { mockGithubApi.mockReset(); });
 
-describe('GET /api/repos/:owner/:name/tree', () => {
+describe('GET /api/repos/:owner/:repo/tree', () => {
     it('returns blob entries with path/type/size', async () => {
         mockGithubApi.mockImplementation(async (url) => {
             if (url.includes('/branches/main')) return { data: { commit: { sha: 'abc' } } };
