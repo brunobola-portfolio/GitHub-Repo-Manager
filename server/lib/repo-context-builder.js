@@ -120,11 +120,12 @@ export async function buildContext({
     owner,
     repo,
     signals = {},
-    customFiles: _customFiles = [],
+    customFiles = [],
     byteCap = DEFAULT_BYTE_CAP,
     topicsLanguageInputs = { topics: [], language: null },
 }) {
     const sections = [];
+    const skippedCustomFiles = [];
     let readmeBytes = 0;
 
     if (signals.readme) {
@@ -198,6 +199,41 @@ export async function buildContext({
         }
     }
 
+    if (Array.isArray(customFiles) && customFiles.length > 0) {
+        const usedSoFar = sections.reduce((n, s) => n + s.bytes, 0);
+        const remaining = byteCap - usedSoFar;
+        if (remaining <= 0) {
+            throw new Error(`Custom files cannot fit: ${usedSoFar} bytes already used of ${byteCap} cap.`);
+        }
+        // Fetch all first so we know how many are present before splitting budget.
+        const fetched = [];
+        for (const path of customFiles) {
+            const content = await fetchTextFile(owner, repo, path, accessToken);
+            if (typeof content === 'string') {
+                fetched.push({ path, content });
+            } else {
+                skippedCustomFiles.push(path);
+            }
+        }
+        if (fetched.length > 0) {
+            const perFile = Math.floor(remaining / fetched.length);
+            const totalUntruncated = fetched.reduce((n, f) => n + f.content.length, 0);
+            // Reject when total content exceeds budget or per-file share is too small to be useful.
+            const totalNeeded = fetched.reduce((n, f) => n + Math.min(f.content.length, perFile), 0);
+            if (totalUntruncated > remaining || totalNeeded === 0 || perFile < 200) {
+                throw new Error(`Selected custom files exceed remaining budget (${remaining} B for ${fetched.length} files).`);
+            }
+            for (const f of fetched) {
+                pushSection(sections, {
+                    kind: 'customFile',
+                    label: f.path,
+                    content: f.content,
+                    byteCap: perFile,
+                });
+            }
+        }
+    }
+
     return {
         sections,
         totalBytes: sections.reduce((n, s) => n + s.bytes, 0),
@@ -209,6 +245,7 @@ export async function buildContext({
         }),
         signalsUsed: sections.map((s) => ({ kind: s.kind, label: s.label, bytes: s.bytes })),
         redactions: sections.filter((s) => s.redactions > 0).map((s) => ({ file: s.label, count: s.redactions })),
+        skippedCustomFiles,
         byteCap,
     };
 }

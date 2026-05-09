@@ -227,3 +227,53 @@ describe('buildContext — entrypoints and folder structure', () => {
         expect(folder.content).not.toContain('README.md');
     });
 });
+
+describe('buildContext — custom files', () => {
+    it('fetches each custom file and divides remaining budget equally', async () => {
+        mockContents({
+            'docs/architecture.md': 'A'.repeat(2000),
+            'examples/main.py': 'B'.repeat(2000),
+        });
+        const ctx = await buildContext({
+            accessToken: 't', owner: 'o', repo: 'r',
+            signals: { readme: false, manifest: false, topics: false, language: false, entrypoints: false, folderStructure: false },
+            customFiles: ['docs/architecture.md', 'examples/main.py'],
+            topicsLanguageInputs: { topics: [], language: null },
+            byteCap: 8192,
+        });
+        const customs = ctx.sections.filter((s) => s.kind === 'customFile');
+        expect(customs).toHaveLength(2);
+        // Full 8 KB available for two files = 4 KB each cap; content is 2 KB so untruncated
+        expect(customs[0].bytes).toBe(2000);
+        expect(customs[1].bytes).toBe(2000);
+    });
+
+    it('drops custom files that 404 and reports them via skippedCustomFiles', async () => {
+        mockContents({
+            'present.md': 'hello',
+            'missing.md': null,
+        });
+        const ctx = await buildContext({
+            accessToken: 't', owner: 'o', repo: 'r',
+            signals: {},
+            customFiles: ['present.md', 'missing.md'],
+            topicsLanguageInputs: { topics: [], language: null },
+        });
+        expect(ctx.sections.filter((s) => s.kind === 'customFile')).toHaveLength(1);
+        expect(ctx.skippedCustomFiles).toEqual(['missing.md']);
+    });
+
+    it('throws when custom files alone exceed byteCap', async () => {
+        mockContents({
+            'a.txt': 'X'.repeat(5000),
+            'b.txt': 'Y'.repeat(5000),
+        });
+        await expect(buildContext({
+            accessToken: 't', owner: 'o', repo: 'r',
+            signals: {},
+            customFiles: ['a.txt', 'b.txt'],
+            byteCap: 4000, // smaller than 2× 5000 truncated halves
+            topicsLanguageInputs: { topics: [], language: null },
+        })).rejects.toThrow(/exceed/i);
+    });
+});
