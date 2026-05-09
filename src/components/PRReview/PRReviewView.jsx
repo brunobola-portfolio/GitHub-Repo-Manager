@@ -291,7 +291,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   // Loading state
   if (loading && !state.pr) {
     return (
-      <div className="flex items-center justify-center h-full min-h-0 flex-1 bg-white dark:bg-gray-950">
+      <div className="flex items-center justify-center h-full min-h-0 flex-1 bg-white dark:bg-slate-950">
         <div className="text-center">
           <Spinner size="xl" tone="primary" label="Loading pull request" className="mx-auto mb-3" />
           <p className="text-slate-500 dark:text-slate-400 text-sm">Loading pull request...</p>
@@ -303,7 +303,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   // Error state
   if (error && !state.pr) {
     return (
-      <div className="flex items-center justify-center h-full min-h-0 flex-1 bg-white dark:bg-gray-950">
+      <div className="flex items-center justify-center h-full min-h-0 flex-1 bg-white dark:bg-slate-950">
         <div className="text-center space-y-3">
           <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
           <button
@@ -318,7 +318,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-white dark:bg-gray-950">
+    <div className="flex flex-col h-[100dvh] bg-white dark:bg-slate-950">
       <ReviewToolbar
         pr={state.pr}
         repoName={repoName}
@@ -336,7 +336,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
 
       <div className="flex flex-1 min-h-0">
         {!state.fileTreeCollapsed && (
-          <div className="w-64 shrink-0 border-r border-gray-200 dark:border-gray-700 overflow-y-auto">
+          <div className="w-64 shrink-0 border-r border-slate-200 dark:border-slate-700 overflow-y-auto">
             <FileTree
               files={displayFiles}
               activeFile={state.activeFile}
@@ -474,10 +474,22 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
           type="button"
           onClick={() => setAiDrawerOpen(true)}
           className="lg:hidden fixed z-30 bottom-24 right-4 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 via-cyan-500 to-pink-500 text-white shadow-[0_8px_24px_-4px_rgba(99,102,241,0.5)] flex items-center justify-center motion-safe:hover:scale-105 motion-safe:active:scale-95 motion-safe:transition-transform motion-reduce:transition-none"
-          aria-label="Open AI insights"
+          aria-label={
+            deep.draft?.lineComments?.length
+              ? `Open AI insights (${deep.draft.lineComments.length} draft comments)`
+              : 'Open AI insights'
+          }
           title="AI insights"
         >
           <Sparkles className="w-6 h-6" strokeWidth={2.25} />
+          {deep.draft?.lineComments?.length > 0 && (
+            <span
+              data-testid="fab-comment-badge"
+              className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-950"
+            >
+              {deep.draft.lineComments.length > 99 ? '99+' : deep.draft.lineComments.length}
+            </span>
+          )}
         </button>
       )}
 

@@ -71,7 +71,7 @@ export function ReviewStatusBar({
                     r={RADIUS}
                     fill="none"
                     stroke="currentColor"
-                    strokeOpacity="0.15"
+                    strokeOpacity="0.22"
                     strokeWidth="3"
                 />
                 <motion.circle
@@ -94,30 +94,39 @@ export function ReviewStatusBar({
                 />
             </svg>
 
-            <span className={allReviewed ? 'text-green-600 dark:text-green-400 font-medium tabular-nums' : 'tabular-nums'}>
+            <span className={`tabular-nums text-sm font-medium ${allReviewed ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'}`}>
                 {reviewedCount}/{safeTotal} reviewed
             </span>
 
             {pendingCommentCount > 0 && (
-                <span className="shrink-0 font-medium text-amber-600 dark:text-amber-400">
+                <span className="shrink-0 text-xs font-medium text-amber-600 dark:text-amber-400">
                     {pendingCommentCount} pending {pendingCommentCount === 1 ? 'comment' : 'comments'}
                 </span>
             )}
 
+            {/* Live region for screen readers — announces progress changes
+                without re-narrating the entire footer (which would happen
+                if the footer itself carried aria-live). See a11y review
+                2026-05-09 (Onda 2.7). */}
+            <span className="sr-only" aria-live="polite" aria-atomic="true">
+                {reviewedCount} of {safeTotal} files reviewed
+                {pendingCommentCount > 0 ? `, ${pendingCommentCount} pending` : ''}
+            </span>
+
             <span className="flex-1" />
 
             {showHints && !onSubmitReview && (
-                <span className="hidden sm:inline text-gray-400 dark:text-gray-500 tabular-nums">
+                <span className="hidden sm:inline text-slate-400 dark:text-slate-500 tabular-nums">
                     j/k navigate &middot; x mark reviewed &middot; c comment
                 </span>
             )}
 
             {onSubmitReview && (
-                <div className="flex items-center gap-1.5 ml-auto">
+                <div className="flex items-center gap-1.5 ml-auto max-md:w-full">
                     <button
                         type="button"
                         onClick={() => onSubmitReview({ event: 'APPROVE' })}
-                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                        className="inline-flex items-center justify-center gap-1 px-3 py-1.5 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-semibold bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 hover:bg-emerald-700 motion-safe:active:scale-95 transition-all"
                         aria-label="Approve"
                     >
                         <ShieldCheck className="w-3.5 h-3.5" /> Approve
@@ -125,7 +134,7 @@ export function ReviewStatusBar({
                     <button
                         type="button"
                         onClick={() => onSubmitReview({ event: 'COMMENT' })}
-                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-transparent border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                         aria-label="Comment"
                     >
                         <MessageCircle className="w-3.5 h-3.5" /> Comment
@@ -133,7 +142,7 @@ export function ReviewStatusBar({
                     <button
                         type="button"
                         onClick={() => onSubmitReview({ event: 'REQUEST_CHANGES' })}
-                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 hover:bg-orange-200 transition-colors"
+                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/50 transition-colors"
                         aria-label="Request changes"
                     >
                         <ShieldAlert className="w-3.5 h-3.5" /> Request changes

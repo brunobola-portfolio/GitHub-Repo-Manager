@@ -18,11 +18,11 @@ const DiffRenderer = lazy(() =>
 function DiffLoadingSkeleton() {
   return (
     <div className="p-4 space-y-2" role="status" aria-live="polite" aria-label="Loading diff">
-      <div className="h-4 w-1/3 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-      <div className="h-4 w-5/6 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-      <div className="h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-      <div className="h-4 w-4/5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-      <div className="h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+      <div className="h-4 w-1/3 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+      <div className="h-4 w-5/6 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+      <div className="h-4 w-2/3 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+      <div className="h-4 w-4/5 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+      <div className="h-4 w-1/2 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
       <span className="sr-only">Loading diff viewer…</span>
     </div>
   )
@@ -195,7 +195,7 @@ export function DiffPanel({
 
   if (!file) {
     return (
-      <div className="flex flex-1 items-center justify-center text-sm text-gray-400 dark:text-gray-500 italic select-none h-full">
+      <div className="flex flex-1 items-center justify-center text-sm text-slate-400 dark:text-slate-500 italic select-none h-full">
         Select a file to view changes
       </div>
     )
@@ -207,8 +207,8 @@ export function DiffPanel({
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* Sticky file header */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-2 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <span className="flex-1 truncate text-sm font-mono text-gray-700 dark:text-gray-200" title={filename}>
+      <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm">
+        <span className="flex-1 truncate text-sm font-mono text-slate-700 dark:text-slate-200" title={filename}>
           {filename}
         </span>
         <span className="shrink-0 text-xs font-mono text-green-600 dark:text-green-400">
@@ -217,7 +217,7 @@ export function DiffPanel({
         <span className="shrink-0 text-xs font-mono text-red-600 dark:text-red-400">
           -{deletions}
         </span>
-        <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500 font-mono uppercase">
+        <span className="shrink-0 text-xs text-slate-400 dark:text-slate-500 font-mono uppercase">
           {lang}
         </span>
       </div>
@@ -260,7 +260,7 @@ export function DiffPanel({
 
       {/* Submitted comment threads */}
       {commentThreads.length > 0 && (
-        <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 space-y-2 max-h-64 overflow-y-auto">
+        <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-3 space-y-2 max-h-64 overflow-y-auto">
           {commentThreads.map(thread => (
             <InlineComment
               key={thread.id}
@@ -276,7 +276,7 @@ export function DiffPanel({
 
       {/* Pending (unsaved) comments */}
       {pendingComments?.length > 0 && (
-        <div className="border-t border-gray-200 dark:border-gray-700 bg-amber-50 dark:bg-amber-900/10 px-4 py-3 space-y-2 max-h-40 overflow-y-auto">
+        <div className="border-t border-slate-200 dark:border-slate-700 bg-amber-50 dark:bg-amber-900/10 px-4 py-3 space-y-2 max-h-40 overflow-y-auto">
           {pendingComments.map((c, i) => (
             <InlineComment
               key={i}
@@ -294,12 +294,12 @@ export function DiffPanel({
       {commentingLine && (
         <div
           data-floating-composer="true"
-          className="fixed z-40 right-4 bottom-4 max-md:left-4 max-md:right-4 w-[420px] max-md:w-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-4"
+          className="fixed z-40 right-4 bottom-4 max-md:left-4 max-md:right-4 w-[420px] max-md:w-auto max-h-[60vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] p-4"
           style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
         >
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
             Comment on line{' '}
-            <span className="font-mono font-semibold text-gray-700 dark:text-gray-200">
+            <span className="font-mono font-semibold text-slate-700 dark:text-slate-200">
               {commentingLine.lineNumber}
             </span>{' '}
             ({commentingLine.side === 'old' || commentingLine.side === 'left' ? 'old' : 'new'} side)
@@ -312,20 +312,20 @@ export function DiffPanel({
             rows={4}
             placeholder="Leave a comment… (Ctrl+Enter to submit, Esc to cancel)"
             aria-label="Inline diff comment"
-            className="w-full resize-y rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full resize-y rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500"
           />
-          <div className="flex gap-2 mt-2 justify-end">
+          <div className="flex gap-2 mt-3 justify-end">
             <button
               onClick={handleCancelComment}
               disabled={submitting}
-              className="px-3 py-1.5 text-sm rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="px-3 py-1.5 max-md:min-h-11 text-sm rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmitComment}
               disabled={submitting || !commentBody.trim()}
-              className="px-3 py-1.5 text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 max-md:min-h-11 text-sm font-semibold rounded-md bg-indigo-600 text-white shadow-sm shadow-indigo-600/30 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed motion-safe:active:scale-95 transition-all"
             >
               {submitting ? 'Adding…' : 'Add comment'}
             </button>

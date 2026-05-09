@@ -162,7 +162,7 @@ export function DiffRenderer({
   if (!diffData) {
     return (
       <div className={`diff-renderer${wrap ? ' diff-wrap-on' : ''}`}>
-        <div className="flex items-center justify-center h-24 text-sm text-gray-400 dark:text-gray-500 italic select-none">
+        <div className="flex items-center justify-center h-24 text-sm text-slate-400 dark:text-slate-500 italic select-none">
           No diff available for this file.
         </div>
       </div>

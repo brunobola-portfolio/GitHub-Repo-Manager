@@ -37,11 +37,11 @@ export function FileTreeItem({ file, isActive, isReviewed, aiRisk, heuristicScor
   const reducedMotion = useReducedMotion()
 
   const StatusIcon = STATUS_ICONS[status] ?? FileEdit
-  const iconColor = STATUS_COLORS[status] ?? 'text-gray-400 dark:text-gray-500'
+  const iconColor = STATUS_COLORS[status] ?? 'text-slate-400 dark:text-slate-500'
 
   const activeClass = isActive
     ? 'bg-blue-100 dark:bg-blue-900/40'
-    : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+    : 'hover:bg-slate-100 dark:hover:bg-slate-800'
 
   // motion.button with `layout` so re-sorting (risk/A-Z toggle, viewed
   // reorder) animates rows to their new positions instead of jumping.
@@ -63,7 +63,7 @@ export function FileTreeItem({ file, isActive, isReviewed, aiRisk, heuristicScor
       <StatusIcon size={13} className={`shrink-0 ${iconColor}`} aria-hidden="true" />
 
       {/* Filename (basename only) */}
-      <span className="flex-1 truncate text-xs text-gray-700 dark:text-gray-200 font-mono leading-none">
+      <span className="flex-1 truncate text-xs text-slate-700 dark:text-slate-200 font-mono leading-none">
         {basename(filename)}
       </span>
 

@@ -25,7 +25,10 @@ describe('ReviewStatusBar', () => {
 
     it('shows pending comment count when > 0', () => {
         render(<ReviewStatusBar totalFiles={5} reviewedCount={1} pendingCommentCount={2} />)
-        expect(screen.getByText(/2 pending/i)).toBeInTheDocument()
+        // The visible chip and the sr-only live region both mention "pending";
+        // assert both are present rather than expecting a single match.
+        expect(screen.getAllByText(/pending/i).length).toBeGreaterThanOrEqual(1)
+        expect(screen.getByText(/2 pending comments/i)).toBeInTheDocument()
     })
 
     it('does not render submit buttons when onSubmitReview is not provided', () => {

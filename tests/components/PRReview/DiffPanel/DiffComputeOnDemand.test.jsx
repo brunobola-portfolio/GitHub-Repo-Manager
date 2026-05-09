@@ -12,7 +12,9 @@ describe('DiffComputeOnDemand', () => {
             </DiffComputeOnDemand>,
         )
         expect(screen.getByText(/src\/huge\.lock/)).toBeInTheDocument()
-        expect(screen.getByText(/120000 lines changed/i)).toBeInTheDocument()
+        // Line count is now hero (number + "lines changed" in separate spans)
+        expect(screen.getByText('120000')).toBeInTheDocument()
+        expect(screen.getByText(/lines changed/i)).toBeInTheDocument()
         expect(screen.getByRole('button', { name: /compute diff/i })).toBeInTheDocument()
         expect(screen.queryByTestId('real-diff')).not.toBeInTheDocument()
     })
