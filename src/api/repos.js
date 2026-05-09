@@ -116,4 +116,18 @@ export const reposApi = {
       method: 'DELETE',
     })
   },
+
+  getTree: async (owner, name, branch) => {
+    const qs = branch ? `?branch=${encodeURIComponent(branch)}` : '';
+    const res = await fetch(`/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/tree${qs}`, {
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const err = new Error(data?.error || 'Failed to load repo tree');
+      err.status = res.status;
+      throw err;
+    }
+    return res.json();
+  },
 }
