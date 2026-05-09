@@ -6,6 +6,16 @@ import '@git-diff-view/react/styles/diff-view-pure.css'
 import { useTheme } from '../../../hooks/useTheme'
 
 /**
+ * Expand tab characters in a patch string to the given number of spaces.
+ * Returns the original patch unchanged when tabWidth is falsy or 1.
+ */
+function expandTabs(patch, tabWidth) {
+  if (!patch || !tabWidth || tabWidth === 1) return patch
+  const spaces = ' '.repeat(tabWidth)
+  return patch.replace(/\t/g, spaces)
+}
+
+/**
  * Language map: file extension → highlight.js language id
  */
 const LANG_MAP = {
@@ -79,9 +89,13 @@ function parsePatchToHunks(patch, filename) {
  * @param {'split'|'unified'} props.viewMode - Display mode
  * @param {Function} [props.onAddComment]    - Called with { lineNumber, side } when the widget button is clicked
  * @param {string}   [props.highlightLanguage] - Override language for syntax highlighting
+ * @param {number}   [props.tabWidth=4]      - Number of spaces each tab character expands to
+ * @param {boolean}  [props.wrap=false]      - When true, long lines wrap instead of scrolling horizontally
  */
-export function DiffRenderer({ filename, patch, viewMode, onAddComment, highlightLanguage }) {
+export function DiffRenderer({ filename, patch, viewMode, onAddComment, highlightLanguage, tabWidth = 4, wrap = false }) {
   const { isDark } = useTheme()
+
+  const expanded = useMemo(() => expandTabs(patch, tabWidth), [patch, tabWidth])
 
   const lang = useMemo(() => {
     if (highlightLanguage) return highlightLanguage
@@ -91,29 +105,31 @@ export function DiffRenderer({ filename, patch, viewMode, onAddComment, highligh
   }, [filename, highlightLanguage])
 
   const diffData = useMemo(() => {
-    if (!patch) return null
-    const hunks = parsePatchToHunks(patch, filename)
+    if (!expanded) return null
+    const hunks = parsePatchToHunks(expanded, filename)
     if (hunks.length === 0) return null
     return {
       oldFile: { fileName: filename ?? null, fileLang: lang },
       newFile: { fileName: filename ?? null, fileLang: lang },
       hunks,
     }
-  }, [patch, filename, lang])
+  }, [expanded, filename, lang])
 
   const diffMode =
     viewMode === 'unified' ? DiffModeEnum.Unified : DiffModeEnum.Split
 
   if (!diffData) {
     return (
-      <div className="flex items-center justify-center h-24 text-sm text-gray-400 dark:text-gray-500 italic select-none">
-        No diff available for this file.
+      <div className={`diff-renderer${wrap ? ' diff-wrap-on' : ''}`}>
+        <div className="flex items-center justify-center h-24 text-sm text-gray-400 dark:text-gray-500 italic select-none">
+          No diff available for this file.
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="overflow-auto text-sm font-mono">
+    <div className={`diff-renderer overflow-auto text-sm font-mono${wrap ? ' diff-wrap-on' : ''}`}>
       <DiffView
         data={diffData}
         diffViewMode={diffMode}

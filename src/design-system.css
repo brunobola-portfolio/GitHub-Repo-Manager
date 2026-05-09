@@ -426,3 +426,21 @@
     transition: none !important;
   }
 }
+
+/* ===== DIFFRENDERER WRAP MODE ===== */
+/* Toggled by the diff-wrap-on class on the DiffRenderer root element.
+ * Forces long diff lines to wrap instead of scrolling horizontally.
+ *
+ * @git-diff-view/react applies the Tailwind `.whitespace-nowrap` class to
+ * content cells (confirmed from node_modules/@git-diff-view/react/styles/
+ * diff-view-pure.css line 185).  We override that class within the wrapper
+ * and also cover pre/code for the syntax-highlighted raw view.
+ */
+.diff-wrap-on .diff-tailwindcss-wrapper .whitespace-nowrap,
+.diff-wrap-on .diff-line-old-content,
+.diff-wrap-on .diff-line-new-content,
+.diff-wrap-on pre,
+.diff-wrap-on code {
+  white-space: pre-wrap !important;
+  word-break: break-all;
+}
