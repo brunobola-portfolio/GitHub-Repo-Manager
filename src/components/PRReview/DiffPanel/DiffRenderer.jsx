@@ -5,6 +5,28 @@ import { DiffView, DiffModeEnum } from '@git-diff-view/react'
 import '@git-diff-view/react/styles/diff-view-pure.css'
 import { useTheme } from '../../../hooks/useTheme'
 
+// Silence a dev-only sanity warning from @git-diff-view/core that fires
+// because we feed it GitHub patch fragments (no full file content). The
+// library tries to reconstruct old/new file content from the diff and
+// validates round-trip — for partial patches the validation is
+// structurally unactionable. The warning lives at
+// node_modules/@git-diff-view/core/dist/esm/index.mjs:2736 and is gated on
+// NODE_ENV === 'development', so this filter is a no-op in production.
+// Sentinel guards against double-install during HMR / repeated module evaluation.
+// See docs/specs/2026-05-09-pr-review-perf-and-polish-design.md (Slice 1.2).
+if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+    const PREFIX = '[@git-diff-view/core] Mismatch detected'
+    const original = console.warn
+    if (!original.__diffViewMismatchFiltered) {
+        const filtered = (...args) => {
+            if (typeof args[0] === 'string' && args[0].startsWith(PREFIX)) return
+            return original.apply(console, args)
+        }
+        filtered.__diffViewMismatchFiltered = true
+        console.warn = filtered
+    }
+}
+
 /**
  * Expand tab characters in a patch string to the given number of spaces.
  * Returns the original patch unchanged when tabWidth is falsy or 1.
