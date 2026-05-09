@@ -87,6 +87,14 @@ export function useAIPolish(repoFullNames, contextOptions = null) {
     // immediately when any row trips a 429 — closure-captured `quotaHit`
     // would be stale until the next render.
     const quotaHitRef = useRef(false)
+    // Stabilize contextOptions so fetchSuggestion's identity doesn't change
+    // when the caller re-renders with a new object literal. Each row's API
+    // call reads .current at call time, so it always uses the latest prefs
+    // without causing the useEffect to re-run and abort in-flight rows.
+    const contextOptionsRef = useRef(contextOptions)
+    useEffect(() => {
+        contextOptionsRef.current = contextOptions
+    }, [contextOptions])
 
     const updateRow = useCallback((fullName, patch) => {
         setRows(prev => prev.map(r =>
@@ -101,9 +109,6 @@ export function useAIPolish(repoFullNames, contextOptions = null) {
      * additional quota. Per-row failures don't poison sibling rows.
      */
     const fetchSuggestion = useCallback(async (row, abortSignal) => {
-        // contextOptions is captured from the outer scope on each render-stable
-        // callback. Closed over intentionally — the batch runner always uses the
-        // prefs that were active when the batch started.
         if (abortSignal?.aborted) return
         updateRow(row.fullName, { status: 'resolving' })
         try {
@@ -132,9 +137,10 @@ export function useAIPolish(repoFullNames, contextOptions = null) {
         }
 
         try {
+            const ctxOpts = contextOptionsRef.current
             const suggestion = await aiApi.polish.getDescription(
                 latest.repoId,
-                contextOptions ? { context: contextOptions } : {},
+                ctxOpts ? { context: ctxOpts } : {},
             )
             if (abortSignal?.aborted) return
             const proposed = suggestion?.proposed?.description ?? suggestion?.description ?? ''
@@ -152,7 +158,7 @@ export function useAIPolish(repoFullNames, contextOptions = null) {
             }
             updateRow(row.fullName, { status: 'error', error: e?.friendlyMessage || e?.message || 'AI suggestion failed' })
         }
-    }, [updateRow, contextOptions])
+    }, [updateRow])
 
     // Kick off batch generation on mount. We key on the joined full-name list
     // so a parent passing a fresh array every render doesn't restart the batch
