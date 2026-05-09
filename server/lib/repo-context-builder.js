@@ -1,14 +1,3 @@
-/*
- * GitHub Repo Manager - Repo Context Builder
- *
- * Orchestrates per-signal GitHub fetches for the AI suggest pipeline.
- * Returns a structured `sections` array bounded by an overall byte cap,
- * with line-level secret redaction applied to every fetched payload.
- *
- * Pure-ish: requires the GitHub access token + helper, but contains no
- * Express, no DB, no logger side-effects.
- */
-
 import { githubApi } from './github-api.js';
 import { redact } from './secret-redactor.js';
 import logger from './logger.js';
@@ -46,6 +35,18 @@ async function fetchTextFile(owner, repo, path, accessToken) {
     }
 }
 
+async function fetchReadme(owner, repo, accessToken) {
+    try {
+        const { data } = await githubApi(`/repos/${owner}/${repo}/readme`, accessToken);
+        if (data?.encoding === 'base64' && typeof data.content === 'string') {
+            return Buffer.from(data.content, 'base64').toString('utf8');
+        }
+    } catch (e) {
+        if (e?.status !== 404) logger.warn({ err: e, owner, repo }, 'repo-context-builder: README fetch failed');
+    }
+    return null;
+}
+
 async function fetchManifest(owner, repo, accessToken) {
     for (const candidate of MANIFEST_CANDIDATES) {
         const content = await fetchTextFile(owner, repo, candidate, accessToken);
@@ -66,6 +67,19 @@ function pushSection(sections, { kind, label, content, byteCap }) {
     });
 }
 
+function topicsLanguageContent({ topics, language }) {
+    const parts = [];
+    if (language) parts.push(`language: ${language}`);
+    if (Array.isArray(topics) && topics.length) parts.push(`topics: ${topics.slice(0, 10).join(', ')}`);
+    return parts.join('\n');
+}
+
+function computeConfidence({ readmeBytes, manifestPresent, topicsPresent, languagePresent }) {
+    if (readmeBytes >= 500 && manifestPresent && (topicsPresent || languagePresent)) return 'high';
+    if (readmeBytes >= 100 || manifestPresent) return 'medium';
+    return 'low';
+}
+
 export async function buildContext({
     accessToken,
     owner,
@@ -73,12 +87,29 @@ export async function buildContext({
     signals = {},
     customFiles: _customFiles = [],
     byteCap = DEFAULT_BYTE_CAP,
+    topicsLanguageInputs = { topics: [], language: null },
 }) {
     const sections = [];
+    let readmeBytes = 0;
 
+    if (signals.readme) {
+        const readme = await fetchReadme(owner, repo, accessToken);
+        if (typeof readme === 'string') {
+            pushSection(sections, {
+                kind: 'readme',
+                label: 'README',
+                content: readme,
+                byteCap: SIGNAL_BUDGETS.readme,
+            });
+            readmeBytes = sections.at(-1).bytes;
+        }
+    }
+
+    let manifestPresent = false;
     if (signals.manifest) {
         const manifest = await fetchManifest(owner, repo, accessToken);
         if (manifest) {
+            manifestPresent = true;
             pushSection(sections, {
                 kind: 'manifest',
                 label: manifest.label,
@@ -88,10 +119,32 @@ export async function buildContext({
         }
     }
 
+    const topicsPresent = Array.isArray(topicsLanguageInputs.topics) && topicsLanguageInputs.topics.length > 0;
+    const languagePresent = !!topicsLanguageInputs.language;
+    if ((signals.topics && topicsPresent) || (signals.language && languagePresent)) {
+        const content = topicsLanguageContent({
+            topics: signals.topics ? topicsLanguageInputs.topics : [],
+            language: signals.language ? topicsLanguageInputs.language : null,
+        });
+        if (content) {
+            pushSection(sections, {
+                kind: 'topicsLanguage',
+                label: 'topics + language',
+                content,
+                byteCap: SIGNAL_BUDGETS.topicsLanguage,
+            });
+        }
+    }
+
     return {
         sections,
         totalBytes: sections.reduce((n, s) => n + s.bytes, 0),
-        confidence: 'low',
+        confidence: computeConfidence({
+            readmeBytes,
+            manifestPresent,
+            topicsPresent: signals.topics && topicsPresent,
+            languagePresent: signals.language && languagePresent,
+        }),
         signalsUsed: sections.map((s) => ({ kind: s.kind, label: s.label, bytes: s.bytes })),
         redactions: sections.filter((s) => s.redactions > 0).map((s) => ({ file: s.label, count: s.redactions })),
         byteCap,
