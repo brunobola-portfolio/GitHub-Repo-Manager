@@ -28,7 +28,7 @@ const SIZE_CLASSES = {
     xl:    'max-w-4xl',
     '2xl': 'max-w-5xl',
     '3xl': 'max-w-6xl',
-    full:  'max-w-7xl',
+    full:  'max-w-[min(96vw,1600px)] max-h-[92vh]',
 }
 
 const SHEET_SIZE_CLASSES = {
@@ -38,7 +38,7 @@ const SHEET_SIZE_CLASSES = {
     xl:    'md:max-w-4xl',
     '2xl': 'md:max-w-5xl',
     '3xl': 'md:max-w-6xl',
-    full:  'md:max-w-7xl',
+    full:  'md:max-w-[min(96vw,1600px)] md:max-h-[92vh]',
 }
 
 // Variant styles for the header gradient — hoisted to module scope to avoid

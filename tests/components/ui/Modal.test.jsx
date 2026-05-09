@@ -42,6 +42,16 @@ describe('Modal — base', () => {
     expect(container.querySelector('[role="dialog"]').className).toMatch(/max-w-6xl/)
   })
 
+  it('size="full" applies a near-full-viewport width class for diff-viewer use', () => {
+    const { container } = render(
+      <Modal isOpen={true} onClose={() => {}} title="Hi" size="full">x</Modal>
+    )
+    const dialog = container.querySelector('[role="dialog"]')
+    // Tailwind arbitrary value with min() is encoded with brackets — matches the
+    // SIZE_CLASSES.full / SHEET_SIZE_CLASSES.full literal class string.
+    expect(dialog.className).toMatch(/max-w-\[min\(96vw,1600px\)\]/)
+  })
+
   it('locks body scroll when open', () => {
     render(<Modal isOpen={true} onClose={() => {}} title="Hi">x</Modal>)
     expect(document.body.style.overflow).toBe('hidden')
