@@ -90,7 +90,10 @@ Repo: {name} ({language}, {visibility})
 Current description: {description}
 Topics: {topics}
 README excerpt (raw — may contain markdown, HTML, or noise):
-{readme}`;
+{readme}
+
+# Repo context (use these signals — do not invent details)
+{signals_block}`;
 
 const PR_DEEP_REVIEW_DEFAULT = `You are a senior staff engineer reviewing a pull request for **{repo_full_name}**. Your review will be posted as inline comments and a walkthrough on GitHub. False-positive reviews waste reviewer time and erode trust — be concrete, grounded in the diff, and conservative.
 
@@ -250,6 +253,7 @@ const SAMPLE_REPO_VARS = Object.freeze({
     visibility: 'public',
     topics: 'cli, logging, observability',
     readme: '# Logflow\n\nA tiny CLI that turns ad-hoc `stdout`/`stderr` from local dev processes into JSON Lines, ready to forward to Loki, Datadog, or a tail viewer.',
+    signals_block: 'language: TypeScript\ntopics: cli, openapi\nmanifest (package.json):\n{ "scripts": { "build": "tsup" } }',
 });
 
 const SAMPLE_PR_VARS = Object.freeze({
@@ -274,7 +278,7 @@ export const AI_PROMPT_REGISTRY = Object.freeze({
         category: 'Repository',
         description: 'Drives the rename / re-describe modal. The variables below are sanitized repo metadata the model uses to ground its proposal. Keep the JSON return contract intact (`{ "name", "description", "rationale" }`) — the route parses the response.',
         defaultPrompt: SUGGEST_NAME_DESC_DEFAULT,
-        variables: ['name', 'description', 'language', 'visibility', 'topics', 'readme'],
+        variables: ['name', 'description', 'language', 'visibility', 'topics', 'readme', 'signals_block'],
         sampleVars: SAMPLE_REPO_VARS,
     },
     pr_deep_review: {
