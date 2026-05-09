@@ -1,3 +1,4 @@
+import { motion, useReducedMotion } from 'framer-motion'
 import { FilePlus, FileMinus, FileEdit, Check } from 'lucide-react'
 import { FileRiskBadge } from '../AIInsights/FileRiskBadge'
 
@@ -33,6 +34,7 @@ function basename(path) {
  */
 export function FileTreeItem({ file, isActive, isReviewed, aiRisk, heuristicScore, onClick }) {
   const { filename, additions = 0, deletions = 0, status = 'modified' } = file
+  const reducedMotion = useReducedMotion()
 
   const StatusIcon = STATUS_ICONS[status] ?? FileEdit
   const iconColor = STATUS_COLORS[status] ?? 'text-gray-400 dark:text-gray-500'
@@ -41,8 +43,13 @@ export function FileTreeItem({ file, isActive, isReviewed, aiRisk, heuristicScor
     ? 'bg-blue-100 dark:bg-blue-900/40'
     : 'hover:bg-gray-100 dark:hover:bg-gray-800'
 
+  // motion.button with `layout` so re-sorting (risk/A-Z toggle, viewed
+  // reorder) animates rows to their new positions instead of jumping.
+  // Reduced-motion gates the animation entirely.
   return (
-    <button
+    <motion.button
+      layout={reducedMotion ? false : 'position'}
+      transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 320, damping: 28 }}
       role="treeitem"
       aria-selected={isActive}
       onClick={onClick}
@@ -68,14 +75,22 @@ export function FileTreeItem({ file, isActive, isReviewed, aiRisk, heuristicScor
         -{deletions}
       </span>
 
-      {/* Reviewed checkmark */}
+      {/* Reviewed checkmark — scales in via Framer Motion when first present */}
       {isReviewed && (
-        <Check
-          size={11}
-          className="shrink-0 text-blue-500 dark:text-blue-400"
-          aria-label="Reviewed"
-        />
+        <motion.span
+          data-reviewed-marker="true"
+          initial={reducedMotion ? false : { scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 18 }}
+          className="shrink-0 inline-flex"
+        >
+          <Check
+            size={11}
+            className="text-blue-500 dark:text-blue-400"
+            aria-label="Reviewed"
+          />
+        </motion.span>
       )}
-    </button>
+    </motion.button>
   )
 }
