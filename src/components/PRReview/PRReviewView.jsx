@@ -8,12 +8,14 @@ import { useToast } from '../../hooks/useToast'
 import { Spinner } from '../ui/Spinner'
 import { usePRData } from '../../hooks/usePRData'
 
+import { Sparkles } from 'lucide-react'
 import { FileTree } from './FileTree/FileTree'
 import { DiffPanel } from './DiffPanel/DiffPanel'
 import { ReviewToolbar } from './ReviewToolbar/ReviewToolbar'
 import { ReviewStatusBar } from './ReviewToolbar/ReviewStatusBar'
 import { AISummaryPanel } from './AIInsights/AISummaryPanel'
 import { AIReviewPanel } from './AIDeepReview/AIReviewPanel'
+import { MobileAIPanelDrawer } from './MobileAIPanelDrawer'
 import { useAIDeepReview } from '../../hooks/useAIDeepReview'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { PublishReviewModal } from './AIDeepReview/PublishReviewModal'
@@ -56,6 +58,10 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   const deep = useAIDeepReview(owner, repo, pullNumber)
   const [publishing, setPublishing] = useState(false)
   const [publishOpen, setPublishOpen] = useState(false)
+  // Mobile/tablet drawer state for the AI Deep Review panel — replaces
+  // the previous `hidden lg:flex` behaviour that hid AI affordances
+  // entirely below lg.
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
 
   // Stamp original indices on the AI comments we hand to DiffPanel so child
   // callbacks can map back to the canonical position before dismissing/editing.
@@ -400,6 +406,40 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
         variant="warning"
         isLoading={submitting}
       />
+
+      {/* Mobile/tablet AI panel: floating action button + right-edge drawer.
+          Visible below lg, where the third-column AIReviewPanel is hidden.
+          Both mounts share the same useAIDeepReview hook instance, so
+          dismissing/editing in one updates the other. */}
+      <button
+        type="button"
+        onClick={() => setAiDrawerOpen(true)}
+        className="lg:hidden fixed z-30 bottom-20 right-4 w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 via-cyan-500 to-pink-500 text-white shadow-2xl flex items-center justify-center hover:scale-105 transition-transform"
+        aria-label="Open AI insights"
+        title="AI insights"
+      >
+        <Sparkles className="w-5 h-5" strokeWidth={2.25} />
+      </button>
+
+      <MobileAIPanelDrawer isOpen={aiDrawerOpen} onClose={() => setAiDrawerOpen(false)}>
+        <AIReviewPanel
+          draft={deep.draft}
+          loading={deep.loading}
+          error={deep.error}
+          onGenerate={deep.generate}
+          onPublish={() => setPublishOpen(true)}
+          onJumpToFile={(filename) => {
+            dispatch({ type: 'SET_ACTIVE_FILE', filename })
+            setAiDrawerOpen(false)
+          }}
+          onDismissComment={(idx) => deep.dismiss(idx)}
+          onEditComment={(idx, payload) => deep.edit(idx, payload)}
+          publishing={publishing}
+          owner={owner}
+          repo={repo}
+          prNumber={pullNumber}
+        />
+      </MobileAIPanelDrawer>
     </div>
   )
 }
