@@ -233,6 +233,11 @@ const KNOWN_ERRORS = {
         body: 'This AI feature has been disabled by the administrator.',
         action: { label: 'Dismiss', kind: 'dismiss', type: 'dismiss' },
     },
+    GITHUB_PRO_REQUIRED: {
+        title: 'Branch protection requires GitHub Pro',
+        body: 'On the free plan, branch protection rules are only available on public repositories. Upgrade to GitHub Pro, or make this repo public, to enable protection.',
+        action: { label: 'Upgrade', kind: 'open-pricing', type: 'upgrade' },
+    },
 }
 
 const FALLBACK = {
