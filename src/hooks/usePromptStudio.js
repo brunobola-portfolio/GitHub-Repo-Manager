@@ -1,5 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { mockPromptStudioPresets, mockGetPreset } from '../__mocks__/mockRepoDetail';
+// NOTE: Mock data is loaded via dynamic `await import()` inside the inlined
+// env-checked branches below — do NOT add a top-level static import. Static
+// imports of `__mocks__/*` pin the mock module in production bundles even
+// when the runtime branch is dead-code-eliminated. See
+// feedback_vite_inline_dce_guards in project memory.
 
 async function fetchJSON(url, options = {}) {
     const res = await fetch(url, {
@@ -55,6 +59,7 @@ export function usePromptStudio() {
             // Use the current state value as the source of truth for demo mode
             // — earlier mutations (save/remove/setDefault) live in component
             // state. On first call, seed with the canonical fixture.
+            const { mockPromptStudioPresets } = await import('../__mocks__/mockRepoDetail.js');
             setPresets((prev) => (prev.length ? prev : mockPromptStudioPresets.slice()));
             setLoading(false);
             setError(null);
@@ -78,6 +83,7 @@ export function usePromptStudio() {
 
     const getPreset = useCallback(async (id) => {
         if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+            const { mockGetPreset } = await import('../__mocks__/mockRepoDetail.js');
             return mockGetPreset(id);
         }
         return fetchJSON(`/api/ai/prompt-studio/presets/${encodeURIComponent(id)}`);
@@ -140,6 +146,7 @@ export function usePromptStudio() {
 
     const test = useCallback(async (id) => {
         if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+            const { mockGetPreset } = await import('../__mocks__/mockRepoDetail.js');
             const preset = mockGetPreset(id);
             return {
                 presetName: preset?.name ?? 'Demo preset',

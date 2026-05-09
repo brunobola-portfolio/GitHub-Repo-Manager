@@ -136,7 +136,8 @@
   "lint-staged": {
     "src/**/*.{js,jsx}": [
       "eslint --fix --max-warnings 0",
-      "node scripts/check-debug-statements.mjs"
+      "node scripts/check-debug-statements.mjs",
+      "node scripts/check-no-static-mock-imports.mjs"
     ],
     "server/**/*.js": [
       "eslint --fix --max-warnings 0",

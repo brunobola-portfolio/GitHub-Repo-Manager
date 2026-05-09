@@ -1,5 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { mockPRCommands } from '../__mocks__/mockRepoDetail';
+// NOTE: Mock data is loaded via dynamic `await import()` inside the inlined
+// env-checked branches below — do NOT add a top-level static import. Static
+// imports of `__mocks__/*` pin the mock module in production bundles even
+// when the runtime branch is dead-code-eliminated. See
+// feedback_vite_inline_dce_guards in project memory.
 
 async function fetchJSON(url, options = {}) {
     const res = await fetch(url, {
@@ -71,6 +75,7 @@ export function usePRCommand(owner, repo, prNumber, command) {
     const loadCached = useCallback(async () => {
         if (!owner || !repo || !prNumber || !isValid) return;
         if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+            const { mockPRCommands } = await import('../__mocks__/mockRepoDetail.js');
             const mock = mockPRCommands?.[command];
             setId(mock ? 1 : null);
             setResult(mock || null);
@@ -103,6 +108,7 @@ export function usePRCommand(owner, repo, prNumber, command) {
     const generate = useCallback(async () => {
         if (!isValid) throw new Error(`Unsupported command: ${command}`);
         if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+            const { mockPRCommands } = await import('../__mocks__/mockRepoDetail.js');
             const mock = mockPRCommands?.[command];
             setId(1);
             setResult(mock || null);

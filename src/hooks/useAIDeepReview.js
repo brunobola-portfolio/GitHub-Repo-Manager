@@ -1,5 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { mockDeepReviewDraft } from '../__mocks__/mockRepoDetail';
+// NOTE: Mock data is loaded via dynamic `await import()` inside the inlined
+// env-checked branches below — do NOT add a top-level static import. Static
+// imports of `__mocks__/*` pin the entire mock module in production bundles
+// even when the runtime branch is dead-code-eliminated. See
+// feedback_vite_inline_dce_guards in project memory.
 
 async function fetchJSON(url, options = {}) {
     const res = await fetch(url, {
@@ -42,13 +46,6 @@ async function fetchJSONWithTimeout(url, options = {}, timeoutMs = 90_000) {
     }
 }
 
-// Per the project's vite-inline-DCE-guard rule, inline both checks at every
-// callsite — do NOT extract to a const reused across callbacks (cross-module
-// constant folding can fail for dynamic-import paths).
-function isMockMode() {
-    return import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true';
-}
-
 /**
  * Drives the AI Deep Review surface for one PR.
  *
@@ -77,7 +74,8 @@ export function useAIDeepReview(owner, repo, prNumber) {
 
     const loadCached = useCallback(async () => {
         if (!owner || !repo || !prNumber) return;
-        if (isMockMode()) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+            const { mockDeepReviewDraft } = await import('../__mocks__/mockRepoDetail.js');
             setDraftId(1);
             setDraft(mockDeepReviewDraft);
             setLoading(false);
@@ -108,7 +106,8 @@ export function useAIDeepReview(owner, repo, prNumber) {
     useEffect(() => { loadCached(); }, [loadCached]);
 
     const generate = useCallback(async (presetKey) => {
-        if (isMockMode()) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+            const { mockDeepReviewDraft } = await import('../__mocks__/mockRepoDetail.js');
             setDraftId(1);
             setDraft(mockDeepReviewDraft);
             setLoading(false);
@@ -138,7 +137,7 @@ export function useAIDeepReview(owner, repo, prNumber) {
     }, [owner, repo, prNumber]);
 
     const dismiss = useCallback(async (idx) => {
-        if (isMockMode()) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             setDraft((d) => d ? { ...d, lineComments: d.lineComments.filter((_, i) => i !== idx) } : d);
             return;
         }
@@ -151,7 +150,7 @@ export function useAIDeepReview(owner, repo, prNumber) {
     }, [draftId]);
 
     const edit = useCallback(async (idx, { body: newBody, suggestion }) => {
-        if (isMockMode()) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             setDraft((d) => {
                 if (!d) return d;
                 const next = [...d.lineComments];
@@ -173,7 +172,7 @@ export function useAIDeepReview(owner, repo, prNumber) {
     }, [draftId]);
 
     const publish = useCallback(async (event = 'COMMENT') => {
-        if (isMockMode()) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             if (aliveRef.current) {
                 // Mark the draft with a demo-only sentinel state so the UI can
                 // distinguish it from a real GitHub publish. We deliberately
@@ -205,7 +204,7 @@ export function useAIDeepReview(owner, repo, prNumber) {
     }, [draftId]);
 
     const discard = useCallback(async () => {
-        if (isMockMode()) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             setDraftId(null);
             setDraft(null);
             return;

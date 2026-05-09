@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getCsrfToken } from '../utils/api';
-import { mockChatMessages } from '../__mocks__/mockRepoDetail';
+// NOTE: Mock data is loaded via dynamic `await import()` inside the inlined
+// env-checked branches below — do NOT add a top-level static import. Static
+// imports of `__mocks__/*` pin the mock module in production bundles even
+// when the runtime branch is dead-code-eliminated. See
+// feedback_vite_inline_dce_guards in project memory.
 
 /**
  * usePRChat — drive the PR-context chat tab.
@@ -22,14 +26,6 @@ import { mockChatMessages } from '../__mocks__/mockRepoDetail';
  * In MOCK_MODE the hook returns a canned conversation and simulates a
  * 2-second streamed reply on send() so the UI works offline.
  */
-// Inline checks at every call-site below — Vite's cross-module DCE doesn't
-// fold module-level constants for env vars, so reading at the call-site keeps
-// the mock branch out of production bundles AND lets tests stub the env
-// variable per-test via `vi.stubEnv('VITE_MOCK_MODE', ...)`.
-function isMockMode() {
-    return import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true';
-}
-
 let _mockMsgId = 1000;
 function nextMockId() { _mockMsgId += 1; return _mockMsgId; }
 
@@ -79,7 +75,8 @@ export function usePRChat(owner, repo, prNumber) {
             setLoading(false);
             return;
         }
-        if (isMockMode()) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+            const { mockChatMessages } = await import('../__mocks__/mockRepoDetail.js');
             setMessages(mockChatMessages || []);
             setLoading(false);
             return;
@@ -119,7 +116,7 @@ export function usePRChat(owner, repo, prNumber) {
         setStreamingText('');
         setSending(true);
 
-        if (isMockMode()) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             // Simulate a 2s streamed reply, chunked at ~80ms.
             const fakeReply = `[DEMO] I would answer "${message.slice(0, 80)}" by looking at the PR diff and walkthrough. Streaming is mocked locally — no network call was made.`;
             const chunks = fakeReply.match(/.{1,12}/g) || [fakeReply];
@@ -219,7 +216,7 @@ export function usePRChat(owner, repo, prNumber) {
         abortRef.current = null;
         setStreamingText('');
         setSending(false);
-        if (isMockMode()) {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             setMessages([]);
             return;
         }
