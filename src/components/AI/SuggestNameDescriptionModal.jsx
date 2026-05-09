@@ -7,6 +7,10 @@ import { aiApi } from '../../api/ai'
 import { reposApi } from '../../api/repos'
 import { useToast } from '../../hooks/useToast'
 import { useAIStatus } from '../../hooks/useAIStatus'
+import { ContextPicker } from './ContextPicker'
+import { PremiumRationale } from './PremiumRationale'
+import { FileTreePicker } from './FileTreePicker'
+import { useContextPrefs } from '../../hooks/useContextPrefs'
 
 function SourceBadge({ source }) {
     if (!source) return null
@@ -145,6 +149,10 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
     const aiStatus = useAIStatus()
     const aiOff = !aiStatus.loading && !aiStatus.configured
 
+    const { prefs, setSignal, reset: resetPrefs } = useContextPrefs()
+    const [customFiles, setCustomFiles] = useState([])
+    const [pickerOpen, setPickerOpen] = useState(false)
+
     // The repo prop is the single source of truth for "current" values; the
     // form starts in manual mode (proposed = current) so the user can edit
     // straight away without waiting for any AI call.
@@ -194,7 +202,12 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
         setLoading(true)
         setError(null)
         try {
-            const result = await aiApi.suggestNameDescription(repo.id)
+            const result = await aiApi.suggestNameDescription(repo.id, {
+                context: {
+                    signals: prefs.signals,
+                    customFiles: customFiles.map((f) => f.path),
+                },
+            })
             if (ctrl.signal.aborted) return
             setSuggestion(result)
             setNameValue(result.proposed.name)
@@ -345,6 +358,30 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
                 </InsightCard>
             )}
 
+            <ContextPicker
+                mode="single"
+                signals={prefs.signals}
+                onSignalChange={setSignal}
+                customFiles={customFiles}
+                onAddCustomFile={() => setPickerOpen(true)}
+                onRemoveCustomFile={(p) => setCustomFiles((prev) => prev.filter((f) => f.path !== p))}
+                onReset={() => { resetPrefs(); setCustomFiles([]) }}
+            />
+
+            <FileTreePicker
+                isOpen={pickerOpen}
+                owner={repo?.owner?.login}
+                repoName={repo?.name}
+                branch={repo?.default_branch}
+                onPick={(entry) => {
+                    if (customFiles.length >= 5) { setPickerOpen(false); return }
+                    if (customFiles.find((f) => f.path === entry.path)) { setPickerOpen(false); return }
+                    setCustomFiles((prev) => [...prev, entry])
+                    setPickerOpen(false)
+                }}
+                onClose={() => setPickerOpen(false)}
+            />
+
             <div className="grid gap-4 mt-3">
                 <FieldCard
                     label="Name"
@@ -388,13 +425,14 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
                     maxLength={500}
                 />
 
-                {suggestion?.rationale && (
-                    <InsightCard tone="ai" hover={false}>
-                        <div className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
-                            <Wand2 className="w-4 h-4 mt-0.5 text-indigo-500 shrink-0" />
-                            {suggestion.rationale}
-                        </div>
-                    </InsightCard>
+                {suggestion && (
+                    <PremiumRationale
+                        source={suggestion.source}
+                        rationale={suggestion.rationale}
+                        confidence={suggestion.confidence}
+                        signalsUsed={suggestion.signalsUsed}
+                        redactions={suggestion.redactions}
+                    />
                 )}
             </div>
         </Modal>

@@ -11,6 +11,7 @@ vi.mock('../../../src/api/ai', () => ({
 vi.mock('../../../src/api/repos', () => ({
     reposApi: {
         updateRepo: vi.fn(),
+        getTree: vi.fn(),
     },
 }));
 vi.mock('../../../src/hooks/useToast', () => ({
@@ -18,6 +19,13 @@ vi.mock('../../../src/hooks/useToast', () => ({
 }));
 vi.mock('../../../src/hooks/useAIStatus', () => ({
     useAIStatus: vi.fn(),
+}));
+vi.mock('../../../src/hooks/useContextPrefs', () => ({
+    useContextPrefs: () => ({
+        prefs: { signals: { readme: true, manifest: true, entrypoints: false, folderStructure: false, topics: true, language: true } },
+        setSignal: vi.fn(),
+        reset: vi.fn(),
+    }),
 }));
 
 import { aiApi } from '../../../src/api/ai';
@@ -31,6 +39,9 @@ const REPO = {
     owner: { login: 'org' },
     description: 'Imported from https://example.com',
 };
+
+// Alias used in newer test cases that reference the plan fixture name.
+const REPO_FIXTURE = REPO;
 
 const SUGGESTION = {
     source: 'ai',
@@ -184,5 +195,26 @@ describe('SuggestNameDescriptionModal — graceful degradation', () => {
         render(<SuggestNameDescriptionModal isOpen repo={REPO} onClose={() => {}} />);
         await user.click(screen.getByRole('button', { name: /suggest with ai/i }));
         await screen.findByText(/Name already great/i);
+    });
+
+    it('renders PremiumRationale and forwards context in the suggest call', async () => {
+        // arrange existing mock to return the enriched shape
+        aiApi.suggestNameDescription.mockResolvedValueOnce({
+            source: 'ai',
+            current: { name: 'demo', description: '' },
+            proposed: { name: 'demo', description: 'Tool for testing.' },
+            rationale: 'Used README + manifest.',
+            noChange: { name: true, description: false },
+            confidence: 'high',
+            signalsUsed: [{ kind: 'readme', label: 'README', bytes: 1500 }],
+            redactions: [],
+        });
+
+        render(<SuggestNameDescriptionModal isOpen repo={REPO_FIXTURE} onClose={() => {}} onApplied={() => {}} />);
+        fireEvent.click(screen.getByRole('button', { name: /suggest with ai/i }));
+        await waitFor(() => screen.getByText(/Used README \+ manifest/));
+
+        expect(aiApi.suggestNameDescription).toHaveBeenCalledWith(REPO_FIXTURE.id, expect.objectContaining({ context: expect.any(Object) }));
+        expect(screen.getByText(/HIGH/i)).toBeInTheDocument();
     });
 });
