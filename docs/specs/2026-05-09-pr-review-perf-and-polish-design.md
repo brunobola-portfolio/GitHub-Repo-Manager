@@ -81,24 +81,32 @@ Either option closes the console noise without affecting render correctness.
 
 The core perf and big-diff slice. Most of the impact lives here.
 
-### 2.1 Hunk-level virtualisation
+> **2026-05-09 revision after technical validation (`docs/reports/`):** the original draft proposed hunk-level virtualisation wrapping `@git-diff-view/react`. Validation found that the library is a per-file renderer with a contiguous-DOM line-number contract, and that **the surface already renders only one file at a time** (FileTree left, single `<DiffRenderer>` centre). The real bottleneck is *one single huge file*, not "many files mounted at once". The strategy below replaces hunk virtualisation with a layered approach (CSS containment + fold-by-default + tiered highlighting + click-to-compute) that mirrors what GitHub Engineering shipped in 2024 for the same problem (sources: github.blog/engineering, chsm.dev highlighter benchmarks, react-virtualized-diff numbers).
 
-The current `DiffRenderer` renders every hunk synchronously. For a file with hundreds of hunks (typical in a large refactor PR) this is the primary jank source.
+### 2.1 Layered render strategy for one file's diff
 
-**Approach:**
+The current `DiffRenderer` renders every hunk synchronously. For a single file with 5k+ changed lines this causes layout thrashing. We do *not* fight the library; we let it render contiguously and reduce the cost via four layers, applied in this order:
 
-- Keep `@git-diff-view/react` as the *per-hunk* renderer (it does syntax highlight, comment widgets, split/unified mode well).
-- Wrap it in a new `<VirtualizedDiff>` that:
-  - Splits `patch` into hunks at the `^@@` boundary (existing `parsePatchToHunks` reuse).
-  - Mounts each hunk as a `useVirtualizer` row with measured height (initial estimate from line count × line height, refined via `measureElement`).
-  - Uses `overscan: 5` (hunks are larger than file-tree rows; a smaller overscan is fine).
-  - Persists per-hunk measured heights in a `useRef` map keyed by hunk hash so re-mounts (filter changes, view-mode toggles) don't reflow.
+1. **Fold-by-default above 500 changed lines.** A collapsed wrapper renders a static "Show diff (N lines changed)" affordance with the first hunk as a one-screen preview. Per-file expanded state lives in the same `localStorage` set as `reviewed` (new `expanded` set), so a user who chose to expand a large file once doesn't have to re-expand it. Toolbar gets "Expand all" / "Collapse all" (Gerrit's `Shift+X` / `Shift+C`).
+2. **CSS containment on every rendered hunk wrapper.** `content-visibility: auto` + `contain-intrinsic-size: auto 24px` on each hunk wrapper inside the existing `<DiffView>` output, gated on `@supports (content-visibility: auto)`. The browser then skips paint and layout for hunks outside the viewport, giving ~10–15% paint savings (per Nolan Lawson's measurements) with zero JavaScript cost. Safari support landed in 18.0; older Safari simply gets no benefit, no regression.
+3. **Tiered syntax highlighting.** `@git-diff-view/lowlight` (the default; `highlight.js` engine, ~1 ms per snippet per chsm.dev benchmarks) for normal files. Above 5k changed lines, force `highlightLanguage="plaintext"` and show a dismissible "Highlighting paused for large file" pill. Shiki, if ever surfaced as an opt-in, only for hand-picked single files (it's 7× slower and adds 280 KB of WASM). Tab expansion (`expandTabs` in `DiffRenderer.jsx:12-16`) moves into a `useDeferredValue` so tab-width changes don't block paint on huge patches.
+4. **Click-to-compute affordance for extreme files (>50k changed lines).** Mirrors Monaco's `maxFileSize` pattern: render a placeholder card with the file path, line count, and a "Compute diff" button. The user explicitly opts in, accepting that even with the layers above the first paint will not be instant.
 
-**File touched:** `src/components/PRReview/DiffPanel/DiffRenderer.jsx` becomes a thin shell that switches between:
-- `<VirtualizedDiff>` for files with >200 changed lines (threshold tunable);
-- The current single-pass `<DiffView>` for small files (overhead of virtualisation is not worth it for a 30-line diff).
+**Files touched:**
+- `src/components/PRReview/DiffPanel/DiffRenderer.jsx` becomes the entry point that reads file size and routes to (a) plain `<DiffView>` for ≤500 lines, (b) `<DiffCollapser>` for 501–50,000 lines, (c) `<DiffComputeOnDemand>` for >50,000 lines.
+- `src/components/PRReview/DiffPanel/DiffCollapser.jsx` *(new)* — fold/expand wrapper, persists `expanded` set in `localStorage` keyed by `reviewKey + filename`.
+- `src/components/PRReview/DiffPanel/DiffComputeOnDemand.jsx` *(new)* — the placeholder + "Compute diff" affordance.
+- A small CSS rule (added to `src/design-system.css` under a `@supports` guard) applying `content-visibility: auto` + `contain-intrinsic-size: auto 24px` to `.diff-renderer .diff-hunk` (the lib's own class).
+- `src/components/diff/CodeReviewToolbar.jsx` — "Expand all" / "Collapse all" buttons.
 
-**Library:** `@tanstack/react-virtual` (already in deps; we use it for `FileTree`). No new dependency.
+**No new top-level dependencies.** No virtualisation library swap. If a real-world test shows the fold + containment combo still chokes on a single 30k-line file, slice 2 *follow-up* can investigate `react-diff-view` (which is designed for hunk virtualisation with a Web Worker tokenizer) — but that is out of scope for this slice. Premature swap = wasted effort.
+
+### 2.1a What we are explicitly NOT doing in slice 2
+
+- Per-hunk virtualisation wrapping `@git-diff-view/react`. The library's contiguous-DOM line-number contract makes this brittle and undocumented (see validation report).
+- Adding `react-virtuoso` or any second virtualisation lib. Unnecessary for a per-file renderer.
+- Swapping `@git-diff-view/react` for `react-diff-view`. A larger spec, justified only if the layered strategy doesn't hold.
+- Web-worker syntax highlighting. The existing `lowlight` default is already in the "good" perf bucket; the worker swap is its own multi-day effort.
 
 ### 2.2 Fold-by-default for large files
 
@@ -130,12 +138,13 @@ Reuse the existing `useDraftPersistence` hook so composer state survives acciden
 
 ### 2.5 Definition of done — slice 2
 
-- [ ] 10k-line PR opens to first diff paint in <600 ms (measured on a mid-tier laptop, dev build acceptable).
-- [ ] `j`/`k` between files in a 10k-line PR is <16 ms on the next file's first frame.
+- [ ] 10k-line single-file diff opens to first paint in <600 ms (measured on a mid-tier laptop, dev build acceptable). Validates that fold-by-default + content-visibility close the gap without per-hunk virtualisation.
+- [ ] `j`/`k` between files in a PR with several large files is <16 ms on the next file's first frame.
 - [ ] Files >500 lines collapsed by default; per-file expand persists across refresh.
+- [ ] Files >50,000 lines render the click-to-compute placeholder and only mount the diff after the user clicks.
 - [ ] Composer remains visible while user scrolls a long diff.
-- [ ] No new top-level dependencies (only `@tanstack/react-virtual` re-use).
-- [ ] Unit tests for `<VirtualizedDiff>` (1: respects threshold; 2: re-uses measured heights on view-mode toggle) and `<DiffCollapser>` (1: collapses above threshold; 2: persists expanded state).
+- [ ] No new top-level dependencies.
+- [ ] Unit tests for `<DiffCollapser>` (collapses above threshold; persists expanded state; renders preview hunk) and `<DiffComputeOnDemand>` (renders placeholder; triggers diff render on click).
 - [ ] One e2e in `e2e/` opens a fixture PR with >500 lines, asserts collapse, expands, asserts diff is rendered.
 
 ---
@@ -209,11 +218,12 @@ All Framer Motion, all <30 lines of code total, all leveraging the `layout` prop
 | File | Slice | Type |
 |---|---|---|
 | `src/components/RepoDetail/BranchProtectionPanel.jsx` | 1 | Edit |
-| `src/components/PRReview/DiffPanel/DiffRenderer.jsx` | 1, 2 | Edit |
-| `src/components/PRReview/DiffPanel/VirtualizedDiff.jsx` | 2 | New |
+| `src/components/PRReview/DiffPanel/DiffRenderer.jsx` | 1, 2 | Edit (router for collapser / compute-on-demand / passthrough) |
 | `src/components/PRReview/DiffPanel/DiffCollapser.jsx` | 2 | New |
+| `src/components/PRReview/DiffPanel/DiffComputeOnDemand.jsx` | 2 | New |
+| `src/design-system.css` | 2 | Edit (`@supports (content-visibility: auto)` rule for `.diff-renderer .diff-hunk`) |
 | `src/components/diff/CodeReviewSurface.jsx` | 2, 3 | Edit |
-| `src/components/diff/CodeReviewToolbar.jsx` | 2, 3 | Edit |
+| `src/components/diff/CodeReviewToolbar.jsx` | 2, 3 | Edit (Expand/Collapse all) |
 | `src/components/PRReview/DiffPanel/DiffPanel.jsx` | 2 | Edit (sticky composer) |
 | `src/components/PRReview/PRReviewView.jsx` | 3 | Edit (drawer + action bar) |
 | `src/components/PRReview/ReviewToolbar/ReviewStatusBar.jsx` | 3 | Edit (promote to action bar) |
