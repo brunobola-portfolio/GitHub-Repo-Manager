@@ -26,6 +26,7 @@ export function useReviewKeyboard({
     onToggleReviewed,
     onEscape,
     onSubmitReview,
+    onShowHelp,
     activeFile,
     enabled = true,
 }) {
@@ -83,6 +84,10 @@ export function useReviewKeyboard({
                     e.preventDefault()
                     onToggleReviewed?.(activeFile)
                     break
+                case '?':
+                    e.preventDefault()
+                    onShowHelp?.()
+                    break
                 default:
                     break
             }
@@ -98,5 +103,6 @@ export function useReviewKeyboard({
         onToggleReviewed,
         onEscape,
         onSubmitReview,
+        onShowHelp,
     ])
 }

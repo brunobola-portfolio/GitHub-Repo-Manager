@@ -16,6 +16,7 @@ import { ReviewStatusBar } from './ReviewToolbar/ReviewStatusBar'
 import { AISummaryPanel } from './AIInsights/AISummaryPanel'
 import { AIReviewPanel } from './AIDeepReview/AIReviewPanel'
 import { MobileAIPanelDrawer } from './MobileAIPanelDrawer'
+import { KeyboardHelpOverlay } from './KeyboardHelpOverlay'
 import { useAIDeepReview } from '../../hooks/useAIDeepReview'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { PublishReviewModal } from './AIDeepReview/PublishReviewModal'
@@ -62,6 +63,8 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   // the previous `hidden lg:flex` behaviour that hid AI affordances
   // entirely below lg.
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
+  // Keyboard help overlay — toggled by `?`.
+  const [helpOpen, setHelpOpen] = useState(false)
 
   // Stamp original indices on the AI comments we hand to DiffPanel so child
   // callbacks can map back to the canonical position before dismissing/editing.
@@ -228,6 +231,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
       filename && dispatch({ type: 'TOGGLE_REVIEWED', filename }),
     onEscape: () => onBack?.(),
     onSubmitReview: handleSubmitReview,
+    onShowHelp: () => setHelpOpen(true),
     enabled: true,
   })
 
@@ -421,6 +425,8 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
       >
         <Sparkles className="w-5 h-5" strokeWidth={2.25} />
       </button>
+
+      <KeyboardHelpOverlay isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
 
       <MobileAIPanelDrawer isOpen={aiDrawerOpen} onClose={() => setAiDrawerOpen(false)}>
         <AIReviewPanel
