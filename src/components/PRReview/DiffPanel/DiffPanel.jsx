@@ -277,11 +277,18 @@ export function DiffPanel({
         </div>
       )}
 
-      {/* Inline comment input */}
+      {/* Inline comment composer — floats above the diff so the user keeps
+          their visual context while composing. Position-fixed so a long
+          diff scrolls behind it. Bottom sheet on mobile via max-md
+          breakpoints + safe-area-inset for notched iOS. Spec Slice 2.4. */}
       {commentingLine && (
-        <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4">
+        <div
+          data-floating-composer="true"
+          className="fixed z-40 right-4 bottom-4 max-md:left-4 max-md:right-4 w-[420px] max-md:w-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-4"
+          style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
+        >
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-            Adding comment on line{' '}
+            Comment on line{' '}
             <span className="font-mono font-semibold text-gray-700 dark:text-gray-200">
               {commentingLine.lineNumber}
             </span>{' '}
