@@ -148,3 +148,53 @@ describe('BranchProtectionPanel — inline variant', () => {
         expect(screen.getByText(/Checking protection/i)).toBeInTheDocument()
     })
 })
+
+describe('BranchProtectionPanel — permission-denied state', () => {
+    it('renders the inline "admin access required" card when API returns INSUFFICIENT_PERMISSIONS', async () => {
+        const err = Object.assign(
+            new Error('Admin access on this repository is required to view branch protection.'),
+            { status: 403, code: 'INSUFFICIENT_PERMISSIONS' },
+        )
+        const api = makeApi({ fetchBranchProtection: vi.fn().mockRejectedValue(err) })
+        renderWithProviders(<BranchProtectionPanel api={api} branch="main" archived={false} />)
+
+        await waitFor(() =>
+            expect(screen.getByRole('heading', { name: /admin access required/i })).toBeInTheDocument()
+        )
+
+        // Quiet failure: no toast, no upgrade card, no enable CTA.
+        expect(screen.queryByText(/Failed to load branch protection/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(/requires GitHub Pro/i)).not.toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: /enable protection/i })).not.toBeInTheDocument()
+    })
+
+    it('falls back to permission-denied for plain 403 even without a structured code (rollout safety)', async () => {
+        // If a stale backend serves a 403 without { code }, the client must
+        // still render the quiet affordance — heuristic: status === 403 && !code.
+        const err = Object.assign(new Error('Forbidden'), { status: 403 })
+        const api = makeApi({ fetchBranchProtection: vi.fn().mockRejectedValue(err) })
+        renderWithProviders(<BranchProtectionPanel api={api} branch="main" archived={false} />)
+
+        await waitFor(() =>
+            expect(screen.getByRole('heading', { name: /admin access required/i })).toBeInTheDocument()
+        )
+        expect(screen.queryByText(/Failed to load branch protection/i)).not.toBeInTheDocument()
+    })
+
+    it('renders an "admin only" chip in inline variant when INSUFFICIENT_PERMISSIONS', async () => {
+        const err = Object.assign(
+            new Error('Admin access on this repository is required to view branch protection.'),
+            { status: 403, code: 'INSUFFICIENT_PERMISSIONS' },
+        )
+        const api = makeApi({ fetchBranchProtection: vi.fn().mockRejectedValue(err) })
+        renderWithProviders(
+            <BranchProtectionPanel api={api} branch="main" archived={false} variant="inline" />
+        )
+
+        await waitFor(() => {
+            expect(screen.getByText(/admin only/i)).toBeInTheDocument()
+        })
+        // Heading-form card must not appear in inline mode.
+        expect(screen.queryByRole('heading', { name: /admin access required/i })).toBeNull()
+    })
+})

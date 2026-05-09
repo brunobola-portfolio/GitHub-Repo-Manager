@@ -70,11 +70,17 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
     // upgrade affordance instead of a generic error toast — the previous
     // UX flagged this expected limitation as a transient failure.
     const [upgradeRequired, setUpgradeRequired] = useState(false)
+    // Set when the user is a collaborator without admin on the repo.
+    // GitHub returns 403 and the backend forwards { code: 'INSUFFICIENT_PERMISSIONS' }.
+    // Renders a quiet "admin access required" affordance instead of a
+    // generic error toast for what is an expected, structural state.
+    const [permissionDenied, setPermissionDenied] = useState(false)
 
     const load = async () => {
         if (!branch) return
         setLoading(true)
         setUpgradeRequired(false)
+        setPermissionDenied(false)
         try {
             const data = await api.fetchBranchProtection(branch)
             const initial = rulesFromProtection(data)
@@ -83,6 +89,13 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
         } catch (err) {
             if (err?.code === 'GITHUB_PRO_REQUIRED') {
                 setUpgradeRequired(true)
+                return
+            }
+            // Quiet branch for non-admin collaborators. Heuristic
+            // (status === 403 && !code) protects us if a stale backend
+            // serves the 403 without the structured code yet.
+            if (err?.code === 'INSUFFICIENT_PERMISSIONS' || (err?.status === 403 && !err?.code)) {
+                setPermissionDenied(true)
                 return
             }
             toast.errorFromException(err, { fallbackTitle: 'Failed to load branch protection' })
@@ -149,6 +162,15 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                 </a>
             )
         }
+        if (permissionDenied) {
+            return (
+                <span
+                    title="You need admin access on this repository to view or change branch protection rules."
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/40">
+                    🔒 admin only
+                </span>
+            )
+        }
         if (!savedRules) {
             return <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500">unprotected</span>
         }
@@ -200,6 +222,18 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                     >
                         See GitHub plans <ExternalLink className="w-3 h-3" />
                     </a>
+                </div>
+            ) : permissionDenied ? (
+                <div className="rounded-lg border border-slate-200 dark:border-slate-700/60 bg-slate-50/60 dark:bg-slate-800/30 p-5 text-center">
+                    <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 mb-3">
+                        <Shield className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                    </div>
+                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                        Admin access required
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 max-w-md mx-auto">
+                        You&apos;re a collaborator on this repository but don&apos;t have admin access. Branch protection rules can only be viewed and edited by admins.
+                    </p>
                 </div>
             ) : !rules ? (
                 <div className="rounded-lg border border-dashed border-slate-300 dark:border-slate-700 p-4 text-center">
