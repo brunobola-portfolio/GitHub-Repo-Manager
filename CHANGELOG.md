@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.1] - 2026-05-10
+
+Bundle hygiene patch on top of v4.1.0. Ships the perf work from PR #32
+(merged post-tag) and unblocks the CLA check on contributor PRs.
+
+### Performance — bundle size
+
+- **`vendor-diff` -74% gzip (332 KB → 82.8 KB).**
+  `@git-diff-view/lowlight` was calling `createLowlight(all)`, bundling
+  all ~190 highlight.js grammars. The diff renderer only needs ~26.
+  `src/lib/diff-highlighter-shim.js` is a drop-in replacement that calls
+  `createLowlight(common)` (~40 langs) plus `dart` and `vue`, exporting
+  the identical `highlighter` API. `vite.config.js` aliases
+  `@git-diff-view/lowlight` → shim, so the redirect propagates
+  transitively (Vite resolves it inside `node_modules`).
+- **`LandingPage` lazy-loaded.** `LandingPage` and its sub-components
+  (`HeroSection`, `FeaturesSection`, `PricingPreview`, `CTASection`)
+  are only rendered for unauthenticated visitors; now `React.lazy()`
+  with the existing `<Suspense fallback={<RouteFallback />}>` wrapper
+  at the render site. Drops the main `index-*` chunk from 65 KB to
+  57.1 KB gzip.
+- **Bundle budgets net-tightened across the board.** New `vendor-diff`
+  budget (86 KB). `index` 65 → 60 KB. `vendor-react` 65 → 57 KB.
+  `vendor-ui` 35 → 28 KB. `vendor-icons` 20 → 15 KB. All passing with
+  headroom.
+
+### Fixed — CI
+
+- **`cla-check` no longer crashes on contributor PRs.**
+  `signatures/cla.json` was `[]` (malformed) instead of the
+  `{"signedContributors":[]}` schema the action expects, which crashed
+  `contributor-assistant@v2.6.1` with "Cannot read properties of
+  undefined (reading 'some')" on every contributor PR. Schema fixed;
+  contributors can now sign normally via the bot comment flow.
+
+### Known follow-ups
+
+- **`vendor-charts` (108 KB gzip) stays deferred.** Tested a recharts
+  v3 → v2 downgrade — neutral on gzip (108.13 → 108.25 KB) because v2
+  pulls d3 directly where v3 wraps it via `victory-vendor`, so reverted.
+  Splitting recharts further requires Rolldown's `advancedChunks.groups`,
+  which currently conflicts with `manualChunks` in the same output
+  config (Rolldown 1.0.0-rc.15). Re-evaluate when Rolldown stabilises or
+  swap to `visx` / `nivo`.
+
 ## [4.1.0] - 2026-05-10
 
 The PR-review surface gets a deep premium pass: faster huge-diff
