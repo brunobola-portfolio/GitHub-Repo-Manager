@@ -11,12 +11,12 @@
  * The contract lives at the top of src/design-system.css as CSS
  * custom properties (--ds-z-surface, --ds-z-floating, --ds-z-composer,
  * --ds-z-overlay, --ds-z-modal, --ds-z-ceiling). Consumers must use
- * `z-[var(--ds-z-*)]` to opt into the contract.
+ * `z-[var(--ds-z-NAME)]` (NAME = floating | composer | popover | modal | toast | ceiling) to opt into the contract.
  *
  * Allowed exceptions:
  *   - `z-0`, `z-10`, `z-20` — in-flow stacking inside a single component;
  *     no cross-surface coordination needed.
- *   - `z-[var(--ds-z-*)]` — the canonical opt-in.
+ *   - `z-[var(--ds-z-NAME)]` (NAME = floating | composer | popover | modal | toast | ceiling) — the canonical opt-in.
  *   - `src/design-system.css` itself — the contract owner.
  *
  * Bypass in emergencies with `git commit --no-verify`.
