@@ -35,7 +35,12 @@ export default defineConfig({
       '@/contexts': path.resolve(__dirname, './src/contexts'),
       '@/hooks': path.resolve(__dirname, './src/hooks'),
       '@/utils': path.resolve(__dirname, './src/utils'),
-      '@/api': path.resolve(__dirname, './src/api')
+      '@/api': path.resolve(__dirname, './src/api'),
+      // Replaces @git-diff-view/lowlight's createLowlight(all) (190+ language
+      // grammars, ~330 KB gzip) with createLowlight(common) + dart + vue.
+      // The shim exports the identical highlighter API that @git-diff-view/core
+      // imports, so no runtime behaviour changes — just fewer bundled grammars.
+      '@git-diff-view/lowlight': path.resolve(__dirname, 'src/lib/diff-highlighter-shim.js'),
     }
   },
   build: {
@@ -53,12 +58,10 @@ export default defineConfig({
           if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) return 'vendor-icons'
           if (/[\\/]node_modules[\\/]@radix-ui[\\/]/.test(id)) return 'vendor-ui'
           if (/[\\/]node_modules[\\/]react-markdown[\\/]/.test(id)) return 'vendor-markdown'
-          // @git-diff-view/* + transitive highlight.js / lowlight / shiki
-          // (~1 MB before splitting, ~330 KB gzipped). Both consumers
-          // (PRReview DiffPanel + ReadmeEnhanceDiffPanel) already lazy() the
-          // import, but without this manualChunks rule rolldown was packing
-          // the deps into the default ESM bundle that loaded eagerly.
-          // Pinning to vendor-diff keeps it on-demand.
+          // @git-diff-view/* + lowlight (common subset via alias shim) + highlight.js
+          // languages. The shiki/* packages listed here are kept for future-proofing
+          // in case @git-diff-view adds a shiki code path; they produce no output
+          // today because nothing imports them after the lowlight alias redirect.
           if (/[\\/]node_modules[\\/](@git-diff-view|lowlight|highlight\.js|shiki|@shikijs)[\\/]/.test(id)) return 'vendor-diff'
         }
       }

@@ -15,12 +15,17 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const BUDGETS = {
-    'index-': { maxGzipKB: 65, name: 'main bundle' },
-    'vendor-react-': { maxGzipKB: 65, name: 'vendor-react' },
-    'vendor-ui-': { maxGzipKB: 35, name: 'vendor-ui' },
-    'vendor-icons-': { maxGzipKB: 20, name: 'vendor-icons' },
+    'index-': { maxGzipKB: 60, name: 'main bundle' },
+    'vendor-react-': { maxGzipKB: 57, name: 'vendor-react' },
+    'vendor-ui-': { maxGzipKB: 28, name: 'vendor-ui' },
+    'vendor-icons-': { maxGzipKB: 15, name: 'vendor-icons' },
     'WorkBoardPage-': { maxGzipKB: 20, name: 'WorkBoard' },
-    // note: esm-* (shiki) and vendor-charts-* are intentionally large; deferred
+    // vendor-diff (highlight.js common-langs + @git-diff-view, shim replaces all→common)
+    // was 332 KB gzip before P5 code-split; now capped at 86 KB (-74%).
+    'vendor-diff-': { maxGzipKB: 86, name: 'vendor-diff' },
+    // vendor-charts-* (recharts v3 + victory-vendor): still large pending a
+    // future recharts downgrade or library swap; Rolldown RC manualChunks does
+    // not propagate to transitive deps so cannot be split further today.
 }
 
 const dist = 'dist/assets'

@@ -42,7 +42,6 @@ import { BYOKUpgradeBanner } from './components/BYOKUpgradeBanner'
 import { RateLimitNotice } from './components/ui/RateLimitNotice'
 import { OfflineBanner } from './components/ui/OfflineBanner'
 import { onRetryQueueEvent } from './utils/retry-queue'
-import { LandingPage } from './components/Landing/LandingPage'
 import { LegalFooter } from './components/LegalFooter'
 import { DemoModeBanner } from './components/DemoModeBanner'
 import { RouteFallback } from './components/ui/RouteFallback'
@@ -82,6 +81,9 @@ const LicenseActivationModal = lazy(() => import('./components/Settings/LicenseA
 const AdminDLQPage = lazy(() => import('./components/Admin/AdminDLQPage').then(m => ({ default: m.AdminDLQPage })))
 const PromptStudioPage = lazy(() => import('./components/AIPrompts/PromptStudioPage').then(m => ({ default: m.PromptStudioPage })))
 const AIPolishModal = lazy(() => import('./components/AIPolish/AIPolishModal').then(m => ({ default: m.AIPolishModal })))
+// Lazy-load the landing page: only rendered for unauthenticated visitors,
+// so its sub-components stay out of the authenticated main bundle.
+const LandingPage = lazy(() => import('./components/Landing/LandingPage').then(m => ({ default: m.LandingPage })))
 
 // Loading fallback component (kept as local alias for legacy callsites below)
 const LoadingFallback = RouteFallback
@@ -921,7 +923,9 @@ function AppContent() {
             onDismiss={() => setRateLimitBanner(null)}
           />
         )}
-        <LandingPage onSignIn={handleLogin} />
+        <Suspense fallback={<RouteFallback />}>
+          <LandingPage onSignIn={handleLogin} />
+        </Suspense>
       </>
     )
   }
