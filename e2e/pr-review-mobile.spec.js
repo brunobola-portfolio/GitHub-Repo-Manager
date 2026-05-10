@@ -23,6 +23,15 @@ import { test, expect, devices } from '@playwright/test'
 test.use({ ...devices['iPhone 13'] })
 
 test.describe('PR review — mobile flow (iPhone 13)', () => {
+    // iPhone 13 device emulation defaults to webkit. The default CI
+    // workflow only installs chromium (see .github/workflows/ci.yml),
+    // so this spec is skipped unless we're actually running webkit
+    // (i.e. the mobile project added when E2E_MOBILE=1 in playwright.config.js).
+    // Local devs running `CI=1 E2E_MOBILE=1 npx playwright test --project=mobile`
+    // hit the spec normally.
+    test.skip(({ browserName }) => browserName !== 'webkit',
+        'mobile flow runs in webkit (iPhone 13) — set E2E_MOBILE=1 to enable the project')
+
     test('opens a PR, navigates files via bottom sheet, exercises fold-by-default', async ({ page }) => {
         // Mock-mode home renders the dashboard. Navigate via the bottom-nav
         // "Repos" tab to reach the repo list, then drill into the first repo.
