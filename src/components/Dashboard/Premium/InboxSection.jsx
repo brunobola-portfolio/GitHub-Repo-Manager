@@ -3,7 +3,7 @@ export function InboxSection({ label, count = 0, active = false, onClick }) {
         <button
             type="button"
             onClick={onClick}
-            aria-current={active ? 'true' : 'false'}
+            aria-current={active ? 'true' : undefined}
             className={[
                 'group w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm transition-colors',
                 active

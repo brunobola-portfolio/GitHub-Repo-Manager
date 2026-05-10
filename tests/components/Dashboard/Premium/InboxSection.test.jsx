@@ -21,4 +21,9 @@ describe('InboxSection', () => {
         fireEvent.click(screen.getByRole('button'));
         expect(onClick).toHaveBeenCalledOnce();
     });
+
+    it('omits aria-current when not active', () => {
+        render(<InboxSection label="x" count={0} active={false} onClick={() => {}} />);
+        expect(screen.getByRole('button').getAttribute('aria-current')).toBeNull();
+    });
 });
