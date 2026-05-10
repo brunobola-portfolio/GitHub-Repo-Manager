@@ -89,6 +89,7 @@ const SECTION_BUILDERS = {
             ageDays: r.ageDays,
         }));
     },
+    // Phase 2 (DORA card): wire gh-cache CI status for items in my_prs
     failing_ci: () => [],
     stale_drafts: (_userId, opts) => {
         const rows = listStalePRs({ staleAfterDays: 7 });
@@ -106,6 +107,7 @@ const SECTION_BUILDERS = {
                 ageDays: r.ageDays,
             }));
     },
+    // Phase 3 (scorecard): wire repos-security.listDependabotReadyToMerge
     dependabot_ready: () => [],
 };
 
