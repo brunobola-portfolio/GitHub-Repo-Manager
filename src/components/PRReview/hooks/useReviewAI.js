@@ -70,12 +70,14 @@ function saveCachedSummary(cacheKey, summary) {
  * @param {string} headSha - current head commit SHA (used as cache key)
  * @param {Array} files - array of PR file objects
  */
-export function useReviewAI(owner, repo, pullNumber, headSha, files) {
+export function useReviewAI(owner, repo, pullNumber, headSha, files, options = {}) {
+    const { enabled = true } = options
     const [summary, setSummary] = useState(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
 
     const fetchSummary = useCallback(async () => {
+        if (!enabled) return
         if (!owner || !repo || !pullNumber || !headSha || !files?.length) return
 
         const cacheKey = getCacheKey(owner, repo, pullNumber, headSha)
@@ -151,7 +153,7 @@ export function useReviewAI(owner, repo, pullNumber, headSha, files) {
         } finally {
             setLoading(false)
         }
-    }, [owner, repo, pullNumber, headSha, files])
+    }, [enabled, owner, repo, pullNumber, headSha, files])
 
     // Fetch on mount / when headSha/files change.
     // fetchSummary is stable (useCallback) and only sets state after awaited fetch resolves.

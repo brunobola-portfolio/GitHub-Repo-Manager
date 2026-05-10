@@ -283,7 +283,7 @@ export function DiffPanel({
       {commentingLine && (
         <div
           data-floating-composer="true"
-          className="fixed z-40 right-4 bottom-4 max-md:left-4 max-md:right-4 w-[420px] max-md:w-auto max-h-[60vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] p-4"
+          className="fixed z-[var(--ds-z-composer)] right-4 bottom-4 max-md:left-4 max-md:right-4 w-[420px] max-md:w-auto max-h-[60vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-2xl ring-1 ring-slate-200/60 dark:ring-slate-700/60 shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] p-4"
           style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
         >
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">

@@ -197,7 +197,7 @@ export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleVi
               exit="exit"
               role="menu"
               aria-label="Submit review options"
-              className="absolute right-0 top-full mt-2 w-80 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden z-30"
+              className="absolute right-0 top-full mt-2 w-80 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden z-[var(--ds-z-overlay)]"
             >
               {/* Review body textarea */}
               <div className="px-4 pt-3 pb-2 border-b border-gray-100 dark:border-gray-800">

@@ -126,7 +126,7 @@ export function Modal({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         onClick={handleBackdropClick}
-                        className={`fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-md z-[60] flex justify-center md:items-center md:p-4 ${mobileVariant === 'sheet' ? 'items-end p-0 short:items-center short:p-4' : 'items-center max-md:p-4'}`}
+                        className={`fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-md z-[var(--ds-z-modal)] flex justify-center md:items-center md:p-4 ${mobileVariant === 'sheet' ? 'items-end p-0 short:items-center short:p-4' : 'items-center max-md:p-4'}`}
                     >
                         {/* Modal Container */}
                         <motion.div

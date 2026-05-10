@@ -35,6 +35,12 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     replyToComment,
   } = useReviewData(owner, repo, pullNumber, api)
 
+  // Deep AI Review is the richer surface; we only spend the heuristic
+  // useReviewAI tokens when deep doesn't already cover the screen
+  // (cleanup of #3 from the 2026-05-09 follow-ups review). The hook
+  // still runs when deep is loading / hasn't been generated, so the
+  // user gets the lightweight summary as a placeholder.
+  const deep = useAIDeepReview(owner, repo, pullNumber)
   const {
     summary: aiSummary,
     loading: aiLoading,
@@ -45,18 +51,18 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     repo,
     pullNumber,
     state.headSha,
-    state.files
+    state.files,
+    { enabled: !deep.draft && !deep.loading }
   )
 
   const { toast } = useToast()
   const [submitting, setSubmitting] = useState(false)
   const [sortMode, setSortMode] = useState('risk')
 
-  // AI Deep Review (Slice 1a) — generates a structured walkthrough + line
-  // comments draft that the user can edit and publish to GitHub as a single
-  // review. Lives alongside the existing AISummaryPanel for now; the legacy
-  // panel may be retired in a follow-up once the new flow is fully wired.
-  const deep = useAIDeepReview(owner, repo, pullNumber)
+  // AI Deep Review (declared earlier alongside useReviewAI so the latter
+  // can be gated on deep.draft / deep.loading). Generates a structured
+  // walkthrough + line-comment draft that the user can edit and publish
+  // to GitHub as a single review.
   const [publishing, setPublishing] = useState(false)
   const [publishOpen, setPublishOpen] = useState(false)
   // Mobile/tablet drawer state for the AI Deep Review panel — replaces
@@ -482,7 +488,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
           ref={aiFabRef}
           type="button"
           onClick={() => setAiDrawerOpen(true)}
-          className="lg:hidden fixed z-30 bottom-24 right-4 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 via-cyan-500 to-pink-500 text-white shadow-[0_8px_24px_-4px_rgba(99,102,241,0.5)] flex items-center justify-center motion-safe:hover:scale-105 motion-safe:active:scale-95 motion-safe:transition-transform motion-reduce:transition-none"
+          className="lg:hidden fixed z-[var(--ds-z-floating)] bottom-24 right-4 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 via-cyan-500 to-pink-500 text-white shadow-[0_8px_24px_-4px_rgba(99,102,241,0.5)] flex items-center justify-center motion-safe:hover:scale-105 motion-safe:active:scale-95 motion-safe:transition-transform motion-reduce:transition-none"
           aria-label={
             deep.draft?.lineComments?.length
               ? `Open AI insights (${deep.draft.lineComments.length} draft comments)`

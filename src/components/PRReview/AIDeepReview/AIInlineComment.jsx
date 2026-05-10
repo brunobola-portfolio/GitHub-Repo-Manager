@@ -1,80 +1,116 @@
-import { useState } from 'react';
+import { useState } from 'react'
+import { Sparkles } from 'lucide-react'
 
-const SEVERITY_TONE = {
-    info: 'bg-sky-50 border-sky-300 text-sky-900 dark:bg-sky-950/40 dark:border-sky-800 dark:text-sky-200',
-    suggestion: 'bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-200',
-    warning: 'bg-orange-50 border-orange-300 text-orange-900 dark:bg-orange-950/40 dark:border-orange-800 dark:text-orange-200',
-    critical: 'bg-red-50 border-red-300 text-red-900 dark:bg-red-950/40 dark:border-red-800 dark:text-red-200',
-};
+// Severity ranks → small badge colour. The card itself stays neutral
+// (matching InlineComment) so all three comment types (synced, pending,
+// ai) share the same visual chrome — distinction lives in the header
+// badge, not the card border. See unified-comment refactor 2026-05-09.
+const SEVERITY_BADGE = {
+    info: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
+    suggestion: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+    warning: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
+    critical: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300',
+}
+
+const SHARED_CARD =
+    'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-md text-sm overflow-hidden'
 
 export function AIInlineComment({ comment, idx, onDismiss, onEdit }) {
-    const [editing, setEditing] = useState(false);
-    const [body, setBody] = useState(comment.body || '');
-    const [suggestion, setSuggestion] = useState(comment.suggestion || '');
+    const [editing, setEditing] = useState(false)
+    const [body, setBody] = useState(comment.body || '')
+    const [suggestion, setSuggestion] = useState(comment.suggestion || '')
 
-    const tone = SEVERITY_TONE[comment.severity] || SEVERITY_TONE.info;
+    const severityClass = SEVERITY_BADGE[comment.severity] || SEVERITY_BADGE.info
+
+    const Header = (
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100 dark:border-slate-700">
+            <span
+                aria-hidden="true"
+                className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 via-cyan-500 to-pink-500 text-white shrink-0"
+            >
+                <Sparkles className="w-3.5 h-3.5" strokeWidth={2.5} />
+            </span>
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">AI</span>
+            {comment.severity && (
+                <span className={`shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${severityClass}`}>
+                    {comment.severity}
+                </span>
+            )}
+            <span className="ml-auto shrink-0 text-xs font-mono text-slate-400 dark:text-slate-500">
+                L{comment.line}
+            </span>
+        </div>
+    )
 
     if (editing) {
         return (
-            <div
-                aria-label="AI-generated comment"
-                className={`my-2 rounded-md border-l-4 p-3 text-sm ${tone}`}
-            >
-                <label className="block text-xs font-medium mb-1">
-                    Comment body
-                    <textarea
-                        aria-label="Comment body"
-                        value={body}
-                        onChange={(e) => setBody(e.target.value)}
-                        className="mt-1 w-full rounded border bg-white px-2 py-1 dark:bg-gray-900 dark:border-gray-700"
-                        rows={3}
-                    />
-                </label>
-                <label className="block text-xs font-medium mt-2 mb-1">
-                    Suggestion (optional)
-                    <textarea
-                        aria-label="Suggestion code"
-                        value={suggestion}
-                        onChange={(e) => setSuggestion(e.target.value)}
-                        className="mt-1 w-full rounded border bg-white px-2 py-1 font-mono text-xs dark:bg-gray-900 dark:border-gray-700"
-                        rows={3}
-                    />
-                </label>
-                <div className="flex gap-2 mt-2 justify-end">
-                    <button onClick={() => setEditing(false)} className="px-2 py-1 text-xs rounded hover:bg-black/5 dark:hover:bg-white/5">Cancel</button>
-                    <button
-                        onClick={() => { onEdit(idx, { body, suggestion }); setEditing(false); }}
-                        className="px-2 py-1 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700"
-                    >
-                        Save
-                    </button>
+            <div aria-label="AI-generated comment" className={SHARED_CARD}>
+                {Header}
+                <div className="px-3 py-2 space-y-2">
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">
+                        Comment body
+                        <textarea
+                            aria-label="Comment body"
+                            value={body}
+                            onChange={(e) => setBody(e.target.value)}
+                            className="mt-1 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                            rows={3}
+                        />
+                    </label>
+                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">
+                        Suggestion (optional)
+                        <textarea
+                            aria-label="Suggestion code"
+                            value={suggestion}
+                            onChange={(e) => setSuggestion(e.target.value)}
+                            className="mt-1 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 font-mono text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                            rows={3}
+                        />
+                    </label>
+                    <div className="flex gap-2 mt-2 justify-end">
+                        <button
+                            onClick={() => setEditing(false)}
+                            className="px-2.5 py-1 text-xs rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={() => { onEdit(idx, { body, suggestion }); setEditing(false) }}
+                            className="px-2.5 py-1 text-xs font-semibold rounded-md bg-indigo-600 text-white shadow-sm shadow-indigo-600/30 hover:bg-indigo-700 motion-safe:active:scale-95 transition-all"
+                        >
+                            Save
+                        </button>
+                    </div>
                 </div>
             </div>
-        );
+        )
     }
 
     return (
-        <div
-            aria-label="AI-generated comment"
-            className={`my-2 rounded-md border-l-4 p-3 text-sm ${tone}`}
-        >
-            <div className="flex items-start gap-2">
-                <span aria-hidden="true" className="text-base leading-none">🤖</span>
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold uppercase tracking-wide opacity-80">{comment.severity}</span>
-                        <span className="text-xs opacity-60">line {comment.line}</span>
-                    </div>
-                    <p className="whitespace-pre-wrap break-words">{comment.body}</p>
-                    {comment.suggestion ? (
-                        <pre className="mt-2 rounded bg-black/5 dark:bg-white/5 p-2 text-xs font-mono whitespace-pre-wrap break-words">{comment.suggestion}</pre>
-                    ) : null}
+        <div aria-label="AI-generated comment" className={SHARED_CARD}>
+            {Header}
+            <div className="px-3 py-2">
+                <p className="whitespace-pre-wrap break-words text-slate-700 dark:text-slate-200">{comment.body}</p>
+                {comment.suggestion ? (
+                    <pre className="mt-2 rounded-md bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 p-2 text-xs font-mono whitespace-pre-wrap break-words text-slate-700 dark:text-slate-200">
+                        {comment.suggestion}
+                    </pre>
+                ) : null}
+                <div className="flex gap-2 mt-3 pt-2 border-t border-slate-100 dark:border-slate-700 justify-end">
+                    <button
+                        onClick={() => setEditing(true)}
+                        className="px-2.5 py-1 text-xs rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        Edit
+                    </button>
+                    <button
+                        onClick={() => onDismiss(idx)}
+                        className="px-2.5 py-1 text-xs rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        Dismiss
+                    </button>
                 </div>
             </div>
-            <div className="flex gap-2 mt-2 justify-end">
-                <button onClick={() => setEditing(true)} className="px-2 py-1 text-xs rounded hover:bg-black/5 dark:hover:bg-white/5">Edit</button>
-                <button onClick={() => onDismiss(idx)} className="px-2 py-1 text-xs rounded hover:bg-black/5 dark:hover:bg-white/5">Dismiss</button>
-            </div>
         </div>
-    );
+    )
 }

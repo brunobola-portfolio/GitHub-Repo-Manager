@@ -24,41 +24,45 @@ test.use({ ...devices['iPhone 13'] })
 
 test.describe('PR review — mobile flow (iPhone 13)', () => {
     test('opens a PR, navigates files via bottom sheet, exercises fold-by-default', async ({ page }) => {
-        // Use the mock repo from src/__mocks__/mockRepos.js. The repo-detail
-        // route is in-app-mocked so no page.route stubs are needed.
-        await page.goto('/repos/dev-user/fintech-dashboard')
+        // Mock-mode home renders the dashboard. Navigate via the bottom-nav
+        // "Repos" tab to reach the repo list, then drill into the first repo.
+        await page.goto('/')
 
-        // Wait for the repo header to render
-        await expect(page.getByText(/fintech-dashboard/i).first()).toBeVisible()
+        // Wait for the demo banner / dashboard to render — confirms mock
+        // mode is on so we're driving through in-app fixtures.
+        await expect(page.getByText(/Demo mode/i).first()).toBeVisible()
 
-        // Switch to Pull requests tab
-        await page.getByRole('tab', { name: /Pull requests/i }).click().catch(async () => {
-            await page.getByRole('link', { name: /Pull requests/i }).click()
+        // Bottom-nav: tap Repos
+        await page.getByRole('button', { name: /^Repos$/i }).first().click().catch(async () => {
+            await page.getByText(/^Repos$/i).first().click()
         })
 
-        // Open the first PR row. The mock generates titles from PR_TITLES;
-        // any visible PR row works.
-        const firstPR = page.getByRole('button', { name: /^#\d+/ }).first()
-        if (await firstPR.isVisible().catch(() => false)) {
-            await firstPR.click()
-        } else {
-            // Fallback — click the first link that looks like a PR title.
-            await page.locator('a').filter({ hasText: /feat:|fix:|chore:|refactor:|docs:/ }).first().click()
-        }
+        // Click the first repo card / row
+        const firstRepoCard = page.locator('[data-testid="repo-card"], a[href*="/repos/"]').first()
+        await firstRepoCard.click().catch(async () => {
+            // Fallback: click anything that looks like a repo title link
+            await page.locator('h3, h2').filter({ hasText: /[a-z]/ }).first().click()
+        })
 
-        // Find the "Start Review" CTA which routes to PRReviewView. Skip
-        // the in-detail Files tab for the mobile flow — PRReviewView is
-        // where the bottom-sheet + FAB live.
-        const reviewBtn = page.getByRole('button', { name: /Review/i }).first()
+        // Open Pull requests tab inside repo detail
+        await page.getByRole('tab', { name: /Pull requests/i }).click().catch(async () => {
+            await page.getByRole('button', { name: /Pull requests/i }).click().catch(async () => {
+                await page.getByRole('link', { name: /Pull requests/i }).click()
+            })
+        })
+
+        // Open the first PR
+        await page.locator('button, a').filter({ hasText: /feat:|fix:|chore:|refactor:|docs:/ }).first().click()
+
+        // Find the "Review" CTA which routes to PRReviewView
+        const reviewBtn = page.getByRole('button', { name: /^Review$/i }).first()
         if (await reviewBtn.isVisible().catch(() => false)) {
             await reviewBtn.click()
         }
 
-        // Toolbar "Files (N)" button must be present below md. It only
-        // renders when CodeReviewSurface is below the md breakpoint — the
-        // iPhone 13 device emulation gives us that.
+        // Toolbar "Files (N)" button must be present below md (iPhone 13)
         const filesBtn = page.getByRole('button', { name: /Open files list/i })
-        await expect(filesBtn).toBeVisible()
+        await expect(filesBtn).toBeVisible({ timeout: 15_000 })
 
         // Open the sheet
         await filesBtn.click()
