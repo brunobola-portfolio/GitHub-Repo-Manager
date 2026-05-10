@@ -8,7 +8,9 @@ import {
 import { DashboardHero } from './DashboardHero'
 import { AIPromoStrip } from './AIPromoStrip'
 import { AttentionFeed } from './AttentionFeed'
-import { InboxPanel } from './Premium/InboxPanel'
+// InboxPanel is code-split so it doesn't inflate the dashboard initial chunk.
+// The static import of isEnabled remains — it's a tiny synchronous flag read.
+const InboxPanel = lazy(() => import('./Premium/InboxPanel').then(m => ({ default: m.InboxPanel })))
 import { isEnabled } from '../../lib/featureFlags'
 import { CategorySection } from './CategorySection'
 import { StatCard } from './StatCard'
@@ -123,7 +125,9 @@ export function DashboardPremium({
             />
 
             {isEnabled('inbox') ? (
-                <InboxPanel onSelectItem={(item) => onViewChange?.('repos', { highlightRepoFullName: item.repoFullName })} />
+                <Suspense fallback={<div className="h-48 animate-pulse bg-zinc-100 dark:bg-zinc-900/40 rounded-2xl" />}>
+                    <InboxPanel onSelectItem={(item) => onViewChange?.('repos', { highlightRepoFullName: item.repoFullName })} />
+                </Suspense>
             ) : (
                 <AttentionFeed onSelectRepo={(repoFullName) => {
                     onViewChange?.('repos', { highlightRepoFullName: repoFullName })
