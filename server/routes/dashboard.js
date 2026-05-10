@@ -56,4 +56,27 @@ router.post('/inbox/:itemId/restore', requireAuth, (req, res) => {
     }
 });
 
+router.post('/inbox/:itemId/snooze', requireAuth, (req, res) => {
+    try {
+        const itemId = decodeURIComponent(req.params.itemId);
+        const until = req.body?.until;
+        const ts = Date.parse(until);
+        if (!until || Number.isNaN(ts)) {
+            return res.status(400).json({ error: 'Invalid ISO timestamp in `until`' });
+        }
+        if (ts <= Date.now()) {
+            return res.status(400).json({ error: '`until` must be in the future' });
+        }
+        db.prepare(`
+            INSERT INTO dashboard_inbox_state (user_id, item_id, snoozed_until)
+            VALUES (?, ?, ?)
+            ON CONFLICT(user_id, item_id) DO UPDATE SET snoozed_until = excluded.snoozed_until
+        `).run(req.session.userId, itemId, until);
+        res.json({ ok: true });
+    } catch (err) {
+        req.log?.error?.({ err }, 'snooze failed');
+        res.status(500).json({ error: safeError(err, 'Failed to snooze') });
+    }
+});
+
 export default router;

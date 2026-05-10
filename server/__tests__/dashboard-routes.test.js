@@ -88,3 +88,35 @@ describe('POST /inbox/:id/restore', () => {
         expect(row.snoozed_until).toBeNull();
     });
 });
+
+describe('POST /inbox/:id/snooze', () => {
+    beforeEach(() => {
+        db.prepare('DELETE FROM dashboard_inbox_state').run();
+    });
+
+    it('persists snoozed_until from body', async () => {
+        const until = '2026-06-01T09:00:00Z';
+        const res = await request(buildApp())
+            .post('/api/v1/dashboard/inbox/pr:foo%2Fbar%231/snooze')
+            .send({ until });
+        expect(res.status).toBe(200);
+        const row = db.prepare('SELECT snoozed_until FROM dashboard_inbox_state WHERE item_id = ?')
+            .get('pr:foo/bar#1');
+        expect(row.snoozed_until).toBe(until);
+    });
+
+    it('rejects invalid ISO timestamp with 400', async () => {
+        const res = await request(buildApp())
+            .post('/api/v1/dashboard/inbox/pr:foo%2Fbar%231/snooze')
+            .send({ until: 'tomorrow-ish' });
+        expect(res.status).toBe(400);
+    });
+
+    it('rejects past timestamps with 400', async () => {
+        const past = new Date(Date.now() - 60_000).toISOString();
+        const res = await request(buildApp())
+            .post('/api/v1/dashboard/inbox/pr:foo%2Fbar%231/snooze')
+            .send({ until: past });
+        expect(res.status).toBe(400);
+    });
+});
