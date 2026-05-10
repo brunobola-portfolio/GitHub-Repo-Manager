@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import { requireAuth, safeError } from '../middleware/auth.js';
 import { composeInbox } from '../lib/dashboard-aggregator.js';
+import db from '../db.js';
 
 const router = Router();
 
@@ -21,6 +22,37 @@ router.get('/inbox', requireAuth, (req, res) => {
     } catch (err) {
         req.log?.error?.({ err }, 'dashboard inbox failed');
         res.status(500).json({ error: safeError(err, 'Failed to compose inbox') });
+    }
+});
+
+router.post('/inbox/:itemId/archive', requireAuth, (req, res) => {
+    try {
+        const itemId = decodeURIComponent(req.params.itemId);
+        const now = new Date().toISOString();
+        db.prepare(`
+            INSERT INTO dashboard_inbox_state (user_id, item_id, archived_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(user_id, item_id) DO UPDATE SET archived_at = excluded.archived_at
+        `).run(req.session.userId, itemId, now);
+        res.json({ ok: true });
+    } catch (err) {
+        req.log?.error?.({ err }, 'archive failed');
+        res.status(500).json({ error: safeError(err, 'Failed to archive') });
+    }
+});
+
+router.post('/inbox/:itemId/restore', requireAuth, (req, res) => {
+    try {
+        const itemId = decodeURIComponent(req.params.itemId);
+        db.prepare(`
+            UPDATE dashboard_inbox_state
+            SET archived_at = NULL, snoozed_until = NULL
+            WHERE user_id = ? AND item_id = ?
+        `).run(req.session.userId, itemId);
+        res.json({ ok: true });
+    } catch (err) {
+        req.log?.error?.({ err }, 'restore failed');
+        res.status(500).json({ error: safeError(err, 'Failed to restore') });
     }
 });
 

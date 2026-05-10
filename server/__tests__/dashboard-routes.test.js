@@ -50,3 +50,41 @@ describe('GET /api/v1/dashboard/inbox', () => {
         expect(res.body.sections.map(s => s.key)).toEqual(['mentions']);
     });
 });
+
+describe('POST /inbox/:id/archive', () => {
+    beforeEach(() => {
+        db.prepare('DELETE FROM dashboard_inbox_state').run();
+    });
+
+    it('persists archived_at and returns ok', async () => {
+        const res = await request(buildApp())
+            .post('/api/v1/dashboard/inbox/pr:foo%2Fbar%231/archive')
+            .send();
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ ok: true });
+        const row = db.prepare('SELECT * FROM dashboard_inbox_state WHERE user_id = 99 AND item_id = ?')
+            .get('pr:foo/bar#1');
+        expect(row?.archived_at).toBeTruthy();
+    });
+});
+
+describe('POST /inbox/:id/restore', () => {
+    beforeEach(() => {
+        db.prepare('DELETE FROM dashboard_inbox_state').run();
+    });
+
+    it('clears archived_at and snoozed_until', async () => {
+        db.prepare(`INSERT INTO dashboard_inbox_state
+            (user_id, item_id, archived_at, snoozed_until) VALUES (?, ?, ?, ?)`)
+            .run(99, 'pr:foo/bar#1', new Date().toISOString(), new Date().toISOString());
+
+        const res = await request(buildApp())
+            .post('/api/v1/dashboard/inbox/pr:foo%2Fbar%231/restore')
+            .send();
+        expect(res.status).toBe(200);
+        const row = db.prepare('SELECT archived_at, snoozed_until FROM dashboard_inbox_state WHERE item_id = ?')
+            .get('pr:foo/bar#1');
+        expect(row.archived_at).toBeNull();
+        expect(row.snoozed_until).toBeNull();
+    });
+});
