@@ -166,7 +166,7 @@ Key entry points:
 
 ## Reporting Bugs
 
-Use the [bug report template](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/issues/new?template=bug_report.md) and include:
+Use the [bug report template](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/issues/new?template=bug_report.yml) and include:
 
 - Steps to reproduce
 - Expected vs actual behaviour
@@ -174,7 +174,7 @@ Use the [bug report template](https://github.com/brunobola-portfolio/GitHub-Repo
 
 ## Suggesting Features
 
-Use the [feature request template](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/issues/new?template=feature_request.md).
+Use the [feature request template](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/issues/new?template=feature_request.yml).
 
 ## Code of Conduct
 
