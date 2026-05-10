@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useFocusTrap } from '../../../hooks/useFocusTrap';
 
 function in1Hour() { return new Date(Date.now() + 60 * 60_000).toISOString(); }
 function tomorrow9am() {
@@ -21,12 +21,9 @@ const PRESETS = [
 ];
 
 export function SnoozeModal({ open, onConfirm, onClose }) {
-    useEffect(() => {
-        if (!open) return undefined;
-        function onKey(e) { if (e.key === 'Escape') onClose?.(); }
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, [open, onClose]);
+    // useFocusTrap handles Escape → onClose, Tab cycling, focus restore.
+    // The returned ref is attached to the inner card (the trap root), not the backdrop.
+    const trapRef = useFocusTrap(open, onClose);
 
     if (!open) return null;
 
@@ -35,15 +32,17 @@ export function SnoozeModal({ open, onConfirm, onClose }) {
         <div
             role="dialog"
             aria-modal="true"
+            aria-labelledby="snooze-modal-title"
             className="fixed inset-0 z-[var(--ds-z-modal)] flex items-center justify-center bg-black/40 backdrop-blur-sm"
             onClick={onClose}
         >
             {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
             <div
+                ref={trapRef}
                 className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-2xl"
                 onClick={e => e.stopPropagation()}
             >
-                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 mb-4 ds-font-display">
+                <h3 id="snooze-modal-title" className="text-base font-bold text-zinc-900 dark:text-zinc-100 mb-4 ds-font-display">
                     Snooze until…
                 </h3>
                 <div className="grid grid-cols-2 gap-2">
