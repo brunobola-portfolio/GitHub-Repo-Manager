@@ -95,7 +95,8 @@ describe('POST /inbox/:id/snooze', () => {
     });
 
     it('persists snoozed_until from body', async () => {
-        const until = '2026-06-01T09:00:00Z';
+        // Dynamic future timestamp so the test does not rot after a hardcoded date.
+        const until = new Date(Date.now() + 7 * 86_400_000).toISOString();
         const res = await request(buildApp())
             .post('/api/v1/dashboard/inbox/pr:foo%2Fbar%231/snooze')
             .send({ until });
