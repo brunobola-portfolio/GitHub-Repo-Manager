@@ -5,6 +5,7 @@ import { fetchAttentionNarrative } from '../../../api/attentionNarrative';
 import { AIQuotaExceededError } from '../../../api/aiFetch';
 import { useAIStatus } from '../../../hooks/useAIStatus';
 import { useAIQuotaState } from '../../../hooks/useAIQuotaState';
+import { useToast } from '../../../hooks/useToast';
 import { InboxRow } from './InboxRow';
 import { InboxSection } from './InboxSection';
 import { SnoozeModal } from './SnoozeModal';
@@ -14,6 +15,7 @@ const NARRATIVE_TOP_N = 3;
 
 export function InboxPanel({ onSelectItem }) {
     const { sections, loading, error, archive, snooze } = useInbox();
+    const { toast } = useToast();
     const [activeKey, setActiveKey] = useState(null);
     const [snoozingItem, setSnoozingItem] = useState(null);
 
@@ -80,12 +82,12 @@ export function InboxPanel({ onSelectItem }) {
         function onKey(e) {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             if (!active?.items?.length) return;
-            if (e.key === 'e') archive(active.items[0].id).catch(() => {});
+            if (e.key === 'e') archive(active.items[0].id).catch(e => toast.errorFromException(e, { fallbackTitle: 'Archive failed' }));
             else if (e.key === 's') setSnoozingItem(active.items[0]);
         }
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [active, archive]);
+    }, [active, archive, toast]);
 
     return (
         <section
@@ -127,7 +129,7 @@ export function InboxPanel({ onSelectItem }) {
                                     key={item.id}
                                     item={item}
                                     narrative={idx < NARRATIVE_TOP_N ? (narratives[item.id] ?? null) : null}
-                                    onArchive={(id) => archive(id).catch(() => {})}
+                                    onArchive={(id) => archive(id).catch(e => toast.errorFromException(e, { fallbackTitle: 'Archive failed' }))}
                                     onSnooze={setSnoozingItem}
                                     onSelect={onSelectItem}
                                 />
@@ -139,7 +141,7 @@ export function InboxPanel({ onSelectItem }) {
 
             <SnoozeModal
                 open={!!snoozingItem}
-                onConfirm={(iso) => snoozingItem && snooze(snoozingItem.id, iso).catch(() => {})}
+                onConfirm={(iso) => snoozingItem && snooze(snoozingItem.id, iso).catch(e => toast.errorFromException(e, { fallbackTitle: 'Snooze failed' }))}
                 onClose={() => setSnoozingItem(null)}
             />
         </section>
