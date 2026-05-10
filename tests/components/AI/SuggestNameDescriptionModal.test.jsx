@@ -133,16 +133,18 @@ describe('SuggestNameDescriptionModal — graceful degradation', () => {
         render(<SuggestNameDescriptionModal isOpen repo={REPO} onClose={() => {}} />);
 
         const name = screen.getByLabelText(/edit name/i);
-        await user.clear(name);
-        await user.type(name, 'apos-pos');
+        // Use fireEvent.change for atomic value replacement — userEvent.type
+        // streams keystrokes which on slow CI can lose focus between the
+        // preceding clear() and the type, leaving the field unchanged and
+        // the conditional rename-ack checkbox never rendering.
+        fireEvent.change(name, { target: { value: 'apos-pos' } });
 
         const applyBtn = screen.getByRole('button', { name: /apply changes/i });
-        expect(applyBtn).toBeDisabled();
+        await waitFor(() => expect(applyBtn).toBeDisabled());
         // findByLabelText waits for the rename-confirmation checkbox to render
-        // (it only mounts once React has reconciled the name change). Earlier
-        // the test used getByLabelText which raced React on slower CI runners
-        // — see CI run 25624349351 for the pre-fix failure trace.
-        const renameAck = await screen.findByLabelText(/I understand renaming changes/i);
+        // (it only mounts once React has reconciled the name change). Bumped
+        // timeout for slower CI runners.
+        const renameAck = await screen.findByLabelText(/I understand renaming changes/i, {}, { timeout: 5000 });
         await user.click(renameAck);
         await waitFor(() => expect(applyBtn).toBeEnabled());
     });
