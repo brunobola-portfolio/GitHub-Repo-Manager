@@ -8,6 +8,8 @@ import {
 import { DashboardHero } from './DashboardHero'
 import { AIPromoStrip } from './AIPromoStrip'
 import { AttentionFeed } from './AttentionFeed'
+import { InboxPanel } from './Premium/InboxPanel'
+import { isEnabled } from '../../lib/featureFlags'
 import { CategorySection } from './CategorySection'
 import { StatCard } from './StatCard'
 // ActivityChart + LanguageChart pull recharts (~360 kB); split them out so
@@ -120,9 +122,13 @@ export function DashboardPremium({
                 onOpenInsights={(repo) => openModalWithData('showRepoInsights', { repo })}
             />
 
-            <AttentionFeed onSelectRepo={(repoFullName) => {
-                onViewChange?.('repos', { highlightRepoFullName: repoFullName })
-            }} />
+            {isEnabled('inbox') ? (
+                <InboxPanel onSelectItem={(item) => onViewChange?.('repos', { highlightRepoFullName: item.repoFullName })} />
+            ) : (
+                <AttentionFeed onSelectRepo={(repoFullName) => {
+                    onViewChange?.('repos', { highlightRepoFullName: repoFullName })
+                }} />
+            )}
 
             {/* CATEGORY 1: Overview Essencial (Always Visible) */}
             <CategorySection
