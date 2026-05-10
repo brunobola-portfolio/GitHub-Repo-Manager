@@ -95,7 +95,12 @@ export function listStalePRs({ staleAfterDays = 7, repoIds, limit = 50 } = {}) {
     const { clause, bindings } = repoIdsFilter(repoIds);
     const cutoff = new Date(Date.now() - staleAfterDays * 24 * 60 * 60 * 1000).toISOString();
 
-    // PRs that have an 'opened' event but no 'closed' event
+    // GitHub sends action='closed' for both merged and unmerged closes (no
+    // action='merged' row exists). A PR is "open" iff the latest lifecycle
+    // event for its (repo_id, pr_number) is anything other than 'closed' —
+    // which covers opened, reopened, and any future lifecycle actions.
+    // Using MAX(id) as the tiebreaker is safe: our insert order matches event
+    // chronology and the id column is autoincrement.
     const rows = db.prepare(`
         SELECT
             pe_open.repo_full_name  AS repoFullName,
@@ -107,12 +112,14 @@ export function listStalePRs({ staleAfterDays = 7, repoIds, limit = 50 } = {}) {
         WHERE pe_open.action = 'opened'
           AND pe_open.created_at <= ?
           ${clause}
-          AND NOT EXISTS (
-              SELECT 1 FROM pr_events pe_close
-              WHERE pe_close.repo_id  = pe_open.repo_id
-                AND pe_close.pr_number = pe_open.pr_number
-                AND pe_close.action    = 'closed'
-          )
+          AND (
+              SELECT pe_last.action
+              FROM pr_events pe_last
+              WHERE pe_last.repo_id   = pe_open.repo_id
+                AND pe_last.pr_number = pe_open.pr_number
+              ORDER BY pe_last.id DESC
+              LIMIT 1
+          ) != 'closed'
         ORDER BY pe_open.created_at ASC
         LIMIT ?
     `).all(cutoff, ...bindings, limit);

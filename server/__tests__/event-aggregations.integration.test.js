@@ -16,7 +16,7 @@ const testDb = makeIntegrationDb(realInitDB);
 
 vi.mock('../db.js', () => ({ default: testDb }));
 
-const { listMyOpenPRs } = await import('../lib/event-aggregations.js');
+const { listMyOpenPRs, listStalePRs } = await import('../lib/event-aggregations.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -68,5 +68,42 @@ describe('listMyOpenPRs (integration)', () => {
 
     it('returns empty when authorLogin missing', () => {
         expect(listMyOpenPRs({})).toEqual([]);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// listStalePRs integration tests
+// ---------------------------------------------------------------------------
+
+describe('listStalePRs (integration)', () => {
+    // Use a fixed "old enough" date so cutoff math is deterministic.
+    const OLD_DATE = '2026-01-01T00:00:00Z'; // well past any staleAfterDays threshold
+
+    beforeEach(() => {
+        testDb.prepare('DELETE FROM pr_events').run();
+    });
+
+    it('includes stale open PR authored by user', () => {
+        insertPrEvent(1, 'org/repo', 10, 'opened', 'bob', 'stale PR', OLD_DATE);
+
+        const rows = listStalePRs({ staleAfterDays: 7 });
+        expect(rows.map(r => r.prNumber)).toContain(10);
+    });
+
+    it('excludes stale PR whose latest event is closed', () => {
+        insertPrEvent(1, 'org/repo', 20, 'opened', 'bob', 'will close', OLD_DATE);
+        insertPrEvent(1, 'org/repo', 20, 'closed', 'bob', 'will close', '2026-01-02T00:00:00Z');
+
+        const rows = listStalePRs({ staleAfterDays: 7 });
+        expect(rows.map(r => r.prNumber)).not.toContain(20);
+    });
+
+    it('INCLUDES stale PR that was closed then reopened (latest event = reopened)', () => {
+        insertPrEvent(1, 'org/repo', 30, 'opened',   'bob', 'reopen me', OLD_DATE);
+        insertPrEvent(1, 'org/repo', 30, 'closed',   'bob', 'reopen me', '2026-01-02T00:00:00Z');
+        insertPrEvent(1, 'org/repo', 30, 'reopened', 'bob', 'reopen me', '2026-01-03T00:00:00Z');
+
+        const rows = listStalePRs({ staleAfterDays: 7 });
+        expect(rows.map(r => r.prNumber)).toContain(30);
     });
 });
