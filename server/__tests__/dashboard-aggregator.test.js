@@ -161,3 +161,43 @@ describe('composeInbox — dedup across sections', () => {
         expect(inMy).toBe(false);
     });
 });
+
+describe('composeInbox — archive / snooze filter', () => {
+    beforeEach(() => {
+        db.prepare('DELETE FROM review_assignments').run();
+        db.prepare('DELETE FROM dashboard_inbox_state').run();
+    });
+
+    function seedReviewAssignmentLocal(repo, prNumber, ageHoursAgo = 3) {
+        const requestedAt = new Date(Date.now() - ageHoursAgo * 3600_000).toISOString();
+        db.prepare(`INSERT INTO review_assignments
+            (repo_id, repo_full_name, pr_number, reviewer_login, state, requested_at)
+            VALUES (?, ?, ?, ?, ?, ?)`).run(1, repo, prNumber, LOGIN, 'pending', requestedAt);
+    }
+
+    it('hides items with archived_at set unless includeArchived=true', () => {
+        seedReviewAssignmentLocal('foo/bar', 1);
+        db.prepare(`INSERT INTO dashboard_inbox_state
+            (user_id, item_id, archived_at) VALUES (?, ?, ?)`).run(USER_ID, 'pr:foo/bar#1', new Date().toISOString());
+
+        expect(composeInbox(USER_ID, { userLogin: LOGIN, sections: ['needs_review'] })
+            .sections[0].items).toEqual([]);
+
+        expect(composeInbox(USER_ID, { userLogin: LOGIN, sections: ['needs_review'], includeArchived: true })
+            .sections[0].items).toHaveLength(1);
+    });
+
+    it('hides items snoozed until a future timestamp; restores after expiry', () => {
+        seedReviewAssignmentLocal('foo/bar', 2);
+        const future = new Date(Date.now() + 3600_000).toISOString();
+        db.prepare(`INSERT INTO dashboard_inbox_state
+            (user_id, item_id, snoozed_until) VALUES (?, ?, ?)`).run(USER_ID, 'pr:foo/bar#2', future);
+        expect(composeInbox(USER_ID, { userLogin: LOGIN, sections: ['needs_review'] })
+            .sections[0].items).toEqual([]);
+
+        const past = new Date(Date.now() - 1000).toISOString();
+        db.prepare('UPDATE dashboard_inbox_state SET snoozed_until = ? WHERE item_id = ?').run(past, 'pr:foo/bar#2');
+        expect(composeInbox(USER_ID, { userLogin: LOGIN, sections: ['needs_review'] })
+            .sections[0].items).toHaveLength(1);
+    });
+});

@@ -6,8 +6,6 @@
  * gh-cache at the route layer.
  */
 
-// db is imported for future use in Task 7 (snooze/archive filter).
-// eslint-disable-next-line no-unused-vars
 import db from '../db.js';
 import { listMyPendingReviews, listMyOpenPRs, listMyOpenIssues, listStalePRs } from './event-aggregations.js';
 
@@ -32,6 +30,19 @@ function prKey(repoFullName, prNumber) {
 
 function issueKey(repoFullName, issueNumber) {
     return `issue:${repoFullName}#${issueNumber}`;
+}
+
+function loadInboxState(userId) {
+    const rows = db.prepare(
+        'SELECT item_id, archived_at, snoozed_until FROM dashboard_inbox_state WHERE user_id = ?'
+    ).all(userId);
+    const archived = new Set();
+    const snoozedUntil = new Map();
+    for (const r of rows) {
+        if (r.archived_at) archived.add(r.item_id);
+        if (r.snoozed_until) snoozedUntil.set(r.item_id, r.snoozed_until);
+    }
+    return { archived, snoozedUntil };
 }
 
 function buildNeedsReview(userLogin) {
@@ -107,17 +118,21 @@ const SECTION_BUILDERS = {
  * @returns {{ sections: Array<{ key, label, items: Array }> }}
  */
 export function composeInbox(userId, opts = {}) {
-    const { userLogin, sections = SECTION_KEYS } = opts;
-
+    const { userLogin, sections = SECTION_KEYS, includeArchived = false } = opts;
     const requested = sections.filter(k => SECTION_KEYS.includes(k));
+    const { archived, snoozedUntil } = loadInboxState(userId);
+    const now = Date.now();
 
-    // Build all in one pass, keyed by section
     const raw = {};
     for (const key of requested) {
-        raw[key] = SECTION_BUILDERS[key](userId, { userLogin });
+        raw[key] = SECTION_BUILDERS[key](userId, { userLogin }).filter(item => {
+            if (!includeArchived && archived.has(item.id)) return false;
+            const snoozeIso = snoozedUntil.get(item.id);
+            if (snoozeIso && Date.parse(snoozeIso) > now) return false;
+            return true;
+        });
     }
 
-    // Dedup by id, honouring SECTION_PRIORITY
     const owned = new Set();
     const dedupBySection = {};
     for (const key of SECTION_PRIORITY) {
@@ -129,11 +144,11 @@ export function composeInbox(userId, opts = {}) {
         });
     }
 
-    const out = requested.map(key => ({
-        key,
-        label: SECTION_LABEL[key],
-        items: dedupBySection[key] ?? [],
-    }));
-
-    return { sections: out };
+    return {
+        sections: requested.map(key => ({
+            key,
+            label: SECTION_LABEL[key],
+            items: dedupBySection[key] ?? [],
+        })),
+    };
 }
