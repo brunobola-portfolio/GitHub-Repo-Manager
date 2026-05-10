@@ -26,7 +26,7 @@ const RISK_HEADER_BG = {
 
 function RiskPill({ level }) {
   if (!level) return null
-  const bg = RISK_HEADER_BG[level] ?? 'bg-gray-400'
+  const bg = RISK_HEADER_BG[level] ?? 'bg-slate-400'
   return (
     <span
       className={`inline-flex items-center px-1.5 py-0.5 rounded text-white text-xs font-semibold uppercase tracking-wide ${bg}`}
@@ -56,16 +56,16 @@ export function AISummaryPanel({ summary, loading, error, collapsed, onToggle, o
   const topFileRisks = Array.isArray(summary?.fileRisks) ? summary.fileRisks.slice(0, 5) : []
 
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden text-sm">
+    <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden text-sm">
       {/* Header */}
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-left"
+        className="w-full flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-left"
         aria-expanded={!collapsed}
       >
-        <ChevronIcon size={14} className="shrink-0 text-gray-500 dark:text-gray-400" aria-hidden="true" />
+        <ChevronIcon size={14} className="shrink-0 text-slate-500 dark:text-slate-400" aria-hidden="true" />
         <AlertTriangle size={14} className="shrink-0 text-yellow-500 dark:text-yellow-400" aria-hidden="true" />
-        <span className="flex-1 font-semibold text-gray-700 dark:text-gray-200">
+        <span className="flex-1 font-semibold text-slate-700 dark:text-slate-200">
           AI Review Summary
         </span>
         {overallRisk && <RiskPill level={overallRisk} />}
@@ -82,11 +82,11 @@ export function AISummaryPanel({ summary, loading, error, collapsed, onToggle, o
             transition={{ duration: 0.2, ease: 'easeInOut' }}
             style={{ overflow: 'hidden' }}
           >
-            <div className="px-3 py-3 space-y-3 bg-white dark:bg-gray-900">
+            <div className="px-3 py-3 space-y-3 bg-white dark:bg-slate-900">
 
               {/* Loading state */}
               {loading && (
-                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                   <Spinner size="sm" className="shrink-0" />
                   <span>Analyzing PR...</span>
                 </div>
@@ -107,7 +107,7 @@ export function AISummaryPanel({ summary, loading, error, collapsed, onToggle, o
                 <>
                   {/* Overview */}
                   {summary.overview && (
-                    <p className="text-gray-700 dark:text-gray-300 leading-snug">
+                    <p className="text-slate-700 dark:text-slate-300 leading-snug">
                       {summary.overview}
                     </p>
                   )}
@@ -115,10 +115,10 @@ export function AISummaryPanel({ summary, loading, error, collapsed, onToggle, o
                   {/* Key changes */}
                   {Array.isArray(summary.keyChanges) && summary.keyChanges.length > 0 && (
                     <div>
-                      <h4 className="font-semibold text-gray-600 dark:text-gray-400 mb-1 text-xs uppercase tracking-wide">
+                      <h4 className="font-semibold text-slate-600 dark:text-slate-400 mb-1 text-xs uppercase tracking-wide">
                         Key Changes
                       </h4>
-                      <ul className="space-y-0.5 list-disc list-inside text-gray-700 dark:text-gray-300">
+                      <ul className="space-y-0.5 list-disc list-inside text-slate-700 dark:text-slate-300">
                         {summary.keyChanges.map((change, i) => (
                           <li key={i}>{change}</li>
                         ))}
@@ -129,14 +129,14 @@ export function AISummaryPanel({ summary, loading, error, collapsed, onToggle, o
                   {/* Top file risks */}
                   {topFileRisks.length > 0 && (
                     <div>
-                      <h4 className="font-semibold text-gray-600 dark:text-gray-400 mb-1 text-xs uppercase tracking-wide">
+                      <h4 className="font-semibold text-slate-600 dark:text-slate-400 mb-1 text-xs uppercase tracking-wide">
                         High-Risk Files
                       </h4>
                       <div className="space-y-1">
                         {topFileRisks.map((entry, i) => {
                           const level = entry.level ?? entry.risk ?? 'medium'
-                          const textColor = RISK_TEXT[level] ?? 'text-gray-700 dark:text-gray-300'
-                          const bgColor = RISK_BG[level] ?? 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+                          const textColor = RISK_TEXT[level] ?? 'text-slate-700 dark:text-slate-300'
+                          const bgColor = RISK_BG[level] ?? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700'
                           const fname = entry.filename ?? entry.file
                           return (
                             <button
@@ -148,11 +148,11 @@ export function AISummaryPanel({ summary, loading, error, collapsed, onToggle, o
                               <span className={`shrink-0 text-xs font-semibold uppercase ${textColor}`}>
                                 {level}
                               </span>
-                              <span className="flex-1 truncate font-mono text-xs text-gray-700 dark:text-gray-300">
+                              <span className="flex-1 truncate font-mono text-xs text-slate-700 dark:text-slate-300">
                                 {fname}
                               </span>
                               {entry.reason && (
-                                <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400 truncate max-w-[140px]">
+                                <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400 truncate max-w-[140px]">
                                   {entry.reason}
                                 </span>
                               )}
@@ -165,9 +165,9 @@ export function AISummaryPanel({ summary, loading, error, collapsed, onToggle, o
 
                   {/* Estimated review time */}
                   {summary.estimatedReviewTime && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       Estimated review time:{' '}
-                      <span className="font-semibold text-gray-700 dark:text-gray-300">
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">
                         {summary.estimatedReviewTime}
                       </span>
                     </p>

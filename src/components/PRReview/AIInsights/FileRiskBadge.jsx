@@ -33,7 +33,7 @@ export function FileRiskBadge({ aiRisk, heuristicScore }) {
     title = `Heuristic risk score: ${idx}/5`
   } else {
     // No risk data — render a neutral dot
-    colorClass = 'bg-gray-300 dark:bg-gray-600'
+    colorClass = 'bg-slate-300 dark:bg-slate-600'
     title = 'Risk unknown'
   }
 

@@ -6,11 +6,11 @@ import {
 import { Spinner } from '../../ui/Spinner'
 
 const STATUS_BADGES = {
-  pending: { icon: Clock, color: 'text-gray-500 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800', label: 'Pending' },
+  pending: { icon: Clock, color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800', label: 'Pending' },
   running: { icon: Loader2, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', label: 'Running', spin: true },
   complete: { icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20', label: 'Complete' },
   failed: { icon: XCircle, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', label: 'Failed' },
-  skipped: { icon: Clock, color: 'text-gray-500 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800', label: 'Skipped' },
+  skipped: { icon: Clock, color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800', label: 'Skipped' },
 }
 
 function StatusIcon({ status, className = 'w-5 h-5' }) {

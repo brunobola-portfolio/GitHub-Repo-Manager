@@ -22,7 +22,7 @@ export function CommentsListTab({ comments, onJumpToFile, onDismiss, onEdit: _on
                     aria-label="Severity filter"
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
-                    className="ml-auto rounded border bg-white px-2 py-1 dark:bg-gray-900 dark:border-gray-700"
+                    className="ml-auto rounded border bg-white px-2 py-1 dark:bg-slate-900 dark:border-slate-700"
                 >
                     {SEVERITY_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>

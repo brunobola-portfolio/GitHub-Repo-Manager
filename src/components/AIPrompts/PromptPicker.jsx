@@ -85,7 +85,7 @@ export function PromptPicker({ presets, activeKey, onChange, disabled }) {
                     id={listboxId}
                     role="listbox"
                     onKeyDown={handleListKeyDown}
-                    className="absolute right-0 mt-1 w-56 max-h-64 overflow-y-auto rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 shadow-lg z-[var(--ds-z-floating)]"
+                    className="absolute right-0 mt-1 w-56 max-h-64 overflow-y-auto rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg z-[var(--ds-z-floating)]"
                 >
                     {presets.map((p, idx) => (
                         <li

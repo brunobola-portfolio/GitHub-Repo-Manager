@@ -104,7 +104,7 @@ export function Drawer({
                             ...sizeStyle,
                             paddingBottom: isBottom ? 'env(safe-area-inset-bottom, 0px)' : undefined,
                         }}
-                        className={`fixed z-[var(--ds-z-modal)] flex flex-col bg-white dark:bg-gray-900 shadow-2xl ${POSITION_CLASSES[side]} ${mobileOnly ? 'xl:hidden' : ''} ${className}`}
+                        className={`fixed z-[var(--ds-z-modal)] flex flex-col bg-white dark:bg-slate-900 shadow-2xl ${POSITION_CLASSES[side]} ${mobileOnly ? 'xl:hidden' : ''} ${className}`}
                     >
                         {dragHandleOn ? (
                             <div className="flex justify-center pt-2 pb-1 shrink-0" aria-hidden="true">
@@ -140,7 +140,7 @@ export function Drawer({
                         ) : null}
                         <div className="flex-1 min-h-0 overflow-y-auto">{children}</div>
                         {footer ? (
-                            <div className="border-t border-slate-200 dark:border-slate-800 px-4 py-3 shrink-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur">
+                            <div className="border-t border-slate-200 dark:border-slate-800 px-4 py-3 shrink-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
                                 {footer}
                             </div>
                         ) : null}

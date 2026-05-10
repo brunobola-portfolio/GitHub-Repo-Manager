@@ -626,7 +626,7 @@ export default function MigrationWizard({
         )
       default:
         return (
-          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+          <div className="p-8 text-center text-slate-500 dark:text-slate-400">
             <p className="text-lg font-medium">Unknown Step</p>
           </div>
         )

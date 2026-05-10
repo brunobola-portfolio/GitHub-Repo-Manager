@@ -10,6 +10,7 @@ import {
 describe('aiActions registry', () => {
   it('exposes the whitelisted actions', () => {
     expect(AI_ACTION_TYPES.sort()).toEqual([
+      'open_ai_polish',
       'open_create_repo',
       'open_migration_history',
       'open_migration_wizard',

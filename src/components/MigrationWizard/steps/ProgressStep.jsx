@@ -9,13 +9,13 @@ import { migrationApi } from '../../../api/migration'
 import { SectionSpinner } from '../../ui/Spinner'
 
 const STATUS_COLORS = {
-  pending: 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400',
+  pending: 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400',
   running: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300',
   complete: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300',
   failed: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300',
   retrying: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300',
-  skipped: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',
-  cancelled: 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400',
+  skipped: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400',
+  cancelled: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400',
 }
 
 const STATUS_ICONS = {

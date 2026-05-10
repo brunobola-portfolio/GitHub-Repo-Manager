@@ -79,7 +79,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                         onChange={(e) => setName(e.target.value)}
                         required
                         maxLength={100}
-                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 px-2 py-1 text-sm"
+                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm"
                     />
                 </div>
                 <div>
@@ -92,7 +92,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                         required
                         pattern="^[a-z0-9_-]{1,40}$"
                         disabled={isEdit}
-                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 px-2 py-1 text-sm font-mono disabled:opacity-60"
+                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm font-mono disabled:opacity-60"
                     />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -103,7 +103,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                             value={scope}
                             onChange={(e) => setScope(e.target.value)}
                             disabled={isEdit}
-                            className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 px-2 py-1 text-sm disabled:opacity-60"
+                            className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm disabled:opacity-60"
                         >
                             <option value="user">User (all repos)</option>
                             <option value="repo">Repo</option>
@@ -120,7 +120,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                                 onChange={(e) => setScopeTarget(e.target.value)}
                                 placeholder="acme/api"
                                 required
-                                className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 px-2 py-1 text-sm font-mono"
+                                className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm font-mono"
                             />
                         </div>
                     ) : null}
@@ -137,7 +137,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                                 pattern="^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$"
                                 maxLength={39}
                                 title="GitHub org login (alphanumeric + . _ -, max 39 chars)"
-                                className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 px-2 py-1 text-sm font-mono"
+                                className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm font-mono"
                             />
                         </div>
                     ) : null}
@@ -157,7 +157,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                         maxLength={8000}
                         rows={10}
                         placeholder='Use ${REPO_STYLE_GUIDE} to inject .repomanager/review-rules.md content.'
-                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 px-2 py-1 text-sm font-mono"
+                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm font-mono"
                     />
                     <div className="text-[10px] opacity-60 mt-1">{systemPrompt.length} / 8000</div>
                 </div>
@@ -167,7 +167,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                         id="prompt-editor-severity"
                         value={severityFloor}
                         onChange={(e) => setSeverityFloor(e.target.value)}
-                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 px-2 py-1 text-sm"
+                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm"
                     >
                         <option value="">No floor</option>
                         <option value="info">Info+</option>
@@ -203,7 +203,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                                         onChange={(e) => updateRule(i, { glob: e.target.value })}
                                         placeholder="src/components/**"
                                         aria-label={`Path glob ${i + 1}`}
-                                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 px-2 py-1 text-xs font-mono"
+                                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-xs font-mono"
                                     />
                                     <textarea
                                         value={r.extraPrompt}
@@ -211,7 +211,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                                         placeholder="Extra guidance for files matching this glob"
                                         rows={2}
                                         aria-label={`Path rule prompt ${i + 1}`}
-                                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-900 px-2 py-1 text-xs"
+                                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-xs"
                                     />
                                     <button type="button" onClick={() => removeRule(i)} className="text-xs text-red-600 dark:text-red-400 hover:underline">
                                         Remove

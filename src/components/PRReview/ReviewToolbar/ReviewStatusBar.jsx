@@ -56,7 +56,7 @@ export function ReviewStatusBar({
         <footer
             aria-live="polite"
             aria-label="Review progress"
-            className="flex items-center gap-3 px-3 py-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 select-none flex-wrap"
+            className="flex items-center gap-3 px-3 py-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 select-none flex-wrap"
             style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' }}
         >
             {/* Progress ring */}
