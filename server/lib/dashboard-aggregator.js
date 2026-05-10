@@ -22,6 +22,10 @@ const SECTION_LABEL = {
     dependabot_ready: 'Dependabot ready',
 };
 
+// Priority order — earlier sections "win" ownership of a duplicated id.
+// Failing CI is most urgent → it claims the PR if also in my_prs.
+const SECTION_PRIORITY = ['failing_ci', 'needs_review', 'stale_drafts', 'mentions', 'dependabot_ready', 'my_prs'];
+
 function prKey(repoFullName, prNumber) {
     return `pr:${repoFullName}#${prNumber}`;
 }
@@ -105,13 +109,31 @@ const SECTION_BUILDERS = {
 export function composeInbox(userId, opts = {}) {
     const { userLogin, sections = SECTION_KEYS } = opts;
 
-    const out = sections
-        .filter(k => SECTION_KEYS.includes(k))
-        .map(key => ({
-            key,
-            label: SECTION_LABEL[key],
-            items: SECTION_BUILDERS[key](userId, { userLogin }),
-        }));
+    const requested = sections.filter(k => SECTION_KEYS.includes(k));
+
+    // Build all in one pass, keyed by section
+    const raw = {};
+    for (const key of requested) {
+        raw[key] = SECTION_BUILDERS[key](userId, { userLogin });
+    }
+
+    // Dedup by id, honouring SECTION_PRIORITY
+    const owned = new Set();
+    const dedupBySection = {};
+    for (const key of SECTION_PRIORITY) {
+        if (!raw[key]) continue;
+        dedupBySection[key] = raw[key].filter(item => {
+            if (owned.has(item.id)) return false;
+            owned.add(item.id);
+            return true;
+        });
+    }
+
+    const out = requested.map(key => ({
+        key,
+        label: SECTION_LABEL[key],
+        items: dedupBySection[key] ?? [],
+    }));
 
     return { sections: out };
 }

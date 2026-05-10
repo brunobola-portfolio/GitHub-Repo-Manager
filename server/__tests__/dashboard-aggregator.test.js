@@ -129,3 +129,35 @@ describe('composeInbox — dependabot_ready section', () => {
         expect(result.sections[0].items).toEqual([]);
     });
 });
+
+describe('composeInbox — dedup across sections', () => {
+    beforeEach(() => {
+        db.prepare('DELETE FROM pr_events').run();
+        db.prepare('DELETE FROM review_assignments').run();
+    });
+
+    function seedReviewAssignmentLocal(repo, prNumber, ageHoursAgo = 3) {
+        const requestedAt = new Date(Date.now() - ageHoursAgo * 3600_000).toISOString();
+        db.prepare(`INSERT INTO review_assignments
+            (repo_id, repo_full_name, pr_number, reviewer_login, state, requested_at)
+            VALUES (?, ?, ?, ?, ?, ?)`).run(1, repo, prNumber, LOGIN, 'pending', requestedAt);
+    }
+
+    it('a PR appearing in both my_prs and needs_review keeps only the higher-priority section (needs_review)', () => {
+        // Same PR: alice is author AND a reviewer was requested from her (edge case)
+        db.prepare(`INSERT INTO pr_events
+            (repo_id, repo_full_name, pr_number, action, author_login, title, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`).run(1, 'foo/bar', 9, 'opened', LOGIN, 'self-review', '2026-05-01T00:00:00Z');
+        seedReviewAssignmentLocal('foo/bar', 9);
+
+        const result = composeInbox(USER_ID, {
+            userLogin: LOGIN,
+            sections: ['needs_review', 'my_prs'],
+        });
+
+        const inNeeds = result.sections.find(s => s.key === 'needs_review').items.some(i => i.id === 'pr:foo/bar#9');
+        const inMy = result.sections.find(s => s.key === 'my_prs').items.some(i => i.id === 'pr:foo/bar#9');
+        expect(inNeeds).toBe(true);
+        expect(inMy).toBe(false);
+    });
+});
