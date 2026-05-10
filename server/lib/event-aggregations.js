@@ -517,6 +517,49 @@ export function meanTimeToRecovery({ environment = 'production', since, repoIds 
 }
 
 // ---------------------------------------------------------------------------
+// listMyOpenPRs
+// ---------------------------------------------------------------------------
+
+/**
+ * Open PRs authored by ME (newest first). Mirrors listMyPendingReviews
+ * shape so the inbox aggregator can dedupe a PR that appears in both
+ * "needs my review" and "my PRs" by canonical key.
+ *
+ * @param {object} opts
+ * @param {string} opts.authorLogin
+ * @param {number} [opts.limit=100]
+ * @returns {Array<{ repoFullName, prNumber, title, authorLogin, openedAt, ageHours }>}
+ */
+export function listMyOpenPRs({ authorLogin, limit = 100 } = {}) {
+    if (!authorLogin) return [];
+
+    const rows = db.prepare(`
+        SELECT
+            pe_open.repo_full_name AS repoFullName,
+            pe_open.pr_number      AS prNumber,
+            pe_open.title          AS title,
+            pe_open.author_login   AS authorLogin,
+            pe_open.created_at     AS openedAt
+        FROM pr_events pe_open
+        WHERE pe_open.action = 'opened'
+          AND pe_open.author_login = ?
+          AND NOT EXISTS (
+              SELECT 1 FROM pr_events pe_close
+              WHERE pe_close.repo_id  = pe_open.repo_id
+                AND pe_close.pr_number = pe_open.pr_number
+                AND pe_close.action    = 'closed'
+          )
+        ORDER BY pe_open.created_at DESC
+        LIMIT ?
+    `).all(authorLogin, limit);
+
+    return rows.map(r => ({
+        ...r,
+        ageHours: r.openedAt ? Math.round(hoursSince(r.openedAt) * 10) / 10 : null,
+    }));
+}
+
+// ---------------------------------------------------------------------------
 // reviewLoadByReviewer
 // ---------------------------------------------------------------------------
 

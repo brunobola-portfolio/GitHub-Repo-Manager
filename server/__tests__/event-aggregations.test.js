@@ -32,6 +32,7 @@ const {
     meanTimeToRecovery,
     listTechDebtIssues,
     techDebtHotspots,
+    listMyOpenPRs,
 } = await import('../lib/event-aggregations.js')
 
 // ---------------------------------------------------------------------------
@@ -450,5 +451,62 @@ describe('techDebtHotspots', () => {
         expect(result[0].count).toBe(2)
         expect(result[0].oldestAgeDays).toBeGreaterThan(29)
         expect(result[1].count).toBe(1)
+    })
+})
+
+// ---------------------------------------------------------------------------
+// listMyOpenPRs
+// ---------------------------------------------------------------------------
+
+describe('listMyOpenPRs', () => {
+    it('returns empty array when authorLogin is falsy', () => {
+        expect(listMyOpenPRs({})).toEqual([])
+        expect(listMyOpenPRs({ authorLogin: '' })).toEqual([])
+        expect(listMyOpenPRs({ authorLogin: null })).toEqual([])
+    })
+
+    it('returns open PR rows authored by the user, newest first, with ageHours', () => {
+        const openedAt = hoursAgo(3)
+        mockRows = [{
+            repoFullName: 'foo/bar',
+            prNumber: 42,
+            title: 'my open pr',
+            authorLogin: 'alice',
+            openedAt,
+        }]
+
+        const result = listMyOpenPRs({ authorLogin: 'alice' })
+        expect(result).toHaveLength(1)
+        expect(result[0].repoFullName).toBe('foo/bar')
+        expect(result[0].prNumber).toBe(42)
+        expect(result[0].title).toBe('my open pr')
+        expect(result[0].authorLogin).toBe('alice')
+        expect(result[0].ageHours).toBeGreaterThan(2)
+        expect(result[0].ageHours).toBeLessThan(4)
+    })
+
+    it('returns empty array when no open PRs found', () => {
+        mockRows = []
+        expect(listMyOpenPRs({ authorLogin: 'alice' })).toEqual([])
+    })
+
+    it('passes authorLogin and limit to the query', () => {
+        mockRows = []
+        listMyOpenPRs({ authorLogin: 'bob', limit: 25 })
+        expect(mockPrepare).toHaveBeenCalled()
+        const allCall = mockPrepare.mock.results[0].value.all
+        expect(allCall).toHaveBeenCalledWith('bob', 25)
+    })
+
+    it('sets ageHours to null when openedAt is missing', () => {
+        mockRows = [{
+            repoFullName: 'foo/bar',
+            prNumber: 1,
+            title: 'no date',
+            authorLogin: 'alice',
+            openedAt: null,
+        }]
+        const result = listMyOpenPRs({ authorLogin: 'alice' })
+        expect(result[0].ageHours).toBeNull()
     })
 })
