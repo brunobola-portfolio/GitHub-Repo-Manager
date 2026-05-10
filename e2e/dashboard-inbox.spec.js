@@ -3,27 +3,26 @@ import { test, expect } from '@playwright/test'
 /**
  * Live Inbox E2E tests
  *
- * The app runs in MOCK_MODE (VITE_MOCK_MODE=true) during e2e — no real GitHub
- * token is required. The InboxPanel is rendered unconditionally as part of
- * DashboardPremium; there is no localStorage gate for the inbox panel.
+ * The InboxPanel is gated by the localStorage flag
+ * `dashboard_premium_v2_inbox` (see DashboardPremium.jsx line ~125 and
+ * src/lib/featureFlags.js). The flag must be set BEFORE the React app
+ * boots and reads it, so beforeEach navigates once, sets the flag, then
+ * reloads — the second mount sees the flag and renders InboxPanel.
  *
- * The useInbox hook calls /api/gh/pulls and /api/gh/issues. In mock mode
- * these endpoints may return 401 (no real session), which causes the panel
- * to show a loading or error state. Tests therefore use expect.poll / soft
- * assertions where real data is uncertain, and check structural elements
- * (the panel title, archive/snooze buttons) that are always rendered.
- *
- * Seeding requirement: for the archive/snooze row-removal assertions to pass
- * deterministically, the /api/gh/* endpoints must return at least one item.
- * On CI this is satisfied by running the dev server with NODE_ENV=test and
- * a real (or stubbed) GITHUB_TOKEN; alternatively, configure a Playwright
- * route intercept for those endpoints if a seeding fixture is added later.
+ * Seeding requirement: the row-removal assertions depend on
+ * /api/v1/dashboard/inbox returning at least one item in the active
+ * section. On CI this is satisfied by seeding review_assignments /
+ * pr_events / issue_events before the spec runs. When data is absent
+ * the tests will fail at the first `rows.first()` visibility check —
+ * that is the intended signal to the operator that seeding is missing.
  */
 
 test.describe('Live Inbox', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/')
-        // Wait for app to fully load in mock mode
+        await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible({ timeout: 15000 })
+        await page.evaluate(() => localStorage.setItem('dashboard_premium_v2_inbox', '1'))
+        await page.reload()
         await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible({ timeout: 15000 })
     })
 
