@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Inbox } from 'lucide-react';
 import { useInbox } from '../../../hooks/useInbox';
+import { fetchAttentionNarrative } from '../../../api/attentionNarrative';
+import { AIQuotaExceededError } from '../../../api/aiFetch';
+import { useAIStatus } from '../../../hooks/useAIStatus';
+import { useAIQuotaState } from '../../../hooks/useAIQuotaState';
 import { InboxRow } from './InboxRow';
 import { InboxSection } from './InboxSection';
 import { SnoozeModal } from './SnoozeModal';
 import { Spinner } from '../../ui/Spinner';
+
+const NARRATIVE_TOP_N = 3;
 
 export function InboxPanel({ onSelectItem }) {
     const { sections, loading, error, archive, snooze } = useInbox();
@@ -23,6 +29,50 @@ export function InboxPanel({ onSelectItem }) {
         () => sections.find(s => s.key === activeKey) ?? sections[0],
         [sections, activeKey],
     );
+
+    const { configured, keyOk } = useAIStatus();
+    const quota = useAIQuotaState();
+    const [narratives, setNarratives] = useState({});
+
+    /* eslint-disable react-hooks/set-state-in-effect -- active section change drives AI narrative fan-out */
+    useEffect(() => {
+        if (!active?.items?.length || !configured || !keyOk || quota) {
+            setNarratives({});
+            return undefined;
+        }
+        const top = active.items.slice(0, NARRATIVE_TOP_N);
+        const ctrl = new AbortController();
+        let cancelled = false;
+
+        const loadingMap = {};
+        for (const it of top) loadingMap[it.id] = { text: null, loading: true };
+        setNarratives(loadingMap);
+
+        (async () => {
+            const next = {};
+            let bailed = false;
+            for (const it of top) {
+                if (cancelled) return;
+                if (bailed) { next[it.id] = { text: null, loading: false }; continue; }
+                try {
+                    const data = await fetchAttentionNarrative({
+                        repo: it.repoFullName,
+                        kind: it.kind,
+                        signalPayload: { title: it.title, since: it.since },
+                        abortSignal: ctrl.signal,
+                    });
+                    next[it.id] = { text: data?.narrative ?? null, loading: false };
+                } catch (err) {
+                    if (err instanceof AIQuotaExceededError) bailed = true;
+                    next[it.id] = { text: null, loading: false };
+                }
+            }
+            if (!cancelled) setNarratives(next);
+        })();
+
+        return () => { cancelled = true; ctrl.abort(); };
+    }, [active, configured, keyOk, quota]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     // Keyboard: 'e' archives the first item of the active section
     // 's' opens snooze modal for the first item of the active section
@@ -72,10 +122,11 @@ export function InboxPanel({ onSelectItem }) {
                     )}
                     {!loading && !error && active && active.items.length > 0 && (
                         <ul>
-                            {active.items.map(item => (
+                            {active.items.map((item, idx) => (
                                 <InboxRow
                                     key={item.id}
                                     item={item}
+                                    narrative={idx < NARRATIVE_TOP_N ? (narratives[item.id] ?? null) : null}
                                     onArchive={(id) => archive(id).catch(() => {})}
                                     onSnooze={setSnoozingItem}
                                     onSelect={onSelectItem}
