@@ -24,7 +24,7 @@ jobs:
           path-to-signatures: 'signatures/cla.json'
           path-to-document: 'CLA.md'
           branch: 'main'
-          allowlist: 'brunobola-portfolio,dependabot[bot],github-actions[bot]'
+          allowlist: 'brunobola,brunobola-portfolio,dependabot[bot],github-actions[bot]'
           custom-notsigned-prcomment: |
             Thank you for your contribution! Before we can merge this PR, you need to sign our
             [Contributor License Agreement](CLA.md).
