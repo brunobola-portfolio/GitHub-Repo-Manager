@@ -103,3 +103,29 @@ describe('composeInbox — mentions section', () => {
         });
     });
 });
+
+describe('composeInbox — stale_drafts section', () => {
+    beforeEach(() => {
+        db.prepare('DELETE FROM pr_events').run();
+    });
+
+    it('lists open PRs older than 7 days authored by user', () => {
+        const oldDate = new Date(Date.now() - 14 * 86400_000).toISOString();
+        db.prepare(`INSERT INTO pr_events
+            (repo_id, repo_full_name, pr_number, action, author_login, title, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`).run(1, 'foo/bar', 5, 'opened', LOGIN, 'wip', oldDate);
+
+        const result = composeInbox(USER_ID, { userLogin: LOGIN, sections: ['stale_drafts'] });
+        expect(result.sections[0].items[0]).toMatchObject({
+            id: 'pr:foo/bar#5',
+            section: 'stale_drafts',
+        });
+    });
+});
+
+describe('composeInbox — dependabot_ready section', () => {
+    it('returns empty array when no dependabot PRs (placeholder until repos-security wired)', () => {
+        const result = composeInbox(USER_ID, { userLogin: LOGIN, sections: ['dependabot_ready'] });
+        expect(result.sections[0].items).toEqual([]);
+    });
+});

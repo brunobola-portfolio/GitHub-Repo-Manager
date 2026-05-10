@@ -9,7 +9,7 @@
 // db is imported for future use in Task 7 (snooze/archive filter).
 // eslint-disable-next-line no-unused-vars
 import db from '../db.js';
-import { listMyPendingReviews, listMyOpenPRs, listMyOpenIssues } from './event-aggregations.js';
+import { listMyPendingReviews, listMyOpenPRs, listMyOpenIssues, listStalePRs } from './event-aggregations.js';
 
 const SECTION_KEYS = ['needs_review', 'my_prs', 'mentions', 'failing_ci', 'stale_drafts', 'dependabot_ready'];
 
@@ -75,7 +75,22 @@ const SECTION_BUILDERS = {
         }));
     },
     failing_ci: () => [],
-    stale_drafts: () => [],
+    stale_drafts: (_userId, opts) => {
+        const rows = listStalePRs({ staleAfterDays: 7 });
+        return rows
+            .filter(r => r.authorLogin === opts.userLogin)
+            .map(r => ({
+                id: prKey(r.repoFullName, r.prNumber),
+                kind: 'pr',
+                section: 'stale_drafts',
+                repoFullName: r.repoFullName,
+                prNumber: r.prNumber,
+                title: r.title,
+                authorLogin: r.authorLogin,
+                since: r.openedAt,
+                ageDays: r.ageDays,
+            }));
+    },
     dependabot_ready: () => [],
 };
 
