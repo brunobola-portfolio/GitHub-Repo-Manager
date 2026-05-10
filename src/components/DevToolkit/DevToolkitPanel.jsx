@@ -151,7 +151,7 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[var(--ds-z-modal)]"
                         aria-hidden="true"
                     />
 
@@ -162,7 +162,7 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
                         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                        className="fixed right-0 top-0 bottom-0 z-[60] flex flex-col bg-white/70 dark:bg-slate-900/95 backdrop-blur-xl border-l border-slate-200/40 dark:border-slate-700/40 shadow-2xl"
+                        className="fixed right-0 top-0 bottom-0 z-[var(--ds-z-modal)] flex flex-col bg-white/70 dark:bg-slate-900/95 backdrop-blur-xl border-l border-slate-200/40 dark:border-slate-700/40 shadow-2xl"
                         style={{ width: `min(${toolkit.panelWidth}px, 100vw)` }}
                         role="dialog"
                         aria-modal="true"

@@ -108,7 +108,7 @@ export function RateLimitNotice({ retryAt, variant = 'toast', onRetry, onDismiss
                 transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 role="status"
                 aria-live="polite"
-                className="relative z-30"
+                className="relative z-[var(--ds-z-floating)]"
             >
                 <div className="bg-amber-50/90 dark:bg-amber-900/60 border-b border-amber-300 dark:border-amber-500 backdrop-blur-xl">
                     <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-3 sm:gap-4">

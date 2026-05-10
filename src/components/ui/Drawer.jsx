@@ -77,7 +77,7 @@ export function Drawer({
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={reduced ? REDUCED_TRANSITION : { duration: 0.18 }}
-                        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-50 ${mobileOnly ? 'xl:hidden' : ''}`}
+                        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[var(--ds-z-modal)] ${mobileOnly ? 'xl:hidden' : ''}`}
                         onClick={closeOnBackdrop ? onClose : undefined}
                         aria-hidden="true"
                     />
@@ -104,7 +104,7 @@ export function Drawer({
                             ...sizeStyle,
                             paddingBottom: isBottom ? 'env(safe-area-inset-bottom, 0px)' : undefined,
                         }}
-                        className={`fixed z-[60] flex flex-col bg-white dark:bg-gray-900 shadow-2xl ${POSITION_CLASSES[side]} ${mobileOnly ? 'xl:hidden' : ''} ${className}`}
+                        className={`fixed z-[var(--ds-z-modal)] flex flex-col bg-white dark:bg-gray-900 shadow-2xl ${POSITION_CLASSES[side]} ${mobileOnly ? 'xl:hidden' : ''} ${className}`}
                     >
                         {dragHandleOn ? (
                             <div className="flex justify-center pt-2 pb-1 shrink-0" aria-hidden="true">

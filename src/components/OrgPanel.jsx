@@ -144,7 +144,7 @@ export function OrgPanel({
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Portal>
 							<DropdownMenu.Content
-								className="min-w-[200px] bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-slate-300/50 dark:shadow-black/50 border border-slate-200/70 dark:border-slate-700/60 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-200"
+								className="min-w-[200px] bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-slate-300/50 dark:shadow-black/50 border border-slate-200/70 dark:border-slate-700/60 p-1.5 z-[var(--ds-z-popover)] animate-in fade-in zoom-in-95 duration-200"
 								sideOffset={8}
 							>
 								<DropdownMenu.Item

@@ -111,7 +111,7 @@ export function HeroOrgChip({ orgs = [], selectedOrg, onSelectOrg, loading }) {
                 <Popover.Content
                     sideOffset={8}
                     align="start"
-                    className="w-[300px] p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/60 dark:border-slate-700/60 rounded-2xl shadow-2xl ds-animate-scale-in z-50"
+                    className="w-[300px] p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/60 dark:border-slate-700/60 rounded-2xl shadow-2xl ds-animate-scale-in z-[var(--ds-z-popover)]"
                 >
                     <OrgList orgs={orgs} selectedOrg={selectedOrg} onSelect={handleSelect} />
                 </Popover.Content>

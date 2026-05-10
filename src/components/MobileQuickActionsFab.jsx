@@ -33,13 +33,13 @@ export function MobileQuickActionsFab(props) {
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         onClick={() => setOpen(false)}
-                        className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+                        className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[var(--ds-z-composer)]"
                         aria-hidden="true"
                     />
                 )}
             </AnimatePresence>
 
-            <div className="fixed right-4 bottom-[calc(56px+1rem+var(--safe-area-inset-bottom,0px))] z-50 flex flex-col items-end gap-3">
+            <div className="fixed right-4 bottom-[calc(56px+1rem+var(--safe-area-inset-bottom,0px))] z-[var(--ds-z-popover)] flex flex-col items-end gap-3">
                 {/* Bare conditional (not AnimatePresence): jsdom doesn't drive exit
                     animations, so the ESC-closes test wouldn't observe the unmount
                     otherwise. Trade-off: secondary buttons disappear without fade. */}

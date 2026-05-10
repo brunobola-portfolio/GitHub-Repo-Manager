@@ -34,16 +34,24 @@
    *   floating (30): floating action buttons that sit ABOVE content
    *                  but BELOW the inline composer
    *   composer (40): the inline floating comment composer
-   *   overlay  (50): toasts, tooltips, popovers
+   *   popover  (50): dropdowns, tooltips, anchored popovers
    *   modal    (60): modal backdrop + sheet (matches Modal.jsx)
-   *   ceiling  (70): hard-stop overlays (auth-gate, fatal-error)
+   *   toast    (70): transient system messages — must be visible OVER
+   *                  any modal so a save / error toast isn't hidden by
+   *                  whatever dialog the user is in
+   *   ceiling  (80): hard-stop overlays (auth-gate, fatal-error)
+   *
+   * `--ds-z-overlay` kept as an alias of `--ds-z-popover` for callers
+   * that landed earlier — both resolve to 50.
    */
   --ds-z-surface: 10;
   --ds-z-floating: 30;
   --ds-z-composer: 40;
+  --ds-z-popover: 50;
   --ds-z-overlay: 50;
   --ds-z-modal: 60;
-  --ds-z-ceiling: 70;
+  --ds-z-toast: 70;
+  --ds-z-ceiling: 80;
 
   --ds-transition-standard: 0.2s var(--ds-ease-out-expo);
   --ds-transition-fast: 0.12s var(--ds-ease-out-expo);

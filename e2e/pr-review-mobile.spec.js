@@ -32,35 +32,33 @@ test.describe('PR review — mobile flow (iPhone 13)', () => {
         // mode is on so we're driving through in-app fixtures.
         await expect(page.getByText(/Demo mode/i).first()).toBeVisible()
 
-        // Bottom-nav: tap Repos
-        await page.getByRole('button', { name: /^Repos$/i }).first().click().catch(async () => {
-            await page.getByText(/^Repos$/i).first().click()
-        })
+        // Bottom-nav: tap Repos. The bottom nav lives inside the mobile
+        // Header and the label text is the most stable handle.
+        await page.getByRole('button', { name: /^Repos$/i }).first().click()
 
-        // Click the first repo card / row
-        const firstRepoCard = page.locator('[data-testid="repo-card"], a[href*="/repos/"]').first()
-        await firstRepoCard.click().catch(async () => {
-            // Fallback: click anything that looks like a repo title link
-            await page.locator('h3, h2').filter({ hasText: /[a-z]/ }).first().click()
-        })
+        // Open the first repo via its title button — clicking the card
+        // body would activate selection mode (multi-select), not navigate.
+        const repoOpenBtn = page.getByTestId('repo-card-open').first()
+        await expect(repoOpenBtn).toBeVisible({ timeout: 10_000 })
+        await repoOpenBtn.click()
 
         // Open Pull requests tab inside repo detail
         await page.getByRole('tab', { name: /Pull requests/i }).click().catch(async () => {
-            await page.getByRole('button', { name: /Pull requests/i }).click().catch(async () => {
-                await page.getByRole('link', { name: /Pull requests/i }).click()
-            })
+            await page.getByRole('button', { name: /Pull requests/i }).click()
         })
 
-        // Open the first PR
-        await page.locator('button, a').filter({ hasText: /feat:|fix:|chore:|refactor:|docs:/ }).first().click()
+        // Open the first PR row. PR rows are role=button with a stable
+        // aria-label "Open pull request #N: <title>", so target by that
+        // prefix instead of fragile text matching.
+        await page.getByRole('button', { name: /^Open pull request/i }).first().click()
 
-        // Find the "Review" CTA which routes to PRReviewView
-        const reviewBtn = page.getByRole('button', { name: /^Review$/i }).first()
-        if (await reviewBtn.isVisible().catch(() => false)) {
-            await reviewBtn.click()
-        }
+        // Inside PRDetailPanel: switch to the Files tab (the in-detail
+        // Files tab mounts CodeReviewSurface, the same surface PRReviewView
+        // uses, with the same MobileFileTreeSheet trigger below md).
+        await page.getByRole('tab', { name: /^Files/i }).click()
 
-        // Toolbar "Files (N)" button must be present below md (iPhone 13)
+        // Toolbar "Files (N)" button must be present below md (iPhone 13).
+        // The aria-label is "Open files list (N)" — match the prefix.
         const filesBtn = page.getByRole('button', { name: /Open files list/i })
         await expect(filesBtn).toBeVisible({ timeout: 15_000 })
 
@@ -68,8 +66,9 @@ test.describe('PR review — mobile flow (iPhone 13)', () => {
         await filesBtn.click()
         await expect(page.getByRole('dialog')).toBeVisible()
 
-        // Select the large file
-        await page.getByText('src/big-refactor.js').first().click()
+        // Select the large file (full path is shown in the tree row's title attr;
+        // the visible label is the basename only). Use title attr for stability.
+        await page.getByTitle('src/big-refactor.js').first().click()
 
         // Sheet auto-closes
         await expect(page.getByRole('dialog')).toHaveCount(0)
@@ -81,7 +80,7 @@ test.describe('PR review — mobile flow (iPhone 13)', () => {
         // Expand on demand
         await page.locator('.diff-collapser').getByRole('button', { name: /Show diff/i }).click()
 
-        // Real diff renders (DiffView's stub-id or the Tailwind wrapper)
+        // Real diff renders (the lib's wrapper uses class `.diff-renderer`)
         await expect(page.locator('.diff-renderer').first()).toBeVisible()
     })
 })

@@ -60,7 +60,7 @@ export function PresetDropdown({ currentFilters, onApply }) {
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
-                        className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-900 shadow-xl z-40 overflow-hidden"
+                        className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-900 shadow-xl z-[var(--ds-z-popover)] overflow-hidden"
                         role="menu"
                     >
                         <div className="p-2 max-h-64 overflow-y-auto">

@@ -94,7 +94,7 @@ export function WorkBoardRowMenu({ repoFullName, itemUrl, itemType, itemNumber }
                 align="end"
                 sideOffset={4}
                 onClick={(e) => e.stopPropagation()}
-                className="z-50 min-w-[220px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 shadow-xl"
+                className="z-[var(--ds-z-popover)] min-w-[220px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 shadow-xl"
             >
                 {itemType && Number.isFinite(itemNumber) && (
                     <MenuItem

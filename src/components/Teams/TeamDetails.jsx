@@ -275,7 +275,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
 
                                     {/* Search Results Dropdown */}
                                     {userSearchResults.length > 0 && (
-                                        <div className="absolute z-50 top-full mt-2 left-0 w-full bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl max-h-60 overflow-y-auto">
+                                        <div className="absolute z-[var(--ds-z-popover)] top-full mt-2 left-0 w-full bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl max-h-60 overflow-y-auto">
                                             {userSearchResults.map(u => (
                                                 <button
                                                     key={u.id}

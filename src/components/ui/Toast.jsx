@@ -80,7 +80,7 @@ export function Toast({ id, type = 'info', message, content, onDismiss, duration
 
 export function ToastContainer({ toasts, onDismiss }) {
 	return (
-		<div className="fixed inset-x-0 bottom-20 z-[60] flex flex-col items-end px-4 space-y-2 pointer-events-none sm:items-end sm:right-4 sm:left-auto sm:max-w-sm safe-area-bottom safe-area-right">
+		<div className="fixed inset-x-0 bottom-20 z-[var(--ds-z-toast)] flex flex-col items-end px-4 space-y-2 pointer-events-none sm:items-end sm:right-4 sm:left-auto sm:max-w-sm safe-area-bottom safe-area-right">
 			{toasts.map(toast => (
 				<Toast key={toast.id} {...toast} onDismiss={onDismiss} />
 			))}

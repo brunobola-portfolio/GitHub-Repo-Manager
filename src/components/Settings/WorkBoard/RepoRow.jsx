@@ -82,7 +82,7 @@ export function RepoRow({ repo, onAction, selected = false, onSelectionChange })
                     side="bottom"
                     align="end"
                     sideOffset={4}
-                    className="z-50 min-w-[180px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 shadow-xl"
+                    className="z-[var(--ds-z-popover)] min-w-[180px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 shadow-xl"
                 >
                     <MenuItem
                         icon={<Copy className="w-3.5 h-3.5" />}

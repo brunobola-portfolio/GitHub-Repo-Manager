@@ -833,7 +833,7 @@ function AppContent() {
         aria-label="All Organizations"
       >
         <Building2 className="w-5 h-5" />
-        <span className="absolute left-full ml-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+        <span className="absolute left-full ml-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-[var(--ds-z-popover)]">
           All Orgs
         </span>
       </button>
@@ -856,7 +856,7 @@ function AppContent() {
               {org.login.charAt(0).toUpperCase()}
             </span>
           )}
-          <span className="absolute left-full ml-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+          <span className="absolute left-full ml-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-[var(--ds-z-popover)]">
             {org.login}
           </span>
           {selectedOrg === org.login && (
@@ -873,7 +873,7 @@ function AppContent() {
           aria-label={user.login}
         >
           <img src={user.avatar_url} alt={user.login} className="w-8 h-8 rounded-lg" />
-          <span className="absolute left-full ml-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+          <span className="absolute left-full ml-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-[var(--ds-z-popover)]">
             {user.login}
           </span>
         </button>
@@ -1122,7 +1122,7 @@ function AppContent() {
                     animate={{ x: 0 }}
                     exit={{ x: -280 }}
                     transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                    className="fixed left-[60px] z-30 w-[280px] rounded-3xl border border-slate-200/60 dark:border-slate-700/50 shadow-2xl bg-white dark:bg-slate-950 backdrop-blur-xl overflow-y-auto"
+                    className="fixed left-[60px] z-[var(--ds-z-floating)] w-[280px] rounded-3xl border border-slate-200/60 dark:border-slate-700/50 shadow-2xl bg-white dark:bg-slate-950 backdrop-blur-xl overflow-y-auto"
                     style={{
                       top: 'calc(var(--header-height) + var(--layout-py))',
                       maxHeight: 'calc(100vh - var(--header-height) - 2 * var(--layout-py))',
@@ -1540,7 +1540,7 @@ function AppContent() {
           aria-modal="true"
           aria-label="Quota exceeded"
           tabIndex={-1}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-[var(--ds-z-ceiling)] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
           onClick={() => setQuotaModal(null)}
           onKeyDown={(e) => { if (e.key === 'Escape') setQuotaModal(null) }}
         >
@@ -1572,7 +1572,7 @@ function AppContent() {
         <>
           <button
             onClick={() => setDrawerOpen(true)}
-            className="md:hidden fixed z-30 p-4 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-colors min-h-[56px] min-w-[56px] flex items-center justify-center safe-area-bottom safe-area-right"
+            className="md:hidden fixed z-[var(--ds-z-floating)] p-4 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-colors min-h-[56px] min-w-[56px] flex items-center justify-center safe-area-bottom safe-area-right"
             style={{
               bottom: 'calc(5rem + var(--safe-area-inset-bottom))',
               right: 'calc(1.5rem + var(--safe-area-inset-right))'

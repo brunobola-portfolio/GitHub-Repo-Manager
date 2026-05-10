@@ -312,7 +312,7 @@ export function Select({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute z-50 w-full mt-2
+                        className="absolute z-[var(--ds-z-popover)] w-full mt-2
                             bg-white/95 dark:bg-slate-900/95
                             backdrop-blur-xl
                             border border-slate-200 dark:border-slate-700

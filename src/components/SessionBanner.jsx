@@ -10,7 +10,7 @@ export function SessionBanner({ visible, onLogin, onDismiss }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-30"
+          className="relative z-[var(--ds-z-floating)]"
         >
           <div className="ds-session-banner">
             <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-2.5 flex items-center justify-between gap-3 sm:gap-4">

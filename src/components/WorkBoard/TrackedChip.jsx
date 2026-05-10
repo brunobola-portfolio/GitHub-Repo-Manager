@@ -74,7 +74,7 @@ export function TrackedChip({ repoFullName }) {
                 align="start"
                 sideOffset={6}
                 onClick={(e) => e.stopPropagation()}
-                className="z-50 min-w-[180px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 shadow-xl"
+                className="z-[var(--ds-z-popover)] min-w-[180px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 shadow-xl"
             >
                 {isPinned
                     ? <ChipMenuItem icon={<PinOff className="w-3.5 h-3.5" />} label="Unpin" onClick={() => runAction(hook.unpin, `Unpinned ${repoFullName}`)} />

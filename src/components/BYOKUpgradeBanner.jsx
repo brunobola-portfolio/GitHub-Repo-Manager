@@ -58,7 +58,7 @@ export function BYOKUpgradeBanner({ isAuthenticated, onOpenAISettings }) {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                    className="relative z-30"
+                    className="relative z-[var(--ds-z-floating)]"
                 >
                     <div className="bg-indigo-600 dark:bg-indigo-700">
                         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-2.5 flex items-center justify-between gap-3 sm:gap-4">

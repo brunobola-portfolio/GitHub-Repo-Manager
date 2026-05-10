@@ -55,7 +55,7 @@ function SlimPopover({ isOpen, onClose, children, triggerRef }) {
       role="dialog"
       aria-modal="true"
       aria-label="Quick actions"
-      className="absolute right-full mr-2 top-0 w-72 max-h-80 overflow-y-auto rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-xl z-40 p-3 outline-none"
+      className="absolute right-full mr-2 top-0 w-72 max-h-80 overflow-y-auto rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-xl z-[var(--ds-z-popover)] p-3 outline-none"
     >
       {children}
     </div>
@@ -79,7 +79,7 @@ function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRe
       aria-expanded={isActive || undefined}
     >
       <Icon className="w-5 h-5" />
-      <span className="absolute right-full mr-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+      <span className="absolute right-full mr-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-[var(--ds-z-popover)]">
         {label}
       </span>
     </button>

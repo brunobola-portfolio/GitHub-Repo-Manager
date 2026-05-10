@@ -25,10 +25,14 @@
 import { readFileSync } from 'node:fs'
 import { relative, normalize } from 'node:path'
 
-// Match `z-30`, `z-40`, `z-[60]`, `z-50`, etc. — raw numeric values
-// >= 30 that should be using a token. (z-0, z-10, z-20 are fine for
-// in-flow stacking.)
-const RAW_Z_RE = /\bz-(?:\[?(?:30|40|50|60|70|80|90|\d{3,})\]?)\b/
+// Match `z-30`, `z-40`, `z-[60]`, `z-50`, `z-[100]`, etc. — raw numeric
+// values >= 30 that should be using a token. (z-0, z-10, z-20 are fine
+// for in-flow stacking.) Excludes Tailwind variant prefixes like
+// `focus:`, `hover:`, `group-hover:`, `aria-*:`, `dark:`, etc., where
+// the z-N is conditional and usually serves an a11y skip-link or a
+// transient hover lift — those don't participate in the global layer
+// contract.
+const RAW_Z_RE = /(?<![:\w-])z-(?:\[?(?:30|40|50|60|70|80|90|\d{3,})\]?)\b/
 
 const files = process.argv.slice(2)
 if (files.length === 0) {

@@ -692,7 +692,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             role="status"
-            className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl shadow-xl border border-amber-300/60
+            className="fixed bottom-6 right-6 z-[var(--ds-z-popover)] px-4 py-2.5 rounded-xl shadow-xl border border-amber-300/60
               bg-amber-50/95 dark:bg-amber-900/40 dark:border-amber-500/30 text-sm text-amber-900 dark:text-amber-100 backdrop-blur"
           >
             {quotaNotice}

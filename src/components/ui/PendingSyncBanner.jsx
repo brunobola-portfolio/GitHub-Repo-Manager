@@ -50,7 +50,7 @@ export function PendingSyncBanner({ isAuthenticated }) {
                     transition={{ duration: 0.25 }}
                     role="status"
                     aria-live="polite"
-                    className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-full bg-amber-500/95 dark:bg-amber-600/95 text-white shadow-2xl backdrop-blur-md max-w-[90vw]"
+                    className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[var(--ds-z-popover)] flex items-center gap-3 px-4 py-2.5 rounded-full bg-amber-500/95 dark:bg-amber-600/95 text-white shadow-2xl backdrop-blur-md max-w-[90vw]"
                 >
                     <CloudOff className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                     <div className="text-sm font-medium">

@@ -109,7 +109,7 @@ export function RepoFilterBar({
 			{/* Search & View Toggle */}
 			<div className="flex items-center gap-2 w-full min-[1700px]:w-auto min-[1700px]:flex-1 flex-wrap sm:flex-nowrap min-w-0">
 				{/* Advanced Selection Menu */}
-				<div className="relative z-40 flex-shrink-0">
+				<div className="relative z-[var(--ds-z-composer)] flex-shrink-0">
 					<div className="flex items-center rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-1">
 						<div
 							role="checkbox"

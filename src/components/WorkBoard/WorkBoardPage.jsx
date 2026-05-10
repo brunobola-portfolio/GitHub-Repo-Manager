@@ -148,7 +148,7 @@ function LockedTabButton({ tab }) {
             <Popover.Portal>
                 <Popover.Content
                     side="bottom"
-                    className="z-50 px-3 py-1.5 text-xs rounded-lg bg-slate-900 text-slate-100 shadow-lg pointer-events-none border border-white/10"
+                    className="z-[var(--ds-z-popover)] px-3 py-1.5 text-xs rounded-lg bg-slate-900 text-slate-100 shadow-lg pointer-events-none border border-white/10"
                 >
                     Upgrade to {tab.badge} to unlock {tab.label}
                     <Popover.Arrow className="fill-slate-900" />

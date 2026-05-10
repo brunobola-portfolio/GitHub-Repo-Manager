@@ -54,7 +54,7 @@ export function SystemSetup({ onComplete }) {
     /* eslint-enable react-hooks/set-state-in-effect */
 
     return (
-        <div className="fixed inset-0 bg-slate-950 flex items-center justify-center z-50 text-white overflow-hidden">
+        <div className="fixed inset-0 bg-slate-950 flex items-center justify-center z-[var(--ds-z-popover)] text-white overflow-hidden">
             {/* Background Effects */}
             <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px]" />
             <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px]" />

@@ -259,7 +259,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                         onClick={() => { setIsOpen(true); setIsIdle(false) }}
                         onMouseEnter={() => setIsIdle(false)}
-                        className="fixed bottom-20 xl:bottom-6 right-3 sm:right-6 z-40 group"
+                        className="fixed bottom-20 xl:bottom-6 right-3 sm:right-6 z-[var(--ds-z-composer)] group"
                         aria-label="Open AI Assistant"
                     >
                         <div className="relative">

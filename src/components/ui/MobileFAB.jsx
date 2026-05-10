@@ -38,7 +38,7 @@ export function MobileFAB({ icon: Icon, label, onClick, shiftAboveBottomBar = fa
 			whileTap={{ scale: 0.95 }}
 			aria-label={label}
 			title={label}
-			className={`fixed right-4 ${bottomClass} z-40 w-14 h-14 rounded-full bg-indigo-500 text-white shadow-2xl flex items-center justify-center md:hidden`}
+			className={`fixed right-4 ${bottomClass} z-[var(--ds-z-composer)] w-14 h-14 rounded-full bg-indigo-500 text-white shadow-2xl flex items-center justify-center md:hidden`}
 		>
 			<Icon className="w-6 h-6" aria-hidden="true" />
 		</motion.button>

@@ -296,7 +296,7 @@ export function Header({
         {user && (
           <>
           <nav
-            className="fixed bottom-0 left-0 right-0 z-40 md:hidden backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-t border-slate-200/60 dark:border-slate-700/50"
+            className="fixed bottom-0 left-0 right-0 z-[var(--ds-z-composer)] md:hidden backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-t border-slate-200/60 dark:border-slate-700/50"
             role="navigation"
             aria-label="Main navigation"
             style={{ paddingBottom: 'var(--safe-area-inset-bottom, 0px)' }}
@@ -466,7 +466,7 @@ function NavButton({ active, onClick, icon, label, badge }) {
 // User Dropdown Menu
 function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, onOpenSettings, onMigrationHistory, onClose, isAdmin = false, onOpenAdminDLQ }) {
     return (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-40 ds-animate-scale-in">
+        <div className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
             {/* User Info */}
             <div className="p-4 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-slate-700/50 dark:to-slate-800/50 border-b border-slate-200/60 dark:border-slate-700/50">
                 <div className="flex items-center gap-3">
@@ -577,7 +577,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
     const sinceLabel = formatRelativeTime(digest.since)
 
     return (
-        <div className="absolute right-0 top-full mt-2 w-96 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-40 ds-animate-scale-in">
+        <div className="absolute right-0 top-full mt-2 w-96 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
             <div className="px-4 pt-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <div className="min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
@@ -746,7 +746,7 @@ function SystemHealthIndicator() {
                 <div
                     role="dialog"
                     aria-label={tooltip}
-                    className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-40 ds-animate-scale-in"
+                    className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in"
                 >
                     <div className="p-3 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
                         <AlertCircle className={`w-4 h-4 ${isDegraded ? 'text-amber-500 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`} />

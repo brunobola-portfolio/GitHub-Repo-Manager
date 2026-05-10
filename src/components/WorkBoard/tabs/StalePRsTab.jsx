@@ -103,7 +103,7 @@ function ChipStrip({ pr, hasAI, onSnooze, onPing }) {
                         side="bottom"
                         align="start"
                         avoidCollisions
-                        className="z-50 w-72 rounded-xl border border-white/10 bg-slate-900 p-3 shadow-xl"
+                        className="z-[var(--ds-z-popover)] w-72 rounded-xl border border-white/10 bg-slate-900 p-3 shadow-xl"
                     >
                         <p className="mb-2 text-[11px] text-slate-400">AI draft — edit before sending</p>
                         <textarea

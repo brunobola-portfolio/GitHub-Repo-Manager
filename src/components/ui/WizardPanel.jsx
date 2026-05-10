@@ -46,7 +46,7 @@ export function WizardPanel({
             animate={{ opacity: effectiveMaximized ? 0 : 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-50 bg-black/60 dark:bg-black/75 backdrop-blur-md"
+            className="fixed inset-0 z-[var(--ds-z-modal)] bg-black/60 dark:bg-black/75 backdrop-blur-md"
             style={{ pointerEvents: effectiveMaximized ? 'none' : 'auto' }}
             aria-hidden="true"
           />
@@ -63,7 +63,7 @@ export function WizardPanel({
             exit={{ opacity: 0, y: 24, scale: 0.98 }}
             transition={{ type: 'spring', duration: 0.5, bounce: 0.12 }}
             className={`
-              fixed z-50 flex flex-col overflow-hidden
+              fixed z-[var(--ds-z-modal)] flex flex-col overflow-hidden
               ${effectiveMaximized
                 ? 'inset-0 bg-white dark:bg-slate-950'
                 : `inset-x-0 mx-auto top-[clamp(1.5rem,5vh,4rem)] max-h-[min(90vh,calc(100vh-3rem))] ${PANEL_SIZES[size] || PANEL_SIZES.xl} rounded-2xl bg-white dark:bg-slate-950 shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] ring-1 ring-slate-200/50 dark:ring-slate-700/50`
