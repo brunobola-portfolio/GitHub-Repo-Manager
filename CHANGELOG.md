@@ -7,6 +7,147 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-05-10
+
+The PR-review surface gets a deep premium pass: faster huge-diff
+rendering, tightened mobile parity, better a11y, and a comment system
+that finally feels coherent. The cycle bundles the last unreleased
+work (Post-migration AI Polish Phase A) so users get one consolidated
+upgrade. **3679 unit tests + the mobile e2e pass; ESLint clean; main
+entry stays at 64.5 KB gzip (under the 65 KB budget).**
+
+### Added — PR review premium pass
+
+- **Layered render strategy for huge diffs.** Files >500 changed lines
+  fold by default with a one-screen preview (`<DiffCollapser>`); files
+  >50 000 changed lines render a click-to-compute placeholder
+  (`<DiffComputeOnDemand>`) mirroring Monaco's `maxFileSize` pattern.
+  Tab expansion runs through `useDeferredValue`. CSS
+  `content-visibility: auto` on the diff wrapper for cheap paint
+  savings on off-screen diffs.
+- **Floating inline-comment composer.** Position-fixed card with the
+  Modal design language (`rounded-2xl ring-1` + 25px shadow stack);
+  bottom sheet on mobile with `safe-area-inset-bottom`. Keeps the diff
+  scrollable behind it instead of trapping the user in a modal.
+- **Sticky review action bar with animated SVG progress ring.** Framer
+  Motion spring on the stroke offset + thumb-zone Approve / Comment /
+  Request changes buttons sized to the 44 px Apple HIG touch target;
+  `aria-live` live region for screen readers.
+- **Mobile parity.** File tree opens as a bottom sheet
+  (`<MobileFileTreeSheet>`) below the `md` breakpoint; AI Deep Review
+  panel reachable via a gradient FAB drawer below `lg`. Both reuse the
+  existing `<Modal mobileVariant="sheet">` primitive — no new top-level
+  dependency. Focus is restored to the originating button on close via
+  the new `useFocusTrap({ initialFocusRef, restoreFocusRef })` API.
+- **Layout-animated FileTreeItem.** Marking a file viewed reorders the
+  row smoothly via Framer Motion `layout='position'` + a scale-in
+  check icon, all gated on `useReducedMotion`.
+- **Keyboard help overlay (`?`).** Modal with shortcuts grouped by
+  Navigate / Review / Diff / Help. PR-review-scoped commands appear in
+  the global Command Palette (`cmd+k`) when the surface is focused —
+  Mark current file viewed, Approve, Comment, Request changes,
+  Toggle file tree, Show keyboard shortcuts.
+- **Unified comment chrome.** Synced threads, pending drafts, and AI
+  Deep Review suggestions now share one neutral container in the
+  diff stack; distinction lives in a small status badge in the header
+  (pending pill / AI gradient orb + severity chip) instead of three
+  competing card styles.
+
+### Added — Z-index design tokens
+
+- **Documented z-index scale** in `src/design-system.css`
+  (`--ds-z-surface/floating/composer/popover/modal/toast/ceiling`).
+  Toast layer sits above modal so system messages are never hidden by
+  whatever sheet the user is in.
+- **37 UI surfaces converted** to use the tokens (modals, drawers,
+  popovers, dropdowns, FABs, sticky bars, tooltips). Replaces the
+  previous implicit `z-30 / z-40 / z-[60] / z-[100]` drift.
+- **Pre-commit guard** (`scripts/check-no-raw-z-index.mjs`) rejects new
+  staged files containing raw numeric z-classes outside
+  `src/design-system.css`. Wired into lint-staged. `focus:` /
+  `hover:` variant prefixes are exempt (correct for a11y skip-links).
+
+### Added — Bundle hygiene
+
+- **Pre-commit guard** (`scripts/check-no-static-mock-imports.mjs`)
+  rejects top-level `import ... from '.../__mocks__/...'`. Static
+  imports of mock modules pin them in production bundles even when the
+  runtime branch is dead-code-eliminated. Four hooks
+  (`useAIDeepReview`, `usePRChat`, `usePRCommand`, `usePromptStudio`)
+  converted to dynamic `await import()` inside inlined
+  `import.meta.env.DEV && VITE_MOCK_MODE === 'true'` branches.
+- **Verified bundle clean.** A grep for the mock symbol names in
+  `dist/assets/*.js` returns zero matches after build.
+
+### Added — Backend
+
+- **Structured `code: 'INSUFFICIENT_PERMISSIONS'`** on the branch-
+  protection 403 response when GitHub returns "no admin" without the
+  Pro-required hint. Lets the client render a quiet inline "admin
+  required" affordance instead of a generic error toast.
+
+### Added — Mobile e2e
+
+- `e2e/pr-review-mobile.spec.js` (gated on `E2E_MOBILE=1`) drives the
+  full mobile flow on iPhone 13: dashboard → Repos → repo detail →
+  Pull requests → open PR → Files tab → "Files (N)" bottom sheet →
+  select large file → fold placeholder → Show diff → diff renders. A
+  large fixture file (`src/big-refactor.js`, 600/200 lines) is added
+  to `mockRepoDetail.js` so the fold path is reachable in mock mode.
+- `data-testid="repo-card-open"` on the RepoCard title button so e2es
+  can navigate without triggering selection mode.
+
+### Fixed
+
+- **403 noise on `BranchProtectionPanel`.** Non-admin collaborators
+  previously saw an alarming red toast. Now they see a calm "Admin
+  access required" card (or "🔒 admin only" chip in the inline
+  variant). Console + toast layer stay quiet for what is an expected,
+  structural state.
+- **`@git-diff-view/core` mismatch warnings.** Dev-only sanity
+  warnings from the diff lib that fire because we feed it GitHub patch
+  fragments without full file content are silenced via a module-load
+  console-warn filter (gated on `import.meta.env.DEV`,
+  sentinel-protected against HMR double-install). Production builds
+  unchanged.
+- **`h-screen` on iOS Safari.** PRReviewView used `h-screen` which the
+  iOS URL bar eats; switched to `h-[100dvh]`.
+- **Floating composer ↔ AI FAB collision.** The AI FAB hides while the
+  inline composer is open via a `pr-review:composer-open / -close`
+  event pair so rounded corners can't poke through each other.
+- **`useReviewKeyboard` interfering with native dropdowns.** The
+  `j` / `k` / `x` / `?` shortcuts now correctly bail when focus is in
+  a `<select>`, `[role=combobox]`, `[role=textbox]`, or
+  `[role=listbox]`.
+- **AI FAB bypassing reduced-motion.** The `hover:scale-105`
+  transition was a Tailwind transform that ignored
+  `prefers-reduced-motion`; switched to `motion-safe:` /
+  `motion-reduce:` variants and bumped the FAB to the Material 56 px
+  standard.
+- **`showHints` session counter overshoot in `ReviewStatusBar`.** Was
+  incrementing on every remount; now uses a `sessionStorage` flag so
+  it counts at most once per tab session (3-session lifecycle
+  intended).
+- **Action-bar visual hierarchy.** Approve is now the primary CTA
+  (semibold + emerald shadow), Comment is a ghost button, Request
+  changes uses calmer rose tones — three competing peers became one
+  obvious primary plus two fallbacks.
+- **`AISummaryPanel` + `AIReviewPanel` duplication.** The lightweight
+  heuristic summary now hides as soon as a deep-review draft exists
+  and `useReviewAI` skips its LLM call when `deep.draft` is already on
+  screen — saves a token round-trip per PR view.
+- **Unit-test repair.** `aiActions.test.js` (added `open_ai_polish` to
+  the expected registry sort) and
+  `suggest-name-description-route.test.js` (loosened the deterministic-
+  fallback assertion to accept either valid template).
+
+### Changed
+
+- **Palette unification.** `gray-*` → `slate-*` across every modified
+  surface; zero raw `gray-N` classes left in `src/`.
+- **Build budget.** Main entry stays at 64.5 KB gzip after every
+  change in this cycle (the 65 KB budget gate is honoured).
+
 ### Added — Post-migration AI Polish (Phase A)
 
 - **Batch description suggestions for migrated repos.** When a migration

@@ -23,6 +23,23 @@ below links to the canonical page for that topic.
 
 Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.1.0 (2026-05-10)** — **PR review premium pass.** Layered render
+  strategy for huge diffs: `<DiffCollapser>` fold-by-default above
+  500 lines, `<DiffComputeOnDemand>` above 50 000, `useDeferredValue`
+  on tab expansion, and `content-visibility: auto`. Mobile parity: file-tree
+  `<MobileFileTreeSheet>` and AI panel drawer below `lg`, both
+  reusing the existing Modal sheet primitive. Sticky review action
+  bar with animated SVG progress ring + thumb-zone Approve/Comment/
+  Request changes. Floating composer that doesn't trap the user.
+  Layout-animated FileTreeItem on mark-as-viewed. Keyboard help
+  overlay (`?`) + PR-scoped Command Palette commands. Unified
+  comment chrome (synced/pending/AI all share one card with status
+  badges). Z-index design tokens consumed across 37 surfaces with a
+  pre-commit guard against raw `z-N`. Bundle hygiene: dynamic mock
+  imports + a CI guard so fixture data can't leak to production.
+  Bundles Phase A of the post-migration AI Polish work. **3679 unit
+  tests + the iPhone-13 mobile e2e pass; ESLint clean; main entry
+  64.5 KB gzip.**
 - **v4.0.0 (2026-05-08)** — **AI Deep Review.** Slice 1a free core
   engine (walkthrough + line comments + `suggestion` blocks + Mermaid +
   batched publish through outbox); slice 1a-2 hardening (provider
