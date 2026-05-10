@@ -1,0 +1,91 @@
+name: Bug Report
+description: Report a bug to help us improve
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill out the fields below — the more detail, the faster the fix.
+        For security vulnerabilities, **do not file a public issue** — email bruno@bolalabs.pt instead.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug.
+      placeholder: When I click X, the app does Y instead of Z.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps so we can hit the same bug locally.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What actually happened. Paste error logs or console output if relevant.
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: App version
+      description: Find this in the footer or run `node -e "console.log(require('./package.json').version)"`.
+      placeholder: e.g., 4.1.1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other (specify in additional context)
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      description: Include version if known.
+      placeholder: e.g., Chrome 124, Firefox 125, Safari 17
+    validations:
+      required: true
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js version
+      description: Output of `node -v`. Only required if the bug is server-side or build-time.
+      placeholder: e.g., v20.11.0
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / additional context
+      description: Drop screenshots, GIFs, or any other context that helps explain the problem.

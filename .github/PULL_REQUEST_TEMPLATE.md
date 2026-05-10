@@ -25,3 +25,9 @@ Closes #
 - [ ] I have added tests for new functionality (if applicable)
 - [ ] I have updated documentation (if applicable)
 - [ ] My commits follow [Conventional Commits](https://www.conventionalcommits.org/)
+
+## Contributor License Agreement
+
+First-time contributors: this project requires a one-time CLA signature so contributions can be included in both the AGPL v3 release and the commercial license. After opening this PR the bot will comment asking you to sign — reply with the exact phrase **`I have read the CLA and I agree`** and you're set for all future PRs.
+
+See [CLA.md](../CLA.md) for the full text.
