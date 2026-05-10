@@ -9,7 +9,7 @@
 // db is imported for future use in Task 7 (snooze/archive filter).
 // eslint-disable-next-line no-unused-vars
 import db from '../db.js';
-import { listMyPendingReviews } from './event-aggregations.js';
+import { listMyPendingReviews, listMyOpenPRs, listMyOpenIssues } from './event-aggregations.js';
 
 const SECTION_KEYS = ['needs_review', 'my_prs', 'mentions', 'failing_ci', 'stale_drafts', 'dependabot_ready'];
 
@@ -24,6 +24,10 @@ const SECTION_LABEL = {
 
 function prKey(repoFullName, prNumber) {
     return `pr:${repoFullName}#${prNumber}`;
+}
+
+function issueKey(repoFullName, issueNumber) {
+    return `issue:${repoFullName}#${issueNumber}`;
 }
 
 function buildNeedsReview(userLogin) {
@@ -43,8 +47,33 @@ function buildNeedsReview(userLogin) {
 
 const SECTION_BUILDERS = {
     needs_review: (_userId, opts) => buildNeedsReview(opts.userLogin),
-    my_prs: () => [],
-    mentions: () => [],
+    my_prs: (_userId, opts) => {
+        const rows = listMyOpenPRs({ authorLogin: opts.userLogin });
+        return rows.map(r => ({
+            id: prKey(r.repoFullName, r.prNumber),
+            kind: 'pr',
+            section: 'my_prs',
+            repoFullName: r.repoFullName,
+            prNumber: r.prNumber,
+            title: r.title,
+            authorLogin: r.authorLogin,
+            since: r.openedAt,
+            ageHours: r.ageHours,
+        }));
+    },
+    mentions: (_userId, opts) => {
+        const rows = listMyOpenIssues({ assigneeLogin: opts.userLogin });
+        return rows.map(r => ({
+            id: issueKey(r.repoFullName, r.issueNumber),
+            kind: 'issue',
+            section: 'mentions',
+            repoFullName: r.repoFullName,
+            issueNumber: r.issueNumber,
+            title: r.title,
+            since: r.openedAt,
+            ageDays: r.ageDays,
+        }));
+    },
     failing_ci: () => [],
     stale_drafts: () => [],
     dependabot_ready: () => [],

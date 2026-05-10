@@ -62,3 +62,44 @@ describe('composeInbox — needs_review section', () => {
         expect(result.sections[0].items).toEqual([]);
     });
 });
+
+describe('composeInbox — my_prs section', () => {
+    beforeEach(() => {
+        db.prepare('DELETE FROM pr_events').run();
+        db.prepare('DELETE FROM dashboard_inbox_state').run();
+    });
+
+    it('lists PRs authored by user', () => {
+        db.prepare(`INSERT INTO pr_events
+            (repo_id, repo_full_name, pr_number, action, author_login, title, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`).run(1, 'foo/bar', 7, 'opened', LOGIN, 'feat: thing', '2026-05-01T00:00:00Z');
+
+        const result = composeInbox(USER_ID, { userLogin: LOGIN, sections: ['my_prs'] });
+        expect(result.sections[0].items[0]).toMatchObject({
+            id: 'pr:foo/bar#7',
+            section: 'my_prs',
+            title: 'feat: thing',
+        });
+    });
+});
+
+describe('composeInbox — mentions section', () => {
+    beforeEach(() => {
+        db.prepare('DELETE FROM issue_events').run();
+        db.prepare('DELETE FROM dashboard_inbox_state').run();
+    });
+
+    it('lists issues assigned to user', () => {
+        // issue_events uses assignee_logins (plural, JSON array) not assignee_login
+        db.prepare(`INSERT INTO issue_events
+            (repo_id, repo_full_name, issue_number, action, assignee_logins, title, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`).run(1, 'foo/bar', 11, 'opened', JSON.stringify([LOGIN]), 'bug: x', '2026-05-01T00:00:00Z');
+
+        const result = composeInbox(USER_ID, { userLogin: LOGIN, sections: ['mentions'] });
+        expect(result.sections[0].items[0]).toMatchObject({
+            id: 'issue:foo/bar#11',
+            section: 'mentions',
+            title: 'bug: x',
+        });
+    });
+});
