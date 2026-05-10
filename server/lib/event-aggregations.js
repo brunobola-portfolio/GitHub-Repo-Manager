@@ -533,6 +533,10 @@ export function meanTimeToRecovery({ environment = 'production', since, repoIds 
 export function listMyOpenPRs({ authorLogin, limit = 100 } = {}) {
     if (!authorLogin) return [];
 
+    // GitHub sends action='closed' for both merged and unmerged closes (no
+    // action='merged' row exists). A PR is "open" iff the latest lifecycle
+    // event for its (repo_id, pr_number) is anything other than 'closed' —
+    // which covers opened, reopened, and any future lifecycle actions.
     const rows = db.prepare(`
         SELECT
             pe_open.repo_full_name AS repoFullName,
@@ -543,12 +547,14 @@ export function listMyOpenPRs({ authorLogin, limit = 100 } = {}) {
         FROM pr_events pe_open
         WHERE pe_open.action = 'opened'
           AND pe_open.author_login = ?
-          AND NOT EXISTS (
-              SELECT 1 FROM pr_events pe_close
-              WHERE pe_close.repo_id  = pe_open.repo_id
-                AND pe_close.pr_number = pe_open.pr_number
-                AND pe_close.action    = 'closed'
-          )
+          AND (
+              SELECT pe_last.action
+              FROM pr_events pe_last
+              WHERE pe_last.repo_id   = pe_open.repo_id
+                AND pe_last.pr_number = pe_open.pr_number
+              ORDER BY pe_last.id DESC
+              LIMIT 1
+          ) != 'closed'
         ORDER BY pe_open.created_at DESC
         LIMIT ?
     `).all(authorLogin, limit);
