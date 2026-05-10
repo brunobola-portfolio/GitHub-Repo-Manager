@@ -56,4 +56,17 @@ test.describe('Live Inbox', () => {
             page.locator('section[aria-labelledby="inbox-panel-title"]'),
         ).not.toContainText(firstRowTitle)
     })
+
+    test('snooze modal preset hides the row from default view', async ({ page }) => {
+        // Wait for at least one row to appear in the active inbox section
+        const rows = page.locator('section[aria-labelledby="inbox-panel-title"] ul li')
+        await expect(rows.first()).toBeVisible({ timeout: 15000 })
+
+        const firstRowTitle = await rows.first().innerText()
+        await rows.first().getByLabel('Snooze item').click()
+        await page.getByRole('button', { name: '1 hour' }).click()
+        await expect(
+            page.locator('section[aria-labelledby="inbox-panel-title"]'),
+        ).not.toContainText(firstRowTitle)
+    })
 })
