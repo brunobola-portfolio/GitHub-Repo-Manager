@@ -138,8 +138,13 @@ describe('SuggestNameDescriptionModal — graceful degradation', () => {
 
         const applyBtn = screen.getByRole('button', { name: /apply changes/i });
         expect(applyBtn).toBeDisabled();
-        await user.click(screen.getByLabelText(/I understand renaming changes/i));
-        expect(applyBtn).toBeEnabled();
+        // findByLabelText waits for the rename-confirmation checkbox to render
+        // (it only mounts once React has reconciled the name change). Earlier
+        // the test used getByLabelText which raced React on slower CI runners
+        // — see CI run 25624349351 for the pre-fix failure trace.
+        const renameAck = await screen.findByLabelText(/I understand renaming changes/i);
+        await user.click(renameAck);
+        await waitFor(() => expect(applyBtn).toBeEnabled());
     });
 
     it('omits a field from the PATCH payload when its toggle is off', async () => {
