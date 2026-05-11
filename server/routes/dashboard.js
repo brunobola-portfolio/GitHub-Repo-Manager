@@ -13,8 +13,12 @@ router.get('/inbox', requireAuth, (req, res) => {
             : undefined;
         const includeArchived = req.query.include_archived === '1';
 
+        const userLogin = req.session.userLogin;
+        if (!userLogin) {
+            req.log?.warn?.({ userId: req.session.userId }, 'inbox requested with no userLogin in session');
+        }
         const result = composeInbox(req.session.userId, {
-            userLogin: req.session.userLogin,
+            userLogin,
             sections,
             includeArchived,
         });
