@@ -152,6 +152,20 @@ modal.
 
 Spec: [`docs/specs/2026-05-01-community-health-ai-autofix.md`](../specs/2026-05-01-community-health-ai-autofix.md).
 
+## Premium Dashboard — Live Inbox
+
+The Live Inbox replaces the static Attention Feed with a sectioned, actionable view of items waiting for the authenticated user: PRs needing review, the user's own open PRs, assigned/mentioned issues, and stale drafts. It is lazy-loaded and gated behind `localStorage.setItem('dashboard_premium_v2_inbox', '1')`.
+
+Data flows through `server/lib/dashboard-aggregator.js` (`composeInbox(userId, opts)`), which fans out to four existing helpers from `event-aggregations.js` and applies priority-based deduplication (an item appears in only the highest-priority section that claims it). Archive and snooze state is persisted per `(user_id, item_id)` in the `dashboard_inbox_state` SQLite table.
+
+The top 3 items in the active section receive Gemini-generated one-line narratives via `POST /api/ai/attention-narrative` (existing endpoint, reused). If the user's AI quota is exhausted the narrative fan-out halts cleanly and the inbox rows render without AI text — no cascading errors.
+
+Keyboard shortcuts in `InboxPanel`: `e` archives the first item of the active section; `s` opens the snooze modal for it. Clicking a row title navigates to the item (via `onSelect`); the chevron button expands the row in-place. Per-section empty states use friendly contextual copy.
+
+`dependabot_ready` and `failing_ci` section builders are intentional stubs that return `[]` in Phase 1 — they will be wired to `repos-security` and CI status aggregators in Phases 2 and 3 respectively. The DORA card and Scorecards widgets are also deferred (Phases 2 and 3).
+
+Spec: [`docs/specs/2026-05-10-premium-dashboard-three-pillars.md`](../specs/2026-05-10-premium-dashboard-three-pillars.md). Plan: [`docs/plans/2026-05-10-premium-dashboard-phase-1-inbox.md`](../plans/2026-05-10-premium-dashboard-phase-1-inbox.md).
+
 ## Backend
 
 Entry point: `server/index.js`
@@ -188,6 +202,7 @@ Entry point: `server/index.js`
     All mutations audit-logged in the G1 hash chain under `dlq.*`.
   - **Work Board** (`routes/work-board.js`, `routes/work-board-actions.js`):
     cross-repo review load, stale PRs, DORA metrics, presets, snooze, cache.
+  - **Dashboard** (`routes/dashboard.js`, `lib/dashboard-aggregator.js`): four endpoints under `/api/v1/dashboard/*` — inbox composition, archive, restore, snooze. Aggregator fans out to existing event-aggregation helpers (`listMyPendingReviews`, `listMyOpenPRs`, `listMyOpenIssues`, `listStalePRs`) with priority-based dedup and per-user `dashboard_inbox_state` persistence.
   - **License** (`routes/v1/license.js`): Ed25519-signed JWT validation,
     per-file kid resolver, 12 h license cache.
   - **Stats, Audit, Usage, System, Health** (`routes/stats.js`,

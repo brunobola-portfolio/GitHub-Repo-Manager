@@ -31,7 +31,8 @@ server/
 │   ├── api-keys.js               # API key generation and management
 │   ├── system.js                 # Health, feature flags, system info
 │   ├── webhooks.js               # GitHub webhook receiver (signature-verified)
-│   └── stripe-webhooks.js        # Stripe webhook handler (raw body)
+│   ├── stripe-webhooks.js        # Stripe webhook handler (raw body)
+│   └── dashboard.js              # /api/v1/dashboard/* — inbox, archive, restore, snooze
 ├── middleware/
 │   ├── auth.js                   # requireAuth, webhook signature, safeError
 │   ├── api-key-auth.js           # Bearer token (grm_live_*) authentication
@@ -51,6 +52,7 @@ server/
 │   ├── stripe.js                 # Stripe SDK helpers
 │   ├── usage-meter.js            # API call / AI query usage counter
 │   ├── utils.js                  # Shared utility functions
+│   ├── dashboard-aggregator.js   # Composes Live Inbox from event-aggregation helpers
 │   ├── validators.js             # Zod schemas for request validation
 │   ├── db-adapter.js             # Database adapter factory
 │   └── adapters/
@@ -136,6 +138,7 @@ tier-gated at mount time:
 | `/` | webhooks.js | -- |
 | `/` | user.js | -- |
 | `/` | bulk.js | -- |
+| `/dashboard` | dashboard.js | -- |
 
 The aggregator also defines two inline team endpoints (team activity stream and
 team actions stats) that query GitHub events and actions data in batched,
@@ -183,7 +186,10 @@ the backend based on the `DATABASE_URL` environment variable:
 transaction. Tables include: `users`, `teams`, `team_members`,
 `repo_assignments`, `repo_metadata`, `repo_embeddings`, `community_health_cache`,
 `workflow_runs`, `workflows_meta`, `migration_jobs`, `migration_plans`,
-`migration_tasks`, `user_subscriptions`, `api_keys`, `audit_log`, and more.
+`migration_tasks`, `user_subscriptions`, `api_keys`, `audit_log`,
+`dashboard_inbox_state`, and more.
+
+`dashboard_inbox_state` carries `(user_id INTEGER, item_id TEXT, archived_at TEXT, snoozed_until TEXT)` with composite PK `(user_id, item_id)`. `item_id` is a stable aggregator-defined key like `pr:owner/repo#123`.
 
 SQL migration files are stored in `server/migrations/` (currently
 `001-initial-schema.sql`).
@@ -270,6 +276,7 @@ provides an in-memory queue that executes jobs immediately in-process.
 | `stripe.js` | Stripe SDK helpers |
 | `usage-meter.js` | Per-tenant API call and AI query usage counter |
 | `utils.js` | Shared utility functions |
+| `dashboard-aggregator.js` | Fans out to event-aggregation helpers; deduplicates and filters by archive/snooze state from dashboard_inbox_state |
 | `validators.js` | Zod schemas for request input validation |
 
 ## Session Store Selection

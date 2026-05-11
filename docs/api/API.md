@@ -2,7 +2,7 @@
 
 **Base URL:** `http://localhost:3001/api`
 **Authentication:** GitHub OAuth via session cookies. Most endpoints require an authenticated session (`requireAuth` middleware). The server never exposes raw access tokens to the client.
-**Total Endpoints:** 154
+**Total Endpoints:** 158
 
 ---
 
@@ -26,6 +26,7 @@
 - [Usage Metrics](#usage-metrics-apiusagex)
 - [API Keys](#api-keys-apiapi-keysx)
 - [Stripe Webhooks](#stripe-webhooks-apiv1webhooksstripe)
+- [Dashboard](#dashboard-apiv1dashboardx)
 
 ---
 
@@ -3956,6 +3957,109 @@ Backs the streaming Q&A tab. **MIN scope** — server-side tool execution
 | `GET` | `/api/ai/pr-chat/:owner/:repo/:pr` | requireAuth | Persisted message history (no LLM call). |
 | `POST` | `/api/ai/pr-chat/:owner/:repo/:pr` | requireAuth | SSE-stream a new turn. Body: `{message: string}`. Persists user msg + assistant reply. Compacts history at `MAX_HISTORY_TURNS = 10`. Streams via `initSSE` + `streamToSSE` with client-disconnect AbortSignal piped into `provider.generateStream({ signal })`. |
 | `DELETE` | `/api/ai/pr-chat/:owner/:repo/:pr` | requireAuth | Clear conversation. |
+
+---
+
+## Dashboard (`/api/v1/dashboard/*`)
+
+All dashboard endpoints require an authenticated session (`requireAuth`). No tier gate — all actions are available to free-tier users.
+
+---
+
+### `GET /api/v1/dashboard/inbox`
+
+Returns the Live Inbox composed from existing event-aggregation helpers.
+
+| Detail | Value |
+| --- | --- |
+| Auth required | Yes |
+| Tier gate | None (free) |
+
+**Query Parameters:**
+
+| Param | Type | Description |
+| --- | --- | --- |
+| `sections` | string | Comma-separated list: `needs_review`, `my_prs`, `mentions`, `failing_ci`, `stale_drafts`, `dependabot_ready`. Omit for all. |
+| `include_archived` | `"1"` | Pass `"1"` to include archived items. Default: excluded. |
+
+**Response `200`:**
+
+```json
+{
+  "sections": [
+    {
+      "key": "needs_review",
+      "label": "Needs my review",
+      "items": [
+        {
+          "id": "pr:owner/repo#42",
+          "kind": "pr",
+          "section": "needs_review",
+          "repoFullName": "owner/repo",
+          "prNumber": 42,
+          "title": "feat: add widget",
+          "authorLogin": "alice",
+          "since": "2026-05-09T10:00:00Z",
+          "ageHours": 26
+        }
+      ]
+    }
+  ]
+}
+```
+
+Note: `failing_ci` and `dependabot_ready` sections always return `items: []` in Phase 1 (stubs, wired in Phase 2/3).
+
+---
+
+### `POST /api/v1/dashboard/inbox/:itemId/archive`
+
+Archives an inbox item for the current user. `itemId` must be URL-encoded (e.g., `pr%3Aowner%2Frepo%2323`).
+
+| Detail | Value |
+| --- | --- |
+| Auth required | Yes |
+| Tier gate | None (free) |
+| Body | None |
+
+**Response `200`:** `{ "ok": true }`
+
+**Errors:** `500` on DB failure.
+
+---
+
+### `POST /api/v1/dashboard/inbox/:itemId/restore`
+
+Clears both `archived_at` and `snoozed_until` for an item, returning it to the active inbox.
+
+| Detail | Value |
+| --- | --- |
+| Auth required | Yes |
+| Tier gate | None (free) |
+| Body | None |
+
+**Response `200`:** `{ "ok": true }`
+
+---
+
+### `POST /api/v1/dashboard/inbox/:itemId/snooze`
+
+Snoozes an inbox item until a future timestamp.
+
+| Detail | Value |
+| --- | --- |
+| Auth required | Yes |
+| Tier gate | None (free) |
+
+**Request Body (`application/json`):**
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `until` | ISO 8601 string | Yes | Must be in the future. |
+
+**Response `200`:** `{ "ok": true }`
+
+**Errors:** `400` if `until` is missing, non-parseable, or in the past. `500` on DB failure.
 
 ---
 

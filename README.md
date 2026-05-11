@@ -97,7 +97,10 @@ Managing a growing GitHub ecosystem is hard. Between dozens of repositories, mul
 Get a bird's-eye view of your entire GitHub ecosystem at a glance.
 
 - **DashboardHero** — personalised greeting (`Bom dia` / `Good morning` based on locale + time), org-filter and time-range chips that round-trip through the URL, and a "What needs you" grid surfacing reviews waiting / stale PRs / open issues with week-over-week deltas and a celebratory empty state.
-- **Attention Feed** — top three repos that need your eyes today, with an AI-written one-liner on the lead item (1-hour cache, BYOK).
+- **Live Inbox** — replaces the Attention Feed with a sectioned, actionable inbox (needs review, my open PRs, mentions, stale drafts). Archive with `e`, snooze with `s`. AI one-liners on the top 3 items (BYOK, Gemini). Enable with `localStorage.setItem('dashboard_premium_v2_inbox', '1')`. Archive/snooze state persists per-user; both actions are free-tier. See the [Live Inbox feature guide](docs/features/dashboard-live-inbox.md).
+
+  ![Live Inbox — needs_review section](docs/images/10_dashboard_live_inbox_needs_review_hd.png)
+- **Attention Feed** — legacy top-three-repos signal, available as fallback when the Live Inbox flag is off.
 - **Real-time Statistics** — Total repos, public/private distribution, stars, forks, organizations.
 - **Activity Trends** — Interactive charts showing development activity over 7/30/90 days.
 - **Language Distribution** — Technology breakdown across all your projects.
@@ -622,6 +625,31 @@ See [`docs/ai-providers.md`](docs/ai-providers.md) for per-provider setup and fr
 
 ### AI Assistant
 ![AI Assistant](docs/images/09_ai_assistant_dark_hd.png)
+
+### Live Inbox — needs_review section
+
+![Live Inbox needs review](docs/images/10_dashboard_live_inbox_needs_review_hd.png)
+
+### Live Inbox — my open PRs
+
+![Live Inbox my PRs](docs/images/11_dashboard_live_inbox_my_prs_hd.png)
+
+### Live Inbox — expanded row + dark mode
+
+![Live Inbox expanded](docs/images/12_dashboard_live_inbox_row_expanded_hd.png)
+![Live Inbox dark](docs/images/15_dashboard_live_inbox_dark_hd.png)
+
+### Live Inbox — snooze modal
+
+![Snooze modal](docs/images/13_dashboard_live_inbox_snooze_modal_hd.png)
+
+### Live Inbox — stale drafts
+
+![Stale drafts](docs/images/14_dashboard_live_inbox_stale_drafts_hd.png)
+
+### Live Inbox — mobile (375 px)
+
+![Live Inbox mobile](docs/images/16_dashboard_live_inbox_mobile_hd.png)
 
 ### Work Board (Dark Mode)
 

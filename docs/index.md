@@ -23,6 +23,7 @@ below links to the canonical page for that topic.
 
 Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.2.0 (upcoming — commit 848e8a2)** — **Premium Dashboard Phase 1: Live Inbox.** Replaces the always-empty Attention Feed with a sectioned, keyboard-driven inbox (needs review, my PRs, mentions, stale drafts). Archive (`e`) / snooze (`s`) state persisted in `dashboard_inbox_state` SQLite table. AI narrative on top-3 items. Four new endpoints under `/api/v1/dashboard/*`. `dependabot_ready` and `failing_ci` are stubs (data wired in Phase 2/3). Lazy-loaded; gated behind `localStorage` flag `dashboard_premium_v2_inbox`. All actions free-tier.
 - **v4.1.0 (2026-05-10)** — **PR review premium pass.** Layered render
   strategy for huge diffs: `<DiffCollapser>` fold-by-default above
   500 lines, `<DiffComputeOnDemand>` above 50 000, `useDeferredValue`
@@ -99,6 +100,7 @@ Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
   comments with `suggestion` blocks, Prompt Studio (Pro), PR slash
   commands (Pro), streaming PR Chat (Pro), org-shared prompts, BYOK
   provider matrix, mock-mode behaviour, privacy & data handling.
+- [Premium Dashboard — Live Inbox](features/dashboard-live-inbox.md) — sectioned inbox, archive/snooze, AI narrative, keyboard shortcuts, feature flag, Phase 1 scope and stubs.
 - [AI Providers (BYOK)](ai-providers.md) — Anthropic, OpenAI, Gemini,
   OpenRouter, Ollama, LMStudio. Per-feature overrides + cost hints.
 - [Cross-Repo Work Board](work-board.md) — review load, stale PRs, DORA
@@ -153,6 +155,7 @@ Recent specs — full list under each directory:
 - [Free Tier Expansion](specs/2026-04-15-free-tier-expansion.md) — move AI Assistant, Semantic Search, Migration Risk Analysis, and PR Review (read-only) to Free.
 - [Migration Repo Select Redesign](specs/2026-04-16-migration-repo-select-redesign.md) — 10-rule risk engine + 5 batched Azure endpoints + virtualized detail panel.
 - [BYOK and Remaining Phase 0](specs/2026-04-19-byok-and-remaining-phase-0.md) — BYOK multi-provider AI, event ingestion, Work Board, SOC 2 hardening.
+- [Premium Dashboard Phase 1 — Live Inbox](plans/2026-05-10-premium-dashboard-phase-1-inbox.md) — implementation plan for the inbox aggregator, four endpoints, `dashboard_inbox_state` table, and `InboxPanel` component tree.
 
 ## Reports
 

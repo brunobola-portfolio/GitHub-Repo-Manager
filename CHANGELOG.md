@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Premium Dashboard Phase 1: Live Inbox
+
+- **Live Inbox replaces Attention Feed.** `InboxPanel` renders six sections
+  (`needs_review`, `my_prs`, `mentions`, `failing_ci`, `stale_drafts`,
+  `dependabot_ready`) on the dashboard hero. Gated behind
+  `localStorage.setItem('dashboard_premium_v2_inbox', '1')`. Lazy-loaded —
+  bundle delta is **3.6 KB gzip** (88% under the 30 KB spec budget).
+- **`dashboard-aggregator.js`.** New `server/lib` module.
+  `composeInbox(userId, opts)` fans out to `listMyPendingReviews`,
+  `listMyOpenPRs`, `listMyOpenIssues`, `listStalePRs` with priority-based
+  dedup so each item appears in only its most urgent section.
+- **Four endpoints** under `GET|POST /api/v1/dashboard/inbox[/:itemId/archive|restore|snooze]`. All free-tier; no tier gate.
+- **`dashboard_inbox_state` table.** `(user_id INTEGER, item_id TEXT, archived_at TEXT, snoozed_until TEXT)` — composite PK `(user_id, item_id)`. Stable `item_id` format: `pr:owner/repo#N` / `issue:owner/repo#N`.
+- **AI narrative on top 3.** Active section's first 3 items get Gemini one-liners via the existing `POST /api/ai/attention-narrative`. Quota exhaustion halts fan-out; no cascading errors.
+- **Keyboard shortcuts.** `e` archives, `s` opens snooze modal, chevron / title click expand/navigate row. Guard skips inputs, textareas, selects, and contenteditable elements.
+- **Premium polish.** Skeleton loading state (per design rule 7), per-section empty-state copy, `aria-live` count updates, focus-visible action buttons (reachable by keyboard), focus-trapped `SnoozeModal`.
+
+### Fixed
+
+- `listStalePRs` correctly handles reopened PRs (latest lifecycle event check, parallel to `listMyOpenPRs` fix shipped on the same branch).
+- `useInbox` snapshot capture uses a ref to avoid stale-closure race on rapid archives.
+- ESLint config now ignores `dist/`, worktrees, and `.dev/` build artifacts so `npm run lint` is usable as a CI gate again.
+
+### Known stubs (Phase 1)
+
+- `failing_ci` and `dependabot_ready` sections return `[]` — data wired in Phase 2.
+- DORA card deferred to Phase 2; Service Scorecards to Phase 3.
+
 ## [4.1.1] - 2026-05-10
 
 Bundle hygiene patch on top of v4.1.0. Ships the perf work from PR #32
