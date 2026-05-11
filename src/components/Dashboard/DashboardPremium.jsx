@@ -8,6 +8,10 @@ import {
 import { DashboardHero } from './DashboardHero'
 import { AIPromoStrip } from './AIPromoStrip'
 import { AttentionFeed } from './AttentionFeed'
+// InboxPanel is code-split so it doesn't inflate the dashboard initial chunk.
+// The static import of isEnabled remains — it's a tiny synchronous flag read.
+const InboxPanel = lazy(() => import('./Premium/InboxPanel').then(m => ({ default: m.InboxPanel })))
+import { isEnabled } from '../../lib/featureFlags'
 import { CategorySection } from './CategorySection'
 import { StatCard } from './StatCard'
 // ActivityChart + LanguageChart pull recharts (~360 kB); split them out so
@@ -120,9 +124,15 @@ export function DashboardPremium({
                 onOpenInsights={(repo) => openModalWithData('showRepoInsights', { repo })}
             />
 
-            <AttentionFeed onSelectRepo={(repoFullName) => {
-                onViewChange?.('repos', { highlightRepoFullName: repoFullName })
-            }} />
+            {isEnabled('inbox') ? (
+                <Suspense fallback={<div className="h-48 animate-pulse bg-zinc-100 dark:bg-zinc-900/40 rounded-2xl" />}>
+                    <InboxPanel onSelectItem={(item) => onViewChange?.('repos', { highlightRepoFullName: item.repoFullName })} />
+                </Suspense>
+            ) : (
+                <AttentionFeed onSelectRepo={(repoFullName) => {
+                    onViewChange?.('repos', { highlightRepoFullName: repoFullName })
+                }} />
+            )}
 
             {/* CATEGORY 1: Overview Essencial (Always Visible) */}
             <CategorySection

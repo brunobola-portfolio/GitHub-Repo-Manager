@@ -1050,6 +1050,20 @@ export function initDB(targetDb = db) {
     `;
     db.exec(installedLicenseSchema);
 
+    // Migration 022 (Premium Dashboard — Phase 1 Inbox): tracks per-user
+    // archive and snooze state for inbox items. The item_id is an
+    // aggregator-stable composite key (e.g. `pr:owner/repo#123`) so that
+    // rows survive repo renames and are not tied to numeric GitHub IDs.
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS dashboard_inbox_state (
+            user_id        INTEGER NOT NULL,
+            item_id        TEXT    NOT NULL,
+            archived_at    TEXT,
+            snoozed_until  TEXT,
+            PRIMARY KEY (user_id, item_id)
+        )
+    `);
+
     logger.info('SQLite Database initialized successfully');
 }
 

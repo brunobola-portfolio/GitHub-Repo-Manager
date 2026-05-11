@@ -82,6 +82,15 @@
   --ds-chart-series-1: #6366f1; /* indigo-500 */
   --ds-chart-series-2: #ec4899; /* pink-500 */
   --ds-chart-series-3: #14b8a6; /* teal-500 */
+
+  /* Premium dashboard tokens (Phase 1 — inbox) */
+  --ds-status-success: #22c55e;
+  --ds-status-warning: #f59e0b;
+  --ds-status-danger:  #ef4444;
+  --ds-status-neutral: #94a3b8;
+
+  --ds-ease-row-expand:     cubic-bezier(0.32, 0.72, 0, 1);
+  --ds-duration-row-expand: 280ms;
 }
 
 /* ===== TRANSITION UTILITIES ===== */
@@ -409,6 +418,15 @@
 /* ===== REDUCED MOTION ===== */
 
 @media (prefers-reduced-motion: reduce) {
+  /* Override transition/animation tokens so all downstream consumers
+   * automatically respect reduced-motion without per-component guards. */
+  :root {
+    --ds-transition-standard:    0.01s linear;
+    --ds-transition-fast:        0.01s linear;
+    --ds-transition-slow:        0.01s linear;
+    --ds-duration-row-expand:    0.01s;
+  }
+
   /* Disable all animations for users who prefer reduced motion */
   *,
   *::before,
