@@ -13,7 +13,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
             <div className="group flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-colors">
                 <button
                     type="button"
-                    aria-label={expanded ? 'Collapse row' : 'Expand row'}
+                    aria-label={expanded ? `Collapse: ${item.title}` : `Expand: ${item.title}`}
                     aria-expanded={expanded}
                     onClick={() => setExpanded(v => !v)}
                     className="shrink-0 text-zinc-400 hover:text-indigo-500"
@@ -50,7 +50,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                         type="button"
                         aria-label="Snooze item"
                         onClick={() => onSnooze?.(item)}
-                        className="p-1.5 rounded-md text-zinc-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                        className="p-1.5 rounded-md text-zinc-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus-visible:opacity-100"
                     >
                         <Clock className="w-3.5 h-3.5" />
                     </button>
@@ -58,7 +58,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                         type="button"
                         aria-label="Archive item"
                         onClick={() => onArchive?.(item.id)}
-                        className="p-1.5 rounded-md text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
+                        className="p-1.5 rounded-md text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus-visible:opacity-100"
                     >
                         <Archive className="w-3.5 h-3.5" />
                     </button>

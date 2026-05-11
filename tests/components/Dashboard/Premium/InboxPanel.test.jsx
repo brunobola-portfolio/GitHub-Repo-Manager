@@ -35,8 +35,8 @@ describe('InboxPanel', () => {
         render(<InboxPanel />);
         await waitFor(() => screen.getByText('Needs my review'));
         fireEvent.click(screen.getByRole('button', { name: /my open prs/i }));
-        // After switching to empty section, "No items" message renders
-        expect(screen.getByText(/no items/i)).toBeInTheDocument();
+        // After switching to empty section, per-section empty state renders
+        expect(screen.getByText(/no open prs of yours/i)).toBeInTheDocument();
     });
 });
 

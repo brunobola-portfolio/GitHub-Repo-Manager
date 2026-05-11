@@ -8,11 +8,12 @@ export function InboxSection({ label, count = 0, active = false, onClick }) {
                 'group w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm transition-colors',
                 active
                     ? 'bg-indigo-500/10 text-zinc-900 dark:text-zinc-50 font-medium'
-                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900/40',
+                    : 'opacity-70 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900/40',
             ].join(' ')}
         >
             <span className="truncate">{label}</span>
             <span
+                aria-live="polite"
                 className={[
                     'shrink-0 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full text-[11px] font-semibold ds-font-mono tabular-nums',
                     count > 0

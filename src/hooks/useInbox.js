@@ -1,10 +1,23 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchInbox, archiveInboxItem, restoreInboxItem, snoozeInboxItem } from '../api/dashboardInbox';
 
 const ALL_SECTIONS = ['needs_review', 'my_prs', 'mentions', 'failing_ci', 'stale_drafts', 'dependabot_ready'];
 
+function removeFromSections(state, itemId) {
+    return {
+        sections: state.sections.map(s => ({
+            ...s,
+            items: s.items.filter(i => i.id !== itemId),
+        })),
+    };
+}
+
 export function useInbox({ sections = ALL_SECTIONS } = {}) {
     const [data, setData] = useState({ sections: [] });
+    const dataRef = useRef(data);
+    // Keep ref in sync so archive/snooze can read current state without stale closure.
+    // eslint-disable-next-line react-hooks/refs -- intentional "latest ref" pattern; ref is only read in async callbacks, never during render
+    dataRef.current = data;
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -17,7 +30,8 @@ export function useInbox({ sections = ALL_SECTIONS } = {}) {
         setLoading(true);
         try {
             const res = await fetchInbox({ sections: sectionsKey.split(',') });
-            setData(res);
+            const safeSections = Array.isArray(res?.sections) ? res.sections : [];
+            setData({ sections: safeSections });
             setError(null);
         } catch (e) {
             setError(e);
@@ -35,36 +49,27 @@ export function useInbox({ sections = ALL_SECTIONS } = {}) {
         return () => { cancelled = true; };
     }, [refresh]);
 
-    function removeLocally(itemId) {
-        setData(prev => ({
-            sections: prev.sections.map(s => ({
-                ...s,
-                items: s.items.filter(i => i.id !== itemId),
-            })),
-        }));
-    }
-
     const archive = useCallback(async (itemId) => {
-        const snapshot = data;
-        removeLocally(itemId);
+        const snapshot = dataRef.current;
+        setData(removeFromSections(snapshot, itemId));
         try {
             await archiveInboxItem(itemId);
         } catch (e) {
-            setData(snapshot); // revert
+            setData(snapshot);
             throw e;
         }
-    }, [data]);
+    }, []);
 
     const snooze = useCallback(async (itemId, untilIso) => {
-        const snapshot = data;
-        removeLocally(itemId);
+        const snapshot = dataRef.current;
+        setData(removeFromSections(snapshot, itemId));
         try {
             await snoozeInboxItem(itemId, untilIso);
         } catch (e) {
             setData(snapshot);
             throw e;
         }
-    }, [data]);
+    }, []);
 
     const restore = useCallback(async (itemId) => {
         await restoreInboxItem(itemId);

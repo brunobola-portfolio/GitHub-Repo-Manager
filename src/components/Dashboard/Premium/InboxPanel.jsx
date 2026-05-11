@@ -9,9 +9,17 @@ import { useToast } from '../../../hooks/useToast';
 import { InboxRow } from './InboxRow';
 import { InboxSection } from './InboxSection';
 import { SnoozeModal } from './SnoozeModal';
-import { Spinner } from '../../ui/Spinner';
 
 const NARRATIVE_TOP_N = 3;
+
+const EMPTY_STATE_COPY = {
+    needs_review: "No PRs waiting for your review — you're all caught up.",
+    my_prs: 'No open PRs of yours right now.',
+    mentions: 'No issues assigned to you. Nice and quiet.',
+    failing_ci: 'No failing CI runs on your PRs.',
+    stale_drafts: 'No stale drafts. You ship clean.',
+    dependabot_ready: 'No Dependabot PRs ready to merge.',
+};
 
 export function InboxPanel({ onSelectItem }) {
     const { sections, loading, error, archive, snooze } = useInbox();
@@ -80,7 +88,12 @@ export function InboxPanel({ onSelectItem }) {
     // 's' opens snooze modal for the first item of the active section
     useEffect(() => {
         function onKey(e) {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (
+                e.target.tagName === 'INPUT' ||
+                e.target.tagName === 'TEXTAREA' ||
+                e.target.tagName === 'SELECT' ||
+                e.target.isContentEditable
+            ) return;
             if (!active?.items?.length) return;
             if (e.key === 'e') archive(active.items[0].id).catch(e => toast.errorFromException(e, { fallbackTitle: 'Archive failed' }));
             else if (e.key === 's') setSnoozingItem(active.items[0]);
@@ -117,10 +130,24 @@ export function InboxPanel({ onSelectItem }) {
                 </nav>
 
                 <div className="min-h-[200px]">
-                    {loading && <div className="p-6 flex justify-center"><Spinner size="md" /></div>}
+                    {loading && (
+                        <ul aria-busy="true" aria-label="Loading inbox">
+                            {[0, 1, 2, 3].map(i => (
+                                <li key={i} className="border-b border-zinc-200/60 dark:border-zinc-800/60 px-4 py-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-4 h-4 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse" />
+                                        <div className="flex-1 space-y-1.5">
+                                            <div className="h-3.5 w-3/5 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse" />
+                                            <div className="h-2.5 w-2/5 bg-zinc-200/70 dark:bg-zinc-800/70 rounded animate-pulse" />
+                                        </div>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                     {error && <p className="p-6 text-sm text-red-600">{String(error.message || error)}</p>}
                     {!loading && !error && active && active.items.length === 0 && (
-                        <p className="p-6 text-sm text-zinc-500">No items in this section.</p>
+                        <p className="p-6 text-sm text-zinc-500">{EMPTY_STATE_COPY[active.key] ?? 'Nothing here.'}</p>
                     )}
                     {!loading && !error && active && active.items.length > 0 && (
                         <ul>
