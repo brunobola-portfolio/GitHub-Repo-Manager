@@ -149,6 +149,45 @@ export function ToastProvider({ children }) {
         },
     }), [addToast, addToastRecord])
 
+    // Bridge global unhandled errors (dispatched from main.jsx) to a friendly
+    // toast. main.jsx already filters extension noise + benign browser noise,
+    // so anything that lands here is a real app failure that escaped every
+    // boundary. The toast offers a Reload button because by definition we're
+    // in a state we don't know how to recover automatically.
+    useEffect(() => {
+        const handler = (event) => {
+            const error = event.detail?.error
+            const message = (error?.message || String(error || '')).slice(0, 240)
+            // Dedupe key collapses storms (a runaway interval throwing every
+            // tick) into one visible toast instead of MAX_TOASTS of the same.
+            const dedupeKey = `unhandled:${message}`
+            addToastRecord({
+                type: 'error',
+                duration: 0, // sticky — unhandled errors deserve user attention
+                dedupeKey,
+                content: (
+                    <div className="space-y-1.5">
+                        <div className="font-semibold">Something went wrong</div>
+                        <div className="text-sm opacity-90">
+                            {message || 'An unexpected error occurred outside the page boundary.'}
+                        </div>
+                        <div className="mt-2 flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => window.location.reload()}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-white/30 dark:bg-white/10 hover:bg-white/40 dark:hover:bg-white/20 transition-colors"
+                            >
+                                Reload
+                            </button>
+                        </div>
+                    </div>
+                ),
+            })
+        }
+        window.addEventListener('app:unhandled-error', handler)
+        return () => window.removeEventListener('app:unhandled-error', handler)
+    }, [addToastRecord])
+
     const value = useMemo(
         () => ({ toasts, toast, dismissToast }),
         [toasts, toast, dismissToast]

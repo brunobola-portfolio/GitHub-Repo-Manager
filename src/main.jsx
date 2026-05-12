@@ -16,6 +16,7 @@ import App from './App.jsx'
 import { ThemeProvider } from './hooks/useTheme.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { ToastProvider } from './contexts/ToastProvider.jsx'
+import { shouldIgnoreClientError } from './utils/errorClassification.js'
 
 // The public status page mounts at /status without any auth/app context.
 // Lazy-loaded so the tiny chunk is only fetched when needed and doesn't
@@ -31,21 +32,47 @@ if (import.meta.env.VITE_SENTRY_DSN) {
   })
 }
 
-// Last-resort capture for promise rejections that aren't awaited or caught.
-// Without this, `.catch(() => {})` swallows errors silently and bugs like
-// rate-limit storms or stale tokens hide in dev-tools. Sentry (if configured)
-// captures automatically; we also log so self-hosted users see the trace.
+// Last-resort capture for unhandled promise rejections AND synchronous errors
+// that escape every boundary. Without this, `.catch(() => {})` and bare
+// `throw`s in event handlers hide in dev-tools. Sentry (if configured)
+// captures automatically; we also log + surface a friendly toast so the user
+// sees that something went wrong instead of staring at a frozen UI.
+//
+// Browser-extension noise (uBlock, password managers, etc.) is filtered up
+// front via shouldIgnoreClientError so it never reaches Sentry/the UI.
 if (typeof window !== 'undefined') {
+  const broadcast = (error, source) => {
+    try {
+      window.dispatchEvent(new CustomEvent('app:unhandled-error', {
+        detail: { error, source },
+      }))
+    } catch {
+      // CustomEvent unavailable in ancient browsers — falling back silently is
+      // fine; we've already logged + reported to Sentry above this call.
+    }
+  }
+
   window.addEventListener('unhandledrejection', (event) => {
     const reason = event.reason
-    const message = reason instanceof Error ? reason.message : String(reason)
-    // Ignore aborted fetches — React StrictMode and route changes cancel them
-    // routinely and they aren't actionable.
-    if (message.includes('AbortError') || reason?.name === 'AbortError') return
+    if (shouldIgnoreClientError(reason)) return
     console.error('[unhandledrejection]', reason)
     if (import.meta.env.VITE_SENTRY_DSN && reason instanceof Error) {
       sentryCaptureException(reason)
     }
+    broadcast(reason instanceof Error ? reason : new Error(String(reason)), 'unhandledrejection')
+  })
+
+  // Synchronous errors that don't reach an ErrorBoundary land here — typically
+  // event-handler throws and resource-load failures. ErrorEvent.filename gives
+  // us the script source, which is what the extension filter keys on.
+  window.addEventListener('error', (event) => {
+    const error = event.error || event.message
+    if (shouldIgnoreClientError(error, event.filename)) return
+    console.error('[window.error]', error)
+    if (import.meta.env.VITE_SENTRY_DSN && error instanceof Error) {
+      sentryCaptureException(error)
+    }
+    broadcast(error instanceof Error ? error : new Error(String(event.message || error)), 'error')
   })
 }
 
