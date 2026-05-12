@@ -21,13 +21,17 @@ const STAGGER_VARIANTS = {
 // Static lookup tables so Tailwind's JIT scanner can discover every class.
 // IMPORTANT: never build these at runtime (e.g. `md:${sizeClasses[size]}`) —
 // Tailwind only picks up complete, static class names in source.
+// Wide tiers (`2xl`, `3xl`) use viewport-aware sizing so big displays stop
+// leaving hundreds of pixels of dead space around the dialog. Caps are still
+// in place so the modal never goes edge-to-edge — premium dialogs stay
+// readable and visually contained even on ultrawide monitors.
 const SIZE_CLASSES = {
     sm:    'max-w-md',
     md:    'max-w-lg',
     lg:    'max-w-2xl',
     xl:    'max-w-4xl',
-    '2xl': 'max-w-5xl',
-    '3xl': 'max-w-6xl',
+    '2xl': 'max-w-[min(90vw,1200px)]',
+    '3xl': 'max-w-[min(92vw,1440px)]',
     full:  'max-w-[min(96vw,1600px)] max-h-[92vh]',
 }
 
@@ -36,8 +40,8 @@ const SHEET_SIZE_CLASSES = {
     md:    'md:max-w-lg',
     lg:    'md:max-w-2xl',
     xl:    'md:max-w-4xl',
-    '2xl': 'md:max-w-5xl',
-    '3xl': 'md:max-w-6xl',
+    '2xl': 'md:max-w-[min(90vw,1200px)]',
+    '3xl': 'md:max-w-[min(92vw,1440px)]',
     full:  'md:max-w-[min(96vw,1600px)] md:max-h-[92vh]',
 }
 
@@ -155,7 +159,7 @@ export function Modal({
                                 overflow-hidden
                                 flex flex-col
                                 max-h-[92vh] md:max-h-[88vh] short:max-h-[90vh]
-                                ${tabs && tabs.length > 0 ? 'md:h-[min(74vh,660px)] short:h-auto' : ''}
+                                ${tabs && tabs.length > 0 ? 'md:h-[min(86vh,920px)] short:h-auto' : ''}
                                 ${className}
                             `}
                         >
@@ -164,9 +168,11 @@ export function Modal({
                                 {Icon && (
                                     <div
                                         data-icon-tile="true"
-                                        className={`${ICON_GRADIENT_CLASSES[iconGradient] || ICON_GRADIENT_CLASSES.none} p-1.5 rounded-lg`}
+                                        className={`${ICON_GRADIENT_CLASSES[iconGradient] || ICON_GRADIENT_CLASSES.none} p-1.5 rounded-lg flex-shrink-0`}
                                     >
-                                        <Icon className="w-6 h-6" strokeWidth={2.5} />
+                                        {/* Icon size matches WizardPanel (w-4 h-4) so every popup primitive
+                                            ships a 28-px gradient tile — uniform header rhythm. */}
+                                        <Icon className="w-4 h-4" strokeWidth={2.5} />
                                     </div>
                                 )}
                                 <div className="flex-1 min-w-0">

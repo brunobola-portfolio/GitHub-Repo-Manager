@@ -89,7 +89,6 @@ export function ConfirmModal({
             size="sm"
             mobileVariant="center"
             footer={footer}
-            bodyClassName="px-6 py-5"
         >
             <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{message}</p>
 

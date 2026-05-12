@@ -167,9 +167,11 @@ export function WizardPanel({
                   {children}
                 </div>
 
-                {/* Footer */}
+                {/* Footer — height + horizontal padding intentionally match the
+                    shared Modal primitive (min-h-[64px] md:min-h-[68px], px-4
+                    md:px-5) so every popup family has the same footer rhythm. */}
                 {footer && (
-                  <div className="flex-shrink-0 relative flex items-center min-h-[72px] px-6 md:px-8 lg:px-10 bg-white/80 dark:bg-slate-900/70 ds-glass border-t border-slate-200/50 dark:border-slate-800/40 safe-area-bottom">
+                  <div className="flex-shrink-0 relative flex items-center min-h-[64px] md:min-h-[68px] px-4 md:px-5 bg-white/80 dark:bg-slate-900/70 ds-glass border-t border-slate-200/50 dark:border-slate-800/40 safe-area-bottom">
                     <div className="w-full">
                       {footer}
                     </div>

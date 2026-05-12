@@ -28,18 +28,20 @@ describe('Modal — base', () => {
     expect(screen.getByText('owner/repo')).toBeInTheDocument()
   })
 
-  it('applies size="2xl" max-width class', () => {
+  it('applies size="2xl" viewport-aware max-width class', () => {
     const { container } = render(
       <Modal isOpen={true} onClose={() => {}} title="Hi" size="2xl">x</Modal>
     )
-    expect(container.querySelector('[role="dialog"]').className).toMatch(/max-w-5xl/)
+    // Wide tiers use a viewport-clamped max-width so big monitors don't leave
+    // hundreds of pixels of dead space framing the dialog.
+    expect(container.querySelector('[role="dialog"]').className).toMatch(/max-w-\[min\(90vw,1200px\)\]/)
   })
 
-  it('applies size="3xl" max-width class', () => {
+  it('applies size="3xl" viewport-aware max-width class', () => {
     const { container } = render(
       <Modal isOpen={true} onClose={() => {}} title="Hi" size="3xl">x</Modal>
     )
-    expect(container.querySelector('[role="dialog"]').className).toMatch(/max-w-6xl/)
+    expect(container.querySelector('[role="dialog"]').className).toMatch(/max-w-\[min\(92vw,1440px\)\]/)
   })
 
   it('size="full" applies a near-full-viewport width class for diff-viewer use', () => {
