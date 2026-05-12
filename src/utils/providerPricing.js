@@ -12,19 +12,38 @@
  */
 
 export const PROVIDER_PRICING = {
-    'gemini-2.5-flash':  { input: 0.30, output: 2.50, currency: 'USD', per: '1M tokens' },
-    'gemini-2.5-pro':    { input: 1.25, output: 5.00, currency: 'USD', per: '1M tokens' },
-    'claude-sonnet-4-6': { input: 3.00, output: 15.00, currency: 'USD', per: '1M tokens' },
-    'claude-opus-4-5':   { input: 15.00, output: 75.00, currency: 'USD', per: '1M tokens' },
-    'gpt-4o-mini':       { input: 0.15, output: 0.60, currency: 'USD', per: '1M tokens' },
-    'gpt-4o':            { input: 2.50, output: 10.00, currency: 'USD', per: '1M tokens' },
-    'gpt-5-mini':        { input: 0.15, output: 0.60, currency: 'USD', per: '1M tokens' },
+    // Gemini current
+    'gemini-2.5-flash':       { input: 0.30, output: 2.50, currency: 'USD', per: '1M tokens' },
+    'gemini-2.5-flash-lite':  { input: 0.10, output: 0.40, currency: 'USD', per: '1M tokens' },
+    'gemini-2.5-pro':         { input: 1.25, output: 10.00, currency: 'USD', per: '1M tokens' },
+    // Anthropic current
+    'claude-sonnet-4-6':      { input: 3.00, output: 15.00, currency: 'USD', per: '1M tokens' },
+    'claude-haiku-4-5':       { input: 1.00, output: 5.00, currency: 'USD', per: '1M tokens' },
+    'claude-opus-4-7':        { input: 5.00, output: 25.00, currency: 'USD', per: '1M tokens' },
+    // Anthropic legacy
+    'claude-opus-4-6':        { input: 5.00, output: 25.00, currency: 'USD', per: '1M tokens' },
+    'claude-sonnet-4-5':      { input: 3.00, output: 15.00, currency: 'USD', per: '1M tokens' },
+    'claude-opus-4-5':        { input: 5.00, output: 25.00, currency: 'USD', per: '1M tokens' },
+    'claude-opus-4-1':        { input: 15.00, output: 75.00, currency: 'USD', per: '1M tokens' },
+    // OpenAI current
+    'gpt-5.4-mini':           { input: 0.75, output: 4.50, currency: 'USD', per: '1M tokens' },
+    'gpt-5.4-nano':           { input: 0.20, output: 1.25, currency: 'USD', per: '1M tokens' },
+    'gpt-5.4':                { input: 2.50, output: 15.00, currency: 'USD', per: '1M tokens' },
+    'gpt-5.5':                { input: 5.00, output: 30.00, currency: 'USD', per: '1M tokens' },
+    'gpt-5.4-pro':            { input: 30.00, output: 180.00, currency: 'USD', per: '1M tokens' },
+    'gpt-5.5-pro':            { input: 30.00, output: 180.00, currency: 'USD', per: '1M tokens' },
+    'gpt-4.1':                { input: 2.00, output: 8.00, currency: 'USD', per: '1M tokens' },
+    // OpenAI superseded but still callable
+    'gpt-5-mini':             { input: 0.15, output: 0.60, currency: 'USD', per: '1M tokens' },
+    'gpt-4o':                 { input: 2.50, output: 10.00, currency: 'USD', per: '1M tokens' },
+    'gpt-4o-mini':            { input: 0.15, output: 0.60, currency: 'USD', per: '1M tokens' },
+    // Embeddings
     'text-embedding-3-small': { input: 0.02, currency: 'USD', per: '1M tokens' },
     'text-embedding-3-large': { input: 0.13, currency: 'USD', per: '1M tokens' },
     'gemini-embedding-001':   { input: 0.15, currency: 'USD', per: '1M tokens' },
 }
 
-export const PRICING_LAST_UPDATED = '2026-04-19'
+export const PRICING_LAST_UPDATED = '2026-05-12'
 
 /**
  * Look up pricing for a model name using prefix matching.

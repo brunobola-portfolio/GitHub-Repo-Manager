@@ -142,6 +142,19 @@ export const COMPLETION_MODELS = {
             capabilities: ['vision', 'tools', 'reasoning'],
             pricing: { input: 5.00, output: 25.00, currency: 'USD', per: '1M tokens' },
         },
+        {
+            id: 'claude-opus-4-1',
+            label: 'Claude Opus 4.1',
+            tier: 'legacy',
+            description: 'Older Opus — pre-4.5 generation',
+            context: '200K',
+            maxOutput: '32K',
+            cutoff: 'Mar 2025',
+            recommended: false,
+            legacy: true,
+            capabilities: ['vision', 'tools', 'reasoning'],
+            pricing: { input: 15.00, output: 75.00, currency: 'USD', per: '1M tokens' },
+        },
     ],
     openai: [
         {
