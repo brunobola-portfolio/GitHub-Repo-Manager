@@ -21,7 +21,7 @@ function formatDollars(n) {
  * Left column: name + tier/context/recommended/NEW pills, description, id + capability icons.
  * Right column: two-line pricing block, colour-coded by output-price tier.
  */
-export function ModelRow({ option, selected, highlighted, onPick, dataIdx }) {
+export function ModelRow({ option, selected, highlighted, onPick, dataIdx, hideTierBadge = false }) {
     const tierStyle = TIER_STYLES[option.tier] || TIER_STYLES.balanced
     const isNew = isNewModel(option.releasedAt)
     const priceTier = pricingTier(option.pricing)
@@ -48,9 +48,11 @@ export function ModelRow({ option, selected, highlighted, onPick, dataIdx }) {
                         <span aria-hidden="true" className="text-indigo-500" title="Recommended">★</span>
                     )}
                     <span className="font-medium text-sm text-slate-900 dark:text-slate-100">{option.label}</span>
-                    <span className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide rounded-full ring-1 ring-inset ${tierStyle}`}>
-                        {TIER_LABELS[option.tier] || option.tier}
-                    </span>
+                    {!hideTierBadge && (
+                        <span className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide rounded-full ring-1 ring-inset ${tierStyle}`}>
+                            {TIER_LABELS[option.tier] || option.tier}
+                        </span>
+                    )}
                     {option.context && (
                         <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 ring-1 ring-inset ring-slate-200/60 dark:ring-slate-700">
                             {option.context}
