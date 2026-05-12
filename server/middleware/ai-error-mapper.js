@@ -68,8 +68,42 @@ export function mapAIErrorToResponse(res, e) {
 		})
 	}
 
-	// INVALID_RESPONSE / NOT_FOUND / UNKNOWN fall through to caller's generic
-	// handler. Returning null preserves the previous behaviour where
-	// work-board-actions used `safeError(e, fallback)` for those codes.
+	if (e.code === AI_ERROR_CODE.NOT_FOUND) {
+		return res.status(404).json({
+			error: 'AI model or resource not found. Check the model name in Settings → AI.',
+			code: 'ai_model_not_found',
+		})
+	}
+
+	if (e.code === AI_ERROR_CODE.INVALID_RESPONSE) {
+		return res.status(502).json({
+			error: 'AI provider returned an invalid response.',
+			code: 'ai_invalid_response',
+		})
+	}
+
+	if (e.code === AI_ERROR_CODE.CANCELED) {
+		// Client aborted (page navigated away, cancel button). 499 is the
+		// nginx-style "client closed request" status — pick 499 so caches
+		// and proxies don't treat it as a real server failure.
+		return res.status(499).json({
+			error: 'Request was cancelled before the AI provider responded.',
+			code: 'ai_canceled',
+		})
+	}
+
+	// UNKNOWN — still an AIError, but the provider gave us no usable code.
+	// Emit a coded 502 so the client can map it to a friendly retry CTA
+	// instead of falling into the generic "Something went wrong" bucket.
+	if (e.code === AI_ERROR_CODE.UNKNOWN) {
+		return res.status(502).json({
+			error: 'AI provider returned an unexpected error.',
+			code: 'ai_provider_error',
+		})
+	}
+
+	// Truly unknown shape (no AI_ERROR_CODE match) — let the caller's
+	// generic 500 path handle it with its own `code: 'ai_summary_failed'`
+	// or equivalent so the cliente continua a saber categorizar o erro.
 	return null
 }

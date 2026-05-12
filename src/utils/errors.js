@@ -238,6 +238,11 @@ const KNOWN_ERRORS = {
         body: 'On the free plan, branch protection rules are only available on public repositories. Upgrade to GitHub Pro, or make this repo public, to enable protection.',
         action: { label: 'Upgrade', kind: 'open-pricing', type: 'upgrade' },
     },
+    AI_SUMMARY_FAILED: {
+        title: 'AI summary unavailable',
+        body: 'The summary could not be generated. Try again — if it keeps failing, check your AI provider in Settings → AI.',
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
+    },
 }
 
 const FALLBACK = {
@@ -272,6 +277,9 @@ const CODE_ALIASES = {
     ai_provider_error: 'AI_PROVIDER_ERROR',
     ai_request_failed: 'AI_REQUEST_FAILED',
     ai_disabled: 'AI_DISABLED',
+    ai_model_not_found: 'MODEL_NOT_FOUND',
+    ai_canceled: 'AI_REQUEST_FAILED',
+    ai_summary_failed: 'AI_SUMMARY_FAILED',
 }
 
 function pickRetryAfterSec(err) {
@@ -292,6 +300,37 @@ function pickRawMessage(err) {
 
 function pickStatus(err) {
     return err?.status ?? err?.response?.status ?? null
+}
+
+// formatUserError is invoked on every render of <AIErrorState>, so warning
+// once per call would flood the console (we observed 15+ identical entries
+// for one transient 500). Dedupe by a stable identity derived from the
+// error envelope so the operator still sees one entry per *distinct* failure.
+//   - WeakSet on the error object: catches the common case where the same
+//     ApiError instance is re-rendered.
+//   - Signature LRU: catches the case where a fresh ApiError is constructed
+//     on each retry but represents the same underlying state.
+const __warnedErrors = typeof WeakSet === 'function' ? new WeakSet() : null
+const __warnedSignatures = new Set()
+const __WARNED_SIGNATURES_MAX = 64
+
+function warnUnmappedOnce(err) {
+    if (!import.meta.env?.DEV) return
+    if (typeof err === 'object' && err !== null) {
+        if (__warnedErrors && __warnedErrors.has(err)) return
+        if (__warnedErrors) __warnedErrors.add(err)
+    }
+    const sig = `${err?.name || ''}|${err?.status || ''}|${err?.data?.code || ''}|${(err?.message || '').slice(0, 80)}`
+    if (__warnedSignatures.has(sig)) return
+    __warnedSignatures.add(sig)
+    if (__warnedSignatures.size > __WARNED_SIGNATURES_MAX) {
+        // Cheap LRU eviction: drop the oldest entry. Iterator order is
+        // insertion order on a Set.
+        const first = __warnedSignatures.values().next().value
+        __warnedSignatures.delete(first)
+    }
+     
+    console.warn('[formatUserError] unmapped error:', err)
 }
 
 export function formatUserError(err, ctx = {}) {
@@ -341,10 +380,7 @@ export function formatUserError(err, ctx = {}) {
         return { ...base, code: 'RATE_LIMITED', raw: null }
     }
 
-    if (import.meta.env?.DEV) {
-
-        console.warn('[formatUserError] unmapped error:', err)
-    }
+    warnUnmappedOnce(err)
     return {
         ...FALLBACK,
         title: ctx.fallbackTitle || FALLBACK.title,

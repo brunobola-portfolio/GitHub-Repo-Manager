@@ -384,6 +384,17 @@ describe('POST /api/v1/work-board/ai-summary', () => {
         expect(res.status).toBe(500);
     });
 
+    it('attaches code=ai_summary_failed on unmapped 500 so the client can render a friendly state', async () => {
+        // The client KNOWN_ERRORS table keys off this exact code — see
+        // src/utils/errors.js. Regression test for the cascade of
+        // "[formatUserError] unmapped error" warnings the UI used to log
+        // when the server emitted a 500 without a machine-readable code.
+        summaryLib.generateSummary.mockRejectedValueOnce(new TypeError('unexpected provider shape'));
+        const res = await request(makeApp()).post('/api/v1/work-board/ai-summary').send({});
+        expect(res.status).toBe(500);
+        expect(res.body.code).toBe('ai_summary_failed');
+    });
+
     it('returns 429 ai_quota_exceeded for AIError code QUOTA (no raw provider dump)', async () => {
         const aiErr = Object.assign(new Error('Google rate-limit error: …long RPC dump…'), {
             name: 'AIError',

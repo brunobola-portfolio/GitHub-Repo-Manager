@@ -17,6 +17,7 @@ import { mapAIErrorToResponse } from '../middleware/ai-error-mapper.js';
 import * as aggregations from '../lib/event-aggregations.js';
 import db from '../db.js';
 import { getSnapshots } from '../lib/work-board-kpi-snapshots.js';
+import logger from '../lib/logger.js';
 
 const router = express.Router();
 
@@ -227,33 +228,45 @@ const AI_SUMMARY_COOLDOWN_MS = 5 * 60 * 1000;
 const AI_SUMMARY_CACHE_TTL_SEC = 300;
 
 function loadDataSources(userId, userLogin) {
-    const pluck = (type, fallbackFn) => {
-        const row = getCacheRow(userId, type);
+    // Each pluck wraps BOTH the cache read AND the live aggregation in
+    // try/catch — a DB hiccup on either side must never crash the route.
+    // Cache miss + live failure both degrade to an empty payload so the
+    // AI summary still renders something useful instead of 500ing.
+    const pluck = (type, fallbackFn, emptyPayload = []) => {
+        let row = null;
+        try { row = getCacheRow(userId, type); } catch (e) {
+            logger.warn({ err: e, userId, cacheType: type }, '[ai-summary] cache read failed');
+        }
         if (row?.isFresh) return row.payload;
-        try { return fallbackFn(); } catch { return []; }
+        try { return fallbackFn(); } catch (e) {
+            logger.warn({ err: e, userId, cacheType: type }, '[ai-summary] live aggregation failed');
+            return emptyPayload;
+        }
     };
+    // Without a userLogin the GitHub-keyed aggregations return nothing
+    // meaningful and listMyOpenIssues runs an unbounded scan. Short-circuit
+    // to an empty payload — the AI fact sheet will still render.
+    const hasLogin = typeof userLogin === 'string' && userLogin.length > 0;
     return {
-        reviews:  pluck('my_reviews', () => aggregations.listMyPendingReviews({ reviewerLogin: userLogin, limit: 20 })),
+        reviews:  hasLogin ? pluck('my_reviews', () => aggregations.listMyPendingReviews({ reviewerLogin: userLogin, limit: 20 })) : [],
         stalePRs: pluck('stale_prs',  () => aggregations.listStalePRs({ staleAfterDays: 7, limit: 20 })),
-        issues:   pluck('my_issues',  () => aggregations.listMyOpenIssues({ assigneeLogin: userLogin, limit: 20 })),
-        techDebt: (() => {
-            const row = getCacheRow(userId, 'tech_debt');
-            if (row?.isFresh) return row.payload;
-            try {
-                const items = aggregations.listTechDebtIssues({ limit: 20 });
-                const hotspots = aggregations.techDebtHotspots({});
-                return { items, hotspots };
-            } catch {
-                return { items: [], hotspots: [] };
-            }
-        })(),
+        issues:   hasLogin ? pluck('my_issues',  () => aggregations.listMyOpenIssues({ assigneeLogin: userLogin, limit: 20 })) : [],
+        techDebt: pluck('tech_debt', () => ({
+            items: aggregations.listTechDebtIssues({ limit: 20 }),
+            hotspots: aggregations.techDebtHotspots({}),
+        }), { items: [], hotspots: [] }),
     };
 }
 
 router.post('/ai-summary', requireAuth, async (req, res) => {
     const userId = req.session.userId;
     try {
-        const cached = getCacheRow(userId, 'ai_summary');
+        // Cache + cooldown are read defensively — a corrupt cache row should
+        // never block the user from generating a fresh summary.
+        let cached = null;
+        try { cached = getCacheRow(userId, 'ai_summary'); } catch (e) {
+            logger.warn({ err: e, userId }, '[ai-summary] cache read failed');
+        }
         const last = aiSummaryLastCall.get(userId) || 0;
         const now = Date.now();
         if (cached?.isFresh && (now - last) < AI_SUMMARY_COOLDOWN_MS) {
@@ -262,25 +275,44 @@ router.post('/ai-summary', requireAuth, async (req, res) => {
 
         const dataSources = loadDataSources(userId, req.session.userLogin);
         let trend7d = [];
-        try { trend7d = getSnapshots(db, userId, 7); } catch { /* degrade cleanly */ }
+        try { trend7d = getSnapshots(db, userId, 7); } catch (e) {
+            logger.warn({ err: e, userId }, '[ai-summary] kpi snapshot read failed');
+        }
         const summary = await generateSummary({ userId, dataSources: { ...dataSources, trend7d } });
-        putCacheRow(userId, 'ai_summary', summary, null, AI_SUMMARY_CACHE_TTL_SEC);
+        try { putCacheRow(userId, 'ai_summary', summary, null, AI_SUMMARY_CACHE_TTL_SEC); } catch (e) {
+            logger.warn({ err: e, userId }, '[ai-summary] cache write failed');
+        }
         aiSummaryLastCall.set(userId, now);
         res.json({ data: summary, meta: { cached: false, generatedAt: new Date() } });
     } catch (e) {
-        if (e.code === 'ai_not_configured') {
+        // Coded provider errors → friendly mapped responses. Order matters:
+        // check makeAIError shapes first (no `name`), then AIError instances,
+        // then unmapped exceptions fall through to a coded 500.
+        if (e?.code === 'ai_not_configured') {
             return errorResponse(res, 404, 'AI is not configured for this user', 'ai_not_configured');
         }
-        if (e.code === 'ai_invalid_response') {
+        if (e?.code === 'ai_invalid_response') {
             return errorResponse(res, 502, 'AI provider returned an invalid response', 'ai_invalid_response');
         }
-        // Translate AIError codes to clean client-facing messages so we never leak
-        // raw provider RPC dumps (e.g. Google Gemini's full quota error JSON) to
-        // the UI. mapAIErrorToResponse returns the response when it handled the
-        // error; null means the caller should fall through to a generic 500.
+        // Translate AIError codes (rate-limit, quota, overload, auth, network…)
+        // to clean client-facing messages so we never leak raw provider RPC
+        // dumps (e.g. Google Gemini's full quota error JSON) to the UI.
+        // mapAIErrorToResponse returns the response when it handled the
+        // error; null means the caller should fall through.
         const mapped = mapAIErrorToResponse(res, e);
         if (mapped) return mapped;
-        errorResponse(res, 500, safeError(e, 'Failed to generate AI summary'));
+        // Unknown failure path — log the full error with context so the
+        // operator can diagnose it from the server logs (production
+        // suppresses the message in the HTTP response, but the structured
+        // log here keeps the stack trace traceable).
+        logger.error({
+            err: e,
+            userId,
+            errName: e?.name || null,
+            errCode: e?.code || null,
+            errStatus: e?.status || null,
+        }, '[ai-summary] unmapped failure');
+        errorResponse(res, 500, safeError(e, 'Failed to generate AI summary'), 'ai_summary_failed');
     }
 });
 
