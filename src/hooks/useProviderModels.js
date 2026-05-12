@@ -45,8 +45,8 @@ async function fetchOpenRouterModels() {
                     if (supportedParams.includes('reasoning') || /reasoning|thinking|o1|o3|o4/i.test(m.id || '')) capabilities.push('reasoning')
 
                     // OpenRouter prices are USD per token as strings; convert to per-million dollars.
-                    const promptPrice = m?.pricing?.prompt ? Number(m.pricing.prompt) * 1_000_000 : undefined
-                    const completionPrice = m?.pricing?.completion ? Number(m.pricing.completion) * 1_000_000 : undefined
+                    const promptPrice = m?.pricing?.prompt != null ? Number(m.pricing.prompt) * 1_000_000 : undefined
+                    const completionPrice = m?.pricing?.completion != null ? Number(m.pricing.completion) * 1_000_000 : undefined
                     const pricing = (promptPrice !== undefined && completionPrice !== undefined)
                         ? { input: promptPrice, output: completionPrice, currency: 'USD', per: '1M tokens' }
                         : undefined
@@ -63,7 +63,7 @@ async function fetchOpenRouterModels() {
                         legacy: false,
                     }
                 })
-                // Sort: balanced/smart/reasoning first, then alphabetical by label
+                // Sort alphabetically by label so the list is predictable and scannable.
                 .sort((a, b) => a.label.localeCompare(b.label))
             // Mark a single recommended pick — Claude Sonnet 4.6 via OR is the
             // strongest balanced default at the time of writing. Falls back to
