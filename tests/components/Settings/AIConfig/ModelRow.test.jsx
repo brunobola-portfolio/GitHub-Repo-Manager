@@ -82,4 +82,14 @@ describe('ModelRow', () => {
         // Tier badge text reflects the legacy label.
         expect(screen.getByText('Legacy')).toBeInTheDocument()
     })
+
+    it('renders premium pricing without decimals for values >= $100', () => {
+        const premiumOpt = {
+            ...BASE_OPTION,
+            pricing: { input: 30, output: 180, currency: 'USD', per: '1M tokens' },
+        }
+        render(<ModelRow option={premiumOpt} selected={false} highlighted={false} onPick={noopHandlers} />)
+        expect(screen.getByText('$180 out')).toBeInTheDocument()
+        expect(screen.getByText('$30.00 in')).toBeInTheDocument()
+    })
 })

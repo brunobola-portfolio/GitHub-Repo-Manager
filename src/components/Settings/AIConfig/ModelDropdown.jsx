@@ -44,7 +44,7 @@ export function ModelDropdown({
             id={listboxId}
             role="listbox"
             ref={listRef}
-            className="absolute z-20 mt-1 left-0 right-0 max-h-96 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-slate-900/10 ds-scrollbar"
+            className="absolute z-[var(--ds-z-floating)] mt-1 left-0 right-0 max-h-96 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-slate-900/10 ds-scrollbar"
         >
             <TierFilterChips
                 availableTiers={availableTiers}
