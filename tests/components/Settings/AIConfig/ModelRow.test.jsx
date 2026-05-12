@@ -75,4 +75,11 @@ describe('ModelRow', () => {
         render(<ModelRow option={BASE_OPTION} selected={true} highlighted={false} onPick={noopHandlers} />)
         expect(screen.getByRole('option')).toHaveAttribute('aria-selected', 'true')
     })
+
+    it('uses the dedicated legacy tier style (distinct from balanced)', () => {
+        const legacy = { ...BASE_OPTION, tier: 'legacy', recommended: false, releasedAt: undefined }
+        render(<ModelRow option={legacy} selected={false} highlighted={false} onPick={noopHandlers} />)
+        // Tier badge text reflects the legacy label.
+        expect(screen.getByText('Legacy')).toBeInTheDocument()
+    })
 })

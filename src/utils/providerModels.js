@@ -349,6 +349,7 @@ export const TIER_STYLES = {
     smart: 'bg-purple-50 text-purple-700 ring-purple-200 dark:bg-purple-900/40 dark:text-purple-200 dark:ring-purple-800',
     reasoning: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800',
     open: 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700',
+    legacy: 'bg-slate-50 text-slate-500 ring-slate-200 dark:bg-slate-900 dark:text-slate-500 dark:ring-slate-800',
 }
 
 export function getCompletionModels(provider) {

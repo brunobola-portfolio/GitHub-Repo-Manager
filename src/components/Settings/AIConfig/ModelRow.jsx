@@ -12,7 +12,6 @@ const ICON_BY_NAME = { Image, Wrench, Braces, Brain }
 function formatDollars(n) {
     if (typeof n !== 'number') return ''
     if (n >= 100) return `$${n.toFixed(0)}`
-    if (n >= 10) return `$${n.toFixed(2)}`
     return `$${n.toFixed(2)}`
 }
 
@@ -46,7 +45,7 @@ export function ModelRow({ option, selected, highlighted, onPick, dataIdx }) {
                 {/* Line 1: name + badges */}
                 <div className="flex items-center gap-2 flex-wrap">
                     {option.recommended && (
-                        <span aria-label="Recommended" className="text-indigo-500" title="Recommended">★</span>
+                        <span aria-hidden="true" className="text-indigo-500" title="Recommended">★</span>
                     )}
                     <span className="font-medium text-sm text-slate-900 dark:text-slate-100">{option.label}</span>
                     <span className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide rounded-full ring-1 ring-inset ${tierStyle}`}>
