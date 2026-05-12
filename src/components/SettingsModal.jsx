@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles, Kanban, Wand2 } from 'lucide-react'
+import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles, Kanban, Wand2, Palette } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
 import { useToast } from '../hooks/useToast'
 import { API_BASE_URL } from '../config'
@@ -190,141 +190,118 @@ function GeneralTabContent({
     migrationSettings, setMigrationSettings,
     clearing, cacheMessage, onClearCache,
 }) {
+    // Premium two-column layout: Appearance spans full width because the three
+    // theme tiles benefit from the breathing room; the dense config cards
+    // (cache + migration) pack side-by-side on md+ so the General tab fits
+    // above the fold without scrolling. Danger Zone stays full-width because
+    // its CTAs and copy deserve the prominence.
     return (
-        <div className="space-y-4">
-            {/* Appearance */}
+        <div className="space-y-3">
             <InsightCard tone="default" hover={false}>
-                <div className="space-y-3">
-                    {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- visual grouping label, not a form input label */}
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Appearance
-                    </label>
-                    <div className="grid grid-cols-3 gap-3">
-                        <ThemeOption value="light" icon={Sun} label="Light" currentTheme={theme} setTheme={setTheme} />
-                        <ThemeOption value="dark" icon={Moon} label="Dark" currentTheme={theme} setTheme={setTheme} />
-                        <ThemeOption value="system" icon={Monitor} label="System" currentTheme={theme} setTheme={setTheme} />
-                    </div>
+                <SectionHeader icon={Palette} iconClassName="text-indigo-500" label="Appearance" />
+                <div className="grid grid-cols-3 gap-2.5 mt-3">
+                    <ThemeOption value="light" icon={Sun} label="Light" currentTheme={theme} setTheme={setTheme} />
+                    <ThemeOption value="dark" icon={Moon} label="Dark" currentTheme={theme} setTheme={setTheme} />
+                    <ThemeOption value="system" icon={Monitor} label="System" currentTheme={theme} setTheme={setTheme} />
                 </div>
             </InsightCard>
 
-            {/* Performance Cache */}
-            <InsightCard tone="default" hover={false}>
-                <div className="space-y-3">
-                    {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- visual grouping label, not a form input label */}
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                        <Zap size={16} className="text-amber-500" />
-                        Performance Cache
-                    </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Performance Cache */}
+                <InsightCard tone="default" hover={false} className="flex flex-col">
+                    <SectionHeader icon={Zap} iconClassName="text-amber-500" label="Performance Cache" />
+                    <div className="mt-3 space-y-2.5 flex-1">
+                        <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                            <span className="text-sm text-slate-600 dark:text-slate-400">Enable stats caching</span>
+                            <button
+                                role="switch"
+                                aria-checked={cacheSettings.enabled}
+                                aria-label="Enable stats caching"
+                                onClick={() => setCacheSettings({ ...cacheSettings, enabled: !cacheSettings.enabled })}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${cacheSettings.enabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
+                            >
+                                <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${cacheSettings.enabled ? 'translate-x-6' : 'translate-x-1'}`}
+                                />
+                            </button>
+                        </div>
 
-                    {/* Enable/Disable Toggle */}
-                    <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">Enable stats caching</span>
-                        <button
-                            role="switch"
-                            aria-checked={cacheSettings.enabled}
-                            aria-label="Enable stats caching"
-                            onClick={() => setCacheSettings({ ...cacheSettings, enabled: !cacheSettings.enabled })}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${cacheSettings.enabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
-                        >
-                            <span
-                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${cacheSettings.enabled ? 'translate-x-6' : 'translate-x-1'}`}
-                            />
-                        </button>
+                        {cacheSettings.enabled && (
+                            <div className="space-y-1.5 px-0.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-slate-600 dark:text-slate-400">Cache duration</span>
+                                    <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 tabular-nums">{cacheSettings.ttl} min</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="1"
+                                    max="60"
+                                    value={cacheSettings.ttl}
+                                    onChange={(e) => setCacheSettings({ ...cacheSettings, ttl: parseInt(e.target.value) })}
+                                    aria-label="Cache duration in minutes"
+                                    className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                />
+                                <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                                    <span>1 min</span>
+                                    <span>60 min</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* TTL Slider */}
-                    {cacheSettings.enabled && (
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-slate-600 dark:text-slate-400">Cache duration</span>
-                                <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">{cacheSettings.ttl} min</span>
+                    <div className="mt-2.5 space-y-1.5">
+                        <Button variant="soft-danger" size="sm" onClick={onClearCache} disabled={clearing} className="w-full">
+                            <Trash2 size={14} />
+                            {clearing ? 'Clearing…' : 'Clear cache now'}
+                        </Button>
+                        {cacheMessage ? (
+                            <p role="status" className={`text-[11px] font-medium ${cacheMessage.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                {cacheMessage.text}
+                            </p>
+                        ) : (
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                Cached stats improve loading times. Clear if you see stale data.
+                            </p>
+                        )}
+                    </div>
+                </InsightCard>
+
+                {/* Migration */}
+                <InsightCard tone="default" hover={false} className="flex flex-col">
+                    <SectionHeader icon={GitBranch} iconClassName="text-indigo-500" label="Migration" />
+                    <div className="mt-3 space-y-2.5">
+                        <div className="flex items-center justify-between gap-3 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                            <span className="text-sm text-slate-600 dark:text-slate-400 min-w-0">Default visibility for imports</span>
+                            <div className="flex gap-1 p-0.5 bg-slate-200 dark:bg-slate-700 rounded-lg flex-shrink-0">
+                                <VisibilityToggleButton
+                                    active={migrationSettings.defaultVisibility === 'public'}
+                                    onClick={() => setMigrationSettings({ ...migrationSettings, defaultVisibility: 'public' })}
+                                >Public</VisibilityToggleButton>
+                                <VisibilityToggleButton
+                                    active={migrationSettings.defaultVisibility === 'private'}
+                                    onClick={() => setMigrationSettings({ ...migrationSettings, defaultVisibility: 'private' })}
+                                >Private</VisibilityToggleButton>
                             </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                            <span className="text-sm text-slate-600 dark:text-slate-400 min-w-0">Max retries for failed tasks</span>
                             <input
-                                type="range"
+                                type="number"
                                 min="1"
-                                max="60"
-                                value={cacheSettings.ttl}
-                                onChange={(e) => setCacheSettings({ ...cacheSettings, ttl: parseInt(e.target.value) })}
-                                aria-label="Cache duration in minutes"
-                                className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                max="5"
+                                value={migrationSettings.maxRetries}
+                                onChange={(e) => {
+                                    const val = Math.min(5, Math.max(1, parseInt(e.target.value) || 1))
+                                    setMigrationSettings({ ...migrationSettings, maxRetries: val })
+                                }}
+                                aria-label="Max retries for failed tasks"
+                                className="w-16 px-2 py-1 text-sm text-center border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500 flex-shrink-0 tabular-nums"
                             />
-                            <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                                <span>1 min</span>
-                                <span>60 min</span>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Clear Cache Button */}
-                    <Button variant="soft-danger" onClick={onClearCache} disabled={clearing} className="w-full">
-                        <Trash2 size={16} />
-                        {clearing ? 'Clearing...' : 'Clear Cache Now'}
-                    </Button>
-                    {cacheMessage && (
-                        <p role="status" className={`text-xs font-medium ${cacheMessage.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                            {cacheMessage.text}
-                        </p>
-                    )}
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Cached stats improve loading times. Clear if you see stale data.
-                    </p>
-                </div>
-            </InsightCard>
-
-            {/* Migration Settings */}
-            <InsightCard tone="default" hover={false}>
-                <div className="space-y-3">
-                    {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- visual grouping label, not a form input label */}
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                        <GitBranch size={16} className="text-indigo-500" />
-                        Migration
-                    </label>
-
-                    {/* Default Visibility */}
-                    <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">Default visibility for imports</span>
-                        <div className="flex gap-1 p-0.5 bg-slate-200 dark:bg-slate-700 rounded-lg">
-                            <button
-                                onClick={() => setMigrationSettings({ ...migrationSettings, defaultVisibility: 'public' })}
-                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                                    migrationSettings.defaultVisibility === 'public'
-                                        ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                                        : 'text-slate-500 dark:text-slate-400'
-                                }`}
-                            >
-                                Public
-                            </button>
-                            <button
-                                onClick={() => setMigrationSettings({ ...migrationSettings, defaultVisibility: 'private' })}
-                                className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                                    migrationSettings.defaultVisibility === 'private'
-                                        ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                                        : 'text-slate-500 dark:text-slate-400'
-                                }`}
-                            >
-                                Private
-                            </button>
                         </div>
                     </div>
-
-                    {/* Retry Policy */}
-                    <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">Max retries for failed tasks</span>
-                        <input
-                            type="number"
-                            min="1"
-                            max="5"
-                            value={migrationSettings.maxRetries}
-                            onChange={(e) => {
-                                const val = Math.min(5, Math.max(1, parseInt(e.target.value) || 1))
-                                setMigrationSettings({ ...migrationSettings, maxRetries: val })
-                            }}
-                            aria-label="Max retries for failed tasks"
-                            className="w-16 px-2 py-1 text-sm text-center border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                        />
-                    </div>
-                </div>
-            </InsightCard>
+                </InsightCard>
+            </div>
 
             {/* Danger Zone — GDPR Art. 17 + 20 self-service */}
             <DangerZoneSection />
@@ -332,17 +309,47 @@ function GeneralTabContent({
     )
 }
 
+// Consistent section header used inside General tab cards. Keeps icon size /
+// label weight aligned across cards so the eye doesn't have to re-anchor.
+function SectionHeader({ icon: Icon, iconClassName = '', label }) {
+    return (
+        <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+            {Icon && <Icon size={15} className={iconClassName} />}
+            <span>{label}</span>
+        </div>
+    )
+}
+
+function VisibilityToggleButton({ active, onClick, children }) {
+    return (
+        <button
+            onClick={onClick}
+            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                active
+                    ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400'
+            }`}
+        >
+            {children}
+        </button>
+    )
+}
+
 // ---- Theme Option Button ----
 
-const ThemeOption = ({ value, icon: IconComp, label, currentTheme, setTheme }) => (
-    <button
-        onClick={() => setTheme(value)}
-        className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${currentTheme === value
-            ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-600 dark:text-indigo-400'
-            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-200'
-            }`}
-    >
-        <IconComp size={20} />
-        <span className="text-sm font-medium">{label}</span>
-    </button>
-)
+const ThemeOption = ({ value, icon: IconComp, label, currentTheme, setTheme }) => {
+    const active = currentTheme === value
+    return (
+        <button
+            onClick={() => setTheme(value)}
+            aria-pressed={active}
+            className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border transition-all ${active
+                ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/20'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+        >
+            <IconComp size={18} />
+            <span className="text-xs font-medium">{label}</span>
+        </button>
+    )
+}
