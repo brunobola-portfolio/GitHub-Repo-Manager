@@ -9,6 +9,8 @@ export function ModelSectionHeader({ tier, isFirst }) {
     return (
         <div
             role="presentation"
+            data-testid="model-section-header"
+            data-tier={tier}
             className={`px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 ${
                 isFirst ? '' : 'border-t border-slate-100 dark:border-slate-800'
             }`}

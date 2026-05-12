@@ -28,9 +28,9 @@ function baseProps(overrides = {}) {
 describe('ModelDropdown', () => {
     it('renders one section header per non-empty tier in TIER_ORDER', () => {
         render(<ModelDropdown {...baseProps()} />)
-        expect(screen.getByText('Fast')).toBeInTheDocument()
-        expect(screen.getByText('Balanced')).toBeInTheDocument()
-        expect(screen.getByText('Smart')).toBeInTheDocument()
+        const headers = screen.getAllByTestId('model-section-header')
+        const tiers = headers.map((h) => h.getAttribute('data-tier'))
+        expect(tiers).toEqual(['fast', 'balanced', 'smart'])
         expect(screen.queryByText(/Legacy A/)).toBeNull()
     })
 
@@ -54,7 +54,10 @@ describe('ModelDropdown', () => {
     })
 
     it('shows an empty state with a clear-filter affordance when no items match the chip', () => {
-        render(<ModelDropdown {...baseProps({ options: [OPTS[0]] })} />)
+        // Render with only a "smart" model + a query that matches nothing.
+        // availableTiers still includes "smart" (computed pre-query), so the chip renders.
+        // Clicking it sets activeTier="smart"; sections remain empty → empty-state message.
+        render(<ModelDropdown {...baseProps({ options: [OPTS[2]], query: 'zzz-no-match' })} />)
         fireEvent.click(screen.getByRole('button', { name: /^smart$/i }))
         expect(screen.getByText(/no models in this tier/i)).toBeInTheDocument()
     })

@@ -4,11 +4,6 @@ import { ModelRow } from './ModelRow'
 import { ModelSectionHeader } from './ModelSectionHeader'
 import { TierFilterChips } from './TierFilterChips'
 import { useFilteredModels } from '../../../hooks/useFilteredModels'
-import { TIER_ORDER } from '../../../utils/providerModels'
-
-// All non-legacy tiers — the chip bar always shows every tier so users can
-// filter by tier even if the current option set has no models in it.
-const ALL_FILTER_TIERS = TIER_ORDER.filter((t) => t !== 'legacy')
 
 /**
  * The full open dropdown panel for the model picker. Owns:
@@ -34,7 +29,7 @@ export function ModelDropdown({
     const [activeTier, setActiveTier] = useState(null)
     const [showLegacy, setShowLegacy] = useState(false)
 
-    const { sections, itemsInOrder, totalCount } = useFilteredModels(
+    const { sections, itemsInOrder, totalCount, availableTiers } = useFilteredModels(
         options,
         { query, tier: activeTier, showLegacy },
     )
@@ -52,7 +47,7 @@ export function ModelDropdown({
             className="absolute z-20 mt-1 left-0 right-0 max-h-96 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-slate-900/10 ds-scrollbar"
         >
             <TierFilterChips
-                availableTiers={ALL_FILTER_TIERS}
+                availableTiers={availableTiers}
                 activeTier={activeTier}
                 onChange={setActiveTier}
                 totalCount={totalCount}

@@ -20,6 +20,11 @@ function formatDollars(n) {
  *
  * Left column: name + tier/context/recommended/NEW pills, description, id + capability icons.
  * Right column: two-line pricing block, colour-coded by output-price tier.
+ *
+ * Props:
+ *   hideTierBadge - When true, the tier badge is omitted. Used inside ModelDropdown
+ *                   because the surrounding ModelSectionHeader already labels the tier,
+ *                   making a per-row badge visually redundant.
  */
 export function ModelRow({ option, selected, highlighted, onPick, dataIdx, hideTierBadge = false }) {
     const tierStyle = TIER_STYLES[option.tier] || TIER_STYLES.balanced
