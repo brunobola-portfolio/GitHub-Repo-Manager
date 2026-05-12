@@ -85,6 +85,6 @@ export function pricingTier(pricing) {
 
 export const PRICING_TIER_CLS = {
     cheap: 'text-emerald-600 dark:text-emerald-300',
-    mid: 'text-slate-700 dark:text-slate-200',
+    mid: 'text-slate-600 dark:text-slate-300',
     premium: 'text-rose-500 dark:text-rose-300',
 }
