@@ -68,3 +68,23 @@ export function formatPricing(pricing) {
     }
     return `${fmt(pricing.input)} per ${pricing.per}`
 }
+
+/**
+ * Classify a pricing entry by output price per million tokens.
+ * Used to colour-code the pricing block in the model picker.
+ *
+ * @param {{ output?: number }|null|undefined} pricing
+ * @returns {'cheap'|'mid'|'premium'|null}
+ */
+export function pricingTier(pricing) {
+    if (!pricing || typeof pricing.output !== 'number') return null
+    if (pricing.output <= 5) return 'cheap'
+    if (pricing.output <= 30) return 'mid'
+    return 'premium'
+}
+
+export const PRICING_TIER_CLS = {
+    cheap: 'text-emerald-600 dark:text-emerald-300',
+    mid: 'text-slate-700 dark:text-slate-200',
+    premium: 'text-rose-500 dark:text-rose-300',
+}
