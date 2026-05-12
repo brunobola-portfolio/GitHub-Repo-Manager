@@ -3,10 +3,23 @@
  * Seed Live Inbox demo data for the dev-user (mock auth user).
  * Run while the dev server is up — SQLite WAL mode handles concurrent writes.
  *
- * Usage: node scripts/seed-inbox-demo.mjs
+ * Usage:
+ *   SEED_DEMO=1 node scripts/seed-inbox-demo.mjs
+ *
+ * Safety guards (refuses to run unless overridden):
+ *   - NODE_ENV=production                  → always refuses
+ *   - real users in DB and SEED_DEMO unset → refuses (avoids the vaporware
+ *     leak we hit on 2026-05-12, where a logged-in real user saw fake PRs
+ *     like bolalabs/legacy#12 because the seed had been run against a live
+ *     SQLite file). Force with SEED_DEMO_FORCE=1 if you really mean it.
  */
 import Database from 'better-sqlite3';
 import { resolve } from 'node:path';
+
+if (process.env.NODE_ENV === 'production') {
+    console.error('[seed] refusing to run in NODE_ENV=production. Aborting.');
+    process.exit(1);
+}
 
 const DB_PATH = resolve('server/data/manager.db');
 const db = new Database(DB_PATH);
@@ -14,6 +27,21 @@ db.pragma('journal_mode = WAL');
 
 const LOGIN = 'dev-user';
 const USER_ID = 999999;
+
+// Guard — don't pollute a database that already has real users unless the
+// caller opts in explicitly. Mock-auth `dev-user` (id 999999) is filtered
+// out so seeding into a fresh dev DB stays one command.
+const realUserCount = (() => {
+    try {
+        const row = db.prepare('SELECT count(*) AS n FROM users WHERE id != ?').get(USER_ID);
+        return Number(row?.n) || 0;
+    } catch { return 0; }
+})();
+if (realUserCount > 0 && !process.env.SEED_DEMO_FORCE && !process.env.SEED_DEMO) {
+    console.error(`[seed] database has ${realUserCount} real user(s) — refusing to seed demo data.`);
+    console.error('       Set SEED_DEMO=1 to opt in, or SEED_DEMO_FORCE=1 to bypass all guards.');
+    process.exit(1);
+}
 
 function hoursAgo(n) { return new Date(Date.now() - n * 3600_000).toISOString(); }
 function daysAgo(n) { return new Date(Date.now() - n * 86_400_000).toISOString(); }
