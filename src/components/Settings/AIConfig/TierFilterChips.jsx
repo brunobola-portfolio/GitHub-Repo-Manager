@@ -18,7 +18,7 @@ export function TierFilterChips({ availableTiers, activeTier, onChange, totalCou
     const tiers = TIER_ORDER.filter((t) => t !== 'legacy' && availableTiers.includes(t))
 
     return (
-        <div className="sticky top-0 z-10 flex items-center gap-1.5 px-3 py-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-100 dark:border-slate-800">
+        <div className="sticky top-0 z-[var(--ds-z-surface)] flex items-center gap-1.5 px-3 py-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-100 dark:border-slate-800">
             <button
                 type="button"
                 aria-pressed={activeTier === null}

@@ -48,4 +48,16 @@ describe('TierFilterChips', () => {
         render(<TierFilterChips availableTiers={['fast']} activeTier={null} onChange={() => {}} totalCount={42} />)
         expect(screen.getByText(/42 models?/i)).toBeInTheDocument()
     })
+
+    it('excludes legacy tier from rendered chips', () => {
+        render(
+            <TierFilterChips
+                availableTiers={['fast', 'legacy']}
+                activeTier={null}
+                onChange={() => {}}
+                totalCount={5}
+            />,
+        )
+        expect(screen.queryByRole('button', { name: /legacy/i })).not.toBeInTheDocument()
+    })
 })
