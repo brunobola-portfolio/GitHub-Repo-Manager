@@ -30,6 +30,7 @@ describe('isNewModel', () => {
         expect(isNewModel(null)).toBe(false)
         expect(isNewModel('')).toBe(false)
         expect(isNewModel('not-a-date')).toBe(false)
+        expect(isNewModel('2026-12-31')).toBe(false) // future date
     })
 })
 

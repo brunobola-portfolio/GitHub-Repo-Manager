@@ -144,6 +144,7 @@ export const TIER_LABELS = {
     smart: 'Smart',
     reasoning: 'Reasoning',
     open: 'Open weights',
+    legacy: 'Legacy',
 }
 
 export const TIER_STYLES = {
@@ -174,6 +175,7 @@ export function isNewModel(releasedAt) {
     const t = Date.parse(releasedAt)
     if (Number.isNaN(t)) return false
     const ageMs = Date.now() - t
+    if (ageMs < 0) return false
     const dayMs = 24 * 60 * 60 * 1000
     return ageMs < 60 * dayMs
 }
