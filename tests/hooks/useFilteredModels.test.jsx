@@ -52,4 +52,21 @@ describe('useFilteredModels', () => {
         const { result } = renderHook(() => useFilteredModels(OPTIONS, { query: '', tier: null, showLegacy: false }))
         expect(result.current.availableTiers).toEqual(['fast', 'balanced', 'smart'])
     })
+
+    it('handles empty or missing options gracefully', () => {
+        const { result: withNull } = renderHook(() => useFilteredModels(null, { query: '', tier: null, showLegacy: false }))
+        expect(withNull.current.sections).toEqual([])
+        expect(withNull.current.totalCount).toBe(0)
+
+        const { result: withEmpty } = renderHook(() => useFilteredModels([], { query: '', tier: null, showLegacy: false }))
+        expect(withEmpty.current.sections).toEqual([])
+        expect(withEmpty.current.totalCount).toBe(0)
+    })
+
+    it('applies tier and query filters together with AND logic', () => {
+        // Query "fast" matches a-fast's id+label+description, but tier filter
+        // restricts to 'balanced' — intersection is empty.
+        const { result } = renderHook(() => useFilteredModels(OPTIONS, { query: 'fast', tier: 'balanced', showLegacy: false }))
+        expect(result.current.totalCount).toBe(0)
+    })
 })

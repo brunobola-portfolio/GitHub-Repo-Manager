@@ -33,11 +33,21 @@ export function useFilteredModels(options, { query, tier, showLegacy }) {
         }
         const filtered = visiblePool.filter((o) => (tier ? o.tier === tier : true)).filter(matchesQuery)
 
-        // 4. Group into sections in canonical order.
+        // 4. Group into sections in canonical order. Items with a tier value
+        //    not in TIER_ORDER are skipped — in DEV they log a warning so we
+        //    can spot bad data; in production they fail silently rather than
+        //    misclassify into a generic bucket.
         const buckets = new Map()
         for (const t of TIER_ORDER) buckets.set(t, [])
         for (const o of filtered) {
-            const bucket = buckets.get(o.tier) ?? buckets.get('balanced')
+            const bucket = buckets.get(o.tier)
+            if (!bucket) {
+                if (import.meta.env?.DEV) {
+                     
+                    console.warn(`useFilteredModels: unknown tier "${o.tier}" on model "${o.id}" — skipped`)
+                }
+                continue
+            }
             bucket.push(o)
         }
         const sections = []
@@ -53,7 +63,7 @@ export function useFilteredModels(options, { query, tier, showLegacy }) {
         return {
             sections,
             itemsInOrder,
-            totalCount: filtered.length,
+            totalCount: itemsInOrder.length,
             availableTiers,
         }
     }, [options, query, tier, showLegacy])
