@@ -161,3 +161,36 @@ export function getCompletionModels(provider) {
 export function getEmbeddingModels(provider) {
     return EMBEDDING_MODELS[provider] || []
 }
+
+/**
+ * Returns true if `releasedAt` (YYYY-MM-DD) is within the last 60 days.
+ * Used to badge recently-released models as NEW in the picker.
+ *
+ * @param {string|null|undefined} releasedAt
+ * @returns {boolean}
+ */
+export function isNewModel(releasedAt) {
+    if (!releasedAt || typeof releasedAt !== 'string') return false
+    const t = Date.parse(releasedAt)
+    if (Number.isNaN(t)) return false
+    const ageMs = Date.now() - t
+    const dayMs = 24 * 60 * 60 * 1000
+    return ageMs < 60 * dayMs
+}
+
+/**
+ * Maps a capability key to its display metadata.
+ * `iconName` is a lucide-react export name; the consumer resolves it.
+ */
+export const CAPABILITY_ICONS = {
+    vision: { label: 'Vision (image input)', iconName: 'Image' },
+    tools: { label: 'Tool / function calling', iconName: 'Wrench' },
+    json: { label: 'Structured JSON output', iconName: 'Braces' },
+    reasoning: { label: 'Reasoning / extended thinking', iconName: 'Brain' },
+}
+
+/**
+ * Render order for tier sections in the dropdown. `legacy` always last
+ * and is hidden behind a toggle.
+ */
+export const TIER_ORDER = ['fast', 'balanced', 'smart', 'reasoning', 'open', 'legacy']
