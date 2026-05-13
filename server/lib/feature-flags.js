@@ -23,9 +23,9 @@ const TIER_FEATURES = {
         // Per-feature Free-tier quotas
         readmeGenPerMonth: 5,
         commitGenPerMonth: 50,
-        repoInsightsPerMonth: 10,
+        repoInsightsPerMonth: 15,
         migrationRiskPerMonth: 5,
-        semanticSearchPerMonth: 50,
+        semanticSearchPerMonth: 75,
         migrationAssistPerMonth: 5,
 
         // Non-AI gating
