@@ -80,4 +80,21 @@ describe('AIQuotaMeter', () => {
         expect(fn).toHaveBeenCalledTimes(1)
         window.removeEventListener('app:navigate-pricing', fn)
     })
+
+    it('closes the popover when the user clicks outside', () => {
+        render(<AIQuotaMeter current={47} limit={200} tier="free" />)
+        fireEvent.click(screen.getByRole('button', { name: /ai quota/i }))
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+        fireEvent.mouseDown(document.body)
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    it('restores focus to the trigger after Escape closes the popover', () => {
+        render(<AIQuotaMeter current={47} limit={200} tier="free" />)
+        const trigger = screen.getByRole('button', { name: /ai quota/i })
+        fireEvent.click(trigger)
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+        fireEvent.keyDown(document, { key: 'Escape' })
+        expect(document.activeElement).toBe(trigger)
+    })
 })

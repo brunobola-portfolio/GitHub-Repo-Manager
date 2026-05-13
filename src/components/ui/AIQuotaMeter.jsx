@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Check, ArrowRight, ExternalLink } from 'lucide-react'
 import { navigateToPricing, openAppSettings } from '../../utils/appEvents'
@@ -72,14 +72,28 @@ function ProgressRing({ percent, tone }) {
  */
 export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', resetAt = null, className = '' }) {
     const [open, setOpen] = useState(false)
+    const containerRef = useRef(null)
+    const triggerRef = useRef(null)
 
     useEffect(() => {
         if (!open) return undefined
         const onKey = (e) => {
-            if (e.key === 'Escape') setOpen(false)
+            if (e.key === 'Escape') {
+                setOpen(false)
+                triggerRef.current?.focus()
+            }
+        }
+        const onMouseDown = (e) => {
+            if (containerRef.current && !containerRef.current.contains(e.target)) {
+                setOpen(false)
+            }
         }
         document.addEventListener('keydown', onKey)
-        return () => document.removeEventListener('keydown', onKey)
+        document.addEventListener('mousedown', onMouseDown)
+        return () => {
+            document.removeEventListener('keydown', onKey)
+            document.removeEventListener('mousedown', onMouseDown)
+        }
     }, [open])
 
     const unlimited = !Number.isFinite(limit)
@@ -92,8 +106,9 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
         : `AI quota: ${current} of ${limit} requests used${reset ? `. Resets ${reset}` : ''}. Click for details.`
 
     return (
-        <div className={`relative inline-block ${className}`}>
+        <div ref={containerRef} className={`relative inline-block ${className}`}>
             <button
+                ref={triggerRef}
                 type="button"
                 onClick={() => setOpen((v) => !v)}
                 aria-label={ariaLabel}
