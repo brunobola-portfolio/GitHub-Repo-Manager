@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.2.0] - 2026-05-13
+
+A premium polish cycle on top of v4.1.1. Three big surfaces — the AI model
+picker, the dashboard quota indicators, and the dashboard's Live Inbox — all
+move from "functional" to "feels right". Plus a settings redesign, unified
+modal primitives, and a security bump for mermaid. **3811 unit tests + the
+full e2e suite pass on `main`; lint, test, build, and e2e are all green on CI
+for the first time in days (the lockfile drift that had been breaking `npm ci`
+since 2026-05-11 is fixed).**
+
+### Added — Premium AI Configuration model picker
+
+- **Sectioned dropdown.** `ModelDropdown` replaces the flat list with
+  per-tier sections (`pro` / `mid` / `free` / `legacy`), each introduced by a
+  `ModelSectionHeader` divider. `useFilteredModels` is the new hook that
+  drives the partition; unknown tier items are skipped defensively.
+- **Sticky tier filter chips.** `TierFilterChips` at the top of the dropdown
+  stays visible while scrolling — filters the catalogue down to a single
+  tier in one click. `hideTierBadge` prop is documented for callers that
+  already show tier context elsewhere (so the chips don't double up).
+- **Per-model premium card.** `ModelRow` surfaces capability icons
+  (`vision`, `tools`, `reasoning`, `long-context`) and pricing pulled from
+  the OpenRouter catalogue where available. Legacy entries get a tier label
+  with muted styling; a NEW badge highlights recently released models
+  (guarded against future-dated entries).
+- **Live capability + pricing.** `providerModels.js` and `providerPricing.js`
+  map the OpenRouter live catalogue into the picker. `$0` is correctly
+  classified as priced (not "free"), and the legacy entry for Opus 4.1 is
+  preserved across catalogue refreshes.
+- **Premium colour-coding.** `pricingTier()` helper assigns five tiers
+  (`free` / `low` / `mid` / `premium` / `frontier`) with WCAG-AA contrast
+  in both light and dark mode. Aligned with the spec's mid shade
+  (`slate-600`/`slate-300`).
+- **Uses the `ds-z-floating` design-system token** — no raw z-index values.
+
+### Added — Premium AI quota indicators (dashboard)
+
+- **`<AIQuotaMeter />`.** A compact pill (~96×28px) with a thin SVG progress
+  ring + numeric label (`47 / 200`) — always visible in the `AttentionFeed`
+  and `Premium/InboxPanel` headers. Tone shifts indigo (<60%) → amber
+  (60–90%) → rose (≥90% with subtle pulse), or emerald for unlimited
+  tiers. Click opens a popover with reset countdown, "Manage usage"
+  deep-link to Settings, and an "Upgrade to Pro" CTA on the free tier.
+- **`<AIQuotaExhaustedCard />`.** Premium inline replacement for the amber
+  "quota reached" banner: rose→amber gradient gauge icon, Pro-only
+  benefits list, gradient indigo→purple Upgrade CTA. Mirrors the language
+  of the existing `QuotaExceededState` full-page surface, scaled down to
+  fit inside a dashboard card. Pro-only benefits are gated on
+  `upgradeTo === 'pro'` (key-based, not label) so future tier additions
+  don't silently hide the wrong copy.
+- **`useAIUsage` hook.** Fetches `/api/v1/usage`, normalises the shape to
+  `{ aiQueries: { current, limit, percent }, aiFeatures, tier }`. 30-second
+  module-level TTL coalesces requests across multiple co-mounted consumers;
+  focus events and quota-gate flips bypass the cache for fresh numbers.
+- **Accessibility.** `aria-label` reads "AI quota: 47 of 200 requests used.
+  Resets in 18 days. Click for details." Popover has `role="dialog"`,
+  closes on Escape (focus restored to the trigger) and outside-click.
+  `prefers-reduced-motion: reduce` disables the ring fill and rose pulse.
+
 ### Added — Premium Dashboard Phase 1: Live Inbox
 
 - **Live Inbox replaces Attention Feed.** `InboxPanel` renders six sections
@@ -24,15 +83,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Keyboard shortcuts.** `e` archives, `s` opens snooze modal, chevron / title click expand/navigate row. Guard skips inputs, textareas, selects, and contenteditable elements.
 - **Premium polish.** Skeleton loading state (per design rule 7), per-section empty-state copy, `aria-live` count updates, focus-visible action buttons (reachable by keyboard), focus-trapped `SnoozeModal`.
 
+### Added — Settings premium pass
+
+- **Two-column layout for the General tab.** Tighter modal height; primary
+  preferences (theme, defaults) live on the left and account/danger-zone
+  on the right. Better information hierarchy on wide screens, single
+  column on narrow ones.
+
+### Changed — Free-tier per-feature quotas
+
+| Metric                   | Before | After  |
+| ------------------------ | ------ | ------ |
+| `semanticSearchPerMonth` | 50     | **75** |
+| `repoInsightsPerMonth`   | 10     | **15** |
+
+Conservative bumps on the two metrics where the cap binds most often,
+keeping the global `aiQueriesPerMonth` deliberately at 200 (the cost
+knob from the 2026-04-15 expansion). Amends
+`docs/specs/2026-04-15-free-tier-expansion.md`.
+
+### Changed — UI primitives
+
+- **Modal / Confirm / Wizard primitives unified.** One shared shell;
+  callers reclaim screen real estate that the old separate components
+  wasted on duplicated chrome. No public-API breaks for consumers; the
+  internal shell is what changed.
+- **Shared `formatTimeUntil(iso)` in `src/utils/format.js`.** Both
+  `AIQuotaMeter` and `AIQuotaExhaustedCard` consume the same helper
+  instead of inlining their own divergent rounding. Future surfaces that
+  need "in N days/h/min" countdowns reuse this.
+
 ### Fixed
 
-- `listStalePRs` correctly handles reopened PRs (latest lifecycle event check, parallel to `listMyOpenPRs` fix shipped on the same branch).
-- `useInbox` snapshot capture uses a ref to avoid stale-closure race on rapid archives.
-- ESLint config now ignores `dist/`, worktrees, and `.dev/` build artifacts so `npm run lint` is usable as a CI gate again.
+- **`dashboard-inbox` e2e tests unblocked.** `src/api/dashboardInbox.js`
+  now follows the project's mock-mode pattern (mirroring
+  `fetchAttentionFeed` and the teams API): seeded in-memory inbox in
+  `VITE_MOCK_MODE=true`, no-op archive/snooze acks that compose with the
+  hook's optimistic UI. The e2e job has been failing on CI ever since the
+  Live Inbox feature shipped; now green.
+- **`package-lock.json` resynced.** Missing `@emnapi/core@1.10.0` /
+  `@emnapi/runtime@1.10.0` transitive entries (optional Linux deps for
+  Rolldown's native bindings) were blocking `npm ci` on CI runners since
+  2026-05-11. Regenerated cross-platform.
+- **Unhandled errors bridge to the toast surface.** A new error event
+  bridge turns unhandled promise rejections + window errors into user-
+  visible toasts, filtering noise from browser extensions so the toast
+  area only shows actionable signal.
+- `listStalePRs` correctly handles reopened PRs (latest lifecycle event
+  check, parallel to `listMyOpenPRs` fix shipped on the same branch).
+- `useInbox` snapshot capture uses a ref to avoid stale-closure race on
+  rapid archives.
+- ESLint config now ignores `dist/`, worktrees, and `.dev/` build
+  artifacts so `npm run lint` is usable as a CI gate again.
+
+### Security
+
+- **`mermaid` 11.14.0 → 11.15.0.** Fixes moderate advisories surfaced by
+  Dependabot. No usage changes.
 
 ### Known stubs (Phase 1)
 
-- `failing_ci` and `dependabot_ready` sections return `[]` — data wired in Phase 2.
+- `failing_ci` and `dependabot_ready` sections return `[]` — data wired in
+  Phase 2.
 - DORA card deferred to Phase 2; Service Scorecards to Phase 3.
 
 ## [4.1.1] - 2026-05-10
