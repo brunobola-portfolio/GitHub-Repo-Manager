@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Check, ArrowRight, ExternalLink } from 'lucide-react'
 import { navigateToPricing, openAppSettings } from '../../utils/appEvents'
 
@@ -112,13 +112,14 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                 </span>
             </button>
 
-            <>
+            <AnimatePresence>
                 {open && (
                     <motion.div
                         role="dialog"
                         aria-label="AI quota details"
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.15 }}
                         className="absolute right-0 mt-2 z-[var(--ds-z-overlay)] w-72 rounded-xl bg-white dark:bg-slate-900 ring-1 ring-slate-200 dark:ring-slate-800 shadow-xl p-4"
                         onClick={(e) => e.stopPropagation()}
@@ -172,7 +173,7 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                         </div>
                     </motion.div>
                 )}
-            </>
+            </AnimatePresence>
         </div>
     )
 }

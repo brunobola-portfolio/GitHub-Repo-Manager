@@ -2,6 +2,25 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { AIQuotaMeter } from '../../../src/components/ui/AIQuotaMeter'
 
+// Mock framer-motion so AnimatePresence is a transparent passthrough in tests.
+// This keeps exit animations out of happy-dom while preserving the real API in production.
+vi.mock('framer-motion', async (importOriginal) => {
+    const actual = await importOriginal()
+    return {
+        ...actual,
+        AnimatePresence: ({ children }) => <>{children}</>,
+        motion: {
+            ...actual.motion,
+            div: ({ children, initial, animate, exit, transition, ...props }) => (
+                <div {...props}>{children}</div>
+            ),
+            circle: ({ initial, animate, exit, transition, ...props }) => (
+                <circle {...props} />
+            ),
+        },
+    }
+})
+
 describe('AIQuotaMeter', () => {
     it('renders current/limit when limit is finite', () => {
         render(<AIQuotaMeter current={47} limit={200} tier="free" />)
