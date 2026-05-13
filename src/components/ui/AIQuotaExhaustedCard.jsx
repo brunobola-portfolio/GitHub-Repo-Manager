@@ -1,20 +1,9 @@
 import { motion } from 'framer-motion'
 import { Gauge, ArrowRight, Sparkles, ExternalLink } from 'lucide-react'
 import { navigateToPricing, openAppSettings } from '../../utils/appEvents'
+import { formatTimeUntil } from '../../utils/format'
 
 const TIER_LABEL = { pro: 'Pro', enterprise: 'Enterprise', free: 'Free' }
-
-function formatResetRelative(iso) {
-    if (!iso) return null
-    const ms = new Date(iso).getTime() - Date.now()
-    if (Number.isNaN(ms) || ms <= 0) return null
-    const d = Math.round(ms / 86_400_000)
-    if (d >= 1) return `in ${d} day${d === 1 ? '' : 's'}`
-    const h = Math.round(ms / 3_600_000)
-    if (h >= 1) return `in ${h}h`
-    const m = Math.max(1, Math.round(ms / 60_000))
-    return `in ${m} min`
-}
 
 function formatResetAbsolute(iso) {
     if (!iso) return null
@@ -38,7 +27,7 @@ export function AIQuotaExhaustedCard({
     currentTier = 'free',
 }) {
     const upgradeLabel = upgradeTo && TIER_LABEL[upgradeTo]
-    const resetRel = formatResetRelative(resetAt)
+    const resetRel = formatTimeUntil(resetAt)
     const resetAbs = formatResetAbsolute(resetAt)
     const tierLabel = TIER_LABEL[currentTier] || currentTier
 

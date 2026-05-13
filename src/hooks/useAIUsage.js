@@ -3,6 +3,37 @@ import { useAIQuotaState } from './useAIQuotaState'
 
 const ENDPOINT = '/api/v1/usage'
 
+// Module-level cache: at most one in-flight or recent (≤30s) fetch.
+let cachedPromise = null
+let cachedAt = 0
+const CACHE_TTL_MS = 30_000
+
+async function fetchUsage(signal) {
+    const now = Date.now()
+    if (cachedPromise && now - cachedAt < CACHE_TTL_MS) {
+        return cachedPromise
+    }
+    cachedAt = now
+    cachedPromise = fetch(ENDPOINT, { credentials: 'include', signal })
+        .then(async (res) => {
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            return res.json()
+        })
+        .catch((err) => {
+            // Invalidate so the next caller retries.
+            cachedPromise = null
+            cachedAt = 0
+            throw err
+        })
+    return cachedPromise
+}
+
+// Manual invalidation used by the gate-flip effect and focus handler.
+function invalidateUsageCache() {
+    cachedPromise = null
+    cachedAt = 0
+}
+
 function coerceLimit(limit) {
     if (limit === null || limit === undefined) return Infinity
     if (limit === 'Infinity') return Infinity
@@ -34,9 +65,7 @@ export function useAIUsage() {
 
     async function load(signal) {
         try {
-            const res = await fetch(ENDPOINT, { credentials: 'include', signal })
-            if (!res.ok) throw new Error(`HTTP ${res.status}`)
-            const json = await res.json()
+            const json = await fetchUsage(signal)
             setData(shape(json))
         } catch {
             // Soft-fail: keep whatever we had; flip loading off so consumers
@@ -51,7 +80,11 @@ export function useAIUsage() {
         const ctrl = new AbortController()
         // eslint-disable-next-line react-hooks/set-state-in-effect
         load(ctrl.signal)
-        const onFocus = () => load()
+        const onFocus = () => {
+            // Focus = user just came back; bypass the cache so they see fresh data.
+            invalidateUsageCache()
+            load()
+        }
         window.addEventListener('focus', onFocus)
         return () => {
             ctrl.abort()
@@ -65,7 +98,8 @@ export function useAIUsage() {
         // the next successful AI request via useAIQuotaState's own
         // subscription, so we don't need to refetch there.
         if (lastGate.current == null && quotaGate != null) {
-             
+            // Bypass the cache: the user just hit a quota — they want fresh numbers.
+            invalidateUsageCache()
             load()
         }
         lastGate.current = quotaGate

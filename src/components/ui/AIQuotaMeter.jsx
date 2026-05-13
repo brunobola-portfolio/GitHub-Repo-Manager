@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Sparkles, Check, ArrowRight, ExternalLink } from 'lucide-react'
 import { navigateToPricing, openAppSettings } from '../../utils/appEvents'
+import { formatTimeUntil } from '../../utils/format'
 
 const TONE = {
     indigo: {
@@ -30,25 +31,15 @@ function pickTone(percent) {
     return 'indigo'
 }
 
-function formatResetRelative(iso) {
-    if (!iso) return null
-    const ms = new Date(iso).getTime() - Date.now()
-    if (Number.isNaN(ms) || ms <= 0) return null
-    const m = Math.round(ms / 60_000)
-    if (m < 60) return `in ${m} min`
-    const h = Math.round(m / 60)
-    if (h < 24) return `in ${h}h`
-    const d = Math.round(h / 24)
-    return `in ${d} day${d === 1 ? '' : 's'}`
-}
 
 function ProgressRing({ percent, tone }) {
     const radius = 9
     const stroke = 2.5
     const c = 2 * Math.PI * radius
     const offset = c * (1 - Math.min(1, Math.max(0, percent)))
+    const reduceMotion = useReducedMotion()
     return (
-        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" className={tone.pulse ? 'animate-pulse' : ''}>
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" className={tone.pulse ? 'motion-safe:animate-pulse' : ''}>
             <circle cx="12" cy="12" r={radius} fill="none" strokeWidth={stroke} className={tone.track} stroke="currentColor" />
             <motion.circle
                 cx="12" cy="12" r={radius} fill="none" strokeWidth={stroke}
@@ -58,7 +49,7 @@ function ProgressRing({ percent, tone }) {
                 strokeDasharray={c}
                 initial={{ strokeDashoffset: c }}
                 animate={{ strokeDashoffset: offset }}
-                transition={{ duration: 0.6, ease: 'easeOut' }}
+                transition={reduceMotion ? { duration: 0 } : { duration: 0.6, ease: 'easeOut' }}
                 transform="rotate(-90 12 12)"
             />
         </svg>
@@ -100,7 +91,7 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
     const percent = unlimited ? 0 : current / Math.max(1, limit)
     const toneKey = unlimited ? 'indigo' : pickTone(percent)
     const tone = TONE[toneKey]
-    const reset = formatResetRelative(resetAt)
+    const reset = formatTimeUntil(resetAt)
     const ariaLabel = unlimited
         ? `AI quota: unlimited on ${tier}. Click for details.`
         : `AI quota: ${current} of ${limit} requests used${reset ? `. Resets ${reset}` : ''}. Click for details.`

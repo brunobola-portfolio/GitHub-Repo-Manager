@@ -146,7 +146,7 @@ export function InboxPanel({ onSelectItem }) {
                 </nav>
 
                 <div className="min-h-[200px]">
-                    {quota && (
+                    {quota && configured && keyOk && (
                         <AIQuotaExhaustedCard
                             feature={quota.feature}
                             used={quota.used}

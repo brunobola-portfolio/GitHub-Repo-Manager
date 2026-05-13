@@ -70,6 +70,7 @@ describe('InboxPanel', () => {
     });
 
     it('renders the AIQuotaExhaustedCard when the gate is closed', async () => {
+        aiStatusModule.useAIStatus.mockReturnValue({ configured: true, keyOk: true });
         aiQuotaModule.useAIQuotaState.mockReturnValue({
             feature: 'ai_queries',
             limit: 200,
