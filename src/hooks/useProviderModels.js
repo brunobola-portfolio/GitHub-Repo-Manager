@@ -33,17 +33,45 @@ async function fetchOpenRouterModels() {
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const body = await res.json()
             const list = Array.isArray(body?.data) ? body.data : []
-            const mapped = list
+            let mapped = list
                 .filter((m) => m?.id)
-                .map((m) => ({
-                    id: m.id,
-                    label: m.name || m.id,
-                    tier: tierFor(m.id),
-                    description: (m.description || '').replace(/\s+/g, ' ').slice(0, 90),
-                    context: formatContext(m.context_length),
-                }))
-                // Sort: balanced/smart/reasoning first, then alphabetical by label
+                .map((m) => {
+                    const inputModalities = m?.architecture?.input_modalities || []
+                    const supportedParams = m?.supported_parameters || []
+                    const capabilities = []
+                    if (inputModalities.includes('image')) capabilities.push('vision')
+                    if (supportedParams.includes('tools') || supportedParams.includes('tool_choice')) capabilities.push('tools')
+                    if (supportedParams.includes('response_format') || supportedParams.includes('structured_outputs')) capabilities.push('json')
+                    if (supportedParams.includes('reasoning') || /reasoning|thinking|o1|o3|o4/i.test(m.id || '')) capabilities.push('reasoning')
+
+                    // OpenRouter prices are USD per token as strings; convert to per-million dollars.
+                    const promptPrice = m?.pricing?.prompt != null ? Number(m.pricing.prompt) * 1_000_000 : undefined
+                    const completionPrice = m?.pricing?.completion != null ? Number(m.pricing.completion) * 1_000_000 : undefined
+                    const pricing = (promptPrice !== undefined && completionPrice !== undefined)
+                        ? { input: promptPrice, output: completionPrice, currency: 'USD', per: '1M tokens' }
+                        : undefined
+
+                    return {
+                        id: m.id,
+                        label: m.name || m.id,
+                        tier: tierFor(m.id),
+                        description: (m.description || '').replace(/\s+/g, ' ').slice(0, 90),
+                        context: formatContext(m.context_length),
+                        capabilities,
+                        pricing,
+                        recommended: false,
+                        legacy: false,
+                    }
+                })
+                // Sort alphabetically by label so the list is predictable and scannable.
                 .sort((a, b) => a.label.localeCompare(b.label))
+            // Mark a single recommended pick — Claude Sonnet 4.6 via OR is the
+            // strongest balanced default at the time of writing. Falls back to
+            // the first balanced/smart entry if Sonnet 4.6 isn't returned.
+            const preferredId = 'anthropic/claude-sonnet-4-6'
+            let recIdx = mapped.findIndex((m) => m.id === preferredId)
+            if (recIdx < 0) recIdx = mapped.findIndex((m) => m.tier === 'balanced' || m.tier === 'smart')
+            if (recIdx >= 0) mapped[recIdx] = { ...mapped[recIdx], recommended: true }
             openrouterCache = mapped
             return mapped
         } catch {

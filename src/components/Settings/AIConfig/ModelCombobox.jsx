@@ -1,22 +1,21 @@
 import { useEffect, useMemo, useRef, useState, useId } from 'react'
-import { ChevronDown, Check, ExternalLink } from 'lucide-react'
-import { TIER_LABELS, TIER_STYLES } from '../../../utils/providerModels'
-import { getPricingForModel, formatPricing } from '../../../utils/providerPricing'
+import { ChevronDown } from 'lucide-react'
+import { ModelDropdown } from './ModelDropdown'
+import { useFilteredModels } from '../../../hooks/useFilteredModels'
 import { INPUT_CLS } from './constants'
 
 /**
- * ModelCombobox — typeable input with a curated model picker.
+ * Typeable input + curated model picker.
  *
- * - Free-type: users can enter any model id (critical for OpenRouter / Local).
- * - Curated list: clicking the chevron (or ArrowDown when focused) opens a
- *   dropdown of recommended models with tier badge, context window and
- *   per-model pricing hint.
- * - Filter: typing narrows the visible list; an "Use custom: X" hint
- *   appears when the typed value doesn't match any catalogue entry.
- * - Keyboard: ArrowUp/Down navigates, Enter selects, Esc closes.
+ * Owns: input value, open/close, keyboard nav highlight. Delegates listbox UI
+ * (chip filter, section headers, row cards, legacy toggle) to ModelDropdown.
  *
- * If `options` is empty (e.g. Local provider), the component degrades to a
- * plain text input with no dropdown — no empty state.
+ * Keyboard nav uses the dropdown's `itemsInOrder` so ArrowDown/Up skip section
+ * headers and respect the active tier filter — this is re-derived here via a
+ * lightweight call to useFilteredModels with the same defaults the dropdown
+ * initialises with (no chip filter, no legacy). The dropdown's own state is
+ * the source of truth once the user interacts; for keyboard nav from the
+ * input we only need an order that matches the *initial* render.
  */
 export function ModelCombobox({
     id,
@@ -37,20 +36,9 @@ export function ModelCombobox({
 
     const hasOptions = options.length > 0
 
-    const filtered = useMemo(() => {
-        const q = (value || '').trim().toLowerCase()
-        if (!q) return options
-        return options.filter((o) =>
-            o.id.toLowerCase().includes(q) ||
-            (o.label || '').toLowerCase().includes(q) ||
-            (o.description || '').toLowerCase().includes(q),
-        )
-    }, [value, options])
-
-    const exactMatch = useMemo(
-        () => options.some((o) => o.id === value),
-        [value, options],
-    )
+    // Mirror the dropdown's default filter (no chip, no legacy) so keyboard nav
+    // operates on the same ordered set the user sees on open.
+    const { itemsInOrder } = useFilteredModels(options, { query: value, tier: null, showLegacy: false })
 
     useEffect(() => {
         if (!open) return
@@ -75,7 +63,7 @@ export function ModelCombobox({
     }, [highlight])
 
     const pickIndex = (idx) => {
-        const opt = filtered[idx]
+        const opt = itemsInOrder[idx]
         if (!opt) return
         onChange(opt.id)
         setOpen(false)
@@ -88,7 +76,7 @@ export function ModelCombobox({
         if (e.key === 'ArrowDown') {
             e.preventDefault()
             setOpen(true)
-            setHighlight((h) => Math.min(filtered.length - 1, (h < 0 ? 0 : h + 1)))
+            setHighlight((h) => Math.min(itemsInOrder.length - 1, (h < 0 ? 0 : h + 1)))
         } else if (e.key === 'ArrowUp') {
             e.preventDefault()
             setOpen(true)
@@ -108,6 +96,11 @@ export function ModelCombobox({
             setOpen(false)
         }
     }
+
+    const exactMatch = useMemo(
+        () => options.some((o) => o.id === value),
+        [value, options],
+    )
 
     if (!hasOptions) {
         return (
@@ -162,76 +155,25 @@ export function ModelCombobox({
             </div>
 
             {open && (
-                <div
-                    id={listboxId}
-                    role="listbox"
-                    ref={listRef}
-                    className="absolute z-20 mt-1 left-0 right-0 max-h-80 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-slate-900/10 ds-scrollbar"
-                >
-                    {filtered.length === 0 ? (
-                        <div className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400">
-                            No match. <span className="text-slate-700 dark:text-slate-200 font-medium">Enter</span> to use custom id.
-                        </div>
-                    ) : (
-                        filtered.map((opt, idx) => {
-                            const selected = value === opt.id
-                            const tierStyle = TIER_STYLES[opt.tier] || TIER_STYLES.balanced
-                            const pricing = getPricingForModel(opt.id)
-                            return (
-                                <button
-                                    key={opt.id}
-                                    type="button"
-                                    role="option"
-                                    aria-selected={selected}
-                                    data-idx={idx}
-                                    onMouseEnter={() => setHighlight(idx)}
-                                    onClick={() => pickIndex(idx)}
-                                    className={`w-full text-left px-3 py-2 flex items-start gap-3 transition-colors ${
-                                        highlight === idx
-                                            ? 'bg-indigo-50 dark:bg-indigo-900/30'
-                                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/70'
-                                    }`}
-                                >
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-medium text-sm text-slate-900 dark:text-slate-100">{opt.label}</span>
-                                            <span className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide rounded-full ring-1 ring-inset ${tierStyle}`}>
-                                                {TIER_LABELS[opt.tier] || opt.tier}
-                                            </span>
-                                            {opt.context && (
-                                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 ring-1 ring-inset ring-slate-200/60 dark:ring-slate-700">
-                                                    {opt.context}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 truncate">
-                                            {opt.description}
-                                        </div>
-                                        <div className="mt-1 flex items-center gap-2 text-[11px] font-mono text-slate-400 dark:text-slate-500">
-                                            <span className="truncate">{opt.id}</span>
-                                            {pricing && (
-                                                <span className="text-slate-500 dark:text-slate-400">· {formatPricing(pricing)}</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    {selected && <Check className="w-4 h-4 text-indigo-500 mt-1 shrink-0" aria-hidden="true" />}
-                                </button>
-                            )
-                        })
-                    )}
-
-                    {catalogueHref && (
-                        <a
-                            href={catalogueHref}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="sticky bottom-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 px-3 py-2 text-xs flex items-center justify-between text-indigo-600 dark:text-indigo-300 hover:underline"
-                        >
-                            <span>{catalogueLabel || 'Browse full catalogue'}</span>
-                            <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-                        </a>
-                    )}
-                </div>
+                <ModelDropdown
+                    options={options}
+                    value={value}
+                    onPick={{
+                        select: (modelId) => {
+                            onChange(modelId)
+                            setOpen(false)
+                            setHighlight(-1)
+                            inputRef.current?.focus()
+                        },
+                        hover: (idx) => setHighlight(idx),
+                    }}
+                    listboxId={listboxId}
+                    listRef={listRef}
+                    query={value || ''}
+                    highlight={highlight}
+                    catalogueHref={catalogueHref}
+                    catalogueLabel={catalogueLabel}
+                />
             )}
 
             {value && !exactMatch && (

@@ -5,8 +5,8 @@ import { render, screen, fireEvent, act } from '@testing-library/react'
 const { ModelCombobox } = await import('../../../../src/components/Settings/AIConfig/ModelCombobox')
 
 const SAMPLE_OPTIONS = [
-    { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', tier: 'fast', description: 'Fast default', context: '1M' },
-    { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', tier: 'smart', description: 'Higher quality', context: '2M' },
+    { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', tier: 'fast', description: 'Fast default', context: '1M', capabilities: [], legacy: false },
+    { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', tier: 'smart', description: 'Higher quality', context: '2M', capabilities: [], legacy: false },
 ]
 
 // Controlled wrapper — ModelCombobox is stateless and needs a host to drive
