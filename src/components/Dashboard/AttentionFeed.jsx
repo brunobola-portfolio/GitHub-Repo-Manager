@@ -7,15 +7,17 @@ import {
     Flame,
     ChevronRight,
     RefreshCw,
-    Gauge,
 } from 'lucide-react'
 import { fetchAttentionFeed } from '../../api/attentionFeed'
 import { fetchAttentionNarrative } from '../../api/attentionNarrative'
 import { AIQuotaExceededError } from '../../api/aiFetch'
 import { useAIStatus } from '../../hooks/useAIStatus'
 import { useAIQuotaState } from '../../hooks/useAIQuotaState'
+import { useAIUsage } from '../../hooks/useAIUsage'
 import { formatRelativeTime } from '../../utils/format'
 import { Spinner } from '../ui/Spinner'
+import { AIQuotaMeter } from '../ui/AIQuotaMeter'
+import { AIQuotaExhaustedCard } from '../ui/AIQuotaExhaustedCard'
 
 const SEVERITY_RING = {
     high: 'ring-red-500/30 bg-gradient-to-br from-red-500/[0.06] via-rose-500/[0.04] to-transparent dark:from-red-500/[0.10] dark:via-rose-500/[0.06]',
@@ -76,6 +78,7 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
     // We render a single, polished inline notice instead of letting parallel
     // narrative fan-outs spam the devtools console with 429s.
     const quota = useAIQuotaState()
+    const { aiQueries, tier } = useAIUsage()
 
     /* eslint-disable react-hooks/set-state-in-effect -- mount + refresh-tick fetch */
     useEffect(() => {
@@ -194,15 +197,25 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
                             Repos that need your eyes
                         </h3>
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => setRefreshTick((t) => t + 1)}
-                        disabled={loading}
-                        aria-label="Refresh attention feed"
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors disabled:opacity-50"
-                    >
-                        <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {aiQueries && (
+                            <AIQuotaMeter
+                                current={aiQueries.current}
+                                limit={aiQueries.limit}
+                                tier={tier ?? 'free'}
+                                resetAt={quota?.resetAt ?? null}
+                            />
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => setRefreshTick((t) => t + 1)}
+                            disabled={loading}
+                            aria-label="Refresh attention feed"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors disabled:opacity-50"
+                        >
+                            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+                        </button>
+                    </div>
                 </header>
 
                 {loading && items.length === 0 ? (
@@ -212,7 +225,14 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
                 ) : (
                     <>
                         {quota && configured && keyOk && (
-                            <QuotaNotice quota={quota} />
+                            <AIQuotaExhaustedCard
+                                feature={quota.feature}
+                                used={quota.used}
+                                limit={quota.limit}
+                                resetAt={quota.resetAt}
+                                upgradeTo={quota.upgradeTo}
+                                currentTier={tier ?? 'free'}
+                            />
                         )}
                         <ul className="divide-y divide-slate-200/60 dark:divide-slate-800">
                             {items.map((item, idx) => (
@@ -228,46 +248,6 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
                 )}
             </div>
         </section>
-    )
-}
-
-// Format the server's `resetAt` ISO into a user-friendly relative string.
-// "in 3 days" reads better than "2026-06-01T00:00:00Z" in a dashboard pill.
-function formatReset(iso) {
-    if (!iso) return null
-    const ms = new Date(iso).getTime() - Date.now()
-    if (Number.isNaN(ms) || ms <= 0) return null
-    const m = Math.round(ms / 60_000)
-    if (m < 60) return `in ${m} min`
-    const h = Math.round(m / 60)
-    if (h < 24) return `in ${h}h`
-    const d = Math.round(h / 24)
-    return `in ${d} day${d === 1 ? '' : 's'}`
-}
-
-function QuotaNotice({ quota }) {
-    const reset = formatReset(quota?.resetAt)
-    return (
-        <div className="px-5 py-3 border-b border-amber-200/60 dark:border-amber-800/40 bg-gradient-to-r from-amber-50 via-amber-50/60 to-transparent dark:from-amber-900/20 dark:via-amber-900/10">
-            <div className="flex items-start gap-2.5">
-                <span className="mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-200">
-                    <Gauge className="w-3.5 h-3.5" aria-hidden="true" />
-                </span>
-                <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-semibold text-amber-800 dark:text-amber-200 leading-tight">
-                        AI insights paused — monthly quota reached
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-amber-700/90 dark:text-amber-300/90">
-                        {quota.limit != null && quota.used != null
-                            ? `${quota.used} / ${quota.limit} requests used`
-                            : 'Your plan limit was reached'}
-                        {reset ? ` · resets ${reset}` : ''}
-                        {quota.upgradeTo ? ` · upgrade to ${quota.upgradeTo} for more` : ''}
-                        . The repo signals below are still live — only the AI narrative is muted.
-                    </p>
-                </div>
-            </div>
-        </div>
     )
 }
 

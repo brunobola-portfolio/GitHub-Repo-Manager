@@ -159,6 +159,23 @@ export function formatDateTime(value) {
 }
 
 /**
+ * "in 3 days" / "in 2h" / "in 45 min". Returns null for past dates,
+ * NaN, or empty input. Days are the largest unit checked; sub-day uses
+ * hours; sub-hour uses minutes (minimum 1 to avoid the meaningless "in 0 min").
+ */
+export function formatTimeUntil(iso) {
+    if (!iso) return null
+    const ms = new Date(iso).getTime() - Date.now()
+    if (Number.isNaN(ms) || ms <= 0) return null
+    const d = Math.round(ms / 86_400_000)
+    if (d >= 1) return `in ${d} day${d === 1 ? '' : 's'}`
+    const h = Math.round(ms / 3_600_000)
+    if (h >= 1) return `in ${h}h`
+    const m = Math.max(1, Math.round(ms / 60_000))
+    return `in ${m} min`
+}
+
+/**
  * Formats a relative time (e.g., "2 hours ago", "3 days ago")
  * @param {Date|string|number} date - The date to format
  * @returns {string} Formatted relative time string

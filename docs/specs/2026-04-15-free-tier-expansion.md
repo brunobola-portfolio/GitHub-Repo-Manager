@@ -49,6 +49,8 @@ The Free tier's feature matrix had three issues:
 | Audit Logs                           | ✗               | ✗            | ✓          |
 | SSO                                  | ✗               | ✗            | ✓          |
 
+> **Amended 2026-05-13** — `semanticSearchPerMonth` raised 50 → 75 and `repoInsightsPerMonth` raised 10 → 15 on Free. See `docs/specs/2026-05-12-ai-quota-premium-indicators.md` for rationale. No other matrix values changed.
+
 ## Implementation changes
 
 ### Per-feature quotas (new metric types)

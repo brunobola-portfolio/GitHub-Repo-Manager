@@ -1,6 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
+vi.mock('framer-motion', async (importOriginal) => {
+    const actual = await importOriginal()
+    return {
+        ...actual,
+        AnimatePresence: ({ children }) => <>{children}</>,
+        motion: {
+            ...actual.motion,
+            div: ({ children, initial, animate, exit, transition, whileHover, whileTap, ...props }) => (
+                <div {...props}>{children}</div>
+            ),
+            circle: ({ initial, animate, exit, transition, ...props }) => (
+                <circle {...props} />
+            ),
+        },
+    }
+})
+
 const mockFetch = vi.fn()
 vi.mock('../../../src/api/attentionFeed', () => ({
     fetchAttentionFeed: (...args) => mockFetch(...args),
@@ -21,6 +38,11 @@ vi.mock('../../../src/hooks/useAIQuotaState', () => ({
     useAIQuotaState: () => mockQuotaState(),
 }))
 
+const mockUsage = vi.fn()
+vi.mock('../../../src/hooks/useAIUsage', () => ({
+    useAIUsage: () => mockUsage(),
+}))
+
 // Real AIQuotaExceededError so `instanceof` checks in the component work.
 const { AIQuotaExceededError } = await import('../../../src/api/aiFetch')
 
@@ -31,10 +53,17 @@ beforeEach(() => {
     mockNarrative.mockReset()
     mockAIStatus.mockReset()
     mockQuotaState.mockReset()
+    mockUsage.mockReset()
     // Default: AI not configured → narrative path stays silent.
     mockAIStatus.mockReturnValue({ configured: false, keyOk: false })
     // Default: quota gate is open.
     mockQuotaState.mockReturnValue(null)
+    mockUsage.mockReturnValue({
+        tier: 'free',
+        aiQueries: { current: 47, limit: 200, percent: 47 / 200 },
+        aiFeatures: {},
+        loading: false,
+    })
 })
 
 const SAMPLE = {
@@ -180,8 +209,8 @@ describe('AttentionFeed', () => {
         await screen.findByText('acme/blocker')
         expect(mockNarrative).not.toHaveBeenCalled()
         // Premium notice is rendered above the list.
+        expect(screen.getByTestId('ai-quota-exhausted')).toBeInTheDocument()
         expect(screen.getByText(/AI insights paused/i)).toBeInTheDocument()
-        expect(screen.getByText(/50 \/ 50 requests used/)).toBeInTheDocument()
         expect(screen.getByText(/upgrade to pro/i)).toBeInTheDocument()
     })
 
@@ -206,5 +235,25 @@ describe('AttentionFeed', () => {
         // Only the first call goes out — the loop bails after seeing the error.
         await waitFor(() => expect(mockNarrative).toHaveBeenCalledTimes(1))
         expect(screen.queryByText(/should never render/)).not.toBeInTheDocument()
+    })
+
+    it('renders the AIQuotaMeter in the header', async () => {
+        mockFetch.mockResolvedValue(SAMPLE)
+        render(<AttentionFeed />)
+        expect(await screen.findByText('47 / 200')).toBeInTheDocument()
+    })
+
+    it('renders the AIQuotaExhaustedCard when quota gate is closed', async () => {
+        mockFetch.mockResolvedValue(SAMPLE)
+        mockAIStatus.mockReturnValue({ configured: true, keyOk: true })
+        mockQuotaState.mockReturnValue({
+            feature: 'ai_queries',
+            limit: 200,
+            used: 200,
+            resetAt: new Date(Date.now() + 18 * 86_400_000).toISOString(),
+            upgradeTo: 'pro',
+        })
+        render(<AttentionFeed />)
+        expect(await screen.findByTestId('ai-quota-exhausted')).toBeInTheDocument()
     })
 })

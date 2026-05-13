@@ -5,10 +5,13 @@ import { fetchAttentionNarrative } from '../../../api/attentionNarrative';
 import { AIQuotaExceededError } from '../../../api/aiFetch';
 import { useAIStatus } from '../../../hooks/useAIStatus';
 import { useAIQuotaState } from '../../../hooks/useAIQuotaState';
+import { useAIUsage } from '../../../hooks/useAIUsage';
 import { useToast } from '../../../hooks/useToast';
 import { InboxRow } from './InboxRow';
 import { InboxSection } from './InboxSection';
 import { SnoozeModal } from './SnoozeModal';
+import { AIQuotaMeter } from '../../ui/AIQuotaMeter';
+import { AIQuotaExhaustedCard } from '../../ui/AIQuotaExhaustedCard';
 
 const NARRATIVE_TOP_N = 3;
 
@@ -42,6 +45,7 @@ export function InboxPanel({ onSelectItem }) {
 
     const { configured, keyOk } = useAIStatus();
     const quota = useAIQuotaState();
+    const { aiQueries, tier } = useAIUsage();
     const [narratives, setNarratives] = useState({});
 
     /* eslint-disable react-hooks/set-state-in-effect -- active section change drives AI narrative fan-out */
@@ -108,12 +112,24 @@ export function InboxPanel({ onSelectItem }) {
             className="rounded-2xl bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl border border-zinc-200/60 dark:border-zinc-800/60"
         >
             <header className="px-5 pt-5 pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
-                <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">
-                    <Inbox className="w-3 h-3" /> Live inbox
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">
+                            <Inbox className="w-3 h-3" /> Live inbox
+                        </div>
+                        <h3 id="inbox-panel-title" className="mt-1 text-base font-bold text-zinc-900 dark:text-zinc-100 ds-font-display">
+                            What needs your eyes
+                        </h3>
+                    </div>
+                    {aiQueries && (
+                        <AIQuotaMeter
+                            current={aiQueries.current}
+                            limit={aiQueries.limit}
+                            tier={tier ?? 'free'}
+                            resetAt={quota?.resetAt ?? null}
+                        />
+                    )}
                 </div>
-                <h3 id="inbox-panel-title" className="mt-1 text-base font-bold text-zinc-900 dark:text-zinc-100 ds-font-display">
-                    What needs your eyes
-                </h3>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-[200px_1fr]">
@@ -130,6 +146,16 @@ export function InboxPanel({ onSelectItem }) {
                 </nav>
 
                 <div className="min-h-[200px]">
+                    {quota && configured && keyOk && (
+                        <AIQuotaExhaustedCard
+                            feature={quota.feature}
+                            used={quota.used}
+                            limit={quota.limit}
+                            resetAt={quota.resetAt}
+                            upgradeTo={quota.upgradeTo}
+                            currentTier={tier ?? 'free'}
+                        />
+                    )}
                     {loading && (
                         <ul aria-busy="true" aria-label="Loading inbox">
                             {[0, 1, 2, 3].map(i => (

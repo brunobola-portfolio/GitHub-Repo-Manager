@@ -5,17 +5,42 @@ import * as api from '../../../../src/api/dashboardInbox';
 import * as narrativeApi from '../../../../src/api/attentionNarrative';
 import * as aiStatusModule from '../../../../src/hooks/useAIStatus';
 import * as aiQuotaModule from '../../../../src/hooks/useAIQuotaState';
+import * as aiUsageModule from '../../../../src/hooks/useAIUsage';
 
 vi.mock('../../../../src/api/dashboardInbox');
 vi.mock('../../../../src/api/attentionNarrative');
 vi.mock('../../../../src/hooks/useAIStatus');
 vi.mock('../../../../src/hooks/useAIQuotaState');
+vi.mock('../../../../src/hooks/useAIUsage');
+
+vi.mock('framer-motion', async (importOriginal) => {
+    const actual = await importOriginal()
+    return {
+        ...actual,
+        AnimatePresence: ({ children }) => <>{children}</>,
+        motion: {
+            ...actual.motion,
+            div: ({ children, initial, animate, exit, transition, ...props }) => (
+                <div {...props}>{children}</div>
+            ),
+            circle: ({ initial, animate, exit, transition, ...props }) => (
+                <circle {...props} />
+            ),
+        },
+    }
+})
 
 describe('InboxPanel', () => {
     beforeEach(() => {
         vi.resetAllMocks();
         aiStatusModule.useAIStatus.mockReturnValue({ configured: false, keyOk: false });
         aiQuotaModule.useAIQuotaState.mockReturnValue(null);
+        aiUsageModule.useAIUsage.mockReturnValue({
+            tier: 'free',
+            aiQueries: { current: 47, limit: 200, percent: 47 / 200 },
+            aiFeatures: {},
+            loading: false,
+        });
         narrativeApi.fetchAttentionNarrative.mockResolvedValue({ narrative: 'AI says hello' });
         api.fetchInbox.mockResolvedValue({
             sections: [
@@ -38,6 +63,35 @@ describe('InboxPanel', () => {
         // After switching to empty section, per-section empty state renders
         expect(screen.getByText(/no open prs of yours/i)).toBeInTheDocument();
     });
+
+    it('renders the AIQuotaMeter in the panel header', async () => {
+        render(<InboxPanel />);
+        expect(await screen.findByText('47 / 200')).toBeInTheDocument();
+    });
+
+    it('renders the AIQuotaExhaustedCard when the gate is closed', async () => {
+        aiStatusModule.useAIStatus.mockReturnValue({ configured: true, keyOk: true });
+        aiQuotaModule.useAIQuotaState.mockReturnValue({
+            feature: 'ai_queries',
+            limit: 200,
+            used: 200,
+            resetAt: new Date(Date.now() + 18 * 86_400_000).toISOString(),
+            upgradeTo: 'pro',
+        });
+        render(<InboxPanel />);
+        expect(await screen.findByTestId('ai-quota-exhausted')).toBeInTheDocument();
+    });
+
+    it('does not render the AIQuotaMeter while aiQueries is null', async () => {
+        aiUsageModule.useAIUsage.mockReturnValue({
+            tier: null,
+            aiQueries: null,
+            aiFeatures: {},
+            loading: true,
+        })
+        render(<InboxPanel />)
+        expect(screen.queryByText(/\d+ \/ \d+/)).not.toBeInTheDocument()
+    })
 });
 
 describe('InboxPanel — AI narrative fan-out', () => {
@@ -45,6 +99,12 @@ describe('InboxPanel — AI narrative fan-out', () => {
         vi.resetAllMocks();
         aiStatusModule.useAIStatus.mockReturnValue({ configured: true, keyOk: true });
         aiQuotaModule.useAIQuotaState.mockReturnValue(null); // quota OK
+        aiUsageModule.useAIUsage.mockReturnValue({
+            tier: 'free',
+            aiQueries: { current: 10, limit: 200, percent: 10 / 200 },
+            aiFeatures: {},
+            loading: false,
+        });
         api.fetchInbox.mockResolvedValue({
             sections: [{
                 key: 'needs_review',
