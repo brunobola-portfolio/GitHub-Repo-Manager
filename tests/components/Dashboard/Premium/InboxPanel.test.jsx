@@ -80,6 +80,17 @@ describe('InboxPanel', () => {
         render(<InboxPanel />);
         expect(await screen.findByTestId('ai-quota-exhausted')).toBeInTheDocument();
     });
+
+    it('does not render the AIQuotaMeter while aiQueries is null', async () => {
+        aiUsageModule.useAIUsage.mockReturnValue({
+            tier: null,
+            aiQueries: null,
+            aiFeatures: {},
+            loading: true,
+        })
+        render(<InboxPanel />)
+        expect(screen.queryByText(/\d+ \/ \d+/)).not.toBeInTheDocument()
+    })
 });
 
 describe('InboxPanel — AI narrative fan-out', () => {
