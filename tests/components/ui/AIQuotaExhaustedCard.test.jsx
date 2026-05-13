@@ -68,4 +68,19 @@ describe('AIQuotaExhaustedCard', () => {
         expect(fn.mock.calls[0][0].detail).toEqual({ tab: 'usage' })
         window.removeEventListener('app:open-settings', fn)
     })
+
+    it('shows Upgrade CTA for enterprise but omits the Pro-only benefits list', () => {
+        render(
+            <AIQuotaExhaustedCard
+                feature="ai_queries"
+                used={200}
+                limit={200}
+                resetAt={null}
+                upgradeTo="enterprise"
+                currentTier="free"
+            />,
+        )
+        expect(screen.getByRole('button', { name: /upgrade to enterprise/i })).toBeInTheDocument()
+        expect(screen.queryByText(/5,000 queries/i)).not.toBeInTheDocument()
+    })
 })

@@ -98,7 +98,7 @@ export function AIQuotaExhaustedCard({
                             </button>
                         </div>
 
-                        {upgradeLabel === 'Pro' && (
+                        {upgradeTo === 'pro' && (
                             <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] text-slate-500 dark:text-slate-400">
                                 <li>· 5,000 queries / month</li>
                                 <li>· Unlimited semantic search</li>
