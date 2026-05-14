@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import { migrationApi } from '../../../api/migration'
 import { SectionSpinner } from '../../ui/Spinner'
+import { OversizedFilesPanel } from '../ui/OversizedFilesPanel'
+import { decodeOversizedError } from '../ui/oversizedError'
 
 /* ═══════════════════════════════════════════
    CONSTANTS & CONFIGURATION
@@ -242,6 +244,7 @@ function ErrorCard({ error, index }) {
   const [copied, setCopied] = useState(false)
   const typeConfig = TYPE_CONFIG[error.type] || TYPE_CONFIG.repo
   const TypeIcon = typeConfig.icon
+  const oversized = decodeOversizedError(error.error)
 
   const handleCopy = () => {
     navigator.clipboard.writeText(error.error)
@@ -298,29 +301,33 @@ function ErrorCard({ error, index }) {
             className="overflow-hidden"
           >
             <div className="px-3.5 pb-3.5 space-y-2.5">
-              {/* Error message */}
-              <div className="relative group/err">
-                <pre className="text-xs text-red-600 dark:text-red-400/90 bg-red-950/10 dark:bg-red-950/30 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all font-[var(--ds-font-mono)]">
-                  {error.error}
-                </pre>
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  aria-label="Copy error message"
-                  className="absolute top-2 right-2 p-1 rounded-md bg-red-900/20 hover:bg-red-900/40 text-red-400 opacity-0 group-hover/err:opacity-100 focus:opacity-100 transition-all"
-                >
-                  {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                </button>
-              </div>
+              {oversized ? (
+                <OversizedFilesPanel files={oversized.files} fallback={oversized.fallback} />
+              ) : (
+                <>
+                  <div className="relative group/err">
+                    <pre className="text-xs text-red-600 dark:text-red-400/90 bg-red-950/10 dark:bg-red-950/30 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all font-[var(--ds-font-mono)]">
+                      {error.error}
+                    </pre>
+                    <button
+                      type="button"
+                      onClick={handleCopy}
+                      aria-label="Copy error message"
+                      className="absolute top-2 right-2 p-1 rounded-md bg-red-900/20 hover:bg-red-900/40 text-red-400 opacity-0 group-hover/err:opacity-100 focus:opacity-100 transition-all"
+                    >
+                      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    </button>
+                  </div>
 
-              {/* Suggestion */}
-              {error.suggestion && (
-                <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-500/5 dark:bg-amber-500/5 border border-amber-500/15">
-                  <Lightbulb className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
-                  <p className="text-xs text-amber-700 dark:text-amber-300/90 leading-relaxed">
-                    {error.suggestion}
-                  </p>
-                </div>
+                  {error.suggestion && (
+                    <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-500/5 dark:bg-amber-500/5 border border-amber-500/15">
+                      <Lightbulb className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
+                      <p className="text-xs text-amber-700 dark:text-amber-300/90 leading-relaxed">
+                        {error.suggestion}
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </motion.div>

@@ -12,6 +12,12 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import logger from './lib/logger.js';
 import { isInternalUrl, resolveAndValidateHost } from './lib/url-validator.js';
+import {
+    findOversizedBlobs,
+    parseOversizedPushError,
+    encodeOversizedError,
+    GITHUB_FILE_SIZE_LIMIT_BYTES,
+} from './lib/oversized-blobs.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -234,13 +240,49 @@ async function importRepository(params) {
             }
         }
 
+        // Step 4c: Pre-check for blobs exceeding GitHub's per-file limit.
+        // GitHub rejects pushes containing any blob > 100 MiB regardless of
+        // total repo size, so this catches the case that size-strategy
+        // planning (which looks at repo totals) misses. We skip when the
+        // user has already opted into lfs-migrate or exclude — those paths
+        // either fix the blobs in place or won't reach the push.
+        if (sizeStrategy !== 'lfs-migrate' && sizeStrategy !== 'exclude') {
+            onProgress('inspecting', 'Inspecting repository for oversized files...', 55);
+            const oversized = await findOversizedBlobs(workDir, GITHUB_FILE_SIZE_LIMIT_BYTES);
+            if (oversized.length > 0) {
+                const err = new Error(
+                    `${oversized.length} file(s) exceed GitHub's 100 MB per-file limit. Migrate the affected paths to Git LFS and retry.`,
+                );
+                err.code = 'OVERSIZED_FILES';
+                err.files = oversized;
+                throw err;
+            }
+        }
+
         // Step 5: Push mirror
         onProgress('pushing', `Pushing to GitHub...`, 60);
 
         const pushUrl = `https://x-access-token:${githubToken}@github.com/${targetFullName}.git`;
         const bareGit = simpleGit(workDir);
         await bareGit.addRemote('github', pushUrl);
-        await bareGit.push('github', '--mirror');
+        try {
+            await bareGit.push('github', '--mirror');
+        } catch (pushErr) {
+            // simple-git surfaces stderr on `message`, but the full output is on
+            // `git.stderr` / `pushErr.task.stdErr` in older versions. Check all
+            // common locations so GH001 detection survives library upgrades.
+            const stderr = pushErr?.message || pushErr?.stderr || pushErr?.task?.stdErr || '';
+            const parsed = parseOversizedPushError(stderr);
+            if (parsed) {
+                const err = new Error(
+                    `${parsed.files.length} file(s) exceeded GitHub's 100 MB limit during push.`,
+                );
+                err.code = 'OVERSIZED_FILES';
+                err.files = parsed.files;
+                throw err;
+            }
+            throw pushErr;
+        }
 
         // Step 6: Push LFS if needed
         if (hasLFS) {
@@ -267,14 +309,20 @@ async function importRepository(params) {
         };
 
     } catch (error) {
-        onProgress('failed', error.message, 0);
+        // Structured oversized-files errors get a sentinel-prefixed encoding so
+        // the SummaryStep can render a premium panel instead of dumping stderr.
+        const errorMessage = error?.code === 'OVERSIZED_FILES' && Array.isArray(error.files)
+            ? encodeOversizedError(error.files, error.message)
+            : error.message;
+
+        onProgress('failed', errorMessage, 0);
 
         // If we created a repo but import failed, we could optionally clean up
         // For now, leave the empty repo so the user can retry or manually push
 
         return {
             success: false,
-            error: error.message,
+            error: errorMessage,
             targetFullName: createdRepo?.full_name || null
         };
     } finally {
