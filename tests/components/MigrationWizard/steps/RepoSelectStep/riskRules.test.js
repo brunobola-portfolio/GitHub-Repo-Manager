@@ -58,6 +58,27 @@ describe('risk engine', () => {
     expect(r.flags.some((f) => f.type === 'name-conflict')).toBe(true)
   })
 
+  it('does NOT flag name conflict when target exists but is empty', () => {
+    // Server marks duplicates[name]=false when target is empty; the risk
+    // engine should mirror that and emit only the informative reuse flag.
+    const r = evaluateRepo(base, {
+      ...ctx,
+      conflicts: { foo: false },
+      conflictDetails: { foo: { exists: true, empty: true } },
+    })
+    expect(r.flags.some((f) => f.type === 'name-conflict')).toBe(false)
+    expect(r.flags.some((f) => f.type === 'empty-target-reuse')).toBe(true)
+    expect(r.level).not.toBe('blocker')
+  })
+
+  it('does not surface empty-target-reuse when target does not exist', () => {
+    const r = evaluateRepo(base, {
+      ...ctx,
+      conflictDetails: { foo: { exists: false, empty: false } },
+    })
+    expect(r.flags.some((f) => f.type === 'empty-target-reuse')).toBe(false)
+  })
+
   it('flags stale repo (>2 years) as info', () => {
     const old = new Date(Date.now() - 3 * 365 * 86400_000).toISOString()
     const r = evaluateRepo({ ...base, lastCommitDate: old }, ctx)

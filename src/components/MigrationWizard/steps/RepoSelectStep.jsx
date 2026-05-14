@@ -27,12 +27,12 @@ const FILTER_PREDICATES = {
 
 export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source, onChange }) {
   const targetOrg = source.targetOrg || ''
-  const { loading, error, tfvcWarning, enriching, conflicts, retry } = useEnrichedRepos({
+  const { loading, error, tfvcWarning, enriching, conflicts, conflictDetails, retry } = useEnrichedRepos({
     source, repos, onSetRepos, onChange, targetOrg,
   })
 
   const { repos: scored, aggregate, aggregateSelected } =
-    useRiskEngine(repos, conflicts, targetOrg || source.org)
+    useRiskEngine(repos, conflicts, targetOrg || source.org, conflictDetails)
 
   // Propagate risk back to wizard state only when changed. The JSON.stringify
   // deep comparison is the loop guard — when risk shapes match, no setState

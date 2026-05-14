@@ -147,18 +147,42 @@ router.post('/import/check-duplicates', requireAuth, validateBody(importCheckDup
     try {
         const { repos, targetOwner } = req.validatedBody;
         const token = req.session.accessToken;
+
+        // `duplicates` keeps the original boolean shape (true = should block
+        // the migration). `duplicateDetails` carries the new context callers
+        // need to show "will push into empty repo" affordances without paying
+        // the cost of a separate round-trip. A repo that exists but is empty
+        // is NOT treated as a duplicate for blocking purposes — pushing into
+        // a freshly-created empty repo is a normal flow we want to support.
         const duplicates = {};
+        const duplicateDetails = {};
 
         await Promise.all(repos.map(async (repoName) => {
             try {
-                await githubApi(`/repos/${encodeURIComponent(targetOwner)}/${encodeURIComponent(repoName)}`, token);
-                duplicates[repoName] = true;
+                const repo = await githubApi(
+                    `/repos/${encodeURIComponent(targetOwner)}/${encodeURIComponent(repoName)}`,
+                    token,
+                );
+                // GitHub reports size in KB; a freshly-created repo with no
+                // pushes back has size 0 and `default_branch` null. Either
+                // alone is a strong signal but we check both to avoid false
+                // positives where size is briefly stale post-push.
+                const isEmpty = (repo.size === 0) && !repo.default_branch;
+                duplicates[repoName] = !isEmpty;
+                duplicateDetails[repoName] = {
+                    exists: true,
+                    empty: isEmpty,
+                    sizeKb: repo.size ?? 0,
+                    defaultBranch: repo.default_branch || null,
+                    htmlUrl: repo.html_url || null,
+                };
             } catch {
                 duplicates[repoName] = false;
+                duplicateDetails[repoName] = { exists: false, empty: false };
             }
         }));
 
-        res.json({ duplicates });
+        res.json({ duplicates, duplicateDetails });
     } catch (error) {
         errorResponse(res, 500, safeError(error, 'Duplicate check failed'));
     }

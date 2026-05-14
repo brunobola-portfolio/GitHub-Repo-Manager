@@ -15,6 +15,7 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
   const [tfvcWarning, setTfvcWarning] = useState('')
   const [enriching, setEnriching] = useState(false)
   const [conflictsState, setConflictsState] = useState({})
+  const [conflictDetailsState, setConflictDetailsState] = useState({})
   const [fetched, setFetched] = useState(false)
   // Tracks which repo IDs have already been enriched (activity + LFS).
   // Using a ref instead of writing a private `_enriched` flag onto each repo
@@ -166,7 +167,13 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
         body: JSON.stringify({ repos: names, targetOwner }),
       })
       const data = await res.json()
-      if (res.ok && data.duplicates) setConflictsState(data.duplicates)
+      if (res.ok && data.duplicates) {
+        setConflictsState(data.duplicates)
+        // Details are optional (older servers won't send them). When absent,
+        // downstream consumers fall back to the boolean map and lose the
+        // "empty target" hint, which is graceful — no crashes.
+        if (data.duplicateDetails) setConflictDetailsState(data.duplicateDetails)
+      }
     } catch { /* non-fatal */ }
   }, [])
 
@@ -185,5 +192,5 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
     enrichedIdsRef.current = new Set()
   }, [])
 
-  return { loading, error, tfvcWarning, enriching, conflicts: conflictsState, retry }
+  return { loading, error, tfvcWarning, enriching, conflicts: conflictsState, conflictDetails: conflictDetailsState, retry }
 }

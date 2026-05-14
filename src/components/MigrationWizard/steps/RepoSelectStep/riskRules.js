@@ -89,6 +89,20 @@ const rules = [
       // buttons here without wiring them would be a broken affordance.
     }
   },
+  function ruleEmptyTargetReuse(repo, ctx) {
+    const name = effectiveName(repo)
+    const detail = ctx.conflictDetails?.[name]
+    // Only surface when target exists AND is empty — that's the "reuse"
+    // path the import-service falls through to. If the conflict rule above
+    // already fired (non-empty target), this stays silent to avoid noise.
+    if (!detail?.exists || !detail.empty) return null
+    return {
+      type: 'empty-target-reuse',
+      severity: 'info',
+      message: `Will push into existing empty repo in ${ctx.targetOrg || 'the target org'}.`,
+      suggestion: 'GitHub already has a repo with this name but it has no commits — the migration will reuse it instead of creating a new one.',
+    }
+  },
   function ruleDuplicateInBatch(repo, ctx) {
     // Only flag when THIS repo is selected AND another selected repo shares
     // its name. Two unselected repos with the same name is not a blocker —
