@@ -148,6 +148,27 @@ describe('useAutoFixPlan', () => {
     expect(result.current.aiSuggestions['a']).toBeUndefined()
   })
 
+  it('Phase 1 emits a rename when the conflicts prop flags a target-org collision', () => {
+    mockFetchImpl({ 'check-duplicates': { body: { duplicates: {} } } })
+    const repos = [makeRepo({ id: 'm', name: 'MainSite', selected: true })]
+    const { result } = renderHook(() =>
+      useAutoFixPlan({
+        repos,
+        allRepos: repos,
+        targetOrg: 'BolaLabs',
+        azureProject: 'BolaLabs',
+        conflicts: { MainSite: true },
+        aiAvailable: false,
+      }),
+    )
+    expect(result.current.plan).toHaveLength(1)
+    expect(result.current.plan[0]).toMatchObject({
+      type: 'name-conflict',
+      from: 'MainSite',
+      to: 'BolaLabs-MainSite',
+    })
+  })
+
   it('Phase 3 AI suggestion persists for size-critical repo without a rename blocker', async () => {
     mockFetchImpl({
       'check-duplicates': { body: { duplicates: {} } },
