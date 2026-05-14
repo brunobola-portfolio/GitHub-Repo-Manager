@@ -145,8 +145,19 @@ router.post('/import/url', requireAuth, validateBody(importSchema), async (req, 
 // ------------------------------------------------------------------
 router.post('/import/check-duplicates', requireAuth, validateBody(importCheckDuplicatesSchema), async (req, res) => {
     try {
-        const { repos, targetOwner } = req.validatedBody;
+        const { repos } = req.validatedBody;
         const token = req.session.accessToken;
+        // When the wizard hasn't fixed a target org yet, fall back to the
+        // authenticated user's login — that's where /user/repos creates
+        // unscoped imports, so it's the actual surface for collisions.
+        let targetOwner = req.validatedBody.targetOwner;
+        if (!targetOwner) {
+            const me = await githubApi('/user', token).catch(() => null);
+            targetOwner = me?.login;
+            if (!targetOwner) {
+                return res.json({ duplicates: {}, duplicateDetails: {} });
+            }
+        }
 
         // `duplicates` keeps the original boolean shape (true = should block
         // the migration). `duplicateDetails` carries the new context callers

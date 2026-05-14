@@ -155,6 +155,8 @@ async function importRepository(params) {
     const jobId = randomUUID();
     const workDir = join(TMP_DIR, jobId);
     let createdRepo = null;
+    let reusedExistingRepo = false;
+    let lfsFetchFailed = false;
 
     try {
         // Step 1: Validate
@@ -180,12 +182,20 @@ async function importRepository(params) {
             'X-GitHub-Api-Version': '2022-11-28',
         };
 
+        // GitHub rejects descriptions longer than ~350 chars with a 422 that
+        // doesn't pinpoint the field. Truncate (with ellipsis) so legitimately
+        // long Azure descriptions don't break create.
+        const rawDescription = description || `Imported from ${safeUrl(sourceUrl)}`;
+        const safeDescription = rawDescription.length > 350
+            ? rawDescription.slice(0, 347) + '...'
+            : rawDescription;
+
         const createRes = await fetch(endpoint, {
             method: 'POST',
             headers: { ...githubHeaders, 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 name: targetName,
-                description: description || `Imported from ${safeUrl(sourceUrl)}`,
+                description: safeDescription,
                 private: isPrivate,
                 auto_init: false
             })
@@ -197,6 +207,22 @@ async function importRepository(params) {
             const err = await createRes.json().catch(() => null);
             const alreadyExists = createRes.status === 422
                 && err?.errors?.[0]?.message?.includes('already exists');
+
+            // Distinguish auth/permission failures so the user knows what to
+            // do. A generic "Failed: 403" tells them nothing actionable.
+            if (createRes.status === 401) {
+                throw new Error('GitHub token expired or invalid. Reconnect your GitHub account and try again.');
+            }
+            if (createRes.status === 403 && !alreadyExists) {
+                throw new Error(
+                    targetOwner
+                        ? `No permission to create repositories in ${targetOwner}. Make sure your GitHub account is a member with "Administration: Read & write", or pick a different target.`
+                        : 'No permission to create repositories on your GitHub account. Check that your token has the "repo" scope.',
+                );
+            }
+            if (createRes.status === 404 && targetOwner) {
+                throw new Error(`Organization "${targetOwner}" not found on GitHub. Check the spelling or pick a different target.`);
+            }
 
             if (alreadyExists) {
                 // Reuse path: fetch the existing repo and let the push proceed
@@ -228,6 +254,7 @@ async function importRepository(params) {
                     );
                 }
                 createdRepo = existing;
+                reusedExistingRepo = true;
                 onProgress('creating', `Reusing empty repository "${existing.full_name}"...`, 18);
             } else {
                 throw new Error(err?.message || `Failed to create GitHub repository: ${createRes.status}`);
@@ -255,6 +282,9 @@ async function importRepository(params) {
             } catch (e) {
                 logger.warn({ err: e }, 'LFS fetch warning');
                 // Continue even if LFS fetch fails - pointers will still be pushed
+                // but mark this so the SummaryStep can warn the user instead of
+                // silently shipping a target with orphaned LFS pointers.
+                lfsFetchFailed = true;
             }
         }
 
@@ -293,6 +323,30 @@ async function importRepository(params) {
             }
         }
 
+        // Step 4d: Race guard — when we entered the reuse path minutes ago,
+        // someone may have pushed to the target in the meantime. Verify it's
+        // still empty right before we touch it, otherwise --mirror could
+        // overwrite or fail non-obviously.
+        if (reusedExistingRepo) {
+            onProgress('verifying', 'Re-checking target is still empty...', 58);
+            const [ownerSeg, nameSeg] = targetFullName.split('/');
+            const freshRes = await fetch(
+                `https://api.github.com/repos/${encodeURIComponent(ownerSeg)}/${encodeURIComponent(nameSeg)}`,
+                { headers: githubHeaders },
+            );
+            if (freshRes.ok) {
+                const fresh = await freshRes.json();
+                if ((fresh.size > 0) || fresh.default_branch) {
+                    throw new Error(
+                        `Target "${targetFullName}" was modified during this migration — it no longer looks empty. Start a fresh migration so we don't overwrite the new content.`,
+                    );
+                }
+            }
+            // Soft-fail on freshRes !ok: prefer attempting the push (which
+            // will fail safely with non-fast-forward) over aborting on a
+            // transient API blip.
+        }
+
         // Step 5: Push mirror
         onProgress('pushing', `Pushing to GitHub...`, 60);
 
@@ -302,9 +356,6 @@ async function importRepository(params) {
         try {
             await bareGit.push('github', '--mirror');
         } catch (pushErr) {
-            // simple-git surfaces stderr on `message`, but the full output is on
-            // `git.stderr` / `pushErr.task.stdErr` in older versions. Check all
-            // common locations so GH001 detection survives library upgrades.
             const stderr = pushErr?.message || pushErr?.stderr || pushErr?.task?.stdErr || '';
             const parsed = parseOversizedPushError(stderr);
             if (parsed) {
@@ -314,6 +365,22 @@ async function importRepository(params) {
                 err.code = 'OVERSIZED_FILES';
                 err.files = parsed.files;
                 throw err;
+            }
+            // Branch protection / rulesets reject pushes with these tokens.
+            // Surface a clear actionable message instead of the raw remote
+            // rejection wall.
+            if (/protected branch|ruleset|rule.*violation|cannot.*force-push/i.test(stderr)) {
+                throw new Error(
+                    `GitHub blocked the push: branch protection or a repository ruleset on "${targetFullName}" prevents mirroring. Disable protection on the target temporarily, or pick a different target.`,
+                );
+            }
+            // --mirror needs the target empty (or strictly fast-forwardable).
+            // A non-fast-forward rejection on reuse means the race guard above
+            // missed a write — surface the concrete recovery path.
+            if (/non-fast-forward|rejected.*fetch first|not a fast-forward/i.test(stderr)) {
+                throw new Error(
+                    `Target "${targetFullName}" already has commits that conflict with the source history. Delete the target or pick a different name and retry.`,
+                );
             }
             throw pushErr;
         }
@@ -332,13 +399,47 @@ async function importRepository(params) {
         const refs = await bareGit.raw(['for-each-ref', '--format=%(refname)', 'refs/heads/']);
         const branchCount = refs.trim().split('\n').filter(Boolean).length;
 
-        onProgress('complete', 'Import completed successfully!', 100);
+        // Step 7: Align default branch on the target when we reused an
+        // existing repo whose default was set up before we knew the source's
+        // layout (typical case: target pre-created with `main`, source uses
+        // `master` or vice versa). Without this, the target's HEAD can point
+        // at a ref that --mirror just deleted, leaving the repo UI broken.
+        if (reusedExistingRepo) {
+            try {
+                const sourceHead = await bareGit.raw(['symbolic-ref', '--short', 'HEAD']).then(s => s.trim()).catch(() => null);
+                if (sourceHead && createdRepo.default_branch && sourceHead !== createdRepo.default_branch) {
+                    const [ownerSeg, nameSeg] = targetFullName.split('/');
+                    await fetch(
+                        `https://api.github.com/repos/${encodeURIComponent(ownerSeg)}/${encodeURIComponent(nameSeg)}`,
+                        {
+                            method: 'PATCH',
+                            headers: { ...githubHeaders, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ default_branch: sourceHead }),
+                        },
+                    );
+                }
+            } catch (e) {
+                logger.warn({ err: e }, 'Default branch alignment skipped');
+            }
+        }
+
+        // Empty source: --mirror pushed zero refs. Treat as success but
+        // surface so SummaryStep can show "Source had no commits" instead of
+        // a misleading "0 branches migrated" line.
+        const emptySource = branchCount === 0;
+
+        onProgress('complete', emptySource
+            ? 'Import completed — source had no commits.'
+            : 'Import completed successfully!', 100);
 
         return {
             success: true,
             targetFullName,
             branchCount,
             hasLFS,
+            lfsFetchFailed,
+            reusedExistingRepo,
+            emptySource,
             repoUrl: createdRepo.html_url
         };
 

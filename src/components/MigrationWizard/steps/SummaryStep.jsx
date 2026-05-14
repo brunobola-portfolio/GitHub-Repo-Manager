@@ -202,13 +202,38 @@ function TaskResultRow({ task, index, maxIndex = 10 }) {
             </>
           )}
         </div>
-        <div className="flex items-center gap-2 mt-0.5">
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider ${statusConfig.badge}`}>
             {statusConfig.label}
           </span>
           <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">
             {typeConfig.label}
           </span>
+          {task.metadata?.reusedExistingRepo && (
+            <span
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
+              title="Pushed into an existing empty repo instead of creating a new one"
+            >
+              Reused
+            </span>
+          )}
+          {task.metadata?.emptySource && (
+            <span
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-500/10 text-slate-500 dark:text-slate-400"
+              title="The source repository had no commits to migrate"
+            >
+              No commits
+            </span>
+          )}
+          {task.metadata?.lfsFetchFailed && (
+            <span
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-600 dark:text-amber-400"
+              title="LFS objects could not be fetched from source — target may have orphaned LFS pointers. Run `git lfs fetch --all` against the source and push to target manually."
+            >
+              <AlertTriangle className="w-2.5 h-2.5" />
+              LFS objects missing
+            </span>
+          )}
         </div>
       </div>
 

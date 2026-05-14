@@ -102,6 +102,30 @@ describe('POST /api/import/check-duplicates', () => {
         expect(res.body.duplicates).toEqual({ empty: false, busy: true, gone: false });
     });
 
+    it('falls back to the authenticated user login when targetOwner is omitted', async () => {
+        // /user returns the login; then /repos/<login>/<name> is consulted.
+        githubApi
+            .mockResolvedValueOnce({ login: 'authuser' })  // /user
+            .mockResolvedValueOnce({ size: 0, default_branch: null });  // /repos/authuser/foo
+        const res = await request(app)
+            .post('/api/import/check-duplicates')
+            .send({ repos: ['foo'] });
+        expect(res.status).toBe(200);
+        expect(res.body.duplicates).toEqual({ foo: false });
+        expect(res.body.duplicateDetails.foo.exists).toBe(true);
+        // Sanity: /user was called once with no path arg shape
+        expect(githubApi.mock.calls[0][0]).toBe('/user');
+    });
+
+    it('returns empty maps when targetOwner is omitted and /user fetch fails', async () => {
+        githubApi.mockRejectedValueOnce(new Error('Unauthorized'));
+        const res = await request(app)
+            .post('/api/import/check-duplicates')
+            .send({ repos: ['foo'] });
+        expect(res.body.duplicates).toEqual({});
+        expect(res.body.duplicateDetails).toEqual({});
+    });
+
     it('guards against a stale size=0 read by also requiring no default_branch', async () => {
         // Edge case: an old repo with size=0 in the API response but an
         // actual default_branch set — should still be treated as populated.

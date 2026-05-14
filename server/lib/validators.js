@@ -108,7 +108,11 @@ export const importValidateUrlSchema = z.object({
 
 export const importCheckDuplicatesSchema = z.object({
     repos: z.array(z.string().min(1).max(200)).min(1).max(100),
-    targetOwner: z.string().min(1).max(100),
+    // Optional: when omitted, the server resolves to the authenticated user's
+    // login. The frontend used to send the Azure org name as a fallback,
+    // which caused the check to always return "no conflict" because the
+    // Azure org name rarely matches a GitHub org.
+    targetOwner: z.string().min(1).max(100).optional(),
 });
 
 export const azureImportSchema = z.object({

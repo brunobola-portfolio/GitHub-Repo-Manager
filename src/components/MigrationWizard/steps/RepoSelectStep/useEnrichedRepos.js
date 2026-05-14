@@ -153,9 +153,9 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetched])
 
-  // ── 3. Conflict preview — batched + re-runs on targetOrg change ─────
+  // ── 3. Conflict preview — batched + re-runs on targetOrg/targetName change
   const runConflictCheck = useCallback(async (names, targetOwner) => {
-    if (!names.length || !targetOwner) return
+    if (!names.length) return
     try {
       const csrfToken = await getCsrfToken().catch(() => null)
       const res = await fetch('/api/import/check-duplicates', {
@@ -164,7 +164,11 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
           'Content-Type': 'application/json',
           ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
         },
-        body: JSON.stringify({ repos: names, targetOwner }),
+        // Send targetOwner only when truthy; the server resolves to the
+        // authenticated user's GitHub login when omitted (avoids the old
+        // bug where the Azure org name was sent as a GitHub owner and the
+        // check always returned "no conflict").
+        body: JSON.stringify(targetOwner ? { repos: names, targetOwner } : { repos: names }),
       })
       const data = await res.json()
       if (res.ok && data.duplicates) {
@@ -177,14 +181,20 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
     } catch { /* non-fatal */ }
   }, [])
 
+  // Effective name string — used both as request payload and as the effect
+  // signature so a rename via AutoFix retriggers the check (the old version
+  // only watched repos.length, so renames silently kept stale verdicts).
+  const effectiveNames = repos
+    .map((r) => (r.targetName && r.targetName.trim()) || r.name)
+    .join('|')
+
   useEffect(() => {
     if (!fetched || repos.length === 0) return
-    const owner = targetOrg || source.org
-    const names = repos.map((r) => r.name)
-    const handle = setTimeout(() => runConflictCheck(names, owner), 500)
+    const names = effectiveNames.split('|').filter(Boolean)
+    const handle = setTimeout(() => runConflictCheck(names, targetOrg), 500)
     return () => clearTimeout(handle)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetched, targetOrg, repos.length])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- effectiveNames is the join of every repo's effective name; depending on it captures rename edits without needing the full `repos` array (which has unrelated mutation triggers via enrichment).
+  }, [fetched, targetOrg, effectiveNames])
 
   const retry = useCallback(() => {
     setFetched(false)
