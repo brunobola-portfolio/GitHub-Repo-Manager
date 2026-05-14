@@ -159,6 +159,35 @@ export function formatDateTime(value) {
 }
 
 /**
+ * Format a duration in seconds as `1h 2m 3s` / `2m 3s` / `45s`. Crosses the
+ * hour boundary properly (so 3712s reads as `1h 1m 52s`, not the misleading
+ * `61m 52s` the old per-step formatters produced).
+ *
+ * @param {number} seconds
+ * @param {object} [opts]
+ * @param {string} [opts.zero='-'] - returned when seconds is falsy / non-positive
+ * @returns {string}
+ */
+export function formatDurationSeconds(seconds, { zero = '-' } = {}) {
+    const n = Number(seconds)
+    if (!Number.isFinite(n) || n <= 0) return zero
+    const total = Math.round(n)
+    if (total <= 0) return zero
+    if (total < 60) return `${total}s`
+    const hours = Math.floor(total / 3600)
+    const mins = Math.floor((total % 3600) / 60)
+    const secs = total % 60
+    const parts = []
+    if (hours > 0) parts.push(`${hours}h`)
+    if (mins > 0 || hours > 0) parts.push(`${mins}m`)
+    // Drop the seconds segment past the hour mark; it's noise once you're
+    // counting in hours, and the parent UI usually re-renders every second
+    // anyway so the live tick stays meaningful at the minute granularity.
+    if (hours === 0 && secs > 0) parts.push(`${secs}s`)
+    return parts.join(' ')
+}
+
+/**
  * "in 3 days" / "in 2h" / "in 45 min". Returns null for past dates,
  * NaN, or empty input. Days are the largest unit checked; sub-day uses
  * hours; sub-hour uses minutes (minimum 1 to avoid the meaningless "in 0 min").

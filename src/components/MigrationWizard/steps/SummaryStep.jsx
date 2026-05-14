@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { migrationApi } from '../../../api/migration'
 import { SectionSpinner } from '../../ui/Spinner'
+import { formatDurationSeconds } from '../../../utils/format'
 import { OversizedFilesPanel } from '../ui/OversizedFilesPanel'
 import { decodeOversizedError } from '../ui/oversizedError'
 
@@ -341,12 +342,11 @@ function ErrorCard({ error, index }) {
    UTILITIES
    ═══════════════════════════════════════════ */
 
+// Thin wrapper kept so the rest of this file reads as before; the actual
+// formatting is shared with ProgressStep so an hour boundary doesn't read as
+// "61m 52s" (technically right but visually misleading) anywhere in the wizard.
 function formatDuration(seconds) {
-  if (!seconds || seconds <= 0) return '-'
-  if (seconds < 60) return `${seconds}s`
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`
+  return formatDurationSeconds(seconds)
 }
 
 function getStatusHeadline(plan, score) {

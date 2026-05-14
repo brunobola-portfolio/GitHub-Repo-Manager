@@ -4,7 +4,8 @@ import {
   formatCompact,
   formatPercentage,
   formatFileSize,
-  formatRelativeTime
+  formatRelativeTime,
+  formatDurationSeconds
 } from '@/utils/format'
 
 describe('formatNumber', () => {
@@ -240,3 +241,43 @@ describe('formatRelativeTime', () => {
     expect(formatRelativeTime(date)).toBe('0s ago')
   })
 })
+
+describe("formatDurationSeconds", () => {
+  it("returns the zero token for null / NaN / negative input", () => {
+    expect(formatDurationSeconds(null)).toBe("-")
+    expect(formatDurationSeconds(undefined)).toBe("-")
+    expect(formatDurationSeconds(NaN)).toBe("-")
+    expect(formatDurationSeconds(0)).toBe("-")
+    expect(formatDurationSeconds(-5)).toBe("-")
+  })
+
+  it("honors a custom zero token", () => {
+    expect(formatDurationSeconds(0, { zero: "" })).toBe("")
+  })
+
+  it("shows seconds-only below 60", () => {
+    expect(formatDurationSeconds(1)).toBe("1s")
+    expect(formatDurationSeconds(45)).toBe("45s")
+    expect(formatDurationSeconds(59)).toBe("59s")
+  })
+
+  it("shows minutes and seconds below 1 hour", () => {
+    expect(formatDurationSeconds(60)).toBe("1m")
+    expect(formatDurationSeconds(61)).toBe("1m 1s")
+    expect(formatDurationSeconds(120)).toBe("2m")
+    expect(formatDurationSeconds(3599)).toBe("59m 59s")
+  })
+
+  it("rolls cleanly past the hour boundary instead of \"61m 52s\"", () => {
+    // 1h 1m 52s — the actual bug from the screenshot.
+    expect(formatDurationSeconds(3712)).toBe("1h 1m")
+    expect(formatDurationSeconds(3600)).toBe("1h 0m")
+    expect(formatDurationSeconds(7325)).toBe("2h 2m")
+  })
+
+  it("rounds fractional seconds", () => {
+    expect(formatDurationSeconds(59.6)).toBe("1m")
+    expect(formatDurationSeconds(0.4)).toBe("-")
+  })
+})
+

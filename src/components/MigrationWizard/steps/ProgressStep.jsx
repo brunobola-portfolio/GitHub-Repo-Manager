@@ -5,6 +5,8 @@ import {
   Loader2, Clock, Pause, Ban, RotateCcw, AlertTriangle,
 } from 'lucide-react'
 import { useSSE } from '../../../hooks/useSSE'
+import { useElapsedSeconds } from '../../../hooks/useElapsedSeconds'
+import { formatDurationSeconds } from '../../../utils/format'
 import { migrationApi } from '../../../api/migration'
 import { SectionSpinner } from '../../ui/Spinner'
 
@@ -45,22 +47,21 @@ function normalizeTasks(tasks) {
   return tasks.map(t => ({ ...t, status: normalizeTaskStatus(t.status) }))
 }
 
-function formatElapsed(startedAt) {
-  if (!startedAt) return null
-  const seconds = Math.round((Date.now() - new Date(startedAt).getTime()) / 1000)
-  if (seconds < 60) return `${seconds}s`
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins}m ${secs}s`
-}
-
 function TaskRow({ task, onRetry }) {
   const TypeIcon = TYPE_ICONS[task.type] || Package
   const StatusIcon = STATUS_ICONS[task.status] || Clock
   const statusColor = STATUS_COLORS[task.status] || STATUS_COLORS.pending
   const isRunning = task.status === 'running'
   const isFailed = task.status === 'failed'
-  const elapsed = formatElapsed(task.started_at || task.startedAt)
+  // Live tick while running so the badge actually moves. Once the task ends,
+  // freeze on its final completed_at-startedAt span so the row keeps a useful
+  // total instead of resetting.
+  const liveSeconds = useElapsedSeconds(task.started_at || task.startedAt, isRunning)
+  const finalSeconds = task.started_at && task.completed_at
+    ? Math.max(0, Math.round((new Date(task.completed_at).getTime() - new Date(task.started_at).getTime()) / 1000))
+    : null
+  const elapsedSeconds = isRunning ? liveSeconds : (finalSeconds ?? liveSeconds)
+  const elapsed = elapsedSeconds != null ? formatDurationSeconds(elapsedSeconds, { zero: '' }) : null
 
   return (
     <motion.div
@@ -124,7 +125,7 @@ function TaskRow({ task, onRetry }) {
       {/* Right side: status badge + elapsed + retry */}
       <div className="flex items-center gap-2 sm:shrink-0 flex-wrap justify-end">
         {elapsed && (
-          <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums">{elapsed}</span>
+          <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums" title={isRunning ? 'Elapsed (live)' : 'Total duration'}>{elapsed}</span>
         )}
 
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>
