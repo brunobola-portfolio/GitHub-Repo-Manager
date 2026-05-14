@@ -1,7 +1,7 @@
 // src/components/MigrationWizard/steps/RepoSelectStep/useAutoFixPlan.js
 import { useEffect, useMemo, useState } from 'react'
 import { buildDeterministicPlan } from './autoFixRules.js'
-import { SIZE_CRITICAL_KB } from './riskRules.js'
+import { SIZE_CRITICAL_BYTES } from './riskRules.js'
 import { getCsrfToken } from '../../../../utils/api'
 
 // Fix 2: priority-aware error setter (auth > ai-quota)
@@ -112,7 +112,7 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAva
         .finally(() => setIsValidating(false))
     }
 
-    const sizeCritical = repos.filter((r) => r.selected && r.size > SIZE_CRITICAL_KB)
+    const sizeCritical = repos.filter((r) => r.selected && r.size > SIZE_CRITICAL_BYTES)
     if (aiAvailable && sizeCritical.length > 0) {
       setIsAILoading(true)
       Promise.allSettled(

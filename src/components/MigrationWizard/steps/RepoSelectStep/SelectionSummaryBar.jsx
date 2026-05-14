@@ -2,8 +2,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { HardDrive, Clock, AlertTriangle, AlertOctagon, ArrowRight } from 'lucide-react'
 import { formatFileSize } from '../../../../utils/format'
 
-function estimateMinutes(totalSizeKb, totalBranches) {
-  const mb = totalSizeKb / 1024
+function estimateMinutes(totalSizeBytes, totalBranches) {
+  const mb = totalSizeBytes / (1024 * 1024)
   const seconds = (mb / 30) + (totalBranches * 3)
   return Math.max(1, Math.round(seconds / 60))
 }
@@ -28,7 +28,7 @@ export function SelectionSummaryBar({ selected, warnings, blockers, autoFixCount
           <div className="flex items-center gap-4 flex-wrap text-sm">
             <span className="font-semibold text-indigo-400">{selected.length} selected</span>
             <span className="flex items-center gap-1 text-slate-400">
-              <HardDrive className="w-3.5 h-3.5" aria-hidden="true" /> {formatFileSize(totalSize * 1024, 1)}
+              <HardDrive className="w-3.5 h-3.5" aria-hidden="true" /> {formatFileSize(totalSize, 1)}
             </span>
             <span className="flex items-center gap-1 text-slate-400">
               <Clock className="w-3.5 h-3.5" aria-hidden="true" /> ~{est} min

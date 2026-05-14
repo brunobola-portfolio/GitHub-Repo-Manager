@@ -7,7 +7,7 @@ const CHIP_DEFS = [
   { id: 'blocked',     icon: AlertOctagon,  label: 'Blocked',     match: (r) => r.risk?.level === 'blocker' },
   { id: 'stale',       icon: Clock,         label: 'Stale',       match: (r) => (r.risk?.flags || []).some((f) => f.type === 'stale') },
   { id: 'archived',    icon: Archive,       label: 'Archived',    match: (r) => r.isDisabled },
-  { id: 'large',       icon: Package,       label: 'Large',       match: (r) => r.size > 1024 * 1024 },
+  { id: 'large',       icon: Package,       label: 'Large',       match: (r) => r.size > 1024 * 1024 * 1024 },
   { id: 'tfvc',        icon: Database,      label: 'TFVC',        match: (r) => r.isTfvc },
   { id: 'conflicts',   icon: Copy,          label: 'Conflicts',   match: (r) => r.risk?.flags?.some((f) => f.type === 'name-conflict') },
 ]

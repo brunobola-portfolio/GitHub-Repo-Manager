@@ -4,7 +4,7 @@ import { Wand2, AlertTriangle } from 'lucide-react'
 import { useAutoFixPlan } from './useAutoFixPlan.js'
 import { FixPlanItem } from './FixPlanItem.jsx'
 import { SizeStrategyCard } from './SizeStrategyCard.jsx'
-import { SIZE_CRITICAL_KB } from './riskRules.js'
+import { SIZE_CRITICAL_BYTES } from './riskRules.js'
 import { isValidRepoName } from './autoFixRules.js'
 import { Drawer } from '../../../ui/Drawer'
 
@@ -28,7 +28,7 @@ export function AutoFixDrawer({
   })
 
   const sizeCritical = useMemo(
-    () => selected.filter((r) => r.size > SIZE_CRITICAL_KB),
+    () => selected.filter((r) => r.size > SIZE_CRITICAL_BYTES),
     [selected],
   )
 

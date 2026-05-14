@@ -20,7 +20,7 @@ const FILTER_PREDICATES = {
   'blocked':     (r) => r.risk?.level === 'blocker',
   'stale':       (r) => (r.risk?.flags || []).some((f) => f.type === 'stale'),
   'archived':    (r) => r.isDisabled,
-  'large':       (r) => r.size > 1024 * 1024,
+  'large':       (r) => r.size > 1024 * 1024 * 1024,
   'tfvc':        (r) => r.isTfvc,
   'conflicts':   (r) => r.risk?.flags?.some((f) => f.type === 'name-conflict'),
 }

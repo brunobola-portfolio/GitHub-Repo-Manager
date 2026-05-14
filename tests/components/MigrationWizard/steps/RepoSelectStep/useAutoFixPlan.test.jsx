@@ -67,7 +67,7 @@ describe('useAutoFixPlan', () => {
 
   it('Phase 3 skips when aiAvailable is false', async () => {
     mockFetchImpl({ 'check-duplicates': { body: { duplicates: {} } } })
-    const repos = [makeRepo({ id: 'a', name: 'huge', size: 11 * 1024 * 1024, selected: true })]
+    const repos = [makeRepo({ id: 'a', name: 'huge', size: 11 * 1024 * 1024 * 1024, selected: true })]
     const { result } = renderHook(() =>
       useAutoFixPlan({ repos, allRepos: repos, targetOrg: 'myorg', azureProject: 'X', aiAvailable: false }),
     )
@@ -84,7 +84,7 @@ describe('useAutoFixPlan', () => {
       'migration-size-strategy': { body: { strategy: 'lfs-migrate', rationale: 'r', confidence: 0.7 } },
     })
     const repos = [
-      makeRepo({ id: 'a', name: 'huge', size: 11 * 1024 * 1024, selected: true }),
+      makeRepo({ id: 'a', name: 'huge', size: 11 * 1024 * 1024 * 1024, selected: true }),
     ]
     const { result } = renderHook(() =>
       useAutoFixPlan({ repos, allRepos: repos, targetOrg: 'myorg', azureProject: 'X', aiAvailable: true }),
@@ -138,7 +138,7 @@ describe('useAutoFixPlan', () => {
       'check-duplicates': { body: { duplicates: {} } },
       'migration-size-strategy': { ok: false, status: 429, body: {} },
     })
-    const repos = [makeRepo({ id: 'a', name: 'huge', size: 11 * 1024 * 1024, selected: true })]
+    const repos = [makeRepo({ id: 'a', name: 'huge', size: 11 * 1024 * 1024 * 1024, selected: true })]
     const { result } = renderHook(() =>
       useAutoFixPlan({ repos, allRepos: repos, targetOrg: 'myorg', azureProject: 'X', aiAvailable: true }),
     )
@@ -154,7 +154,7 @@ describe('useAutoFixPlan', () => {
       'migration-size-strategy': { body: { strategy: 'exclude', rationale: 'stale', confidence: 0.9 } },
     })
     // A size-critical repo with a VALID name — no rename blocker → not in plan.
-    const repos = [makeRepo({ id: 'big', name: 'valid-name', size: 11 * 1024 * 1024, selected: true })]
+    const repos = [makeRepo({ id: 'big', name: 'valid-name', size: 11 * 1024 * 1024 * 1024, selected: true })]
     const { result } = renderHook(() =>
       useAutoFixPlan({ repos, allRepos: repos, targetOrg: 'myorg', azureProject: 'X', aiAvailable: true }),
     )

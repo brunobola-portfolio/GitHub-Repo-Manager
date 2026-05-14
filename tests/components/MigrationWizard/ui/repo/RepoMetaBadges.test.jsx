@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest'
 import { RepoMetaBadges } from '../../../../../src/components/MigrationWizard/ui/repo/RepoMetaBadges'
 
 describe('RepoMetaBadges', () => {
-  const base = { name: 'foo', size: 2048, language: 'JavaScript', branches: 3 }
+  const base = { name: 'foo', size: 2 * 1024 * 1024, language: 'JavaScript', branches: 3 }
 
   it('renders language, size, branches', () => {
     render(<RepoMetaBadges repo={base} />)

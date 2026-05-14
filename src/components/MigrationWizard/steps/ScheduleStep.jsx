@@ -29,7 +29,7 @@ function SummaryCard({ wizard }) {
       <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Migration Summary</h4>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard icon={Package} label="Repositories" value={selectedRepos.length} tone="indigo" />
-        <StatCard icon={HardDrive} label="Total size" value={formatFileSize(totalSize * 1024, 1)} tone="cyan" />
+        <StatCard icon={HardDrive} label="Total size" value={formatFileSize(totalSize, 1)} tone="cyan" />
         {estimatedMinutes && <StatCard icon={Clock} label="Estimated" value={`~${estimatedMinutes}m`} tone="violet" />}
         <StatCard icon={Flag} label="Target" value={targetOrg} tone="emerald" />
         {workItemCount > 0 && <StatCard icon={ClipboardList} label="Work items" value={workItemCount} tone="amber" />}

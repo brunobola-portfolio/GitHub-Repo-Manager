@@ -82,7 +82,7 @@ describe('AutoFixDrawer', () => {
   it('size-critical card without chosen strategy is not counted', () => {
     const repos = [
       makeRepo({ id: 'a', name: 'ok', size: 1024, selected: true }),
-      makeRepo({ id: 'b', name: 'huge', size: 11 * 1024 * 1024, selected: true }),
+      makeRepo({ id: 'b', name: 'huge', size: 11 * 1024 * 1024 * 1024, selected: true }),
     ]
     render(
       <AutoFixDrawer
@@ -102,7 +102,7 @@ describe('AutoFixDrawer', () => {
   it('selecting a strategy enables Apply for that repo', async () => {
     const user = userEvent.setup({ delay: null })
     const onApply = vi.fn()
-    const repos = [makeRepo({ id: 'b', name: 'huge', size: 11 * 1024 * 1024, selected: true })]
+    const repos = [makeRepo({ id: 'b', name: 'huge', size: 11 * 1024 * 1024 * 1024, selected: true })]
     render(
       <AutoFixDrawer
         open
@@ -125,7 +125,7 @@ describe('AutoFixDrawer', () => {
   it('selecting lfs-migrate also enables lfsEnabled in the patch', async () => {
     const user = userEvent.setup({ delay: null })
     const onApply = vi.fn()
-    const repos = [makeRepo({ id: 'b', name: 'huge', size: 11 * 1024 * 1024, selected: true })]
+    const repos = [makeRepo({ id: 'b', name: 'huge', size: 11 * 1024 * 1024 * 1024, selected: true })]
     render(
       <AutoFixDrawer
         open
@@ -146,7 +146,7 @@ describe('AutoFixDrawer', () => {
   })
 
   it('shows AI unavailable banner when aiAvailable is false and size-critical exists', () => {
-    const repos = [makeRepo({ id: 'b', name: 'huge', size: 11 * 1024 * 1024, selected: true })]
+    const repos = [makeRepo({ id: 'b', name: 'huge', size: 11 * 1024 * 1024 * 1024, selected: true })]
     render(
       <AutoFixDrawer
         open
@@ -218,7 +218,7 @@ describe('AutoFixDrawer', () => {
       makeRepo({
         id: 'b',
         name: 'huge',
-        size: 11 * 1024 * 1024,
+        size: 11 * 1024 * 1024 * 1024,
         selected: true,
         sizeStrategy: 'lfs-migrate',
       }),
@@ -245,7 +245,7 @@ describe('AutoFixDrawer', () => {
       makeRepo({
         id: 'b',
         name: 'huge',
-        size: 11 * 1024 * 1024,
+        size: 11 * 1024 * 1024 * 1024,
         selected: true,
         sizeStrategy: 'lfs-migrate',
       }),
@@ -270,7 +270,7 @@ describe('AutoFixDrawer', () => {
       makeRepo({
         id: 'b',
         name: 'huge',
-        size: 11 * 1024 * 1024,
+        size: 11 * 1024 * 1024 * 1024,
         selected: true,
         sizeStrategy: 'lfs-migrate',
       }),
@@ -299,7 +299,7 @@ describe('AutoFixDrawer', () => {
       makeRepo({
         id: 'b',
         name: 'huge',
-        size: 11 * 1024 * 1024,
+        size: 11 * 1024 * 1024 * 1024,
         selected: true,
         sizeStrategy: 'lfs-migrate',
       }),

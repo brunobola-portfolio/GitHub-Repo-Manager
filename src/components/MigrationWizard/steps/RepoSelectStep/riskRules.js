@@ -6,8 +6,10 @@ export const RESERVED_NAMES = [
   'admin', 'sponsors', 'topics',
 ]
 
-const GB_IN_KB = 1024 * 1024
-export const SIZE_CRITICAL_KB = 10 * GB_IN_KB
+// Azure DevOps GitRepository.size is reported in bytes.
+const GB_IN_BYTES = 1024 * 1024 * 1024
+export const SIZE_CRITICAL_BYTES = 10 * GB_IN_BYTES
+const SIZE_WARN_BYTES = 5 * GB_IN_BYTES
 const TWO_YEARS_MS = 2 * 365 * 24 * 60 * 60 * 1000
 const VALID_NAME_RE = /^[A-Za-z0-9._-]+$/
 
@@ -46,7 +48,7 @@ const rules = [
     }
   },
   function ruleSizeWarning(repo) {
-    if (repo.size <= 5 * GB_IN_KB || repo.size > 10 * GB_IN_KB) return null
+    if (repo.size <= SIZE_WARN_BYTES || repo.size > SIZE_CRITICAL_BYTES) return null
     return {
       type: 'size-warning',
       severity: 'warning',
@@ -55,7 +57,7 @@ const rules = [
     }
   },
   function ruleSizeCritical(repo) {
-    if (repo.size <= SIZE_CRITICAL_KB) return null
+    if (repo.size <= SIZE_CRITICAL_BYTES) return null
     // User has acknowledged the size and chosen a mitigation in the Fix
     // issues drawer (lfs-migrate or exclude); no longer a blocker.
     if (repo.sizeStrategy) return null

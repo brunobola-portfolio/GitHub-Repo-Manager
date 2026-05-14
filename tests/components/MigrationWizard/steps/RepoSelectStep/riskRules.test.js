@@ -22,21 +22,21 @@ describe('risk engine', () => {
   })
 
   it('flags size > 5GB as warning', () => {
-    // size is in KB
-    const r = evaluateRepo({ ...base, size: 6 * 1024 * 1024 }, ctx)
+    // size is in bytes (matches Azure DevOps GitRepository.size)
+    const r = evaluateRepo({ ...base, size: 6 * 1024 * 1024 * 1024 }, ctx)
     expect(r.level).toBe('warning')
     expect(r.flags.some((f) => f.type === 'size-warning')).toBe(true)
   })
 
   it('flags size > 10GB as blocker', () => {
-    const r = evaluateRepo({ ...base, size: 11 * 1024 * 1024 }, ctx)
+    const r = evaluateRepo({ ...base, size: 11 * 1024 * 1024 * 1024 }, ctx)
     expect(r.level).toBe('blocker')
     expect(r.flags.some((f) => f.type === 'size-critical')).toBe(true)
   })
 
   it('clears size-critical when sizeStrategy=lfs-migrate is chosen', () => {
     const r = evaluateRepo(
-      { ...base, size: 11 * 1024 * 1024, sizeStrategy: 'lfs-migrate' },
+      { ...base, size: 11 * 1024 * 1024 * 1024, sizeStrategy: 'lfs-migrate' },
       ctx,
     )
     expect(r.flags.some((f) => f.type === 'size-critical')).toBe(false)
@@ -45,7 +45,7 @@ describe('risk engine', () => {
 
   it('clears size-critical when sizeStrategy=exclude is chosen', () => {
     const r = evaluateRepo(
-      { ...base, size: 11 * 1024 * 1024, sizeStrategy: 'exclude' },
+      { ...base, size: 11 * 1024 * 1024 * 1024, sizeStrategy: 'exclude' },
       ctx,
     )
     expect(r.flags.some((f) => f.type === 'size-critical')).toBe(false)

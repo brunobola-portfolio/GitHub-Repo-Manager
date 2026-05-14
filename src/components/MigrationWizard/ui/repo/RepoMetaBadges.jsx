@@ -39,7 +39,7 @@ export function RepoMetaBadges({ repo, density = 'full' }) {
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
       {repo.language && <Badge icon={Code2} tone="purple">{repo.language}</Badge>}
-      <Badge icon={HardDrive}>{formatFileSize((repo.size || 0) * 1024, 1)}</Badge>
+      <Badge icon={HardDrive}>{formatFileSize(repo.size || 0, 1)}</Badge>
       {showBranches && <Badge icon={GitBranch} tone="sky">{repo.branches}</Badge>}
       {repo.isTfvc && <Badge tone="violet">TFVC</Badge>}
       {repo.hasLfsMarker && <Badge icon={Database} tone="amber">LFS</Badge>}

@@ -1,10 +1,9 @@
 // src/components/MigrationWizard/steps/RepoSelectStep/SizeStrategyCard.jsx
 import { Sparkles, X, Package, Database, CheckCircle2 } from 'lucide-react'
+import { formatFileSize } from '../../../../utils/format'
 
-const GB = 1024 * 1024
-
-function formatSize(kb) {
-  return `${(kb / GB).toFixed(1)} GB`
+function formatSize(bytes) {
+  return formatFileSize(bytes || 0, 1)
 }
 
 const STRATEGIES = [
