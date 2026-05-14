@@ -272,6 +272,7 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
         allRepos={repos}
         targetOrg={targetOrg}
         azureProject={source?.project}
+        conflicts={conflicts}
         aiAvailable={aiAvailable}
         onClose={() => setDrawerOpen(false)}
         onApply={handleApplyFixes}

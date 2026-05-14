@@ -31,10 +31,10 @@ function worseError(prev, next) {
  * - Abort on unmount via the single AbortController is internal; callers
  *   do not need to manage cleanup.
  */
-export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, aiAvailable }) {
+export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, conflicts, aiAvailable }) {
   const ctx = useMemo(
-    () => ({ allRepos, conflicts: {}, targetOrg, azureProject }),
-    [allRepos, targetOrg, azureProject],
+    () => ({ allRepos, conflicts: conflicts || {}, targetOrg, azureProject }),
+    [allRepos, conflicts, targetOrg, azureProject],
   )
 
   const plan = useMemo(() => buildDeterministicPlan(repos, ctx), [repos, ctx])

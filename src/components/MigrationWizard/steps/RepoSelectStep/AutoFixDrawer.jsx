@@ -14,6 +14,7 @@ export function AutoFixDrawer({
   allRepos,
   targetOrg,
   azureProject,
+  conflicts,
   aiAvailable,
   onClose,
   onApply,
@@ -24,6 +25,7 @@ export function AutoFixDrawer({
     allRepos,
     targetOrg,
     azureProject,
+    conflicts,
     aiAvailable: aiAvailable && open,
   })
 
