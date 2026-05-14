@@ -298,17 +298,18 @@ export function useMigrationWizard({
     }
   }, [currentStepIndex, steps, source, repos, workItems, wiki, aiPlan, schedule, planId, importJobs])
 
-  // Clear a stale wizard-level error once the current step's preconditions
-  // are actually met. Without this, errors set by a too-early Next click
-  // (e.g. PAT-backed auto-validation still in flight) linger on screen even
-  // after the underlying state becomes valid.
+  // Clear a stale wizard-level error once the user-visible reason changes —
+  // either resolved entirely, or shifted to a different validator complaint
+  // (e.g. "Please validate your credentials" should disappear once the PAT
+  // auto-validates, even if "Project is required" is now the live problem;
+  // that next message will surface when the user clicks Next again).
   useEffect(() => {
     if (!error) return
     const validate = validators[steps[currentStepIndex]]
     if (!validate) return
-    const stillInvalid = validate({ source, repos, workItems, wiki, aiPlan, schedule, planId, importJobs })
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- clears a transient UI error once its precondition resolves; no cascade because the next render sees error=null and exits the effect early.
-    if (!stillInvalid) setError(null)
+    const current = validate({ source, repos, workItems, wiki, aiPlan, schedule, planId, importJobs })
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clears a transient UI error once its precondition shifts; no cascade because the next render sees error=null and exits the effect early.
+    if (current !== error) setError(null)
   }, [error, currentStepIndex, steps, source, repos, workItems, wiki, aiPlan, schedule, planId, importJobs])
 
   const prevStep = useCallback(() => {
