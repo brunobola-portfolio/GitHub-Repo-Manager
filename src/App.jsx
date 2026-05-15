@@ -31,7 +31,6 @@ import { useIsAdmin } from './hooks/useIsAdmin'
 import { useLicense } from './hooks/useLicense'
 import { useCommandPalette } from './hooks/useCommandPalette'
 import { CommandPalette } from './components/CommandPalette'
-import { CommandPalette as CommandPaletteUI } from './components/ui/CommandPalette'
 import { useResponsiveLayout } from './hooks/useResponsiveLayout'
 import CollapsiblePanel from './components/ui/CollapsiblePanel'
 import { SlimSidebar } from './components/Sidebar'
@@ -1517,6 +1516,7 @@ function AppContent() {
         isAdmin={isAdmin}
         selectedRepoDetail={selectedRepoDetail}
         selectedRepoDetailEntities={palettePropEntities}
+        onSyncNow={handleRefreshOrgs}
       />
 
       {/* Mobile-only FAB to reach the command palette without a keyboard.
@@ -1530,11 +1530,6 @@ function AppContent() {
         onClick={commandPalette.open}
         shiftAboveBottomBar={!!user}
       />
-
-      <CommandPaletteUI commands={[
-        { id: 'sync', label: 'Sync now', run: () => window.dispatchEvent(new CustomEvent('app:sync')) },
-        { id: 'toggle-theme', label: 'Toggle theme', run: () => document.documentElement.classList.toggle('dark') },
-      ]} />
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <PendingSyncBanner isAuthenticated={!!user} />

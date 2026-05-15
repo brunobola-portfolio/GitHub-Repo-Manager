@@ -229,6 +229,9 @@ export function CommandPalette({
   // lists for the active repo, the palette enumerates the corresponding
   // action registries. Empty / undefined = the group is hidden.
   selectedRepoDetailEntities = null,
+  // Starter commands wired from App-level callbacks (replaces the removed
+  // duplicate ui/CommandPalette mount; see C2 audit fix).
+  onSyncNow = null,
 }) {
   const [input, setInput] = useState('')
   // Track whether a PRReviewView is currently mounted + focused. PRReviewView
@@ -391,8 +394,8 @@ export function CommandPalette({
       open={isOpen}
       onOpenChange={(open) => { if (!open) onClose() }}
       label="Command Palette"
-      overlayClassName="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm"
-      contentClassName="fixed left-1/2 top-[20%] z-[9999] -translate-x-1/2 w-full max-w-[640px] px-4"
+      overlayClassName="fixed inset-0 z-[var(--ds-z-modal)] bg-black/50 backdrop-blur-sm"
+      contentClassName="fixed left-1/2 top-[20%] z-[var(--ds-z-ceiling)] -translate-x-1/2 w-full max-w-[640px] px-4"
       shouldFilter={true}
     >
       {/* Radix Dialog requires Title + Description for screen readers; cmdk
@@ -615,6 +618,26 @@ export function CommandPalette({
                 </Command.Item>
               )
             })}
+            {onSyncNow && (
+              <Command.Item
+                key="action-sync-now"
+                value="Sync now sync organisations refresh"
+                onSelect={() => { onSyncNow(); onClose() }}
+                className={ITEM_CLASSES}
+              >
+                <RefreshCw className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                Sync now
+              </Command.Item>
+            )}
+            <Command.Item
+              key="action-toggle-theme"
+              value="Toggle theme dark light mode"
+              onSelect={() => { document.documentElement.classList.toggle('dark'); onClose() }}
+              className={ITEM_CLASSES}
+            >
+              <Settings className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />
+              Toggle theme
+            </Command.Item>
           </Command.Group>
 
           {isAdmin && (

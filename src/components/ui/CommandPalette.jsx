@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Command } from 'cmdk'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 
 export function CommandPalette({ commands = [] }) {
   const [open, setOpen] = useState(false)
+
+  const handleClose = () => setOpen(false)
+  const trapRef = useFocusTrap(open, handleClose, { disableEscape: true })
 
   useEffect(() => {
     const onKey = (e) => {
@@ -22,6 +26,7 @@ export function CommandPalette({ commands = [] }) {
   return (
     // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/click-events-have-key-events
     <div
+      ref={trapRef}
       className="fixed inset-0 bg-black/60 flex items-start justify-center pt-[15vh] z-[var(--ds-z-modal)]"
       role="dialog"
       aria-modal="true"

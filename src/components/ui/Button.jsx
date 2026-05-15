@@ -3,10 +3,10 @@ import { twMerge } from 'tailwind-merge'
 const variants = {
     primary: 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm active:scale-[0.98] ds-focus-ring',
     secondary: 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 shadow-sm dark:shadow-slate-900/50 active:scale-[0.98] ds-focus-ring',
-    danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm shadow-red-200 dark:shadow-red-900/50 active:scale-[0.98] ds-focus-ring',
-    warning: 'bg-amber-500 text-white hover:bg-amber-600 shadow-sm shadow-amber-200 dark:shadow-amber-900/50 active:scale-[0.98] ds-focus-ring',
-    success: 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-200 dark:shadow-emerald-900/50 active:scale-[0.98] ds-focus-ring',
-    info: 'bg-sky-500 text-white hover:bg-sky-600 shadow-sm shadow-sky-200 dark:shadow-sky-900/50 active:scale-[0.98] ds-focus-ring',
+    danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm active:scale-[0.98] ds-focus-ring',
+    warning: 'bg-amber-500 text-white hover:bg-amber-600 shadow-sm active:scale-[0.98] ds-focus-ring',
+    success: 'bg-[color:var(--ds-cta)] dark:bg-[color:var(--ds-cta-dark)] text-white hover:bg-[color:var(--ds-cta-hover)] dark:hover:bg-[color:var(--ds-cta-hover-dark)] shadow-sm active:scale-[0.98] ds-focus-ring',
+    info: 'bg-sky-500 text-white hover:bg-sky-600 shadow-sm active:scale-[0.98] ds-focus-ring',
     ghost: 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 ds-focus-ring',
     // Outline variants — transparent bg with coloured border + matching text.
     // For tight CTAs that read as 'soft' actions (Replace / Rename / Skip in
@@ -43,7 +43,7 @@ export function Button({ className, variant = 'primary', size = 'md', children, 
     return (
         <button
             className={twMerge(
-                'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
+                'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
                 enforcesMinTarget && 'min-h-[44px] min-w-[44px]',
                 variants[variant] || variants.primary,
                 sizes[size] || sizes.md,

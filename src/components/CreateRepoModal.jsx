@@ -138,8 +138,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
             onClose={onClose}
             title="Create Repository"
             icon={Plus}
-            headerGradient="from-emerald-600 via-emerald-500 to-teal-600"
-            size="md"
+size="md"
             footer={footer}
             isMaximized={isMaximized}
             isMobile={isMobile}

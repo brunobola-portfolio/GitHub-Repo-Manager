@@ -420,7 +420,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
             {!isUser && (
                 <div className={`w-7 h-7 rounded-lg ${isError ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-[color:var(--ds-accent-brand)] text-white'} flex items-center justify-center shrink-0 mt-0.5 mr-2 shadow-sm`}>
                     {isError
-                        ? <AlertTriangle size={13} className="text-white" />
+                        ? <AlertTriangle size={13} className="text-rose-600 dark:text-rose-400" />
                         : <Sparkles size={13} className="text-white" />}
                 </div>
             )}
