@@ -44,7 +44,7 @@ export function HeroSection({ onSignIn }) {
         />
 
         {/* Top spotlight */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-gradient-to-b from-indigo-500/10 via-purple-500/5 to-transparent dark:from-indigo-500/15 dark:via-purple-500/8 blur-3xl" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-indigo-500/8 dark:bg-indigo-500/12 blur-3xl" />
       </div>
 
       {/* Badge */}
@@ -67,10 +67,10 @@ export function HeroSection({ onSignIn }) {
       {/* Headline */}
       <motion.h1
         {...fadeUp(0.1)}
-        className="text-4xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight leading-[1.08] mb-6 max-w-4xl ds-font-display"
+        className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.08] mb-6 max-w-4xl ds-font-display"
       >
         <span className="text-slate-900 dark:text-white">Manage your GitHub repos with </span>
-        <span className="ds-gradient-text">AI superpowers</span>
+        <span className="text-slate-900 dark:text-white font-semibold">AI superpowers</span>
       </motion.h1>
 
       {/* Subtitle */}
@@ -90,14 +90,12 @@ export function HeroSection({ onSignIn }) {
         <button
           onClick={onSignIn}
           className="group relative px-8 py-3.5 rounded-2xl font-bold text-base text-white
-            bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]
-            hover:bg-right
-            shadow-xl shadow-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/50
+            bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600
+            shadow-md
             hover:scale-[1.04] active:scale-[0.97]
-            transition-all duration-500
+            transition-all duration-300
             focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2
-            focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950 focus:outline-none
-            ds-btn-shimmer"
+            focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950 focus:outline-none"
         >
           <span className="flex items-center gap-2.5">
             <Github className="w-5 h-5" />

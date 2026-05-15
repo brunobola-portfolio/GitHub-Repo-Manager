@@ -65,7 +65,7 @@ export function SystemSetup({ onComplete }) {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center mb-12"
                 >
-                    <div className="w-20 h-20 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-xl shadow-indigo-500/30">
+                    <div className="w-20 h-20 bg-indigo-600 dark:bg-indigo-500 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-xl">
                         <Database className="w-10 h-10 text-white" />
                     </div>
                     <PageHeader

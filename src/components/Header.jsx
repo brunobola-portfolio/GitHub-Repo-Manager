@@ -87,7 +87,7 @@ export function Header({
                       </button>
                     )}
                     <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-[4px] pr-3 rounded-[13px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
-                        <div className="bg-gradient-to-br from-indigo-600 to-purple-600 w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shadow-md shadow-indigo-500/20 dark:shadow-indigo-500/25 flex-shrink-0 text-white">
+                        <div className="bg-indigo-600 dark:bg-indigo-500 w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shadow-md flex-shrink-0 text-white">
                             <AppLogoIcon className="w-[18px] h-[18px]" />
                         </div>
                         <div className="min-w-0 hidden sm:block">
@@ -275,8 +275,8 @@ export function Header({
                                     className="flex items-center gap-1.5 h-[34px] px-3 sm:px-3.5 rounded-[9px]
                                         bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600
                                         text-white text-[13px] font-semibold
-                                        shadow-sm shadow-indigo-500/25
-                                        hover:shadow-md hover:shadow-indigo-500/30
+                                        shadow-sm
+                                        hover:shadow-md
                                         active:scale-[0.97] transition-all duration-200
                                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                                 >
@@ -467,7 +467,7 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
     return (
         <div className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
             {/* User Info */}
-            <div className="p-4 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-slate-700/50 dark:to-slate-800/50 border-b border-slate-200/60 dark:border-slate-700/50">
+            <div className="p-4 bg-slate-50/70 dark:bg-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/50">
                 <div className="flex items-center gap-3">
                     <img
                         src={user.avatar_url || 'https://github.com/ghost.png'}

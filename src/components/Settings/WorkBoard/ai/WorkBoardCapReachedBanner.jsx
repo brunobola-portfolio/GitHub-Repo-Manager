@@ -24,10 +24,10 @@ export function WorkBoardCapReachedBanner({ spentCents, capCents, className = ''
             variants={variants}
             role="alert"
             aria-live="polite"
-            className={`relative overflow-hidden rounded-xl p-4 ring-1 ring-inset ring-rose-500/30 bg-gradient-to-br from-rose-500/[0.08] via-amber-500/[0.05] to-transparent dark:from-rose-500/[0.12] dark:via-amber-500/[0.08] ${className}`}
+            className={`relative overflow-hidden rounded-xl p-4 ring-1 ring-inset ring-rose-500/30 bg-rose-500/[0.08] dark:bg-rose-500/[0.12] ${className}`}
         >
             <div className="flex items-start gap-3">
-                <div className="shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500/25 to-amber-500/20 dark:from-rose-500/35 dark:to-amber-500/30 ring-1 ring-inset ring-rose-500/40 flex items-center justify-center">
+                <div className="shrink-0 w-10 h-10 rounded-xl bg-rose-500/25 dark:bg-rose-500/35 ring-1 ring-inset ring-rose-500/40 flex items-center justify-center">
                     <Wallet className="w-5 h-5 text-rose-600 dark:text-rose-300" aria-hidden="true" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -61,7 +61,7 @@ export function WorkBoardCapReachedBanner({ spentCents, capCents, className = ''
                                     aria-label={`${Math.round(pct)}% of monthly AI cap used`}
                                 >
                                     <div
-                                        className="h-full bg-gradient-to-r from-rose-500 to-amber-500"
+                                        className="h-full bg-rose-500"
                                         style={{ width: `${pct}%` }}
                                         aria-hidden="true"
                                     />

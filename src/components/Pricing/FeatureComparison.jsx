@@ -168,7 +168,7 @@ export function FeatureComparison() {
     >
       <div className="text-center mb-10">
         <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white ds-font-display mb-3">
-          Compare all <span className="ds-gradient-text">features</span>
+          Compare all <span className="text-indigo-600 dark:text-indigo-400">features</span>
         </h2>
         <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-lg mx-auto">
           A full breakdown of what's included in each plan.

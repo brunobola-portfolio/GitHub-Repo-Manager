@@ -162,7 +162,7 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
                         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                        className="fixed right-0 top-0 bottom-0 z-[var(--ds-z-modal)] flex flex-col bg-white/70 dark:bg-slate-900/95 backdrop-blur-xl border-l border-slate-200/40 dark:border-slate-700/40 shadow-2xl"
+                        className="fixed right-0 top-0 bottom-0 z-[var(--ds-z-modal)] flex flex-col bg-white/70 dark:bg-slate-900/95 backdrop-blur-md border-l border-slate-200/40 dark:border-slate-700/40 shadow-2xl"
                         style={{ width: `min(${toolkit.panelWidth}px, 100vw)` }}
                         role="dialog"
                         aria-modal="true"
@@ -181,7 +181,7 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                         />
 
                         {/* Header */}
-                        <header className="relative bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-4">
+                        <header className="relative bg-indigo-700 dark:bg-indigo-600 px-5 py-4">
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-2">
                                     <div className="w-6 h-6 rounded-md bg-white/20 flex items-center justify-center">

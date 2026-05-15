@@ -11,13 +11,13 @@ const SOURCE_TYPES = [
     icon: Cloud,
     recommended: true,
     accent: {
-      icon: 'from-cyan-400 to-blue-500',
+      icon: 'bg-cyan-500',
       iconText: 'text-white',
-      glow: 'shadow-cyan-500/25 dark:shadow-cyan-400/20',
+      glow: '',
       border: 'border-cyan-400/60 dark:border-cyan-400/40',
       bg: 'bg-cyan-50/80 dark:bg-cyan-950/30',
       ring: 'ring-cyan-400/20',
-      badge: 'from-amber-400 to-orange-500',
+      badge: 'bg-amber-500',
     },
   },
   {
@@ -27,9 +27,9 @@ const SOURCE_TYPES = [
     icon: Globe,
     recommended: false,
     accent: {
-      icon: 'from-emerald-400 to-teal-500',
+      icon: 'bg-emerald-500',
       iconText: 'text-white',
-      glow: 'shadow-emerald-500/25 dark:shadow-emerald-400/20',
+      glow: '',
       border: 'border-emerald-400/60 dark:border-emerald-400/40',
       bg: 'bg-emerald-50/80 dark:bg-emerald-950/30',
       ring: 'ring-emerald-400/20',
@@ -42,9 +42,9 @@ const SOURCE_TYPES = [
     icon: GitBranch,
     recommended: false,
     accent: {
-      icon: 'from-violet-400 to-purple-500',
+      icon: 'bg-violet-500',
       iconText: 'text-white',
-      glow: 'shadow-violet-500/25 dark:shadow-violet-400/20',
+      glow: '',
       border: 'border-violet-400/60 dark:border-violet-400/40',
       bg: 'bg-violet-50/80 dark:bg-violet-950/30',
       ring: 'ring-violet-400/20',
@@ -138,7 +138,7 @@ export default function SourceTypeStep({ source, onChange, onAdvance }) {
               onMouseEnter={() => setHoveredType(st.value)}
               onMouseLeave={() => setHoveredType(null)}
               className={`
-                ds-card-shimmer ds-focus-ring
+                ds-focus-ring
                 group relative w-full flex items-center gap-4 p-4 rounded-2xl text-left
                 transition-all duration-300 ease-out
                 ${selected
@@ -150,7 +150,7 @@ export default function SourceTypeStep({ source, onChange, onAdvance }) {
             >
               {/* Icon */}
               <div className={`
-                relative p-3 rounded-xl bg-gradient-to-br ${accent.icon}
+                relative p-3 rounded-xl ${accent.icon}
                 shadow-md transition-all duration-300
                 ${selected ? `shadow-lg ${accent.glow}` : 'shadow-slate-200/60 dark:shadow-black/30'}
                 ${hovered && !selected ? `shadow-lg ${accent.glow}` : ''}
@@ -174,8 +174,8 @@ export default function SourceTypeStep({ source, onChange, onAdvance }) {
                     <span className={`
                       inline-flex items-center gap-1 text-[11px] font-semibold
                       px-2 py-0.5 rounded-full
-                      bg-gradient-to-r ${accent.badge} text-white
-                      shadow-sm shadow-amber-500/20
+                      ${accent.badge} text-white
+                      shadow-sm
                     `}>
                       <Star className="w-3 h-3" fill="currentColor" />
                       Recommended

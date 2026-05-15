@@ -332,7 +332,7 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
         </div>
         <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
           <motion.div
-            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
+            className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full"
             initial={{ width: 0 }}
             animate={{ width: `${overallProgress}%` }}
             transition={{ duration: 0.5 }}

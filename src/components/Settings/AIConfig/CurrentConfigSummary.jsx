@@ -66,8 +66,8 @@ export function CurrentConfigSummary({ form }) {
     const featuresHealth = useAIFeaturesHealth(showPerFeature ? activeFeatures : [])
 
     return (
-        <div className="rounded-2xl p-[1px] bg-gradient-to-br from-indigo-500/30 via-purple-500/20 to-pink-500/10 dark:from-indigo-500/40 dark:via-purple-500/30 dark:to-pink-500/20">
-            <div className="rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-4 space-y-4">
+        <div className="rounded-2xl ring-1 ring-indigo-500/25 dark:ring-indigo-500/35">
+            <div className="rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 space-y-4">
                 <div className="flex items-center gap-2">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
                     <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">

@@ -17,7 +17,7 @@ export function RoadmapItem({ title, description, tier, index = 0 }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-24px' }}
       transition={{ duration: 0.4, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
-      className="group relative rounded-xl p-4 ds-card-shimmer ds-hover-lift
+      className="group relative rounded-xl p-4
         bg-white/70 dark:bg-white/[0.04] backdrop-blur-sm
         border border-slate-200/60 dark:border-white/[0.08]
         hover:border-slate-300 dark:hover:border-white/[0.15]

@@ -37,7 +37,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
             {/* Header */}
             <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2.5">
-                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/25 shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center shadow-md shrink-0">
                         <Sparkles className="w-4 h-4 text-white" />
                     </div>
                     <div>
@@ -204,7 +204,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                         type="button"
                         onClick={handleApply}
                         disabled={applyDisabled}
-                        className="ds-btn-shimmer inline-flex items-center gap-1.5 px-5 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:from-indigo-400 hover:to-purple-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-medium rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white shadow-md hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {phase === 'applying' ? <Spinner size="xs" /> : <Sparkles className="w-3.5 h-3.5" />}
                         Apply to {stats.includedReady} repo{stats.includedReady === 1 ? '' : 's'}

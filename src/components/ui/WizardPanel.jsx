@@ -27,7 +27,8 @@ export function WizardPanel({
   isMaximized = true,
   isMobile = false,
   onToggleMaximize,
-  headerGradient = DEFAULT_GRADIENT,
+   
+  headerGradient: _headerGradient = DEFAULT_GRADIENT,
   size = 'xl',
 }) {
   const panelRef = useFocusTrap(isOpen, onClose, { disableEscape })
@@ -74,7 +75,7 @@ export function WizardPanel({
             {/* Title Bar */}
             <div className={`
               flex-shrink-0 text-white flex items-center h-12 md:h-[52px] px-4 md:px-5 gap-3
-              ${headerGradient ? `bg-gradient-to-r ${headerGradient}` : 'bg-indigo-600'}
+              bg-indigo-600 dark:bg-indigo-700
               ${effectiveMaximized ? '' : 'border-b border-white/10'}
             `}>
               {/* Left: Icon + Title */}

@@ -42,7 +42,7 @@ export function AINotConfiguredBanner({
                 animate="visible"
                 exit="exit"
                 variants={variants}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-700 dark:text-indigo-200 ring-1 ring-inset ring-indigo-200/60 dark:ring-indigo-800/60 ${className}`}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-200 ring-1 ring-inset ring-indigo-200/60 dark:ring-indigo-800/60 ${className}`}
                 role="status"
             >
                 <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
@@ -66,10 +66,10 @@ export function AINotConfiguredBanner({
             variants={variants}
             role="status"
             aria-live="polite"
-            className={`relative overflow-hidden rounded-xl p-4 ring-1 ring-inset ring-indigo-500/20 bg-gradient-to-br from-indigo-500/[0.06] via-purple-500/[0.04] to-transparent dark:from-indigo-500/[0.10] dark:via-purple-500/[0.06] ${className}`}
+            className={`relative overflow-hidden rounded-xl p-4 ring-1 ring-inset ring-indigo-500/20 bg-indigo-500/[0.06] dark:bg-indigo-500/[0.10] ${className}`}
         >
             <div className="flex items-start gap-3">
-                <div className="shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 dark:from-indigo-500/30 dark:to-purple-500/30 ring-1 ring-inset ring-indigo-500/30 flex items-center justify-center">
+                <div className="shrink-0 w-10 h-10 rounded-xl bg-indigo-500/20 dark:bg-indigo-500/30 ring-1 ring-inset ring-indigo-500/30 flex items-center justify-center">
                     <Key className="w-5 h-5 text-indigo-600 dark:text-indigo-300" aria-hidden="true" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -86,7 +86,7 @@ export function AINotConfiguredBanner({
                         <button
                             type="button"
                             onClick={openAISettings}
-                            className="ds-btn-shimmer inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-lg transition-colors shadow-md shadow-indigo-500/25"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-md"
                         >
                             <Key className="w-3.5 h-3.5" aria-hidden="true" />
                             Configure AI

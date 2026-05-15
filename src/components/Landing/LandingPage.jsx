@@ -97,11 +97,11 @@ export function LandingPage({ onSignIn }) {
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="sticky top-0 z-20 backdrop-blur-xl bg-white/75 dark:bg-slate-950/75 border-b border-slate-200/50 dark:border-white/[0.06]"
+        className="sticky top-0 z-20 backdrop-blur-md bg-white/75 dark:bg-slate-950/75 border-b border-slate-200/50 dark:border-white/[0.06]"
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/30">
+            <div className="w-7 h-7 rounded-lg bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center shadow-md">
               <Github className="w-4 h-4 text-white" />
             </div>
             <span className="font-bold text-slate-800 dark:text-white text-sm ds-font-display">
@@ -123,14 +123,13 @@ export function LandingPage({ onSignIn }) {
             <button
               onClick={onSignIn}
               className="px-4 py-2 rounded-xl text-sm font-semibold text-white
-                bg-gradient-to-r from-indigo-600 to-purple-600
-                hover:from-indigo-500 hover:to-purple-500
-                shadow-md shadow-indigo-500/25
+                bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600
+                shadow-md
                 hover:scale-[1.03] active:scale-[0.97]
                 transition-all duration-200
                 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2
                 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950 focus:outline-none
-                ds-btn-shimmer ds-font-display"
+                ds-font-display"
             >
               Sign in
             </button>

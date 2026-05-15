@@ -18,7 +18,6 @@ const TIER_CONFIG = {
         iconColor: 'text-slate-500',
         iconBg: 'bg-slate-100 dark:bg-slate-700',
         badgeVariant: 'default',
-        gradient: 'from-slate-400 to-slate-600',
     },
     pro: {
         label: 'Pro',
@@ -26,7 +25,6 @@ const TIER_CONFIG = {
         iconColor: 'text-indigo-500',
         iconBg: 'bg-indigo-500/10',
         badgeVariant: 'info',
-        gradient: 'from-indigo-500 to-purple-600',
     },
     enterprise: {
         label: 'Enterprise',
@@ -34,7 +32,6 @@ const TIER_CONFIG = {
         iconColor: 'text-amber-500',
         iconBg: 'bg-amber-500/10',
         badgeVariant: 'warning',
-        gradient: 'from-amber-500 to-orange-600',
     },
 }
 
@@ -110,7 +107,7 @@ function PlanCard({ tier, status, renewalDate, onManage, onChangePlan, portalLoa
 function UpgradePrompt({ onUpgradePro, onUpgradeEnterprise }) {
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <motion.div whileHover={{ y: -3 }}>
+            <div>
                 <Card className="p-5 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all cursor-pointer h-full" onClick={onUpgradePro}>
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center">
@@ -133,9 +130,9 @@ function UpgradePrompt({ onUpgradePro, onUpgradeEnterprise }) {
                         Upgrade to Pro
                     </Button>
                 </Card>
-            </motion.div>
+            </div>
 
-            <motion.div whileHover={{ y: -3 }}>
+            <div>
                 <Card className="p-5 hover:border-amber-300 dark:hover:border-amber-700 transition-all cursor-pointer h-full" onClick={onUpgradeEnterprise}>
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center">
@@ -154,11 +151,11 @@ function UpgradePrompt({ onUpgradePro, onUpgradeEnterprise }) {
                             </li>
                         ))}
                     </ul>
-                    <button className="w-full py-2 text-sm font-medium text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 rounded-xl transition-all">
+                    <button className="w-full py-2 text-sm font-medium text-white bg-amber-500 dark:bg-amber-400 hover:bg-amber-600 dark:hover:bg-amber-500 rounded-xl transition-colors">
                         Contact Sales
                     </button>
                 </Card>
-            </motion.div>
+            </div>
         </div>
     )
 }

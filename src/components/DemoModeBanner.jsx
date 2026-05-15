@@ -31,7 +31,7 @@ export function DemoModeBanner() {
         <div
             role="status"
             data-testid="demo-mode-banner"
-            className="flex items-center gap-2 px-4 py-1.5 text-xs bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40 border-b border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200"
+            className="flex items-center gap-2 px-4 py-1.5 text-xs bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200"
         >
             <Sparkles className="w-3.5 h-3.5 shrink-0" aria-hidden />
             <span className="flex-1">

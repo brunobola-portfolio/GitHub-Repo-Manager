@@ -179,7 +179,7 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
         disabled={!source.targetName?.trim()}
         className={`w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl transition-all
           ${source.targetName?.trim()
-            ? 'text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-lg shadow-indigo-500/25'
+            ? 'text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md'
             : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'}`}
       >
         Import Repository

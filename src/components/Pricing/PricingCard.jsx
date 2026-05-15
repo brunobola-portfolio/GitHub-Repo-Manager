@@ -42,7 +42,7 @@ export function PricingCard({
         rawX.set(dx * 6)
         rawY.set(dy * 6)
       }}
-      whileHover={reducedMotion ? {} : { scale: highlighted ? 1.02 : 1.015, y: -6 }}
+      whileHover={reducedMotion ? {} : undefined}
       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
       className="relative flex flex-col h-full"
       style={{ '--mx': '50%', '--my': '50%' }}
@@ -76,7 +76,7 @@ export function PricingCard({
       {/* Badge — absolute on the outer wrapper (no overflow-hidden here) */}
       {highlighted && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20">
-          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 shadow-lg shadow-indigo-500/30">
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-indigo-600 dark:bg-indigo-500 shadow-md">
             <Zap className="w-3 h-3" />
             Most Popular
           </span>
@@ -85,7 +85,7 @@ export function PricingCard({
 
       {enterprise && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20">
-          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 shadow-lg shadow-amber-500/30">
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-amber-500 shadow-lg">
             <Crown className="w-3 h-3" />
             Enterprise
           </span>
@@ -94,12 +94,12 @@ export function PricingCard({
 
       {/* Card body */}
       <div
-        className={`relative flex flex-col h-full rounded-2xl p-7 ds-card-shimmer overflow-hidden transition-shadow duration-300
+        className={`relative flex flex-col h-full rounded-2xl p-7 overflow-hidden transition-shadow duration-300
           ${highlighted
-            ? 'bg-slate-900 dark:bg-slate-900 border border-transparent shadow-2xl shadow-indigo-500/25 hover:shadow-violet-500/40 ds-border-glow'
+            ? 'bg-slate-900 dark:bg-slate-900 border border-transparent shadow-2xl'
             : enterprise
               ? 'bg-white dark:bg-slate-950 border border-transparent shadow-xl shadow-amber-500/10 hover:shadow-amber-500/30'
-              : 'bg-white/60 dark:bg-white/[0.04] backdrop-blur-xl border border-slate-200/60 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.15] hover:shadow-indigo-500/20 hover:shadow-xl'
+              : 'bg-white/60 dark:bg-white/[0.04] backdrop-blur-md border border-slate-200/60 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.15] hover:shadow-xl'
           }`}
       >
         <PricingCardHoverLayers
@@ -134,19 +134,13 @@ export function PricingCard({
               </span>
             )}
             <span
-              className={`text-5xl font-extrabold ds-font-display leading-none transition-[background-image] duration-500
+              className={`text-5xl font-bold ds-font-display leading-none
                 ${highlighted
                   ? 'text-white'
                   : enterprise
                     ? 'text-slate-800 dark:text-white'
                     : 'text-slate-800 dark:text-white'
                 }`}
-              style={isHovered && !reducedMotion ? {
-                backgroundImage: `linear-gradient(135deg, ${accent.primary}, ${accent.secondary})`,
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              } : undefined}
             >
               {customPrice != null ? customPrice : price === 0 ? 'Free' : `$${price}`}
             </span>
@@ -234,10 +228,9 @@ export function PricingCard({
               <button
                 onClick={ctaAction}
                 className="w-full py-3.5 rounded-xl font-bold text-sm text-white
-                  bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-[length:200%_100%]
-                  hover:bg-right shadow-lg shadow-indigo-500/30
-                  hover:shadow-xl hover:shadow-indigo-500/40
-                  active:scale-95 transition-all duration-500 ds-btn-shimmer"
+                  bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600
+                  shadow-md
+                  active:scale-95 transition-all duration-300"
               >
                 {ctaText}
               </button>

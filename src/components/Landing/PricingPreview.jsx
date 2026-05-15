@@ -108,7 +108,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 			{/* Badges — absolute on outer wrapper so they can float above the card body (overflow-visible here) */}
 			{plan.popular && (
 				<div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
-					<div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 shadow-lg shadow-indigo-500/30">
+					<div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-indigo-600 dark:bg-indigo-500 shadow-md">
 						<Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
 						<span className="text-xs font-bold text-white tracking-wide">Most Popular</span>
 					</div>
@@ -117,7 +117,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 
 			{plan.enterprise && (
 				<div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
-					<div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 shadow-lg shadow-amber-500/30">
+					<div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-500 shadow-lg">
 						<Crown className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
 						<span className="text-xs font-bold text-white tracking-wide">Enterprise</span>
 					</div>
@@ -126,12 +126,12 @@ function PreviewCard({ plan, i, onSignIn }) {
 
 			{/* Card body — has overflow-hidden to clip the shimmer */}
 			<div
-				className={`relative rounded-2xl p-7 flex flex-col gap-6 h-full ds-hover-lift transition-all duration-300 overflow-hidden
+				className={`relative rounded-2xl p-7 flex flex-col gap-6 h-full transition-all duration-300 overflow-hidden
 					${plan.popular
-						? 'bg-gradient-to-b from-indigo-600/90 to-purple-700/90 dark:from-indigo-600/80 dark:to-purple-700/80 border-2 border-indigo-400/30 shadow-2xl shadow-indigo-500/30 hover:shadow-violet-500/40'
+						? 'bg-indigo-700 dark:bg-indigo-600 border-2 border-indigo-400/30 shadow-2xl'
 						: plan.enterprise
 							? 'bg-white/60 dark:bg-white/[0.04] border border-amber-400/30 dark:border-amber-500/20 backdrop-blur-sm shadow-lg shadow-amber-500/5 hover:shadow-amber-500/30'
-							: 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm hover:shadow-indigo-500/20 hover:shadow-xl'
+							: 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm hover:shadow-xl'
 					}`}
 			>
 				<PricingCardHoverLayers
@@ -150,13 +150,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 						</p>
 						<div className="flex items-end gap-2 mb-2">
 							<span
-								className={`text-4xl font-extrabold tracking-tight ds-font-display transition-[background-image] duration-500 ${plan.popular ? 'text-white' : 'text-slate-900 dark:text-white'}`}
-								style={isHovered && !reducedMotion ? {
-									backgroundImage: `linear-gradient(135deg, ${accent.primary}, ${accent.secondary})`,
-									backgroundClip: 'text',
-									WebkitBackgroundClip: 'text',
-									WebkitTextFillColor: 'transparent',
-								} : undefined}
+								className={`text-4xl font-bold tracking-tight ds-font-display ${plan.popular ? 'text-white' : 'text-slate-900 dark:text-white'}`}
 							>
 								{plan.price}
 							</span>
@@ -212,7 +206,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 									onSignIn()
 								}
 							}}
-							className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 ds-btn-shimmer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+							className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
 								${plan.popular
 									? 'bg-white text-indigo-700 hover:bg-indigo-50 shadow-lg shadow-white/20 hover:shadow-xl focus-visible:ring-white focus-visible:ring-offset-indigo-600'
 									: plan.enterprise
@@ -255,9 +249,9 @@ export function PricingPreview({ onSignIn }) {
           <p className="text-xs font-semibold tracking-widest uppercase text-indigo-500 dark:text-indigo-400 mb-3 ds-font-display">
             Pricing
           </p>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight ds-font-display mb-4">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white tracking-tight ds-font-display mb-4">
             Simple,{' '}
-            <span className="ds-gradient-text">transparent pricing</span>
+            <span className="text-slate-900 dark:text-white font-semibold">transparent pricing</span>
           </h2>
           <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto text-lg ds-font-display">
             Start free, scale when you&apos;re ready. Or self-host for free forever.

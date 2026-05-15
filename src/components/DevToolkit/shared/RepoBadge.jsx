@@ -30,7 +30,7 @@ export function RepoBadge({ repos = [], selectedRepo, isPinned, onSelectRepo, on
                     onClick={() => setOpen(!open)}
                     className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border transition-all ${
                         isPinned
-                            ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-sm shadow-indigo-500/10'
+                            ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 shadow-sm'
                             : 'bg-slate-100 dark:bg-slate-800/60 border-slate-200/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-400'
                     }`}
                 >

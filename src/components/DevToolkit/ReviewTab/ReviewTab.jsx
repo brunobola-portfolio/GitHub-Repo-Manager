@@ -188,7 +188,7 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
                     <button
                         type="button"
                         onClick={handleStartFullReview}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-lg shadow-indigo-500/20 transition-all"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md transition-all"
                     >
                         <Eye className="w-4 h-4" />
                         Open Full Review

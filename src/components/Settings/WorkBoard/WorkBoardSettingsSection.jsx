@@ -135,7 +135,7 @@ export function WorkBoardSettingsSection() {
             <header className="relative flex items-start gap-4 pb-1">
                 <span
                     aria-hidden="true"
-                    className="absolute -left-1 top-1 bottom-1 w-0.5 rounded-full bg-gradient-to-b from-indigo-500 via-violet-500 to-blue-500 opacity-80"
+                    className="absolute -left-1 top-1 bottom-1 w-0.5 rounded-full bg-indigo-500 opacity-80"
                 />
                 <div className="pl-3 flex-1 min-w-0">
                     <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
@@ -155,7 +155,7 @@ export function WorkBoardSettingsSection() {
                 {/* ─────────── Left column: configuration ─────────── */}
                 <div className="space-y-4 min-w-0">
                     {/* 01 — Discovery */}
-                    <section className="rounded-2xl bg-gradient-to-br from-indigo-500/[0.03] via-violet-500/[0.02] to-transparent dark:from-indigo-500/[0.05] dark:via-violet-500/[0.03] ring-1 ring-inset ring-indigo-500/15 dark:ring-indigo-500/20 p-4">
+                    <section className="rounded-2xl bg-indigo-500/[0.03] dark:bg-indigo-500/[0.05] ring-1 ring-inset ring-indigo-500/15 dark:ring-indigo-500/20 p-4">
                         <WorkBoardSectionHeader
                             step={1}
                             title="Discovery"

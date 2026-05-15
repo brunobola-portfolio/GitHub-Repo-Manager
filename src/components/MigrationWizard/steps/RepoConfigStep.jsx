@@ -303,7 +303,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="bg-gradient-to-br from-violet-500/10 to-indigo-500/10 border border-violet-500/20 rounded-2xl p-5"
+        className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-5"
       >
         {/* Row 1: Destination + Bulk Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
@@ -411,7 +411,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                   }`}
               >
                 {/* Gradient left border accent */}
-                <div className="absolute top-0 left-0 bottom-0 w-[3px] rounded-l-xl bg-gradient-to-b from-violet-500 to-cyan-500" />
+                <div className="absolute top-0 left-0 bottom-0 w-[3px] rounded-l-xl bg-violet-500" />
 
                 {/* ── Main row ──────────────────────────────────── */}
                 <div className="flex items-center gap-3 pl-4 pr-3 py-3">
@@ -743,7 +743,7 @@ function DescriptionField({ repo, index, aiAvailable, isGenerating, onChange, on
           className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium
             transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed
             ${aiAvailable
-              ? 'text-white bg-gradient-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 shadow-sm hover:shadow-md'
+              ? 'text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-sm hover:shadow-md'
               : 'text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600/60'
             }`}
         >

@@ -62,7 +62,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
             className={twMerge(
                 'relative isolate overflow-hidden',
                 'rounded-3xl border border-amber-200/70 dark:border-amber-500/25',
-                'bg-amber-50/70 dark:bg-amber-500/5 backdrop-blur-xl',
+                'bg-amber-50/70 dark:bg-amber-500/5 backdrop-blur-md',
                 'shadow-lg shadow-amber-100/40 dark:shadow-black/30',
                 'px-6 py-10 sm:px-10 sm:py-12',
                 className
@@ -76,8 +76,8 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.08, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
                     className="mb-5 inline-flex items-center justify-center w-14 h-14 rounded-2xl
-                               bg-gradient-to-br from-amber-400 to-orange-500
-                               shadow-lg shadow-amber-500/30 ring-1 ring-amber-500/20"
+                               bg-amber-500
+                               shadow-lg ring-1 ring-amber-500/20"
                 >
                     <Plug className="w-6 h-6 text-white" strokeWidth={2.4} />
                 </motion.div>
@@ -151,8 +151,7 @@ function BannerService({ service, reason, docsHref, contactEmail, contactSubject
             )}
         >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg
-                             bg-gradient-to-br from-amber-400 to-orange-500
-                             shadow-md shadow-amber-500/30">
+                             bg-amber-500 shadow-md">
                 <Plug className="w-4 h-4 text-white" />
             </span>
 
@@ -238,7 +237,7 @@ function Halo() {
             aria-hidden
             className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2
                        w-[28rem] h-[28rem] rounded-full blur-3xl opacity-30 dark:opacity-20
-                       bg-gradient-to-br from-amber-300 via-orange-400 to-rose-400"
+                       bg-amber-400"
         />
     )
 }

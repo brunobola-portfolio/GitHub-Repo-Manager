@@ -525,7 +525,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, pre
         className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/60 dark:to-slate-800/30 border border-slate-200/60 dark:border-white/10"
       >
         {/* Subtle gradient accent at top */}
-        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-80" />
+        <div className="absolute top-0 inset-x-0 h-1 bg-indigo-500 opacity-80" />
 
         <div className="flex items-center gap-6 p-6">
           <CircularProgress score={score} />
@@ -666,10 +666,9 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, pre
             onClick={onNewMigration}
             className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl
               text-white
-              bg-gradient-to-r from-indigo-500 to-purple-600
-              hover:from-indigo-600 hover:to-purple-700
-              shadow-lg shadow-indigo-500/25
-              hover:shadow-xl hover:shadow-indigo-500/30
+              bg-indigo-600 dark:bg-indigo-500
+              hover:bg-indigo-700 dark:hover:bg-indigo-600
+              shadow-md
               transition-all duration-200 ml-auto"
           >
             <Plus className="w-4 h-4" />

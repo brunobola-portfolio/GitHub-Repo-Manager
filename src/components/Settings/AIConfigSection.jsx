@@ -346,7 +346,7 @@ export function AIConfigSection() {
             <header className="relative flex items-start gap-4 pb-1">
                 <span
                     aria-hidden="true"
-                    className="absolute -left-1 top-1 bottom-1 w-0.5 rounded-full bg-gradient-to-b from-indigo-500 via-purple-500 to-pink-500 opacity-80"
+                    className="absolute -left-1 top-1 bottom-1 w-0.5 rounded-full bg-indigo-500 opacity-80"
                 />
                 <div className="pl-3 flex-1 min-w-0">
                     <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
@@ -364,8 +364,8 @@ export function AIConfigSection() {
 
             {/* Shared-key banner — premium hairline-gradient */}
             {form.serverFallbackAvailable && !hasKeyStored && (
-                <div className="relative rounded-2xl p-[1px] bg-gradient-to-br from-amber-400/40 via-amber-500/20 to-transparent">
-                    <div className="flex items-start gap-3 rounded-2xl bg-amber-50/80 dark:bg-amber-900/10 backdrop-blur-xl px-3.5 py-3">
+                <div className="relative rounded-2xl ring-1 ring-amber-400/40">
+                    <div className="flex items-start gap-3 rounded-2xl bg-amber-50/80 dark:bg-amber-900/10 backdrop-blur-md px-3.5 py-3">
                         <div className="w-8 h-8 shrink-0 rounded-lg bg-amber-500/15 ring-1 ring-inset ring-amber-500/30 flex items-center justify-center">
                             <Info className="w-4 h-4 text-amber-600 dark:text-amber-400" aria-hidden="true" />
                         </div>
@@ -382,7 +382,7 @@ export function AIConfigSection() {
                 {/* ─────────── Left column: configuration form ─────────── */}
                 <div className="space-y-4 min-w-0">
                     {/* 01 — Completion provider */}
-                    <section className="rounded-2xl bg-gradient-to-br from-indigo-500/[0.03] via-purple-500/[0.02] to-transparent dark:from-indigo-500/[0.05] dark:via-purple-500/[0.03] ring-1 ring-inset ring-indigo-500/15 dark:ring-indigo-500/20 p-4">
+                    <section className="rounded-2xl bg-indigo-500/[0.03] dark:bg-indigo-500/[0.05] ring-1 ring-inset ring-indigo-500/15 dark:ring-indigo-500/20 p-4">
                         <SectionHeader
                             step={1}
                             title="Completion provider"
@@ -523,7 +523,7 @@ export function AIConfigSection() {
                             <button
                                 onClick={handleSave}
                                 disabled={saving || !isDirty}
-                                className="ds-btn-shimmer inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-slate-400 disabled:to-slate-500 disabled:shadow-none disabled:cursor-not-allowed rounded-xl shadow-lg shadow-indigo-500/25 transition-all"
+                                className="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:bg-slate-400 disabled:shadow-none disabled:cursor-not-allowed rounded-xl shadow-md transition-all"
                             >
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                                 {saving ? 'Saving...' : 'Save'}

@@ -24,7 +24,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
       className="relative overflow-hidden rounded-xl border border-slate-200/80 dark:border-white/10 bg-gradient-to-br from-white via-white to-slate-50 dark:from-white/[0.04] dark:via-white/[0.02] dark:to-white/[0.01]"
     >
       {/* Top gradient accent */}
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500 via-violet-500 to-purple-500 opacity-70" />
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-indigo-500 opacity-70" />
 
       <div className="p-4">
         {/* Source → Destination row */}
@@ -60,7 +60,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
           {/* Arrow */}
           <div className="shrink-0 flex flex-col items-center gap-0.5 px-1">
             <motion.div
-              className="w-9 h-9 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 flex items-center justify-center shadow-md shadow-indigo-500/20"
+              className="w-9 h-9 rounded-full bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center shadow-md"
               animate={{ x: [0, 2, 0] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >

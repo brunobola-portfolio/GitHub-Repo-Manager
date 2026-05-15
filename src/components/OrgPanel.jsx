@@ -32,7 +32,7 @@ export function OrgPanel({
 			<div className="p-5 border-b border-slate-200/60 dark:border-slate-700/40">
 				<div className="flex items-center justify-between mb-4">
 					<h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
-						<div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/20">
+						<div className="p-2 rounded-xl bg-indigo-600 dark:bg-indigo-500 text-white shadow-md">
 							<Building2 className="w-4 h-4" />
 						</div>
 						Organizations
@@ -144,7 +144,7 @@ export function OrgPanel({
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Portal>
 							<DropdownMenu.Content
-								className="min-w-[200px] bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-slate-300/50 dark:shadow-black/50 border border-slate-200/70 dark:border-slate-700/60 p-1.5 z-[var(--ds-z-popover)] animate-in fade-in zoom-in-95 duration-200"
+								className="min-w-[200px] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/70 dark:border-slate-700/60 p-1.5 z-[var(--ds-z-popover)] animate-in fade-in zoom-in-95 duration-200"
 								sideOffset={8}
 							>
 								<DropdownMenu.Item
@@ -201,14 +201,14 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 			title={org.description || org.login}
 			className={`group relative w-full flex items-center gap-3 rounded-xl transition-all duration-300 border ${
 				isSelected
-					? 'bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800 shadow-lg shadow-indigo-200/50 dark:shadow-indigo-900/30'
-					: 'bg-white/80 dark:bg-slate-800/60 border-slate-200/50 dark:border-slate-700/40 hover:border-indigo-200 dark:hover:border-indigo-800/60 hover:shadow-xl hover:shadow-indigo-100/30 dark:hover:shadow-indigo-900/20'
+					? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800 shadow-lg'
+					: 'bg-white/80 dark:bg-slate-800/60 border-slate-200/50 dark:border-slate-700/40 hover:border-indigo-200 dark:hover:border-indigo-800/60 hover:shadow-xl'
 			} ${isGrid ? 'flex-col text-center p-5 min-h-[180px] justify-start' : 'p-3.5'}`}
 		>
 			{/* Gradient overlay animado no hover (estado selecionado) */}
 			{isSelected && (
 				<motion.div
-					className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 dark:from-indigo-500/10 dark:to-purple-500/10"
+					className="absolute inset-0 rounded-xl bg-indigo-500/5 dark:bg-indigo-500/10"
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					transition={{ duration: 0.3 }}
@@ -222,14 +222,14 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 					alt={org.login}
 					className={`rounded-xl object-cover ring-2 transition-all duration-300 ${
 						isSelected
-							? 'ring-indigo-300 dark:ring-indigo-600 shadow-lg shadow-indigo-200/50 dark:shadow-indigo-900/50'
+							? 'ring-indigo-300 dark:ring-indigo-600 shadow-lg'
 							: 'ring-slate-200 dark:ring-slate-700 group-hover:ring-indigo-300 dark:group-hover:ring-indigo-700/60 group-hover:shadow-md'
 					} ${isGrid ? 'w-16 h-16 mb-3' : 'w-11 h-11'}`}
 				/>
 
 				{/* Personal Account Badge */}
 				{isPersonal && (
-					<div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-md shadow-md">
+					<div className="absolute -bottom-1 -right-1 bg-indigo-600 dark:bg-indigo-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-md shadow-md">
 						YOU
 					</div>
 				)}

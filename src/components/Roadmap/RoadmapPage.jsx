@@ -104,10 +104,10 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.65, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight ds-font-display mb-5"
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight ds-font-display mb-5"
           >
             <span className="text-slate-800 dark:text-white">What we&apos;re</span>{' '}
-            <span className="ds-gradient-text">building next</span>
+            <span className="text-slate-800 dark:text-white font-semibold">building next</span>
           </motion.h1>
 
           <motion.p

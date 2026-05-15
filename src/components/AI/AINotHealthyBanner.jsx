@@ -51,10 +51,10 @@ export function AINotHealthyBanner({
             variants={variants}
             role="alert"
             aria-live="polite"
-            className={`relative overflow-hidden rounded-xl p-4 ring-1 ring-inset ring-amber-500/30 bg-gradient-to-br from-amber-500/[0.08] via-orange-500/[0.05] to-transparent dark:from-amber-500/[0.12] dark:via-orange-500/[0.08] ${className}`}
+            className={`relative overflow-hidden rounded-xl p-4 ring-1 ring-inset ring-amber-500/30 bg-amber-500/[0.08] dark:bg-amber-500/[0.12] ${className}`}
         >
             <div className="flex items-start gap-3">
-                <div className="shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/25 to-orange-500/20 dark:from-amber-500/35 dark:to-orange-500/30 ring-1 ring-inset ring-amber-500/40 flex items-center justify-center">
+                <div className="shrink-0 w-10 h-10 rounded-xl bg-amber-500/25 dark:bg-amber-500/35 ring-1 ring-inset ring-amber-500/40 flex items-center justify-center">
                     <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-300" aria-hidden="true" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -71,7 +71,7 @@ export function AINotHealthyBanner({
                         <button
                             type="button"
                             onClick={openAISettings}
-                            className="ds-btn-shimmer inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-sm font-semibold rounded-lg transition-colors shadow-md shadow-amber-500/25"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-md"
                         >
                             <KeyRound className="w-3.5 h-3.5" aria-hidden="true" />
                             Verify in Settings

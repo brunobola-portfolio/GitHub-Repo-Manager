@@ -1,6 +1,6 @@
 export function SkeletonRow() {
   return (
-    <div className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 ds-card-shimmer">
+    <div className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700">
       <div className="flex items-center gap-3">
         <div className="w-[18px] h-[18px] rounded bg-slate-200 dark:bg-slate-700" />
         <div className="flex-1 space-y-2">

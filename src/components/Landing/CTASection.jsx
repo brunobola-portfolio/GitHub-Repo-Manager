@@ -42,10 +42,10 @@ export function CTASection({ onSignIn }) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white ds-font-display mb-5"
+          className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white ds-font-display mb-5"
         >
           Ready to level up your{' '}
-          <span className="ds-gradient-text-premium">repo management?</span>
+          <span className="text-slate-900 dark:text-white font-semibold">repo management?</span>
         </motion.h2>
 
         {/* Sub */}
@@ -70,14 +70,12 @@ export function CTASection({ onSignIn }) {
           <button
             onClick={onSignIn}
             className="group relative px-9 py-4 rounded-2xl font-bold text-base text-white
-              bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]
-              hover:bg-right
-              shadow-xl shadow-indigo-500/30 hover:shadow-2xl hover:shadow-indigo-500/50
+              bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600
+              shadow-md
               hover:scale-[1.04] active:scale-[0.97]
-              transition-all duration-500
+              transition-all duration-300
               focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2
-              focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950 focus:outline-none
-              ds-btn-shimmer"
+              focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950 focus:outline-none"
           >
             <span className="flex items-center gap-2.5">
               <Github className="w-5 h-5" />

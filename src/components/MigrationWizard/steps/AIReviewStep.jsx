@@ -139,7 +139,6 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
             type="button"
             onClick={analyze}
             disabled={analyzing}
-            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
               text-violet-600 dark:text-violet-400
@@ -366,15 +365,13 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                 <motion.button
                   type="button"
                   onClick={handleApprove}
-                  whileHover={{ scale: 1.01, y: -1 }}
                   whileTap={{ scale: 0.99 }}
                   className="relative w-full overflow-hidden inline-flex items-center justify-center gap-2.5 px-5 py-3.5 text-sm font-semibold rounded-xl
                     text-white
-                    bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600
-                    shadow-lg shadow-emerald-500/20
-                    hover:shadow-xl hover:shadow-emerald-500/30
-                    transition-shadow duration-300
-                    ds-btn-shimmer"
+                    bg-emerald-600 dark:bg-emerald-500
+                    hover:bg-emerald-700 dark:hover:bg-emerald-600
+                    shadow-lg
+                    transition-colors duration-200"
                 >
                   <CheckCircle2 className="w-4.5 h-4.5" />
                   Approve Migration Plan

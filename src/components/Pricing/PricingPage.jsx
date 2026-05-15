@@ -295,10 +295,10 @@ export function PricingPage({ onGetStarted } = {}) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.65, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight ds-font-display mb-5"
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight ds-font-display mb-5"
           >
             <span className="text-slate-800 dark:text-white">Plans that</span>{' '}
-            <span className="ds-gradient-text">grow with you</span>
+            <span className="text-slate-900 dark:text-white font-semibold">grow with you</span>
           </motion.h1>
 
           <motion.p
@@ -412,7 +412,7 @@ export function PricingPage({ onGetStarted } = {}) {
             className="text-center mb-10"
           >
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white ds-font-display mb-3">
-              Frequently asked <span className="ds-gradient-text">questions</span>
+              Frequently asked <span className="text-indigo-600 dark:text-indigo-400">questions</span>
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-lg mx-auto">
               Can't find the answer? Reach us at{' '}
@@ -440,7 +440,7 @@ export function PricingPage({ onGetStarted } = {}) {
         >
           <div className="relative rounded-3xl px-8 py-14 text-center bg-slate-900 dark:bg-slate-900 overflow-hidden">
             {/* Inner glow */}
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-purple-600/5 to-cyan-500/10 pointer-events-none" />
+            <div className="absolute inset-0 bg-indigo-600/5 pointer-events-none" />
 
             <motion.div
               className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-purple-500 opacity-10 blur-3xl"
@@ -454,9 +454,9 @@ export function PricingPage({ onGetStarted } = {}) {
             />
 
             <div className="relative z-10">
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white ds-font-display mb-4">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white ds-font-display mb-4">
                 Start for free,{' '}
-                <span className="ds-gradient-text-premium">upgrade when ready</span>
+                <span className="text-white font-semibold">upgrade when ready</span>
               </h2>
               <p className="text-slate-300 text-base max-w-md mx-auto mb-8 leading-relaxed">
                 No credit card required. Move to Pro or Enterprise when your team needs more power.
@@ -466,9 +466,9 @@ export function PricingPage({ onGetStarted } = {}) {
                 <button
                   onClick={() => handleTierAction('Free')}
                   className="group px-8 py-3.5 rounded-xl font-bold text-sm text-white
-                    bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-[length:200%_100%]
-                    hover:bg-right shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/50
-                    hover:scale-[1.03] active:scale-[0.97] transition-all duration-500 ds-btn-shimmer"
+                    bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600
+                    shadow-md
+                    hover:scale-[1.03] active:scale-[0.97] transition-all duration-300"
                 >
                   <span className="flex items-center gap-2">
                     Get started free

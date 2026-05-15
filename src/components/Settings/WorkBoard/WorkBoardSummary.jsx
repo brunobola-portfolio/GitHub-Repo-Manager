@@ -18,8 +18,8 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
     const tierLabel = TIER_LABEL[tier] || 'Free'
 
     return (
-        <div className="rounded-2xl p-[1px] bg-gradient-to-br from-indigo-500/30 via-violet-500/20 to-blue-500/10 dark:from-indigo-500/40 dark:via-violet-500/30 dark:to-blue-500/20">
-            <div className="rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-4 space-y-4">
+        <div className="rounded-2xl ring-1 ring-indigo-500/25 dark:ring-indigo-500/35">
+            <div className="rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 space-y-4">
                 <div className="flex items-center gap-2">
                     <Activity className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
                     <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
@@ -46,7 +46,7 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
                     <span>Plan</span>
                     <span className={`ml-auto inline-flex items-center px-1.5 py-0.5 rounded-full font-semibold text-[10px] uppercase tracking-wide ${
                         tier === 'enterprise'
-                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                            ? 'bg-amber-500 text-white'
                             : tier === 'pro'
                             ? 'bg-indigo-500 text-white'
                             : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'

@@ -288,9 +288,9 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
           disabled={executing || (schedule.mode === 'scheduled' && !schedule.scheduledAt)}
           className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-medium rounded-xl
             text-white
-            bg-gradient-to-r from-indigo-500 to-purple-600
-            hover:from-indigo-600 hover:to-purple-700
-            shadow-lg shadow-indigo-500/25
+            bg-indigo-600 dark:bg-indigo-500
+            hover:bg-indigo-700 dark:hover:bg-indigo-600
+            shadow-md
             disabled:opacity-50 disabled:cursor-not-allowed
             transition-all"
         >

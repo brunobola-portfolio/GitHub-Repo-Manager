@@ -32,7 +32,7 @@ function SourceSection({ title, source }) {
     )
   }
   return (
-    <details className="group rounded-lg border border-slate-200 dark:border-slate-800 ds-card-shimmer">
+    <details className="group rounded-lg border border-slate-200 dark:border-slate-800">
       <summary className="p-4 cursor-pointer flex justify-between items-center">
         <span className="text-sm font-medium">{title}</span>
         <span className="text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
@@ -80,7 +80,6 @@ export function SecurityScanModal({ isOpen, onClose, repo }) {
               title="Pro feature"
               description="Security & Secrets Scan is available on Pro plans. Upgrade to unlock it for this repository."
               action={{ label: 'View pricing', onClick: () => window.location.assign(error.upgradeUrl || '/pricing') }}
-              gradient="from-indigo-500 to-purple-600"
             />
           ) : (
             <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-300 text-sm">{error.message || error}</div>

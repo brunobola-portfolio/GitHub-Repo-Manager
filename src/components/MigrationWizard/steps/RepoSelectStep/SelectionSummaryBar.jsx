@@ -21,7 +21,7 @@ export function SelectionSummaryBar({ selected, warnings, blockers, autoFixCount
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 60, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-          className="sticky bottom-0 mt-4 backdrop-blur-xl bg-slate-900/70 dark:bg-slate-950/70 border border-indigo-500/20 rounded-2xl p-3 shadow-lg shadow-indigo-500/10 z-10"
+          className="sticky bottom-0 mt-4 backdrop-blur-md bg-slate-900/70 dark:bg-slate-950/70 border border-indigo-500/20 rounded-2xl p-3 shadow-lg z-10"
           role="status"
           aria-live="polite"
         >

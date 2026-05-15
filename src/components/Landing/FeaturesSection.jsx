@@ -8,9 +8,9 @@ const features = [
     description:
       'Quality reports, code health scoring, migration risk analysis, and actionable suggestions — all powered by Gemini AI.',
     iconColor: 'text-indigo-500 dark:text-indigo-400',
-    glow: 'group-hover:shadow-indigo-500/20',
-    iconBg: 'from-indigo-500/15 to-purple-500/15 dark:from-indigo-500/25 dark:to-purple-500/25',
-    accent: 'from-indigo-500 to-purple-500',
+    glow: '',
+    iconBg: 'bg-indigo-500/15 dark:bg-indigo-500/25',
+    accent: 'bg-indigo-500',
   },
   {
     icon: Search,
@@ -18,9 +18,9 @@ const features = [
     description:
       'Find repositories by meaning, not just keywords. Describe what you need and let AI surface the right repos instantly.',
     iconColor: 'text-cyan-500 dark:text-cyan-400',
-    glow: 'group-hover:shadow-cyan-500/20',
-    iconBg: 'from-cyan-500/15 to-blue-500/15 dark:from-cyan-500/25 dark:to-blue-500/25',
-    accent: 'from-cyan-500 to-blue-500',
+    glow: '',
+    iconBg: 'bg-cyan-500/15 dark:bg-cyan-500/25',
+    accent: 'bg-cyan-500',
   },
   {
     icon: GitBranch,
@@ -28,9 +28,9 @@ const features = [
     description:
       'Move from Azure DevOps (Git & TFVC) to GitHub with AI-assisted risk analysis, history preservation, and LFS support.',
     iconColor: 'text-amber-500 dark:text-amber-400',
-    glow: 'group-hover:shadow-amber-500/20',
-    iconBg: 'from-amber-500/15 to-orange-500/15 dark:from-amber-500/25 dark:to-orange-500/25',
-    accent: 'from-amber-500 to-orange-500',
+    glow: '',
+    iconBg: 'bg-amber-500/15 dark:bg-amber-500/25',
+    accent: 'bg-amber-500',
   },
   {
     icon: Users,
@@ -38,9 +38,9 @@ const features = [
     description:
       'Shared dashboards, activity feeds, per-team repo assignment, and fine-grained access management across organizations.',
     iconColor: 'text-emerald-500 dark:text-emerald-400',
-    glow: 'group-hover:shadow-emerald-500/20',
-    iconBg: 'from-emerald-500/15 to-teal-500/15 dark:from-emerald-500/25 dark:to-teal-500/25',
-    accent: 'from-emerald-500 to-teal-500',
+    glow: '',
+    iconBg: 'bg-emerald-500/15 dark:bg-emerald-500/25',
+    accent: 'bg-emerald-500',
   },
   {
     icon: FileText,
@@ -48,9 +48,9 @@ const features = [
     description:
       'AI-crafted documentation in seconds. Auto-detect project structure, tech stack, and generate polished READMEs.',
     iconColor: 'text-pink-500 dark:text-pink-400',
-    glow: 'group-hover:shadow-pink-500/20',
-    iconBg: 'from-pink-500/15 to-rose-500/15 dark:from-pink-500/25 dark:to-rose-500/25',
-    accent: 'from-pink-500 to-rose-500',
+    glow: '',
+    iconBg: 'bg-pink-500/15 dark:bg-pink-500/25',
+    accent: 'bg-pink-500',
   },
   {
     icon: LayoutDashboard,
@@ -58,9 +58,9 @@ const features = [
     description:
       'Beautiful analytics, language breakdowns, commit activity, dark mode, and 20+ bulk operations at your fingertips.',
     iconColor: 'text-violet-500 dark:text-violet-400',
-    glow: 'group-hover:shadow-violet-500/20',
-    iconBg: 'from-violet-500/15 to-purple-500/15 dark:from-violet-500/25 dark:to-purple-500/25',
-    accent: 'from-violet-500 to-purple-500',
+    glow: '',
+    iconBg: 'bg-violet-500/15 dark:bg-violet-500/25',
+    accent: 'bg-violet-500',
   },
 ]
 
@@ -108,9 +108,9 @@ export function FeaturesSection() {
           <p className="text-xs font-semibold tracking-widest uppercase text-indigo-500 dark:text-indigo-400 mb-3 ds-font-display">
             Features
           </p>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight ds-font-display mb-4">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white tracking-tight ds-font-display mb-4">
             Everything you need,{' '}
-            <span className="ds-gradient-text">nothing you don&apos;t</span>
+            <span className="text-slate-900 dark:text-white font-semibold">nothing you don&apos;t</span>
           </h2>
           <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto text-lg leading-relaxed ds-font-display">
             A complete toolkit for developers and engineering teams who take GitHub seriously.
@@ -134,19 +134,18 @@ export function FeaturesSection() {
                 border border-slate-200/60 dark:border-white/[0.07]
                 hover:border-slate-300/80 dark:hover:border-white/[0.14]
                 hover:bg-white/80 dark:hover:bg-white/[0.07]
-                hover:shadow-2xl ${feat.glow}
+                hover:shadow-lg
                 backdrop-blur-sm
-                transition-all duration-500
-                ds-hover-lift ds-card-shimmer`}
+                transition-all duration-300`}
             >
               {/* Gradient accent top line */}
               <div
-                className={`absolute top-0 left-6 right-6 h-[2px] rounded-full bg-gradient-to-r ${feat.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                className={`absolute top-0 left-6 right-6 h-[2px] rounded-full ${feat.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
               />
 
               {/* Icon */}
               <div
-                className={`w-11 h-11 rounded-xl bg-gradient-to-br ${feat.iconBg} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}
+                className={`w-11 h-11 rounded-xl ${feat.iconBg} flex items-center justify-center mb-5 transition-transform duration-300`}
               >
                 <feat.icon
                   className={`w-5 h-5 ${feat.iconColor}`}

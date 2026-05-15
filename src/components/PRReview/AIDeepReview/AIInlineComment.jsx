@@ -26,7 +26,7 @@ export function AIInlineComment({ comment, idx, onDismiss, onEdit }) {
         <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100 dark:border-slate-700">
             <span
                 aria-hidden="true"
-                className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 via-cyan-500 to-pink-500 text-white shrink-0"
+                className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white shrink-0"
             >
                 <Sparkles className="w-3.5 h-3.5" strokeWidth={2.5} />
             </span>
@@ -76,7 +76,7 @@ export function AIInlineComment({ comment, idx, onDismiss, onEdit }) {
                         </button>
                         <button
                             onClick={() => { onEdit(idx, { body, suggestion }); setEditing(false) }}
-                            className="px-2.5 py-1 text-xs font-semibold rounded-md bg-indigo-600 text-white shadow-sm shadow-indigo-600/30 hover:bg-indigo-700 motion-safe:active:scale-95 transition-all"
+                            className="px-2.5 py-1 text-xs font-semibold rounded-md bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 motion-safe:active:scale-95 transition-all"
                         >
                             Save
                         </button>

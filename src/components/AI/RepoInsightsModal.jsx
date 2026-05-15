@@ -236,7 +236,7 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
                     </Button>
                     <button
                         onClick={onClose}
-                        className="ds-btn-shimmer px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-lg hover:from-indigo-400 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/25"
+                        className="px-6 py-2 bg-indigo-600 dark:bg-indigo-500 text-white font-medium rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all shadow-md"
                     >
                         Done
                     </button>
@@ -648,7 +648,7 @@ function SuggestionsGrid({ data, loading, error, onRetry }) {
             {analysis && (
                 <InsightCard tone="ai">
                     <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 shrink-0">
+                        <div className="p-2 rounded-lg bg-indigo-500/20 shrink-0">
                             <Wand2 className="w-5 h-5 text-indigo-500 dark:text-indigo-300" />
                         </div>
                         <div className="min-w-0">

@@ -131,7 +131,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                         }}
                         disabled={upgradeRequired}
                         title={upgradeRequired ? 'Teams require the Pro plan' : undefined}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-indigo-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
                     >
                         {upgradeRequired ? <Lock className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
                         <span>Create Team</span>
@@ -224,8 +224,8 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                     )}
 
                     {teams.length === 0 && upgradeRequired && (
-                        <div className="col-span-full py-14 px-6 text-center bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent dark:from-indigo-500/15 dark:via-purple-500/10 rounded-3xl ring-1 ring-indigo-500/20">
-                            <div className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/25">
+                        <div className="col-span-full py-14 px-6 text-center bg-indigo-500/8 dark:bg-indigo-500/12 rounded-3xl ring-1 ring-indigo-500/20">
+                            <div className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-2xl bg-indigo-600 dark:bg-indigo-500 shadow-md">
                                 <Sparkles className="w-7 h-7 text-white" strokeWidth={2.5} />
                             </div>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
@@ -236,7 +236,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                             </p>
                             <button
                                 onClick={() => onNavigatePricing?.()}
-                                className="ds-btn-shimmer inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-400 hover:to-purple-500 transition-all shadow-lg shadow-indigo-500/25"
+                                className="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 dark:bg-indigo-500 text-white font-medium rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all shadow-md"
                             >
                                 <Sparkles className="w-4 h-4" />
                                 View Pricing
@@ -264,7 +264,7 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
 
     return (
         <motion.div layoutId={`team-${team.id}`} onClick={onClick} className="group">
-        <Card hover className="relative p-6 hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-500/50">
+        <Card hover className="relative p-6 hover:shadow-2xl hover:border-indigo-500/50">
             <div className="flex items-start justify-between mb-4">
                 <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                     <Users className="w-6 h-6" />

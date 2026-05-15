@@ -7,7 +7,7 @@ const ACCENT = {
   blocker: 'from-red-500 to-red-600',
   warning: 'from-amber-500 to-orange-500',
   info:    'from-slate-400 to-slate-500',
-  ok:      'from-indigo-500 to-violet-500',
+  ok:      'bg-indigo-500',
 }
 
 /**
@@ -34,11 +34,11 @@ export function RepoRow({ repo, isSelected, isActive, density = 'full', onToggle
         repo.isDisabled ? 'opacity-60' : ''
       } ${
         isSelected
-          ? 'border-indigo-500/60 bg-indigo-950/30 shadow-sm shadow-indigo-500/10'
+          ? 'border-indigo-500/60 bg-indigo-950/30 shadow-sm'
           : 'border-slate-200 dark:border-slate-700 hover:border-indigo-400/50 hover:bg-slate-50 dark:hover:bg-slate-800/50'
       } ${isActive ? 'ring-2 ring-indigo-500/40' : ''}`}
     >
-      <div className={`absolute top-0 left-0 bottom-0 w-[3px] rounded-l-xl bg-gradient-to-b ${accent}`} />
+      <div className={`absolute top-0 left-0 bottom-0 w-[3px] rounded-l-xl ${accent}`} />
 
       <div className="flex items-center gap-3 p-3 pl-4">
         {/* Main toggle: whole row click area except the actions cluster on the right. */}

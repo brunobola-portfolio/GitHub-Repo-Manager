@@ -82,7 +82,7 @@ export function RepoDetailPanel({ repo, source, onClose, onPrev, onNext, onRiskA
         <section>
           <h4 className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mb-2">Activity</h4>
           {activity === null ? (
-            <div className="h-8 rounded bg-slate-200 dark:bg-slate-800 ds-card-shimmer" />
+            <div className="h-8 rounded bg-slate-200 dark:bg-slate-800" />
           ) : (
             <ActivitySparkline data={activity} />
           )}
@@ -126,7 +126,7 @@ function ActivitySparkline({ data }) {
         <div
           key={d.month}
           title={`${d.month}: ${d.count}`}
-          className="flex-1 bg-gradient-to-t from-indigo-500 to-violet-400 rounded-sm min-w-[4px]"
+          className="flex-1 bg-indigo-500 rounded-sm min-w-[4px]"
           style={{ height: `${(d.count / max) * 100}%` }}
         />
       ))}

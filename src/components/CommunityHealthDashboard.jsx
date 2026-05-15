@@ -209,7 +209,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                 className="space-y-6"
                             >
                                 {/* Health Score — always visible */}
-                                <div className="rounded-3xl p-8 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 border border-indigo-200/30 dark:border-indigo-500/20">
+                                <div className="rounded-3xl p-8 bg-indigo-500/10 dark:bg-indigo-500/20 border border-indigo-200/30 dark:border-indigo-500/20">
                                     <div className="flex flex-col sm:flex-row items-center gap-6">
                                         <HealthScoreRing score={health.score} />
                                         <div className="text-center sm:text-left space-y-1">
@@ -373,8 +373,8 @@ export function CommunityHealthDashboard({ repo, onClose }) {
 function FileCheckItem({ file, exists, size, onFix }) {
     const canFix = !exists && typeof onFix === 'function' && FILE_TYPE_BY_LABEL[file]
     return (
-        <motion.div whileHover={{ y: -1 }}
-            className={`flex items-center justify-between p-3 rounded-xl min-h-[44px] ds-card-shimmer bg-white/60 dark:bg-slate-900/60 border ${exists ? 'border-slate-200/40 dark:border-slate-800/40' : 'border-red-300/40 dark:border-red-500/20'} transition-all`}>
+        <motion.div
+            className={`flex items-center justify-between p-3 rounded-xl min-h-[44px] bg-white/60 dark:bg-slate-900/60 border ${exists ? 'border-slate-200/40 dark:border-slate-800/40' : 'border-red-300/40 dark:border-red-500/20'} transition-all`}>
             <div className="flex items-center gap-3 min-w-0">
                 {exists ? (
                     <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
@@ -456,9 +456,9 @@ function RecommendationItem({ recommendation }) {
     };
 
     const iconGradients = {
-        high: 'from-red-500/20 to-orange-500/10 dark:from-red-500/30 dark:to-orange-500/20',
-        medium: 'from-amber-500/20 to-yellow-500/10 dark:from-amber-500/30 dark:to-yellow-500/20',
-        low: 'from-blue-500/15 to-indigo-500/5 dark:from-blue-500/20 dark:to-indigo-500/10'
+        high: 'bg-red-500/20 dark:bg-red-500/30',
+        medium: 'bg-amber-500/20 dark:bg-amber-500/30',
+        low: 'bg-blue-500/15 dark:bg-blue-500/20'
     };
 
     const iconColors = {
@@ -468,10 +468,10 @@ function RecommendationItem({ recommendation }) {
     };
 
     return (
-        <motion.div whileHover={{ y: -1 }}
+        <motion.div
             className="flex items-start gap-3 p-4 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/40 dark:border-slate-800/40 transition-all"
         >
-            <div className={`p-1.5 rounded-lg bg-gradient-to-br ${iconGradients[recommendation.priority]}`}>
+            <div className={`p-1.5 rounded-lg ${iconGradients[recommendation.priority]}`}>
                 <AlertCircle className={`w-4 h-4 ${iconColors[recommendation.priority]}`} />
             </div>
             <div className="flex-1">
@@ -522,7 +522,7 @@ function SkeletonState() {
             </div>
 
             {/* Health Score skeleton */}
-            <div className="rounded-3xl p-8 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 border border-indigo-200/30 dark:border-indigo-500/20">
+            <div className="rounded-3xl p-8 bg-indigo-500/10 dark:bg-indigo-500/20 border border-indigo-200/30 dark:border-indigo-500/20">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                     <div className="w-28 h-28 md:w-36 md:h-36 rounded-full ds-skeleton" />
                     <div className="space-y-3 flex-1">

@@ -10,7 +10,7 @@ export const TIER_ACCENTS = {
 		primary: 'rgba(129,140,248,1)',    // indigo-400
 		secondary: 'rgba(59,130,246,1)',   // blue-500
 		spotlight: 'rgba(99,102,241,0.18)',
-		shadowClass: 'shadow-indigo-500/15',
+		shadowClass: 'shadow-md',
 		spotlightRadius: 350,
 		borderGlowOpacity: 0.55,
 		shimmerDuration: 0.7,
@@ -20,7 +20,7 @@ export const TIER_ACCENTS = {
 		primary: 'rgba(167,139,250,1)',    // violet-400
 		secondary: 'rgba(217,70,239,1)',   // fuchsia-500
 		spotlight: 'rgba(167,139,250,0.22)',
-		shadowClass: 'shadow-violet-500/25',
+		shadowClass: 'shadow-md',
 		spotlightRadius: 400,
 		borderGlowOpacity: 0.75,
 		shimmerDuration: 0.7,
@@ -30,7 +30,7 @@ export const TIER_ACCENTS = {
 		primary: 'rgba(251,191,36,1)',     // amber-400
 		secondary: 'rgba(249,115,22,1)',   // orange-500
 		spotlight: 'rgba(251,191,36,0.18)',
-		shadowClass: 'shadow-amber-500/20',
+		shadowClass: 'shadow-md',
 		spotlightRadius: 350,
 		borderGlowOpacity: 0.6,
 		shimmerDuration: 0.9,

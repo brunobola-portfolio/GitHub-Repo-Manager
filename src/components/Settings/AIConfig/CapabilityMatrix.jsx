@@ -31,7 +31,7 @@ const DOT_STATE = {
 
 export function CapabilityMatrix({ activeProvider }) {
     return (
-        <div className="rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 p-4 space-y-3">
+        <div className="rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-md ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 p-4 space-y-3">
             <div className="flex items-center gap-2">
                 <Cpu className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
                 <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
@@ -71,7 +71,7 @@ export function CapabilityMatrix({ activeProvider }) {
                             {isActive && (
                                 <span
                                     aria-hidden="true"
-                                    className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-gradient-to-b from-indigo-500 to-purple-500"
+                                    className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-indigo-500"
                                 />
                             )}
                             <div className="flex items-center gap-1.5 min-w-0">

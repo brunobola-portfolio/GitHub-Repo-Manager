@@ -67,7 +67,7 @@ export function OverviewTab({ api, repoData, onUpdate }) {
             <div className="lg:col-span-3">
                 <button
                     onClick={() => openModalWithData('showRepoInsights', { repo: repoData, initialTab: 'quality' })}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 ds-btn-shimmer ds-focus-ring transition"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 ds-focus-ring transition"
                 >
                     <Sparkles className="w-4 h-4" />
                     View AI Insights

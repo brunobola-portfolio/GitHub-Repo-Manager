@@ -5,14 +5,14 @@ import { twMerge } from 'tailwind-merge'
 const TIER_COPY = {
     pro: {
         eyebrow: 'Pro feature',
-        gradient: 'from-indigo-500 via-violet-500 to-fuchsia-500',
-        glow: 'shadow-indigo-500/30',
+        bg: 'bg-indigo-600 dark:bg-indigo-500',
+        glow: '',
         ring: 'ring-indigo-500/20 dark:ring-indigo-400/20',
     },
     enterprise: {
         eyebrow: 'Enterprise feature',
-        gradient: 'from-amber-400 via-orange-500 to-rose-500',
-        glow: 'shadow-amber-500/30',
+        bg: 'bg-amber-500 dark:bg-amber-400',
+        glow: '',
         ring: 'ring-amber-500/20 dark:ring-amber-400/20',
     },
 }
@@ -82,13 +82,13 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
             className={twMerge(
                 'relative isolate overflow-hidden',
                 'rounded-3xl border border-slate-200/70 dark:border-slate-700/50',
-                'bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl',
+                'bg-white/80 dark:bg-slate-900/70 backdrop-blur-md',
                 'shadow-xl shadow-slate-200/40 dark:shadow-black/40',
                 'px-6 py-12 sm:px-10 sm:py-16',
                 className
             )}
         >
-            <DecorativeOrbs gradient={copy.gradient} />
+            <DecorativeOrbs bg={copy.bg} />
             <NoiseGrain />
 
             <div className="relative flex flex-col items-center text-center max-w-md mx-auto">
@@ -99,9 +99,9 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                     transition={{ delay: 0.1, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
                     className={twMerge(
                         'relative mb-5 inline-flex items-center justify-center',
-                        'w-16 h-16 rounded-2xl bg-gradient-to-br',
-                        copy.gradient,
-                        'shadow-2xl', copy.glow,
+                        'w-16 h-16 rounded-2xl',
+                        copy.bg,
+                        'shadow-2xl',
                         'ring-1', copy.ring
                     )}
                 >
@@ -113,8 +113,8 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                 <span className={twMerge(
                     'inline-flex items-center gap-1.5 px-2.5 py-1 mb-3',
                     'text-[10px] font-semibold uppercase tracking-[0.14em]',
-                    'rounded-full bg-gradient-to-r text-white',
-                    copy.gradient
+                    'rounded-full text-white',
+                    copy.bg
                 )}>
                     <Sparkles className="w-3 h-3" /> {copy.eyebrow}
                 </span>
@@ -141,9 +141,8 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                                 className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300"
                             >
                                 <span className={twMerge(
-                                    'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full',
-                                    'bg-gradient-to-br text-white',
-                                    copy.gradient
+                                    'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-white',
+                                    copy.bg
                                 )}>
                                     <Check className="w-3 h-3" strokeWidth={3} />
                                 </span>
@@ -159,10 +158,10 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                     className={twMerge(
                         'group inline-flex items-center justify-center gap-2',
                         'px-5 py-2.5 rounded-xl text-sm font-semibold text-white',
-                        'bg-gradient-to-r', copy.gradient,
-                        'shadow-lg', copy.glow,
-                        'hover:shadow-xl hover:saturate-110 transition-all duration-200',
-                        'ds-btn-shimmer ds-focus-ring active:scale-[0.98]'
+                        copy.bg,
+                        'shadow-lg',
+                        'hover:shadow-xl hover:opacity-90 transition-all duration-200',
+                        'ds-focus-ring active:scale-[0.98]'
                     )}
                 >
                     View {tierName(tier)} pricing
@@ -186,9 +185,8 @@ function InlineUpgrade({ tier, feature, copy, pricingHref, onPricingClick, class
             className
         )}>
             <span className={twMerge(
-                'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
-                'bg-gradient-to-br', copy.gradient,
-                'shadow-md', copy.glow
+                'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-md',
+                copy.bg
             )}>
                 <Lock className="w-4 h-4 text-white" />
             </span>
@@ -227,8 +225,8 @@ function BannerUpgrade({ tier, feature, copy, pricingHref, onPricingClick, onDis
             className={twMerge(
                 'relative overflow-hidden',
                 'rounded-2xl border border-indigo-200/60 dark:border-indigo-500/30',
-                'bg-gradient-to-r from-indigo-50/80 via-violet-50/80 to-fuchsia-50/80',
-                'dark:from-indigo-500/10 dark:via-violet-500/10 dark:to-fuchsia-500/10',
+                'bg-indigo-50/80',
+                'dark:bg-indigo-500/10',
                 'backdrop-blur-md',
                 'px-5 py-4',
                 'flex flex-col sm:flex-row sm:items-center gap-3',
@@ -236,9 +234,8 @@ function BannerUpgrade({ tier, feature, copy, pricingHref, onPricingClick, onDis
             )}
         >
             <span className={twMerge(
-                'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
-                'bg-gradient-to-br', copy.gradient,
-                'shadow-md', copy.glow
+                'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-md',
+                copy.bg
             )}>
                 <Sparkles className="w-4 h-4 text-white" />
             </span>
@@ -255,10 +252,9 @@ function BannerUpgrade({ tier, feature, copy, pricingHref, onPricingClick, onDis
                     href={pricingHref}
                     onClick={onPricingClick}
                     className={twMerge(
-                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white',
-                        'bg-gradient-to-r', copy.gradient,
-                        'shadow-md', copy.glow,
-                        'hover:saturate-110 transition-all ds-focus-ring'
+                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white shadow-md',
+                        copy.bg,
+                        'hover:opacity-90 transition-all ds-focus-ring'
                     )}
                 >
                     Upgrade <ArrowRight className="w-3 h-3" />
@@ -281,21 +277,21 @@ function BannerUpgrade({ tier, feature, copy, pricingHref, onPricingClick, onDis
 /* Decorations                                                         */
 /* ------------------------------------------------------------------ */
 
-function DecorativeOrbs({ gradient }) {
+function DecorativeOrbs({ bg }) {
     return (
         <>
             <div
                 aria-hidden
                 className={twMerge(
                     'pointer-events-none absolute -top-24 -right-16 w-64 h-64 rounded-full blur-3xl opacity-30 dark:opacity-25',
-                    'bg-gradient-to-br', gradient
+                    bg
                 )}
             />
             <div
                 aria-hidden
                 className={twMerge(
                     'pointer-events-none absolute -bottom-32 -left-20 w-72 h-72 rounded-full blur-3xl opacity-20 dark:opacity-20',
-                    'bg-gradient-to-tr', gradient
+                    bg
                 )}
             />
         </>

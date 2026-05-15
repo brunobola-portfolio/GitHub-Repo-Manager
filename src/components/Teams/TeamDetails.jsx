@@ -224,7 +224,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                         <div className="flex justify-end mb-4">
                             <button
                                 onClick={() => setShowInvite(!showInvite)}
-                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20"
+                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-md"
                             >
                                 <UserPlus className="w-4 h-4" />
                                 <span>Add Member</span>
@@ -325,7 +325,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                         <div className="flex justify-end mb-4">
                             <button
                                 onClick={() => setShowAssign(!showAssign)}
-                                className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition-colors shadow-lg shadow-pink-500/20"
+                                className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition-colors shadow-md"
                             >
                                 <BookCopy className="w-4 h-4" />
                                 <span>Assign Repository</span>
@@ -727,7 +727,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                 <div className="flex justify-end">
                     <button
                         onClick={onShowStats}
-                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/20"
+                        className="flex items-center gap-2 px-6 py-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all shadow-md"
                     >
                         <Activity className="w-5 h-5" />
                         <span className="font-semibold">View Actions Statistics</span>
@@ -744,7 +744,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                         key={repo.id}
                         onClick={() => setSelectedRepo(repo.repo_full_name)}
                         className={`w-full text-left p-3 rounded-xl transition-all ${selectedRepo === repo.repo_full_name
-                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                            ? 'bg-indigo-600 text-white shadow-md'
                             : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
                     >

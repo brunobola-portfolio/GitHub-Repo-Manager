@@ -69,7 +69,7 @@ export function SmartSelectMenu({ repos, onSelect }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
-          bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-md shadow-indigo-500/25
+          bg-indigo-600 dark:bg-indigo-500 text-white shadow-md
           hover:shadow-lg transition-all"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -83,7 +83,7 @@ export function SmartSelectMenu({ repos, onSelect }) {
           ref={menuRef}
           role="menu"
           aria-label="Smart selection presets"
-          className="absolute right-0 mt-1 w-64 rounded-xl bg-white dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-xl z-20"
+          className="absolute right-0 mt-1 w-64 rounded-xl bg-white dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-xl z-20"
         >
           <ul className="py-1">
             {PRESETS.map((p) => {

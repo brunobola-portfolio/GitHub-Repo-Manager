@@ -461,7 +461,7 @@ export function AIInstructionsSection() {
     return (
         <div className="space-y-4">
             <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500/15 to-purple-500/15">
+                <div className="p-2 rounded-lg bg-indigo-500/15">
                     <Sparkles className="w-5 h-5 text-indigo-500" />
                 </div>
                 <div className="flex-1 min-w-0">
