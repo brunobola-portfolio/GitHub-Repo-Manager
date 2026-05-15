@@ -109,7 +109,7 @@ export function InboxPanel({ onSelectItem }) {
     return (
         <section
             aria-labelledby="inbox-panel-title"
-            className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
+            className="rounded-2xl bg-white dark:bg-slate-900 border border-zinc-200 dark:border-slate-700"
         >
             <header className="px-5 pt-5 pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
                 <div className="flex items-start justify-between gap-4">

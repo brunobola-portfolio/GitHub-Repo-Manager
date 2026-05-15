@@ -129,7 +129,7 @@ export function WizardPanel({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="p-2 hover:bg-white/15 rounded-lg transition-colors"
+                  className="p-2 hover:bg-white/15 rounded-lg transition-colors ds-focus-ring"
                   aria-label="Close wizard"
                 >
                   <X className="w-4 h-4" strokeWidth={2} />

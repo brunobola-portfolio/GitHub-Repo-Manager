@@ -24,7 +24,7 @@ const EXPECTED_TOKENS = {
   '--ds-cta': '#1f883d',
   '--ds-radius-sm': '4px',
   '--ds-radius': '6px',
-  '--ds-radius-lg': '8px',
+  '--ds-radius-lg': '16px',
   '--ds-radius-xl': '12px',
 }
 

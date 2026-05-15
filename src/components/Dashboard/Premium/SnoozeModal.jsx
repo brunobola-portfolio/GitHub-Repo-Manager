@@ -39,7 +39,7 @@ export function SnoozeModal({ open, onConfirm, onClose }) {
             {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
             <div
                 ref={trapRef}
-                className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 p-6 shadow-2xl"
+                className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl"
                 onClick={e => e.stopPropagation()}
             >
                 <h3 id="snooze-modal-title" className="text-base font-bold text-zinc-900 dark:text-zinc-100 mb-4 ds-font-display">
