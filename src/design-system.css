@@ -117,9 +117,22 @@
   --ds-chart-series-3: var(--ds-attention);
 }
 
-/* Dark-mode override for chart chrome — auto-swap to dark variants so
- * ActivityChart axes/grid keep contrast against #0d1117 surface. */
-:where(.dark) {
+:root {
+  /* Premium dashboard tokens (kept for Phase 1 inbox compat) */
+  --ds-status-success: var(--ds-success);
+  --ds-status-warning: var(--ds-attention);
+  --ds-status-danger: var(--ds-danger);
+  --ds-status-neutral: var(--ds-fg-muted);
+
+  --ds-ease-row-expand: var(--ds-ease);
+  --ds-duration-row-expand: var(--ds-duration);
+}
+
+/* Dark-mode token overrides. MUST use :root.dark (specificity 0,2,0) NOT
+ * :where(.dark) (specificity 0,0,0) — the latter loses to :root (0,1,0)
+ * regardless of source order. Block ALSO placed AFTER the second :root
+ * block above so source order also favours the dark redefinitions. */
+:root.dark {
   --ds-chart-axis: var(--ds-fg-muted-dark);
   --ds-chart-grid: var(--ds-border-dark);
   /* Status tokens — auto-swap to dark variants */
@@ -131,17 +144,6 @@
   --ds-chart-series-1: var(--ds-accent-brand-dark);
   --ds-chart-series-2: var(--ds-success-dark);
   --ds-chart-series-3: var(--ds-attention-dark);
-}
-
-:root {
-  /* Premium dashboard tokens (kept for Phase 1 inbox compat) */
-  --ds-status-success: var(--ds-success);
-  --ds-status-warning: var(--ds-attention);
-  --ds-status-danger: var(--ds-danger);
-  --ds-status-neutral: var(--ds-fg-muted);
-
-  --ds-ease-row-expand: var(--ds-ease);
-  --ds-duration-row-expand: var(--ds-duration);
 }
 
 /* ===== KEYFRAMES (premium set only) ===== */
