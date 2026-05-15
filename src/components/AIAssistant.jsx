@@ -263,10 +263,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                         aria-label="Open AI Assistant"
                     >
                         <div className="relative">
-                            <span className={`absolute inset-0 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 blur-lg transition-opacity duration-500 ${
-                                isIdle ? 'opacity-0' : 'opacity-30 group-hover:opacity-60'
-                            }`} />
-                            <div className={`relative ds-btn-shimmer flex items-center bg-gradient-to-r from-indigo-600 via-indigo-600 to-purple-600 hover:from-indigo-500 hover:via-purple-500 hover:to-purple-500 text-white shadow-xl shadow-indigo-500/30 dark:shadow-indigo-500/50 transition-all duration-500 ease-in-out transform hover:scale-105 hover:-translate-y-0.5 ${
+                            <div className={`relative flex items-center bg-[color:var(--ds-accent-brand)] text-white shadow-md transition-all duration-500 ease-in-out hover:opacity-90 ${
                                 isIdle
                                     ? 'gap-0 px-3 py-3 rounded-full opacity-60 hover:opacity-100'
                                     : 'gap-2.5 px-4 py-3 rounded-2xl opacity-100'
@@ -296,7 +293,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                         className="fixed bottom-20 xl:bottom-6 right-3 sm:right-6 z-[45]"
                     >
-                        <Card className={`ds-glass-strong w-[calc(100vw-2rem)] sm:w-[22rem] md:w-[26rem] flex flex-col shadow-2xl shadow-indigo-500/20 dark:shadow-black/60 border border-white/30 dark:border-white/10 bg-white/85 dark:bg-slate-900/80 overflow-hidden rounded-2xl transition-all duration-300 ${
+                        <Card className={`w-[calc(100vw-2rem)] sm:w-[22rem] md:w-[26rem] flex flex-col shadow-[var(--ds-shadow-overlay)] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden rounded-2xl transition-all duration-300 ${
                             isMinimized ? '' : 'h-[65vh] xl:h-[540px]'
                         }`}>
                             {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
@@ -305,11 +302,9 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                 onClick={() => isMinimized && setIsMinimized(false)}
                             >
                                 <div
-                                    className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600"
-                                    style={{ backgroundSize: '200% 200%' }}
+                                    className="absolute inset-0 bg-[color:var(--ds-accent-brand)]"
                                     aria-hidden="true"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" aria-hidden="true" />
                                 <div className="relative flex items-center gap-3 z-10">
                                     <div className="relative w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center ring-1 ring-white/30 shadow-inner">
                                         <Sparkles size={16} className="drop-shadow" />
@@ -357,7 +352,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                         <NotConfiguredState onOpenSettings={() => openModal('showSettings')} />
                                     ) : (
                                         <>
-                                            <div className="ds-scrollbar flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-gradient-to-b from-slate-50/60 to-white/30 dark:from-slate-950/40 dark:to-slate-900/20">
+                                            <div className="ds-scrollbar flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-slate-50/40 dark:bg-slate-900/40">
                                                 {messages.map((msg) => (
                                                     <MessageBubble
                                                         key={msg.id}
@@ -395,7 +390,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                                     <button
                                                         type="submit"
                                                         disabled={isLoading || !input.trim()}
-                                                        className="ds-btn-shimmer p-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md shadow-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/40 active:scale-95"
+                                                        className="p-2.5 bg-[color:var(--ds-accent-brand)] text-white rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm active:scale-95"
                                                         aria-label="Send message"
                                                     >
                                                         {isLoading
@@ -423,7 +418,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
     return (
         <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
             {!isUser && (
-                <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${isError ? 'from-rose-500 to-amber-500' : 'from-indigo-500 via-purple-500 to-pink-500'} flex items-center justify-center shrink-0 mt-0.5 mr-2 ring-1 ring-white/30 shadow-sm`}>
+                <div className={`w-7 h-7 rounded-lg ${isError ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-[color:var(--ds-accent-brand)] text-white'} flex items-center justify-center shrink-0 mt-0.5 mr-2 shadow-sm`}>
                     {isError
                         ? <AlertTriangle size={13} className="text-white" />
                         : <Sparkles size={13} className="text-white" />}
@@ -433,7 +428,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
                 <div
                     className={`px-3.5 py-2.5 text-sm leading-relaxed rounded-2xl shadow-sm ${
                         isUser
-                            ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-br-sm shadow-indigo-500/25'
+                            ? 'bg-[color:var(--ds-accent-brand)] text-white rounded-br-sm shadow-sm'
                             : isError
                                 ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-900/50 rounded-bl-sm'
                                 : 'bg-white dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 rounded-bl-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-pre:my-2 prose-code:text-xs'
@@ -483,9 +478,8 @@ function ActionChip({ action, onClick }) {
             type="button"
             onClick={onClick}
             data-action={action.type}
-            className="group relative inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-200 ring-1 ring-indigo-200 dark:ring-indigo-800/60 transition-all duration-200 hover:-translate-y-0.5 hover:ring-2 hover:ring-indigo-400 dark:hover:ring-indigo-500 hover:shadow-lg hover:shadow-indigo-500/25 active:translate-y-0"
+            className="group inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-1 ring-slate-200 dark:ring-slate-700 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0"
         >
-            <span className="pointer-events-none absolute -inset-px rounded-full bg-gradient-to-r from-indigo-500/0 via-purple-500/0 to-pink-500/0 group-hover:from-indigo-500/20 group-hover:via-purple-500/20 group-hover:to-pink-500/20 transition-opacity" aria-hidden="true" />
             <Sparkles size={11} className="relative text-indigo-500 dark:text-indigo-300 transition-transform group-hover:rotate-12" />
             <span className="relative truncate max-w-[180px]">{action.label}</span>
             <ArrowRight size={11} className="relative transition-transform group-hover:translate-x-0.5" />
@@ -496,14 +490,14 @@ function ActionChip({ action, onClick }) {
 function TypingIndicator() {
     return (
         <div className="flex justify-start" aria-live="polite" aria-label="Assistant is typing">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shrink-0 mt-0.5 mr-2 ring-1 ring-white/30 shadow-sm">
+            <div className="w-7 h-7 rounded-lg bg-[color:var(--ds-accent-brand)] flex items-center justify-center shrink-0 mt-0.5 mr-2 shadow-sm">
                 <Sparkles size={13} className="text-white" />
             </div>
             <div className="bg-white dark:bg-slate-800/90 px-3.5 py-3 rounded-2xl rounded-bl-sm border border-slate-200/80 dark:border-slate-700/60 shadow-sm">
                 <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 bg-gradient-to-br from-indigo-400 to-purple-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-2 h-2 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-2 h-2 bg-gradient-to-br from-pink-400 to-rose-400 rounded-full animate-bounce" />
+                    <span className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" />
                 </div>
             </div>
         </div>
@@ -512,9 +506,9 @@ function TypingIndicator() {
 
 function NotConfiguredState({ onOpenSettings }) {
     return (
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 bg-gradient-to-b from-slate-50 to-white dark:from-slate-950/50 dark:to-slate-900/40">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-indigo-900/30 dark:via-purple-900/30 dark:to-pink-900/30 flex items-center justify-center shadow-inner ring-1 ring-indigo-200/50 dark:ring-indigo-900/40">
-                <Key className="w-7 h-7 text-indigo-600 dark:text-indigo-300" />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 bg-slate-50 dark:bg-slate-900/40">
+            <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center ring-1 ring-slate-200 dark:ring-slate-700">
+                <Key className="w-7 h-7 text-[color:var(--ds-accent-brand)]" />
             </div>
             <h4 className="text-lg font-semibold text-slate-900 dark:text-white ds-font-display">Setup required</h4>
             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-[260px]">
@@ -523,7 +517,7 @@ function NotConfiguredState({ onOpenSettings }) {
             <button
                 type="button"
                 onClick={onOpenSettings}
-                className="ds-btn-shimmer px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold rounded-xl transition-all shadow-md shadow-indigo-500/25"
+                className="px-4 py-2 bg-[color:var(--ds-accent-brand)] text-white text-sm font-semibold rounded-xl transition-colors hover:opacity-90 shadow-sm"
             >
                 Open settings
             </button>
