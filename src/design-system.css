@@ -70,7 +70,7 @@
   /* ===== MOTION ===== */
   --ds-ease:        cubic-bezier(0.2, 0, 0, 1);
   --ds-ease-out:    cubic-bezier(0.3, 0, 0.8, 0.15);
-  --ds-ease-spring: cubic-bezier(0.5, 1.25, 0.75, 1.25);
+  --ds-ease-spring: cubic-bezier(0.5, 1.25, 0.75, 1.25); /* RESERVED — modal/drawer only */
 
   --ds-duration-instant: 80ms;
   --ds-duration-fast: 120ms;
@@ -115,7 +115,16 @@
   --ds-chart-series-1: var(--ds-accent-brand);
   --ds-chart-series-2: var(--ds-success);
   --ds-chart-series-3: var(--ds-attention);
+}
 
+/* Dark-mode override for chart chrome — auto-swap to dark variants so
+ * ActivityChart axes/grid keep contrast against #0d1117 surface. */
+:where(.dark) {
+  --ds-chart-axis: var(--ds-fg-muted-dark);
+  --ds-chart-grid: var(--ds-border-dark);
+}
+
+:root {
   /* Premium dashboard tokens (kept for Phase 1 inbox compat) */
   --ds-status-success: var(--ds-success);
   --ds-status-warning: var(--ds-attention);
