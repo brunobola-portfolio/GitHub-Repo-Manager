@@ -55,7 +55,7 @@ function SlimPopover({ isOpen, onClose, children, triggerRef }) {
       role="dialog"
       aria-modal="true"
       aria-label="Quick actions"
-      className="absolute right-full mr-2 top-0 w-72 max-h-80 overflow-y-auto rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-xl z-[var(--ds-z-popover)] p-3 outline-none"
+      className="absolute right-full mr-2 top-0 w-72 max-h-80 overflow-y-auto rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-900 backdrop-blur-md shadow-xl z-[var(--ds-z-popover)] p-3 outline-none"
     >
       {children}
     </div>
@@ -69,7 +69,7 @@ function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRe
       onClick={onClick}
       className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 group ${
         accent
-          ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/25'
+          ? 'bg-[color:var(--ds-accent-brand)] text-white hover:opacity-90 shadow-md'
           : isActive
             ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400'
             : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300'
@@ -245,16 +245,16 @@ function QuickActions({
     onTransfer, onArchive, onDelete, selectedRepos, onImport
 }) {
     return (
-        <Card hover={true} className="flex-shrink-0 overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl">
-            <div className="px-5 py-4 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center justify-between">
-                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
-                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-md shadow-amber-500/20">
+        <Card hover={true} className="flex-shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700/60 shadow-sm rounded-2xl">
+            <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
+                <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
                         <Zap className="w-3.5 h-3.5" />
                     </div>
                     Quick Actions
                 </h3>
                 {hasSelection && (
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 text-indigo-600 dark:text-indigo-300 shadow-sm">
+                    <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-[color:var(--ds-surface-muted)] dark:bg-[color:var(--ds-surface-muted-dark)] text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
                         {selectedCount} SELECTED
                     </span>
                 )}
@@ -277,36 +277,21 @@ function QuickActions({
 
                         {/* Global Tools */}
                         <div className="grid grid-cols-1 gap-2">
-                            <motion.button
+                            <button
+                                type="button"
                                 onClick={onImport}
                                 disabled={isPerforming}
-                                whileHover={{
-                                    scale: 1.03,
-                                    boxShadow: "0 20px 25px -5px rgba(99, 102, 241, 0.3), 0 10px 10px -5px rgba(99, 102, 241, 0.2)"
-                                }}
-                                whileTap={{ scale: 0.98 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                                className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md hover:shadow-lg transition-all duration-200 group cursor-pointer"
+                                className="flex items-center gap-3 p-3 rounded-xl bg-[color:var(--ds-accent-brand)] text-white shadow-sm hover:opacity-90 transition-colors duration-150 group cursor-pointer"
                             >
-                                <motion.div
-                                    className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm"
-                                    whileHover={{ rotate: 360 }}
-                                    transition={{ duration: 0.6 }}
-                                >
+                                <div className="p-1.5 bg-white/20 rounded-lg">
                                     <Download className="w-4 h-4 text-white" />
-                                </motion.div>
-                                <div className="text-left">
-                                    <div className="text-xs font-bold">Import Repository</div>
-                                    <div className="text-[10px] text-indigo-100">Git URL, Azure, GitHub</div>
                                 </div>
-                                <motion.div
-                                    initial={{ x: 0 }}
-                                    animate={{ x: [0, 5, 0] }}
-                                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                                >
-                                    <ChevronRight className="w-4 h-4 ml-auto" />
-                                </motion.div>
-                            </motion.button>
+                                <div className="text-left">
+                                    <div className="text-xs font-semibold">Import Repository</div>
+                                    <div className="text-[10px] text-white/75">Git URL, Azure, GitHub</div>
+                                </div>
+                                <ChevronRight className="w-4 h-4 ml-auto" />
+                            </button>
                         </div>
                     </div>
                 ) : (
@@ -375,42 +360,33 @@ function ActionButton({ icon: IconComp, label, subLabel, onClick, disabled, vari
     }
 
     return (
-        <motion.button
+        <button
+            type="button"
             onClick={onClick}
             disabled={disabled}
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
             className={`
                 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold
-                transition-all duration-200 relative overflow-hidden
-                disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                transition-colors duration-150
+                disabled:opacity-50 disabled:cursor-not-allowed
                 ${variants[variant]}
                 ${className}
             `}
         >
-            {/* Background animado no hover */}
-            <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0"
-                initial={{ x: '-100%' }}
-                whileHover={{ x: '100%' }}
-                transition={{ duration: 0.6 }}
-            />
-            <IconComp className="w-3.5 h-3.5 relative z-10" />
-            <div className="flex flex-col items-start leading-none relative z-10">
+            <IconComp className="w-3.5 h-3.5" />
+            <div className="flex flex-col items-start leading-none">
                 <span>{label}</span>
                 {subLabel && <span className="text-[9px] opacity-70 font-normal mt-0.5">{subLabel}</span>}
             </div>
-        </motion.button>
+        </button>
     )
 }
 
 function ActionHistory({ results, isPerforming, message }) {
     return (
-        <Card hover={true} className="flex-shrink-0 overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl flex flex-col max-h-[300px]">
-            <div className="px-5 py-3.5 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center justify-between sticky top-0">
-                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
-                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-600 text-white shadow-md shadow-slate-400/20">
+        <Card hover={true} className="flex-shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700/60 shadow-sm rounded-2xl flex flex-col max-h-[300px]">
+            <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-700/60 flex items-center justify-between sticky top-0 bg-white dark:bg-slate-900">
+                <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
+                    <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                         <History className="w-3.5 h-3.5" />
                     </div>
                     Action History
@@ -486,12 +462,12 @@ function ActivityList({ activity }) {
     // sidebar reads as one cohesive premium column instead of three loose
     // panels with the activity feed dangling borderless underneath.
     return (
-        <Card hover={true} className="flex-1 min-h-0 flex flex-col overflow-hidden border border-slate-200/40 dark:border-slate-700/40 shadow-lg shadow-slate-200/30 dark:shadow-black/40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl">
-            <div className="flex-shrink-0 px-5 py-4 border-b border-slate-200/50 dark:border-slate-700/40 bg-gradient-to-r from-slate-50/80 to-white/80 dark:from-slate-800/80 dark:to-slate-900/80 flex items-center gap-2.5">
-                <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 text-white shadow-md shadow-indigo-500/20">
+        <Card hover={true} className="flex-1 min-h-0 flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700/60 shadow-sm rounded-2xl">
+            <div className="flex-shrink-0 px-5 py-4 border-b border-slate-200 dark:border-slate-700/60 flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
                     <Clock className="w-3.5 h-3.5" />
                 </div>
-                <h3 className="font-bold text-sm text-slate-800 dark:text-slate-100">Recent Activity</h3>
+                <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-100">Recent Activity</h3>
             </div>
             <ActivityListBody activity={activity} now={now} />
         </Card>
