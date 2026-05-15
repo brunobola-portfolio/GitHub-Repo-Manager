@@ -35,7 +35,7 @@ export function EmptyState({
       transition={{ duration: 0.5 }}
       className="flex flex-col items-center justify-center p-12 text-center"
     >
-      {/* Icon with gradient background */}
+      {/* Icon container */}
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

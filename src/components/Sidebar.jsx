@@ -10,7 +10,6 @@ import {
     GitCommit, GitPullRequest, CircleDot, Play, ExternalLink,
     Clock, ChevronRight, Download, Kanban
 } from 'lucide-react'
-import { motion } from 'framer-motion'
 import { useSelection } from '../hooks/useSelection'
 import { useModal } from '../hooks/useModal'
 

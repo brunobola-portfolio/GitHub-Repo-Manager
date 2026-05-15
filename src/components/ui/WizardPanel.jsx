@@ -12,8 +12,6 @@ const PANEL_SIZES = {
 }
 
 // headerGradient prop kept for backward-compat; default header is now solid indigo
-const DEFAULT_GRADIENT = ''
-
 export function WizardPanel({
   isOpen,
   onClose,
@@ -27,8 +25,8 @@ export function WizardPanel({
   isMaximized = true,
   isMobile = false,
   onToggleMaximize,
-   
-  headerGradient: _headerGradient = DEFAULT_GRADIENT,
+
+  headerGradient: _headerGradient = '',
   size = 'xl',
 }) {
   const panelRef = useFocusTrap(isOpen, onClose, { disableEscape })

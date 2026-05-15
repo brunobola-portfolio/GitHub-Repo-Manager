@@ -59,7 +59,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
             role="dialog"
             aria-modal="true"
             aria-label="Welcome tour"
-            className="fixed inset-0 z-[var(--ds-z-modal)] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[var(--ds-z-ceiling)] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
             onClick={onClose}
             onKeyDown={(e) => { if (e.key === 'Escape') onClose?.() }}
         >

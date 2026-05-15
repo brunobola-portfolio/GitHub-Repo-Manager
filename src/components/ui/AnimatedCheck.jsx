@@ -1,4 +1,5 @@
-export function AnimatedCheck({ size = 16, color = 'currentColor', durationMs = 240 }) {
+/** durationMs is deprecated — animation is now fixed at 240ms via ds-animated-check-path CSS class. */
+export function AnimatedCheck({ size = 16, color = 'currentColor' }) {
   const length = 21
   return (
     <svg
@@ -17,10 +18,8 @@ export function AnimatedCheck({ size = 16, color = 'currentColor', durationMs = 
         strokeLinejoin="round"
         strokeDasharray={length}
         strokeDashoffset={length}
-        style={{
-          animation: `ds-stroke-draw ${durationMs}ms cubic-bezier(0.2,0,0,1) forwards`,
-          '--ds-stroke-length': length,
-        }}
+        className="ds-animated-check-path"
+        style={{ '--ds-stroke-length': length }}
       />
     </svg>
   )

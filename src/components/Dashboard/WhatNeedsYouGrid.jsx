@@ -70,7 +70,7 @@ function CategoryCard({ category, data, onClick }) {
     const lastClass = category.id === 'issues' ? 'col-span-2 sm:col-span-1' : ''
 
     return (
-        <motion.button
+        <button
             type="button"
             onClick={onClick}
             aria-label={ariaLabel}
@@ -102,7 +102,7 @@ function CategoryCard({ category, data, onClick }) {
             <div className="text-xs font-medium text-indigo-600 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                 Open <ArrowRight className="w-3 h-3" />
             </div>
-        </motion.button>
+        </button>
     )
 }
 

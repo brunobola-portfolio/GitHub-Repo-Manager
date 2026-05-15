@@ -145,16 +145,15 @@
 }
 
 /* ===== KEYFRAMES (premium set only) ===== */
-@keyframes ds-fade-in-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes ds-fade-in   { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ds-scale-in  { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
 @keyframes ds-pulse     { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 @keyframes ds-stroke-draw { from { stroke-dashoffset: var(--ds-stroke-length, 28); } to { stroke-dashoffset: 0; } }
 
 /* ===== ANIMATION CLASSES ===== */
-.ds-animate-fade-in-up { animation: ds-fade-in-up var(--ds-duration) var(--ds-ease) both; }
-.ds-animate-fade-in    { animation: ds-fade-in var(--ds-duration) var(--ds-ease) both; }
 .ds-animate-scale-in   { animation: ds-scale-in var(--ds-duration) var(--ds-ease) both; }
+.ds-animated-check-path {
+  animation: ds-stroke-draw 240ms cubic-bezier(0.2, 0, 0, 1) forwards;
+}
 
 /* Stagger children (preserved API) */
 .ds-stagger > *:nth-child(1) { animation-delay: 0.04s; }
