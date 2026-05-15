@@ -69,7 +69,7 @@ export function EmptyState({ hasRepos, onCreateRepo, onImport, onClearFilters })
 	if (!hasRepos) {
 		return (
 			<div data-testid="empty-state" className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
-				<div className="w-16 h-16 mb-5 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/15 dark:to-purple-500/15 flex items-center justify-center">
+				<div className="w-16 h-16 mb-5 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
 					<Archive className="w-8 h-8 text-indigo-500 dark:text-indigo-400" />
 				</div>
 				<h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-1">No repositories yet</h2>

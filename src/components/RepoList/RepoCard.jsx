@@ -32,7 +32,6 @@ function RepoCardQuickActions({ repo, onAction, onContextMenu }) {
 					<motion.button
 						key={a.id}
 						onClick={(e) => { e.stopPropagation(); onAction(a.id, repo) }}
-						whileHover={{ scale: 1.1 }}
 						whileTap={{ scale: 0.9 }}
 						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
 						title={description ? `${label} — ${description}` : label}
@@ -44,7 +43,6 @@ function RepoCardQuickActions({ repo, onAction, onContextMenu }) {
 			})}
 			<motion.button
 				onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
-				whileHover={{ scale: 1.1 }}
 				whileTap={{ scale: 0.9 }}
 				className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
 				title="More actions"
@@ -100,9 +98,6 @@ export const RepoCard = memo(function RepoCard({
 		}
 		: {}
 
-	// Preserve ring in hover shadow for selected cards
-	const hoverShadow = '0 20px 25px -5px rgba(100, 116, 139, 0.2), 0 10px 10px -5px rgba(100, 116, 139, 0.15)'
-
 	return (
 		<motion.div
 			tabIndex={0}
@@ -114,18 +109,13 @@ export const RepoCard = memo(function RepoCard({
 			onContextMenu={onContextMenu}
 			initial={{ opacity: 0, y: 20 }}
 			animate={{ opacity: 1, y: 0 }}
-			whileHover={isContextTarget ? {} : {
-				y: -4,
-				boxShadow: isSelected ? `0 0 0 2px rgba(99, 102, 241, 0.9), ${hoverShadow}` : hoverShadow,
-				transition: { duration: 0.2, ease: "easeOut" }
-			}}
 			transition={{ duration: 0.3 }}
 			style={stateStyle}
 			className={`
                 group relative transition-all duration-300 cursor-pointer
-                backdrop-blur-xl border
+                border
                 shadow-lg shadow-slate-200/40 dark:shadow-black/40
-                ds-card-shimmer ds-hover-lift
+                ds-hover-lift
                 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 outline-none
                 ${isContextTarget
 					? isSelected
@@ -138,11 +128,6 @@ export const RepoCard = memo(function RepoCard({
                 ${isGrid ? 'rounded-2xl p-3 sm:p-4 xl:p-5 flex flex-col h-full' : 'rounded-xl p-4 flex items-center gap-4'}
             `}
 		>
-			{/* Background gradiente animado no hover */}
-			<motion.div
-				className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500/0 to-purple-500/0 opacity-0 group-hover:from-indigo-500/5 group-hover:to-purple-500/5 group-hover:opacity-100 transition-all duration-300"
-				style={{ pointerEvents: 'none' }}
-			/>
 			{/* Selection Checkbox */}
 			{/* In Grid: Top Right. In List: Left side, static. */}
 			{isGrid ? (
