@@ -55,7 +55,9 @@
     "admin:grant": "node server/scripts/admin-grant.mjs",
     "admin:revoke": "node server/scripts/admin-grant.mjs --revoke",
     "admin:dlq": "node server/scripts/admin-dlq.mjs",
-    "admin:dlq:sweep": "node server/scripts/dlq-sweep.mjs"
+    "admin:dlq:sweep": "node server/scripts/dlq-sweep.mjs",
+    "lint:css": "node scripts/check-killed-classes.mjs",
+    "prebuild": "npm run lint:css"
   },
   "dependencies": {
     "@git-diff-view/react": "^0.1.3",
