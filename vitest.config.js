@@ -12,7 +12,8 @@ export default defineConfig({
     exclude: ['node_modules', 'dist', 'e2e'],
     environmentMatchGlobs: [
       ['server/**/*.test.js', 'node'],
-      ['scripts/**/*.test.js', 'node']
+      ['scripts/**/*.test.js', 'node'],
+      ['tests/styles/**/*.test.js', 'node'],
     ],
     css: true,
     coverage: {

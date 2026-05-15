@@ -31,7 +31,7 @@ const EXPECTED_TOKENS = {
 describe('design-system.css — new tokens resolve to expected values', () => {
   Object.entries(EXPECTED_TOKENS).forEach(([token, value]) => {
     it(`${token} = ${value}`, () => {
-      const re = new RegExp(`${token.replace(/--/g, '--')}\\s*:\\s*${value.replace(/[#()]/g, '\\$&')}`)
+      const re = new RegExp(`${token}(?![-\\w])\\s*:\\s*${value.replace(/[#()]/g, '\\$&')}`)
       expect(css).toMatch(re)
     })
   })
