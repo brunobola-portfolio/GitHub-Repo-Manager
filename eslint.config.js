@@ -81,10 +81,32 @@ export default defineConfig([
     // into a user-facing toast/banner.
     files: ['src/components/**/*.{js,jsx}'],
     rules: {
-      'no-restricted-syntax': ['error', {
-        selector: "MemberExpression[property.name='stack']",
-        message: 'Do not surface .stack in UI. Use formatUserError(err) from src/utils/errors.js instead.',
-      }],
+      'no-restricted-syntax': ['error',
+        {
+          selector: "MemberExpression[property.name='stack']",
+          message: 'Do not surface .stack in UI. Use formatUserError(err) from src/utils/errors.js instead.',
+        },
+        {
+          selector: "JSXAttribute[name.name='whileHover'] ObjectExpression > Property[key.name='rotate']",
+          message: 'Theme spec: no rotate on hover. See docs/specs/2026-05-14-premium-non-llm-theme-design.md anti-patterns.',
+        },
+        {
+          selector: "JSXAttribute[name.name='whileHover'] ObjectExpression > Property[key.name='scale']",
+          message: 'Theme spec: no scale on hover (cards-as-button exception is rare — discuss in review).',
+        },
+        {
+          selector: "Literal[value=/\\bfont-extrabold\\b/]",
+          message: 'Theme spec: max font weight on UI text is font-semibold (600).',
+        },
+        {
+          selector: "Literal[value=/\\bbackdrop-blur-(xl|2xl|3xl)\\b/]",
+          message: 'Theme spec: max blur is backdrop-blur-md.',
+        },
+        {
+          selector: "Literal[value=/\\bds-(gradient-text|card-shimmer|btn-shimmer|border-glow|hover-glow|animate-float|pulse-glow|glass(-strong)?)\\b/]",
+          message: 'Theme spec: this ds-* class is in the kill list.',
+        },
+      ],
     },
   },
 ])
