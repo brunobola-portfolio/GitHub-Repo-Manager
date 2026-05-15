@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { Modal, ModalFooter } from './Modal'
 import { Button } from './Button'
+import { Kbd } from './Kbd'
 
 /**
  * ConfirmModal — danger/warning/info confirmation dialog.
@@ -39,7 +40,7 @@ export function ConfirmModal({
         }
     }, [isOpen])
 
-    const handleConfirm = async () => {
+    const handleConfirm = useCallback(async () => {
         if (isSubmitting) return
         if (requiresInput) {
             if (inputValue !== requiresInput) {
@@ -56,7 +57,22 @@ export function ConfirmModal({
         } finally {
             setIsSubmitting(false)
         }
-    }
+    }, [isSubmitting, requiresInput, inputValue, onConfirm])
+
+    // ⌘↵ (or Ctrl+↵) keyboard shortcut to confirm — mirrors the visible
+    // <Kbd> hint so keyboard-fluent users can confirm without mousing.
+    const handleKeyDown = useCallback((e) => {
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault()
+            handleConfirm()
+        }
+    }, [handleConfirm])
+
+    useEffect(() => {
+        if (!isOpen) return
+        document.addEventListener('keydown', handleKeyDown)
+        return () => document.removeEventListener('keydown', handleKeyDown)
+    }, [isOpen, handleKeyDown])
 
     // Map ConfirmModal's danger/warning/info variants onto Modal's
     // gradient-header variants. Modal supports the same vocabulary so the
@@ -69,11 +85,11 @@ export function ConfirmModal({
 
     const footer = (
         <ModalFooter align="right">
-            <Button variant="ghost" onClick={onClose} disabled={isLoading || isSubmitting}>
-                {cancelText}
+            <Button variant="ghost" onClick={onClose} disabled={isLoading || isSubmitting} aria-label={cancelText} className="inline-flex items-center gap-2">
+                {cancelText} <Kbd>Esc</Kbd>
             </Button>
-            <Button variant={buttonVariant} onClick={handleConfirm} disabled={isLoading || isSubmitting}>
-                {(isLoading || isSubmitting) ? 'Processing...' : confirmText}
+            <Button variant={buttonVariant} onClick={handleConfirm} disabled={isLoading || isSubmitting} aria-label={(isLoading || isSubmitting) ? 'Processing...' : confirmText} className="inline-flex items-center gap-2">
+                {(isLoading || isSubmitting) ? 'Processing...' : confirmText} <Kbd modifier="mod">↵</Kbd>
             </Button>
         </ModalFooter>
     )

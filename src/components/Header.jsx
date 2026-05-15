@@ -17,6 +17,7 @@ import { useWorkBoardBadgeCounts } from '../hooks/useWorkBoardBadgeCounts'
 import { useNotificationsDigest } from '../hooks/useNotificationsDigest'
 import { Drawer } from './ui/Drawer'
 import { MobileQuickActionsFab } from './MobileQuickActionsFab'
+import { Tooltip } from './ui/Tooltip'
 
 export function Header({
     user,
@@ -413,23 +414,24 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
 // Shared icon button for header actions
 function HeaderIconButton({ onClick, label, title, children, disabled, active, ...rest }) {
     return (
-        <button
-            type="button"
-            onClick={onClick}
-            disabled={disabled}
-            className={`relative w-[34px] h-[34px] rounded-[9px] flex items-center justify-center transition-all duration-200
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
-                disabled:opacity-40 disabled:cursor-not-allowed
-                ${active
-                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100'
-                }`}
-            title={title}
-            aria-label={label}
-            {...rest}
-        >
-            {children}
-        </button>
+        <Tooltip label={title}>
+            <button
+                type="button"
+                onClick={onClick}
+                disabled={disabled}
+                className={`relative w-[34px] h-[34px] rounded-[9px] flex items-center justify-center transition-all duration-200
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
+                    disabled:opacity-40 disabled:cursor-not-allowed
+                    ${active
+                        ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100'
+                    }`}
+                aria-label={label}
+                {...rest}
+            >
+                {children}
+            </button>
+        </Tooltip>
     )
 }
 

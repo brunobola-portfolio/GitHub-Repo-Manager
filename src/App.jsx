@@ -46,6 +46,7 @@ import { LegalFooter } from './components/LegalFooter'
 import { DemoModeBanner } from './components/DemoModeBanner'
 import { RouteFallback } from './components/ui/RouteFallback'
 import { ViewErrorFallback } from './components/ui/ViewErrorFallback'
+import { startTransition } from './utils/viewTransitions'
 
 // Lazy load Pricing page
 const PricingPage = lazy(() => import('./components/Pricing/PricingPage').then(m => ({ default: m.PricingPage })))
@@ -104,13 +105,15 @@ function AppContent() {
   // in viewParams and forwarded to the rendered view component.
   const setActiveView = useCallback((next, params = {}) => {
     setViewParams(params)
-    _setActiveView((prev) => {
-      const resolved = typeof next === 'function' ? next(prev) : next
-      if (resolved !== prev) {
-        trackBreadcrumb('nav', `view:${resolved}`)
-        mark(`nav:${resolved}`)
-      }
-      return resolved
+    startTransition(() => {
+      _setActiveView((prev) => {
+        const resolved = typeof next === 'function' ? next(prev) : next
+        if (resolved !== prev) {
+          trackBreadcrumb('nav', `view:${resolved}`)
+          mark(`nav:${resolved}`)
+        }
+        return resolved
+      })
     })
   }, [])
   const [selectedTeam, setSelectedTeam] = useState(null)

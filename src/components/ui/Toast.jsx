@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react'
+import { XCircle, Info, AlertTriangle, X } from 'lucide-react'
+import { AnimatedCheck } from './AnimatedCheck'
 
 const ICONS = {
-    success: CheckCircle,
+    success: null, // rendered directly as <AnimatedCheck> below
     error: XCircle,
     info: Info,
     warning: AlertTriangle
@@ -34,7 +35,7 @@ export function Toast({ id, type = 'info', message, content, onDismiss, duration
     useEffect(() => {
         onDismissRef.current = onDismiss
     }, [onDismiss])
-    const Icon = ICONS[type] || Info
+    const Icon = ICONS[type] ?? Info
 
     useEffect(() => {
         if (duration > 0) {
@@ -61,7 +62,10 @@ export function Toast({ id, type = 'info', message, content, onDismiss, duration
 				STYLES[type]
 			} ${isLeaving ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'}`}
 		>
-            <Icon className={`w-5 h-5 shrink-0 ${ICON_STYLES[type]}`} />
+            {type === 'success'
+                ? <AnimatedCheck size={20} color="currentColor" />
+                : <Icon className={`w-5 h-5 shrink-0 ${ICON_STYLES[type]}`} />
+            }
             {content ? (
                 <div className="flex-1 text-sm">{content}</div>
             ) : (
