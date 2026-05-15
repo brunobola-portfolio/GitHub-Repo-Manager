@@ -59,7 +59,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
             role="dialog"
             aria-modal="true"
             aria-label="Welcome tour"
-            className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[var(--ds-z-modal)] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
             onClick={onClose}
             onKeyDown={(e) => { if (e.key === 'Escape') onClose?.() }}
         >
@@ -69,7 +69,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25 }}
                 onClick={(e) => e.stopPropagation()}
-                className="ds-card-shimmer w-full max-w-lg p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                className="w-full max-w-lg p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-[var(--ds-shadow-overlay)]"
             >
                 <div className="flex justify-between items-start mb-6">
                     <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -95,7 +95,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                         aria-live="polite"
                         className="text-center"
                     >
-                        <div className={`w-16 h-16 mb-5 mx-auto rounded-2xl bg-gradient-to-br ${step.gradient} flex items-center justify-center`}>
+                        <div className="w-16 h-16 mb-5 mx-auto rounded-2xl bg-[color:var(--ds-accent-brand)] flex items-center justify-center">
                             <Icon className="w-8 h-8 text-white" strokeWidth={2.5} />
                         </div>
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{step.title}</h2>
@@ -125,7 +125,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                             <button
                                 type="button"
                                 onClick={() => setStepIndex((i) => Math.min(ONBOARDING_STEPS.length - 1, i + 1))}
-                                className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+                                className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-[color:var(--ds-accent-brand)] hover:opacity-90 transition-colors"
                             >
                                 Next <ArrowRight className="w-4 h-4" />
                             </button>
@@ -134,7 +134,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                             <button
                                 type="button"
                                 onClick={handleComplete}
-                                className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+                                className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-[color:var(--ds-accent-brand)] hover:opacity-90 transition-colors"
                             >
                                 Got it
                             </button>
