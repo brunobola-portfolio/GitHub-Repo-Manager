@@ -2,11 +2,11 @@ import { motion, useReducedMotion } from 'framer-motion'
 
 const TONE_CLASSES = {
   default: 'ring-slate-200/60 dark:ring-slate-800/50 bg-white dark:bg-slate-900/60',
-  info:    'ring-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent dark:from-blue-500/10',
-  success: 'ring-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent dark:from-emerald-500/10',
-  warning: 'ring-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent dark:from-amber-500/10',
-  danger:  'ring-red-500/20 bg-gradient-to-br from-red-500/5 to-transparent dark:from-red-500/10',
-  ai:      'ring-purple-500/25 bg-gradient-to-br from-purple-500/[0.08] via-indigo-500/5 to-transparent dark:from-purple-500/[0.12] dark:via-indigo-500/[0.08]',
+  info:    'ring-blue-500/20 bg-blue-50/60 dark:bg-blue-950/20',
+  success: 'ring-emerald-500/20 bg-emerald-50/60 dark:bg-emerald-950/20',
+  warning: 'ring-amber-500/20 bg-amber-50/60 dark:bg-amber-950/20',
+  danger:  'ring-red-500/20 bg-red-50/60 dark:bg-red-950/20',
+  ai:      'ring-purple-500/25 bg-slate-50 dark:bg-slate-900/60',
 }
 
 const VARIANTS = {
@@ -23,7 +23,7 @@ const VARIANTS_REDUCED = {
  * InsightCard — shared card used inside modals for a consistent look.
  *
  * - Tones: default, info, success, warning, danger, ai
- * - Hover: ds-card-shimmer + ds-hover-lift (opt-out with hover={false})
+ * - Hover: ds-hover-lift (opt-out with hover={false})
  * - Animates in on mount with its own `hidden → visible` variants. When
  *   placed inside a parent with matching `staggerChildren` variants,
  *   Framer Motion's variant name matching will still propagate the
@@ -39,7 +39,7 @@ export function InsightCard({
 }) {
   const reduced = useReducedMotion()
   const toneClass = TONE_CLASSES[tone] ?? TONE_CLASSES.default
-  const hoverClass = hover ? 'ds-card-shimmer ds-hover-lift' : ''
+  const hoverClass = hover ? 'ds-hover-lift' : ''
 
   return (
     <motion.div

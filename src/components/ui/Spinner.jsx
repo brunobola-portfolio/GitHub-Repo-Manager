@@ -9,9 +9,9 @@ const SIZE = {
 }
 
 const TONE = {
-    primary: 'text-indigo-500 dark:text-indigo-400',
+    primary: 'text-[color:var(--ds-fg-muted)]',
     onPrimary: 'text-white',
-    muted: 'text-slate-400 dark:text-slate-500',
+    muted: 'text-[color:var(--ds-fg-muted)]',
     danger: 'text-red-500 dark:text-red-400',
     success: 'text-emerald-500 dark:text-emerald-400',
     warning: 'text-amber-500 dark:text-amber-400',

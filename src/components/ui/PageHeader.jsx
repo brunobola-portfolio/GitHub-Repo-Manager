@@ -20,13 +20,11 @@ export function PageHeader({
     icon: Icon,
     actions,
     align = 'left',
-    gradient = false,
+    gradient: _gradient,
     titleAccessory,
     className = '',
 }) {
-    const titleClass = `mt-1 text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight ds-font-display ${
-        gradient ? 'ds-gradient-text' : 'text-slate-900 dark:text-white'
-    } ${titleAccessory ? 'truncate' : ''}`.trim()
+    const titleClass = `mt-1 text-xl font-semibold tracking-tight ds-font-display text-slate-900 dark:text-white ${titleAccessory ? 'truncate' : ''}`.trim()
 
     return (
         <header className={`flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6 ${className}`.trim()}>

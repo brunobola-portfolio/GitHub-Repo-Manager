@@ -114,7 +114,7 @@ export function Drawer({
                         {(title || subtitle || Icon || showCloseButton) ? (
                             <div className="flex items-start gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
                                 {Icon ? (
-                                    <span className="shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center shadow-sm">
+                                    <span className="shrink-0 w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm">
                                         <Icon className="w-4 h-4" aria-hidden="true" />
                                     </span>
                                 ) : null}

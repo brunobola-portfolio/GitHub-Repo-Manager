@@ -9,12 +9,11 @@ describe('PageHeader', () => {
         expect(h1.textContent).toBe('Tracked repositories')
     })
 
-    it('applies the standard responsive size + display font', () => {
+    it('applies the standard size + display font', () => {
         render(<PageHeader title="Page" />)
         const h1 = screen.getByRole('heading', { level: 1 })
-        expect(h1.className).toContain('text-2xl')
-        expect(h1.className).toContain('sm:text-3xl')
-        expect(h1.className).toContain('lg:text-4xl')
+        expect(h1.className).toContain('text-xl')
+        expect(h1.className).toContain('font-semibold')
         expect(h1.className).toContain('ds-font-display')
     })
 
@@ -39,10 +38,11 @@ describe('PageHeader', () => {
         expect(document.querySelectorAll('p').length).toBe(0)
     })
 
-    it('applies the gradient text class when gradient prop is true', () => {
+    it('ignores the gradient prop (deprecated) — title is always solid', () => {
         render(<PageHeader title="Page" gradient />)
         const h1 = screen.getByRole('heading', { level: 1 })
-        expect(h1.className).toContain('ds-gradient-text')
+        expect(h1.className).toContain('text-slate-900')
+        expect(h1.className).not.toContain('ds-gradient-text')
     })
 
     it('renders titleAccessory inline next to the H1 when supplied', () => {

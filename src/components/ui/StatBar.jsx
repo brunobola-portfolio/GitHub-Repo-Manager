@@ -1,10 +1,10 @@
 import { motion, useReducedMotion } from 'framer-motion'
 
 const GRADIENT_CLASSES = {
-  primary:   'bg-gradient-to-r from-indigo-500 to-purple-500',
-  secondary: 'bg-gradient-to-r from-cyan-500 to-blue-500',
-  success:   'bg-gradient-to-r from-emerald-500 to-cyan-500',
-  accent:    'bg-gradient-to-r from-amber-500 to-pink-500',
+  primary:   'bg-indigo-500',
+  secondary: 'bg-sky-500',
+  success:   'bg-emerald-500',
+  accent:    'bg-amber-500',
 }
 
 const SIZE_CLASSES = {

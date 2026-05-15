@@ -43,7 +43,7 @@ describe('InsightCard', () => {
   it('adds hover classes by default', () => {
     render(<InsightCard data-testid="card">x</InsightCard>)
     expect(screen.getByTestId('card').className).toMatch(/ds-hover-lift/)
-    expect(screen.getByTestId('card').className).toMatch(/ds-card-shimmer/)
+    // ds-card-shimmer removed from primitive; ds-hover-lift still applied
   })
 
   it('omits hover classes when hover=false', () => {

@@ -10,25 +10,25 @@ export function Card({
     children,
     className,
     hover = false,
-    glass = true,
+    glass = false,
     shadow = 'lg',
     ref,
     ...props
 }) {
     return (
         <div ref={ref} {...props} className={twMerge(
-            // Base glassmorphism styling
+            // Base styling — solid by default; glass opt-in
             glass
-                ? 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl'
-                : 'bg-white dark:bg-slate-800',
-            // Borders with subtle transparency
-            'rounded-2xl border border-slate-200/70 dark:border-slate-700/50',
+                ? 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-md'
+                : 'bg-white dark:bg-slate-900',
+            // Borders
+            'rounded-[var(--ds-radius-lg)] border border-slate-200 dark:border-slate-700',
             // Layered shadows for depth (opt-out via shadow="sm" | "none")
             SHADOW_CLASS[shadow] ?? SHADOW_CLASS.lg,
             // Smooth transitions
             'overflow-hidden transition-all duration-300',
             // Hover effects
-            hover && 'ds-hover-lift cursor-pointer ds-card-shimmer',
+            hover && 'ds-hover-lift cursor-pointer',
             className
         )}>
             {children}

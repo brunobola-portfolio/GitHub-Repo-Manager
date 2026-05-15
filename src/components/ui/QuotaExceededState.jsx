@@ -34,9 +34,9 @@ export function QuotaExceededState({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="ds-card-shimmer p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 max-w-lg mx-auto text-center"
+      className="p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 max-w-lg mx-auto text-center"
     >
-      <div className="w-16 h-16 mb-5 mx-auto rounded-2xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center">
+      <div className="w-16 h-16 mb-5 mx-auto rounded-2xl bg-amber-500 flex items-center justify-center">
         <Gauge className="w-8 h-8 text-white" strokeWidth={2.5} />
       </div>
       <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Quota reached</h3>
@@ -56,7 +56,7 @@ export function QuotaExceededState({
         <button
           type="button"
           onClick={() => { navigateToPricing(upgradeTo); onClose?.() }}
-          className="ds-border-glow inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:shadow-lg transition-all"
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
         >
           Upgrade to {upgradeLabel} <ArrowRight className="w-4 h-4" />
         </button>

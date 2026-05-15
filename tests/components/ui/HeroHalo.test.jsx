@@ -33,7 +33,8 @@ describe('HeroHalo', () => {
     it('falls back to default classes for unknown palette/position', () => {
         render(<HeroHalo palette="unknown" position="bogus" />)
         const halo = screen.getByTestId('hero-halo')
-        expect(halo.className).toMatch(/from-indigo/)
+        // default palette is 'indigo' but now maps to slate-based classes
+        expect(halo.className).toMatch(/from-slate/)
         expect(halo.className).toMatch(/-top-24/)
     })
 

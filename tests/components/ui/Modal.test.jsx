@@ -129,14 +129,14 @@ describe('Modal — staggerChildren and iconGradient', () => {
     expect(container.querySelector('[data-stagger-root="true"]')).toBeNull()
   })
 
-  it('renders icon with primary gradient class when iconGradient=primary', () => {
+  it('renders icon tile with primary solid class when iconGradient=primary', () => {
     const Icon = () => <svg data-testid="icon" />
     const { container } = render(
       <Modal isOpen={true} onClose={() => {}} title="Hi" icon={Icon} iconGradient="primary">x</Modal>
     )
     const iconTile = container.querySelector('[data-icon-tile="true"]')
     expect(iconTile).not.toBeNull()
-    expect(iconTile.className).toMatch(/from-indigo-500/)
+    expect(iconTile.className).toMatch(/bg-indigo-6/)
   })
 })
 

@@ -27,7 +27,7 @@ describe('Spinner', () => {
         const el = screen.getByRole('status')
         expect(el).toHaveAttribute('aria-label', 'test')
         expect(el.className).toContain('w-4 h-4')          // md default
-        expect(el.className).toContain('text-indigo-500')  // primary default
+        expect(el.className).toContain('--ds-fg-muted')  // primary default (now maps to muted token)
     })
 
     it('honours an explicit label', () => {

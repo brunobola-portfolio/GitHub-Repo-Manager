@@ -67,9 +67,9 @@ export function ViewErrorFallback({
       <div className="relative">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 w-24 h-24 rounded-full bg-gradient-to-br from-amber-300/40 via-rose-300/30 to-indigo-400/30 blur-2xl"
+          className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 w-24 h-24 rounded-full bg-amber-300/30 blur-2xl"
         />
-        <div className="relative w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-rose-500 shadow-lg shadow-amber-500/25 flex items-center justify-center ring-1 ring-white/40 dark:ring-white/10">
+        <div className="relative w-14 h-14 mx-auto mb-4 rounded-2xl bg-amber-500 shadow-md flex items-center justify-center ring-1 ring-white/40 dark:ring-white/10">
           <AlertTriangle className="w-7 h-7 text-white" strokeWidth={2.25} aria-hidden="true" />
         </div>
       </div>
@@ -85,7 +85,7 @@ export function ViewErrorFallback({
         <button
           type="button"
           onClick={handleRetry}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl font-medium text-sm transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 focus:outline-none shadow-sm shadow-indigo-500/20"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl font-medium text-sm transition-colors focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 focus:outline-none shadow-sm"
         >
           <RotateCcw className="w-4 h-4" aria-hidden="true" />
           Retry
@@ -126,7 +126,7 @@ export function ViewErrorFallback({
           onClick={(e) => {
             if (e.target === e.currentTarget) handleGoHome()
           }}
-          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-md"
+          className="fixed inset-0 z-[var(--ds-z-modal)] flex items-center justify-center p-4 bg-black/60 dark:bg-black/75 backdrop-blur-md"
         >
           <motion.div
             role="alertdialog"

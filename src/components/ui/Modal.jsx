@@ -8,9 +8,9 @@ import { TabBar } from './TabBar'
 
 const ICON_GRADIENT_CLASSES = {
     none:    'bg-white/15',
-    primary: 'bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/25',
-    premium: 'bg-gradient-to-br from-indigo-500 via-cyan-500 to-pink-500 shadow-lg shadow-purple-500/25',
-    success: 'bg-gradient-to-br from-emerald-500 to-cyan-500 shadow-lg shadow-emerald-500/25',
+    primary: 'bg-indigo-600 shadow-sm',
+    premium: 'bg-indigo-600 shadow-sm',
+    success: 'bg-emerald-600 shadow-sm',
 }
 
 const STAGGER_VARIANTS = {
@@ -48,11 +48,11 @@ const SHEET_SIZE_CLASSES = {
 // Variant styles for the header gradient — hoisted to module scope to avoid
 // per-render allocation.
 const VARIANT_STYLES = {
-    default: { headerBg: 'bg-gradient-to-r from-indigo-500 to-purple-600', iconBg: 'bg-white/20', textColor: 'text-white' },
-    danger:  { headerBg: 'bg-gradient-to-r from-red-500 to-rose-600',       iconBg: 'bg-white/20', textColor: 'text-white' },
-    warning: { headerBg: 'bg-gradient-to-r from-amber-500 to-orange-600',   iconBg: 'bg-white/20', textColor: 'text-white' },
-    info:    { headerBg: 'bg-gradient-to-r from-blue-500 to-cyan-600',      iconBg: 'bg-white/20', textColor: 'text-white' },
-    success: { headerBg: 'bg-gradient-to-r from-emerald-500 to-teal-600',   iconBg: 'bg-white/20', textColor: 'text-white' },
+    default: { headerBg: 'bg-indigo-600',  iconBg: 'bg-white/20', textColor: 'text-white' },
+    danger:  { headerBg: 'bg-red-600',     iconBg: 'bg-white/20', textColor: 'text-white' },
+    warning: { headerBg: 'bg-amber-600',   iconBg: 'bg-white/20', textColor: 'text-white' },
+    info:    { headerBg: 'bg-sky-600',     iconBg: 'bg-white/20', textColor: 'text-white' },
+    success: { headerBg: 'bg-emerald-600', iconBg: 'bg-white/20', textColor: 'text-white' },
 }
 
 /**
@@ -241,7 +241,7 @@ export function Modal({
                             {/* Footer */}
                             {footer && (
                                 <div
-                                    className={`flex-shrink-0 flex items-center min-h-[64px] md:min-h-[68px] px-4 md:px-5 bg-white/80 dark:bg-slate-900/70 ds-glass border-t border-slate-200/50 dark:border-slate-800/40 ${mobileVariant === 'sheet' ? 'pb-[calc(1rem+env(safe-area-inset-bottom))] md:pb-0' : ''}`}
+                                    className={`flex-shrink-0 flex items-center min-h-[64px] md:min-h-[68px] px-4 md:px-5 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shadow-[var(--ds-shadow-overlay)] ${mobileVariant === 'sheet' ? 'pb-[calc(1rem+env(safe-area-inset-bottom))] md:pb-0' : ''}`}
                                 >
                                     <div className="w-full">
                                         {footer}

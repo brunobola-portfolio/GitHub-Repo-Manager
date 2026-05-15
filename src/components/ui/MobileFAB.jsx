@@ -34,7 +34,6 @@ export function MobileFAB({ icon: Icon, label, onClick, shiftAboveBottomBar = fa
 		<motion.button
 			type="button"
 			onClick={onClick}
-			whileHover={{ scale: 1.05 }}
 			whileTap={{ scale: 0.95 }}
 			aria-label={label}
 			title={label}

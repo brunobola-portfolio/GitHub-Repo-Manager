@@ -272,7 +272,7 @@ export function Select({
                     w-full flex items-center justify-between gap-2
                     ${sizeClasses[size]}
                     bg-white/80 dark:bg-slate-800/80
-                    backdrop-blur-xl
+                    backdrop-blur-md
                     border border-slate-200 dark:border-slate-700
                     rounded-xl
                     font-medium
@@ -314,7 +314,7 @@ export function Select({
                         transition={{ duration: 0.15 }}
                         className="absolute z-[var(--ds-z-popover)] w-full mt-2
                             bg-white/95 dark:bg-slate-900/95
-                            backdrop-blur-xl
+                            backdrop-blur-md
                             border border-slate-200 dark:border-slate-700
                             rounded-xl
                             shadow-2xl

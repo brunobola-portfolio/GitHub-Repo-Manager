@@ -17,10 +17,10 @@ export function HeroHalo({
     className = '',
 }) {
     const palettes = {
-        indigo:  'from-indigo-400/40 via-blue-400/20 to-transparent dark:from-indigo-500/30 dark:via-blue-500/15',
+        indigo:  'from-slate-400/30 via-slate-300/15 to-transparent dark:from-slate-600/20 dark:via-slate-500/10',
         emerald: 'from-emerald-400/40 via-teal-400/20 to-transparent dark:from-emerald-500/30 dark:via-teal-500/15',
         amber:   'from-amber-400/40 via-orange-400/20 to-transparent dark:from-amber-500/30 dark:via-orange-500/15',
-        rose:    'from-rose-400/40 via-pink-400/20 to-transparent dark:from-rose-500/30 dark:via-pink-500/15',
+        rose:    'from-rose-400/40 via-rose-300/20 to-transparent dark:from-rose-500/30 dark:via-rose-400/15',
     }
     const intensities = {
         subtle:  'opacity-50',

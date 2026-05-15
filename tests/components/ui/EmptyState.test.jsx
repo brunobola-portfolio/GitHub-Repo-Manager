@@ -63,12 +63,13 @@ describe('EmptyState', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('applies custom gradient class', () => {
+  it('gradient prop is deprecated — icon area uses neutral bg regardless', () => {
     const { container } = render(
       <EmptyState icon={Inbox} title="Test" gradient="from-red-500 to-pink-600" />
     )
-    const gradientDiv = container.querySelector('.from-red-500')
-    expect(gradientDiv).toBeInTheDocument()
+    // gradient prop is now ignored; icon container uses slate bg
+    expect(container.querySelector('.from-red-500')).toBeNull()
+    expect(container.querySelector('[class*="bg-slate"]')).toBeInTheDocument()
   })
 
   it('exposes data-testid="empty-state" for e2e selectors', () => {

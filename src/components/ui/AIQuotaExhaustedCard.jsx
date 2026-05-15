@@ -39,11 +39,11 @@ export function AIQuotaExhaustedCard({
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="mx-5 my-3 rounded-2xl p-[1px] bg-gradient-to-br from-rose-500/40 via-amber-500/30 to-transparent"
+            className="mx-5 my-3 rounded-2xl border border-rose-200 dark:border-rose-900/50"
         >
-            <div className="rounded-2xl bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl p-4 sm:p-5">
+            <div className="rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-5">
                 <div className="flex items-start gap-3 sm:gap-4">
-                    <div className="shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center shadow-md">
+                    <div className="shrink-0 w-10 h-10 rounded-xl bg-rose-500 flex items-center justify-center shadow-sm">
                         <Gauge className="w-5 h-5 text-white" strokeWidth={2.5} aria-hidden="true" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -70,7 +70,7 @@ export function AIQuotaExhaustedCard({
                                 <button
                                     type="button"
                                     onClick={() => navigateToPricing(upgradeTo)}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-[12px] text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:shadow-lg transition-shadow"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-[12px] text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
                                 >
                                     Upgrade to {upgradeLabel}
                                     <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />

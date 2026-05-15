@@ -43,15 +43,15 @@ export function SectionPanel({
     const contentId = useId()
 
     const bg = tone === 'muted'
-        ? 'bg-gradient-to-br from-slate-50/40 to-white/40 dark:from-slate-900/30 dark:to-slate-950/30'
-        : 'bg-gradient-to-br from-white/60 to-slate-50/60 dark:from-slate-900/40 dark:to-slate-950/50'
+        ? 'bg-slate-50/60 dark:bg-slate-900/40'
+        : 'bg-white dark:bg-slate-900'
 
     const hasHeader = !!(eyebrow || title || subtitle || Icon || actions || collapsible)
 
     const headerCommon = (
         <>
             {Icon ? (
-                <span className="shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center shadow-sm">
+                <span className="shrink-0 w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm">
                     <Icon className="w-4 h-4" aria-hidden="true" />
                 </span>
             ) : null}
@@ -83,7 +83,7 @@ export function SectionPanel({
 
     return (
         <section
-            className={`rounded-3xl border-2 border-slate-200/60 dark:border-slate-800/60 ${bg} backdrop-blur-xl shadow-sm overflow-hidden ${className}`.trim()}
+            className={`rounded-3xl border border-slate-200 dark:border-slate-800 ${bg} shadow-sm overflow-hidden ${className}`.trim()}
             {...rest}
         >
             {hasHeader ? (

@@ -11,7 +11,8 @@ const PANEL_SIZES = {
   xl: 'w-[min(92vw,1140px)]',
 }
 
-const DEFAULT_GRADIENT = 'from-indigo-600 via-indigo-500 to-purple-600'
+// headerGradient prop kept for backward-compat; default header is now solid indigo
+const DEFAULT_GRADIENT = ''
 
 export function WizardPanel({
   isOpen,
@@ -73,13 +74,13 @@ export function WizardPanel({
             {/* Title Bar */}
             <div className={`
               flex-shrink-0 text-white flex items-center h-12 md:h-[52px] px-4 md:px-5 gap-3
-              bg-gradient-to-r ${headerGradient}
+              ${headerGradient ? `bg-gradient-to-r ${headerGradient}` : 'bg-indigo-600'}
               ${effectiveMaximized ? '' : 'border-b border-white/10'}
             `}>
               {/* Left: Icon + Title */}
               <div className="flex items-center gap-2.5 min-w-0">
                 {Icon && (
-                  <div className="bg-white/15 ds-hover-glow p-1.5 rounded-lg flex-shrink-0 transition-all">
+                  <div className="bg-white/15 p-1.5 rounded-lg flex-shrink-0 transition-all">
                     <Icon className="w-4 h-4" strokeWidth={2.5} />
                   </div>
                 )}
@@ -143,7 +144,7 @@ export function WizardPanel({
                   initial={{ opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: 0.08 }}
-                  className="flex-shrink-0 w-60 bg-white/90 dark:bg-slate-900/90 ds-glass border-r border-slate-200/60 dark:border-slate-800/40 overflow-hidden relative"
+                  className="flex-shrink-0 w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 overflow-hidden relative"
                 >
                   {/* Sidebar atmospheric glow */}
                   <div className="absolute -bottom-20 -left-10 w-40 h-40 bg-indigo-400/[0.06] dark:bg-indigo-400/[0.08] rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
@@ -171,7 +172,7 @@ export function WizardPanel({
                     shared Modal primitive (min-h-[64px] md:min-h-[68px], px-4
                     md:px-5) so every popup family has the same footer rhythm. */}
                 {footer && (
-                  <div className="flex-shrink-0 relative flex items-center min-h-[64px] md:min-h-[68px] px-4 md:px-5 bg-white/80 dark:bg-slate-900/70 ds-glass border-t border-slate-200/50 dark:border-slate-800/40 safe-area-bottom">
+                  <div className="flex-shrink-0 relative flex items-center min-h-[64px] md:min-h-[68px] px-4 md:px-5 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shadow-[var(--ds-shadow-overlay)] safe-area-bottom">
                     <div className="w-full">
                       {footer}
                     </div>
