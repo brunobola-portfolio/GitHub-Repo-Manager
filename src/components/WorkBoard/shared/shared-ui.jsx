@@ -41,9 +41,8 @@ export function EmptyState({ icon: Icon, title, subtitle }) {
     return (
         <div data-testid="empty-state" className="flex flex-col items-center justify-center py-20 px-6 text-slate-400">
             <div className="relative w-20 h-20 mb-5">
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-500/15 via-purple-500/10 to-transparent blur-lg" />
-                <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-slate-200/60 dark:border-slate-700/50 flex items-center justify-center shadow-sm">
-                    <Icon className="w-9 h-9 text-indigo-400/70 dark:text-indigo-300/50" />
+                <div className="relative w-20 h-20 rounded-3xl bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/50 flex items-center justify-center shadow-sm">
+                    <Icon className="w-9 h-9 text-slate-400 dark:text-slate-500" />
                 </div>
             </div>
             <p className="text-base font-semibold text-slate-700 dark:text-slate-200 mb-1.5">{title}</p>

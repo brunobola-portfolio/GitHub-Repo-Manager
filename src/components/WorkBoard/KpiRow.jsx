@@ -61,10 +61,10 @@ function DeltaBadge({ pct }) {
 }
 
 const KPI_ACCENTS = {
-    purple:  { ring: 'from-purple-500/20',  dot: 'bg-purple-500',  text: 'text-purple-600 dark:text-purple-300',  sparkColor: '#a78bfa' },
-    amber:   { ring: 'from-amber-500/20',   dot: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-300',    sparkColor: '#fbbf24' },
-    emerald: { ring: 'from-emerald-500/20', dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-300', sparkColor: '#34d399' },
-    indigo:  { ring: 'from-indigo-500/20',  dot: 'bg-indigo-500',  text: 'text-indigo-600 dark:text-indigo-300',  sparkColor: '#818cf8' },
+    purple:  { dot: 'bg-purple-500',  text: 'text-purple-600 dark:text-purple-300',  sparkColor: '#a78bfa' },
+    amber:   { dot: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-300',    sparkColor: '#fbbf24' },
+    emerald: { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-300', sparkColor: '#34d399' },
+    indigo:  { dot: 'bg-indigo-500',  text: 'text-indigo-600 dark:text-indigo-300',  sparkColor: '#818cf8' },
 }
 
 function KpiTile({ icon: Icon, label, value, hint, loading, accent = 'indigo', onClick, active, history }) {
@@ -76,17 +76,16 @@ function KpiTile({ icon: Icon, label, value, hint, loading, accent = 'indigo', o
             type="button"
             onClick={onClick}
             className={`
-                group relative text-left p-5 rounded-2xl border backdrop-blur-xl overflow-hidden
-                transition-all duration-300 ds-hover-lift
+                group relative text-left p-5 rounded-2xl border
+                transition-all duration-200 ds-hover-lift
                 ${active
-                    ? 'border-indigo-400/60 dark:border-indigo-500/50 bg-white dark:bg-slate-900 shadow-lg shadow-indigo-500/10'
-                    : 'border-slate-200/60 dark:border-slate-700/40 bg-white/70 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600'
+                    ? 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 shadow-sm'
+                    : 'border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600'
                 }
             `}
         >
-            <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full bg-gradient-to-br ${a.ring} to-transparent blur-2xl opacity-70 group-hover:opacity-100 transition-opacity`} />
             <div className="relative flex items-start justify-between gap-3">
-                <div className={`p-2 rounded-xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-slate-200/60 dark:border-slate-700/50 ${a.text}`}>
+                <div className={`p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/50 ${a.text}`}>
                     <Icon className="w-4 h-4" />
                 </div>
                 <span className={`w-1.5 h-1.5 rounded-full ${a.dot} mt-2 opacity-70`} />

@@ -355,7 +355,7 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
                 />
             ) : (
             /* Main card */
-            <div className="relative rounded-3xl border border-slate-200/60 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-xl shadow-slate-300/20 dark:shadow-black/40 overflow-hidden">
+            <div className="relative rounded-3xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
                 <HeroHalo palette="indigo" intensity="subtle" position="top" />
 
                 {/* Tab bar */}
@@ -383,8 +383,8 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
                                 {tab.badge && (
                                     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
                                         tab.badge === 'Enterprise'
-                                            ? 'bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40 text-amber-700 dark:text-amber-300'
-                                            : 'bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 text-indigo-600 dark:text-indigo-300'
+                                            ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                                            : 'bg-[color:var(--ds-surface-muted)] dark:bg-[color:var(--ds-surface-muted-dark)] text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
                                     }`}>
                                         {tab.badge}
                                     </span>

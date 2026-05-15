@@ -102,7 +102,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
             <div
                 role="status"
                 data-testid="ai-summary-demo"
-                className="rounded-2xl border border-dashed border-amber-300/70 dark:border-amber-700/50 p-4 bg-gradient-to-br from-amber-50/60 to-orange-50/40 dark:from-amber-950/20 dark:to-orange-950/15"
+                className="rounded-2xl border border-dashed border-amber-300/70 dark:border-amber-700/50 p-4 bg-amber-50/60 dark:bg-amber-950/20"
             >
                 <div className="flex items-center gap-2 mb-1.5">
                     <Sparkles className="w-4 h-4 text-amber-500" aria-hidden="true" />
@@ -127,7 +127,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
     }
     if (state.status === 'loading' && !state.data) {
         return (
-            <div className="rounded-3xl border border-slate-200/60 dark:border-slate-700/50 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5" role="status" aria-live="polite">
+            <div className="rounded-3xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 p-5" role="status" aria-live="polite">
                 <Skeleton className="h-5 w-1/2 mb-3" />
                 <div className="space-y-2">
                     <Skeleton className="h-3 w-4/5" />
@@ -173,14 +173,13 @@ export function AISummaryCard({ meta: metaProp } = {}) {
     return (
         <motion.div
             className={clsx(
-                'relative rounded-3xl border border-slate-200/60 dark:border-slate-700/50',
-                'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-lg overflow-hidden ds-card-shimmer',
+                'relative rounded-3xl border border-slate-200 dark:border-slate-700/60',
+                'bg-white dark:bg-slate-900 shadow-sm overflow-hidden',
                 'flex flex-col sm:flex-row gap-6 p-5',
             )}
             animate={glowAnimation}
             transition={isHigh ? { duration: 3, repeat: Infinity, ease: 'easeInOut' } : {}}
         >
-            <div className="pointer-events-none absolute -top-16 left-1/4 w-96 h-36 rounded-full bg-gradient-to-r from-indigo-500/20 via-purple-500/15 to-transparent blur-3xl" />
 
             {/* Left column — gauge + controls */}
             <div className="relative flex flex-col items-center gap-2 min-w-[100px] sm:pl-2 sm:pr-4 sm:border-r sm:border-slate-200/50 sm:dark:border-slate-700/40">
@@ -211,7 +210,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
 
             {/* Right column — content */}
             <div className="relative flex-1 flex flex-col gap-2 min-w-0">
-                <h3 className="text-xl md:text-2xl font-bold leading-tight ds-font-display ds-gradient-text">
+                <h3 className="text-xl md:text-2xl font-bold leading-tight ds-font-display text-slate-900 dark:text-slate-50">
                     {headline}
                 </h3>
                 {trendLine && (
