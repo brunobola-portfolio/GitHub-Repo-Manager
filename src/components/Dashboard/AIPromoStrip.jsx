@@ -60,9 +60,9 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                 transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                 className="overflow-hidden"
             >
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-3 bg-gradient-to-r from-indigo-50/60 via-white/40 to-purple-50/60 dark:from-indigo-500/5 dark:via-slate-900/30 dark:to-purple-500/5 border border-indigo-200/30 dark:border-indigo-500/10 rounded-2xl">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-800/40 rounded-2xl">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-500/20">
+                        <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center flex-shrink-0">
                             <Sparkles className="w-4 h-4 text-white" strokeWidth={2.5} />
                         </div>
                         <div className="min-w-0">
@@ -86,7 +86,7 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                         <button
                             type="button"
                             onClick={handleInsights}
-                            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/30 transition-all ds-btn-shimmer"
+                            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
                         >
                             Get Insights
                             <ArrowRight className="w-3.5 h-3.5" />

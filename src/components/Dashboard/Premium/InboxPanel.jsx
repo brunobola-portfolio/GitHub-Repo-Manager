@@ -109,12 +109,12 @@ export function InboxPanel({ onSelectItem }) {
     return (
         <section
             aria-labelledby="inbox-panel-title"
-            className="rounded-2xl bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl border border-zinc-200/60 dark:border-zinc-800/60"
+            className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
         >
             <header className="px-5 pt-5 pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">
+                        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                             <Inbox className="w-3 h-3" /> Live inbox
                         </div>
                         <h3 id="inbox-panel-title" className="mt-1 text-base font-bold text-zinc-900 dark:text-zinc-100 ds-font-display">

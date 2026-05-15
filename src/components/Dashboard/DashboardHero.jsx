@@ -62,14 +62,14 @@ export function DashboardHero({
             <HeroHalo palette="indigo" intensity="default" position="top" />
             <motion.p
                 variants={childVariants}
-                className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300"
+                className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400"
             >
                 {eyebrow}
             </motion.p>
 
             <motion.h1
                 variants={childVariants}
-                className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight ds-font-display ds-gradient-text"
+                className="text-xl sm:text-2xl font-semibold tracking-tight ds-font-display text-slate-900 dark:text-white"
             >
                 {greeting}
             </motion.h1>

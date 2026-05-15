@@ -29,11 +29,11 @@ function OrgList({ orgs, selectedOrg, onSelect }) {
                 onClick={() => onSelect('')}
                 className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors text-left ${
                     !selectedOrg
-                        ? 'bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-700 dark:text-indigo-300'
+                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
                         : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
                 }`}
             >
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                     <Building2 size={16} strokeWidth={2.5} />
                 </div>
                 <span className="font-semibold flex-1">All Organizations</span>
@@ -47,7 +47,7 @@ function OrgList({ orgs, selectedOrg, onSelect }) {
                     onClick={() => onSelect(org.login)}
                     className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors text-left ${
                         selectedOrg === org.login
-                            ? 'bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-700 dark:text-indigo-300'
+                            ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
                             : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
                     }`}
                 >
@@ -111,7 +111,7 @@ export function HeroOrgChip({ orgs = [], selectedOrg, onSelectOrg, loading }) {
                 <Popover.Content
                     sideOffset={8}
                     align="start"
-                    className="w-[300px] p-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/60 dark:border-slate-700/60 rounded-2xl shadow-2xl ds-animate-scale-in z-[var(--ds-z-popover)]"
+                    className="w-[300px] p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-md ds-animate-scale-in z-[var(--ds-z-popover)]"
                 >
                     <OrgList orgs={orgs} selectedOrg={selectedOrg} onSelect={handleSelect} />
                 </Popover.Content>

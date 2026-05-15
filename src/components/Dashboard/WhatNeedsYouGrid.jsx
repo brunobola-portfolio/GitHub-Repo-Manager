@@ -73,9 +73,8 @@ function CategoryCard({ category, data, onClick }) {
         <motion.button
             type="button"
             onClick={onClick}
-            whileHover={{ y: -3 }}
             aria-label={ariaLabel}
-            className={`group flex flex-col gap-3 p-5 text-left bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/40 dark:border-slate-800/40 rounded-2xl ${tone.hoverBorder} hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ${tone.ring} transition-all ${lastClass}`}
+            className={`group flex flex-col gap-3 p-5 text-left bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl ${tone.hoverBorder} hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ${tone.ring} transition-all ${lastClass}`}
         >
             <div className={`w-10 h-10 rounded-xl ${tone.iconBg} flex items-center justify-center`}>
                 <Icon className={`w-5 h-5 ${tone.iconColor}`} />
@@ -109,7 +108,7 @@ function CategoryCard({ category, data, onClick }) {
 
 function SkeletonCard() {
     return (
-        <div data-testid="skeleton-card" className="flex flex-col gap-3 p-5 bg-white/60 dark:bg-slate-900/60 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl">
+        <div data-testid="skeleton-card" className="flex flex-col gap-3 p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
             <Skeleton className="w-10 h-10 rounded-xl" />
             <Skeleton className="h-3 w-24" />
             <Skeleton className="h-8 w-12" />
@@ -124,9 +123,9 @@ function EmptyState({ onOpenWorkBoard }) {
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="col-span-2 sm:col-span-3 flex flex-col items-center text-center gap-2 p-8 bg-white/40 dark:bg-slate-900/40 border border-slate-200/40 dark:border-slate-800/40 rounded-2xl"
+            className="col-span-2 sm:col-span-3 flex flex-col items-center text-center gap-2 p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl"
         >
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
                 <Sparkles className="w-6 h-6 text-indigo-500" />
             </div>
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 ds-font-display">Estás em dia.</h3>

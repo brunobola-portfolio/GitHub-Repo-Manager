@@ -20,9 +20,9 @@ import { AIQuotaMeter } from '../ui/AIQuotaMeter'
 import { AIQuotaExhaustedCard } from '../ui/AIQuotaExhaustedCard'
 
 const SEVERITY_RING = {
-    high: 'ring-red-500/30 bg-gradient-to-br from-red-500/[0.06] via-rose-500/[0.04] to-transparent dark:from-red-500/[0.10] dark:via-rose-500/[0.06]',
-    medium: 'ring-amber-500/30 bg-gradient-to-br from-amber-500/[0.06] via-orange-500/[0.04] to-transparent dark:from-amber-500/[0.10] dark:via-orange-500/[0.06]',
-    low: 'ring-slate-200/70 dark:ring-slate-800 bg-white/70 dark:bg-slate-900/60',
+    high: 'ring-red-200 dark:ring-red-900/40 bg-red-50/50 dark:bg-red-950/20',
+    medium: 'ring-amber-200 dark:ring-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20',
+    low: 'ring-slate-200 dark:ring-slate-800 bg-white dark:bg-slate-900',
 }
 
 const SEVERITY_BADGE = {
@@ -184,12 +184,12 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
     return (
         <section
             aria-labelledby="attention-feed-title"
-            className={`rounded-2xl p-[1px] bg-gradient-to-br from-indigo-500/30 via-purple-500/20 to-pink-500/10 dark:from-indigo-500/40 dark:via-purple-500/30 dark:to-pink-500/20 ${className}`.trim()}
+            className={`rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 ${className}`.trim()}
         >
-            <div className="rounded-2xl bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl">
+            <div>
                 <header className="flex items-center justify-between gap-3 px-5 pt-5 pb-3 border-b border-slate-200/60 dark:border-slate-800">
                     <div className="min-w-0">
-                        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">
+                        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                             <Sparkles className="w-3 h-3" aria-hidden="true" />
                             Attention feed
                         </div>

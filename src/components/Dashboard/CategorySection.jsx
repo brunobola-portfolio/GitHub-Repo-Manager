@@ -25,7 +25,7 @@ export function CategorySection({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/50 to-slate-50/50 dark:from-slate-900/50 dark:to-slate-800/50 backdrop-blur-xl border-2 border-slate-200/60 dark:border-slate-700/40 shadow-lg hover:shadow-2xl hover:border-indigo-300/60 dark:hover:border-indigo-500/40 transition-all duration-300"
+      className="p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm transition-all duration-300"
     >
       {/* Section Header */}
       <button
@@ -34,7 +34,7 @@ export function CategorySection({
       >
         <div className="flex items-center gap-3">
           {Icon && (
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
               <Icon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             </div>
           )}

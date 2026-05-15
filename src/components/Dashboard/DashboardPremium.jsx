@@ -279,9 +279,9 @@ export function DashboardPremium({
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                         {teams.map(team => {
                             const interactive = typeof onTeamClick === 'function'
-                            const className = `text-left w-full p-5 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/40 dark:border-slate-800/40 rounded-xl transition-all ${
+                            const className = `text-left w-full p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl transition-all ${
                                 interactive
-                                    ? 'cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset'
+                                    ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset'
                                     : ''
                             }`
                             const inner = (
@@ -317,7 +317,6 @@ export function DashboardPremium({
                                 <motion.button
                                     type="button"
                                     key={team.id}
-                                    whileHover={{ y: -3 }}
                                     className={className}
                                     onClick={() => onTeamClick(team)}
                                     aria-label={`Open team ${team.name}`}
@@ -325,7 +324,7 @@ export function DashboardPremium({
                                     {inner}
                                 </motion.button>
                             ) : (
-                                <motion.div key={team.id} whileHover={{ y: -3 }} className={className}>
+                                <motion.div key={team.id} className={className}>
                                     {inner}
                                 </motion.div>
                             )
@@ -428,11 +427,10 @@ function HealthOverview({ repos, openModalWithData }) {
                     <motion.button
                         key={repo.id}
                         type="button"
-                        whileHover={{ y: -2 }}
                         onClick={() => openModalWithData('showCommunityHealth', repo)}
-                        className="flex items-center gap-3 p-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/40 dark:border-slate-800/40 rounded-xl hover:border-emerald-300 dark:hover:border-emerald-500/50 hover:shadow-lg text-left transition-all group"
+                        className="flex items-center gap-3 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 text-left transition-all group"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 flex items-center justify-center shrink-0 group-hover:from-emerald-500/20 group-hover:to-teal-500/20 transition-colors">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
                             <Heart className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                         </div>
                         <div className="min-w-0 flex-1">
@@ -477,8 +475,7 @@ function DiscoverCard({ icon: Icon, title, description, href, actionText, onClic
 
     return (
         <motion.div
-            whileHover={{ y: -3 }}
-            className="p-6 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/40 dark:border-slate-800/40 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-xl transition-all"
+            className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all"
         >
             <Icon className="w-8 h-8 text-indigo-500 mb-3" />
             <h3 className="font-bold text-slate-900 dark:text-white mb-2">

@@ -46,10 +46,6 @@ export const StatCard = memo(function StatCard({
 
     return (
         <motion.div
-            whileHover={{
-                y: -4,
-                transition: { type: "spring", stiffness: 300, damping: 20 }
-            }}
             transition={{ type: "spring", stiffness: 300 }}
             className="rounded-2xl focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-inset"
             role={interactive ? 'button' : undefined}
@@ -60,26 +56,14 @@ export const StatCard = memo(function StatCard({
             title={interactive && hint ? hint : undefined}
             style={interactive ? { cursor: 'pointer' } : undefined}
         >
-            <Card className="p-4 sm:p-6 hover:shadow-2xl transition-all duration-300 border-slate-200/60 dark:border-slate-800/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl group overflow-hidden relative ds-card-shimmer">
-                {/* Background gradient on hover */}
-                <motion.div
-                    className="absolute inset-0 bg-gradient-to-br from-indigo-500/0 to-purple-500/0"
-                    initial={{ opacity: 0 }}
-                    whileHover={{
-                        opacity: 1,
-                        background: "linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(168, 85, 247, 0.03) 100%)"
-                    }}
-                    transition={{ duration: 0.3 }}
-                />
-
-                <div className="flex items-start justify-between relative z-10">
+            <Card className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all duration-300 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 group">
+                <div className="flex items-start justify-between">
                     <div className="flex-1">
                         <p className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider ds-font-display">
                             {title}
                         </p>
                         <motion.h3
-                            className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-2 sm:mt-3 group-hover:text-transparent bg-clip-text group-hover:bg-gradient-to-r group-hover:from-indigo-500 group-hover:to-purple-500 transition-all ds-font-mono"
-                            whileHover={{ scale: 1.05 }}
+                            className="text-xl sm:text-3xl font-semibold text-slate-900 dark:text-white mt-2 sm:mt-3 ds-font-mono"
                             transition={{ type: "spring", stiffness: 400 }}
                         >
                             {isNumeric ? (
@@ -89,13 +73,9 @@ export const StatCard = memo(function StatCard({
                             )}
                         </motion.h3>
                         {trend && (
-                            <motion.p
-                                className="text-xs text-slate-500 dark:text-slate-400 mt-3 flex items-center gap-1.5 font-medium"
-                                initial={{ opacity: 0.7 }}
-                                whileHover={{ opacity: 1 }}
-                            >
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 flex items-center gap-1.5 font-medium">
                                 {trend}
-                            </motion.p>
+                            </p>
                         )}
                         {interactive && hint && (
                             <p className="mt-3 text-[11px] font-medium text-indigo-600 dark:text-indigo-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 transition-opacity flex items-center gap-1">
@@ -104,17 +84,9 @@ export const StatCard = memo(function StatCard({
                             </p>
                         )}
                     </div>
-                    <motion.div
-                        className={`p-2.5 sm:p-4 rounded-xl sm:rounded-2xl ${bg}`}
-                        whileHover={{
-                            scale: 1.15,
-                            rotate: 10,
-                            transition: { type: "spring", stiffness: 400, damping: 15 }
-                        }}
-                        transition={{ type: "spring", stiffness: 300 }}
-                    >
+                    <div className={`p-2.5 sm:p-4 rounded-xl sm:rounded-2xl ${bg}`}>
                         <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${color}`} />
-                    </motion.div>
+                    </div>
                 </div>
             </Card>
         </motion.div>

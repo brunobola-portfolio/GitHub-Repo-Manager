@@ -5,7 +5,7 @@ export const HeroChip = forwardRef(function HeroChip(
     { icon: Icon, label, hasMenu = false, onClick, disabled = false, busy = false, children, className = '', ...rest },
     ref
 ) {
-    const baseClass = 'inline-flex items-center gap-2 h-9 px-3 rounded-xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-700/50 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:bg-white/80 dark:hover:bg-slate-900/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+    const baseClass = 'inline-flex items-center gap-2 h-9 px-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
 
     return (
         <button
