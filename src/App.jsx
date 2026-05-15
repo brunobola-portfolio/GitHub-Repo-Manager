@@ -854,7 +854,7 @@ function AppContent() {
           {org.avatar_url ? (
             <img src={org.avatar_url} alt={org.login} className="w-8 h-8 rounded-lg" />
           ) : (
-            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+            <span className="w-8 h-8 rounded-lg bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">
               {org.login.charAt(0).toUpperCase()}
             </span>
           )}
@@ -1061,7 +1061,7 @@ function AppContent() {
                   mode={leftMode}
                   expandedWidth={280}
                   slimContent={slimOrgContent}
-                  className="rounded-3xl border border-slate-200/60 dark:border-slate-700/50 shadow-xl bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl"
+                  className="rounded-3xl border border-slate-200/60 dark:border-slate-700/50 shadow-xl bg-white/70 dark:bg-slate-950/70 backdrop-blur-md"
                 >
                   <OrgPanel
                     orgs={orgs}
@@ -1126,7 +1126,7 @@ function AppContent() {
                     animate={{ x: 0 }}
                     exit={{ x: -280 }}
                     transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                    className="fixed left-[60px] z-[var(--ds-z-floating)] w-[280px] rounded-3xl border border-slate-200/60 dark:border-slate-700/50 shadow-2xl bg-white dark:bg-slate-950 backdrop-blur-xl overflow-y-auto"
+                    className="fixed left-[60px] z-[var(--ds-z-floating)] w-[280px] rounded-3xl border border-slate-200/60 dark:border-slate-700/50 shadow-2xl bg-white dark:bg-slate-950 backdrop-blur-md overflow-y-auto"
                     style={{
                       top: 'calc(var(--header-height) + var(--layout-py))',
                       maxHeight: 'calc(100vh - var(--header-height) - 2 * var(--layout-py))',

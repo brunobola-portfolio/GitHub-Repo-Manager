@@ -73,7 +73,7 @@ export function Header({
 
     return (
         <>
-        <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-700/50 sticky top-0 z-20 transition-all duration-300 shadow-sm dark:shadow-black/20 safe-area-top">
+        <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-700/50 sticky top-0 z-20 transition-all duration-300 shadow-sm dark:shadow-black/20 safe-area-top">
             <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 h-14 sm:h-16 flex items-center gap-3">
                 {/* Left: Logo & Title */}
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink-0">
@@ -87,7 +87,7 @@ export function Header({
                       </button>
                     )}
                     <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-[4px] pr-3 rounded-[13px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
-                        <div className="bg-gradient-to-br from-indigo-600 to-purple-600 w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shadow-md shadow-indigo-500/20 dark:shadow-indigo-500/25 ds-btn-shimmer flex-shrink-0 text-white">
+                        <div className="bg-gradient-to-br from-indigo-600 to-purple-600 w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shadow-md shadow-indigo-500/20 dark:shadow-indigo-500/25 flex-shrink-0 text-white">
                             <AppLogoIcon className="w-[18px] h-[18px]" />
                         </div>
                         <div className="min-w-0 hidden sm:block">
@@ -273,13 +273,12 @@ export function Header({
                                     type="button"
                                     onClick={onLogin}
                                     className="flex items-center gap-1.5 h-[34px] px-3 sm:px-3.5 rounded-[9px]
-                                        bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500
+                                        bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600
                                         text-white text-[13px] font-semibold
                                         shadow-sm shadow-indigo-500/25
                                         hover:shadow-md hover:shadow-indigo-500/30
                                         active:scale-[0.97] transition-all duration-200
-                                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
-                                        ds-btn-shimmer"
+                                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                                 >
                                     <Github className="w-[15px] h-[15px]" />
                                     <span className="hidden sm:inline">Login with GitHub</span>
@@ -296,7 +295,7 @@ export function Header({
         {user && (
           <>
           <nav
-            className="fixed bottom-0 left-0 right-0 z-[var(--ds-z-composer)] md:hidden backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-t border-slate-200/60 dark:border-slate-700/50"
+            className="fixed bottom-0 left-0 right-0 z-[var(--ds-z-composer)] md:hidden backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-t border-slate-200/60 dark:border-slate-700/50"
             role="navigation"
             aria-label="Main navigation"
             style={{ paddingBottom: 'var(--safe-area-inset-bottom, 0px)' }}
@@ -466,7 +465,7 @@ function NavButton({ active, onClick, icon, label, badge }) {
 // User Dropdown Menu
 function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, onOpenSettings, onMigrationHistory, onClose, isAdmin = false, onOpenAdminDLQ }) {
     return (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
+        <div className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
             {/* User Info */}
             <div className="p-4 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-slate-700/50 dark:to-slate-800/50 border-b border-slate-200/60 dark:border-slate-700/50">
                 <div className="flex items-center gap-3">
@@ -577,7 +576,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
     const sinceLabel = formatRelativeTime(digest.since)
 
     return (
-        <div className="absolute right-0 top-full mt-2 w-96 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
+        <div className="absolute right-0 top-full mt-2 w-96 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
             <div className="px-4 pt-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <div className="min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
@@ -746,7 +745,7 @@ function SystemHealthIndicator() {
                 <div
                     role="dialog"
                     aria-label={tooltip}
-                    className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in"
+                    className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in"
                 >
                     <div className="p-3 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
                         <AlertCircle className={`w-4 h-4 ${isDegraded ? 'text-amber-500 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`} />
