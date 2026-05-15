@@ -232,6 +232,7 @@ export function CommandPalette({
   // Starter commands wired from App-level callbacks (replaces the removed
   // duplicate ui/CommandPalette mount; see C2 audit fix).
   onSyncNow = null,
+  onToggleTheme = null,
 }) {
   const [input, setInput] = useState('')
   // Track whether a PRReviewView is currently mounted + focused. PRReviewView
@@ -629,15 +630,17 @@ export function CommandPalette({
                 Sync now
               </Command.Item>
             )}
-            <Command.Item
-              key="action-toggle-theme"
-              value="Toggle theme dark light mode"
-              onSelect={() => { document.documentElement.classList.toggle('dark'); onClose() }}
-              className={ITEM_CLASSES}
-            >
-              <Settings className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />
-              Toggle theme
-            </Command.Item>
+            {onToggleTheme && (
+              <Command.Item
+                key="action-toggle-theme"
+                value="Toggle theme dark light mode"
+                onSelect={() => { onToggleTheme(); onClose() }}
+                className={ITEM_CLASSES}
+              >
+                <Settings className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                Toggle theme
+              </Command.Item>
+            )}
           </Command.Group>
 
           {isAdmin && (

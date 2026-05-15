@@ -47,6 +47,7 @@ import { DemoModeBanner } from './components/DemoModeBanner'
 import { RouteFallback } from './components/ui/RouteFallback'
 import { ViewErrorFallback } from './components/ui/ViewErrorFallback'
 import { startTransition } from './utils/viewTransitions'
+import { useTheme } from './hooks/useTheme.jsx'
 
 // Lazy load Pricing page
 const PricingPage = lazy(() => import('./components/Pricing/PricingPage').then(m => ({ default: m.PricingPage })))
@@ -90,6 +91,7 @@ const LandingPage = lazy(() => import('./components/Landing/LandingPage').then(m
 const LoadingFallback = RouteFallback
 
 function AppContent() {
+  const { toggleTheme } = useTheme()
   const [_session, setSession] = useState(null)
   const [appLoading, setAppLoading] = useState(true)
   const [activeView, _setActiveView] = useState('dashboard')
@@ -1520,6 +1522,7 @@ function AppContent() {
         selectedRepoDetail={selectedRepoDetail}
         selectedRepoDetailEntities={palettePropEntities}
         onSyncNow={handleRefreshOrgs}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Mobile-only FAB to reach the command palette without a keyboard.
