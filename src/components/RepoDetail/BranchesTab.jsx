@@ -217,7 +217,7 @@ export function BranchesTab({ api, repoData }) {
                 {filtered.map(b => (
                     <li key={b.name}>
                         <Card className={`p-3 flex items-center gap-3 group ${
-                            b.name === repoData?.default_branch ? 'ring-1 ring-indigo-200/60 dark:ring-indigo-800/50 bg-gradient-to-r from-indigo-50/40 to-transparent dark:from-indigo-950/20' : ''
+                            b.name === repoData?.default_branch ? 'ring-1 ring-slate-300 dark:ring-slate-600 bg-slate-50 dark:bg-slate-800/50' : ''
                         }`}>
                             <GitBranch className="w-4 h-4 text-slate-400 shrink-0" />
                             <div className="flex-1 min-w-0">

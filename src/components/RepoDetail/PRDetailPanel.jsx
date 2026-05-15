@@ -229,7 +229,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                 onClick={() => onGenerateDescription?.(pr)}
                                 disabled={aiOff}
                                 title={aiOff ? 'Configure AI in Settings → AI to enable generation' : undefined}
-                                className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition-colors ${aiOff ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors ${aiOff ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 <Wand2 className="w-3.5 h-3.5" />
                                 Generate Description

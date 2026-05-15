@@ -27,9 +27,9 @@ export function BranchHygieneCard({ branches, defaultBranch = 'main', className 
     return (
         <section
             aria-labelledby="branch-hygiene-title"
-            className={`rounded-2xl p-[1px] bg-gradient-to-br from-indigo-500/30 via-purple-500/20 to-pink-500/10 dark:from-indigo-500/40 dark:via-purple-500/30 dark:to-pink-500/20 ${className}`.trim()}
+            className={`rounded-2xl border border-slate-200 dark:border-slate-700 ${className}`.trim()}
         >
-            <div className="rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-4 space-y-4">
+            <div className="rounded-2xl bg-white dark:bg-slate-900 p-4 space-y-4">
                 <div className="flex items-center gap-2">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
                     <h3 id="branch-hygiene-title" className="text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">

@@ -265,7 +265,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                             repo: { ...repoData, owner: repoData.owner || { login: owner } },
                             onApplied: (updated) => onUpdate?.((prev) => ({ ...prev, ...updated })),
                         })}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-gradient-to-r from-indigo-500/10 to-purple-500/10 hover:from-indigo-500/20 hover:to-purple-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/20 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors"
                     >
                         <Sparkles className="w-3.5 h-3.5" /> Suggest with AI
                     </button>

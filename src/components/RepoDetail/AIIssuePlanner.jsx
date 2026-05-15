@@ -72,10 +72,10 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
     }
 
     return (
-        <Card className="p-5 border-l-4 border-l-indigo-500/70 bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-950/20 dark:to-slate-900">
+        <Card className="p-5 border-l-4 border-l-slate-300 dark:border-l-slate-600 bg-white dark:bg-slate-900">
             <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-500/20">
+                    <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                         <Sparkles className="w-4 h-4" />
                     </div>
                     <div>
