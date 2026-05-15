@@ -1,49 +1,88 @@
 /**
- * GitHub Repo Manager - Premium Design Enhancement Layer
- * Complements Tailwind CSS - NO global element overrides
- * Only opt-in classes (.ds-*), CSS variables, and keyframe animations
+ * GitHub Repo Manager — Premium Design System
+ * GitHub-utilitarian (H direction) + V3 hybrid accent.
+ * Only opt-in `.ds-*` classes, CSS variables, and keyframe animations.
+ * Spec: docs/specs/2026-05-14-premium-non-llm-theme-design.md
  */
 
-/* Fonts loaded via <link> in index.html for non-render-blocking behavior */
-
-/* ===== DESIGN TOKENS ===== */
 :root {
-  --ds-font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --ds-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  /* ===== TYPOGRAPHY ===== */
+  --ds-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
+                  Helvetica, Arial, sans-serif, "Apple Color Emoji",
+                  "Segoe UI Emoji";
+  --ds-font-mono: ui-monospace, "JetBrains Mono", "Cascadia Code",
+                  "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono",
+                  monospace;
 
-  --ds-gradient-primary: linear-gradient(135deg, #6366f1, #8b5cf6);
-  --ds-gradient-secondary: linear-gradient(135deg, #06b6d4, #3b82f6);
-  --ds-gradient-accent: linear-gradient(135deg, #f59e0b, #ec4899);
-  --ds-gradient-success: linear-gradient(135deg, #10b981, #06b6d4);
-  --ds-gradient-premium: linear-gradient(135deg, #6366f1 0%, #06b6d4 50%, #ec4899 100%);
+  --ds-text-xs: 0.75rem;
+  --ds-text-sm: 0.8125rem;
+  --ds-text-base: 0.875rem;
+  --ds-text-md: 1rem;
+  --ds-text-lg: 1.25rem;
+  --ds-text-xl: 1.5rem;
+  --ds-text-2xl: 2rem;
 
-  --ds-shadow-glow-indigo: 0 0 30px rgba(99, 102, 241, 0.35);
-  --ds-shadow-glow-cyan: 0 0 30px rgba(6, 182, 212, 0.35);
-  --ds-shadow-glow-purple: 0 0 30px rgba(139, 92, 246, 0.35);
+  /* ===== PALETTE (light) ===== */
+  --ds-surface: #ffffff;
+  --ds-surface-subtle: #f6f8fa;
+  --ds-surface-muted: #eaeef2;
+  --ds-border: #d1d9e0;
+  --ds-border-strong: #59636e;
+  --ds-fg: #1f2328;
+  --ds-fg-muted: #59636e;
+  --ds-fg-subtle: #6e7781;
 
-  --ds-ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ds-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* ===== PALETTE (dark, Primer-aligned) ===== */
+  --ds-surface-dark: #0d1117;
+  --ds-surface-subtle-dark: #151b23;
+  --ds-surface-muted-dark: #21262d;
+  --ds-border-dark: #3d444d;
+  --ds-border-strong-dark: #9198a1;
+  --ds-fg-dark: #f0f6fc;
+  --ds-fg-muted-dark: #9198a1;
+  --ds-fg-subtle-dark: #6e7681;
 
-  /* ===== Z-INDEX SCALE (documented contract) =====
-   * The PR-review surface stacks several fixed-position layers. The
-   * implicit Tailwind values previously drifted (FAB z-30, composer
-   * z-40, modal backdrop z-[60]) — easy to break with one careless
-   * number. Tokens make the contract explicit and reviewable.
-   *
-   *   surface  (10): in-flow sticky bars (status bar, file header)
-   *   floating (30): floating action buttons that sit ABOVE content
-   *                  but BELOW the inline composer
-   *   composer (40): the inline floating comment composer
-   *   popover  (50): dropdowns, tooltips, anchored popovers
-   *   modal    (60): modal backdrop + sheet (matches Modal.jsx)
-   *   toast    (70): transient system messages — must be visible OVER
-   *                  any modal so a save / error toast isn't hidden by
-   *                  whatever dialog the user is in
-   *   ceiling  (80): hard-stop overlays (auth-gate, fatal-error)
-   *
-   * `--ds-z-overlay` kept as an alias of `--ds-z-popover` for callers
-   * that landed earlier — both resolve to 50.
-   */
+  /* ===== ACCENTS (V3 hybrid) ===== */
+  --ds-accent-link: #0969da;
+  --ds-accent-link-dark: #4493f8;
+  --ds-accent-brand: #4f46e5;
+  --ds-accent-brand-dark: #818cf8;
+
+  /* ===== STATUS ===== */
+  --ds-success: #1a7f37;     --ds-success-dark: #3fb950;
+  --ds-attention: #9a6700;   --ds-attention-dark: #d29922;
+  --ds-danger: #cf222e;      --ds-danger-dark: #f85149;
+  --ds-cta: #1f883d;         --ds-cta-dark: #238636;
+  --ds-cta-hover: #1a7f37;   --ds-cta-hover-dark: #29903b;
+
+  /* ===== RADIUS ===== */
+  --ds-radius-sm: 4px;
+  --ds-radius: 6px;
+  --ds-radius-lg: 8px;
+  --ds-radius-xl: 12px;
+
+  /* ===== ELEVATION ===== */
+  --ds-shadow-sm: 0 1px 0 rgba(31,35,40,.04);
+  --ds-shadow:    0 3px 6px rgba(140,149,159,.15);
+  --ds-shadow-lg: 0 8px 24px rgba(140,149,159,.2);
+  --ds-shadow-overlay: 0 0 0 1px rgba(31,35,40,.06), 0 8px 24px rgba(31,35,40,.12);
+
+  /* ===== MOTION ===== */
+  --ds-ease:        cubic-bezier(0.2, 0, 0, 1);
+  --ds-ease-out:    cubic-bezier(0.3, 0, 0.8, 0.15);
+  --ds-ease-spring: cubic-bezier(0.5, 1.25, 0.75, 1.25);
+
+  --ds-duration-instant: 80ms;
+  --ds-duration-fast: 120ms;
+  --ds-duration: 200ms;
+  --ds-duration-slow: 320ms;
+
+  /* Back-compat aliases (existing call sites) — repointed to new tokens */
+  --ds-transition-fast: var(--ds-duration-fast) var(--ds-ease);
+  --ds-transition-standard: var(--ds-duration) var(--ds-ease);
+  --ds-transition-slow: var(--ds-duration-slow) var(--ds-ease);
+
+  /* ===== Z-INDEX (unchanged contract) ===== */
   --ds-z-surface: 10;
   --ds-z-floating: 30;
   --ds-z-composer: 40;
@@ -53,11 +92,7 @@
   --ds-z-toast: 70;
   --ds-z-ceiling: 80;
 
-  --ds-transition-standard: 0.2s var(--ds-ease-out-expo);
-  --ds-transition-fast: 0.12s var(--ds-ease-out-expo);
-  --ds-transition-slow: 0.35s var(--ds-ease-spring);
-
-  /* Brand identity (logo) — intentionally static, not theme-aware */
+  /* Brand identity (logo only — NOT theme-aware) */
   --ds-logo-bg-start: #312e81;
   --ds-logo-bg-mid: #4c1d95;
   --ds-logo-bg-end: #1e1b4b;
@@ -69,93 +104,41 @@
   --ds-logo-tertiary: #a78bfa;
   --ds-logo-tertiary-soft: #c084fc;
 
-  /* Chart chrome — theme-aware (light defaults) */
-  --ds-chart-axis: #94a3b8;                      /* slate-400 — matches original */
-  --ds-chart-grid: #334155;                      /* slate-700 — matches original (used at low opacity) */
-  --ds-chart-tooltip-bg: rgba(15, 23, 42, 0.95); /* slate-900/95 — matches original */
+  /* Chart chrome — repointed to surface tokens */
+  --ds-chart-axis: var(--ds-fg-muted);
+  --ds-chart-grid: var(--ds-border);
+  --ds-chart-tooltip-bg: var(--ds-surface-dark);
   --ds-chart-tooltip-border: rgba(148, 163, 184, 0.2);
-  --ds-chart-tooltip-text: #f8fafc;              /* slate-50 — matches original */
-  --ds-chart-tooltip-label: #94a3b8;             /* slate-400 — matches original */
-  --ds-chart-tooltip-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  --ds-chart-tooltip-text: var(--ds-fg-dark);
+  --ds-chart-tooltip-label: var(--ds-fg-muted-dark);
+  --ds-chart-tooltip-shadow: var(--ds-shadow-overlay);
+  --ds-chart-series-1: var(--ds-accent-brand);
+  --ds-chart-series-2: var(--ds-success);
+  --ds-chart-series-3: var(--ds-attention);
 
-  /* Chart data series — shared across light/dark (intentionally bright in both) */
-  --ds-chart-series-1: #6366f1; /* indigo-500 */
-  --ds-chart-series-2: #ec4899; /* pink-500 */
-  --ds-chart-series-3: #14b8a6; /* teal-500 */
+  /* Premium dashboard tokens (kept for Phase 1 inbox compat) */
+  --ds-status-success: var(--ds-success);
+  --ds-status-warning: var(--ds-attention);
+  --ds-status-danger: var(--ds-danger);
+  --ds-status-neutral: var(--ds-fg-muted);
 
-  /* Premium dashboard tokens (Phase 1 — inbox) */
-  --ds-status-success: #22c55e;
-  --ds-status-warning: #f59e0b;
-  --ds-status-danger:  #ef4444;
-  --ds-status-neutral: #94a3b8;
-
-  --ds-ease-row-expand:     cubic-bezier(0.32, 0.72, 0, 1);
-  --ds-duration-row-expand: 280ms;
+  --ds-ease-row-expand: var(--ds-ease);
+  --ds-duration-row-expand: var(--ds-duration);
 }
 
-/* ===== TRANSITION UTILITIES ===== */
+/* ===== KEYFRAMES (premium set only) ===== */
+@keyframes ds-fade-in-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ds-fade-in   { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ds-scale-in  { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+@keyframes ds-pulse     { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+@keyframes ds-stroke-draw { from { stroke-dashoffset: var(--ds-stroke-length, 28); } to { stroke-dashoffset: 0; } }
 
-.ds-transition-standard {
-  transition: all var(--ds-transition-standard);
-}
+/* ===== ANIMATION CLASSES ===== */
+.ds-animate-fade-in-up { animation: ds-fade-in-up var(--ds-duration) var(--ds-ease) both; }
+.ds-animate-fade-in    { animation: ds-fade-in var(--ds-duration) var(--ds-ease) both; }
+.ds-animate-scale-in   { animation: ds-scale-in var(--ds-duration) var(--ds-ease) both; }
 
-/* ===== KEYFRAME ANIMATIONS ===== */
-
-@keyframes ds-fade-in-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes ds-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-@keyframes ds-scale-in {
-  from { opacity: 0; transform: scale(0.92); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-@keyframes ds-shimmer {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-@keyframes ds-gradient-shift {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-@keyframes ds-pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.2); }
-  50%      { box-shadow: 0 0 40px rgba(99, 102, 241, 0.4); }
-}
-
-@keyframes ds-float {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-6px); }
-}
-
-/* ===== OPT-IN ANIMATION CLASSES ===== */
-
-.ds-animate-fade-in-up {
-  animation: ds-fade-in-up 0.5s var(--ds-ease-out-expo) both;
-}
-
-.ds-animate-fade-in {
-  animation: ds-fade-in 0.4s ease-out both;
-}
-
-.ds-animate-scale-in {
-  animation: ds-scale-in 0.35s var(--ds-ease-out-expo) both;
-}
-
-.ds-animate-float {
-  animation: ds-float 3s ease-in-out infinite;
-}
-
-/* Stagger children */
+/* Stagger children (preserved API) */
 .ds-stagger > *:nth-child(1) { animation-delay: 0.04s; }
 .ds-stagger > *:nth-child(2) { animation-delay: 0.08s; }
 .ds-stagger > *:nth-child(3) { animation-delay: 0.12s; }
@@ -165,324 +148,84 @@
 .ds-stagger > *:nth-child(7) { animation-delay: 0.28s; }
 .ds-stagger > *:nth-child(8) { animation-delay: 0.32s; }
 
-/* ===== OPT-IN HOVER EFFECTS ===== */
-
+/* ===== HOVER (premium contract) ===== */
 .ds-hover-lift {
-  transition: transform 0.25s var(--ds-ease-out-expo), box-shadow 0.25s ease;
+  transition: border-color var(--ds-duration-fast) var(--ds-ease),
+              background-color var(--ds-duration-fast) var(--ds-ease);
 }
-.ds-hover-lift:hover {
-  transform: translateY(-4px);
-}
+/* No translate, no scale — premium contract enforces idle→hover via bg/border only. */
 
-.ds-hover-glow {
-  transition: box-shadow 0.3s ease;
-}
-.ds-hover-glow:hover {
-  box-shadow: var(--ds-shadow-glow-indigo);
-}
+/* ===== FONT UTILITIES ===== */
+.ds-font-display { font-family: var(--ds-font-sans); }
+.ds-font-mono    { font-family: var(--ds-font-mono); }
 
-.ds-hover-scale {
-  transition: transform 0.2s var(--ds-ease-spring);
-}
-.ds-hover-scale:hover {
-  transform: scale(1.03);
-}
-
-/* ===== MODAL PADDING TOKENS ===== */
-/* Uniform header / body / footer padding used by Modal, ConfirmModal,
- * WizardPanel, and consumer modals. Keeps spacing consistent across the app
- * so every modal has the same rhythm — previously body padding mixed p-4,
- * p-5, p-6 across components which made densities look different.
- *
- * Callers can still add `bodyClassName` or local padding when a specific
- * modal truly needs something different. */
-
-.ds-modal-body {
-  padding: 1rem; /* p-4 — base for narrow screens */
-}
-
-@media (min-width: 768px) {
-  .ds-modal-body {
-    padding: 1.25rem; /* md:p-5 — premium density without wasted gutters */
-  }
-}
-
-/* ===== OPT-IN CARD SHIMMER ===== */
-
-.ds-card-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-.ds-card-shimmer::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.06) 45%, rgba(255,255,255,0.06) 55%, transparent 60%);
-  transform: translateX(-100%);
-  pointer-events: none;
-}
-.ds-card-shimmer:hover::after {
-  animation: ds-shimmer 0.8s ease-out;
-}
-
-/* ===== OPT-IN GRADIENT TEXT ===== */
-
-.ds-gradient-text {
-  background: var(--ds-gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.ds-gradient-text-premium {
-  background: var(--ds-gradient-premium);
-  background-size: 200% 200%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: ds-gradient-shift 5s ease infinite;
-}
-
-/* ===== OPT-IN GLASS PANELS ===== */
-
-.ds-glass {
-  backdrop-filter: blur(16px) saturate(180%);
-}
-
-.ds-glass-strong {
-  backdrop-filter: blur(24px) saturate(200%);
-}
-
-/* ===== OPT-IN BUTTON SHIMMER ===== */
-
-.ds-btn-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-.ds-btn-shimmer::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent, rgba(255,255,255,0.18), transparent);
-  transform: translateX(-100%);
-  pointer-events: none;
-}
-.ds-btn-shimmer:hover::before {
-  animation: ds-shimmer 0.6s ease-out;
-}
-
-/* ===== OPT-IN BORDER GLOW ===== */
-
-.ds-border-glow {
-  position: relative;
-}
-.ds-border-glow::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  background: var(--ds-gradient-primary);
-  opacity: 0;
-  z-index: -1;
-  transition: opacity 0.3s ease;
-}
-.ds-border-glow:hover::before {
-  opacity: 0.5;
-}
-
-/* ===== OPT-IN SESSION BANNER ===== */
-
-.ds-session-banner {
-  background: linear-gradient(135deg,
-    rgba(251, 191, 36, 0.08) 0%,
-    rgba(245, 158, 11, 0.05) 50%,
-    rgba(251, 191, 36, 0.08) 100%
-  );
-  backdrop-filter: blur(16px) saturate(180%);
-  border-bottom: 1px solid rgba(245, 158, 11, 0.15);
-  box-shadow: 0 1px 8px rgba(245, 158, 11, 0.06);
-}
-
-:where(.dark) .ds-session-banner {
-  background: linear-gradient(135deg,
-    rgba(245, 158, 11, 0.06) 0%,
-    rgba(217, 119, 6, 0.04) 50%,
-    rgba(245, 158, 11, 0.06) 100%
-  );
-  border-bottom: 1px solid rgba(245, 158, 11, 0.12);
-  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.2);
-}
-
-/* ===== FONT UTILITY CLASSES ===== */
-
-.ds-font-display {
-  font-family: var(--ds-font-sans);
-}
-
-.ds-font-mono {
-  font-family: var(--ds-font-mono);
-}
-
-/* ===== FOCUS RING STANDARDIZATION ===== */
-
-/* Standard focus ring for light backgrounds */
-.ds-focus-ring {
-  outline: none;
-  transition: box-shadow 0.2s ease;
-}
+/* ===== FOCUS RING (premium) ===== */
+.ds-focus-ring { outline: none; transition: box-shadow var(--ds-duration-fast) var(--ds-ease); }
 .ds-focus-ring:focus-visible {
-  box-shadow: 0 0 0 2px theme('colors.indigo.500'), 0 0 0 4px theme('colors.indigo.500' / 0.2);
+  outline: 2px solid var(--ds-accent-brand);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--ds-accent-brand) 25%, transparent);
+}
+:where(.dark) .ds-focus-ring:focus-visible {
+  outline-color: var(--ds-accent-brand-dark);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--ds-accent-brand-dark) 25%, transparent);
 }
 
-/* ===== PREMIUM SCROLLBAR ===== */
+/* ===== MODAL BODY (unchanged) ===== */
+.ds-modal-body { padding: 1rem; }
+@media (min-width: 768px) { .ds-modal-body { padding: 1.25rem; } }
 
-.ds-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(99, 102, 241, 0.25) transparent;
+/* ===== SESSION BANNER (desaturated) ===== */
+.ds-session-banner {
+  background: var(--ds-surface-subtle);
+  border-bottom: 1px solid var(--ds-border);
+}
+:where(.dark) .ds-session-banner {
+  background: var(--ds-surface-subtle-dark);
+  border-bottom: 1px solid var(--ds-border-dark);
 }
 
-.ds-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
+/* ===== SCROLLBAR (unchanged subtle treatment) ===== */
+.ds-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,.25) transparent; }
+.ds-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.ds-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.ds-scrollbar::-webkit-scrollbar-thumb { background: rgba(148,163,184,.25); border-radius: 3px; }
+.ds-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,.4); }
+:where(.dark) .ds-scrollbar { scrollbar-color: rgba(148,163,184,.2) transparent; }
+:where(.dark) .ds-scrollbar::-webkit-scrollbar-thumb { background: rgba(148,163,184,.2); }
+:where(.dark) .ds-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,.35); }
 
-.ds-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.ds-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.25);
-  border-radius: 3px;
-}
-
-.ds-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.4);
-}
-
-:where(.dark) .ds-scrollbar {
-  scrollbar-color: rgba(99, 102, 241, 0.2) transparent;
-}
-
-:where(.dark) .ds-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.2);
-}
-
-:where(.dark) .ds-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.35);
-}
-
-/* ===== SKELETON SHIMMER ===== */
-
+/* ===== SKELETON (opacity pulse only — no rainbow shimmer) ===== */
 .ds-skeleton {
-  position: relative;
-  overflow: hidden;
-  background: rgba(148, 163, 184, 0.12);
-  border-radius: 0.75rem;
+  background: var(--ds-surface-muted);
+  border-radius: var(--ds-radius);
+  animation: ds-pulse 1.8s ease-in-out infinite;
 }
-
-:where(.dark) .ds-skeleton {
-  background: rgba(100, 116, 139, 0.15);
-}
-
-.ds-skeleton::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.08) 40%,
-    rgba(255, 255, 255, 0.12) 50%,
-    rgba(255, 255, 255, 0.08) 60%,
-    transparent 100%
-  );
-  animation: ds-shimmer 1.8s ease-in-out infinite;
-}
-
-:where(.dark) .ds-skeleton::after {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(148, 163, 184, 0.06) 40%,
-    rgba(148, 163, 184, 0.1) 50%,
-    rgba(148, 163, 184, 0.06) 60%,
-    transparent 100%
-  );
-}
+:where(.dark) .ds-skeleton { background: var(--ds-surface-muted-dark); }
 
 /* ===== SELECTION ===== */
-
-::selection {
-  background: rgba(99, 102, 241, 0.25);
-}
+::selection { background: color-mix(in srgb, var(--ds-accent-brand) 25%, transparent); }
 
 /* ===== REDUCED MOTION ===== */
-
 @media (prefers-reduced-motion: reduce) {
-  /* Override transition/animation tokens so all downstream consumers
-   * automatically respect reduced-motion without per-component guards. */
   :root {
-    --ds-transition-standard:    0.01s linear;
-    --ds-transition-fast:        0.01s linear;
-    --ds-transition-slow:        0.01s linear;
-    --ds-duration-row-expand:    0.01s;
+    --ds-duration-instant: 0.01ms;
+    --ds-duration-fast: 0.01ms;
+    --ds-duration: 0.01ms;
+    --ds-duration-slow: 0.01ms;
+    --ds-transition-standard: 0.01ms linear;
+    --ds-transition-fast: 0.01ms linear;
+    --ds-transition-slow: 0.01ms linear;
   }
-
-  /* Disable all animations for users who prefer reduced motion */
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-
-  /* Disable specific design system animations */
-  .ds-animate-fade-in-up,
-  .ds-animate-fade-in,
-  .ds-animate-scale-in,
-  .ds-animate-float,
-  .animate-pulse,
-  .animate-spin,
-  .animate-bounce {
-    animation: none !important;
-  }
-
-  /* Disable transform-based hover effects */
-  .ds-hover-lift:hover,
-  .ds-hover-scale:hover {
-    transform: none !important;
-  }
-
-  /* Disable shimmer and gradient animations */
-  .ds-card-shimmer:hover::after,
-  .ds-btn-shimmer:hover::before,
-  .ds-gradient-text-premium {
-    animation: none !important;
-  }
-
-  /* Keep essential opacity transitions for feedback (minimal) */
-  button:hover,
-  a:hover {
-    transition: opacity 0.15s ease !important;
-  }
-
-  /* Disable Framer Motion animations globally */
-  .motion-reduce {
-    animation: none !important;
-    transition: none !important;
-  }
 }
 
-/* ===== DIFFRENDERER WRAP MODE ===== */
-/* Toggled by the diff-wrap-on class on the DiffRenderer root element.
- * Forces long diff lines to wrap instead of scrolling horizontally.
- *
- * @git-diff-view/react applies the Tailwind `.whitespace-nowrap` class to
- * content cells (confirmed from node_modules/@git-diff-view/react/styles/
- * diff-view-pure.css line 185).  We override that class within the wrapper
- * and also cover pre/code for the syntax-highlighted raw view.
- */
+/* ===== DIFFRENDERER (perf, unchanged) ===== */
 .diff-wrap-on .diff-tailwindcss-wrapper .whitespace-nowrap,
 .diff-wrap-on .diff-line-old-content,
 .diff-wrap-on .diff-line-new-content,
@@ -491,20 +234,6 @@
   white-space: pre-wrap !important;
   word-break: break-all;
 }
-
-/* Diff renderer paint optimisation — see
- * docs/specs/2026-05-09-pr-review-perf-and-polish-design.md (Slice 2.1).
- *
- * `content-visibility: auto` lets the browser skip rendering for the
- * diff wrapper when it sits outside the viewport (e.g. multiple files
- * stacked in a long page). `contain-intrinsic-size` reserves a
- * believable initial height so the scroll bar doesn't jump as users
- * scroll past unrendered diffs.
- *
- * Per-row containment was investigated but skipped: applying
- * `content-visibility` to <tr> elements has known table-layout edge
- * cases. The wrapper-level rule is the safe pragmatic win.
- */
 @supports (content-visibility: auto) {
   .diff-renderer {
     content-visibility: auto;
