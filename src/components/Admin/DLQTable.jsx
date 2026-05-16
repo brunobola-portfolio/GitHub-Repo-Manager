@@ -9,11 +9,13 @@
  * per-kind columns via `kind` and keep a single table component so the
  * styling + hover-action UX stay in lockstep.
  */
+import { useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Eye, RotateCw, CheckCircle2, Inbox } from 'lucide-react'
 import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
+import { useStickyHeaderShadow } from '../../hooks/useStickyHeaderShadow'
 
 function formatTimestamp(iso) {
     if (!iso) return '—'
@@ -44,6 +46,9 @@ export function DLQTable({
     onRetry,
     onResolve,
 }) {
+    const tableScrollRef = useRef(null)
+    const elevated = useStickyHeaderShadow(tableScrollRef)
+
     if (!entries || entries.length === 0) {
         return (
             <EmptyState
@@ -61,8 +66,12 @@ export function DLQTable({
 
     return (
         <Card glass={false} shadow="sm" className="rounded-xl overflow-x-auto">
+            <div
+                ref={tableScrollRef}
+                className="overflow-y-auto max-h-[480px]"
+            >
             <table className="w-full text-sm">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700">
+                <thead className={`sticky top-0 z-10 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700 transition-shadow${elevated ? ' shadow-[0_1px_4px_0_rgba(0,0,0,0.08)]' : ''}`}>
                     <tr className="text-left text-slate-500 dark:text-slate-400 uppercase text-[11px] tracking-wider">
                         <th className="px-4 py-3 font-semibold">ID</th>
                         {kind === 'email' ? (
@@ -161,6 +170,7 @@ export function DLQTable({
                     })}
                 </tbody>
             </table>
+            </div>
         </Card>
     )
 }

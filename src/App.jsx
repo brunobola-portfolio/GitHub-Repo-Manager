@@ -1523,6 +1523,7 @@ function AppContent() {
         selectedRepoDetailEntities={palettePropEntities}
         onSyncNow={handleRefreshOrgs}
         onToggleTheme={toggleTheme}
+        onSignOut={user ? handleLogout : null}
       />
 
       {/* Mobile-only FAB to reach the command palette without a keyboard.

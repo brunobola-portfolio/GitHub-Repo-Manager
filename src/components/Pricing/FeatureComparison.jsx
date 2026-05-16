@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Check, X } from 'lucide-react'
 import { Card } from '../ui/Card'
+import { useStickyHeaderShadow } from '../../hooks/useStickyHeaderShadow'
 
 const TIERS = ['Free', 'Pro', 'Enterprise']
 
@@ -158,6 +159,9 @@ function CellValue({ value, colIndex }) {
 }
 
 export function FeatureComparison() {
+  const tableScrollRef = useRef(null)
+  const elevated = useStickyHeaderShadow(tableScrollRef)
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
@@ -177,9 +181,13 @@ export function FeatureComparison() {
 
       {/* Horizontal scroll on mobile */}
       <Card className="overflow-x-auto shadow-xl shadow-slate-200/50 dark:shadow-black/30">
+        <div
+          ref={tableScrollRef}
+          className="overflow-y-auto max-h-[560px]"
+        >
         <table className="w-full min-w-[600px] border-collapse">
           {/* Sticky header */}
-          <thead>
+          <thead className={`transition-shadow${elevated ? ' shadow-[0_1px_4px_0_rgba(0,0,0,0.08)]' : ''}`}>
             <tr className="border-b border-slate-200/60 dark:border-white/[0.08]">
               <th className="sticky top-0 left-0 z-20 w-1/2 px-6 py-5 text-left text-sm font-semibold text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
                 Feature
@@ -245,6 +253,7 @@ export function FeatureComparison() {
             ))}
           </tbody>
         </table>
+        </div>
       </Card>
     </motion.div>
   )

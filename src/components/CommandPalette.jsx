@@ -7,7 +7,7 @@ import {
   AlertTriangle, Wrench, BarChart3, Sparkles, Bookmark, ShieldAlert,
   Pin, PinOff, Bell, BellOff, X, RefreshCw, RotateCw, Eraser,
   ExternalLink, Copy, FileText, GitBranch, Star, Clock, Archive, ArrowDownAZ,
-  Check, ShieldCheck, MessageCircle,
+  Check, ShieldCheck, MessageCircle, LogOut,
 } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { searchApi } from '../api/search'
@@ -233,6 +233,7 @@ export function CommandPalette({
   // duplicate ui/CommandPalette mount; see C2 audit fix).
   onSyncNow = null,
   onToggleTheme = null,
+  onSignOut = null,
 }) {
   const [input, setInput] = useState('')
   // Track whether a PRReviewView is currently mounted + focused. PRReviewView
@@ -639,6 +640,17 @@ export function CommandPalette({
               >
                 <Settings className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />
                 Toggle theme
+              </Command.Item>
+            )}
+            {onSignOut && (
+              <Command.Item
+                key="action-sign-out"
+                value="Sign out log out logout"
+                onSelect={() => { onClose(); onSignOut() }}
+                className={ITEM_CLASSES}
+              >
+                <LogOut className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                Sign out
               </Command.Item>
             )}
           </Command.Group>
