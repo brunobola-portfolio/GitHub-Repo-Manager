@@ -94,8 +94,7 @@ export function HeroSection({ onSignIn }) {
             shadow-md
             hover:scale-[1.04] active:scale-[0.97]
             transition-all duration-300
-            focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2
-            focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950 focus:outline-none"
+            ds-focus-ring"
         >
           <span className="flex items-center gap-2.5">
             <Github className="w-5 h-5" />
@@ -116,7 +115,7 @@ export function HeroSection({ onSignIn }) {
             hover:bg-white/90 dark:hover:bg-white/[0.1]
             backdrop-blur-sm
             transition-all duration-300
-            focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus:outline-none"
+            ds-focus-ring"
         >
           <Github className="w-5 h-5" />
           View on GitHub

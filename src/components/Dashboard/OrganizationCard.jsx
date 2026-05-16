@@ -34,7 +34,7 @@ export const OrganizationCard = memo(function OrganizationCard({ org, repos = []
         <motion.button
             onClick={() => onClick?.(org.login)}
             whileTap={{ scale: 0.98 }}
-            className="group relative w-full p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset transition-all duration-200 text-left"
+            className="group relative w-full p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/40 ds-focus-ring transition-all duration-200 text-left"
         >
 
             {/* Header */}

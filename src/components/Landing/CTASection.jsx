@@ -74,8 +74,7 @@ export function CTASection({ onSignIn }) {
               shadow-md
               hover:scale-[1.04] active:scale-[0.97]
               transition-all duration-300
-              focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2
-              focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950 focus:outline-none"
+              ds-focus-ring"
           >
             <span className="flex items-center gap-2.5">
               <Github className="w-5 h-5" />

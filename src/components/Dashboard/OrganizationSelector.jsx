@@ -21,7 +21,7 @@ export function OrganizationSelector({ orgs = [], selectedOrg, onSelectOrg, load
                 <Popover.Trigger asChild>
                     <button
                         disabled={loading}
-                        className="flex items-center gap-3 px-5 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset transition-all duration-200 min-w-[260px] justify-between group"
+                        className="flex items-center gap-3 px-5 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 ds-focus-ring transition-all duration-200 min-w-[260px] justify-between group"
                     >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                             {selectedOrgData ? (

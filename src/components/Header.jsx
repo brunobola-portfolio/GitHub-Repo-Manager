@@ -231,7 +231,7 @@ export function Header({
                                     <button
                                         type="button"
                                         onClick={() => setShowUserMenu(!showUserMenu)}
-                                        className={`flex items-center gap-1 h-[34px] px-1.5 rounded-[9px] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                                        className={`flex items-center gap-1 h-[34px] px-1.5 rounded-[9px] transition-all duration-200 ds-focus-ring ${
                                             showUserMenu
                                                 ? 'bg-white dark:bg-slate-600 shadow-sm'
                                                 : 'hover:bg-white/80 dark:hover:bg-slate-700'
@@ -279,7 +279,7 @@ export function Header({
                                         shadow-sm
                                         hover:shadow-md
                                         active:scale-[0.97] transition-all duration-200
-                                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                        ds-focus-ring"
                                 >
                                     <Github className="w-[15px] h-[15px]" />
                                     <span className="hidden sm:inline">Login with GitHub</span>
@@ -392,7 +392,7 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
             type="button"
             onClick={toggleTheme}
             aria-pressed={isDark}
-            className={`relative flex items-center gap-1.5 rounded-[9px] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 h-[34px] px-2.5 ${
+            className={`relative flex items-center gap-1.5 rounded-[9px] transition-all duration-300 ds-focus-ring h-[34px] px-2.5 ${
                 isDark
                     ? 'bg-slate-600/80 text-amber-300 hover:bg-slate-500/80 hover:text-amber-200'
                     : 'bg-white text-indigo-600 shadow-sm hover:bg-indigo-50 hover:text-indigo-700'
@@ -420,7 +420,7 @@ function HeaderIconButton({ onClick, label, title, children, disabled, active, .
                 onClick={onClick}
                 disabled={disabled}
                 className={`relative w-[34px] h-[34px] rounded-[9px] flex items-center justify-center transition-all duration-200
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
+                    ds-focus-ring
                     disabled:opacity-40 disabled:cursor-not-allowed
                     ${active
                         ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
@@ -445,7 +445,7 @@ function NavButton({ active, onClick, icon, label, badge }) {
             aria-current={active ? 'page' : undefined}
             aria-label={label}
             title={label}
-            className={`relative flex items-center gap-1.5 px-2.5 lg:px-3.5 h-[34px] rounded-[9px] text-[13px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ds-font-display ${active
+            className={`relative flex items-center gap-1.5 px-2.5 lg:px-3.5 h-[34px] rounded-[9px] text-[13px] font-semibold transition-all duration-200 ds-focus-ring ds-font-display ${active
                 ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-600/40'
                 }`}
@@ -735,7 +735,7 @@ function SystemHealthIndicator() {
                 title={tooltip}
                 data-testid="system-health-indicator"
                 data-status={status}
-                className="relative w-[34px] h-[34px] rounded-[9px] flex items-center justify-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 hover:bg-white/80 dark:hover:bg-slate-700"
+                className="relative w-[34px] h-[34px] rounded-[9px] flex items-center justify-center transition-all duration-200 ds-focus-ring hover:bg-white/80 dark:hover:bg-slate-700"
             >
                 <span
                     className={`w-2.5 h-2.5 rounded-full ring-4 ${dotClass}`}

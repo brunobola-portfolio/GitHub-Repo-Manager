@@ -224,7 +224,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                     }
                                                 },
                                             } : {})}
-                                            className={`w-full p-3 flex items-start gap-3 text-left rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${isExpandable ? 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer' : ''}`}
+                                            className={`w-full p-3 flex items-start gap-3 text-left rounded-xl transition-colors ds-focus-ring ${isExpandable ? 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer' : ''}`}
                                         >
                                             <div className={`p-1.5 rounded-lg ${status.bg}`}>
                                                 <StatusIcon className={`w-4 h-4 ${status.text} ${plan.status === 'running' || plan.status === 'executing' ? 'animate-spin' : ''}`} />

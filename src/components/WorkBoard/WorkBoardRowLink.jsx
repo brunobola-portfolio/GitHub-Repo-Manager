@@ -60,7 +60,7 @@ export function WorkBoardRowLink({
                 onAuxClick={openInApp}
                 onKeyDown={onKeyDown}
                 aria-label={ariaLabel || `Open ${itemType === 'pr' ? 'pull request' : 'issue'} #${number} in app`}
-                className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-xl cursor-pointer"
+                className="block w-full text-left ds-focus-ring rounded-xl cursor-pointer"
             >
                 {children}
             </div>

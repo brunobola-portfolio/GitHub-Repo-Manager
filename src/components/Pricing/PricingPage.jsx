@@ -119,7 +119,7 @@ function FaqItem({ q, a, index }) {
         onClick={() => setOpen(v => !v)}
         onKeyDown={(e) => { if (e.key === 'Escape' && open) setOpen(false) }}
         aria-expanded={open}
-        className="w-full flex items-center justify-between px-6 py-5 text-left group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950 rounded-xl"
+        className="w-full flex items-center justify-between px-6 py-5 text-left group ds-focus-ring rounded-xl"
       >
         <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-200">
           {q}
@@ -324,7 +324,7 @@ export function PricingPage({ onGetStarted } = {}) {
 
             <button
               onClick={() => setIsYearly(v => !v)}
-              className={`relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2
+              className={`relative w-12 h-6 rounded-full transition-colors duration-300 ds-focus-ring
                 ${isYearly ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-white/10'}`}
               aria-label="Toggle yearly billing"
             >

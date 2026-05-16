@@ -293,7 +293,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                             role="button"
                             tabIndex={0}
                             aria-label={`Open pull request #${pr.number}: ${pr.title}`}
-                            className={`p-3 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                            className={`p-3 cursor-pointer transition-colors ds-focus-ring ${
                                 idx === focusedIndex
                                     ? 'border-indigo-400 dark:border-indigo-600 bg-indigo-50/40 dark:bg-indigo-900/15 ring-1 ring-indigo-300 dark:ring-indigo-700/60'
                                     : 'hover:border-indigo-300 dark:hover:border-indigo-600'

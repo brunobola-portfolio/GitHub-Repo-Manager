@@ -27,7 +27,7 @@ export default function CredCard({ mode, icon: Icon, label, subtitle, available,
         }
       }}
       className={`rounded-xl border p-4 transition-all
-        ${selectable ? 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500' : 'cursor-default opacity-60'}
+        ${selectable ? 'cursor-pointer ds-focus-ring' : 'cursor-default opacity-60'}
         ${active && selectable
           ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
           : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'}

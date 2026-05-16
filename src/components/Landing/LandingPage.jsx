@@ -15,7 +15,7 @@ function ThemeToggleButton() {
       onClick={toggleTheme}
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+      className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
     >
       {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
     </button>
@@ -127,8 +127,7 @@ export function LandingPage({ onSignIn }) {
                 shadow-md
                 hover:scale-[1.03] active:scale-[0.97]
                 transition-all duration-200
-                focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2
-                focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950 focus:outline-none
+                ds-focus-ring
                 ds-font-display"
             >
               Sign in

@@ -106,7 +106,7 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                 aria-haspopup="dialog"
                 aria-expanded={open}
                 data-tone={toneKey}
-                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm hover:ring-indigo-400/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition"
+                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm hover:ring-indigo-400/60 ds-focus-ring transition"
             >
                 {unlimited ? (
                     <Check className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" />

@@ -281,7 +281,7 @@ export function DashboardPremium({
                             const interactive = typeof onTeamClick === 'function'
                             const className = `text-left w-full p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl transition-all ${
                                 interactive
-                                    ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset'
+                                    ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 ds-focus-ring'
                                     : ''
                             }`
                             const inner = (

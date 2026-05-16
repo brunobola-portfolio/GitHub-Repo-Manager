@@ -26,7 +26,7 @@ export function LegalFooter() {
             href={SOURCE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-indigo-600 dark:hover:text-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 rounded"
+            className="underline hover:text-indigo-600 dark:hover:text-indigo-400 ds-focus-ring rounded"
           >
             Source code (AGPL v3)
           </a>
@@ -36,7 +36,7 @@ export function LegalFooter() {
             href="/status"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-indigo-600 dark:hover:text-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 rounded"
+            className="underline hover:text-indigo-600 dark:hover:text-indigo-400 ds-focus-ring rounded"
           >
             Status
           </a>
@@ -44,7 +44,7 @@ export function LegalFooter() {
             href={COMMERCIAL_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-indigo-600 dark:hover:text-indigo-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-indigo-400 rounded"
+            className="underline hover:text-indigo-600 dark:hover:text-indigo-400 ds-focus-ring rounded"
           >
             Commercial license
           </a>

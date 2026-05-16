@@ -111,7 +111,7 @@ export function InlineEditField({
             onKeyDown={onWrapperKey}
             aria-label={ariaLabel ? `Edit ${ariaLabel}` : undefined}
             aria-disabled={disabled || undefined}
-            className={`group w-full flex items-center gap-1.5 -mx-1 px-1 py-0.5 rounded-md transition-colors ${disabled ? 'cursor-default' : 'cursor-text hover:bg-slate-100 dark:hover:bg-slate-800/60'} focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40`}
+            className={`group w-full flex items-center gap-1.5 -mx-1 px-1 py-0.5 rounded-md transition-colors ${disabled ? 'cursor-default' : 'cursor-text hover:bg-slate-100 dark:hover:bg-slate-800/60'} ds-focus-ring`}
         >
             <span className="flex-1 min-w-0 truncate">{display}</span>
             {!disabled && (

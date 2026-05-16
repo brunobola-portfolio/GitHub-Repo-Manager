@@ -199,7 +199,7 @@ function PromptEditor({ entry, onSaved, onReset }) {
                 type="button"
                 onClick={() => setExpanded(e => !e)}
                 aria-expanded={expanded}
-                className="w-full flex items-start gap-3 text-left -m-1 p-1 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40"
+                className="w-full flex items-start gap-3 text-left -m-1 p-1 rounded-lg ds-focus-ring"
             >
                 <div className="mt-0.5">
                     {expanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}

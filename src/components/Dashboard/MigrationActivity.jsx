@@ -130,7 +130,7 @@ export function MigrationActivity({ loading: parentLoading }) {
                 animate={{ opacity: 1, y: 0 }}
                 onClick={openHistory}
                 aria-label={`Open migration history for ${job.sourceName}`}
-                className="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/30 dark:border-slate-800/30 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset transition-all cursor-pointer"
+                className="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/30 dark:border-slate-800/30 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-md ds-focus-ring transition-all cursor-pointer"
               >
                 <div className={`w-8 h-8 rounded-lg ${config.bg} flex items-center justify-center shrink-0`}>
                   <StatusIcon className={`w-4 h-4 ${config.color} ${config.animate ? 'animate-spin' : ''}`} />
@@ -178,7 +178,7 @@ export function MigrationActivity({ loading: parentLoading }) {
 function MiniStat({ label, value, icon: Icon, color, animate, onClick }) {
   const className = `flex items-center gap-2.5 p-3 rounded-xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/20 dark:border-slate-800/20 transition-all ${
     onClick
-      ? 'cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset text-left w-full'
+      ? 'cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-md ds-focus-ring text-left w-full'
       : ''
   }`
   const inner = (

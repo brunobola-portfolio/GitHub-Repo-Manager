@@ -91,7 +91,7 @@ export function MobileQuickActionsFab(props) {
                     onClick={() => setOpen(v => !v)}
                     animate={{ rotate: open ? 45 : 0 }}
                     transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-                    className="w-14 h-14 rounded-full bg-indigo-600 dark:bg-indigo-500 shadow-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 flex items-center justify-center text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
+                    className="w-14 h-14 rounded-full bg-indigo-600 dark:bg-indigo-500 shadow-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 flex items-center justify-center text-white ds-focus-ring"
                 >
                     {open ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
                 </motion.button>

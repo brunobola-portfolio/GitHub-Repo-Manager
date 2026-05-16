@@ -42,7 +42,7 @@ export function RepoHealthBadge({ score, className = '', onClick }) {
             <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onClick() }}
-                className={`${baseClasses} cursor-pointer hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500`}
+                className={`${baseClasses} cursor-pointer hover:brightness-110 ds-focus-ring`}
                 title={`AI health score: ${score}/100 — click to see details`}
                 aria-label={`AI health score ${score} out of 100`}
             >

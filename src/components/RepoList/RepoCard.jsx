@@ -116,7 +116,7 @@ export const RepoCard = memo(function RepoCard({
                 border
                 shadow-lg shadow-slate-200/40 dark:shadow-black/40
                 ds-hover-lift
-                focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 outline-none
+                ds-focus-ring
                 ${isContextTarget
 					? isSelected
 						? 'bg-indigo-100/60 dark:bg-indigo-900/40'
