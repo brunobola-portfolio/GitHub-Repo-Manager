@@ -351,7 +351,7 @@ export function Header({
               <button
                 type="button"
                 onClick={() => { onViewChange?.('pricing'); setMoreOpen(false) }}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left ds-focus-ring"
               >
                 <CreditCard className="w-4 h-4" />
                 Pricing
@@ -359,7 +359,7 @@ export function Header({
               <button
                 type="button"
                 onClick={() => { onMigrationHistory?.(); setMoreOpen(false) }}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left ds-focus-ring"
               >
                 <History className="w-4 h-4" />
                 Migration History
@@ -367,7 +367,7 @@ export function Header({
               <button
                 type="button"
                 onClick={() => { onOpenSettings?.(); setMoreOpen(false) }}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left ds-focus-ring"
               >
                 <Settings className="w-4 h-4" />
                 Settings
@@ -375,7 +375,7 @@ export function Header({
               <button
                 type="button"
                 onClick={() => { onReauthorize?.(); setMoreOpen(false) }}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left ds-focus-ring"
               >
                 <Shield className="w-4 h-4" />
                 Re-authorize Permissions
@@ -384,7 +384,7 @@ export function Header({
               <button
                 type="button"
                 onClick={() => { onLogout?.(); setMoreOpen(false) }}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors text-left"
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors text-left ds-focus-ring"
               >
                 <LogOut className="w-4 h-4" />
                 Logout
@@ -514,7 +514,8 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
                                 type="button"
                                 key={org.login}
                                 onClick={() => { onOpenOrgManager?.(org); onClose() }}
-                                className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left"
+                                aria-label={`Open ${org.login} organization`}
+                                className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left ds-focus-ring"
                             >
                                 <img src={org.avatar_url} alt={org.login} className="w-6 h-6 rounded-md" />
                                 <span className="text-sm text-slate-700 dark:text-slate-300 flex-1 truncate">{org.login}</span>
@@ -569,7 +570,7 @@ function MenuButton({ icon, onClick, children, danger }) {
         <button
             type="button"
             onClick={onClick}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${danger
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ds-focus-ring ${danger
                 ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30'
                 : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                 }`}
