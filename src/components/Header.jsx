@@ -6,6 +6,7 @@ import {
     AlertCircle, Sparkles, Moon, Sun, Wand2, Download, History, Menu, CreditCard,
     Kanban, ShieldAlert, GitPullRequest, CircleDot, AlertTriangle, Pin, ExternalLink, Check
 } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { Github } from './icons/GithubIcon'
 import { AppLogoIcon } from './AppLogo'
 import LicenseBadge from './LicenseBadge'
@@ -308,26 +309,40 @@ export function Header({
                 { id: 'work-board', icon: Kanban,          label: 'Work',  showDot: workBoardCount > 0 },
                 { id: 'teams',      icon: Users,           label: 'Teams', showDot: false },
                 { id: 'more',       icon: Menu,            label: 'More',  showDot: false },
-              ].map(({ id, icon: Icon, label, showDot }) => (
+              ].map(({ id, icon: Icon, label, showDot }) => {
+                const isActive = activeView === id && id !== 'more'
+                return (
                 <button
                   key={id}
                   onClick={id === 'more' ? () => setMoreOpen(true) : () => onViewChange?.(id)}
                   className={`relative flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-xl transition-colors ${
-                    activeView === id && id !== 'more'
+                    isActive
                       ? 'text-indigo-600 dark:text-indigo-400'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                   }`}
-                  aria-current={activeView === id && id !== 'more' ? 'page' : undefined}
+                  aria-current={isActive ? 'page' : undefined}
                 >
+                  {/* Animated active-tab pill — slides between tabs via
+                      shared layoutId, giving the bottom-nav a premium
+                      micro-feedback at every change. */}
+                  {isActive && (
+                    <motion.span
+                      layoutId="mobile-nav-active-pill"
+                      aria-hidden="true"
+                      transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                      className="absolute inset-x-2 top-1 h-7 rounded-lg bg-indigo-500/10 dark:bg-indigo-400/15"
+                    />
+                  )}
                   <span className="relative">
                     <Icon className="w-5 h-5" />
                     {showDot && (
                       <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white/80 dark:ring-slate-900/80" />
                     )}
                   </span>
-                  <span className="text-[10px] font-medium leading-none">{label}</span>
+                  <span className="relative text-[10px] font-medium leading-none">{label}</span>
                 </button>
-              ))}
+                )
+              })}
             </div>
           </nav>
           <Drawer side="bottom" isOpen={moreOpen} onClose={() => setMoreOpen(false)} title="More">
@@ -404,8 +419,8 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
                 aria-label={label}
             >
                 <span className="relative w-[15px] h-[15px]" aria-hidden="true">
-                    <Sun className={`w-[15px] h-[15px] absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-50'}`} />
-                    <Moon className={`w-[15px] h-[15px] absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-0 -rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'}`} />
+                    <Sun className={`w-[15px] h-[15px] absolute inset-0 transition-[opacity,transform] duration-300 ${isDark ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90'}`} />
+                    <Moon className={`w-[15px] h-[15px] absolute inset-0 transition-[opacity,transform] duration-300 ${isDark ? 'opacity-0 -rotate-90' : 'opacity-100 rotate-0'}`} />
                 </span>
             </button>
         </Tooltip>

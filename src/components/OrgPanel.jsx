@@ -312,9 +312,11 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 				</motion.div>
 			)}
 
-			{/* Chevron no hover com animação suave */}
+			{/* Chevron reveal on hover (opacity only — no translate per
+			    premium contract). The parent's bg/border change carries
+			    the directional affordance instead of motion. */}
 			{!isSelected && !isGrid && (
-				<ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-0 group-hover:translate-x-1" />
+				<ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
 			)}
 		</motion.button>
 	)

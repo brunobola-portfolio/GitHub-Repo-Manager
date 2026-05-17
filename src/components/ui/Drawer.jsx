@@ -76,7 +76,7 @@ export function Drawer({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={reduced ? REDUCED_TRANSITION : { duration: 0.18 }}
+                        transition={reduced ? REDUCED_TRANSITION : { duration: 0.12 }}
                         className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[var(--ds-z-modal)] ${mobileOnly ? 'xl:hidden' : ''}`}
                         onClick={closeOnBackdrop ? onClose : undefined}
                         aria-hidden="true"
@@ -131,7 +131,7 @@ export function Drawer({
                                         type="button"
                                         onClick={onClose}
                                         aria-label="Close"
-                                        className="shrink-0 w-8 h-8 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center ds-focus-ring"
+                                        className="shrink-0 w-9 h-9 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 flex items-center justify-center transition-colors ds-focus-ring"
                                     >
                                         <X className="w-4 h-4" aria-hidden="true" />
                                     </button>
