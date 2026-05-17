@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import { PieChart, Pie, Cell, Tooltip } from 'recharts'
 import { Code2 } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
@@ -79,8 +79,11 @@ export function LanguageChart({ data = [], loading }) {
     const itemsPerColumn = Math.ceil(enrichedData.length / 2)
     const legendHeight = Math.max(itemsPerColumn * 32, 200)
     const chartHeight = Math.max(legendHeight + 60, 340)
-    // Gate ResponsiveContainer on a measured >0 size so recharts never
-    // sees a 0×0 viewport (silences width(0)/height(0) warnings).
+    // Hand recharts concrete pixel dimensions instead of ResponsiveContainer.
+    // ResponsiveContainer initializes width/height to -1 and renders the
+    // PieChart with that sentinel before its first ResizeObserver pass,
+    // tripping recharts' own width(-1)/height(-1) warning. Real numbers from
+    // useMeasuredSize sidestep the sentinel entirely.
     const [pieRef, { width: pieMeasuredW, height: pieMeasuredH }] = useMeasuredSize()
     const pieReady = pieMeasuredW > 0 && pieMeasuredH > 0
 
@@ -137,12 +140,7 @@ export function LanguageChart({ data = [], loading }) {
                                 style={{ maxWidth: '280px', width: '100%', height: '280px', overflow: 'hidden' }}
                             >
                                 {pieReady && (
-                                <ResponsiveContainer
-                                    width="100%"
-                                    height="100%"
-                                    debounce={200}
-                                >
-                                    <PieChart>
+                                <PieChart width={pieMeasuredW} height={pieMeasuredH}>
                                         <Pie
                                             data={enrichedData}
                                             cx="50%"
@@ -178,7 +176,6 @@ export function LanguageChart({ data = [], loading }) {
                                         }}
                                     />
                                 </PieChart>
-                            </ResponsiveContainer>
                                 )}
                             </div>
 

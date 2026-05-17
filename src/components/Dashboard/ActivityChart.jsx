@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import { Activity } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
@@ -59,11 +59,14 @@ export function ActivityChart({ activity = [], timeRange, loading }) {
 
     // Calculate height to match LanguageChart
     const chartHeight = 340
-    // Gate ResponsiveContainer on a measured >0 size so recharts never
-    // sees a 0×0 viewport (which logs noisy width/height warnings on
-    // every initial paint and collapse/expand cycle).
-    const [chartRef, { width: measuredWidth, height: measuredHeight }] = useMeasuredSize()
-    const chartReady = measuredWidth > 0 && measuredHeight > 0
+    // Hand recharts concrete pixel dimensions instead of ResponsiveContainer.
+    // ResponsiveContainer initializes its internal width/height to -1 and
+    // briefly renders the chart with that sentinel before its own ResizeObserver
+    // fires — which trips recharts' own "width(-1) and height(-1)" warning on
+    // every mount. With useMeasuredSize we pass real numbers from the start,
+    // so the warning never has a chance to fire.
+    const [chartRef, { width: measuredWidth }] = useMeasuredSize()
+    const chartReady = measuredWidth > 0
 
     return (
         <motion.div
@@ -89,12 +92,7 @@ export function ActivityChart({ activity = [], timeRange, loading }) {
                         style={{ height: `${chartHeight}px`, width: '100%', overflow: 'hidden' }}
                     >
                         {chartReady && (
-                        <ResponsiveContainer
-                            width="100%"
-                            height="100%"
-                            debounce={200}
-                        >
-                        <LineChart data={chartData}>
+                        <LineChart width={measuredWidth} height={chartHeight} data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--ds-chart-grid)" opacity={0.1} vertical={false} />
                             <XAxis dataKey="name" stroke="var(--ds-chart-axis)" fontSize={12} tickLine={false} axisLine={false} dy={10} />
                             <YAxis stroke="var(--ds-chart-axis)" fontSize={12} tickLine={false} axisLine={false} dx={-10} />
@@ -145,7 +143,6 @@ export function ActivityChart({ activity = [], timeRange, loading }) {
                                 activeDot={{ r: 8, strokeWidth: 0 }}
                             />
                         </LineChart>
-                    </ResponsiveContainer>
                         )}
                     </div>
                 )}
