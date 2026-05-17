@@ -7,6 +7,7 @@ import { dayLabel } from '../shared/formatters'
 import { WorkBoardRowMenu } from '../WorkBoardRowMenu'
 import { WorkBoardRowLink } from '../WorkBoardRowLink'
 import { EmptyStateDiscovery } from '../EmptyStateDiscovery'
+import { RowIconBadge } from '../../ui/RowIconBadge'
 
 export function MyIssuesTab() {
     const { data, loading, error, refresh } = useMyOpenIssues()
@@ -52,9 +53,7 @@ export function MyIssuesTab() {
                             ariaLabel={`Open issue #${issue.issueNumber} ${issue.title ? `— ${issue.title}` : ''} in app`}
                         >
                             <div className="flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                <div className="mt-0.5 p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex-shrink-0">
-                                    <CircleDot className="w-4 h-4" />
-                                </div>
+                                <RowIconBadge icon={CircleDot} tone="emerald" size="md" className="mt-0.5" />
                                 <div className="flex-1 min-w-0">
                                     <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                         {issue.title || `Issue #${issue.issueNumber}`}

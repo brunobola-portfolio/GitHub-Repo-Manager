@@ -4,6 +4,7 @@ import {
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
 import { Spinner } from './ui/Spinner'
+import { RowIconBadge } from './ui/RowIconBadge'
 import {
     ArrowRightLeft, Lock, Unlock, History, Zap, CheckCircle, XCircle,
     Archive, Trash2, MoreHorizontal,
@@ -247,9 +248,7 @@ function QuickActions({
         <Card hover={true} className="flex-shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700/60 shadow-sm rounded-2xl">
             <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
                 <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
-                    <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-                        <Zap className="w-3.5 h-3.5" />
-                    </div>
+                    <RowIconBadge icon={Zap} tone="amber" />
                     Quick Actions
                 </h3>
                 {hasSelection && (
@@ -533,15 +532,15 @@ function ActivityListBody({ activity, now }) {
 function getEventIcon(type) {
     switch (type) {
         case 'PushEvent':
-            return <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"><GitCommit className="w-3.5 h-3.5" /></div>
+            return <RowIconBadge icon={GitCommit} tone="emerald" />
         case 'PullRequestEvent':
-            return <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"><GitPullRequest className="w-3.5 h-3.5" /></div>
+            return <RowIconBadge icon={GitPullRequest} tone="purple" />
         case 'IssuesEvent':
-            return <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"><CircleDot className="w-3.5 h-3.5" /></div>
+            return <RowIconBadge icon={CircleDot} tone="amber" />
         case 'CreateEvent':
-            return <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"><Play className="w-3.5 h-3.5" /></div>
+            return <RowIconBadge icon={Play} tone="blue" />
         default:
-            return <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"><Clock className="w-3.5 h-3.5" /></div>
+            return <RowIconBadge icon={Clock} tone="slate" />
     }
 }
 

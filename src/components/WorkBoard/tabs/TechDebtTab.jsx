@@ -8,6 +8,7 @@ import { WorkBoardRowMenu } from '../WorkBoardRowMenu'
 import { WorkBoardRowLink } from '../WorkBoardRowLink'
 import { EmptyStateDiscovery } from '../EmptyStateDiscovery'
 import { Card } from '../../ui/Card'
+import { RowIconBadge } from '../../ui/RowIconBadge'
 
 export function TechDebtTab() {
     const { data, loading, error, refresh } = useTechDebt()
@@ -83,9 +84,7 @@ export function TechDebtTab() {
                                 ariaLabel={`Open tech-debt issue #${issue.issueNumber} ${issue.title ? `— ${issue.title}` : ''} in app`}
                             >
                                 <div className="flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors bg-white/60 dark:bg-slate-900/40">
-                                    <div className="mt-0.5 p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex-shrink-0">
-                                        <Wrench className="w-4 h-4" />
-                                    </div>
+                                    <RowIconBadge icon={Wrench} tone="amber" size="md" className="mt-0.5" />
                                     <div className="flex-1 min-w-0">
                                         <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                             {issue.title || `Issue #${issue.issueNumber}`}
