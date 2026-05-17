@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { Spinner } from '../../../ui/Spinner'
 import { Select } from '../../../ui/Select'
+import { Field, Input } from '../../../ui/form'
 
 /**
  * Org selector with two modes:
@@ -162,47 +163,46 @@ export default function OrgField({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
-            <div className="relative">
-              <Cloud className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                id="azure-org"
-                type="text"
-                value={source.org}
-                onChange={handleOrgInputChange}
-                placeholder="my-organization"
-                aria-label="Azure DevOps organization"
-                className={`w-full pl-9 pr-44 py-2.5 border rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-colors ${
-                  isAccessError ? 'border-amber-400 dark:border-amber-500' : 'border-slate-300 dark:border-slate-600'
-                }`}
-              />
-              <AnimatePresence mode="wait">
-                {source.org && orgStatusBadge && (
-                  <motion.div
-                    key={orgStatusBadge.text}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5"
-                    aria-live="polite"
-                  >
-                    {orgStatusBadge.spin ? (
-                      <Spinner size="xs" className={orgStatusBadge.color} />
-                    ) : (
-                      <motion.span
-                        initial={{ scale: 1 }}
-                        animate={{ scale: [1, 1.3, 1] }}
-                        transition={{ duration: 0.3 }}
-                        className={`w-2 h-2 rounded-full ${orgStatusBadge.dot}`}
-                      />
-                    )}
-                    <span className={`text-xs font-medium ${orgStatusBadge.color}`}>
-                      {orgStatusBadge.text}
-                    </span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <Input
+              id="azure-org"
+              type="text"
+              value={source.org}
+              onChange={handleOrgInputChange}
+              placeholder="my-organization"
+              aria-label="Azure DevOps organization"
+              leadingIcon={Cloud}
+              status={isAccessError ? 'error' : 'idle'}
+              className="pr-44"
+              trailing={
+                <AnimatePresence mode="wait">
+                  {source.org && orgStatusBadge && (
+                    <motion.div
+                      key={orgStatusBadge.text}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-center gap-1.5"
+                      aria-live="polite"
+                    >
+                      {orgStatusBadge.spin ? (
+                        <Spinner size="xs" className={orgStatusBadge.color} />
+                      ) : (
+                        <motion.span
+                          initial={{ scale: 1 }}
+                          animate={{ scale: [1, 1.3, 1] }}
+                          transition={{ duration: 0.3 }}
+                          className={`w-2 h-2 rounded-full ${orgStatusBadge.dot}`}
+                        />
+                      )}
+                      <span className={`text-xs font-medium ${orgStatusBadge.color}`}>
+                        {orgStatusBadge.text}
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              }
+            />
 
             {manualOrgMode && isOAuthMode && oauthStatusValue === 'success' && (
               <button

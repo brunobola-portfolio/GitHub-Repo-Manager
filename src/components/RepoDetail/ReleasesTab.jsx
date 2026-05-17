@@ -6,6 +6,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { SectionPanel } from '../ui/SectionPanel'
 import { Tag, Plus, Trash2, Loader2, ExternalLink, CheckCircle2, XCircle, Package, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
+import { Field, Input, Textarea } from '../ui/form'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 
@@ -104,25 +105,19 @@ export function ReleasesTab({ api }) {
             {showCreate && (
                 <Card className="p-4 space-y-3">
                     <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label htmlFor="release-tag-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tag *</label>
-                            <input id="release-tag-name" type="text" value={form.tag_name} onChange={e => setForm(f => ({ ...f, tag_name: e.target.value }))}
-                                placeholder="v1.0.0"
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
-                        </div>
-                        <div>
-                            <label htmlFor="release-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title</label>
-                            <input id="release-name" type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                                placeholder="Release title"
-                                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
-                        </div>
+                        <Field label="Tag" required htmlFor="release-tag-name">
+                            <Input id="release-tag-name" type="text" value={form.tag_name} onChange={e => setForm(f => ({ ...f, tag_name: e.target.value }))}
+                                placeholder="v1.0.0" />
+                        </Field>
+                        <Field label="Title" htmlFor="release-name">
+                            <Input id="release-name" type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                                placeholder="Release title" />
+                        </Field>
                     </div>
-                    <div>
-                        <label htmlFor="release-body" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Release Notes</label>
-                        <textarea id="release-body" value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
-                            rows={4} placeholder="Describe this release..."
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm resize-none" />
-                    </div>
+                    <Field label="Release Notes" htmlFor="release-body">
+                        <Textarea id="release-body" value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+                            rows={4} placeholder="Describe this release..." />
+                    </Field>
                     <div className="flex items-center gap-4">
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" checked={form.draft} onChange={e => setForm(f => ({ ...f, draft: e.target.checked }))}

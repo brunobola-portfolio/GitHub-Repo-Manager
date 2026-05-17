@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { parseAzureUrl } from '../../../utils/azureUrlParser'
 import { Button } from '../../ui/Button'
+import { Field, Input } from '../../ui/form'
 import { getCsrfToken } from '../../../utils/api'
 
 /**
@@ -67,25 +68,16 @@ export default function UrlInputStep({ source, onChange }) {
   return (
     <div className="space-y-5">
       {/* URL input */}
-      <div>
-        <label
-          htmlFor="source-url"
-          className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
-        >
-          Clone URL
-        </label>
-        <div className="relative">
-          <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            id="source-url"
-            type="url"
-            value={source.sourceUrl}
-            onChange={handleUrlChange}
-            placeholder="https://github.com/user/repo.git"
-            className="w-full pl-9 pr-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-colors"
-          />
-        </div>
-      </div>
+      <Field label="Clone URL" htmlFor="source-url">
+        <Input
+          id="source-url"
+          type="url"
+          value={source.sourceUrl}
+          onChange={handleUrlChange}
+          placeholder="https://github.com/user/repo.git"
+          leadingIcon={Link2}
+        />
+      </Field>
 
       {/* Azure URL auto-detection banner */}
       {azureDetected && (
@@ -130,58 +122,40 @@ export default function UrlInputStep({ source, onChange }) {
 
       {/* Conditional auth fields */}
       {source.authType === 'token' && (
-        <div>
-          <label htmlFor="url-auth-token" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-            Access Token
-          </label>
-          <div className="relative">
-            <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              id="url-auth-token"
-              type="password"
-              value={source.authToken}
-              onChange={(e) => onChange({ authToken: e.target.value })}
-              placeholder="ghp_... or PAT"
-              className="w-full pl-9 pr-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-colors"
-            />
-          </div>
-        </div>
+        <Field label="Access Token" htmlFor="url-auth-token">
+          <Input
+            id="url-auth-token"
+            type="password"
+            value={source.authToken}
+            onChange={(e) => onChange({ authToken: e.target.value })}
+            placeholder="ghp_... or PAT"
+            leadingIcon={KeyRound}
+          />
+        </Field>
       )}
 
       {source.authType === 'basic' && (
         <div className="space-y-3">
-          <div>
-            <label htmlFor="url-auth-username" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              Username
-            </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                id="url-auth-username"
-                type="text"
-                value={source.authUsername}
-                onChange={(e) => onChange({ authUsername: e.target.value })}
-                placeholder="Username"
-                className="w-full pl-9 pr-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-colors"
-              />
-            </div>
-          </div>
-          <div>
-            <label htmlFor="url-auth-password" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                id="url-auth-password"
-                type="password"
-                value={source.authPassword}
-                onChange={(e) => onChange({ authPassword: e.target.value })}
-                placeholder="Password"
-                className="w-full pl-9 pr-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-colors"
-              />
-            </div>
-          </div>
+          <Field label="Username" htmlFor="url-auth-username">
+            <Input
+              id="url-auth-username"
+              type="text"
+              value={source.authUsername}
+              onChange={(e) => onChange({ authUsername: e.target.value })}
+              placeholder="Username"
+              leadingIcon={User}
+            />
+          </Field>
+          <Field label="Password" htmlFor="url-auth-password">
+            <Input
+              id="url-auth-password"
+              type="password"
+              value={source.authPassword}
+              onChange={(e) => onChange({ authPassword: e.target.value })}
+              placeholder="Password"
+              leadingIcon={Lock}
+            />
+          </Field>
         </div>
       )}
 

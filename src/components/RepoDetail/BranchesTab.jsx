@@ -6,6 +6,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { SectionPanel } from '../ui/SectionPanel'
 import { GitBranch, Shield, Trash2, Plus, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
+import { Field, Input } from '../ui/form'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 import { BranchHygieneCard } from './BranchHygieneCard'
@@ -162,18 +163,15 @@ export function BranchesTab({ api, repoData }) {
 
             {showCreate && (
                 <Card className="p-4 space-y-3">
-                    <div>
-                        <label htmlFor="new-branch-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Branch Name *</label>
-                        <input id="new-branch-name" type="text" value={newBranch} onChange={e => setNewBranch(e.target.value)}
-                            placeholder="feature/my-branch"
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
-                    </div>
-                    <div>
-                        <label htmlFor="new-branch-base-sha" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Base SHA (optional, defaults to default branch)</label>
-                        <input id="new-branch-base-sha" type="text" value={baseSha} onChange={e => setBaseSha(e.target.value)}
+                    <Field label="Branch Name" required htmlFor="new-branch-name">
+                        <Input id="new-branch-name" type="text" value={newBranch} onChange={e => setNewBranch(e.target.value)}
+                            placeholder="feature/my-branch" />
+                    </Field>
+                    <Field label="Base SHA (optional, defaults to default branch)" htmlFor="new-branch-base-sha">
+                        <Input id="new-branch-base-sha" type="text" value={baseSha} onChange={e => setBaseSha(e.target.value)}
                             placeholder="abc123..."
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-mono" />
-                    </div>
+                            className="font-mono" />
+                    </Field>
                     <div className="flex gap-2">
                         <Button size="sm" variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button>
                         <Button size="sm" onClick={handleCreate} disabled={!newBranch || creating}>
@@ -185,14 +183,16 @@ export function BranchesTab({ api, repoData }) {
             )}
 
             <div className="flex flex-wrap gap-2 items-center pb-2">
-                <input
-                    type="text"
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    placeholder="Search branches…"
-                    className="flex-1 min-w-[180px] px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
-                    aria-label="Search branches"
-                />
+                <div className="flex-1 min-w-[180px]">
+                    <Input
+                        type="text"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="Search branches…"
+                        aria-label="Search branches"
+                        size="sm"
+                    />
+                </div>
                 <div className="flex gap-1">
                     {['all', 'active', 'stale', 'protected'].map(k => (
                         <button key={k} type="button" onClick={() => setChip(k)}

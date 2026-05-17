@@ -11,6 +11,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { PageHeader } from '../ui/PageHeader';
 import { SectionSpinner } from '../ui/Spinner';
+import { Input } from '../ui/form';
 import { getCsrfToken } from '../../utils/api';
 
 const TEAM_TABS = [
@@ -235,43 +236,36 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                             <Card glass={false} className="mb-6 p-4 animate-in fade-in slide-in-from-top-2">
                                 <h3 className="font-semibold text-slate-900 dark:text-white mb-3">Add Member</h3>
                                 <div className="relative">
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                                        <input
-                                            type="text"
-                                            value={inviteUsername}
-                                            aria-label="Search GitHub username to invite"
-                                            onChange={(e) => {
-                                                setInviteUsername(e.target.value);
-                                                // Debounce search
-                                                if (e.target.value.length > 2) {
-                                                    setIsSearchingUsers(true);
-                                                    const timer = setTimeout(async () => {
-                                                        try {
-                                                            const res = await fetch(`/api/search/users?q=${e.target.value}`);
-                                                            const data = await res.json();
-                                                            setUserSearchResults(data || []);
-                                                        } catch {
-                                                            // User search failed
-                                                        } finally {
-                                                            setIsSearchingUsers(false);
-                                                        }
-                                                    }, 500);
-                                                    return () => clearTimeout(timer);
-                                                } else {
-                                                    setUserSearchResults([]);
-                                                }
-                                            }}
-                                            className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
-                                            placeholder="Search GitHub username..."
-                                            autoFocus
-                                        />
-                                        {isSearchingUsers && (
-                                            <div className="absolute right-3 top-2.5">
-                                                <Spinner size="sm" />
-                                            </div>
-                                        )}
-                                    </div>
+                                    <Input
+                                        type="text"
+                                        value={inviteUsername}
+                                        aria-label="Search GitHub username to invite"
+                                        leadingIcon={Search}
+                                        trailing={isSearchingUsers ? <Spinner size="sm" /> : undefined}
+                                        onChange={(e) => {
+                                            setInviteUsername(e.target.value);
+                                            // Debounce search
+                                            if (e.target.value.length > 2) {
+                                                setIsSearchingUsers(true);
+                                                const timer = setTimeout(async () => {
+                                                    try {
+                                                        const res = await fetch(`/api/search/users?q=${e.target.value}`);
+                                                        const data = await res.json();
+                                                        setUserSearchResults(data || []);
+                                                    } catch {
+                                                        // User search failed
+                                                    } finally {
+                                                        setIsSearchingUsers(false);
+                                                    }
+                                                }, 500);
+                                                return () => clearTimeout(timer);
+                                            } else {
+                                                setUserSearchResults([]);
+                                            }
+                                        }}
+                                        placeholder="Search GitHub username..."
+                                        autoFocus
+                                    />
 
                                     {/* Search Results Dropdown */}
                                     {userSearchResults.length > 0 && (
@@ -335,13 +329,12 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                         {showAssign && (
                             <Card glass={false} className="mb-6 p-4 animate-in fade-in slide-in-from-top-2">
                                 <h3 className="font-semibold text-slate-900 dark:text-white mb-3">Assign Repository</h3>
-                                <div className="relative mb-4">
-                                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                                    <input
+                                <div className="mb-4">
+                                    <Input
                                         type="text"
                                         placeholder="Search repositories..."
                                         aria-label="Search repositories to assign"
-                                        className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-transparent dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        leadingIcon={Search}
                                         onChange={(e) => setSelectedRepoToAssign(e.target.value)} // Using this state for search temporarily
                                     />
                                 </div>

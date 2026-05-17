@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Link2, Cloud, FolderGit2, X } from 'lucide-react'
 import { parseAzureUrl } from '../../../../utils/azureUrlParser'
+import { Field, Input } from '../../../ui/form'
 
 /**
  * Smart Azure DevOps URL paste field with preview confirmation.
@@ -17,23 +18,24 @@ export default function SourceUrlForm({
   onDismiss,
 }) {
   const parsedBadge = smartPasteValue ? parseAzureUrl(smartPasteValue) : null
+  const showParseError = !urlPreview && parsedBadge?.error
 
   return (
     <div>
-      <label htmlFor="source-azure-url" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-        Paste Azure DevOps URL <span className="text-slate-400 font-normal">(optional)</span>
-      </label>
-      <div className="relative">
-        <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <input
+      <Field
+        label={<>Paste Azure DevOps URL <span className="text-slate-400 font-normal">(optional)</span></>}
+        htmlFor="source-azure-url"
+        hint={showParseError ? parsedBadge.error : undefined}
+      >
+        <Input
           id="source-azure-url"
           type="text"
           value={smartPasteValue}
           onChange={(e) => onInput(e.target.value)}
           placeholder="https://dev.azure.com/org/project or org/project/repo"
-          className="w-full pl-9 pr-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-colors"
+          leadingIcon={Link2}
         />
-      </div>
+      </Field>
 
       <AnimatePresence>
         {urlPreview && (
@@ -88,10 +90,6 @@ export default function SourceUrlForm({
           </motion.div>
         )}
       </AnimatePresence>
-
-      {!urlPreview && parsedBadge?.error && (
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{parsedBadge.error}</p>
-      )}
     </div>
   )
 }

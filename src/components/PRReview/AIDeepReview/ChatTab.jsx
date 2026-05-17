@@ -3,6 +3,7 @@ import { Send, X, Trash2 } from 'lucide-react';
 import { usePRChat } from '../../../hooks/usePRChat';
 import { MessageBubble, StreamingBubble, TypingIndicator } from '../../AI/ChatPrimitives';
 import { AIErrorState } from '../../ui/AIErrorState';
+import { Textarea } from '../../ui/form';
 
 /**
  * ChatTab — 4th tab of AIReviewPanel. Streaming PR-context chat.
@@ -89,21 +90,22 @@ export function ChatTab({ owner, repo, prNumber, headSha }) {
             </div>
 
             <form onSubmit={onSubmit} className="border-t border-slate-200 dark:border-slate-800 p-2 flex items-end gap-2">
-                <textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            onSubmit(e);
-                        }
-                    }}
-                    rows={2}
-                    placeholder="Ask about this PR…"
-                    aria-label="Chat message"
-                    disabled={sending}
-                    className="flex-1 resize-none text-sm px-2.5 py-1.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
-                />
+                <div className="flex-1">
+                    <Textarea
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                onSubmit(e);
+                            }
+                        }}
+                        rows={2}
+                        placeholder="Ask about this PR…"
+                        aria-label="Chat message"
+                        disabled={sending}
+                    />
+                </div>
                 {sending ? (
                     <button
                         type="button"

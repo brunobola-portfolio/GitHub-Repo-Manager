@@ -3,6 +3,7 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
 import { ConfirmModal } from '../ui/ConfirmModal'
+import { Field, Input } from '../ui/form'
 import { reposApi } from '../../api/repos'
 import { useToast } from '../../hooks/useToast'
 import { Users, Trash2, Plus, ShieldCheck } from 'lucide-react'
@@ -15,7 +16,7 @@ const PERMISSION_OPTIONS = [
     { value: 'admin', label: 'Admin', description: 'Full administrative access' },
 ]
 
-const FIELD_CLASSES = 'w-full px-3 py-2.5 rounded-lg bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed'
+const SELECT_CLASSES = 'w-full px-3 py-2.5 rounded-lg bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed'
 
 function permissionLabel(c) {
     // GitHub returns either a `permissions` object (legacy boolean shape) OR a
@@ -122,20 +123,18 @@ export function CollaboratorsSection({ owner, repo, archived }) {
 
             {showAdd && (
                 <div className="space-y-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                    <div>
-                        <label htmlFor="collab-username" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">GitHub username</label>
-                        <input id="collab-username" type="text" value={newUsername}
+                    <Field label="GitHub username" htmlFor="collab-username">
+                        <Input id="collab-username" type="text" value={newUsername}
                             onChange={(e) => setNewUsername(e.target.value)}
                             placeholder="octocat"
-                            disabled={adding}
-                            className={FIELD_CLASSES} />
-                    </div>
+                            disabled={adding} />
+                    </Field>
                     <div>
                         <label htmlFor="collab-permission" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Permission</label>
                         <select id="collab-permission" value={newPermission}
                             onChange={(e) => setNewPermission(e.target.value)}
                             disabled={adding}
-                            className={FIELD_CLASSES}>
+                            className={SELECT_CLASSES}>
                             {PERMISSION_OPTIONS.map(opt => (
                                 <option key={opt.value} value={opt.value}>
                                     {opt.label} — {opt.description}

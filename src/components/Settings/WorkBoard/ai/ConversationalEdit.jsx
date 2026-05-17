@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { InsightCard } from '../../../ui/InsightCard'
+import { Textarea } from '../../../ui/form'
 import { MessageSquare, Loader2, Check, Pencil } from 'lucide-react'
 
 export function ConversationalEdit({ onInterpret, onApply }) {
@@ -45,12 +46,11 @@ export function ConversationalEdit({ onInterpret, onApply }) {
 
                 {!diff && (
                     <>
-                        <textarea
+                        <Textarea
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
                             placeholder="Describe what you want — e.g. mute all forks, keep only tesla org"
                             rows={2}
-                            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
                         />
                         <button
                             type="button"

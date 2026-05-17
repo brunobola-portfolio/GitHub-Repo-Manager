@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { SendHorizontal } from 'lucide-react'
+import { Textarea } from '../../ui/form'
 
 export function ChatInput({ placeholder = 'Refine...', onSubmit, disabled }) {
     const [value, setValue] = useState('')
@@ -29,17 +30,19 @@ export function ChatInput({ placeholder = 'Refine...', onSubmit, disabled }) {
 
     return (
         <div className="flex items-end gap-2">
-            <textarea
-                ref={textareaRef}
-                rows={1}
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={placeholder}
-                disabled={disabled}
-                aria-label="Message or refinement input"
-                className="flex-1 px-3 py-2 text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-xl ds-focus-ring focus-visible:border-indigo-500 disabled:opacity-50 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all resize-none overflow-hidden"
-            />
+            <div className="flex-1">
+                <Textarea
+                    ref={textareaRef}
+                    rows={1}
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={placeholder}
+                    disabled={disabled}
+                    aria-label="Message or refinement input"
+                    className="overflow-hidden py-2"
+                />
+            </div>
             <button
                 type="button"
                 onClick={handleSubmit}

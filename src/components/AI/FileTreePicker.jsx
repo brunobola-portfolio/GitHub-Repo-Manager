@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Modal } from '../ui/Modal'
 import { Spinner } from '../ui/Spinner'
+import { Input } from '../ui/form'
 import { Search, AlertTriangle, FileText } from 'lucide-react'
 import { reposApi } from '../../api/repos'
 
@@ -47,17 +48,16 @@ export function FileTreePicker({ isOpen, owner, repoName, branch, onPick, onClos
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Add specific file" size="lg" closeOnBackdrop>
             <div className="space-y-3">
-                <div className="relative">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
-                    <input
-                        type="text"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search files…"
-                        autoFocus
-                        className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
-                    />
-                </div>
+                <Input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search files…"
+                    autoFocus
+                    leadingIcon={Search}
+                    aria-label="Search files"
+                />
+
 
                 {loading && <div className="flex items-center justify-center py-8"><Spinner /></div>}
 

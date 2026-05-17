@@ -3,6 +3,7 @@ import {
   FolderGit2, Lock, Globe, Loader2, CheckCircle2, XCircle, ChevronDown,
 } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
+import { Field, Input, Textarea } from '../../ui/form'
 import { getCsrfToken } from '../../../utils/api'
 
 /**
@@ -73,6 +74,14 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
     checkDuplicate(value)
   }
 
+  const nameTrailing = (
+    <>
+      {nameStatus === 'checking' && <Spinner size="md" tone="warning" />}
+      {nameStatus === 'clear' && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+      {nameStatus === 'conflict' && <XCircle className="w-4 h-4 text-red-500" />}
+    </>
+  )
+
   return (
     <div className="space-y-5">
       {/* Owner dropdown */}
@@ -97,33 +106,21 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
       </div>
 
       {/* Repository name */}
-      <div>
-        <label htmlFor="target-config-repo-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-          Repository name
-        </label>
-        <div className="relative">
-          <FolderGit2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            id="target-config-repo-name"
-            type="text"
-            value={source.targetName || ''}
-            onChange={handleNameChange}
-            placeholder="my-repository"
-            className={`w-full pl-9 pr-9 py-2.5 border rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors
-              ${nameStatus === 'conflict' ? 'border-red-400 dark:border-red-600' : 'border-slate-300 dark:border-slate-600'}`}
-          />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            {nameStatus === 'checking' && <Spinner size="md" tone="warning" />}
-            {nameStatus === 'clear' && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
-            {nameStatus === 'conflict' && <XCircle className="w-4 h-4 text-red-500" />}
-          </div>
-        </div>
-        {nameStatus === 'conflict' && (
-          <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">
-            A repository with this name already exists.
-          </p>
-        )}
-      </div>
+      <Field
+        label="Repository name"
+        htmlFor="target-config-repo-name"
+        error={nameStatus === 'conflict' ? 'A repository with this name already exists.' : undefined}
+      >
+        <Input
+          id="target-config-repo-name"
+          type="text"
+          value={source.targetName || ''}
+          onChange={handleNameChange}
+          placeholder="my-repository"
+          leadingIcon={FolderGit2}
+          trailing={nameTrailing}
+        />
+      </Field>
 
       {/* Visibility toggle */}
       <div>
@@ -158,19 +155,15 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
       </div>
 
       {/* Description */}
-      <div>
-        <label htmlFor="target-config-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-          Description (optional)
-        </label>
-        <textarea
+      <Field label="Description (optional)" htmlFor="target-config-description">
+        <Textarea
           id="target-config-description"
           value={source.description || ''}
           onChange={(e) => onChange({ description: e.target.value })}
           placeholder="Repository description..."
           rows={2}
-          className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none"
         />
-      </div>
+      </Field>
 
       {/* Import button */}
       <button

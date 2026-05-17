@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Field, Input, Textarea } from '../ui/form';
 
 const MAX_PATH_RULES = 20;
 
@@ -70,21 +71,19 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
-                <div>
-                    <label className="block text-xs font-medium mb-1" htmlFor="prompt-editor-name">Name</label>
-                    <input
+                <Field label="Name" htmlFor="prompt-editor-name" required>
+                    <Input
                         id="prompt-editor-name"
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         required
                         maxLength={100}
-                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm"
+                        size="sm"
                     />
-                </div>
-                <div>
-                    <label className="block text-xs font-medium mb-1" htmlFor="prompt-editor-key">Preset key (alphanum + dash/underscore)</label>
-                    <input
+                </Field>
+                <Field label="Preset key (alphanum + dash/underscore)" htmlFor="prompt-editor-key" required>
+                    <Input
                         id="prompt-editor-key"
                         type="text"
                         value={presetKey}
@@ -92,9 +91,10 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                         required
                         pattern="^[a-z0-9_-]{1,40}$"
                         disabled={isEdit}
-                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm font-mono disabled:opacity-60"
+                        size="sm"
+                        className="font-mono"
                     />
-                </div>
+                </Field>
                 <div className="grid grid-cols-2 gap-2">
                     <div>
                         <label className="block text-xs font-medium mb-1" htmlFor="prompt-editor-scope">Scope</label>
@@ -111,23 +111,22 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                         </select>
                     </div>
                     {scope === 'repo' ? (
-                        <div>
-                            <label className="block text-xs font-medium mb-1" htmlFor="prompt-editor-scope-target">Repo (owner/name)</label>
-                            <input
+                        <Field label="Repo (owner/name)" htmlFor="prompt-editor-scope-target" required>
+                            <Input
                                 id="prompt-editor-scope-target"
                                 type="text"
                                 value={scopeTarget}
                                 onChange={(e) => setScopeTarget(e.target.value)}
                                 placeholder="acme/api"
                                 required
-                                className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm font-mono"
+                                size="sm"
+                                className="font-mono"
                             />
-                        </div>
+                        </Field>
                     ) : null}
                     {scope === 'org' ? (
-                        <div>
-                            <label className="block text-xs font-medium mb-1" htmlFor="prompt-editor-scope-target">Organization (login)</label>
-                            <input
+                        <Field label="Organization (login)" htmlFor="prompt-editor-scope-target" required>
+                            <Input
                                 id="prompt-editor-scope-target"
                                 type="text"
                                 value={scopeTarget}
@@ -137,9 +136,10 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                                 pattern="^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$"
                                 maxLength={39}
                                 title="GitHub org login (alphanumeric + . _ -, max 39 chars)"
-                                className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm font-mono"
+                                size="sm"
+                                className="font-mono"
                             />
-                        </div>
+                        </Field>
                     ) : null}
                 </div>
                 {scope === 'org' ? (
@@ -148,17 +148,18 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                     </p>
                 ) : null}
                 <div>
-                    <label className="block text-xs font-medium mb-1" htmlFor="prompt-editor-body">System prompt</label>
-                    <textarea
-                        id="prompt-editor-body"
-                        value={systemPrompt}
-                        onChange={(e) => setSystemPrompt(e.target.value)}
-                        required
-                        maxLength={8000}
-                        rows={10}
-                        placeholder='Use ${REPO_STYLE_GUIDE} to inject .repomanager/review-rules.md content.'
-                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm font-mono"
-                    />
+                    <Field label="System prompt" htmlFor="prompt-editor-body" required>
+                        <Textarea
+                            id="prompt-editor-body"
+                            value={systemPrompt}
+                            onChange={(e) => setSystemPrompt(e.target.value)}
+                            required
+                            maxLength={8000}
+                            rows={10}
+                            placeholder='Use ${REPO_STYLE_GUIDE} to inject .repomanager/review-rules.md content.'
+                            className="font-mono"
+                        />
+                    </Field>
                     <div className="text-[10px] opacity-60 mt-1">{systemPrompt.length} / 8000</div>
                 </div>
                 <div>
@@ -197,21 +198,22 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                         <ul className="space-y-2">
                             {pathRules.map((r, i) => (
                                 <li key={i} className="rounded border border-slate-200 dark:border-slate-700 p-2 space-y-1">
-                                    <input
+                                    <Input
                                         type="text"
                                         value={r.glob}
                                         onChange={(e) => updateRule(i, { glob: e.target.value })}
                                         placeholder="src/components/**"
                                         aria-label={`Path glob ${i + 1}`}
-                                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-xs font-mono"
+                                        size="sm"
+                                        className="font-mono text-xs"
                                     />
-                                    <textarea
+                                    <Textarea
                                         value={r.extraPrompt}
                                         onChange={(e) => updateRule(i, { extraPrompt: e.target.value })}
                                         placeholder="Extra guidance for files matching this glob"
                                         rows={2}
                                         aria-label={`Path rule prompt ${i + 1}`}
-                                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-xs"
+                                        className="text-xs"
                                     />
                                     <button type="button" onClick={() => removeRule(i)} className="text-xs text-red-600 dark:text-red-400 hover:underline">
                                         Remove

@@ -5,6 +5,7 @@ import {
   AlertCircle, Loader2, Info, Flag, HardDrive, AlertTriangle,
 } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
+import { Field, Input } from '../../ui/form'
 import { migrationApi } from '../../../api/migration'
 import { useToast } from '../../../hooks/useToast'
 import { StatCard } from '../ui/repo/StatCard'
@@ -224,22 +225,15 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
         >
-          <label
-            htmlFor="schedule-datetime"
-            className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
-          >
-            Scheduled Date & Time
-          </label>
-          <input
-            id="schedule-datetime"
-            type="datetime-local"
-            min={minDateTime}
-            value={schedule.scheduledAt || ''}
-            onChange={(e) => onUpdate({ scheduledAt: e.target.value })}
-            className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl
-              bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100
-              focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-colors"
-          />
+          <Field label="Scheduled Date & Time" htmlFor="schedule-datetime">
+            <Input
+              id="schedule-datetime"
+              type="datetime-local"
+              min={minDateTime}
+              value={schedule.scheduledAt || ''}
+              onChange={(e) => onUpdate({ scheduledAt: e.target.value })}
+            />
+          </Field>
           <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
             <Info className="w-3 h-3" />
             Credentials will be securely stored until execution time.

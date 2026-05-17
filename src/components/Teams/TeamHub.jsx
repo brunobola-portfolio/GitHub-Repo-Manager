@@ -8,6 +8,7 @@ import { PageHeader } from '../ui/PageHeader';
 import { PageShell } from '../ui/PageShell';
 import { Card } from '../ui/Card';
 import { Skeleton } from '../ui/Skeleton';
+import { Field, Input } from '../ui/form';
 import { listTeams } from '../../api/teams';
 import { getCsrfToken } from '../../utils/api';
 
@@ -153,29 +154,25 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                             {isEditing ? 'Edit Team' : 'Create New Team'}
                         </h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label htmlFor="team-form-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Team Name</label>
-                                <input
+                            <Field label="Team Name" htmlFor="team-form-name">
+                                <Input
                                     id="team-form-name"
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
                                     placeholder="e.g. Frontend Squad"
                                     autoFocus
                                 />
-                            </div>
-                            <div>
-                                <label htmlFor="team-form-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Description</label>
-                                <input
+                            </Field>
+                            <Field label="Description" htmlFor="team-form-description">
+                                <Input
                                     id="team-form-description"
                                     type="text"
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
                                     placeholder="Short description of the team's purpose"
                                 />
-                            </div>
+                            </Field>
                             <div className="flex justify-end gap-3 pt-2">
                                 <button
                                     type="button"

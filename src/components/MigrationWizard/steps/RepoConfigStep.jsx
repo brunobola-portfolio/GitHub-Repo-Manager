@@ -10,6 +10,7 @@ import {
 import { Spinner } from '../../ui/Spinner'
 import { getCsrfToken } from '../../../utils/api'
 import { Select } from '../../ui/Select'
+import { Input, Textarea, Switch } from '../../ui/form'
 import { formatFileSize } from '../../../utils/format'
 import { RiskBadge } from '../ui/repo/RiskBadge'
 import { REPO_DESCRIPTION_MAX } from '../../../utils/migrationDescription'
@@ -427,31 +428,28 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                         {repo.name}
                       </span>
                       <ArrowRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
-                      <div className="relative flex-1 max-w-[200px]">
-                        <input
+                      <div className="flex-1 max-w-[200px]">
+                        <Input
                           type="text"
+                          size="sm"
                           value={repo.targetName || ''}
                           onChange={(e) => handleTargetNameChange(repo, index, e.target.value)}
                           aria-label={`Target repository name for ${repo.name}`}
-                          aria-invalid={conflictStatus === 'conflict'}
-                          className={`w-full px-2.5 py-1 text-sm rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100
-                            focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-colors
-                            ${conflictStatus === 'conflict'
-                              ? 'border border-red-500/50'
-                              : 'border border-slate-200 dark:border-slate-700'
-                            }`}
+                          status={conflictStatus === 'conflict' ? 'error' : 'idle'}
+                          trailing={
+                            <>
+                              {conflictStatus === 'checking' && (
+                                <Spinner size="xs" tone="warning" />
+                              )}
+                              {conflictStatus === 'clear' && (
+                                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                              )}
+                              {conflictStatus === 'conflict' && (
+                                <XCircle className="w-3 h-3 text-red-500" />
+                              )}
+                            </>
+                          }
                         />
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                          {conflictStatus === 'checking' && (
-                            <Spinner size="xs" tone="warning" />
-                          )}
-                          {conflictStatus === 'clear' && (
-                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                          )}
-                          {conflictStatus === 'conflict' && (
-                            <XCircle className="w-3 h-3 text-red-500" />
-                          )}
-                        </div>
                       </div>
                     </div>
                     {/* Metadata badges */}
@@ -589,24 +587,18 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
 
                         {/* LFS + Branch row */}
                         <div className="flex items-center gap-4">
-                          {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-                          <label className="inline-flex items-center gap-2 cursor-pointer">
-                            <button
-                              type="button"
-                              role="switch"
-                              aria-checked={!!repo.lfsEnabled}
-                              onClick={() => onUpdateRepo(index, { lfsEnabled: !repo.lfsEnabled })}
-                              className={`relative w-8 h-5 rounded-full transition-colors shrink-0
-                                ${repo.lfsEnabled ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-600'}`}
-                            >
-                              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform
-                                ${repo.lfsEnabled ? 'translate-x-3' : 'translate-x-0'}`} />
-                            </button>
+                          <div className="inline-flex items-center gap-2">
+                            <Switch
+                              checked={!!repo.lfsEnabled}
+                              onChange={(next) => onUpdateRepo(index, { lfsEnabled: next })}
+                              label="LFS"
+                              size="sm"
+                            />
                             <span className="text-xs text-slate-600 dark:text-slate-400">
                               <HardDrive className="w-3 h-3 inline mr-1" />
                               LFS
                             </span>
-                          </label>
+                          </div>
 
                           {!repo.isTfvc && (
                             <button
@@ -755,17 +747,14 @@ function DescriptionField({ repo, index, aiAvailable, isGenerating, onChange, on
         </button>
       </div>
       <div className="relative">
-        <textarea
+        <Textarea
           id={`repo-desc-${index}`}
-          rows="2"
+          rows={2}
           value={value}
           onChange={handleChange}
           maxLength={REPO_DESCRIPTION_MAX}
           placeholder="Optional description..."
-          className={`w-full px-3 py-1.5 pr-14 text-sm bg-white dark:bg-slate-900 border rounded-lg
-            text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600
-            focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-colors resize-none
-            ${over ? 'border-red-400 dark:border-red-500/60' : 'border-slate-200 dark:border-slate-700'}`}
+          status={over ? 'error' : 'idle'}
         />
         <span className={`pointer-events-none absolute bottom-1.5 right-2 text-[10px] font-mono tabular-nums ${counterTone}`}>
           {length}/{REPO_DESCRIPTION_MAX}

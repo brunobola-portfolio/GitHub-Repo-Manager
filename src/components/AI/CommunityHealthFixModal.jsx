@@ -5,6 +5,7 @@ import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
 import { AIErrorState } from '../ui/AIErrorState'
+import { Input, Textarea } from '../ui/form'
 import { getCsrfToken } from '../../utils/api'
 
 /**
@@ -224,20 +225,24 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 				)}
 				<div className="flex items-center justify-between gap-2">
 					<span className="text-xs font-mono text-slate-500 dark:text-slate-400 truncate" title={filePath}>{filePath}</span>
-					<input
-						type="text"
-						value={commitMessage}
-						onChange={(e) => setCommitMessage(e.target.value)}
-						disabled={state === 'committing'}
-						className="flex-1 max-w-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
-						placeholder="Commit message"
-					/>
+					<div className="flex-1 max-w-xs">
+						<Input
+							type="text"
+							size="sm"
+							value={commitMessage}
+							onChange={(e) => setCommitMessage(e.target.value)}
+							disabled={state === 'committing'}
+							placeholder="Commit message"
+							aria-label="Commit message"
+						/>
+					</div>
 				</div>
-				<textarea
+				<Textarea
 					value={content}
 					onChange={(e) => setContent(e.target.value)}
 					disabled={state === 'committing'}
-					className="w-full h-72 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono leading-relaxed resize-none"
+					rows={14}
+					className="font-mono text-xs leading-relaxed"
 					spellCheck={false}
 					aria-label={`${filePath} preview`}
 				/>

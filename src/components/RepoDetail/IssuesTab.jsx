@@ -6,6 +6,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { SectionPanel } from '../ui/SectionPanel'
 import { CircleDot, Plus, Loader2, CheckCircle2, XCircle, MessageSquare, ExternalLink, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
+import { Field, Input, Textarea } from '../ui/form'
 import { IssueDetailPanel } from './IssueDetailPanel'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
@@ -169,18 +170,14 @@ export function IssuesTab({ api, repoFullName }) {
 
             {showCreate && (
                 <Card className="p-4 space-y-3">
-                    <div>
-                        <label htmlFor="issue-title" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title *</label>
-                        <input id="issue-title" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                            placeholder="Issue title" aria-label="Issue title" aria-required="true"
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
-                    </div>
-                    <div>
-                        <label htmlFor="issue-body" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
-                        <textarea id="issue-body" value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
-                            rows={4} placeholder="Describe the issue..." aria-label="Issue description"
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm resize-none" />
-                    </div>
+                    <Field label="Title" required htmlFor="issue-title">
+                        <Input id="issue-title" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                            placeholder="Issue title" aria-label="Issue title" aria-required="true" />
+                    </Field>
+                    <Field label="Description" htmlFor="issue-body">
+                        <Textarea id="issue-body" value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+                            rows={4} placeholder="Describe the issue..." aria-label="Issue description" />
+                    </Field>
                     <div className="flex gap-2">
                         <Button size="sm" variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button>
                         <Button size="sm" onClick={handleCreate} disabled={!form.title || creating}>

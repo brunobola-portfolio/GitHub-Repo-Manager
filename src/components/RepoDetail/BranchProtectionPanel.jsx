@@ -5,8 +5,7 @@ import { Spinner } from '../ui/Spinner'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { Shield, ShieldOff, Save, Undo2, Sparkles, ExternalLink } from 'lucide-react'
 import { useToast } from '../../hooks/useToast'
-
-const FIELD_CLASSES = 'w-24 px-3 py-2 rounded-lg bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50'
+import { Input } from '../ui/form'
 
 // Reasonable defaults applied when the user enables protection from scratch.
 // Mirrors what GitHub.com offers as "recommended" toggles when you click
@@ -260,15 +259,18 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                         <div className="ml-6 space-y-2 pl-3 border-l-2 border-slate-200 dark:border-slate-700">
                             <div className="flex items-center gap-3">
                                 <label htmlFor="bp-min-reviews" className="text-sm text-slate-600 dark:text-slate-400">Required approvals</label>
-                                <input
-                                    id="bp-min-reviews"
-                                    type="number"
-                                    min={0}
-                                    max={6}
-                                    value={rules.requiredApprovingReviewCount}
-                                    onChange={(e) => setRules(r => ({ ...r, requiredApprovingReviewCount: Math.max(0, Math.min(6, Number(e.target.value) || 0)) }))}
-                                    disabled={archived || saving}
-                                    className={FIELD_CLASSES} />
+                                <div className="w-24">
+                                    <Input
+                                        id="bp-min-reviews"
+                                        type="number"
+                                        min={0}
+                                        max={6}
+                                        value={rules.requiredApprovingReviewCount}
+                                        onChange={(e) => setRules(r => ({ ...r, requiredApprovingReviewCount: Math.max(0, Math.min(6, Number(e.target.value) || 0)) }))}
+                                        disabled={archived || saving}
+                                        size="sm"
+                                    />
+                                </div>
                             </div>
                             <label className="flex items-center gap-2 cursor-pointer select-none">
                                 <input

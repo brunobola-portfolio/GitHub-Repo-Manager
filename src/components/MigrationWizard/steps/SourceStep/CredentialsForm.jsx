@@ -5,6 +5,7 @@ import {
 import { Spinner } from '../../../ui/Spinner'
 import CredCard from './CredCard'
 import { Button } from '../../../ui/Button'
+import { Input } from '../../../ui/form'
 
 /**
  * Credential selection cards (Server PAT / Personal PAT / OAuth) with per-mode
@@ -70,24 +71,23 @@ export default function CredentialsForm({
         >
           {source.credentialMode === 'personalPat' && (
             <div className="space-y-2">
-              <div className="relative">
-                <input
-                  type={showPat ? 'text' : 'password'}
-                  value={source.pat}
-                  onChange={(e) => onChange({ pat: e.target.value, validated: false })}
-                  placeholder="Paste your Personal Access Token"
-                  aria-label="Personal Access Token"
-                  className="w-full pr-10 pl-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 text-sm transition-colors"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPat((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                  aria-label={showPat ? 'Hide PAT' : 'Show PAT'}
-                >
-                  {showPat ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
+              <Input
+                type={showPat ? 'text' : 'password'}
+                value={source.pat}
+                onChange={(e) => onChange({ pat: e.target.value, validated: false })}
+                placeholder="Paste your Personal Access Token"
+                aria-label="Personal Access Token"
+                trailing={
+                  <button
+                    type="button"
+                    onClick={() => setShowPat((v) => !v)}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                    aria-label={showPat ? 'Hide PAT' : 'Show PAT'}
+                  >
+                    {showPat ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                }
+              />
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>Minimum scope: Code (Read). Add Work Items (Read) + Wiki (Read) for full migration.</span>
                 {source.org && (

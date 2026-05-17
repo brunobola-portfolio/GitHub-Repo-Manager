@@ -4,6 +4,7 @@ import { Button } from './ui/Button'
 import { Card } from './ui/Card'
 import { Loader2, Copy, CheckCircle2, AlertTriangle, Users, GitCommit, Settings2 } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
+import { Textarea } from './ui/form'
 import { reposApi } from '../api/repos'
 
 /**
@@ -257,12 +258,12 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
                             .github/CODEOWNERS preview
                         </p>
-                        <textarea
+                        <Textarea
                             readOnly
                             value={data.preview}
                             rows={Math.min(12, Math.max(4, data.preview.split('\n').length + 1))}
                             aria-label="CODEOWNERS preview"
-                            className="w-full font-mono text-xs p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/40 bg-slate-50 dark:bg-slate-900/60 text-slate-800 dark:text-slate-200"
+                            className="font-mono text-xs"
                             onFocus={(e) => e.target.select()}
                         />
                         <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">

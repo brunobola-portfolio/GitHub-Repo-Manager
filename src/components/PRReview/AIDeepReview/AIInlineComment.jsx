@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Sparkles } from 'lucide-react'
+import { Field, Textarea } from '../../ui/form'
 
 // Severity ranks → small badge colour. The card itself stays neutral
 // (matching InlineComment) so all three comment types (synced, pending,
@@ -47,26 +48,23 @@ export function AIInlineComment({ comment, idx, onDismiss, onEdit }) {
             <div aria-label="AI-generated comment" className={SHARED_CARD}>
                 {Header}
                 <div className="px-3 py-2 space-y-2">
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">
-                        Comment body
-                        <textarea
+                    <Field label="Comment body">
+                        <Textarea
                             aria-label="Comment body"
                             value={body}
                             onChange={(e) => setBody(e.target.value)}
-                            className="mt-1 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
                             rows={3}
                         />
-                    </label>
-                    <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">
-                        Suggestion (optional)
-                        <textarea
+                    </Field>
+                    <Field label="Suggestion (optional)">
+                        <Textarea
                             aria-label="Suggestion code"
                             value={suggestion}
                             onChange={(e) => setSuggestion(e.target.value)}
-                            className="mt-1 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 font-mono text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
                             rows={3}
+                            className="font-mono text-xs"
                         />
-                    </label>
+                    </Field>
                     <div className="flex gap-2 mt-2 justify-end">
                         <button
                             onClick={() => setEditing(false)}

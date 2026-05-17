@@ -3,6 +3,7 @@ import { useState } from 'react'
 // closest thematic fit for the in-chat GitHub preview badge.
 import { Wand2, X, ArrowRight, Check, Cloud, GitBranch } from 'lucide-react'
 import { Button } from './ui/Button'
+import { Field, Input } from './ui/form'
 
 /**
  * Inline chat card that drives the paste-URL flow.
@@ -68,28 +69,26 @@ export function AIAssistantPasteCard({ dialog, onAnswer, onConfirm, onCancel }) 
 
       {!isReady && question && (
         <form onSubmit={handleSubmit} className="space-y-2">
-          <label
+          <Field
+            label={question.label}
             htmlFor={`paste-dialog-${dialog.nextField}`}
-            className="block text-xs font-medium text-slate-700 dark:text-slate-200"
+            hint={question.hint}
           >
-            {question.label}
-          </label>
-          <div className="flex gap-2">
-            <input
-              id={`paste-dialog-${dialog.nextField}`}
-              type="text"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder={question.placeholder}
-              className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-            <Button type="submit" variant="primary" size="xs" disabled={!value.trim()}>
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          </div>
-          {question.hint && (
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">{question.hint}</p>
-          )}
+            <div className="flex gap-2">
+              <Input
+                id={`paste-dialog-${dialog.nextField}`}
+                type="text"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder={question.placeholder}
+                size="sm"
+                className="flex-1"
+              />
+              <Button type="submit" variant="primary" size="xs" disabled={!value.trim()}>
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </Field>
         </form>
       )}
 

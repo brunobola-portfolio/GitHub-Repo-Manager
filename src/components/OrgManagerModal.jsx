@@ -8,6 +8,7 @@ import { Button } from './ui/Button'
 import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
 import { EmptyState } from './ui/EmptyState'
+import { Field, Input, Textarea } from './ui/form'
 import { useToast } from '../hooks/useToast'
 import { getCsrfToken } from '../utils/api'
 
@@ -475,29 +476,24 @@ function DetailRow({ label, value, icon: IconComp, isLink }) {
 function EditField({ label, value, onChange, icon: IconComp, multiline }) {
     const fieldId = `orgmgr-field-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
     return (
-        <div>
-            <label htmlFor={fieldId} className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">{label}</label>
-            <div className="relative">
-                {IconComp && <IconComp className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />}
-                {multiline ? (
-                    <textarea
-                        id={fieldId}
-                        value={value}
-                        onChange={e => onChange(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        rows={3}
-                    />
-                ) : (
-                    <input
-                        id={fieldId}
-                        type="text"
-                        value={value}
-                        onChange={e => onChange(e.target.value)}
-                        className={`w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${IconComp ? 'pl-10' : ''}`}
-                    />
-                )}
-            </div>
-        </div>
+        <Field label={label} htmlFor={fieldId}>
+            {multiline ? (
+                <Textarea
+                    id={fieldId}
+                    value={value}
+                    onChange={e => onChange(e.target.value)}
+                    rows={3}
+                />
+            ) : (
+                <Input
+                    id={fieldId}
+                    type="text"
+                    value={value}
+                    onChange={e => onChange(e.target.value)}
+                    leadingIcon={IconComp}
+                />
+            )}
+        </Field>
     )
 }
 

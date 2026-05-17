@@ -3,6 +3,7 @@ import { Sparkles, Wand2, Loader2, CheckCircle2, AlertTriangle, Info } from 'luc
 import { Modal, ModalFooter } from '../ui/Modal'
 import { InsightCard } from '../ui/InsightCard'
 import { Button } from '../ui/Button'
+import { Input, Textarea } from '../ui/form'
 import { aiApi } from '../../api/ai'
 import { reposApi } from '../../api/repos'
 import { useToast } from '../../hooks/useToast'
@@ -60,7 +61,14 @@ function FieldCard({
         )
     }
 
-    const Tag = multiline ? 'textarea' : 'input'
+    const editProps = {
+        value: proposedValue,
+        onChange: (e) => onChange(e.target.value),
+        maxLength,
+        disabled: !useField,
+        'aria-label': `Edit ${label.toLowerCase()}`,
+        placeholder: !proposedValue ? `Enter ${label.toLowerCase()}…` : undefined,
+    }
 
     if (mode === 'manual') {
         return (
@@ -78,16 +86,11 @@ function FieldCard({
                         Use this {label.toLowerCase()}
                     </label>
                 </div>
-                <Tag
-                    value={proposedValue}
-                    onChange={(e) => onChange(e.target.value)}
-                    maxLength={maxLength}
-                    rows={multiline ? 3 : undefined}
-                    disabled={!useField}
-                    aria-label={`Edit ${label.toLowerCase()}`}
-                    placeholder={!proposedValue ? `Enter ${label.toLowerCase()}…` : undefined}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50"
-                />
+                {multiline ? (
+                    <Textarea rows={3} {...editProps} />
+                ) : (
+                    <Input type="text" {...editProps} />
+                )}
                 <p className="text-[11px] text-slate-400 mt-2">Edit manually, or use “Suggest with AI” below to fill this in.</p>
             </InsightCard>
         )
@@ -129,15 +132,25 @@ function FieldCard({
                             Restore
                         </button>
                     </div>
-                    <Tag
-                        value={proposedValue}
-                        onChange={(e) => onChange(e.target.value)}
-                        maxLength={maxLength}
-                        rows={multiline ? 3 : undefined}
-                        disabled={!useField}
-                        aria-label={`Proposed ${label.toLowerCase()}`}
-                        className="w-full px-3 py-2 text-sm rounded-lg border border-indigo-500/30 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 disabled:opacity-50"
-                    />
+                    {multiline ? (
+                        <Textarea
+                            value={proposedValue}
+                            onChange={(e) => onChange(e.target.value)}
+                            maxLength={maxLength}
+                            rows={3}
+                            disabled={!useField}
+                            aria-label={`Proposed ${label.toLowerCase()}`}
+                        />
+                    ) : (
+                        <Input
+                            type="text"
+                            value={proposedValue}
+                            onChange={(e) => onChange(e.target.value)}
+                            maxLength={maxLength}
+                            disabled={!useField}
+                            aria-label={`Proposed ${label.toLowerCase()}`}
+                        />
+                    )}
                 </div>
             </div>
         </InsightCard>

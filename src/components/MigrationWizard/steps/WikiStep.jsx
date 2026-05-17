@@ -3,6 +3,7 @@ import {
   AlertCircle, BookOpen, AlertTriangle,
 } from 'lucide-react'
 import { SectionSpinner } from '../../ui/Spinner'
+import { Switch } from '../../ui/form'
 import { getCsrfToken } from '../../../utils/api'
 
 /**
@@ -78,24 +79,11 @@ export default function WikiStep({ wiki, onUpdate, source }) {
     <div className="space-y-5">
       {/* Master Toggle */}
       <div className="flex items-center justify-end">
-        <button
-          type="button"
-          role="switch"
-          aria-checked={wiki.enabled}
-          aria-label="Migrate Wikis"
-          onClick={handleToggleEnabled}
-          className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ${
-            wiki.enabled
-              ? 'bg-indigo-500'
-              : 'bg-slate-300 dark:bg-slate-600'
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-              wiki.enabled ? 'translate-x-5' : 'translate-x-0'
-            }`}
-          />
-        </button>
+        <Switch
+          checked={wiki.enabled}
+          onChange={handleToggleEnabled}
+          label="Migrate Wikis"
+        />
       </div>
 
       {!wiki.enabled && (

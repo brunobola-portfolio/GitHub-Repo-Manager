@@ -4,6 +4,7 @@ import {
   Paperclip, History, LayoutGrid, Tag,
 } from 'lucide-react'
 import { SectionSpinner } from '../../ui/Spinner'
+import { Input, Switch } from '../../ui/form'
 import { getCsrfToken } from '../../../utils/api'
 
 const DEFAULT_LABEL_MAPPING = {
@@ -126,24 +127,11 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
       {/* Master Toggle */}
       <div className="flex items-center justify-between">
         <div />
-        <button
-          type="button"
-          role="switch"
-          aria-checked={workItems.enabled}
-          aria-label="Migrate Work Items"
-          onClick={handleToggleEnabled}
-          className={`relative w-12 h-7 rounded-full transition-colors shrink-0 ${
-            workItems.enabled
-              ? 'bg-indigo-500'
-              : 'bg-slate-300 dark:bg-slate-600'
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-              workItems.enabled ? 'translate-x-5' : 'translate-x-0'
-            }`}
-          />
-        </button>
+        <Switch
+          checked={workItems.enabled}
+          onChange={handleToggleEnabled}
+          label="Migrate Work Items"
+        />
       </div>
 
       {!workItems.enabled && (
@@ -287,12 +275,12 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
                         {type}
                       </td>
                       <td className="px-3 py-2">
-                        <input
+                        <Input
                           type="text"
+                          size="sm"
                           value={(workItems.labelMapping || {})[type] || ''}
                           onChange={(e) => handleLabelChange(type, e.target.value)}
                           aria-label={`GitHub label for ${type}`}
-                          className="w-full px-2 py-1 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                           placeholder={type.toLowerCase().replace(/\s+/g, '-')}
                         />
                       </td>

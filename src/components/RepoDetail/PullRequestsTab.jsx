@@ -7,6 +7,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { SectionPanel } from '../ui/SectionPanel'
 import { GitPullRequest, Plus, Loader2, CheckCircle2, XCircle, GitMerge, ExternalLink, ChevronDown, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
+import { Field, Input, Textarea } from '../ui/form'
 import { PRDetailPanel } from './PRDetailPanel'
 import { PRRiskBadges } from './PRRiskBadges'
 import { prActions } from '../../actions/prActions'
@@ -197,12 +198,10 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
 
             {showCreate && (
                 <Card className="p-4 space-y-3">
-                    <div>
-                        <label htmlFor="pr-title" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title *</label>
-                        <input id="pr-title" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                            placeholder="PR title" aria-label="Pull request title" aria-required="true"
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
-                    </div>
+                    <Field label="Title" required htmlFor="pr-title">
+                        <Input id="pr-title" type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                            placeholder="PR title" aria-label="Pull request title" aria-required="true" />
+                    </Field>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label htmlFor="pr-head-branch" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Head Branch *</label>
@@ -224,9 +223,8 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                     <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                                 </div>
                             ) : (
-                                <input id="pr-head-branch" type="text" value={form.head} onChange={e => setForm(f => ({ ...f, head: e.target.value }))}
-                                    placeholder="feature-branch" aria-label="Head branch" aria-required="true"
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
+                                <Input id="pr-head-branch" type="text" value={form.head} onChange={e => setForm(f => ({ ...f, head: e.target.value }))}
+                                    placeholder="feature-branch" aria-label="Head branch" aria-required="true" />
                             )}
                         </div>
                         <div>
@@ -249,18 +247,15 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                     <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                                 </div>
                             ) : (
-                                <input id="pr-base-branch" type="text" value={form.base} onChange={e => setForm(f => ({ ...f, base: e.target.value }))}
-                                    placeholder="main" aria-label="Base branch" aria-required="true"
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm" />
+                                <Input id="pr-base-branch" type="text" value={form.base} onChange={e => setForm(f => ({ ...f, base: e.target.value }))}
+                                    placeholder="main" aria-label="Base branch" aria-required="true" />
                             )}
                         </div>
                     </div>
-                    <div>
-                        <label htmlFor="pr-body" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
-                        <textarea id="pr-body" value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
-                            rows={3} placeholder="Describe the changes..." aria-label="Pull request description"
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm resize-none" />
-                    </div>
+                    <Field label="Description" htmlFor="pr-body">
+                        <Textarea id="pr-body" value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+                            rows={3} placeholder="Describe the changes..." aria-label="Pull request description" />
+                    </Field>
                     <div className="flex items-center justify-between">
                         <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer select-none">
                             <input

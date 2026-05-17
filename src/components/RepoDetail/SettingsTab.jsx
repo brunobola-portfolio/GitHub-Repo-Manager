@@ -12,8 +12,7 @@ import { aiApi } from '../../api/ai'
 import { reposApi } from '../../api/repos'
 import { Settings, Save, AlertTriangle, Lock, Globe, Webhook, Trash2, Plus, RefreshCw, Users, Tag, Sparkles, Undo2, X, GitMerge, Archive, ArchiveRestore } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
-
-const FIELD_CLASSES = 'w-full px-3 py-2.5 rounded-lg bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed'
+import { Field, Input } from '../ui/form'
 
 export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
     const { toast } = useToast()
@@ -270,30 +269,24 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                         <Sparkles className="w-3.5 h-3.5" /> Suggest with AI
                     </button>
                 </div>
-                <div>
-                    <label htmlFor="repo-settings-description" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Description</label>
-                    <input id="repo-settings-description" type="text" value={form.description}
+                <Field label="Description" htmlFor="repo-settings-description">
+                    <Input id="repo-settings-description" type="text" value={form.description}
                         onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                         placeholder="A short description of this repository"
-                        disabled={saving}
-                        className={FIELD_CLASSES} />
-                </div>
-                <div>
-                    <label htmlFor="repo-settings-homepage" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Website</label>
-                    <input id="repo-settings-homepage" type="url" value={form.homepage}
+                        disabled={saving} />
+                </Field>
+                <Field label="Website" htmlFor="repo-settings-homepage">
+                    <Input id="repo-settings-homepage" type="url" value={form.homepage}
                         onChange={e => setForm(f => ({ ...f, homepage: e.target.value }))}
                         placeholder="https://example.com"
-                        disabled={saving}
-                        className={FIELD_CLASSES} />
-                </div>
-                <div>
-                    <label htmlFor="repo-settings-default-branch" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Default Branch</label>
-                    <input id="repo-settings-default-branch" type="text" value={form.default_branch}
+                        disabled={saving} />
+                </Field>
+                <Field label="Default Branch" htmlFor="repo-settings-default-branch">
+                    <Input id="repo-settings-default-branch" type="text" value={form.default_branch}
                         onChange={e => setForm(f => ({ ...f, default_branch: e.target.value }))}
                         placeholder="main"
-                        disabled={saving}
-                        className={FIELD_CLASSES} />
-                </div>
+                        disabled={saving} />
+                </Field>
 
                 {/* Feature toggles */}
                 <div className="space-y-2">
@@ -384,13 +377,11 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
 
                 {showNewHook && (
                     <div className="space-y-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                        <div>
-                            <label htmlFor="webhook-payload-url" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Payload URL *</label>
-                            <input id="webhook-payload-url" type="url" value={hookForm.url}
+                        <Field label="Payload URL" required htmlFor="webhook-payload-url">
+                            <Input id="webhook-payload-url" type="url" value={hookForm.url}
                                 onChange={e => setHookForm(f => ({ ...f, url: e.target.value }))}
-                                placeholder="https://example.com/webhook"
-                                className={FIELD_CLASSES} />
-                        </div>
+                                placeholder="https://example.com/webhook" />
+                        </Field>
                         <div className="flex gap-2">
                             <Button size="sm" variant="secondary" onClick={() => setShowNewHook(false)}>Cancel</Button>
                             <Button size="sm" onClick={createHook} disabled={!hookForm.url}>Create</Button>
@@ -530,20 +521,22 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                     ))}
                 </div>
                 <div className="flex items-center gap-2">
-                    <input
-                        type="text"
-                        value={newTopicInput}
-                        onChange={(e) => setNewTopicInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault()
-                                handleAddTopic()
-                            }
-                        }}
-                        placeholder="add-a-topic"
-                        disabled={topicsSaving || repoData.archived}
-                        aria-label="Add a topic"
-                        className={FIELD_CLASSES + ' flex-1'} />
+                    <div className="flex-1">
+                        <Input
+                            type="text"
+                            value={newTopicInput}
+                            onChange={(e) => setNewTopicInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault()
+                                    handleAddTopic()
+                                }
+                            }}
+                            placeholder="add-a-topic"
+                            disabled={topicsSaving || repoData.archived}
+                            aria-label="Add a topic"
+                        />
+                    </div>
                     <Button
                         variant="secondary"
                         size="sm"

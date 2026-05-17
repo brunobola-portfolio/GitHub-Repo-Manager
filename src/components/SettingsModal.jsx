@@ -13,6 +13,7 @@ import { DangerZoneSection } from './Settings/DangerZoneSection'
 import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
 import { Button } from './ui/Button'
+import { Input, Switch } from './ui/form'
 import { ProbeStatsSection } from './Settings/ProbeStatsSection'
 import { getCsrfToken } from '../utils/api'
 
@@ -213,17 +214,11 @@ function GeneralTabContent({
                     <div className="mt-3 space-y-2.5 flex-1">
                         <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                             <span className="text-sm text-slate-600 dark:text-slate-400">Enable stats caching</span>
-                            <button
-                                role="switch"
-                                aria-checked={cacheSettings.enabled}
-                                aria-label="Enable stats caching"
-                                onClick={() => setCacheSettings({ ...cacheSettings, enabled: !cacheSettings.enabled })}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${cacheSettings.enabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
-                            >
-                                <span
-                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${cacheSettings.enabled ? 'translate-x-6' : 'translate-x-1'}`}
-                                />
-                            </button>
+                            <Switch
+                                checked={cacheSettings.enabled}
+                                onChange={(v) => setCacheSettings({ ...cacheSettings, enabled: v })}
+                                label="Enable stats caching"
+                            />
                         </div>
 
                         {cacheSettings.enabled && (
@@ -286,18 +281,21 @@ function GeneralTabContent({
 
                         <div className="flex items-center justify-between gap-3 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                             <span className="text-sm text-slate-600 dark:text-slate-400 min-w-0">Max retries for failed tasks</span>
-                            <input
-                                type="number"
-                                min="1"
-                                max="5"
-                                value={migrationSettings.maxRetries}
-                                onChange={(e) => {
-                                    const val = Math.min(5, Math.max(1, parseInt(e.target.value) || 1))
-                                    setMigrationSettings({ ...migrationSettings, maxRetries: val })
-                                }}
-                                aria-label="Max retries for failed tasks"
-                                className="w-16 px-2 py-1 text-sm text-center border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-indigo-500 flex-shrink-0 tabular-nums"
-                            />
+                            <div className="w-16 flex-shrink-0">
+                                <Input
+                                    type="number"
+                                    size="sm"
+                                    min="1"
+                                    max="5"
+                                    value={migrationSettings.maxRetries}
+                                    onChange={(e) => {
+                                        const val = Math.min(5, Math.max(1, parseInt(e.target.value) || 1))
+                                        setMigrationSettings({ ...migrationSettings, maxRetries: val })
+                                    }}
+                                    aria-label="Max retries for failed tasks"
+                                    className="text-center tabular-nums"
+                                />
+                            </div>
                         </div>
                     </div>
                 </InsightCard>
