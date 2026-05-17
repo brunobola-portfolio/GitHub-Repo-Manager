@@ -24,6 +24,7 @@ import { OrganizationCard } from './OrganizationCard'
 import { shouldShowCategory, aggregateRepoStats, aggregateLanguages, calculateActivityMetrics } from '../../utils/statsAggregator'
 import { useModal } from '../../hooks/useModal'
 import { Skeleton } from '../ui/Skeleton'
+import { RowIconBadge } from '../ui/RowIconBadge'
 import { motion } from 'framer-motion'
 
 /**
@@ -343,9 +344,7 @@ export function DashboardPremium({
                                 const inner = (
                                     <>
                                         <div className="flex items-center gap-3 mb-3">
-                                            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-                                                <Users className="w-5 h-5 text-indigo-500" />
-                                            </div>
+                                            <RowIconBadge icon={Users} tone="indigo" size="lg" surface="soft" />
                                             <div className="min-w-0">
                                                 <h3 className="font-bold text-slate-900 dark:text-white truncate">
                                                     {team.name}
@@ -495,9 +494,7 @@ function HealthOverview({ repos, openModalWithData }) {
                         onClick={() => openModalWithData('showCommunityHealth', repo)}
                         className="flex items-center gap-3 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:border-emerald-300 dark:hover:border-emerald-500/40 text-left transition-all group ds-focus-ring"
                     >
-                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                            <Heart className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                        </div>
+                        <RowIconBadge icon={Heart} tone="emerald" size="lg" surface="soft" />
                         <div className="min-w-0 flex-1">
                             <h4 className="font-semibold text-sm text-slate-900 dark:text-white truncate">
                                 {repo.name}

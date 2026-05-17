@@ -1,22 +1,22 @@
 /**
- * RowIconBadge — small tinted-square icon container used on the left
- * edge of list rows (PR rows, issue rows, activity events, sidebar
- * notification rows). Before this primitive, the same
- * `p-1.5 rounded-lg bg-{tone}-100 dark:bg-{tone}-900/30 text-{tone}-600
- * dark:text-{tone}-400` snippet was repeated across 8+ files with
- * subtle drift (some used `mt-0.5`, some `rounded-md` instead of
- * `rounded-lg`, some forgot `flex-shrink-0`).
+ * RowIconBadge — small tinted icon container used on the left edge of
+ * list rows, section headers, and the leading slot of cards. Before
+ * this primitive, the same `p-X rounded-Y bg-{tone}-{shade} text-{tone}-{shade}`
+ * snippet was inlined across 15+ files with subtle drift.
  *
- * Pass the lucide icon component as `icon` and pick a tone. The size
- * defaults to `sm` (32px tile, 14px icon) which matches the current
- * row designs; bump to `md` (36px tile, 18px icon) when the row has
- * larger primary content.
+ * Two surface treatments:
+ *   - `solid` (default): bg-{tone}-100 / dark:bg-{tone}-900/30 — opaque
+ *     pastel tile, the row-icon look used in WorkBoard tabs, Sidebar
+ *     activity feed and release badges.
+ *   - `soft`: bg-{tone}-500/10 — translucent tile, the section-header
+ *     look used in DashboardPremium category icons, Settings headers,
+ *     and stat-card icon slots.
  *
- *   <RowIconBadge icon={GitPullRequest} tone="purple" />
- *   <RowIconBadge icon={CircleDot} tone="amber" size="md" />
+ *   <RowIconBadge icon={GitPullRequest} tone="purple" />            // solid sm
+ *   <RowIconBadge icon={Heart} tone="emerald" size="lg" surface="soft" />
  */
 
-const TONE_CLASSES = {
+const SOLID_TONES = {
     purple:  'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
     amber:   'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
     emerald: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
@@ -28,21 +28,36 @@ const TONE_CLASSES = {
     slate:   'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300',
 }
 
+const SOFT_TONES = {
+    purple:  'bg-purple-500/10  text-purple-600 dark:text-purple-400',
+    amber:   'bg-amber-500/10   text-amber-600 dark:text-amber-400',
+    emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+    blue:    'bg-blue-500/10    text-blue-600 dark:text-blue-400',
+    indigo:  'bg-indigo-500/10  text-indigo-600 dark:text-indigo-400',
+    sky:     'bg-sky-500/10     text-sky-600 dark:text-sky-400',
+    rose:    'bg-rose-500/10    text-rose-600 dark:text-rose-400',
+    red:     'bg-red-500/10     text-red-600 dark:text-red-400',
+    slate:   'bg-slate-500/10   text-slate-600 dark:text-slate-300',
+}
+
 const SIZE_CLASSES = {
-    sm: { wrap: 'p-1.5 rounded-lg', icon: 'w-3.5 h-3.5' },
-    md: { wrap: 'p-2 rounded-xl',   icon: 'w-4 h-4' },
-    lg: { wrap: 'p-2.5 rounded-xl', icon: 'w-5 h-5' },
+    sm: { wrap: 'p-1.5 rounded-lg',          icon: 'w-3.5 h-3.5' },
+    md: { wrap: 'p-2 rounded-xl',            icon: 'w-4 h-4' },
+    lg: { wrap: 'w-10 h-10 rounded-xl',      icon: 'w-5 h-5' },
+    xl: { wrap: 'w-12 h-12 rounded-2xl',     icon: 'w-6 h-6' },
 }
 
 export function RowIconBadge({
     icon: Icon,
     tone = 'indigo',
     size = 'sm',
+    surface = 'solid',
     className = '',
     iconClassName = '',
     ariaLabel,
 }) {
-    const toneClass = TONE_CLASSES[tone] || TONE_CLASSES.indigo
+    const palette = surface === 'soft' ? SOFT_TONES : SOLID_TONES
+    const toneClass = palette[tone] || palette.indigo
     const sizeClass = SIZE_CLASSES[size] || SIZE_CLASSES.sm
     return (
         <span

@@ -3,6 +3,7 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
+import { RowIconBadge } from '../ui/RowIconBadge'
 import { SectionPanel } from '../ui/SectionPanel'
 import { Tag, Plus, Trash2, Loader2, ExternalLink, CheckCircle2, XCircle, Package, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
@@ -144,9 +145,7 @@ export function ReleasesTab({ api }) {
                 {releases.map(r => (
                     <Card key={r.id} className="p-4">
                         <div className="flex items-start gap-3">
-                            <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 mt-0.5">
-                                <Package className="w-4 h-4" />
-                            </div>
+                            <RowIconBadge icon={Package} tone="emerald" size="md" className="mt-0.5" />
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className="font-bold text-slate-900 dark:text-slate-100">{r.name || r.tag_name}</span>

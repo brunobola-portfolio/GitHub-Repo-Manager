@@ -6,6 +6,7 @@ import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
+import { RowIconBadge } from '../ui/RowIconBadge'
 import { useModal } from '../../hooks/useModal'
 import { UsageDashboard } from './UsageDashboard'
 import { formatDate as formatDateBase } from '../../utils/format'
@@ -373,9 +374,7 @@ export function LicensePlanSection() {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-purple-500" />
-                </div>
+                <RowIconBadge icon={Shield} tone="purple" size="lg" surface="soft" />
                 <div>
                     <h2 className="text-base font-semibold text-slate-900 dark:text-white">License & Plan</h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">Manage your license, plan and usage</p>

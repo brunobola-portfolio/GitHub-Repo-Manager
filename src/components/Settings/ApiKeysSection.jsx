@@ -8,6 +8,7 @@ import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
 import { Skeleton } from '../ui/Skeleton'
 import { Field, Input } from '../ui/form'
+import { RowIconBadge } from '../ui/RowIconBadge'
 import { formatDate as formatDateBase } from '../../utils/format'
 import { getCsrfToken } from '../../utils/api'
 
@@ -410,9 +411,7 @@ export function ApiKeysSection() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-                        <Key className="w-5 h-5 text-indigo-500" />
-                    </div>
+                    <RowIconBadge icon={Key} tone="indigo" size="lg" surface="soft" />
                     <div>
                         <h2 className="text-base font-semibold text-slate-900 dark:text-white">API Keys</h2>
                         <p className="text-xs text-slate-500 dark:text-slate-400">Manage programmatic access to the API</p>
