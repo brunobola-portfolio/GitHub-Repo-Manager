@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ExternalLink, ChevronUp, ChevronDown } from 'lucide-react'
 import { Drawer } from '../../../ui/Drawer'
+import { Tooltip } from '../../../ui/Tooltip'
 import { RepoMetaBadges } from '../../ui/repo/RepoMetaBadges'
 import { RepoRiskReport } from '../../ui/repo/RepoRiskReport'
 import { getCsrfToken } from '../../../../utils/api'
@@ -64,12 +65,26 @@ export function RepoDetailPanel({ repo, source, onClose, onPrev, onNext, onRiskA
           </a>
         )}
         <div className="ml-auto flex items-center gap-1">
-          <button type="button" onClick={onPrev} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Previous repo">
-            <ChevronUp className="w-3.5 h-3.5" />
-          </button>
-          <button type="button" onClick={onNext} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Next repo">
-            <ChevronDown className="w-3.5 h-3.5" />
-          </button>
+          <Tooltip label="Previous repo">
+            <button
+              type="button"
+              onClick={onPrev}
+              className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
+              aria-label="Previous repo"
+            >
+              <ChevronUp className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
+          <Tooltip label="Next repo">
+            <button
+              type="button"
+              onClick={onNext}
+              className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
+              aria-label="Next repo"
+            >
+              <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
         </div>
       </div>
 

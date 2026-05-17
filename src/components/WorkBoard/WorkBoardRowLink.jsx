@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { ExternalLink } from 'lucide-react'
+import { Tooltip } from '../ui/Tooltip'
 
 /**
  * Shared row-wrapper for every Work Board tab. Click the row → open the
@@ -64,17 +65,18 @@ export function WorkBoardRowLink({
             >
                 {children}
             </div>
-            <a
-                href={itemUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                aria-label="Open on GitHub"
-                title="Open on GitHub"
-                className="absolute top-2 right-2 p-1.5 rounded-md text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
-            >
-                <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-            </a>
+            <Tooltip label="Open on GitHub">
+                <a
+                    href={itemUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label="Open on GitHub"
+                    className="absolute top-2 right-2 p-1.5 rounded-md text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity ds-focus-ring"
+                >
+                    <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                </a>
+            </Tooltip>
         </div>
     )
 }

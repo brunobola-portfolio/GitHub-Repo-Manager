@@ -84,7 +84,7 @@ export function WorkBoardRowMenu({ repoFullName, itemUrl, itemType, itemNumber }
                     aria-label="More actions"
                     onClick={stopBubble}
                     onMouseDown={stopBubble}
-                    className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 focus-within:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                    className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 focus-within:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ds-focus-ring"
                 >
                     <MoreHorizontal className="w-4 h-4 text-slate-500" />
                 </button>
