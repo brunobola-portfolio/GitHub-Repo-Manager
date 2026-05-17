@@ -25,9 +25,11 @@ export function MobileFAB({ icon: Icon, label, onClick, shiftAboveBottomBar = fa
 	if (!isMobile) return null
 
 	// Stacked positioning: MobileQuickActionsFab sits at bottom-72px (56px nav + 16px gap),
-	// so this FAB sits at 72 + 56 (its own height) + 12 = 140px to clear it.
+	// so its own top edge is at 128px. We sit at 72 + 56 + 24 = 152px so there is
+	// a comfortable 24px breathing gap between the two FABs (12px was too tight —
+	// they read as a single overlapping blob instead of two distinct actions).
 	const bottomClass = shiftAboveBottomBar
-		? 'bottom-[calc(140px+env(safe-area-inset-bottom,0px))]'
+		? 'bottom-[calc(152px+env(safe-area-inset-bottom,0px))]'
 		: 'bottom-6'
 
 	return (

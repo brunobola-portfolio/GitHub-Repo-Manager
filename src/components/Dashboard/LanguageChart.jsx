@@ -4,6 +4,7 @@ import { Code2 } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
 import { motion } from 'framer-motion'
+import { useMeasuredSize } from '../../hooks/useMeasuredSize'
 
 // GitHub-style language colors — covers the most common languages
 const LANGUAGE_COLORS = {
@@ -78,6 +79,10 @@ export function LanguageChart({ data = [], loading }) {
     const itemsPerColumn = Math.ceil(enrichedData.length / 2)
     const legendHeight = Math.max(itemsPerColumn * 32, 200)
     const chartHeight = Math.max(legendHeight + 60, 340)
+    // Gate ResponsiveContainer on a measured >0 size so recharts never
+    // sees a 0×0 viewport (silences width(0)/height(0) warnings).
+    const [pieRef, { width: pieMeasuredW, height: pieMeasuredH }] = useMeasuredSize()
+    const pieReady = pieMeasuredW > 0 && pieMeasuredH > 0
 
     return (
         <motion.div
@@ -127,14 +132,15 @@ export function LanguageChart({ data = [], loading }) {
                             style={{ minHeight: `${chartHeight}px` }}
                         >
                             {/* Chart */}
-                            <div style={{ maxWidth: '280px', width: '100%', height: '280px', overflow: 'hidden' }}>
+                            <div
+                                ref={pieRef}
+                                style={{ maxWidth: '280px', width: '100%', height: '280px', overflow: 'hidden' }}
+                            >
+                                {pieReady && (
                                 <ResponsiveContainer
                                     width="100%"
                                     height="100%"
-                                    minWidth={0}
-                                    minHeight={0}
                                     debounce={200}
-                                    initialDimension={{ width: 280, height: 280 }}
                                 >
                                     <PieChart>
                                         <Pie
@@ -173,6 +179,7 @@ export function LanguageChart({ data = [], loading }) {
                                     />
                                 </PieChart>
                             </ResponsiveContainer>
+                                )}
                             </div>
 
                             {/* Language Legend - Dynamic and scrollable */}

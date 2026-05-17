@@ -4,6 +4,7 @@ import { Activity } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
 import { motion } from 'framer-motion'
+import { useMeasuredSize } from '../../hooks/useMeasuredSize'
 
 /**
  * ActivityChart - Timeline chart showing commits, PRs, and issues
@@ -58,6 +59,11 @@ export function ActivityChart({ activity = [], timeRange, loading }) {
 
     // Calculate height to match LanguageChart
     const chartHeight = 340
+    // Gate ResponsiveContainer on a measured >0 size so recharts never
+    // sees a 0×0 viewport (which logs noisy width/height warnings on
+    // every initial paint and collapse/expand cycle).
+    const [chartRef, { width: measuredWidth, height: measuredHeight }] = useMeasuredSize()
+    const chartReady = measuredWidth > 0 && measuredHeight > 0
 
     return (
         <motion.div
@@ -78,14 +84,15 @@ export function ActivityChart({ activity = [], timeRange, loading }) {
                 {loading ? (
                     <Skeleton className="w-full rounded-xl" style={{ height: `${chartHeight}px` }} />
                 ) : (
-                    <div style={{ height: `${chartHeight}px`, width: '100%', overflow: 'hidden' }}>
+                    <div
+                        ref={chartRef}
+                        style={{ height: `${chartHeight}px`, width: '100%', overflow: 'hidden' }}
+                    >
+                        {chartReady && (
                         <ResponsiveContainer
                             width="100%"
                             height="100%"
-                            minWidth={0}
-                            minHeight={0}
                             debounce={200}
-                            initialDimension={{ width: 320, height: chartHeight }}
                         >
                         <LineChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="var(--ds-chart-grid)" opacity={0.1} vertical={false} />
@@ -139,6 +146,7 @@ export function ActivityChart({ activity = [], timeRange, loading }) {
                             />
                         </LineChart>
                     </ResponsiveContainer>
+                        )}
                     </div>
                 )}
             </Card>

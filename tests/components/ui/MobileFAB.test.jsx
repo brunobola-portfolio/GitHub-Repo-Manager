@@ -46,9 +46,10 @@ describe('MobileFAB', () => {
 		useMobileBreakpoint.mockReturnValue(true)
 		render(<MobileFAB icon={Search} label="Search" onClick={() => { }} shiftAboveBottomBar />)
 		const btn = screen.getByRole('button')
-		// bottom-[calc(140px+env(safe-area-inset-bottom,0px))] — 140px clears the
-		// MobileQuickActionsFab (which sits at bottom-72 in Header.jsx).
-		expect(btn.className).toMatch(/bottom-\[calc\(140px/)
+		// bottom-[calc(152px+env(safe-area-inset-bottom,0px))] — clears the
+		// MobileQuickActionsFab (top edge at 128px) with a 24px breathing gap
+		// so the two FABs read as distinct actions instead of one blob.
+		expect(btn.className).toMatch(/bottom-\[calc\(152px/)
 	})
 
 	it('uses bottom-6 by default', () => {
