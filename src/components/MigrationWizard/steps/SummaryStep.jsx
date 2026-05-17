@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { migrationApi } from '../../../api/migration'
 import { SectionSpinner } from '../../ui/Spinner'
+import { RowIconBadge } from '../../ui/RowIconBadge'
 import { formatDurationSeconds } from '../../../utils/format'
 import { OversizedFilesPanel } from '../ui/OversizedFilesPanel'
 import { decodeOversizedError } from '../ui/oversizedError'
@@ -466,9 +467,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, pre
   if (error) {
     return (
       <div className="flex flex-col items-center gap-3 p-12 text-center">
-        <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center">
-          <XCircle className="w-6 h-6 text-red-500" />
-        </div>
+        <RowIconBadge icon={XCircle} tone="red" size="xl" surface="soft" />
         <div>
           <p className="text-sm font-medium text-red-600 dark:text-red-400">Failed to load report</p>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{error}</p>

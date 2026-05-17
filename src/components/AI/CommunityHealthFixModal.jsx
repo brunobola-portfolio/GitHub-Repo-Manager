@@ -6,6 +6,7 @@ import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
 import { AIErrorState } from '../ui/AIErrorState'
 import { Input, Textarea } from '../ui/form'
+import { RowIconBadge } from '../ui/RowIconBadge'
 import { getCsrfToken } from '../../utils/api'
 
 /**
@@ -138,9 +139,7 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 		if (state === 'error' && aiNotConfigured) {
 			return (
 				<div role="alert" className="flex flex-col items-center text-center gap-4 py-8">
-					<div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
-						<Sparkles className="w-6 h-6 text-indigo-500" aria-hidden="true" />
-					</div>
+					<RowIconBadge icon={Sparkles} tone="indigo" size="xl" surface="soft" />
 					<div>
 						<h3 className="font-bold text-slate-900 dark:text-white text-lg">AI is not configured</h3>
 						<p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -176,9 +175,7 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 		if (state === 'committed') {
 			return (
 				<div className="flex flex-col items-center text-center gap-4 py-8">
-					<div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
-						<CheckCircle className="w-6 h-6 text-emerald-500" aria-hidden="true" />
-					</div>
+					<RowIconBadge icon={CheckCircle} tone="emerald" size="xl" surface="soft" />
 					<div>
 						<h3 className="font-bold text-slate-900 dark:text-white text-lg">
 							{committedResult?.mode === 'pr-fallback' || committedResult?.mode === 'pr'

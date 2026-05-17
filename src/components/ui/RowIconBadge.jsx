@@ -18,6 +18,7 @@
 
 const SOLID_TONES = {
     purple:  'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
+    violet:  'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400',
     amber:   'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
     emerald: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
     blue:    'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
@@ -30,6 +31,7 @@ const SOLID_TONES = {
 
 const SOFT_TONES = {
     purple:  'bg-purple-500/10  text-purple-600 dark:text-purple-400',
+    violet:  'bg-violet-500/15  text-violet-600 dark:text-violet-400',
     amber:   'bg-amber-500/10   text-amber-600 dark:text-amber-400',
     emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
     blue:    'bg-blue-500/10    text-blue-600 dark:text-blue-400',
