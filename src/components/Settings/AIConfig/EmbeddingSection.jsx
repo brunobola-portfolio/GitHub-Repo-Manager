@@ -10,6 +10,7 @@ import { useEmbeddingModels } from '../../../hooks/useProviderModels'
 import { PROVIDERS_NEEDING_EMBEDDING_OVERRIDE, INPUT_CLS, LABEL_CLS } from './constants'
 import { PriceHint } from './PriceHint'
 import { ModelCombobox } from './ModelCombobox'
+import { Field, Input } from '../../ui/form'
 
 // ---------------------------------------------------------------------------
 // Sub-component: EmbeddingSection
@@ -90,11 +91,11 @@ export function EmbeddingSection({ form, onChange }) {
 
             {form.embeddingProvider && (
                 <>
-                    <div>
-                        <label htmlFor="embedding-api-key" className={LABEL_CLS}>
-                            {PROVIDER_DEFAULTS[form.embeddingProvider]?.apiKeyLabel ?? 'API Key'}
-                        </label>
-                        <input
+                    <Field
+                        label={PROVIDER_DEFAULTS[form.embeddingProvider]?.apiKeyLabel ?? 'API Key'}
+                        htmlFor="embedding-api-key"
+                    >
+                        <Input
                             id="embedding-api-key"
                             type="password"
                             value={form.embeddingApiKey ?? ''}
@@ -104,10 +105,9 @@ export function EmbeddingSection({ form, onChange }) {
                                     ? '•••••••• (leave empty to keep current)'
                                     : (PROVIDER_DEFAULTS[form.embeddingProvider]?.apiKeyPlaceholder ?? '')
                             }
-                            className={INPUT_CLS}
                             autoComplete="off"
                         />
-                    </div>
+                    </Field>
                     <div>
                         <label htmlFor="embedding-model" className={LABEL_CLS}>Embedding Model</label>
                         <ModelCombobox

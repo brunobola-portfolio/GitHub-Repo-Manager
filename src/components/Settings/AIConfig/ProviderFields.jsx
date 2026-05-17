@@ -1,9 +1,10 @@
-import { AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 import { PROVIDER_DEFAULTS } from '../../../utils/providerCapabilities'
 import { useCompletionModels } from '../../../hooks/useProviderModels'
-import { INPUT_CLS, LABEL_CLS } from './constants'
+import { LABEL_CLS } from './constants'
 import { PriceHint } from './PriceHint'
 import { ModelCombobox } from './ModelCombobox'
+import { Field, Input } from '../../ui/form'
 
 // ---------------------------------------------------------------------------
 // Sub-component: ProviderFields
@@ -19,17 +20,25 @@ export function ProviderFields({ provider, form, onChange, errors }) {
         <div className="space-y-3">
             {/* API Key */}
             {(defaults.apiKeyRequired || provider !== 'local') && (
-                <div>
-                    <div className="flex items-center justify-between mb-1">
-                        <label htmlFor="completion-api-key" className={`${LABEL_CLS} mb-0`}>{defaults.apiKeyLabel}</label>
-                        {form.hasCompletionKey && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-                                <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
-                                Stored
-                            </span>
-                        )}
-                    </div>
-                    <input
+                <Field
+                    label={
+                        <span className="flex items-center justify-between w-full">
+                            <span>{defaults.apiKeyLabel}</span>
+                            {form.hasCompletionKey && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                                    <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                                    Stored
+                                </span>
+                            )}
+                        </span>
+                    }
+                    htmlFor="completion-api-key"
+                    hint={form.hasCompletionKey && !form.completionApiKey
+                        ? 'Your key is encrypted at rest. Leave empty to keep the current one; type a new one to replace it.'
+                        : undefined}
+                    error={errors.completionApiKey}
+                >
+                    <Input
                         id="completion-api-key"
                         type="password"
                         value={form.completionApiKey ?? ''}
@@ -39,36 +48,22 @@ export function ProviderFields({ provider, form, onChange, errors }) {
                                 ? '•••••••• (leave empty to keep current)'
                                 : defaults.apiKeyPlaceholder
                         }
-                        className={`${INPUT_CLS} ${errors.completionApiKey ? 'border-red-400 dark:border-red-500 focus:ring-red-500' : ''}`}
                         autoComplete="off"
                     />
-                    {form.hasCompletionKey && !form.completionApiKey && !errors.completionApiKey && (
-                        <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                            Your key is encrypted at rest. Leave empty to keep the current one; type a new one to replace it.
-                        </p>
-                    )}
-                    {errors.completionApiKey && (
-                        <p role="alert" aria-live="polite" className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-                            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                            {errors.completionApiKey}
-                        </p>
-                    )}
-                </div>
+                </Field>
             )}
 
             {/* Endpoint URL (Local only) */}
             {defaults.showEndpointUrl && (
-                <div>
-                    <label htmlFor="completion-endpoint-url" className={LABEL_CLS}>Endpoint URL</label>
-                    <input
+                <Field label="Endpoint URL" htmlFor="completion-endpoint-url">
+                    <Input
                         id="completion-endpoint-url"
                         type="url"
                         value={form.completionEndpointUrl ?? ''}
                         onChange={(e) => onChange('completionEndpointUrl', e.target.value)}
                         placeholder={defaults.endpointPlaceholder}
-                        className={INPUT_CLS}
                     />
-                </div>
+                </Field>
             )}
 
             {/* Model override */}
@@ -84,7 +79,7 @@ export function ProviderFields({ provider, form, onChange, errors }) {
                     catalogueLabel={defaults.modelHelp}
                 />
                 {defaults.modelHelp && !defaults.modelHelpUrl && (
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{defaults.modelHelp}</p>
+                    <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{defaults.modelHelp}</p>
                 )}
                 <PriceHint modelName={form.completionModel || defaults.modelPlaceholder} />
             </div>

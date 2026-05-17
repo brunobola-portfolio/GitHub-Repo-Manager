@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { Button } from '../ui/Button'
+import { Field, Textarea } from '../ui/form'
 import { Loader2, CheckCircle2, XCircle, Sparkles } from 'lucide-react'
 import { fetchWithRetry } from '../../utils/api'
 import { formatUserError } from '../../utils/errors'
@@ -96,24 +97,23 @@ export function LicenseActivationModal({ isOpen, onClose }) {
           </p>
         )}
         {!result && (
-          <div>
-            <label htmlFor="license-key-input" className="text-xs font-medium text-slate-700 dark:text-slate-300">License key</label>
-            <textarea
+          <Field label="License key" htmlFor="license-key-input">
+            <Textarea
               id="license-key-input"
               value={keyInput}
               onChange={(e) => setKeyInput(e.target.value)}
               placeholder="grm_lic_eyJ..."
-              className="mt-1 w-full px-3 py-2.5 text-xs font-mono border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent ds-focus-ring"
+              className="font-mono text-xs"
               rows={5}
               autoFocus
             />
-          </div>
+          </Field>
         )}
         {error && (
-          <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-900 dark:text-red-300 text-sm flex gap-2" role="alert">
+          <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 text-rose-900 dark:text-rose-300 text-sm flex gap-2.5" role="alert">
             <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium">Activation failed</p>
+              <p className="font-semibold">Activation failed</p>
               <p className="text-xs mt-1">{error}</p>
             </div>
           </div>

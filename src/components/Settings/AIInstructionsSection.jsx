@@ -7,12 +7,11 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
 import { ConfirmModal } from '../ui/ConfirmModal'
+import { Field, Input, Textarea } from '../ui/form'
 import { useToast } from '../../hooks/useToast'
 import { apiCall } from '../../utils/api'
 
-const TEXTAREA_CLASSES = 'w-full px-3 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm font-mono leading-relaxed placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50'
-
-const READONLY_CLASSES = 'w-full px-3 py-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-mono leading-relaxed whitespace-pre-wrap break-words overflow-auto'
+const READONLY_CLASSES = 'w-full px-3.5 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70 text-slate-700 dark:text-slate-200 text-sm font-mono leading-relaxed whitespace-pre-wrap break-words overflow-auto'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -274,18 +273,19 @@ function PromptEditor({ entry, onSaved, onReset }) {
                             id={`prompt-tabpanel-${entry.key}-editor`}
                             aria-labelledby={`prompt-tab-${entry.key}-editor`}
                         >
-                            <label htmlFor={`prompt-editor-${entry.key}`} className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">Your prompt</label>
-                            <textarea
-                                id={`prompt-editor-${entry.key}`}
-                                rows={Math.min(20, Math.max(8, (draft.match(/\n/g)?.length ?? 0) + 4))}
-                                value={draft}
-                                onChange={(e) => setDraft(e.target.value)}
-                                placeholder={entry.defaultPrompt}
-                                disabled={saving || resetting}
-                                className={TEXTAREA_CLASSES}
-                                maxLength={8000}
-                            />
-                            <div className="flex items-center justify-between mt-1.5 gap-2 flex-wrap">
+                            <Field label="Your prompt" htmlFor={`prompt-editor-${entry.key}`}>
+                                <Textarea
+                                    id={`prompt-editor-${entry.key}`}
+                                    rows={Math.min(20, Math.max(8, (draft.match(/\n/g)?.length ?? 0) + 4))}
+                                    value={draft}
+                                    onChange={(e) => setDraft(e.target.value)}
+                                    placeholder={entry.defaultPrompt}
+                                    disabled={saving || resetting}
+                                    className="font-mono leading-relaxed"
+                                    maxLength={8000}
+                                />
+                            </Field>
+                            <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
                                 <p className="text-[11px] text-slate-400">
                                     {draft.length}/8000 chars
                                     {!entry.hasOverride && draft.length === 0 && ' · placeholder shows the default prompt'}
@@ -488,15 +488,15 @@ export function AIInstructionsSection() {
                                 </p>
                             </div>
                         </div>
-                        <div className="relative w-full sm:w-auto sm:flex-1 sm:max-w-sm">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-                            <input
+                        <div className="w-full sm:w-auto sm:flex-1 sm:max-w-sm">
+                            <Input
                                 type="search"
+                                size="sm"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 placeholder="Search prompts…"
                                 aria-label="Search prompts"
-                                className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
+                                leadingIcon={Search}
                             />
                         </div>
                     </div>
