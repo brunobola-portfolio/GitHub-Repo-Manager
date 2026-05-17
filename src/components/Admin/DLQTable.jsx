@@ -188,7 +188,7 @@ function RowActionButton({ onClick, label, icon: Icon, disabled, tone = 'slate' 
             disabled={disabled}
             title={label}
             aria-label={label}
-            className={`p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${toneClass}`}
+            className={`p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ds-focus-ring ${toneClass}`}
         >
             <Icon className="w-4 h-4" />
         </button>

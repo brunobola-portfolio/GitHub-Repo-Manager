@@ -189,7 +189,7 @@ export function AdminDLQPage() {
                             key={f.id}
                             type="button"
                             onClick={() => setFilter(f.id)}
-                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ds-focus-ring ${
                                 filter === f.id
                                     ? 'bg-indigo-600 text-white shadow-sm'
                                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
