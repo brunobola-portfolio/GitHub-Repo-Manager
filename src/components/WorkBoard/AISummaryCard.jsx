@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { clsx } from 'clsx'
 import { Sparkles, RefreshCw, X } from 'lucide-react'
+import { Tooltip } from '../ui/Tooltip'
 import { fetchWithRetry } from '../../utils/api'
 import { MOCK_MODE } from '../../config'
 import { AIErrorState } from '../ui/AIErrorState'
@@ -188,14 +189,29 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                     </span>
                 )}
                 <div className="flex gap-1 mt-1">
-                    <button type="button" onClick={fetchSummary} disabled={state.status === 'loading'} aria-label="Regenerate summary" title="Regenerate" className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-500 dark:text-slate-400 transition disabled:opacity-50">
-                        <motion.div animate={{ rotate: state.status === 'loading' ? 360 : 0 }} transition={{ duration: 0.6 }}>
-                            <RefreshCw className="w-4 h-4" />
-                        </motion.div>
-                    </button>
-                    <button type="button" onClick={() => setDismissed(true)} aria-label="Dismiss" title="Dismiss" className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-500 dark:text-slate-400 transition">
-                        <X className="w-4 h-4" />
-                    </button>
+                    <Tooltip label="Regenerate">
+                        <button
+                            type="button"
+                            onClick={fetchSummary}
+                            disabled={state.status === 'loading'}
+                            aria-label="Regenerate summary"
+                            className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-500 dark:text-slate-400 transition-colors disabled:opacity-50 ds-focus-ring"
+                        >
+                            <motion.div animate={{ rotate: state.status === 'loading' ? 360 : 0 }} transition={{ duration: 0.6 }}>
+                                <RefreshCw className="w-4 h-4" />
+                            </motion.div>
+                        </button>
+                    </Tooltip>
+                    <Tooltip label="Dismiss">
+                        <button
+                            type="button"
+                            onClick={() => setDismissed(true)}
+                            aria-label="Dismiss"
+                            className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-500 dark:text-slate-400 transition-colors ds-focus-ring"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </Tooltip>
                 </div>
             </div>
 
