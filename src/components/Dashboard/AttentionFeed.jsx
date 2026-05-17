@@ -184,7 +184,7 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
     return (
         <section
             aria-labelledby="attention-feed-title"
-            className={`rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 ${className}`.trim()}
+            className={`overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 ${className}`.trim()}
         >
             <div>
                 <header className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 border-b border-slate-200/60 dark:border-slate-800">
