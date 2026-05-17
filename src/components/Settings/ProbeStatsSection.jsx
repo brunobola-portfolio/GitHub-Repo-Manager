@@ -7,6 +7,7 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
 import { Skeleton } from '../ui/Skeleton'
+import { PanelHeader } from '../ui/PanelHeader'
 
 const STATE_META = {
     ok:           { Icon: CheckCircle2,  accent: 'text-emerald-500', dot: 'bg-emerald-500',  label: 'Healthy' },
@@ -106,32 +107,24 @@ export function ProbeStatsSection({ isAdmin = false }) {
     const total = stats?.total ?? 0
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
-                        AI key probes
-                    </p>
-                    <h3 className="mt-0.5 text-base font-bold text-slate-900 dark:text-slate-100 ds-font-display">
-                        {total > 0 ? `${total} probes since restart` : 'No probes yet this process'}
-                    </h3>
-                    {lastOutcomeRel && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            Last outcome {lastOutcomeRel}
-                        </p>
-                    )}
-                </div>
-                <div className="shrink-0 flex gap-2">
-                    <Button variant="secondary" size="sm" onClick={fetchStats} disabled={loading}>
-                        <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                        Refresh
-                    </Button>
-                    <Button variant="outline-danger" size="sm" onClick={handleReset} disabled={resetting || total === 0}>
-                        <RotateCcw className={`w-3.5 h-3.5 ${resetting ? 'animate-spin' : ''}`} />
-                        Reset
-                    </Button>
-                </div>
-            </div>
+        <div className="space-y-5">
+            <PanelHeader
+                eyebrow="AI key probes"
+                title={total > 0 ? `${total} probes since restart` : 'No probes yet this process'}
+                description={lastOutcomeRel ? `Last outcome ${lastOutcomeRel}` : undefined}
+                actions={
+                    <>
+                        <Button variant="secondary" size="sm" onClick={fetchStats} disabled={loading}>
+                            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </Button>
+                        <Button variant="outline-danger" size="sm" onClick={handleReset} disabled={resetting || total === 0}>
+                            <RotateCcw className={`w-3.5 h-3.5 ${resetting ? 'animate-spin' : ''}`} />
+                            Reset
+                        </Button>
+                    </>
+                }
+            />
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {ORDER.map((stateKey) => {

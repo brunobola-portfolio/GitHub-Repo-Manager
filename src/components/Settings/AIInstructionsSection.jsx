@@ -8,6 +8,7 @@ import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { Field, Input, Textarea } from '../ui/form'
+import { PanelHeader } from '../ui/PanelHeader'
 import { useToast } from '../../hooks/useToast'
 import { apiCall } from '../../utils/api'
 
@@ -459,18 +460,13 @@ export function AIInstructionsSection() {
     const totalCount = prompts.length
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-indigo-500/15">
-                    <Sparkles className="w-5 h-5 text-indigo-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Custom AI Instructions</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 max-w-2xl mt-0.5">
-                        Override the system prompts for individual AI features. Your customization replaces the default text the model receives. Tone, formatting, and language all become yours to control. The structural parts that the app needs (action whitelist, JSON schemas) are always preserved automatically.
-                    </p>
-                </div>
-            </div>
+        <div className="space-y-5">
+            <PanelHeader
+                eyebrowIcon={Sparkles}
+                eyebrow="AI Instructions"
+                title="Custom AI Instructions"
+                description="Override the system prompts for individual AI features. Your customization replaces the default text the model receives. Tone, formatting and language all become yours to control — structural parts (action whitelist, JSON schemas) are always preserved automatically."
+            />
 
             {!loading && !error && totalCount > 0 && (
                 <Card className="p-3.5">
