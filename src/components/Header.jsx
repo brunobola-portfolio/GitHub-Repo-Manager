@@ -19,6 +19,7 @@ import { useNotificationsDigest } from '../hooks/useNotificationsDigest'
 import { Drawer } from './ui/Drawer'
 import { MobileQuickActionsFab } from './MobileQuickActionsFab'
 import { Tooltip } from './ui/Tooltip'
+import { Spinner } from './ui/Spinner'
 
 export function Header({
     user,
@@ -608,7 +609,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
                     <button
                         type="button"
                         onClick={() => onMarkSeen?.()}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-300 transition-colors"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-300 transition-colors ds-focus-ring"
                     >
                         <Check className="w-3 h-3" aria-hidden="true" /> Mark as read
                     </button>
@@ -618,7 +619,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
             <div className="max-h-[420px] overflow-y-auto">
                 {loading && totalCount === 0 ? (
                     <div className="px-4 py-8 flex justify-center">
-                        <RefreshCw className="w-4 h-4 text-slate-400 animate-spin" />
+                        <Spinner size="sm" tone="muted" label="Loading digest" />
                     </div>
                 ) : totalCount === 0 ? (
                     <div className="px-4 py-10 text-center">
@@ -692,7 +693,7 @@ function DigestItemRow({ kind, item, onClick }) {
                 target={url ? '_blank' : undefined}
                 rel={url ? 'noopener noreferrer' : undefined}
                 onClick={() => onClick?.()}
-                className="group flex items-start gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
+                className="group flex items-start gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ds-focus-ring"
             >
                 <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">
