@@ -1,4 +1,5 @@
 import { Search, ArrowUpDown, LayoutList, Rows } from 'lucide-react'
+import { Input } from '../../../ui/form'
 
 const SORT_OPTIONS = [
   { value: 'name',     label: 'Name (A–Z)' },
@@ -10,15 +11,15 @@ const SORT_OPTIONS = [
 export function SearchAndSort({ query, onQuery, sortBy, onSort, viewMode, onViewMode }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" aria-hidden="true" />
-        <input
+      <div className="flex-1">
+        <Input
           type="text"
+          size="sm"
+          leadingIcon={Search}
           value={query}
           onChange={(e) => onQuery(e.target.value)}
           placeholder="Search repositories..."
           aria-label="Search repositories"
-          className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
         />
       </div>
       <div className="relative">

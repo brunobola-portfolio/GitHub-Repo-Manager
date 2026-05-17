@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { ChevronDown, ChevronRight, CheckCircle } from 'lucide-react'
 import { formatRelativeTime } from '../../../utils/format'
+import { Textarea } from '../../ui/form'
 
 /**
  * Compact avatar placeholder using the first letter of the username.
@@ -212,7 +213,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
           {/* Reply textarea */}
           {showReply && !isPending && (
             <div className="mt-3">
-              <textarea
+              <Textarea
                 ref={textareaRef}
                 value={replyText}
                 onChange={e => setReplyText(e.target.value)}
@@ -220,7 +221,6 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
                 rows={3}
                 placeholder="Reply… (Ctrl+Enter to submit, Esc to cancel)"
                 aria-label="Reply to comment"
-                className="w-full resize-y rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <div className="flex gap-2 mt-1.5 justify-end">
                 <button

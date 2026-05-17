@@ -10,6 +10,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { TrackedChip } from '../../WorkBoard/TrackedChip'
+import { Textarea } from '../../ui/form'
 
 const REVIEW_OPTIONS = [
   {
@@ -204,13 +205,12 @@ export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleVi
                 <label htmlFor="review-summary-body" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
                   Review summary <span className="font-normal text-slate-400">(optional)</span>
                 </label>
-                <textarea
+                <Textarea
                   id="review-summary-body"
                   value={reviewBody}
                   onChange={e => setReviewBody(e.target.value)}
                   rows={3}
                   placeholder="Leave a general comment on this pull request…"
-                  className="w-full resize-none rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 

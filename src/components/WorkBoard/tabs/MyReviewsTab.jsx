@@ -17,6 +17,7 @@ import { getCsrfToken } from '../../../utils/api'
 import { WorkBoardRowMenu } from '../WorkBoardRowMenu'
 import { WorkBoardRowLink } from '../WorkBoardRowLink'
 import { EmptyStateDiscovery } from '../EmptyStateDiscovery'
+import { Field, Textarea } from '../../ui/form'
 
 // ---------------------------------------------------------------------------
 // Module-level suggestion cache (expires after 30 min)
@@ -108,11 +109,11 @@ function ChipStrip({ review, hasAI, onSnooze, onPing }) {
                         className="z-[var(--ds-z-popover)] w-72 rounded-xl border border-white/10 bg-slate-900 p-3 shadow-xl"
                     >
                         <p className="mb-2 text-[11px] text-slate-400">AI draft — edit before sending</p>
-                        <textarea
+                        <Textarea
                             defaultValue={pingBody}
                             onChange={e => setPingBody(e.target.value)}
                             rows={3}
-                            className="w-full resize-none rounded-lg bg-slate-800 px-2 py-1.5 text-xs text-slate-200 outline-none focus:ring-1 focus:ring-indigo-500"
+                            aria-label="AI draft comment"
                         />
                         <div className="mt-2 flex gap-2 justify-end">
                             <button onClick={() => setPopoverOpen(false)} className="px-2 py-1 text-xs text-slate-400 hover:text-slate-200">Cancel</button>
@@ -306,16 +307,16 @@ function DraftCommentModal({ review, intent, onConfirm, onClose }) {
                         <Spinner size="sm" />
                     </div>
                 )}
-                <label htmlFor="my-reviews-draft-comment" className="sr-only">{title} body</label>
-                <textarea
-                    id="my-reviews-draft-comment"
-                    value={text}
-                    onChange={e => setText(e.target.value)}
-                    onClick={handleTextareaClick}
-                    placeholder={draftLoading ? 'Drafting review comment…' : ''}
-                    rows={5}
-                    className="w-full resize-none rounded-xl bg-slate-100 dark:bg-slate-800 px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:ring-1 focus:ring-indigo-500"
-                />
+                <Field label={`${title} body`} htmlFor="my-reviews-draft-comment" className="[&>label]:sr-only">
+                    <Textarea
+                        id="my-reviews-draft-comment"
+                        value={text}
+                        onChange={e => setText(e.target.value)}
+                        onClick={handleTextareaClick}
+                        placeholder={draftLoading ? 'Drafting review comment…' : ''}
+                        rows={5}
+                    />
+                </Field>
             </div>
             {!draftLoading && (
                 <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">

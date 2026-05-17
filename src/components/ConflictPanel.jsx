@@ -3,6 +3,7 @@ import { Trash2, Edit3, SkipForward } from 'lucide-react'
 import { formatFileSize, formatDate as formatDateBase } from '../utils/format'
 import { MS_PER_DAY } from '../utils/time'
 import { Button } from './ui/Button'
+import { Field, Input } from './ui/form'
 
 // --- Helper functions ---
 
@@ -169,20 +170,19 @@ export function ConflictPanel({ conflict, repoName, onResolve, resolution }) {
                 ) : pendingAction === 'rename' ? (
                     /* Rename flow */
                     <div className="space-y-2">
-                        <label
+                        <Field
+                            label="New repository name"
                             htmlFor={`conflict-rename-${repoName}`}
-                            className="block text-xs text-slate-600 dark:text-slate-400 font-medium"
                         >
-                            New repository name
-                        </label>
-                        <input
-                            id={`conflict-rename-${repoName}`}
-                            type="text"
-                            value={renameValue}
-                            onChange={(e) => setRenameValue(e.target.value)}
-                            aria-label="New repository name"
-                            className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
+                            <Input
+                                id={`conflict-rename-${repoName}`}
+                                type="text"
+                                size="sm"
+                                value={renameValue}
+                                onChange={(e) => setRenameValue(e.target.value)}
+                                aria-label="New repository name"
+                            />
+                        </Field>
                         <div className="flex gap-2">
                             <Button
                                 variant="primary"

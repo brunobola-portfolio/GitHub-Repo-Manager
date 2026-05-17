@@ -11,6 +11,7 @@ import { AIRunButton } from '../ui/AIRunButton'
 import { AIUnavailableBanner } from '../ui/AIUnavailableBanner'
 import { AIErrorState } from '../ui/AIErrorState'
 import { aiApi } from '../../api/ai'
+import { Field, Textarea } from '../ui/form'
 
 const ACTION_META = {
     create: { icon: FilePlus, color: 'text-emerald-600 dark:text-emerald-400', label: 'Create' },
@@ -98,22 +99,21 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
             {!plan && !loading && (
                 <div className="space-y-3">
                     <AIUnavailableBanner />
-                    <label className="block">
-                        <span className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                            Extra context (optional)
-                        </span>
-                        <textarea
-                            value={extra}
-                            onChange={e => setExtra(e.target.value.slice(0, 2000))}
-                            rows={3}
-                            maxLength={2000}
-                            placeholder="e.g. scope to the frontend, avoid DB migrations, reuse existing auth middleware…"
-                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm resize-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all"
-                        />
+                    <div>
+                        <Field label="Extra context (optional)" htmlFor="ai-issue-planner-extra">
+                            <Textarea
+                                id="ai-issue-planner-extra"
+                                value={extra}
+                                onChange={e => setExtra(e.target.value.slice(0, 2000))}
+                                rows={3}
+                                maxLength={2000}
+                                placeholder="e.g. scope to the frontend, avoid DB migrations, reuse existing auth middleware…"
+                            />
+                        </Field>
                         <span className="block text-[10px] text-right text-slate-400 mt-0.5">
                             {extra.length}/2000
                         </span>
-                    </label>
+                    </div>
                     <AIRunButton
                         size="sm"
                         onClick={generate}

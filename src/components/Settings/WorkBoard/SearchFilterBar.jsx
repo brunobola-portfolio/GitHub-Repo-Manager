@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useDebounce } from '../../../hooks/useDebounce'
+import { Input } from '../../ui/form'
 
 const SEARCH_DEBOUNCE_MS = 150
 
@@ -42,16 +43,15 @@ export function SearchFilterBar({ filters, countsBySignal, onChange }) {
 
     return (
         <div className="flex flex-col gap-2 p-3 border-b border-slate-200/40 dark:border-slate-700/40">
-            <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                    type="text"
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    placeholder="Search tracked repositories…"
-                    className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-            </div>
+            <Input
+                size="sm"
+                leadingIcon={Search}
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search tracked repositories…"
+                aria-label="Search tracked repositories"
+            />
 
             <div className="flex flex-wrap gap-1.5">
                 {SIGNAL_ORDER.filter(s => countsBySignal[s] > 0).map(signal => (

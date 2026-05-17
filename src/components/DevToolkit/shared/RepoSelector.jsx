@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { Search, ChevronDown } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { Input } from '../../ui/form'
 
 export function RepoSelector({ repos = [], selected, onSelect }) {
     const [open, setOpen] = useState(false)
@@ -45,17 +46,15 @@ export function RepoSelector({ repos = [], selected, onSelect }) {
                         className="absolute z-[var(--ds-z-popover)] mt-1 w-full max-h-60 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl"
                     >
                         <div className="sticky top-0 bg-white dark:bg-slate-900 p-2 border-b border-slate-100 dark:border-slate-800">
-                            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60">
-                                <Search className="w-3.5 h-3.5 text-slate-400" />
-                                <input
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    placeholder="Search repos..."
-                                    aria-label="Search repositories"
-                                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                                    autoFocus
-                                />
-                            </div>
+                            <Input
+                                size="sm"
+                                leadingIcon={Search}
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder="Search repos..."
+                                aria-label="Search repositories"
+                                autoFocus
+                            />
                         </div>
                         {filtered.length === 0 ? (
                             <div className="px-3 py-4 text-center text-xs text-slate-400">No repos found</div>

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { Pin, PinOff, ChevronDown, Search } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { Input } from '../../ui/form'
 
 export function RepoBadge({ repos = [], selectedRepo, isPinned, onSelectRepo, onTogglePin }) {
     const [open, setOpen] = useState(false)
@@ -66,10 +67,15 @@ export function RepoBadge({ repos = [], selectedRepo, isPinned, onSelectRepo, on
                         className="absolute z-[var(--ds-z-popover)] mt-1 left-0 w-80 max-h-60 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl"
                     >
                         <div className="sticky top-0 bg-white dark:bg-slate-900 p-2 border-b border-slate-100 dark:border-slate-800">
-                            <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60">
-                                <Search className="w-3.5 h-3.5 text-slate-400" />
-                                <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search repos..." className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500" autoFocus />
-                            </div>
+                            <Input
+                                size="sm"
+                                leadingIcon={Search}
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder="Search repos..."
+                                aria-label="Search repositories"
+                                autoFocus
+                            />
                         </div>
                         {filtered.length === 0 ? (
                             <div className="px-3 py-4 text-center text-xs text-slate-400">No repos found</div>

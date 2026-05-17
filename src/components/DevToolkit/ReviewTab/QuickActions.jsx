@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ThumbsUp, MessageSquare } from 'lucide-react'
 import { useToast } from '../../../hooks/useToast'
 import { getCsrfToken } from '../../../utils/api'
+import { Field, Textarea } from '../../ui/form'
 
 export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
     const { toast } = useToast()
@@ -36,16 +37,15 @@ export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
     if (action) {
         return (
             <div className="space-y-2 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-                <textarea
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder={action === 'APPROVE' ? 'Optional comment...' : 'Your comment...'}
-                    aria-label="Review comment"
-                    className="w-full h-20 px-3 py-2 text-sm bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 rounded-lg resize-none outline-none"
-                />
-                {error && (
-                    <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
-                )}
+                <Field error={error || undefined}>
+                    <Textarea
+                        rows={4}
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        placeholder={action === 'APPROVE' ? 'Optional comment...' : 'Your comment...'}
+                        aria-label="Review comment"
+                    />
+                </Field>
                 <div className="flex gap-2">
                     <button type="button" onClick={() => { setAction(null); setError(null) }} className="px-3 py-1 text-xs text-slate-500">Cancel</button>
                     <button

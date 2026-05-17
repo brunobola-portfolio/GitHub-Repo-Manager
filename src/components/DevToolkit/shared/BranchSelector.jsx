@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { GitBranch, ChevronDown, Star } from 'lucide-react'
+import { GitBranch, ChevronDown, Star, Search } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { Input } from '../../ui/form'
 
 export function BranchSelector({ branches = [], selected, onSelect, label, defaultBranch }) {
     const [open, setOpen] = useState(false)
@@ -54,12 +55,13 @@ export function BranchSelector({ branches = [], selected, onSelect, label, defau
                     >
                         {branches.length > 5 && (
                             <div className="sticky top-0 bg-white dark:bg-slate-900 p-2 border-b border-slate-100 dark:border-slate-800">
-                                <input
+                                <Input
+                                    size="sm"
+                                    leadingIcon={Search}
                                     value={query}
                                     onChange={(e) => setQuery(e.target.value)}
                                     placeholder="Search branches..."
                                     aria-label="Search branches"
-                                    className="w-full px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 text-sm outline-none placeholder:text-slate-400"
                                     autoFocus
                                 />
                             </div>

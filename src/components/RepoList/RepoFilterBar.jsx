@@ -7,6 +7,7 @@ import { Spinner } from '../ui/Spinner'
 import { Button } from '../ui/Button'
 import { Select } from '../ui/Select'
 import { Drawer } from '../ui/Drawer'
+import { Input } from '../ui/form'
 import { useMobileBreakpoint } from '../../hooks/useMobileBreakpoint'
 
 /**
@@ -164,27 +165,29 @@ export function RepoFilterBar({
 				</div>
 
 				<div className="relative min-w-0 sm:min-w-[260px] basis-full sm:basis-auto sm:flex-1 group order-first sm:order-none">
-					<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-					<input
+					<Input
 						type="text"
 						data-search-input
+						leadingIcon={Search}
 						placeholder={isAISearch ? "Ask AI (e.g., 'React apps with auth')..." : "Search repositories..."}
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 						aria-label={isAISearch ? "AI semantic repository search" : "Search repositories"}
-						className={`w-full pl-10 pr-12 py-2.5 rounded-xl border outline-none text-sm transition-all shadow-sm
-							${isAISearch
-								? 'bg-purple-50/80 dark:bg-purple-900/20 backdrop-blur-sm border-purple-200/80 dark:border-purple-700/60 focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 text-purple-900 dark:text-purple-100 placeholder:text-purple-600 dark:placeholder:text-purple-300'
-								: 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200/80 dark:border-slate-700/60 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400'
-							}`}
+						className={isAISearch
+							? 'bg-purple-50/80 dark:bg-purple-900/20 border-purple-200/80 dark:border-purple-700/60 focus:ring-purple-500/30 focus:border-purple-500 text-purple-900 dark:text-purple-100 placeholder:text-purple-600 dark:placeholder:text-purple-300'
+							: undefined}
+						trailing={
+							<button
+								type="button"
+								onClick={() => { setIsAISearch(!isAISearch); setSearchQuery('') }}
+								className={`p-1.5 rounded-lg transition-all ${isAISearch ? 'text-purple-500 bg-purple-100 dark:bg-purple-900/30 shadow-sm' : 'text-slate-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20'}`}
+								title="Toggle AI Semantic Search"
+								aria-label="Toggle AI Semantic Search"
+							>
+								<Sparkles className="w-4 h-4" />
+							</button>
+						}
 					/>
-					<button
-						onClick={() => { setIsAISearch(!isAISearch); setSearchQuery('') }}
-						className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${isAISearch ? 'text-purple-500 bg-purple-100 dark:bg-purple-900/30 shadow-sm' : 'text-slate-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20'}`}
-						title="Toggle AI Semantic Search"
-					>
-						<Sparkles className="w-4 h-4" />
-					</button>
 					{isSearchingAI && (
 						<Spinner size="sm" />
 					)}

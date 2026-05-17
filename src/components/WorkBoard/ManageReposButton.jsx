@@ -4,6 +4,7 @@ import { Settings2, Search, Pin, PinOff, Bell, BellOff } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useTrackedRepos } from '../../hooks/useTrackedRepos'
 import { useToast } from '../../hooks/useToast'
+import { Input } from '../ui/form'
 
 const TOP_N = 10
 
@@ -60,16 +61,15 @@ export function ManageReposButton({ onOpenSettings }) {
                 className="z-[var(--ds-z-popover)] w-80 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl overflow-hidden"
             >
                 <div className="p-2 border-b border-slate-200/60 dark:border-slate-700/60">
-                    <div className="relative">
-                        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                            type="text"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Search tracked…"
-                            className="w-full pl-7 pr-2 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                        />
-                    </div>
+                    <Input
+                        size="sm"
+                        leadingIcon={Search}
+                        type="text"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Search tracked…"
+                        aria-label="Search tracked repos"
+                    />
                 </div>
 
                 <div className="max-h-64 overflow-auto p-1">

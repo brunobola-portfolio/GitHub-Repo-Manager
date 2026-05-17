@@ -9,6 +9,7 @@ import { formatNumber, formatCompact } from '../utils/format'
 import { motion, AnimatePresence } from 'framer-motion'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { useModal } from '../hooks/useModal'
+import { Input } from './ui/form'
 
 export function OrgPanel({
 	orgs = [],
@@ -56,17 +57,14 @@ export function OrgPanel({
 				</div>
 
 				{/* Search */}
-				<div className="relative group">
-					<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-					<input
-						type="text"
-						placeholder="Search orgs..."
-						value={searchTerm}
-						onChange={(e) => setSearchTerm(e.target.value)}
-						aria-label="Search organizations"
-						className="w-full pl-10 pr-4 py-2.5 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200/80 dark:border-slate-700/60 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all shadow-sm"
-					/>
-				</div>
+				<Input
+					leadingIcon={Search}
+					type="text"
+					placeholder="Search orgs..."
+					value={searchTerm}
+					onChange={(e) => setSearchTerm(e.target.value)}
+					aria-label="Search organizations"
+				/>
 			</div>
 
 			{/* Org List */}

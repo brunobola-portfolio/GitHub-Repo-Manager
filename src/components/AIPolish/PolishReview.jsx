@@ -5,6 +5,7 @@ import { Spinner } from '../ui/Spinner'
 import { useAIPolish } from '../../hooks/useAIPolish'
 import { ContextPicker } from '../AI/ContextPicker'
 import { useContextPrefs } from '../../hooks/useContextPrefs'
+import { Input } from '../ui/form'
 
 /**
  * Batch table for post-migration AI polish.
@@ -117,14 +118,14 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                                     <div className="h-9 rounded-md ds-skeleton" />
                                 )}
                                 {(row.status === 'ready' || row.status === 'applying' || row.status === 'done') && (
-                                    <input
+                                    <Input
                                         type="text"
+                                        size="sm"
                                         value={row.proposedDescription}
                                         onChange={(e) => setProposedDescription(row.fullName, e.target.value)}
                                         disabled={!row.include || row.status === 'applying' || row.status === 'done'}
                                         placeholder="No suggestion"
                                         aria-label={`Description for ${row.fullName}`}
-                                        className="w-full px-2.5 py-1.5 text-sm rounded-md bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
                                     />
                                 )}
                                 {row.status === 'error' && (

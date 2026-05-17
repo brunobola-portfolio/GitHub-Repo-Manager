@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react'
 import { InlineComment } from './InlineComment'
 import { AIInlineComment } from '../AIDeepReview/AIInlineComment'
+import { Textarea } from '../../ui/form'
 
 // DiffRenderer pulls in @git-diff-view/react + shiki (~1 MB / ~332 KB gzipped).
 // Lazy-load so mounting the PR Review view itself doesn't trigger that download —
@@ -293,7 +294,7 @@ export function DiffPanel({
             </span>{' '}
             ({commentingLine.side === 'old' || commentingLine.side === 'left' ? 'old' : 'new'} side)
           </p>
-          <textarea
+          <Textarea
             ref={textareaRef}
             value={commentBody}
             onChange={e => setCommentBody(e.target.value)}
@@ -301,7 +302,6 @@ export function DiffPanel({
             rows={4}
             placeholder="Leave a comment… (Ctrl+Enter to submit, Esc to cancel)"
             aria-label="Inline diff comment"
-            className="w-full resize-y rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500"
           />
           <div className="flex gap-2 mt-3 justify-end">
             <button

@@ -1,6 +1,7 @@
 // src/components/MigrationWizard/steps/RepoSelectStep/FixPlanItem.jsx
 import { ArrowRight, Check, AlertCircle, Loader2 } from 'lucide-react'
 import { Spinner } from '../../../ui/Spinner'
+import { Input } from '../../../ui/form'
 
 const TYPE_LABEL = {
   'invalid-chars': 'Invalid chars',
@@ -26,18 +27,17 @@ export function FixPlanItem({ item, checked, conflictStatus, onToggle, onEdit })
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <span className="truncate text-slate-400 line-through">{item.from}</span>
         <ArrowRight className="h-3 w-3 shrink-0 text-slate-500" />
-        <input
-          type="text"
-          value={item.to}
-          onChange={(e) => onEdit(item, e.target.value)}
-          disabled={disabled}
-          aria-label={`Rename target for ${item.from}`}
-          className={`min-w-0 flex-1 rounded bg-slate-900 px-2 py-1 font-mono text-xs outline-none ring-1
-            ${disabled
-              ? 'cursor-not-allowed text-slate-500 ring-slate-800'
-              : 'text-slate-100 ring-slate-700 focus:ring-indigo-500'
-            }`}
-        />
+        <div className="min-w-0 flex-1">
+          <Input
+            type="text"
+            size="sm"
+            value={item.to}
+            onChange={(e) => onEdit(item, e.target.value)}
+            disabled={disabled}
+            aria-label={`Rename target for ${item.from}`}
+            className="font-mono text-xs"
+          />
+        </div>
       </div>
       <span className="shrink-0 rounded bg-slate-700 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
         {TYPE_LABEL[item.type] || item.type}

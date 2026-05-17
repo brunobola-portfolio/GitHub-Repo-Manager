@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Filter } from 'lucide-react'
 import { Modal, ModalFooter } from '../../../ui/Modal'
 import { Button } from '../../../ui/Button'
+import { Field, Input } from '../../../ui/form'
 
 export function PatternSelectModal({ repos, onConfirm, onClose }) {
     const [pattern, setPattern] = useState('')
@@ -40,19 +41,17 @@ export function PatternSelectModal({ repos, onConfirm, onClose }) {
             }
         >
             <p className="text-xs text-slate-500 mb-2">Enter a regular expression. Case-insensitive match on repo name.</p>
-            <label htmlFor="pattern-select-input" className="sr-only">Regular expression pattern</label>
-            <input
-                id="pattern-select-input"
-                type="text"
-                autoFocus
-                value={pattern}
-                onChange={(e) => setPattern(e.target.value)}
-                placeholder="^web-.*|.*-legacy$"
-                aria-invalid={!!error}
-                aria-describedby={error ? 'pattern-error' : undefined}
-                className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 focus:ring-2 focus:ring-indigo-500"
-            />
-            {error && <p id="pattern-error" className="text-xs text-red-500 dark:text-red-400 mt-1">{error}</p>}
+            <Field htmlFor="pattern-select-input" error={error || undefined}>
+                <Input
+                    id="pattern-select-input"
+                    type="text"
+                    autoFocus
+                    value={pattern}
+                    onChange={(e) => setPattern(e.target.value)}
+                    placeholder="^web-.*|.*-legacy$"
+                    aria-label="Regular expression pattern"
+                />
+            </Field>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 tabular-nums" aria-live="polite">
                 {matches.length} of {repos.length} match
             </p>

@@ -14,6 +14,7 @@ import { Spinner } from '../ui/Spinner'
 import { useToast } from '../../hooks/useToast'
 import { useAIStatus } from '../../hooks/useAIStatus'
 import { useDraftPersistence } from '../../hooks/useDraftPersistence'
+import { Textarea } from '../ui/form'
 import { formatRelativeTime } from '../../utils/format'
 import { PRFilesTab } from './PRFilesTab'
 import { invalidatePRData } from '../../hooks/usePRData'
@@ -386,14 +387,13 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                         {message.text}
                                     </div>
                                 )}
-                                <textarea
+                                <Textarea
                                     ref={commentRef}
                                     value={newComment}
                                     onChange={e => setNewComment(e.target.value)}
                                     rows={3}
                                     placeholder="Write a comment... (Markdown supported)"
                                     aria-label="Pull request comment"
-                                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm resize-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all"
                                 />
                                 <div className="flex justify-end mt-3">
                                     <Button
@@ -535,12 +535,11 @@ function ReviewComposer({ api, prNumber, onSubmitted }) {
             <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Submit review
             </h4>
-            <textarea
+            <Textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Optional review message — supports markdown"
                 rows={3}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 resize-y"
             />
             <div className="flex flex-wrap items-center gap-2">
                 <Button
