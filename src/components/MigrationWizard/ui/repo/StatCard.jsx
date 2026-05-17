@@ -1,3 +1,5 @@
+import { Card } from '../../../ui/Card'
+
 const TONE_MAP = {
   indigo:  'text-indigo-400',
   violet:  'text-violet-400',
@@ -12,7 +14,7 @@ const TONE_MAP = {
 export function StatCard({ icon: Icon, label, value, tone = 'indigo' }) {
   const toneClass = TONE_MAP[tone] || TONE_MAP.indigo
   return (
-    <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
+    <Card shadow="none" className="rounded-xl px-4 py-3 text-center bg-white/60 dark:bg-slate-900/50 border-0">
       {Icon && (
         <div className="flex justify-center mb-1">
           <Icon className={`w-4 h-4 ${toneClass}`} aria-hidden="true" />
@@ -22,6 +24,6 @@ export function StatCard({ icon: Icon, label, value, tone = 'indigo' }) {
       <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">
         {label}
       </div>
-    </div>
+    </Card>
   )
 }

@@ -74,7 +74,7 @@ export function AIInlineComment({ comment, idx, onDismiss, onEdit }) {
                         </button>
                         <button
                             onClick={() => { onEdit(idx, { body, suggestion }); setEditing(false) }}
-                            className="px-2.5 py-1 text-xs font-semibold rounded-md bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 motion-safe:active:scale-95 transition-all"
+                            className="px-2.5 py-1 text-xs font-semibold rounded-md bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition-colors"
                         >
                             Save
                         </button>

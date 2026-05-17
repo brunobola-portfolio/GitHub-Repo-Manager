@@ -132,7 +132,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                         }}
                         disabled={upgradeRequired}
                         title={upgradeRequired ? 'Teams require the Pro plan' : undefined}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
                     >
                         {upgradeRequired ? <Lock className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
                         <span>Create Team</span>

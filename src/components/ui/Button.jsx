@@ -43,7 +43,7 @@ export function Button({ className, variant = 'primary', size = 'md', children, 
     return (
         <button
             className={twMerge(
-                'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
+                'inline-flex items-center justify-center rounded-lg font-medium transition-colors duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed',
                 enforcesMinTarget && 'min-h-[44px] min-w-[44px]',
                 variants[variant] || variants.primary,
                 sizes[size] || sizes.md,

@@ -393,7 +393,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                                     <button
                                                         type="submit"
                                                         disabled={isLoading || !input.trim()}
-                                                        className="p-2.5 bg-[color:var(--ds-accent-brand)] text-white rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm active:scale-95"
+                                                        className="p-2.5 bg-[color:var(--ds-accent-brand)] text-white rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
                                                         aria-label="Send message"
                                                     >
                                                         {isLoading
@@ -481,7 +481,7 @@ function ActionChip({ action, onClick }) {
             type="button"
             onClick={onClick}
             data-action={action.type}
-            className="group inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-1 ring-slate-200 dark:ring-slate-700 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-sm active:translate-y-0"
+            className="group inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-1 ring-slate-200 dark:ring-slate-700 transition-colors duration-150 hover:ring-indigo-300 dark:hover:ring-indigo-500/40 hover:bg-slate-50 dark:hover:bg-slate-700/60"
         >
             <Sparkles size={11} className="relative text-indigo-500 dark:text-indigo-300 transition-transform group-hover:rotate-12" />
             <span className="relative truncate max-w-[180px]">{action.label}</span>

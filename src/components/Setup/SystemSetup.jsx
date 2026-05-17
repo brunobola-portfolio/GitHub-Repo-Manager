@@ -120,7 +120,7 @@ export function SystemSetup({ onComplete }) {
                         >
                             <button
                                 onClick={onComplete}
-                                className="w-full py-4 bg-white text-slate-900 rounded-xl font-bold text-lg hover:bg-slate-100 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-white/10"
+                                className="w-full py-4 bg-white text-slate-900 rounded-xl font-bold text-lg hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-white/10"
                             >
                                 <span>Launch Workspace</span>
                                 <ArrowRight className="w-5 h-5" />

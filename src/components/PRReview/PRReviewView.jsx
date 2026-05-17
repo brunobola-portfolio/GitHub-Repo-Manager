@@ -488,7 +488,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
           ref={aiFabRef}
           type="button"
           onClick={() => setAiDrawerOpen(true)}
-          className="lg:hidden fixed z-[var(--ds-z-floating)] bottom-24 right-4 w-14 h-14 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white shadow-lg flex items-center justify-center motion-safe:hover:scale-105 motion-safe:active:scale-95 motion-safe:transition-transform motion-reduce:transition-none"
+          className="lg:hidden fixed z-[var(--ds-z-floating)] bottom-24 right-4 w-14 h-14 rounded-full bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white shadow-lg flex items-center justify-center transition-colors"
           aria-label={
             deep.draft?.lineComments?.length
               ? `Open AI insights (${deep.draft.lineComments.length} draft comments)`

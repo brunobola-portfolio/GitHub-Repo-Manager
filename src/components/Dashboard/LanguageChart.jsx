@@ -194,7 +194,7 @@ export function LanguageChart({ data = [], loading }) {
                                             className="flex items-center gap-3 group p-2.5 rounded-xl transition-all duration-200"
                                         >
                                             <div
-                                                className="w-4 h-4 rounded-md flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform"
+                                                className="w-4 h-4 rounded-md flex-shrink-0 shadow-sm ring-1 ring-black/5 dark:ring-white/10 transition-colors"
                                                 style={{ backgroundColor: lang.color }}
                                             />
                                             <span className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate flex-1 min-w-0">

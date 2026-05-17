@@ -133,7 +133,7 @@ export function ReviewStatusBar({
                     <button
                         type="button"
                         onClick={() => onSubmitReview({ event: 'APPROVE' })}
-                        className="inline-flex items-center justify-center gap-1 px-3 py-1.5 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-semibold bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 hover:bg-emerald-700 motion-safe:active:scale-95 transition-all"
+                        className="inline-flex items-center justify-center gap-1 px-3 py-1.5 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-semibold bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 hover:bg-emerald-700 transition-colors"
                         aria-label="Approve"
                     >
                         <ShieldCheck className="w-3.5 h-3.5" /> Approve

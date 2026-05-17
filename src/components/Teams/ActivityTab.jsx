@@ -158,7 +158,7 @@ function ActivityItem({ event }) {
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <Card glass={false} shadow="sm" className="flex items-start gap-4 p-4 hover:border-indigo-500/30 group">
-            <div className="mt-1 p-2 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 group-hover:scale-110 transition-transform">
+            <div className="mt-1 p-2 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 group-hover:border-indigo-300/60 dark:group-hover:border-indigo-500/40 transition-colors">
                 {getEventIcon(event.type)}
             </div>
 
