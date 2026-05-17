@@ -379,6 +379,8 @@ export function Header({
             onCreate={onCreateRepo}
             onImport={onImport}
             onOpenDevToolkit={onOpenDevToolkit}
+            onOpenCommandPalette={onOpenCommandPalette}
+            onOpenAIAssistant={() => window.dispatchEvent(new CustomEvent('ai-assistant:open'))}
           />
           </>
         )}

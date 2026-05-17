@@ -34,8 +34,7 @@ import { CommandPalette } from './components/CommandPalette'
 import { useResponsiveLayout } from './hooks/useResponsiveLayout'
 import CollapsiblePanel from './components/ui/CollapsiblePanel'
 import { SlimSidebar } from './components/Sidebar'
-import { Menu, Building2, ChevronRight, Search } from 'lucide-react'
-import { MobileFAB } from './components/ui/MobileFAB'
+import { Menu, Building2, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SessionBanner } from './components/SessionBanner'
 import { BYOKUpgradeBanner } from './components/BYOKUpgradeBanner'
@@ -1529,17 +1528,9 @@ function AppContent() {
         onSignOut={user ? handleLogout : null}
       />
 
-      {/* Mobile-only FAB to reach the command palette without a keyboard.
-        The bottom navigation bar (Header.jsx fixed bottom-0) is always
-        visible while the user is authenticated, so we lift the FAB above
-        it (`bottom-20`) — otherwise the FAB intercepts clicks on the "More"
-        nav button at the bottom-right of the screen. */}
-      <MobileFAB
-        icon={Search}
-        label="Open command palette"
-        onClick={commandPalette.open}
-        shiftAboveBottomBar={!!user}
-      />
+      {/* Mobile command-palette entry is consolidated into the
+        MobileQuickActionsFab menu (Search item) so the right edge isn't a
+        stack of FABs. Keyboard-only fallback is the ⌘K / Ctrl+K shortcut. */}
 
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       <PendingSyncBanner isAuthenticated={!!user} />

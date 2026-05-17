@@ -259,7 +259,10 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                         transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
                         onClick={() => { setIsOpen(true); setIsIdle(false) }}
                         onMouseEnter={() => setIsIdle(false)}
-                        className="fixed bottom-20 xl:bottom-6 right-3 sm:right-6 z-[var(--ds-z-composer)] group"
+                        /* Hidden on mobile (< md): the AI Assistant entry point
+                           on phones is consolidated into MobileQuickActionsFab
+                           so the right edge isn't a stack of four FABs. */
+                        className="hidden md:flex fixed bottom-20 xl:bottom-6 right-3 sm:right-6 z-[var(--ds-z-composer)] group"
                         aria-label="Open AI Assistant"
                     >
                         <div className="relative">

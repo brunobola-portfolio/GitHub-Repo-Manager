@@ -1,11 +1,22 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Download, Wand2, FolderPlus } from 'lucide-react'
+import { Plus, X, Download, Wand2, FolderPlus, Search, Sparkles } from 'lucide-react'
 
+// Render order = visual order top→bottom; last entry sits closest to the
+// FAB trigger. Search / AI assistant are the highest-traffic touch
+// entry-points so they live right above the trigger; heavier flows
+// (Dev Toolkit) drift to the top.
+//
+// This menu is the SINGLE mobile entry-point for these actions — Search
+// and AI Assistant no longer render their own standalone FABs on mobile.
+// Keeping them consolidated here avoids the "four buttons stacked at the
+// right edge" mess on phones.
 const ITEMS = [
-    { id: 'devtoolkit', label: 'Dev Toolkit', icon: Wand2,       handlerKey: 'onOpenDevToolkit' },
-    { id: 'import',     label: 'Import',      icon: Download,    handlerKey: 'onImport' },
-    { id: 'create',     label: 'Create',      icon: FolderPlus,  handlerKey: 'onCreate' },
+    { id: 'devtoolkit', label: 'Dev Toolkit',  icon: Wand2,      handlerKey: 'onOpenDevToolkit' },
+    { id: 'import',     label: 'Import',       icon: Download,   handlerKey: 'onImport' },
+    { id: 'create',     label: 'Create',       icon: FolderPlus, handlerKey: 'onCreate' },
+    { id: 'assistant',  label: 'AI Assistant', icon: Sparkles,   handlerKey: 'onOpenAIAssistant' },
+    { id: 'search',     label: 'Search',       icon: Search,     handlerKey: 'onOpenCommandPalette' },
 ]
 
 export function MobileQuickActionsFab(props) {
