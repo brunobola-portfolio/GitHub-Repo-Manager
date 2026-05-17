@@ -5,6 +5,7 @@ import {
 	MoreHorizontal, CheckSquare, AlertCircle
 } from 'lucide-react'
 import { Badge } from '../ui/Badge'
+import { Tooltip } from '../ui/Tooltip'
 import { formatCompact } from '../../utils/format'
 import { TrackedDot } from '../WorkBoard/TrackedDot'
 import { RepoHealthBadge } from '../AI/RepoHealthBadge'
@@ -27,29 +28,29 @@ function RepoCardQuickActions({ repo, onAction, onContextMenu }) {
 			{top.map((a) => {
 				const Icon = resolveValue(a.icon, repo)
 				const label = resolveValue(a.label, repo)
-				const description = resolveValue(a.description, repo)
 				return (
-					<motion.button
-						key={a.id}
-						onClick={(e) => { e.stopPropagation(); onAction(a.id, repo) }}
-						whileTap={{ scale: 0.9 }}
-						className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
-						title={description ? `${label} — ${description}` : label}
-						aria-label={label}
-					>
-						<Icon className="w-4 h-4" />
-					</motion.button>
+					<Tooltip key={a.id} label={label}>
+						<motion.button
+							onClick={(e) => { e.stopPropagation(); onAction(a.id, repo) }}
+							whileTap={{ scale: 0.9 }}
+							className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
+							aria-label={label}
+						>
+							<Icon className="w-4 h-4" />
+						</motion.button>
+					</Tooltip>
 				)
 			})}
-			<motion.button
-				onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
-				whileTap={{ scale: 0.9 }}
-				className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
-				title="More actions"
-				aria-label="More actions"
-			>
-				<MoreHorizontal className="w-4 h-4" />
-			</motion.button>
+			<Tooltip label="More actions">
+				<motion.button
+					onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
+					whileTap={{ scale: 0.9 }}
+					className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
+					aria-label="More actions"
+				>
+					<MoreHorizontal className="w-4 h-4" />
+				</motion.button>
+			</Tooltip>
 		</div>
 	)
 }

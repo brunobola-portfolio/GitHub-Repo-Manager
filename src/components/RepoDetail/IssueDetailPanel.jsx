@@ -120,7 +120,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                             </span>
                             <span className="text-xs text-slate-400">#{current.number}</span>
                         </div>
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">{current.title}</h3>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{current.title}</h3>
                         <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 dark:text-slate-400">
                             {current.user && (
                                 <span className="flex items-center gap-1.5">

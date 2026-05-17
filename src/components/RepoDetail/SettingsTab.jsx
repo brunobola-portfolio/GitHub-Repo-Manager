@@ -256,7 +256,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
             {/* General Settings */}
             <Card className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                         <Settings className="w-5 h-5 text-indigo-500" /> General
                     </h3>
                     <button
@@ -366,7 +366,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
             {/* Webhooks */}
             <Card className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                         <Webhook className="w-5 h-5 text-indigo-500" /> Webhooks
                     </h3>
                     <div className="flex gap-2">
@@ -426,7 +426,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
 
             {/* Danger Zone */}
             <Card className="p-5 border-red-200 dark:border-red-900/50">
-                <h3 className="font-bold text-red-600 dark:text-red-400 flex items-center gap-2 mb-3">
+                <h3 className="font-semibold text-red-600 dark:text-red-400 flex items-center gap-2 mb-3">
                     <AlertTriangle className="w-5 h-5" /> Danger Zone
                 </h3>
                 <div className="space-y-3">
@@ -503,7 +503,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
 
             {/* Topics — manual editor (chips + add input). AI suggestions live in the section below. */}
             <Card className="p-5 space-y-3">
-                <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                     <Tag className="w-5 h-5 text-indigo-500" /> Topics
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">

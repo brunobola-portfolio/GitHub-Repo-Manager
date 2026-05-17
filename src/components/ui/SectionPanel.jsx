@@ -62,7 +62,7 @@ export function SectionPanel({
                     </div>
                 ) : null}
                 {title ? (
-                    <h3 className="ds-font-display text-lg font-bold text-slate-900 dark:text-slate-100 leading-tight">
+                    <h3 className="ds-font-display text-base font-semibold text-slate-900 dark:text-slate-100 leading-tight">
                         {title}
                     </h3>
                 ) : null}

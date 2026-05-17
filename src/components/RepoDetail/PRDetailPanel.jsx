@@ -181,7 +181,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                             )}
                             <span className="text-xs text-slate-400">#{current.number}</span>
                         </div>
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">{current.title}</h3>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{current.title}</h3>
 
                         {/* Branch info */}
                         <div className="flex items-center gap-2 mt-2">

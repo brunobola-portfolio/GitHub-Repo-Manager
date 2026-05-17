@@ -181,7 +181,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
         <Card className="p-5 space-y-4">
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                         <Shield className="w-5 h-5 text-indigo-500" /> Protection — <span className="font-mono text-sm">{branch}</span>
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
