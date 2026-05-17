@@ -9,6 +9,7 @@ import { Spinner } from '../ui/Spinner'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { Field, Input, Textarea } from '../ui/form'
 import { PanelHeader } from '../ui/PanelHeader'
+import { EmptyState } from '../ui/EmptyState'
 import { useToast } from '../../hooks/useToast'
 import { apiCall } from '../../utils/api'
 
@@ -512,22 +513,18 @@ export function AIInstructionsSection() {
                     </div>
                 </Card>
             ) : prompts.length === 0 ? (
-                <Card className="p-8 text-center">
-                    <p className="text-sm text-slate-500 dark:text-slate-400">No customizable prompts available.</p>
-                </Card>
+                <EmptyState
+                    icon={Sparkles}
+                    title="No customizable prompts available"
+                    description="There are no AI features wired up for prompt customization on this build."
+                />
             ) : filteredPrompts.length === 0 ? (
-                <Card className="p-8 text-center">
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                        No prompts match <span className="font-medium text-slate-700 dark:text-slate-200">&quot;{query}&quot;</span>.
-                    </p>
-                    <button
-                        type="button"
-                        onClick={() => setQuery('')}
-                        className="mt-2 text-xs text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300"
-                    >
-                        Clear search
-                    </button>
-                </Card>
+                <EmptyState
+                    icon={Search}
+                    title={`No prompts match "${query}"`}
+                    description="Try a different search term."
+                    action={{ label: 'Clear search', onClick: () => setQuery('') }}
+                />
             ) : (
                 filteredPrompts.map(p => (
                     <PromptEditor key={p.key} entry={p} onSaved={handleSaved} onReset={handleReset} />

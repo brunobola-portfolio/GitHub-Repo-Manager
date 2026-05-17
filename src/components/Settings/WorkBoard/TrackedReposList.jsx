@@ -1,10 +1,11 @@
 import { useRef, useState, useEffect } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { Inbox } from 'lucide-react'
+import { Inbox, Search } from 'lucide-react'
 import { RepoRow } from './RepoRow'
 import { SearchFilterBar } from './SearchFilterBar'
 import { BulkActionsBar } from './BulkActionsBar'
 import { Skeleton } from '../../ui/Skeleton'
+import { EmptyState } from '../../ui/EmptyState'
 
 const ROW_HEIGHT = 56
 
@@ -67,17 +68,19 @@ export function TrackedReposList({
             <SearchFilterBar filters={filters} countsBySignal={countsBySignal} onChange={onFilterChange} />
 
             {isEmpty && !hasSearch && (
-                <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
-                    <Inbox className="w-8 h-8 text-slate-400" />
-                    <p className="text-sm text-slate-600 dark:text-slate-400">No tracked repositories yet.</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-500">Run discovery or add one manually below.</p>
-                </div>
+                <EmptyState
+                    icon={Inbox}
+                    title="No tracked repositories yet"
+                    description="Run discovery or add one manually below."
+                />
             )}
 
             {isEmpty && hasSearch && (
-                <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
-                    <p className="text-sm text-slate-600 dark:text-slate-400">No results for &quot;{filters.search}&quot;.</p>
-                </div>
+                <EmptyState
+                    icon={Search}
+                    title={`No results for "${filters.search}"`}
+                    description="Try a different search term or clear the filter."
+                />
             )}
 
             {!isEmpty && (
