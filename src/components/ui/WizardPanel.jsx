@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { X, Maximize2, Minimize2 } from 'lucide-react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
@@ -9,6 +9,18 @@ const PANEL_SIZES = {
   md: 'w-[min(92vw,680px)]',
   lg: 'w-[min(92vw,900px)]',
   xl: 'w-[min(92vw,1140px)]',
+}
+
+// Variant header colors — mirrors Modal.jsx's VARIANT_STYLES so wizards
+// can match the tone of their action (danger flows in red, success in
+// emerald). Keep this list in sync with Modal's, plus any wizard-specific
+// tones (which there are none of right now — keep them in sync).
+const VARIANT_STYLES = {
+  default: 'bg-indigo-600 dark:bg-indigo-700',
+  danger:  'bg-red-600 dark:bg-red-700',
+  warning: 'bg-amber-600 dark:bg-amber-700',
+  info:    'bg-sky-600 dark:bg-sky-700',
+  success: 'bg-emerald-600 dark:bg-emerald-700',
 }
 
 // headerGradient prop kept for backward-compat; default header is now solid indigo
@@ -28,12 +40,24 @@ export function WizardPanel({
 
   headerGradient: _headerGradient = '',
   size = 'xl',
+  variant = 'default',
 }) {
   const panelRef = useFocusTrap(isOpen, onClose, { disableEscape })
   useMobileKeyboardFix(isOpen, panelRef)
   useBodyScrollLock(isOpen)
+  const reduced = useReducedMotion()
 
   const effectiveMaximized = isMobile || isMaximized
+  const headerBg = VARIANT_STYLES[variant] || VARIANT_STYLES.default
+
+  // Match Modal.jsx's spring timing exactly so the two shells animate in
+  // sync when a flow opens a wizard from inside a modal (or vice-versa).
+  // Reduced-motion users get a short fade so the entrance is calm but the
+  // dialog still telegraphs the state change.
+  const panelTransition = reduced
+    ? { duration: 0.15 }
+    : { type: 'spring', duration: 0.4, bounce: 0.12 }
+  const backdropTransition = reduced ? { duration: 0 } : { duration: 0.18 }
 
   return (
     <AnimatePresence>
@@ -45,7 +69,7 @@ export function WizardPanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: effectiveMaximized ? 0 : 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={backdropTransition}
             className="fixed inset-0 z-[var(--ds-z-modal)] bg-black/60 dark:bg-black/75 backdrop-blur-md"
             style={{ pointerEvents: effectiveMaximized ? 'none' : 'auto' }}
             aria-hidden="true"
@@ -58,10 +82,10 @@ export function WizardPanel({
             role="dialog"
             aria-modal="true"
             aria-labelledby="wizard-panel-title"
-            initial={{ opacity: 0, y: 24, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 24, scale: 0.98 }}
-            transition={{ type: 'spring', duration: 0.5, bounce: 0.12 }}
+            initial={reduced ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.98 }}
+            animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+            exit={reduced ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.98 }}
+            transition={panelTransition}
             className={`
               fixed z-[var(--ds-z-modal)] flex flex-col overflow-hidden
               ${effectiveMaximized
@@ -73,7 +97,7 @@ export function WizardPanel({
             {/* Title Bar */}
             <div className={`
               flex-shrink-0 text-white flex items-center h-12 md:h-[52px] px-4 md:px-5 gap-3
-              bg-indigo-600 dark:bg-indigo-700
+              ${headerBg}
               ${effectiveMaximized ? '' : 'border-b border-white/10'}
             `}>
               {/* Left: Icon + Title */}
