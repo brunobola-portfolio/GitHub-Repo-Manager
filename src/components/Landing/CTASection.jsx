@@ -70,10 +70,9 @@ export function CTASection({ onSignIn }) {
           <button
             onClick={onSignIn}
             className="group relative px-9 py-4 rounded-2xl font-bold text-base text-white
-              bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600
+              bg-[color:var(--ds-cta)] hover:bg-[color:var(--ds-cta-hover)]
               shadow-md
-              hover:scale-[1.04] active:scale-[0.97]
-              transition-all duration-300
+              transition-colors duration-200
               ds-focus-ring"
           >
             <span className="flex items-center gap-2.5">

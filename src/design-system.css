@@ -59,7 +59,7 @@
   --ds-radius-sm: 4px;
   --ds-radius: 6px;
   --ds-radius-lg: 16px;  /* matches dominant `rounded-2xl` usage in cards */
-  --ds-radius-xl: 12px;
+  --ds-radius-xl: 24px;  /* rounded-3xl — larger than lg so scale is monotonic */
 
   /* ===== ELEVATION ===== */
   --ds-shadow-sm: 0 1px 0 rgba(31,35,40,.04);

@@ -51,7 +51,7 @@ export const OrganizationCard = memo(function OrganizationCard({ org, repos = []
                             />
                             {hasRecentActivity && (
                                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm">
-                                    <div className="w-full h-full bg-emerald-500 rounded-full animate-ping opacity-75" />
+                                    <div className="w-full h-full bg-emerald-500 rounded-full" />
                                 </div>
                             )}
                         </div>

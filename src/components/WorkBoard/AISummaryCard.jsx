@@ -201,7 +201,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
 
             {/* Right column — content */}
             <div className="relative flex-1 flex flex-col gap-2 min-w-0">
-                <h3 className="text-xl md:text-2xl font-bold leading-tight ds-font-display text-slate-900 dark:text-slate-50">
+                <h3 className="text-xl font-semibold leading-tight ds-font-display text-slate-900 dark:text-slate-50">
                     {headline}
                 </h3>
                 {trendLine && (

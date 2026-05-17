@@ -40,14 +40,14 @@ export function OrgPanel({
 					<div className="flex items-center gap-1">
 						<button
 							onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-							className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all duration-200 hover:scale-105"
+							className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-colors duration-200"
 							title={viewMode === 'list' ? "Switch to Grid View" : "Switch to List View"}
 						>
 							{viewMode === 'list' ? <LayoutGrid size={18} /> : <List size={18} />}
 						</button>
 						<button
 							onClick={onCreateOrg}
-							className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all duration-200 hover:scale-105"
+							className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-colors duration-200"
 							title="Add Organization"
 						>
 							<Plus size={18} />
@@ -137,14 +137,14 @@ export function OrgPanel({
 							<button
 								type="button"
 								aria-label="Open user settings menu"
-								className="p-2.5 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all duration-200 hover:scale-105"
+								className="p-2.5 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-colors duration-200"
 							>
 								<Settings size={18} aria-hidden="true" />
 							</button>
 						</DropdownMenu.Trigger>
 						<DropdownMenu.Portal>
 							<DropdownMenu.Content
-								className="min-w-[200px] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-2xl dark:shadow-black/50 border border-slate-200/70 dark:border-slate-700/60 p-1.5 z-[var(--ds-z-popover)] animate-in fade-in zoom-in-95 duration-200"
+								className="min-w-[200px] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/70 dark:border-slate-700/60 p-1.5 z-[var(--ds-z-popover)] animate-in fade-in zoom-in-95 duration-200"
 								sideOffset={8}
 							>
 								<DropdownMenu.Item
@@ -240,7 +240,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 						animate={{ scale: [1, 1.2, 1] }}
 						transition={{ duration: 2, repeat: Infinity }}
 					>
-						<div className="absolute inset-0 rounded-full bg-indigo-500 animate-ping opacity-75" />
+						<div className="absolute inset-0 rounded-full bg-indigo-500 opacity-75" />
 					</motion.div>
 				)}
 			</div>
@@ -305,11 +305,11 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 					className="absolute right-3 top-1/2 -translate-y-1/2"
 					initial={{ scale: 0 }}
 					animate={{ scale: 1 }}
-					transition={{ type: "spring", stiffness: 500, damping: 30 }}
+					transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
 				>
 					<div className="relative">
 						<div className="w-2 h-2 rounded-full bg-indigo-500" />
-						<div className="absolute inset-0 w-2 h-2 rounded-full bg-indigo-500 animate-ping opacity-75" />
+						<div className="absolute inset-0 w-2 h-2 rounded-full bg-indigo-500 opacity-75" />
 					</div>
 				</motion.div>
 			)}

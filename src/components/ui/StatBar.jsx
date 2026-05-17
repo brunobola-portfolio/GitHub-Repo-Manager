@@ -74,7 +74,7 @@ export function StatBar({
             className={`h-full ${gradientClass} rounded-full`}
             initial={{ width: 0 }}
             animate={{ width: `${pct}%` }}
-            transition={{ type: 'spring', damping: 22, stiffness: 90, delay: 0.1 }}
+            transition={{ duration: 0.32, ease: [0.2, 0, 0, 1], delay: 0.1 }}
             data-testid="statbar-fill"
           />
         ) : (

@@ -263,7 +263,7 @@ function QuickActions({
                 {!hasSelection ? (
                     <div className="flex flex-col gap-3">
                         <div className="p-6 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-center group transition-colors hover:border-indigo-300 dark:hover:border-indigo-700">
-                            <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm group-hover:scale-110 transition-transform duration-200">
+                            <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
                                 <MoreHorizontal className="w-5 h-5 text-slate-400 group-hover:text-indigo-500" />
                             </div>
                             <p className="text-xs font-medium text-slate-600 dark:text-slate-300">

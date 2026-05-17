@@ -46,7 +46,7 @@ export const StatCard = memo(function StatCard({
 
     return (
         <motion.div
-            transition={{ type: "spring", stiffness: 300 }}
+            transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
             className="rounded-2xl focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-inset"
             role={interactive ? 'button' : undefined}
             tabIndex={interactive ? 0 : undefined}
@@ -64,7 +64,7 @@ export const StatCard = memo(function StatCard({
                         </p>
                         <motion.h3
                             className="text-xl sm:text-3xl font-semibold text-slate-900 dark:text-white mt-2 sm:mt-3 ds-font-mono"
-                            transition={{ type: "spring", stiffness: 400 }}
+                            transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
                         >
                             {isNumeric ? (
                                 <CountUp value={value} format={formatFn} />

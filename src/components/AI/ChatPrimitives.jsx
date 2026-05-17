@@ -10,6 +10,7 @@
  * without behaviour drift.
  */
 import { Sparkles, AlertTriangle, ChevronRight } from 'lucide-react';
+import { Spinner } from '../ui/Spinner';
 import ReactMarkdown from 'react-markdown';
 
 /**
@@ -86,12 +87,8 @@ export function TypingIndicator() {
             <div className="w-7 h-7 rounded-lg bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center shrink-0 mt-0.5 mr-2 ring-1 ring-white/30 shadow-sm">
                 <Sparkles size={13} className="text-white" />
             </div>
-            <div className="bg-white dark:bg-slate-800/90 px-3.5 py-3 rounded-2xl rounded-bl-sm border border-slate-200/80 dark:border-slate-700/60 shadow-sm">
-                <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" />
-                </div>
+            <div className="bg-white dark:bg-slate-800/90 px-3.5 py-3 rounded-2xl rounded-bl-sm border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center">
+                <Spinner size="sm" tone="muted" label="Typing" />
             </div>
         </div>
     );

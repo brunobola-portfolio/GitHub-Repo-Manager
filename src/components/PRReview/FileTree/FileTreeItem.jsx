@@ -49,7 +49,7 @@ export function FileTreeItem({ file, isActive, isReviewed, aiRisk, heuristicScor
   return (
     <motion.button
       layout={reducedMotion ? false : 'position'}
-      transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 320, damping: 28 }}
+      transition={reducedMotion ? { duration: 0 } : { duration: 0.2, ease: [0.2, 0, 0, 1] }}
       role="treeitem"
       aria-selected={isActive}
       onClick={onClick}
@@ -81,7 +81,7 @@ export function FileTreeItem({ file, isActive, isReviewed, aiRisk, heuristicScor
           data-reviewed-marker="true"
           initial={reducedMotion ? false : { scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 18 }}
+          transition={reducedMotion ? { duration: 0 } : { duration: 0.2, ease: [0.2, 0, 0, 1] }}
           className="shrink-0 inline-flex"
         >
           <Check

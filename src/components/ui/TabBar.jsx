@@ -88,7 +88,7 @@ export function TabBar({ tabs, activeTab, onTabChange, variant = 'pill', layoutI
                             <motion.div
                                 layoutId={layoutId}
                                 className={indicatorClass}
-                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
                             />
                         )}
                         <span className={indicatorClass ? 'relative z-10 flex items-center gap-1.5' : 'flex items-center gap-1.5'}>

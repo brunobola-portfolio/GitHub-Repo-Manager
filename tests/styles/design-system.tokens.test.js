@@ -25,7 +25,7 @@ const EXPECTED_TOKENS = {
   '--ds-radius-sm': '4px',
   '--ds-radius': '6px',
   '--ds-radius-lg': '16px',
-  '--ds-radius-xl': '12px',
+  '--ds-radius-xl': '24px',
 }
 
 describe('design-system.css — new tokens resolve to expected values', () => {

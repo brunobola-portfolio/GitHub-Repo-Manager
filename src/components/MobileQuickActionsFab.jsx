@@ -90,7 +90,7 @@ export function MobileQuickActionsFab(props) {
                     aria-haspopup="menu"
                     onClick={() => setOpen(v => !v)}
                     animate={{ rotate: open ? 45 : 0 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                    transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
                     className="w-14 h-14 rounded-full bg-indigo-600 dark:bg-indigo-500 shadow-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 flex items-center justify-center text-white ds-focus-ring"
                 >
                     {open ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}

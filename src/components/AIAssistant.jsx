@@ -256,7 +256,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.8, opacity: 0 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                        transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
                         onClick={() => { setIsOpen(true); setIsIdle(false) }}
                         onMouseEnter={() => setIsIdle(false)}
                         className="fixed bottom-20 xl:bottom-6 right-3 sm:right-6 z-[var(--ds-z-composer)] group"
@@ -290,7 +290,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        transition={{ duration: 0.32, ease: [0.2, 0, 0, 1] }}
                         className="fixed bottom-20 xl:bottom-6 right-3 sm:right-6 z-[45]"
                     >
                         <Card className={`w-[calc(100vw-2rem)] sm:w-[22rem] md:w-[26rem] flex flex-col shadow-[var(--ds-shadow-overlay)] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden rounded-2xl transition-all duration-300 ${
@@ -493,12 +493,8 @@ function TypingIndicator() {
             <div className="w-7 h-7 rounded-lg bg-[color:var(--ds-accent-brand)] flex items-center justify-center shrink-0 mt-0.5 mr-2 shadow-sm">
                 <Sparkles size={13} className="text-white" />
             </div>
-            <div className="bg-white dark:bg-slate-800/90 px-3.5 py-3 rounded-2xl rounded-bl-sm border border-slate-200/80 dark:border-slate-700/60 shadow-sm">
-                <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-2 h-2 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" />
-                </div>
+            <div className="bg-white dark:bg-slate-800/90 px-3.5 py-3 rounded-2xl rounded-bl-sm border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center">
+                <Spinner size="sm" tone="muted" label="Typing" />
             </div>
         </div>
     )

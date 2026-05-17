@@ -275,7 +275,7 @@ function SidebarStepper({ steps, currentStepIndex, onGoToStep, source, selectedC
                     <motion.div
                       layoutId="activeStepBar"
                       className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full bg-indigo-500"
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
                     />
                   )}
                 </button>

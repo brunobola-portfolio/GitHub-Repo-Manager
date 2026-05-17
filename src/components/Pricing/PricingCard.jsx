@@ -57,7 +57,7 @@ export function PricingCard({
       <div
         className={`relative flex flex-col h-full rounded-2xl p-7 overflow-hidden transition-colors duration-200
           ${highlighted
-            ? 'bg-slate-900 dark:bg-slate-900 border border-transparent shadow-2xl'
+            ? 'bg-slate-900 dark:bg-slate-900 border border-transparent shadow-[var(--ds-shadow-lg)]'
             : enterprise
               ? 'bg-white dark:bg-slate-950 border border-transparent shadow-xl shadow-amber-500/10 hover:shadow-amber-500/30'
               : 'bg-white/60 dark:bg-white/[0.04] backdrop-blur-md border border-slate-200/60 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-slate-600'
@@ -171,7 +171,7 @@ export function PricingCard({
             <button
               onClick={ctaAction}
               className="w-full py-3.5 rounded-xl font-bold text-sm text-white
-                bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600
+                bg-[color:var(--ds-cta)] hover:bg-[color:var(--ds-cta-hover)]
                 shadow-md transition-colors duration-200"
             >
               {ctaText}

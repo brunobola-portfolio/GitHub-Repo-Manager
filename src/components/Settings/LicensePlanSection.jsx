@@ -60,7 +60,7 @@ function PlanCard({ tier, status, renewalDate, onManage, onChangePlan, portalLoa
                     </div>
                     <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{config.label} Plan</h3>
+                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{config.label} Plan</h3>
                             <Badge variant={config.badgeVariant}>{config.label}</Badge>
                             {status && (
                                 <Badge variant={STATUS_VARIANT[status] || 'default'}>

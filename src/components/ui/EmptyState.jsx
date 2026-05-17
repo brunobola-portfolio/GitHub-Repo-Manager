@@ -39,7 +39,7 @@ export function EmptyState({
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.1, duration: 0.5, type: "spring" }}
+        transition={{ delay: 0.1, duration: 0.2, ease: [0.2, 0, 0, 1] }}
         className="w-20 h-20 mb-6 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-sm"
       >
         {Icon && <Icon className="w-10 h-10 text-slate-500 dark:text-slate-400" strokeWidth={2.5} />}

@@ -97,7 +97,7 @@ export function Header({
                                 <h1>s on the same page broke Playwright's strict-mode locator
                                 in dashboard-hero.spec; <h2> keeps the heading role for
                                 consumers like findByRole('heading', { name: /repo manager/i }). */}
-                            <h2 className="text-[13px] font-bold text-slate-900 dark:text-slate-100 leading-none ds-font-display truncate">
+                            <h2 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 leading-none ds-font-display truncate">
                                 Repo Manager
                                 <LicenseBadge />
                             </h2>
@@ -584,7 +584,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
                         {sinceLabel ? `Since ${sinceLabel}` : 'Activity digest'}
                     </p>
-                    <h3 className="mt-0.5 text-sm font-bold text-slate-900 dark:text-slate-100 ds-font-display">
+                    <h3 className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100 ds-font-display">
                         {totalCount > 0 ? `${totalCount} new` : 'You\'re all caught up'}
                     </h3>
                 </div>

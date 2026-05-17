@@ -38,7 +38,7 @@ export function CategorySection({
               <Icon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             </div>
           )}
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white ds-font-display">
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-white ds-font-display">
             {title}
           </h2>
           {badge && (

@@ -145,7 +145,7 @@ export function RepoFilterBar({
 
 					{/* Dropdown */}
 					{showSelectionMenu && (
-						<div className="absolute top-full left-0 mt-2 w-48 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-xl shadow-2xl border border-slate-200/60 dark:border-slate-700/50 py-1 ds-animate-scale-in overflow-hidden">
+						<div className="absolute top-full left-0 mt-2 w-48 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 py-1 ds-animate-scale-in overflow-hidden">
 							<button onClick={handleSelectAll} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2">
 								<CheckSquare className="w-4 h-4" />
 								{allFilteredSelected ? 'Deselect All' : 'Select All'}

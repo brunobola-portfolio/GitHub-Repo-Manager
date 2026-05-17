@@ -161,7 +161,7 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                         initial={{ x: '100%' }}
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
-                        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                        transition={{ duration: 0.32, ease: [0.2, 0, 0, 1] }}
                         className="fixed right-0 top-0 bottom-0 z-[var(--ds-z-modal)] flex flex-col bg-white/70 dark:bg-slate-900/95 backdrop-blur-md border-l border-slate-200/40 dark:border-slate-700/40 shadow-2xl"
                         style={{ width: `min(${toolkit.panelWidth}px, 100vw)` }}
                         role="dialog"
@@ -243,7 +243,7 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                                             <motion.div
                                                 layoutId="dev-toolkit-panel-tabs"
                                                 className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full"
-                                                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                                transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
                                             />
                                         )}
                                     </button>
