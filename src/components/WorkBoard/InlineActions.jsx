@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, XCircle, Clock, Loader2 } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
+import { Tooltip } from '../ui/Tooltip'
 
 function IconButton({ onClick, disabled, icon: Icon, label, tone = 'slate' }) {
     const tones = {
@@ -10,16 +11,17 @@ function IconButton({ onClick, disabled, icon: Icon, label, tone = 'slate' }) {
         slate: 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-500/10',
     }
     return (
-        <button
-            type="button"
-            onClick={onClick}
-            disabled={disabled}
-            aria-label={label}
-            title={label}
-            className={`p-1.5 rounded-lg transition-colors ${tones[tone] || tones.slate} disabled:opacity-40`}
-        >
-            <Icon className="w-4 h-4" />
-        </button>
+        <Tooltip label={label}>
+            <button
+                type="button"
+                onClick={onClick}
+                disabled={disabled}
+                aria-label={label}
+                className={`p-1.5 rounded-lg transition-colors ds-focus-ring ${tones[tone] || tones.slate} disabled:opacity-40`}
+            >
+                <Icon className="w-4 h-4" />
+            </button>
+        </Tooltip>
     )
 }
 
@@ -64,7 +66,7 @@ export function InlineActions({ onApprove, onRequestChanges, onSnooze, busy }) {
                                             <button
                                                 key={hours}
                                                 type="button"
-                                                className="block w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
+                                                className="block w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors ds-focus-ring"
                                                 onClick={stop(() => { setSnoozeOpen(false); onSnooze(hours) })}
                                             >
                                                 {label}
