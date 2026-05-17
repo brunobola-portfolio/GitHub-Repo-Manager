@@ -89,7 +89,7 @@ export function LanguageChart({ data = [], loading }) {
                 className="p-4 sm:p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300"
                 style={{ minHeight: `${chartHeight + 60}px` }}
             >
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
                     <Code2 className="w-5 h-5 text-pink-500" />
                     Language Distribution
                 </h3>

@@ -31,7 +31,7 @@ export function OrgPanel({
 			{/* Header */}
 			<div className="p-5 border-b border-slate-200/60 dark:border-slate-700/40">
 				<div className="flex items-center justify-between mb-4">
-					<h2 className="font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+					<h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2.5">
 						<div className="p-2 rounded-xl bg-indigo-600 dark:bg-indigo-500 text-white shadow-md">
 							<Building2 className="w-4 h-4" />
 						</div>
@@ -247,7 +247,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 
 			<div className={`flex-1 min-w-0 relative z-10 ${isGrid ? 'w-full flex flex-col items-center' : 'text-left'}`}>
 				{/* Nome da Organização */}
-				<h3 className={`font-bold truncate w-full ${
+				<h3 className={`font-semibold truncate w-full ${
 					isSelected ? 'text-indigo-900 dark:text-indigo-100' : 'text-slate-800 dark:text-slate-100'
 				} ${isGrid ? 'text-sm mb-1' : 'text-base mb-0.5'}`}>
 					{org.login}
