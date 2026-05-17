@@ -166,38 +166,46 @@ export function PricingCard({
             })}
           </ul>
 
-          {/* CTA button */}
+          {/* CTA button — each tier uses its own visual treatment but they
+              all share ds-focus-ring so keyboard navigation feels intentional
+              across the three cards. */}
           {highlighted ? (
             <button
+              type="button"
               onClick={ctaAction}
+              aria-label={`${ctaText} — ${tier} plan`}
               className="w-full py-3.5 rounded-xl font-bold text-sm text-white
                 bg-[color:var(--ds-cta)] hover:bg-[color:var(--ds-cta-hover)]
-                shadow-md transition-colors duration-200"
+                shadow-md transition-colors duration-200 ds-focus-ring"
             >
               {ctaText}
             </button>
           ) : enterprise ? (
             <button
+              type="button"
               onClick={ctaAction}
+              aria-label={`${ctaText} — ${tier} plan`}
               className="w-full py-3.5 rounded-xl font-bold text-sm
                 border border-amber-400/40 dark:border-amber-500/30
                 text-amber-700 dark:text-amber-300
                 hover:border-amber-400 dark:hover:border-amber-500/60
                 hover:bg-amber-50/50 dark:hover:bg-amber-500/[0.08]
-                transition-colors duration-200"
+                transition-colors duration-200 ds-focus-ring"
             >
               {ctaText}
             </button>
           ) : (
             <button
+              type="button"
               onClick={ctaAction}
+              aria-label={`${ctaText} — ${tier} plan`}
               className="w-full py-3.5 rounded-xl font-semibold text-sm
                 border border-slate-200 dark:border-white/[0.12]
                 text-slate-700 dark:text-slate-200
                 hover:border-indigo-400 dark:hover:border-indigo-500/60
                 hover:text-indigo-600 dark:hover:text-indigo-400
                 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/[0.08]
-                transition-colors duration-200"
+                transition-colors duration-200 ds-focus-ring"
             >
               {ctaText}
             </button>

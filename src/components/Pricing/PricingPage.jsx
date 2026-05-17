@@ -449,10 +449,11 @@ export function PricingPage({ onGetStarted } = {}) {
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
+                  type="button"
                   onClick={() => handleTierAction('Free')}
                   className="group px-8 py-3.5 rounded-xl font-semibold text-sm text-white
                     bg-[color:var(--ds-cta)] hover:bg-[color:var(--ds-cta-hover)]
-                    shadow-md transition-colors duration-200"
+                    shadow-md transition-colors duration-200 ds-focus-ring"
                 >
                   <span className="flex items-center gap-2">
                     Get started free
@@ -460,11 +461,12 @@ export function PricingPage({ onGetStarted } = {}) {
                   </span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleTierAction('Enterprise')}
                   className="px-8 py-3.5 rounded-xl font-semibold text-sm text-slate-200
                     border border-white/15 hover:border-white/30
                     hover:bg-white/[0.07]
-                    transition-colors duration-200"
+                    transition-colors duration-200 ds-focus-ring"
                 >
                   Talk to sales
                 </button>
@@ -482,8 +484,9 @@ export function PricingPage({ onGetStarted } = {}) {
           className="mt-12 text-center"
         >
           <button
+            type="button"
             onClick={() => typeof onGetStarted === 'function' && onGetStarted('roadmap')}
-            className="inline-flex items-center gap-2 text-sm font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors duration-200"
+            className="inline-flex items-center gap-2 px-2 py-1 rounded text-sm font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors duration-200 ds-focus-ring"
           >
             See what&apos;s next on our Roadmap
             <ArrowRight className="w-4 h-4" />
