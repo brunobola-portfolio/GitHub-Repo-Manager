@@ -109,7 +109,7 @@ export function CollaboratorsSection({ owner, repo, archived }) {
     return (
         <Card className="p-5 space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                     <Users className="w-5 h-5 text-indigo-500" /> Collaborators
                 </h3>
                 <Button size="sm" onClick={() => setShowAdd(s => !s)} disabled={archived}>

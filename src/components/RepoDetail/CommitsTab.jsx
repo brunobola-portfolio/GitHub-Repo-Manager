@@ -95,7 +95,7 @@ export function CommitsTab({ repo }) {
             <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2">
                     <GitCommit className="w-4 h-4 text-indigo-500" aria-hidden="true" />
-                    <h2 className="font-bold text-sm text-slate-800 dark:text-slate-200">
+                    <h2 className="font-semibold text-sm text-slate-800 dark:text-slate-200">
                         {commits.length} {commits.length === 1 ? 'commit' : 'commits'}
                     </h2>
                     <KeyboardHint />

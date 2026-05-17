@@ -79,7 +79,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
                         <Sparkles className="w-4 h-4" />
                     </div>
                     <div>
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">AI Issue-to-Plan</h4>
+                        <h4 className="text-sm font-semibold text-slate-900 dark:text-white">AI Issue-to-Plan</h4>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400">
                             Structured plan only — no branches or PRs are created.
                         </p>
@@ -181,7 +181,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
                 <div className="space-y-4">
                     {plan.title && (
                         <div>
-                            <h5 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                            <h5 className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">
                                 {plan.title}
                             </h5>
                         </div>
