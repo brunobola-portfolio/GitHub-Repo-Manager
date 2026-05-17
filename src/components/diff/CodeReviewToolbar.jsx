@@ -1,4 +1,5 @@
 import { Columns2, AlignLeft, ChevronLeft, ChevronRight, ChevronsDown, ChevronsUp, Files, PanelRightClose, PanelRightOpen, WrapText } from 'lucide-react'
+import { Tooltip } from '../ui/Tooltip'
 
 export function CodeReviewToolbar({
     filesCount, additions, deletions, reviewedCount,
@@ -15,14 +16,16 @@ export function CodeReviewToolbar({
     return (
         <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 flex-shrink-0">
             <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                <button
-                    type="button"
-                    onClick={onToggleTree}
-                    className="hidden md:inline-flex p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                    aria-label={treeCollapsed ? 'Show file tree' : 'Hide file tree'}
-                >
-                    {treeCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-                </button>
+                <Tooltip label={treeCollapsed ? 'Show file tree' : 'Hide file tree'}>
+                    <button
+                        type="button"
+                        onClick={onToggleTree}
+                        className="hidden md:inline-flex p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ds-focus-ring"
+                        aria-label={treeCollapsed ? 'Show file tree' : 'Hide file tree'}
+                    >
+                        {treeCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                    </button>
+                </Tooltip>
                 {onOpenMobileTree && (
                     <button
                         ref={mobileTreeButtonRef}
@@ -46,19 +49,23 @@ export function CodeReviewToolbar({
             </div>
 
             <div className="flex items-center gap-1.5">
-                <button type="button" onClick={onPrev} disabled={activeIndex === 0}
-                    className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 transition-colors"
-                    aria-label="Previous file">
-                    <ChevronLeft className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                </button>
+                <Tooltip label="Previous file">
+                    <button type="button" onClick={onPrev} disabled={activeIndex === 0}
+                        className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 transition-colors ds-focus-ring"
+                        aria-label="Previous file">
+                        <ChevronLeft className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    </button>
+                </Tooltip>
                 <span className="text-xs text-slate-500 dark:text-slate-400 w-14 text-center tabular-nums">
                     {activeIndex + 1} / {filesCount}
                 </span>
-                <button type="button" onClick={onNext} disabled={activeIndex >= filesCount - 1}
-                    className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 transition-colors"
-                    aria-label="Next file">
-                    <ChevronRight className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                </button>
+                <Tooltip label="Next file">
+                    <button type="button" onClick={onNext} disabled={activeIndex >= filesCount - 1}
+                        className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 transition-colors ds-focus-ring"
+                        aria-label="Next file">
+                        <ChevronRight className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    </button>
+                </Tooltip>
 
                 <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1" />
 
@@ -117,11 +124,13 @@ export function CodeReviewToolbar({
                 </button>
 
                 {rightSlotPresent && (
-                    <button type="button" onClick={onToggleRight}
-                        className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
-                        aria-label={rightCollapsed ? 'Show AI insights' : 'Hide AI insights'}>
-                        {rightCollapsed ? <PanelRightOpen className="w-3.5 h-3.5" /> : <PanelRightClose className="w-3.5 h-3.5" />}
-                    </button>
+                    <Tooltip label={rightCollapsed ? 'Show AI insights' : 'Hide AI insights'}>
+                        <button type="button" onClick={onToggleRight}
+                            className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600 transition-colors ds-focus-ring"
+                            aria-label={rightCollapsed ? 'Show AI insights' : 'Hide AI insights'}>
+                            {rightCollapsed ? <PanelRightOpen className="w-3.5 h-3.5" /> : <PanelRightClose className="w-3.5 h-3.5" />}
+                        </button>
+                    </Tooltip>
                 )}
             </div>
         </div>
