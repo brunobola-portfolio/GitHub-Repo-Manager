@@ -10,6 +10,7 @@ import { useToast } from '../../hooks/useToast'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { Skeleton } from '../ui/Skeleton'
 import { Button } from '../ui/Button'
+import { PanelHeader } from '../ui/PanelHeader'
 import { PROVIDER_DEFAULTS } from '../../utils/providerCapabilities'
 import { PRICING_LAST_UPDATED } from '../../utils/providerPricing'
 
@@ -342,25 +343,12 @@ export function AIConfigSection() {
 
     return (
         <div className="space-y-5">
-            {/* Editorial header */}
-            <header className="relative flex items-start gap-4 pb-1">
-                <span
-                    aria-hidden="true"
-                    className="absolute -left-1 top-1 bottom-1 w-0.5 rounded-full bg-indigo-500 opacity-80"
-                />
-                <div className="pl-3 flex-1 min-w-0">
-                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
-                        <Sparkles className="w-3 h-3" aria-hidden="true" />
-                        AI Workspace
-                    </div>
-                    <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-900 dark:text-white ds-font-display">
-                        Bring your own AI
-                    </h2>
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 max-w-lg">
-                        Connect your own provider API key. Your choices override the server default and stay private to your account.
-                    </p>
-                </div>
-            </header>
+            <PanelHeader
+                eyebrowIcon={Sparkles}
+                eyebrow="AI Workspace"
+                title="Bring your own AI"
+                description="Connect your own provider API key. Your choices override the server default and stay private to your account."
+            />
 
             {/* Shared-key banner — premium hairline-gradient */}
             {form.serverFallbackAvailable && !hasKeyStored && (

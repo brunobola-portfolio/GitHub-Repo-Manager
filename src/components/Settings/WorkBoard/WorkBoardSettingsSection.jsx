@@ -11,6 +11,7 @@ import { DangerZoneCard } from './DangerZoneCard'
 import { WorkBoardAISection } from './ai/WorkBoardAISection'
 import { WorkBoardSectionHeader } from './WorkBoardSectionHeader'
 import { WorkBoardSummary } from './WorkBoardSummary'
+import { PanelHeader } from '../../ui/PanelHeader'
 
 const ACTION_LABELS = {
     pin: 'Pinned',
@@ -131,25 +132,12 @@ export function WorkBoardSettingsSection() {
 
     return (
         <div className="space-y-5">
-            {/* Editorial header */}
-            <header className="relative flex items-start gap-4 pb-1">
-                <span
-                    aria-hidden="true"
-                    className="absolute -left-1 top-1 bottom-1 w-0.5 rounded-full bg-indigo-500 opacity-80"
-                />
-                <div className="pl-3 flex-1 min-w-0">
-                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
-                        <Sparkles className="w-3 h-3" aria-hidden="true" />
-                        Work Board
-                    </div>
-                    <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-900 dark:text-white ds-font-display">
-                        Tracked repositories
-                    </h2>
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 max-w-lg">
-                        Manage discovery, webhooks and the AI Assistant that keeps your board tidy.
-                    </p>
-                </div>
-            </header>
+            <PanelHeader
+                eyebrowIcon={Sparkles}
+                eyebrow="Work Board"
+                title="Tracked repositories"
+                description="Manage discovery, webhooks and the AI Assistant that keeps your board tidy."
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_18rem] gap-5 lg:items-start">
                 {/* ─────────── Left column: configuration ─────────── */}
