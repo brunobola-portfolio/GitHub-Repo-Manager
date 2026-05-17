@@ -435,24 +435,9 @@ export function PricingPage({ onGetStarted } = {}) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-          className="relative overflow-hidden rounded-3xl p-px"
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4)' }}
+          className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700"
         >
           <div className="relative rounded-3xl px-8 py-14 text-center bg-slate-900 dark:bg-slate-900 overflow-hidden">
-            {/* Inner glow */}
-            <div className="absolute inset-0 bg-indigo-600/5 pointer-events-none" />
-
-            <motion.div
-              className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-purple-500 opacity-10 blur-3xl"
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-            />
-            <motion.div
-              className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-indigo-500 opacity-10 blur-3xl"
-              animate={{ scale: [1, 1.15, 1] }}
-              transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-            />
-
             <div className="relative z-10">
               <h2 className="text-3xl sm:text-4xl font-bold text-white ds-font-display mb-4">
                 Start for free,{' '}
@@ -465,10 +450,9 @@ export function PricingPage({ onGetStarted } = {}) {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
                   onClick={() => handleTierAction('Free')}
-                  className="group px-8 py-3.5 rounded-xl font-bold text-sm text-white
-                    bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600
-                    shadow-md
-                    hover:scale-[1.03] active:scale-[0.97] transition-all duration-300"
+                  className="group px-8 py-3.5 rounded-xl font-semibold text-sm text-white
+                    bg-[color:var(--ds-cta)] hover:bg-[color:var(--ds-cta-hover)]
+                    shadow-md transition-colors duration-200"
                 >
                   <span className="flex items-center gap-2">
                     Get started free
@@ -479,8 +463,8 @@ export function PricingPage({ onGetStarted } = {}) {
                   onClick={() => handleTierAction('Enterprise')}
                   className="px-8 py-3.5 rounded-xl font-semibold text-sm text-slate-200
                     border border-white/15 hover:border-white/30
-                    hover:bg-white/[0.07] active:scale-[0.97]
-                    transition-all duration-300"
+                    hover:bg-white/[0.07]
+                    transition-colors duration-200"
                 >
                   Talk to sales
                 </button>
