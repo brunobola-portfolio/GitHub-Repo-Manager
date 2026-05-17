@@ -6,6 +6,7 @@ import { useToast } from '../../hooks/useToast'
 import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
+import { Field, Input } from '../ui/form'
 import { formatDate as formatDateBase } from '../../utils/format'
 import { getCsrfToken } from '../../utils/api'
 
@@ -111,69 +112,69 @@ function NewKeyForm({ onCreated, onCancel }) {
                     <Key className="w-4 h-4 text-indigo-500" />
                     Create New API Key
                 </h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label htmlFor="api-key-name" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                            Key Name
-                        </label>
-                        <input
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <Field
+                        label="Key Name"
+                        htmlFor="api-key-name"
+                        error={error && error.toLowerCase().includes('name') ? error : undefined}
+                    >
+                        <Input
                             id="api-key-name"
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="e.g. CI/CD Pipeline"
-                            className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                            autoComplete="off"
                         />
-                    </div>
+                    </Field>
 
-                    <div>
-                        <p className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
+                    <fieldset>
+                        <legend className="text-[13px] font-semibold text-slate-700 dark:text-slate-200 mb-2">
                             Scopes
-                        </p>
+                        </legend>
                         <div className="grid grid-cols-2 gap-2">
-                            {SCOPE_OPTIONS.map((scope) => (
-                                <label
-                                    key={scope.id}
-                                    htmlFor={`scope-${scope.id}`}
-                                    aria-label={scope.label}
-                                    className={`flex items-start gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${
-                                        scopes.includes(scope.id)
-                                            ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-400 dark:border-indigo-600'
-                                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700'
-                                    }`}
-                                >
-                                    <input
-                                        id={`scope-${scope.id}`}
-                                        type="checkbox"
-                                        checked={scopes.includes(scope.id)}
-                                        onChange={() => toggleScope(scope.id)}
-                                        className="mt-0.5 accent-indigo-600"
-                                    />
-                                    <div>
-                                        <p className="text-xs font-medium text-slate-800 dark:text-slate-200">{scope.label}</p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">{scope.description}</p>
-                                    </div>
-                                </label>
-                            ))}
+                            {SCOPE_OPTIONS.map((scope) => {
+                                const checked = scopes.includes(scope.id)
+                                return (
+                                    <label
+                                        key={scope.id}
+                                        htmlFor={`scope-${scope.id}`}
+                                        aria-label={scope.label}
+                                        className={`group flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors ${
+                                            checked
+                                                ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-300 dark:border-indigo-500/40 shadow-sm'
+                                                : 'bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/40'
+                                        }`}
+                                    >
+                                        <input
+                                            id={`scope-${scope.id}`}
+                                            type="checkbox"
+                                            checked={checked}
+                                            onChange={() => toggleScope(scope.id)}
+                                            className="mt-0.5 w-4 h-4 accent-indigo-600 cursor-pointer ds-focus-ring rounded"
+                                        />
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{scope.label}</p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{scope.description}</p>
+                                        </div>
+                                    </label>
+                                )
+                            })}
                         </div>
-                    </div>
+                    </fieldset>
 
-                    <div>
-                        <label htmlFor="api-key-expiry" className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                            Expiry Date <span className="text-slate-400">(optional)</span>
-                        </label>
-                        <input
+                    <Field label="Expiry Date" optional htmlFor="api-key-expiry">
+                        <Input
                             id="api-key-expiry"
                             type="date"
                             value={expiry}
                             onChange={(e) => setExpiry(e.target.value)}
                             min={new Date().toISOString().split('T')[0]}
-                            className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
                         />
-                    </div>
+                    </Field>
 
-                    {error && (
-                        <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                    {error && !error.toLowerCase().includes('name') && (
+                        <p className="text-xs font-medium text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
                             <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                             {error}
                         </p>
@@ -183,16 +184,16 @@ function NewKeyForm({ onCreated, onCancel }) {
                         <button
                             type="button"
                             onClick={onCancel}
-                            className="px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                            className="px-3.5 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors ds-focus-ring"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="px-4 py-1.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-all"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-colors ds-focus-ring"
                         >
-                            {submitting ? 'Creating...' : 'Create Key'}
+                            {submitting ? 'Creating…' : 'Create Key'}
                         </button>
                     </div>
                 </form>
