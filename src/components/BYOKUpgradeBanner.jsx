@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, X, ArrowRight } from 'lucide-react'
+import { Tooltip } from './ui/Tooltip'
 import { API_BASE_URL, MOCK_MODE } from '../config'
 
 const DISMISS_KEY = 'byok-banner-dismissed'
@@ -90,17 +91,20 @@ export function BYOKUpgradeBanner({ isAuthenticated, onOpenAISettings }) {
                                     Configure now
                                     <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                                 </button>
-                                <button
-                                    onClick={handleDismiss}
-                                    className="p-1.5 rounded-md text-white/60
-                                        hover:text-white
-                                        hover:bg-white/15
-                                        transition-colors duration-200
-                                        focus-visible:ring-2 focus-visible:ring-white focus:outline-none"
-                                    aria-label="Dismiss notification"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
+                                <Tooltip label="Dismiss">
+                                    <button
+                                        type="button"
+                                        onClick={handleDismiss}
+                                        className="p-1.5 rounded-md text-white/60
+                                            hover:text-white
+                                            hover:bg-white/15
+                                            transition-colors duration-200
+                                            focus-visible:ring-2 focus-visible:ring-white focus:outline-none"
+                                        aria-label="Dismiss notification"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </Tooltip>
                             </div>
                         </div>
                     </div>

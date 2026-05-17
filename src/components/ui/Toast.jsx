@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { XCircle, Info, AlertTriangle, X } from 'lucide-react'
 import { AnimatedCheck } from './AnimatedCheck'
+import { Tooltip } from './Tooltip'
 
 const ICONS = {
     success: null, // rendered directly as <AnimatedCheck> below
@@ -71,13 +72,16 @@ export function Toast({ id, type = 'info', message, content, onDismiss, duration
             ) : (
                 <p className="flex-1 text-sm font-medium">{message}</p>
             )}
-            <button
-                onClick={handleDismiss}
-                className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors"
-                aria-label="Dismiss notification"
-            >
-                <X className="w-4 h-4" />
-            </button>
+            <Tooltip label="Dismiss">
+                <button
+                    type="button"
+                    onClick={handleDismiss}
+                    className="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded transition-colors ds-focus-ring"
+                    aria-label="Dismiss notification"
+                >
+                    <X className="w-4 h-4" />
+                </button>
+            </Tooltip>
         </div>
     )
 }

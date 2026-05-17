@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { ShieldAlert, LogIn, X } from 'lucide-react'
+import { Tooltip } from './ui/Tooltip'
 
 export function SessionBanner({ visible, onLogin, onDismiss }) {
   return (
@@ -42,17 +43,19 @@ export function SessionBanner({ visible, onLogin, onDismiss }) {
                   Sign In
                 </button>
                 {onDismiss && (
-                  <button
-                    onClick={onDismiss}
-                    className="p-1.5 rounded-md text-amber-500/60 dark:text-amber-400/40
-                      hover:text-amber-700 dark:hover:text-amber-300
-                      hover:bg-amber-500/10 dark:hover:bg-amber-400/10
-                      transition-colors duration-200
-                      focus-visible:ring-2 focus-visible:ring-amber-500 focus:outline-none"
-                    aria-label="Dismiss notification"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <Tooltip label="Dismiss">
+                    <button
+                      type="button"
+                      onClick={onDismiss}
+                      className="p-1.5 rounded-md text-amber-500/60 dark:text-amber-400/40
+                        hover:text-amber-700 dark:hover:text-amber-300
+                        hover:bg-amber-500/10 dark:hover:bg-amber-400/10
+                        transition-colors duration-200 ds-focus-ring"
+                      aria-label="Dismiss notification"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </Tooltip>
                 )}
               </div>
             </div>
