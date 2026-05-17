@@ -255,7 +255,6 @@ export function TransferModal({
 							icon={Building2}
 							title="No organizations"
 							description="You're not a member of any GitHub organization that can receive transfers."
-							gradient="from-slate-400 to-slate-500"
 							action={{
 								label: "Create an organization on GitHub",
 								href: "https://github.com/organizations/plan",

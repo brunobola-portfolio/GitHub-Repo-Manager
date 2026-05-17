@@ -216,7 +216,7 @@ function SidebarStepper({ steps, currentStepIndex, onGoToStep, source, selectedC
                   {/* Step indicator */}
                   <div className="relative z-10 shrink-0">
                     {isCompleted ? (
-                      <div className="w-[18px] h-[18px] rounded-full bg-emerald-500 flex items-center justify-center shadow-[0_0_8px_rgba(16,185,129,0.4)]">
+                      <div className="w-[18px] h-[18px] rounded-full bg-emerald-500 flex items-center justify-center">
                         <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
                       </div>
                     ) : isActive ? (

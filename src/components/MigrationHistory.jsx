@@ -192,7 +192,6 @@ export function MigrationHistory({ isOpen, onClose }) {
                                 icon={ListChecks}
                                 title="No migration plans yet"
                                 description="Plans show up here once you start a migration from the wizard."
-                                gradient="from-slate-400 to-slate-500"
                             />
                         ) : (
                             plans.map(plan => {
@@ -303,7 +302,6 @@ export function MigrationHistory({ isOpen, onClose }) {
                                 icon={History}
                                 title="No legacy jobs"
                                 description="Pre-plan migrations from older sessions would show up here."
-                                gradient="from-slate-400 to-slate-500"
                             />
                         ) : (
                             filteredJobs.map(job => {

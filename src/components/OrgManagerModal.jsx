@@ -369,7 +369,6 @@ function MembersTab({ members, orgLogin }) {
                 icon={Users}
                 title="No members visible"
                 description="Either this org has no members or your token isn't authorized to read the member list."
-                gradient="from-slate-400 to-slate-500"
                 action={{
                     label: 'View members on GitHub',
                     href: `https://github.com/orgs/${orgLogin}/people`,

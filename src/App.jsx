@@ -906,7 +906,10 @@ function AppContent() {
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center">
           <Spinner size="xl" tone="primary" label="Loading Workspace" className="mx-auto mb-4" />
-          <p className="text-slate-500 dark:text-slate-400 animate-pulse">Loading Workspace...</p>
+          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+            <Spinner size="sm" />
+            <span>Loading Workspace...</span>
+          </div>
         </div>
       </div>
     )

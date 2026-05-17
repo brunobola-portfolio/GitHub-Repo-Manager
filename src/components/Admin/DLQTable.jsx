@@ -59,7 +59,6 @@ export function DLQTable({
                         ? 'No email deliveries are currently in the dead-letter queue for this filter.'
                         : 'No webhook events are currently in the dead-letter queue for this filter.'
                 }
-                gradient="from-emerald-500 to-teal-600"
             />
         )
     }

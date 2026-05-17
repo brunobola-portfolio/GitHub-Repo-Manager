@@ -77,7 +77,6 @@ export function ProbeStatsSection({ isAdmin = false }) {
                 icon={ShieldAlert}
                 title="Admin only"
                 description="The probe counters are restricted to admin accounts. Contact your operator for access."
-                gradient="from-slate-400 to-slate-500"
             />
         )
     }
@@ -99,7 +98,6 @@ export function ProbeStatsSection({ isAdmin = false }) {
                 icon={AlertTriangle}
                 title="Couldn't load probe stats"
                 description={error.message ?? 'Unknown error talking to /api/admin/ai/probe-stats.'}
-                gradient="from-red-400 to-rose-500"
                 action={{ label: 'Retry', onClick: fetchStats }}
             />
         )

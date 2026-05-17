@@ -1,6 +1,5 @@
-import { motion, useMotionValue, useSpring } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Check, Zap, Crown } from 'lucide-react'
-import { usePricingCardHover, PricingCardHoverLayers } from '@/hooks/usePricingCardHover'
 
 const plans = [
   {
@@ -71,39 +70,14 @@ const cardVariants = {
 const SALES_EMAIL = 'bruno@bolalabs.pt'
 
 function PreviewCard({ plan, i, onSignIn }) {
-	const tier = plan.popular ? 'pro' : plan.enterprise ? 'enterprise' : 'free'
-	const { cardRef, isHovered, hoverKey, reducedMotion, accent, handlers } = usePricingCardHover({ tier })
-	const rawX = useMotionValue(0)
-	const rawY = useMotionValue(0)
-	const springX = useSpring(rawX, { stiffness: 150, damping: 15 })
-	const springY = useSpring(rawY, { stiffness: 150, damping: 15 })
-
 	return (
 		<motion.div
-			ref={cardRef}
 			custom={i}
 			variants={cardVariants}
 			initial="hidden"
 			whileInView="visible"
 			viewport={{ once: true, margin: '-60px' }}
-			onMouseEnter={handlers.onMouseEnter}
-			onMouseLeave={() => {
-				handlers.onMouseLeave()
-				rawX.set(0)
-				rawY.set(0)
-			}}
-			onMouseMove={(e) => {
-				handlers.onMouseMove(e)
-				if (reducedMotion || !accent.hasMagneticButton) return
-				const rect = cardRef.current?.getBoundingClientRect()
-				if (!rect) return
-				const dx = (e.clientX - (rect.left + rect.width / 2)) / rect.width
-				const dy = (e.clientY - (rect.top + rect.height / 2)) / rect.height
-				rawX.set(dx * 6)
-				rawY.set(dy * 6)
-			}}
 			className={`relative ${plan.popular ? 'scale-[1.03] md:scale-[1.05]' : ''}`}
-			style={{ '--mx': '50%', '--my': '50%' }}
 		>
 			{/* Badges — absolute on outer wrapper so they can float above the card body (overflow-visible here) */}
 			{plan.popular && (
@@ -124,25 +98,17 @@ function PreviewCard({ plan, i, onSignIn }) {
 				</div>
 			)}
 
-			{/* Card body — has overflow-hidden to clip the shimmer */}
+			{/* Card body */}
 			<div
-				className={`relative rounded-2xl p-7 flex flex-col gap-6 h-full transition-all duration-300 overflow-hidden
+				className={`relative rounded-2xl p-7 flex flex-col gap-6 h-full transition-colors duration-200 overflow-hidden
 					${plan.popular
 						? 'bg-indigo-700 dark:bg-indigo-600 border-2 border-indigo-400/30 shadow-2xl'
 						: plan.enterprise
 							? 'bg-white/60 dark:bg-white/[0.04] border border-amber-400/30 dark:border-amber-500/20 backdrop-blur-sm shadow-lg shadow-amber-500/5 hover:shadow-amber-500/30'
-							: 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm hover:shadow-xl'
+							: 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm hover:border-slate-300 dark:hover:border-slate-600'
 					}`}
 			>
-				<PricingCardHoverLayers
-					tier={tier}
-					isHovered={isHovered}
-					hoverKey={hoverKey}
-					reducedMotion={reducedMotion}
-				/>
-
-				{/* Content wrapper above the absolute hover layers */}
-				<div className="relative z-[1] flex flex-col gap-6 h-full">
+				<div className="flex flex-col gap-6 h-full">
 					{/* Plan header */}
 					<div>
 						<p className={`text-sm font-semibold mb-1 ds-font-display ${plan.popular ? 'text-indigo-200' : plan.enterprise ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
@@ -163,22 +129,11 @@ function PreviewCard({ plan, i, onSignIn }) {
 						</p>
 					</div>
 
-					{/* Feature list — with stagger pop animation on hover (Layer 5) */}
-					<motion.ul
-						className="flex flex-col gap-3 flex-1"
-						animate={isHovered && !reducedMotion ? 'hover' : 'rest'}
-						variants={{
-							hover: { transition: { staggerChildren: 0.03 } },
-							rest: {},
-						}}
-					>
+					{/* Feature list */}
+					<ul className="flex flex-col gap-3 flex-1">
 						{plan.features.map((feat) => (
 							<li key={feat} className="flex items-start gap-2.5">
-								<motion.div
-									variants={{
-										hover: { scale: [1, 1.15, 1], transition: { duration: 0.3 } },
-										rest: { scale: 1 },
-									}}
+								<div
 									className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0
 										${plan.popular
 											? 'bg-white/20'
@@ -188,35 +143,33 @@ function PreviewCard({ plan, i, onSignIn }) {
 										}`}
 								>
 									<Check className={`w-3 h-3 ${plan.popular ? 'text-white' : plan.enterprise ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400'}`} strokeWidth={2.5} />
-								</motion.div>
+								</div>
 								<span className={`text-sm ds-font-display ${plan.popular ? 'text-indigo-50' : 'text-slate-600 dark:text-slate-300'}`}>
 									{feat}
 								</span>
 							</li>
 						))}
-					</motion.ul>
+					</ul>
 
-					{/* CTA — magnetic wrapper for popular/enterprise */}
-					<motion.div style={accent.hasMagneticButton ? { x: springX, y: springY } : undefined}>
-						<button
-							onClick={() => {
-								if (plan.enterprise) {
-									window.open(`mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Enterprise inquiry')}`, '_self')
-								} else if (onSignIn) {
-									onSignIn()
-								}
-							}}
-							className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
-								${plan.popular
-									? 'bg-white text-indigo-700 hover:bg-indigo-50 shadow-lg shadow-white/20 hover:shadow-xl focus-visible:ring-white focus-visible:ring-offset-indigo-600'
-									: plan.enterprise
-										? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 dark:hover:bg-amber-500/25 border border-amber-400/40 dark:border-amber-500/30 focus-visible:ring-amber-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950'
-										: 'bg-indigo-500/10 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20 dark:hover:bg-indigo-500/25 border border-indigo-300/40 dark:border-indigo-500/30 focus-visible:ring-indigo-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950'
-								}`}
-						>
-							{plan.cta}
-						</button>
-					</motion.div>
+					{/* CTA */}
+					<button
+						onClick={() => {
+							if (plan.enterprise) {
+								window.open(`mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Enterprise inquiry')}`, '_self')
+							} else if (onSignIn) {
+								onSignIn()
+							}
+						}}
+						className={`w-full py-3 rounded-xl font-semibold text-sm transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+							${plan.popular
+								? 'bg-white text-indigo-700 hover:bg-indigo-50 shadow-lg shadow-white/20 focus-visible:ring-white focus-visible:ring-offset-indigo-600'
+								: plan.enterprise
+									? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 dark:hover:bg-amber-500/25 border border-amber-400/40 dark:border-amber-500/30 focus-visible:ring-amber-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950'
+									: 'bg-indigo-500/10 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20 dark:hover:bg-indigo-500/25 border border-indigo-300/40 dark:border-indigo-500/30 focus-visible:ring-indigo-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950'
+							}`}
+					>
+						{plan.cta}
+					</button>
 				</div>
 			</div>
 		</motion.div>

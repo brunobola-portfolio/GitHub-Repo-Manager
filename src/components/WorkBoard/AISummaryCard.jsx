@@ -154,14 +154,6 @@ export function AISummaryCard({ meta: metaProp } = {}) {
     const urgency = urgencyScore
     const isHigh = urgency > 0.8
 
-    const glowAnimation = isHigh ? {
-        boxShadow: [
-            '0 0 0px rgba(244,63,94,0)',
-            '0 0 24px rgba(244,63,94,0.18)',
-            '0 0 0px rgba(244,63,94,0)',
-        ],
-    } : {}
-
     const severityLabel = urgency > 0.7 ? 'Critical' : urgency > 0.4 ? 'Elevated' : 'Nominal'
     const severityColor = urgency > 0.7 ? 'text-rose-400' : urgency > 0.4 ? 'text-amber-400' : 'text-indigo-400'
 
@@ -176,9 +168,8 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                 'relative rounded-3xl border border-slate-200 dark:border-slate-700/60',
                 'bg-white dark:bg-slate-900 shadow-sm overflow-hidden',
                 'flex flex-col sm:flex-row gap-6 p-5',
+                isHigh && 'ring-2 ring-rose-500/40 dark:ring-rose-400/40',
             )}
-            animate={glowAnimation}
-            transition={isHigh ? { duration: 3, repeat: Infinity, ease: 'easeInOut' } : {}}
         >
 
             {/* Left column — gauge + controls */}

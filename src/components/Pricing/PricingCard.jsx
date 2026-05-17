@@ -1,6 +1,4 @@
-import { motion, useMotionValue, useSpring } from 'framer-motion'
 import { Check, X, Zap, Crown } from 'lucide-react'
-import { usePricingCardHover, PricingCardHoverLayers } from '@/hooks/usePricingCardHover'
 
 export function PricingCard({
   tier,
@@ -16,51 +14,14 @@ export function PricingCard({
 }) {
   const showStrike = originalPrice != null && originalPrice !== price && price > 0
 
-  const pricingTier = highlighted ? 'pro' : enterprise ? 'enterprise' : 'free'
-  const { cardRef, isHovered, hoverKey, reducedMotion, accent, handlers } = usePricingCardHover({ tier: pricingTier })
-  const rawX = useMotionValue(0)
-  const rawY = useMotionValue(0)
-  const springX = useSpring(rawX, { stiffness: 150, damping: 15 })
-  const springY = useSpring(rawY, { stiffness: 150, damping: 15 })
-
   return (
-    <motion.div
-      ref={cardRef}
-      onMouseEnter={handlers.onMouseEnter}
-      onMouseLeave={() => {
-        handlers.onMouseLeave()
-        rawX.set(0)
-        rawY.set(0)
-      }}
-      onMouseMove={(e) => {
-        handlers.onMouseMove(e)
-        if (reducedMotion || !accent.hasMagneticButton) return
-        const rect = cardRef.current?.getBoundingClientRect()
-        if (!rect) return
-        const dx = (e.clientX - (rect.left + rect.width / 2)) / rect.width
-        const dy = (e.clientY - (rect.top + rect.height / 2)) / rect.height
-        rawX.set(dx * 6)
-        rawY.set(dy * 6)
-      }}
-      whileHover={reducedMotion ? {} : undefined}
-      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className="relative flex flex-col h-full"
-      style={{ '--mx': '50%', '--my': '50%' }}
-    >
-      {/* Gradient border wrapper for highlighted (Pro) card */}
+    <div className="relative flex flex-col h-full">
+      {/* Brand-indigo ring accent for highlighted (Pro) card */}
       {highlighted && (
-        <>
-          <div
-            className="absolute inset-0 rounded-2xl p-px"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4)' }}
-          >
-            <div className="absolute inset-0 rounded-2xl bg-slate-900" />
-          </div>
-          <div
-            className="absolute -inset-1 rounded-3xl opacity-40 blur-xl pointer-events-none"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4)' }}
-          />
-        </>
+        <div
+          className="absolute inset-0 rounded-2xl pointer-events-none ring-2 ring-[color:var(--ds-accent-brand)] dark:ring-[color:var(--ds-accent-brand-dark)]"
+          aria-hidden="true"
+        />
       )}
 
       {/* Subtle gold border for Enterprise */}
@@ -94,21 +55,15 @@ export function PricingCard({
 
       {/* Card body */}
       <div
-        className={`relative flex flex-col h-full rounded-2xl p-7 overflow-hidden transition-shadow duration-300
+        className={`relative flex flex-col h-full rounded-2xl p-7 overflow-hidden transition-colors duration-200
           ${highlighted
             ? 'bg-slate-900 dark:bg-slate-900 border border-transparent shadow-2xl'
             : enterprise
               ? 'bg-white dark:bg-slate-950 border border-transparent shadow-xl shadow-amber-500/10 hover:shadow-amber-500/30'
-              : 'bg-white/60 dark:bg-white/[0.04] backdrop-blur-md border border-slate-200/60 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.15] hover:shadow-xl'
+              : 'bg-white/60 dark:bg-white/[0.04] backdrop-blur-md border border-slate-200/60 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-slate-600'
           }`}
       >
-        <PricingCardHoverLayers
-          tier={pricingTier}
-          isHovered={isHovered}
-          hoverKey={hoverKey}
-          reducedMotion={reducedMotion}
-        />
-        {/* All existing content wrapped so it sits above the absolute hover layers */}
+        {/* All content */}
         <div className="relative z-[1] flex flex-col h-full">
 
           {/* Tier name */}
@@ -164,30 +119,19 @@ export function PricingCard({
           {customPrice == null && price > 0 && (
             <p className={`text-sm mb-6 ${highlighted ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
               {period === 'year'
-                ? `$${price * 12}/year \u00b7 Save 20%`
+                ? `$${price * 12}/year · Save 20%`
                 : 'Billed monthly'
               }
             </p>
           )}
 
           {/* Feature list */}
-          <motion.ul
-            className="flex flex-col gap-3 flex-1 mb-8"
-            animate={isHovered && !reducedMotion ? 'hover' : 'rest'}
-            variants={{
-              hover: { transition: { staggerChildren: 0.03 } },
-              rest: {},
-            }}
-          >
+          <ul className="flex flex-col gap-3 flex-1 mb-8">
             {features.map(({ label, included }) => {
               const isIncluded = included !== false && included !== null
               return (
                 <li key={label} className="flex items-start gap-3">
-                  <motion.span
-                    variants={{
-                      hover: { scale: [1, 1.15, 1], transition: { duration: 0.3 } },
-                      rest: { scale: 1 },
-                    }}
+                  <span
                     className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center
                       ${isIncluded
                         ? highlighted
@@ -202,7 +146,7 @@ export function PricingCard({
                       ? <Check className="w-3 h-3" strokeWidth={2.5} />
                       : <X className="w-3 h-3" strokeWidth={2.5} />
                     }
-                  </motion.span>
+                  </span>
                   <span
                     className={`text-sm leading-snug
                       ${isIncluded
@@ -220,35 +164,30 @@ export function PricingCard({
                 </li>
               )
             })}
-          </motion.ul>
+          </ul>
 
           {/* CTA button */}
           {highlighted ? (
-            <motion.div style={{ x: springX, y: springY }}>
-              <button
-                onClick={ctaAction}
-                className="w-full py-3.5 rounded-xl font-bold text-sm text-white
-                  bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600
-                  shadow-md
-                  active:scale-95 transition-all duration-300"
-              >
-                {ctaText}
-              </button>
-            </motion.div>
+            <button
+              onClick={ctaAction}
+              className="w-full py-3.5 rounded-xl font-bold text-sm text-white
+                bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600
+                shadow-md transition-colors duration-200"
+            >
+              {ctaText}
+            </button>
           ) : enterprise ? (
-            <motion.div style={{ x: springX, y: springY }}>
-              <button
-                onClick={ctaAction}
-                className="w-full py-3.5 rounded-xl font-bold text-sm
-                  border border-amber-400/40 dark:border-amber-500/30
-                  text-amber-700 dark:text-amber-300
-                  hover:border-amber-400 dark:hover:border-amber-500/60
-                  hover:bg-amber-50/50 dark:hover:bg-amber-500/[0.08]
-                  active:scale-95 transition-all duration-300"
-              >
-                {ctaText}
-              </button>
-            </motion.div>
+            <button
+              onClick={ctaAction}
+              className="w-full py-3.5 rounded-xl font-bold text-sm
+                border border-amber-400/40 dark:border-amber-500/30
+                text-amber-700 dark:text-amber-300
+                hover:border-amber-400 dark:hover:border-amber-500/60
+                hover:bg-amber-50/50 dark:hover:bg-amber-500/[0.08]
+                transition-colors duration-200"
+            >
+              {ctaText}
+            </button>
           ) : (
             <button
               onClick={ctaAction}
@@ -258,13 +197,13 @@ export function PricingCard({
                 hover:border-indigo-400 dark:hover:border-indigo-500/60
                 hover:text-indigo-600 dark:hover:text-indigo-400
                 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/[0.08]
-                active:scale-95 transition-all duration-300"
+                transition-colors duration-200"
             >
               {ctaText}
             </button>
           )}
         </div>  {/* closes the z-[1] wrapper */}
       </div>  {/* closes the card body */}
-    </motion.div>
+    </div>
   )
 }

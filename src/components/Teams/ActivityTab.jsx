@@ -66,7 +66,6 @@ export function ActivityTab({ teamId }) {
             icon={Activity}
             title="No recent activity"
             description="Once this team's repositories see commits, PRs or issues, they'll show up here."
-            gradient="from-slate-400 to-slate-500"
         />
     );
 
