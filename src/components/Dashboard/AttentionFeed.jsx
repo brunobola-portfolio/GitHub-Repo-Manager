@@ -187,13 +187,13 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
             className={`rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 ${className}`.trim()}
         >
             <div>
-                <header className="flex items-center justify-between gap-3 px-5 pt-5 pb-3 border-b border-slate-200/60 dark:border-slate-800">
+                <header className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 border-b border-slate-200/60 dark:border-slate-800">
                     <div className="min-w-0">
                         <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                             <Sparkles className="w-3 h-3" aria-hidden="true" />
                             Attention feed
                         </div>
-                        <h3 id="attention-feed-title" className="mt-1 text-base font-bold text-slate-900 dark:text-slate-100 ds-font-display">
+                        <h3 id="attention-feed-title" className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100 ds-font-display">
                             Repos that need your eyes
                         </h3>
                     </div>
@@ -263,7 +263,7 @@ function AttentionRow({ item, onClick, narrative = null }) {
             <button
                 type="button"
                 onClick={onClick}
-                className={`group flex w-full items-start gap-3 px-5 py-3 text-left ring-1 ring-inset transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40 ${ringClass}`}
+                className={`group flex w-full items-start gap-3 px-4 py-2.5 text-left ring-1 ring-inset transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40 ${ringClass}`}
             >
                 <span className={`mt-0.5 shrink-0 ${accentClass}`}>
                     <Icon className="w-4 h-4" aria-hidden="true" />

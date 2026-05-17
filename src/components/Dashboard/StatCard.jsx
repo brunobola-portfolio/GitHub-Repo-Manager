@@ -19,8 +19,10 @@ export const StatCard = memo(function StatCard({
     title,
     value,
     icon: Icon,
-    color = "text-indigo-500",
-    bg = "bg-indigo-500/10",
+    // color and bg props are accepted for backward-compat but ignored in the
+    // render path — all stat cards now use a uniform neutral icon treatment.
+    color: _color,
+    bg: _bg,
     trend,
     loading = false,
     compact = false,
@@ -59,11 +61,11 @@ export const StatCard = memo(function StatCard({
             <Card className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all duration-300 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 group">
                 <div className="flex items-start justify-between">
                     <div className="flex-1">
-                        <p className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider ds-font-display">
+                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide ds-font-display">
                             {title}
                         </p>
                         <motion.h3
-                            className="text-xl sm:text-3xl font-semibold text-slate-900 dark:text-white mt-2 sm:mt-3 ds-font-mono"
+                            className="text-2xl font-semibold text-slate-900 dark:text-white mt-2 ds-font-mono"
                             transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
                         >
                             {isNumeric ? (
@@ -84,8 +86,8 @@ export const StatCard = memo(function StatCard({
                             </p>
                         )}
                     </div>
-                    <div className={`p-2.5 sm:p-4 rounded-xl sm:rounded-2xl ${bg}`}>
-                        <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${color}`} />
+                    <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
+                        <Icon className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                     </div>
                 </div>
             </Card>

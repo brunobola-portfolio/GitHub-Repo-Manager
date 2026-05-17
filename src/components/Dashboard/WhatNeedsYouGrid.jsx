@@ -74,16 +74,16 @@ function CategoryCard({ category, data, onClick }) {
             type="button"
             onClick={onClick}
             aria-label={ariaLabel}
-            className={`group flex flex-col gap-3 p-5 text-left bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl ${tone.hoverBorder} hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ${tone.ring} transition-all ${lastClass}`}
+            className={`group flex flex-col gap-2.5 p-4 text-left bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl ${tone.hoverBorder} hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ${tone.ring} transition-all ${lastClass}`}
         >
-            <div className={`w-10 h-10 rounded-xl ${tone.iconBg} flex items-center justify-center`}>
-                <Icon className={`w-5 h-5 ${tone.iconColor}`} />
+            <div className={`w-8 h-8 rounded-lg ${tone.iconBg} flex items-center justify-center`}>
+                <Icon className={`w-4 h-4 ${tone.iconColor}`} />
             </div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                 {category.label}
             </div>
             <div className="flex items-end justify-between gap-2">
-                <span className={`text-3xl font-bold ds-font-display ${hasCount ? tone.countActive : 'text-slate-400 dark:text-slate-600'}`}>
+                <span className={`text-2xl font-semibold ds-font-display ${hasCount ? tone.countActive : 'text-slate-400 dark:text-slate-600'}`}>
                     {data.count}
                 </span>
                 {showDelta && (
@@ -108,7 +108,7 @@ function CategoryCard({ category, data, onClick }) {
 
 function SkeletonCard() {
     return (
-        <div data-testid="skeleton-card" className="flex flex-col gap-3 p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
+        <div data-testid="skeleton-card" className="flex flex-col gap-2.5 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl">
             <Skeleton className="w-10 h-10 rounded-xl" />
             <Skeleton className="h-3 w-24" />
             <Skeleton className="h-8 w-12" />
@@ -123,12 +123,12 @@ function EmptyState({ onOpenWorkBoard }) {
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="col-span-2 sm:col-span-3 flex flex-col items-center text-center gap-2 p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl"
+            className="col-span-2 sm:col-span-3 flex flex-col items-center text-center gap-2 py-5 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl"
         >
-            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-indigo-500" />
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-slate-500 dark:text-slate-400" />
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 ds-font-display">Estás em dia.</h3>
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 ds-font-display">Estás em dia.</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400">Nada precisa de ti agora.</p>
             <button
                 type="button"

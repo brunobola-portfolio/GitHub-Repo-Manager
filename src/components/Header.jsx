@@ -392,7 +392,7 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
             type="button"
             onClick={toggleTheme}
             aria-pressed={isDark}
-            className={`relative flex items-center gap-1.5 rounded-[9px] transition-all duration-300 ds-focus-ring h-[34px] px-2.5 ${
+            className={`relative flex items-center justify-center rounded-[9px] transition-all duration-300 ds-focus-ring w-[34px] h-[34px] ${
                 isDark
                     ? 'bg-slate-600/80 text-amber-300 hover:bg-slate-500/80 hover:text-amber-200'
                     : 'bg-white text-indigo-600 shadow-sm hover:bg-indigo-50 hover:text-indigo-700'
@@ -403,9 +403,6 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
             <span className="relative w-[15px] h-[15px]" aria-hidden="true">
                 <Sun className={`w-[15px] h-[15px] absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-50'}`} />
                 <Moon className={`w-[15px] h-[15px] absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-0 -rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'}`} />
-            </span>
-            <span className="hidden sm:inline text-[12px] font-semibold tracking-wide">
-                {isDark ? 'Dark' : 'Light'}
             </span>
         </button>
     )
