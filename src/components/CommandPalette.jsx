@@ -435,7 +435,9 @@ export function CommandPalette({
             }`}
           />
           {(loading || ask.loading || askResults.loading) && (
-            <Spinner size="sm" tone="muted" />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true">
+              <Spinner size="sm" tone="muted" />
+            </span>
           )}
         </div>
         <Command.List className="max-h-[400px] overflow-y-auto p-2">
