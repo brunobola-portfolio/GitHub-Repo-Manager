@@ -3,6 +3,7 @@ import {
   ExternalLink, Server, Globe, ShieldCheck,
 } from 'lucide-react'
 import { Spinner } from '../../../ui/Spinner'
+import { Skeleton } from '../../../ui/Skeleton'
 import CredCard from './CredCard'
 import { Button } from '../../../ui/Button'
 import { Input } from '../../../ui/form'
@@ -32,7 +33,7 @@ export default function CredentialsForm({
         <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Authentication</p>
         <div className="space-y-2">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-16 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+            <Skeleton key={i} variant="card" className="h-16" />
           ))}
         </div>
       </div>

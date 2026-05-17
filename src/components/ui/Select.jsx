@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useId } from 'react'
 import { ChevronDown, Check, Search } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { Skeleton } from './Skeleton'
 
 /**
  * Custom Select Component with sections, badges, search, skeleton, and footer.
@@ -346,8 +347,8 @@ export function Select({
                             {loading && (
                                 Array.from({ length: skeletonCount }).map((_, i) => (
                                     <div key={`skeleton-${i}`} className="px-3 py-2.5 flex items-center justify-between">
-                                        <div className="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                                        <div className="h-3 w-10 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                                        <Skeleton className="h-4 w-32" />
+                                        <Skeleton className="h-3 w-10" />
                                     </div>
                                 ))
                             )}

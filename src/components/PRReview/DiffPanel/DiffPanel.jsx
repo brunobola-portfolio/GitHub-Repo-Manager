@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } fro
 import { InlineComment } from './InlineComment'
 import { AIInlineComment } from '../AIDeepReview/AIInlineComment'
 import { Textarea } from '../../ui/form'
+import { Skeleton } from '../../ui/Skeleton'
 
 // DiffRenderer pulls in @git-diff-view/react + shiki (~1 MB / ~332 KB gzipped).
 // Lazy-load so mounting the PR Review view itself doesn't trigger that download —
@@ -19,11 +20,11 @@ const DiffRenderer = lazy(() =>
 function DiffLoadingSkeleton() {
   return (
     <div className="p-4 space-y-2" role="status" aria-live="polite" aria-label="Loading diff">
-      <div className="h-4 w-1/3 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-      <div className="h-4 w-5/6 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-      <div className="h-4 w-2/3 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-      <div className="h-4 w-4/5 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-      <div className="h-4 w-1/2 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+      <Skeleton className="h-4 w-1/3" />
+      <Skeleton className="h-4 w-5/6" />
+      <Skeleton className="h-4 w-2/3" />
+      <Skeleton className="h-4 w-4/5" />
+      <Skeleton className="h-4 w-1/2" />
       <span className="sr-only">Loading diff viewer…</span>
     </div>
   )

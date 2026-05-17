@@ -23,6 +23,7 @@ import { MigrationActivity } from './MigrationActivity'
 import { OrganizationCard } from './OrganizationCard'
 import { shouldShowCategory, aggregateRepoStats, aggregateLanguages, calculateActivityMetrics } from '../../utils/statsAggregator'
 import { useModal } from '../../hooks/useModal'
+import { Skeleton } from '../ui/Skeleton'
 import { motion } from 'framer-motion'
 
 /**
@@ -155,7 +156,7 @@ export function DashboardPremium({
 
                 <div id="attention" className="scroll-mt-20">
                     {isEnabled('inbox') ? (
-                        <Suspense fallback={<div className="h-48 animate-pulse bg-zinc-100 dark:bg-zinc-900/40 rounded-2xl" />}>
+                        <Suspense fallback={<Skeleton variant="card" className="h-48 rounded-2xl" />}>
                             <InboxPanel onSelectItem={(item) => onViewChange?.('repos', { highlightRepoFullName: item.repoFullName })} />
                         </Suspense>
                     ) : (
@@ -268,14 +269,14 @@ export function DashboardPremium({
                         the dashboard first paint is faster; the Suspense fallback is a
                         plain skeleton card until the chunk arrives. */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-7">
-                        <Suspense fallback={<div className="h-[400px] rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/30 dark:border-slate-800/30 animate-pulse" aria-hidden="true" />}>
+                        <Suspense fallback={<Skeleton variant="card" className="h-[400px] rounded-2xl border border-slate-200/30 dark:border-slate-800/30" aria-hidden="true" />}>
                             <ActivityChart
                                 activity={activity}
                                 timeRange={timeRange}
                                 loading={loading}
                             />
                         </Suspense>
-                        <Suspense fallback={<div className="h-[400px] rounded-2xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/30 dark:border-slate-800/30 animate-pulse" aria-hidden="true" />}>
+                        <Suspense fallback={<Skeleton variant="card" className="h-[400px] rounded-2xl border border-slate-200/30 dark:border-slate-800/30" aria-hidden="true" />}>
                             <LanguageChart
                                 data={languageData}
                                 loading={loading}

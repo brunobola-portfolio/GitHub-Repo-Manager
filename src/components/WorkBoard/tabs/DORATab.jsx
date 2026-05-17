@@ -4,6 +4,7 @@ import { EmptyState, WebhookHint, UpsellCard } from '../shared/shared-ui'
 import { hoursLabel } from '../shared/formatters'
 import { MOCK_MODE, API_BASE_URL } from '../../../config'
 import { Card } from '../../ui/Card'
+import { Skeleton } from '../../ui/Skeleton'
 
 function SparkLine({ perDay }) {
     if (!perDay || perDay.length === 0) return null
@@ -46,11 +47,11 @@ export function DORATab() {
 
     if (loading) {
         return (
-            <div className="p-6 space-y-4 animate-pulse">
+            <div className="p-6 space-y-4">
                 <div className="flex gap-3">
-                    {[1, 2, 3, 4].map(i => <div key={i} className="flex-1 h-20 rounded-2xl bg-slate-200 dark:bg-slate-700" />)}
+                    {[1, 2, 3, 4].map(i => <Skeleton key={i} variant="card" className="flex-1 h-20 rounded-2xl" />)}
                 </div>
-                <div className="h-14 rounded-xl bg-slate-200 dark:bg-slate-700" />
+                <Skeleton className="h-14 rounded-xl" />
             </div>
         )
     }

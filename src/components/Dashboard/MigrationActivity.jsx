@@ -5,6 +5,7 @@ import {
   ArrowRight, Clock, FolderGit2, AlertTriangle
 } from 'lucide-react'
 import { SectionSpinner } from '../ui/Spinner'
+import { EmptyState } from '../ui/EmptyState'
 import { formatRelativeTime } from '../../utils/format'
 import { useModal } from '../../hooks/useModal'
 
@@ -85,15 +86,11 @@ export function MigrationActivity({ loading: parentLoading }) {
 
   if (!stats || stats.total === 0) {
     return (
-      <div className="text-center py-10">
-        <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-4">
-          <Download className="w-7 h-7 text-indigo-500" />
-        </div>
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No migrations yet</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Import repositories from Azure DevOps, GitHub, or any Git URL
-        </p>
-      </div>
+      <EmptyState
+        icon={Download}
+        title="No migrations yet"
+        description="Import repositories from Azure DevOps, GitHub, or any Git URL"
+      />
     )
   }
 

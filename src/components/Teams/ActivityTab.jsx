@@ -5,6 +5,7 @@ import { GitCommit, GitPullRequest, CircleDot, Activity, Clock, FileCode, Star, 
 import { MOCK_MODE } from '../../config';
 import { EmptyState } from '../ui/EmptyState';
 import { Card } from '../ui/Card';
+import { Skeleton } from '../ui/Skeleton';
 
 export function ActivityTab({ teamId }) {
     const [events, setEvents] = useState([]);
@@ -222,10 +223,10 @@ function ActivitySkeleton() {
         <div className="space-y-4">
             {[1, 2, 3].map((i) => (
                 <div key={i} className="flex items-start gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <div className="w-8 h-8 bg-slate-100 dark:bg-slate-700/50 rounded-lg animate-pulse" />
+                    <Skeleton className="w-8 h-8 rounded-lg" />
                     <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-slate-100 dark:bg-slate-700/50 rounded w-3/4 animate-pulse" />
-                        <div className="h-3 bg-slate-100 dark:bg-slate-700/50 rounded w-1/4 animate-pulse" />
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/4" />
                     </div>
                 </div>
             ))}

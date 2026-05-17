@@ -12,6 +12,7 @@ import { InboxSection } from './InboxSection';
 import { SnoozeModal } from './SnoozeModal';
 import { AIQuotaMeter } from '../../ui/AIQuotaMeter';
 import { AIQuotaExhaustedCard } from '../../ui/AIQuotaExhaustedCard';
+import { Skeleton } from '../../ui/Skeleton';
 
 const NARRATIVE_TOP_N = 3;
 
@@ -161,10 +162,10 @@ export function InboxPanel({ onSelectItem }) {
                             {[0, 1, 2, 3].map(i => (
                                 <li key={i} className="border-b border-zinc-200/60 dark:border-zinc-800/60 px-4 py-3">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-4 h-4 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse" />
+                                        <Skeleton className="w-4 h-4" />
                                         <div className="flex-1 space-y-1.5">
-                                            <div className="h-3.5 w-3/5 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse" />
-                                            <div className="h-2.5 w-2/5 bg-zinc-200/70 dark:bg-zinc-800/70 rounded animate-pulse" />
+                                            <Skeleton className="h-3.5 w-3/5" />
+                                            <Skeleton className="h-2.5 w-2/5" />
                                         </div>
                                     </div>
                                 </li>

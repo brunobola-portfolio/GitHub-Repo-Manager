@@ -16,6 +16,7 @@ import { useAIQuotaState } from '../../hooks/useAIQuotaState'
 import { useAIUsage } from '../../hooks/useAIUsage'
 import { formatRelativeTime } from '../../utils/format'
 import { Spinner } from '../ui/Spinner'
+import { Skeleton } from '../ui/Skeleton'
 import { AIQuotaMeter } from '../ui/AIQuotaMeter'
 import { AIQuotaExhaustedCard } from '../ui/AIQuotaExhaustedCard'
 
@@ -286,7 +287,7 @@ function AttentionRow({ item, onClick, narrative = null }) {
                         </p>
                     )}
                     {narrative?.loading && (
-                        <p className="mt-1.5 h-3 w-2/3 rounded bg-indigo-100/60 dark:bg-indigo-900/30 animate-pulse" aria-hidden="true" />
+                        <Skeleton className="mt-1.5 h-3 w-2/3" aria-hidden="true" />
                     )}
                     {!narrative?.loading && narrative?.text && (
                         <p className="mt-1.5 flex items-start gap-1.5 text-[11px] italic text-indigo-700 dark:text-indigo-300">

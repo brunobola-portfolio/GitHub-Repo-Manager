@@ -10,6 +10,7 @@ import {
   Check, ShieldCheck, MessageCircle, LogOut,
 } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
+import { Skeleton } from './ui/Skeleton'
 import { Kbd } from './ui/Kbd'
 import { searchApi } from '../api/search'
 import { translateSearch } from '../api/translateSearch'
@@ -461,8 +462,8 @@ export function CommandPalette({
             </div>
           ) : ask.loading && !ask.data ? (
             <div className="px-3 py-3 space-y-2">
-              <div className="h-3 w-3/4 rounded bg-indigo-100/60 dark:bg-indigo-900/30 animate-pulse" />
-              <div className="h-2 w-1/2 rounded bg-indigo-100/40 dark:bg-indigo-900/20 animate-pulse" />
+              <Skeleton className="h-3 w-3/4" />
+              <Skeleton className="h-2 w-1/2" />
             </div>
           ) : ask.data ? (
             <>
