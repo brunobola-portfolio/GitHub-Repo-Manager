@@ -387,24 +387,26 @@ export function Header({
 }
 
 function ThemeToggleButton({ isDark, toggleTheme }) {
+    const label = isDark ? 'Switch to light mode' : 'Switch to dark mode'
     return (
-        <button
-            type="button"
-            onClick={toggleTheme}
-            aria-pressed={isDark}
-            className={`relative flex items-center justify-center rounded-[9px] transition-all duration-300 ds-focus-ring w-[34px] h-[34px] ${
-                isDark
-                    ? 'bg-slate-600/80 text-amber-300 hover:bg-slate-500/80 hover:text-amber-200'
-                    : 'bg-white text-indigo-600 shadow-sm hover:bg-indigo-50 hover:text-indigo-700'
-            }`}
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-            <span className="relative w-[15px] h-[15px]" aria-hidden="true">
-                <Sun className={`w-[15px] h-[15px] absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-50'}`} />
-                <Moon className={`w-[15px] h-[15px] absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-0 -rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'}`} />
-            </span>
-        </button>
+        <Tooltip label={label}>
+            <button
+                type="button"
+                onClick={toggleTheme}
+                aria-pressed={isDark}
+                className={`relative flex items-center justify-center rounded-[9px] transition-all duration-300 ds-focus-ring w-[34px] h-[34px] ${
+                    isDark
+                        ? 'bg-slate-600/80 text-amber-300 hover:bg-slate-500/80 hover:text-amber-200'
+                        : 'bg-white text-indigo-600 shadow-sm hover:bg-indigo-50 hover:text-indigo-700'
+                }`}
+                aria-label={label}
+            >
+                <span className="relative w-[15px] h-[15px]" aria-hidden="true">
+                    <Sun className={`w-[15px] h-[15px] absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-50'}`} />
+                    <Moon className={`w-[15px] h-[15px] absolute inset-0 transition-all duration-300 ${isDark ? 'opacity-0 -rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'}`} />
+                </span>
+            </button>
+        </Tooltip>
     )
 }
 
