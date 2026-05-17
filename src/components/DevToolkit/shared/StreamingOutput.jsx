@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Copy, Check, Terminal, Square } from 'lucide-react'
+import { Tooltip } from '../../ui/Tooltip'
 
 export function StreamingOutput({ content, streamingText, isStreaming, onCancel, label = 'Generated Output', retryCount = 0 }) {
     const [copiedId, setCopiedId] = useState(null)
@@ -52,9 +53,17 @@ export function StreamingOutput({ content, streamingText, isStreaming, onCancel,
 }
 
 function CopyBtn({ text, id, copiedId, onCopy, label, icon: Icon = Copy }) {
+    const isCopied = copiedId === id
     return (
-        <button type="button" onClick={() => onCopy(text, id)} className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-md transition-all" aria-label={label} title={label}>
-            {copiedId === id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Icon className="w-3.5 h-3.5" />}
-        </button>
+        <Tooltip label={isCopied ? 'Copied!' : label}>
+            <button
+                type="button"
+                onClick={() => onCopy(text, id)}
+                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-md transition-colors ds-focus-ring"
+                aria-label={label}
+            >
+                {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Icon className="w-3.5 h-3.5" />}
+            </button>
+        </Tooltip>
     )
 }

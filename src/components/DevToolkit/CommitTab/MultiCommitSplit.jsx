@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Copy, Check, Lightbulb, X } from 'lucide-react'
+import { Tooltip } from '../../ui/Tooltip'
 
 export function MultiCommitSplit({ commits = [], onDismiss, onUseAll }) {
     const [copiedIdx, setCopiedIdx] = useState(null)
@@ -28,9 +29,16 @@ export function MultiCommitSplit({ commits = [], onDismiss, onUseAll }) {
                     <Lightbulb className="w-3.5 h-3.5" />
                     Suggested commit sequence
                 </span>
-                <button type="button" onClick={onDismiss} className="p-1 rounded hover:bg-amber-200/50 dark:hover:bg-amber-800/30" aria-label="Dismiss">
-                    <X className="w-3 h-3 text-amber-500" />
-                </button>
+                <Tooltip label="Dismiss suggestion">
+                    <button
+                        type="button"
+                        onClick={onDismiss}
+                        className="p-1 rounded hover:bg-amber-200/50 dark:hover:bg-amber-800/30 transition-colors ds-focus-ring"
+                        aria-label="Dismiss"
+                    >
+                        <X className="w-3 h-3 text-amber-500" />
+                    </button>
+                </Tooltip>
             </div>
             <div className="divide-y divide-amber-100 dark:divide-amber-900/30">
                 {commits.map((commit, idx) => (
@@ -50,9 +58,16 @@ export function MultiCommitSplit({ commits = [], onDismiss, onUseAll }) {
                                 <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{commit.files.join(', ')}</p>
                             )}
                         </div>
-                        <button type="button" onClick={() => handleCopy(commit.message, idx)} className="shrink-0 p-1 rounded hover:bg-amber-200/50 dark:hover:bg-amber-800/30" aria-label="Copy">
-                            {copiedIdx === idx ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-slate-400" />}
-                        </button>
+                        <Tooltip label={copiedIdx === idx ? 'Copied!' : 'Copy commit message'}>
+                            <button
+                                type="button"
+                                onClick={() => handleCopy(commit.message, idx)}
+                                className="shrink-0 p-1 rounded hover:bg-amber-200/50 dark:hover:bg-amber-800/30 transition-colors ds-focus-ring"
+                                aria-label={copiedIdx === idx ? 'Copied' : 'Copy commit message'}
+                            >
+                                {copiedIdx === idx ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-slate-400" />}
+                            </button>
+                        </Tooltip>
                     </motion.div>
                 ))}
             </div>
