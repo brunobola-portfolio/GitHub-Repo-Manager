@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { X, Send, Sparkles, Loader2, Settings, Key, Minus, ArrowRight, AlertTriangle, RotateCw } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { Card } from './ui/Card'
+import { Input } from './ui/form'
 import ReactMarkdown from 'react-markdown'
 import { useModal } from '../hooks/useModal'
 import { useFocusTrap } from '../hooks/useFocusTrap'
@@ -382,18 +383,20 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                                 className="p-3 border-t border-white/40 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md shrink-0"
                                             >
                                                 <div className="flex gap-2 items-end">
-                                                    <input
-                                                        type="text"
-                                                        value={input}
-                                                        onChange={(e) => setInput(e.target.value)}
-                                                        placeholder="Ask me to open, create, or migrate…"
-                                                        aria-label="Message the AI assistant"
-                                                        className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-400 transition-all placeholder:text-slate-400"
-                                                    />
+                                                    <div className="flex-1 min-w-0">
+                                                        <Input
+                                                            type="text"
+                                                            value={input}
+                                                            onChange={(e) => setInput(e.target.value)}
+                                                            placeholder="Ask me to open, create, or migrate…"
+                                                            aria-label="Message the AI assistant"
+                                                            autoComplete="off"
+                                                        />
+                                                    </div>
                                                     <button
                                                         type="submit"
                                                         disabled={isLoading || !input.trim()}
-                                                        className="p-2.5 bg-[color:var(--ds-accent-brand)] text-white rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
+                                                        className="shrink-0 inline-flex items-center justify-center h-11 w-11 bg-[color:var(--ds-accent-brand)] text-white rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm ds-focus-ring"
                                                         aria-label="Send message"
                                                     >
                                                         {isLoading
