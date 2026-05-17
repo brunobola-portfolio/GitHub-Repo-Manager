@@ -161,7 +161,7 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                         copy.bg,
                         'shadow-lg',
                         'hover:shadow-xl hover:opacity-90 transition-all duration-200',
-                        'ds-focus-ring active:scale-[0.98]'
+                        'ds-focus-ring'
                     )}
                 >
                     View {tierName(tier)} pricing

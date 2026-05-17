@@ -107,7 +107,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                             rel={docsHref.startsWith('http') ? 'noopener noreferrer' : undefined}
                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold
                                        bg-amber-500 text-white shadow-md shadow-amber-500/30
-                                       hover:bg-amber-600 transition-colors ds-focus-ring active:scale-[0.98]"
+                                       hover:bg-amber-600 transition-colors ds-focus-ring"
                         >
                             <BookOpen className="w-3.5 h-3.5" /> Setup guide
                         </a>
@@ -118,7 +118,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold
                                        bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200
                                        border border-slate-200 dark:border-slate-700
-                                       hover:bg-white dark:hover:bg-slate-800 transition-colors ds-focus-ring active:scale-[0.98]"
+                                       hover:bg-white dark:hover:bg-slate-800 transition-colors ds-focus-ring"
                         >
                             <Mail className="w-3.5 h-3.5" /> Contact support
                         </a>

@@ -35,7 +35,7 @@ export function SessionBanner({ visible, onLogin, onDismiss }) {
                     text-white dark:text-slate-900
                     shadow-sm shadow-amber-600/20 dark:shadow-amber-500/20
                     hover:shadow-md hover:shadow-amber-500/30
-                    active:scale-[0.97] transition-all duration-200
+                    transition-colors duration-200
                     focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1 focus:outline-none"
                 >
                   <LogIn className="w-3.5 h-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />

@@ -125,8 +125,7 @@ export function LandingPage({ onSignIn }) {
               className="px-4 py-2 rounded-xl text-sm font-semibold text-white
                 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600
                 shadow-md
-                hover:scale-[1.03] active:scale-[0.97]
-                transition-all duration-200
+                transition-colors duration-200
                 ds-focus-ring
                 ds-font-display"
             >

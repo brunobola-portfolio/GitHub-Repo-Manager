@@ -84,7 +84,7 @@ export function BYOKUpgradeBanner({ isAuthenticated, onOpenAISettings }) {
                                         bg-white text-indigo-700
                                         hover:bg-indigo-50
                                         shadow-sm shadow-black/10
-                                        active:scale-[0.97] transition-all duration-200
+                                        transition-colors duration-200
                                         focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 focus-visible:ring-offset-indigo-600 focus:outline-none"
                                 >
                                     Configure now

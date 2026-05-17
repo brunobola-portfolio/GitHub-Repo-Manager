@@ -278,7 +278,7 @@ export function Header({
                                         text-white text-[13px] font-semibold
                                         shadow-sm
                                         hover:shadow-md
-                                        active:scale-[0.97] transition-all duration-200
+                                        transition-colors duration-200
                                         ds-focus-ring"
                                 >
                                     <Github className="w-[15px] h-[15px]" />
