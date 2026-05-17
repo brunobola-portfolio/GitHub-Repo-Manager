@@ -115,9 +115,7 @@
   --ds-chart-series-1: var(--ds-accent-brand);
   --ds-chart-series-2: var(--ds-success);
   --ds-chart-series-3: var(--ds-attention);
-}
 
-:root {
   /* Premium dashboard tokens (kept for Phase 1 inbox compat) */
   --ds-status-success: var(--ds-success);
   --ds-status-warning: var(--ds-attention);

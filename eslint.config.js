@@ -79,7 +79,7 @@ export default defineConfig([
     // implementation detail to users. The formatUserError() helper in
     // src/utils/errors.js is the supported way to convert exceptions
     // into a user-facing toast/banner.
-    files: ['src/components/**/*.{js,jsx}'],
+    files: ['src/components/**/*.{js,jsx}', 'src/hooks/**/*.{js,jsx}', 'src/utils/**/*.{js,jsx}'],
     rules: {
       'no-restricted-syntax': ['error',
         {
@@ -95,8 +95,8 @@ export default defineConfig([
           message: 'Theme spec: no scale on hover (cards-as-button exception is rare — discuss in review).',
         },
         {
-          selector: "Literal[value=/\\bfont-extrabold\\b/]",
-          message: 'Theme spec: max font weight on UI text is font-semibold (600).',
+          selector: "Literal[value=/\\bfont-(extrabold|black)\\b/]",
+          message: 'Theme spec: max font weight on UI text is font-semibold (600). font-extrabold and font-black are forbidden.',
         },
         {
           selector: "Literal[value=/\\bbackdrop-blur-(xl|2xl|3xl)\\b/]",

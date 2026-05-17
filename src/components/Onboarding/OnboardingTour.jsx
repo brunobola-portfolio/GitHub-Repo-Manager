@@ -79,7 +79,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                         type="button"
                         onClick={onClose}
                         aria-label="Close tour"
-                        className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"
+                        className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 ds-focus-ring"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -107,7 +107,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                     <button
                         type="button"
                         onClick={handleSkip}
-                        className="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                        className="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 ds-focus-ring"
                     >
                         Skip tour
                     </button>
@@ -116,7 +116,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                             <button
                                 type="button"
                                 onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
-                                className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
+                                className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 ds-focus-ring"
                             >
                                 <ArrowLeft className="w-4 h-4" /> Back
                             </button>
@@ -125,7 +125,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                             <button
                                 type="button"
                                 onClick={() => setStepIndex((i) => Math.min(ONBOARDING_STEPS.length - 1, i + 1))}
-                                className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-[color:var(--ds-accent-brand)] hover:opacity-90 transition-colors"
+                                className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-[color:var(--ds-accent-brand)] hover:opacity-90 transition-colors ds-focus-ring"
                             >
                                 Next <ArrowRight className="w-4 h-4" />
                             </button>
@@ -134,7 +134,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                             <button
                                 type="button"
                                 onClick={handleComplete}
-                                className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-[color:var(--ds-accent-brand)] hover:opacity-90 transition-colors"
+                                className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-[color:var(--ds-accent-brand)] hover:opacity-90 transition-colors ds-focus-ring"
                             >
                                 Got it
                             </button>

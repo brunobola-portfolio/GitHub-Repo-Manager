@@ -66,7 +66,7 @@ function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRe
     <button
       ref={buttonRef}
       onClick={onClick}
-      className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 group ${
+      className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 group ds-focus-ring ${
         accent
           ? 'bg-[color:var(--ds-accent-brand)] text-white hover:opacity-90 shadow-md'
           : isActive
@@ -365,7 +365,7 @@ function ActionButton({ icon: IconComp, label, subLabel, onClick, disabled, vari
             disabled={disabled}
             className={`
                 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold
-                transition-colors duration-150
+                transition-colors duration-150 ds-focus-ring
                 disabled:opacity-50 disabled:cursor-not-allowed
                 ${variants[variant]}
                 ${className}

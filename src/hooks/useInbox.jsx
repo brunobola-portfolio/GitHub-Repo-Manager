@@ -63,7 +63,7 @@ export function useInbox({ sections = ALL_SECTIONS } = {}) {
         if (undo) {
             toast.custom({
                 type: 'success',
-                duration: 6000,
+                duration: 8000,
                 content: (
                     <span className="flex items-center gap-3 w-full">
                         <span className="flex-1 text-sm font-medium">{label}</span>
@@ -82,53 +82,37 @@ export function useInbox({ sections = ALL_SECTIONS } = {}) {
         }
     }, [toast]);
 
-    // useOptimisticMutation expects static apply/revert/fn/inverse callbacks.
-    // We use refs to thread the per-call itemId/untilIso through stable fns.
-    const archiveItemRef = useRef(null);
-    const archiveSnapshotRef = useRef(null);
-    const archiveOnToast = useCallback(
-        (result) => makeOnToast('Archived')(result),
-        [makeOnToast],
-    );
-    const archiveApply   = useCallback(() => { archiveSnapshotRef.current = dataRef.current; setData(removeFromSections(dataRef.current, archiveItemRef.current)); }, []);
-    const archiveRevert  = useCallback(() => { setData(archiveSnapshotRef.current); }, []);
-    const archiveFn      = useCallback(() => archiveInboxItem(archiveItemRef.current), []);
-    const archiveInverse = useCallback(() => restoreInboxItem(archiveItemRef.current), []);
-    const { run: runArchive } = useOptimisticMutation({
-        apply:   archiveApply,
-        revert:  archiveRevert,
-        fn:      archiveFn,
-        inverse: archiveInverse,
-        onToast: archiveOnToast,
+    // Archive: payload = { itemId, snapshot }
+    const { run: archiveRun } = useOptimisticMutation({
+        apply: ({ itemId, snapshot: _snap }) => {
+            setData(removeFromSections(dataRef.current, itemId));
+        },
+        revert: ({ snapshot }) => { setData(snapshot); },
+        fn: ({ itemId }) => archiveInboxItem(itemId),
+        inverse: ({ itemId }) => restoreInboxItem(itemId),
+        onToast: makeOnToast('Archived'),
+        successMessage: 'Archived',
     });
     const archive = useCallback((itemId) => {
-        archiveItemRef.current = itemId;
-        return runArchive();
-    }, [runArchive]);
+        const snapshot = dataRef.current;
+        return archiveRun({ itemId, snapshot });
+    }, [archiveRun]);
 
-    const snoozeItemRef = useRef(null);
-    const snoozeUntilRef = useRef(null);
-    const snoozeSnapshotRef = useRef(null);
-    const snoozeOnToast = useCallback(
-        (result) => makeOnToast('Snoozed')(result),
-        [makeOnToast],
-    );
-    const snoozeApply   = useCallback(() => { snoozeSnapshotRef.current = dataRef.current; setData(removeFromSections(dataRef.current, snoozeItemRef.current)); }, []);
-    const snoozeRevert  = useCallback(() => { setData(snoozeSnapshotRef.current); }, []);
-    const snoozeFn      = useCallback(() => snoozeInboxItem(snoozeItemRef.current, snoozeUntilRef.current), []);
-    const snoozeInverse = useCallback(() => restoreInboxItem(snoozeItemRef.current), []);
-    const { run: runSnooze } = useOptimisticMutation({
-        apply:   snoozeApply,
-        revert:  snoozeRevert,
-        fn:      snoozeFn,
-        inverse: snoozeInverse,
-        onToast: snoozeOnToast,
+    // Snooze: payload = { itemId, untilIso, snapshot }
+    const { run: snoozeRun } = useOptimisticMutation({
+        apply: ({ itemId, snapshot: _snap }) => {
+            setData(removeFromSections(dataRef.current, itemId));
+        },
+        revert: ({ snapshot }) => { setData(snapshot); },
+        fn: ({ itemId, untilIso }) => snoozeInboxItem(itemId, untilIso),
+        inverse: ({ itemId }) => restoreInboxItem(itemId),
+        onToast: makeOnToast('Snoozed'),
+        successMessage: 'Snoozed',
     });
     const snooze = useCallback((itemId, untilIso) => {
-        snoozeItemRef.current = itemId;
-        snoozeUntilRef.current = untilIso;
-        return runSnooze();
-    }, [runSnooze]);
+        const snapshot = dataRef.current;
+        return snoozeRun({ itemId, untilIso, snapshot });
+    }, [snoozeRun]);
 
     const restore = useCallback(async (itemId) => {
         await restoreInboxItem(itemId);

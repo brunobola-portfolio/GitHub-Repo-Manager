@@ -10,6 +10,7 @@ import {
   Check, ShieldCheck, MessageCircle, LogOut,
 } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
+import { Kbd } from './ui/Kbd'
 import { searchApi } from '../api/search'
 import { translateSearch } from '../api/translateSearch'
 import { useDebounce } from '../hooks/useDebounce'
@@ -984,14 +985,13 @@ export function CommandPalette({
             : 'border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'
         }`}>
           <span>
-            <kbd className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">↑</kbd>
-            <kbd className="ml-1 px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">↓</kbd>
+            <Kbd>↑↓</Kbd>
             <span className="ml-1.5">navigate</span>
             <span className="mx-2 opacity-40">·</span>
-            <kbd className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">↵</kbd>
+            <Kbd>↵</Kbd>
             <span className="ml-1.5">{askMode ? 'open' : 'select'}</span>
             <span className="mx-2 opacity-40">·</span>
-            <kbd className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">esc</kbd>
+            <Kbd>Esc</Kbd>
             <span className="ml-1.5">close</span>
           </span>
           <span className="opacity-70 font-medium">

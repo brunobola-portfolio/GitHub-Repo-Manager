@@ -52,7 +52,7 @@ function PlanCard({ tier, status, renewalDate, onManage, onChangePlan, portalLoa
     const IconComp = config.icon
 
     return (
-        <Card className="p-6 bg-white/80 dark:bg-slate-800/80">
+        <Card glass={true} className="p-6 bg-white/80 dark:bg-slate-800/80">
             <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-2xl ${config.iconBg} flex items-center justify-center shrink-0`}>
@@ -167,7 +167,7 @@ function LicenseCard({ license, onChangeLicenseKey }) {
     const seatPct = license.seats > 0 ? Math.min(100, Math.round((license.seatsUsed / license.seats) * 100)) : 0
 
     return (
-        <Card className="p-6 bg-white/80 dark:bg-slate-800/80">
+        <Card glass={true} className="p-6 bg-white/80 dark:bg-slate-800/80">
             <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-2xl ${tierConfig.iconBg} flex items-center justify-center shrink-0`}>

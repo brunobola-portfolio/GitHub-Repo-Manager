@@ -1,3 +1,13 @@
+/**
+ * Keyboard shortcut hint pill. Renders the OS-specific modifier prefix
+ * when `modifier="mod"` (⌘ on macOS, Ctrl+ elsewhere).
+ *
+ * Example:
+ *   <Kbd>Esc</Kbd>
+ *   <Kbd modifier="mod">K</Kbd>   // renders "⌘K" on Mac, "Ctrl+K" on Windows
+ *
+ * Note: only `modifier="mod"` is platform-aware; any other value is ignored.
+ */
 function isMac() {
   if (typeof navigator === 'undefined') return false
   return /Mac/i.test(navigator.platform)

@@ -1,4 +1,11 @@
-/** durationMs is deprecated — animation is now fixed at 240ms via ds-animated-check-path CSS class. */
+/**
+ * Animated SVG checkmark with stroke-draw fill on mount.
+ * Used by Toast success variant and any "action complete" confirmation.
+ * Animation: 240ms via `.ds-animated-check-path` class.
+ *
+ * Example:
+ *   <AnimatedCheck size={20} color="currentColor" />
+ */
 export function AnimatedCheck({ size = 16, color = 'currentColor' }) {
   const length = 21
   return (

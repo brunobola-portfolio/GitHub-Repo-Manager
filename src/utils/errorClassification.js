@@ -43,7 +43,7 @@ function matchesAny(value, patterns) {
 function extractStack(error) {
     if (!error) return ''
     if (typeof error === 'string') return error
-    return error.stack || error.message || ''
+    return error.stack || error.message || '' // eslint-disable-line no-restricted-syntax -- internal error classification; .stack is never exposed to UI
 }
 
 /**

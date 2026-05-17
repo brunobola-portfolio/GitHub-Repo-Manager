@@ -9,13 +9,13 @@ import * as api from '../../src/api/dashboardInbox';
 // internals complaining about hooks called in callbacks.
 vi.mock('../../src/hooks/useOptimisticMutation', () => ({
     useOptimisticMutation: ({ apply, revert, fn, onToast }) => ({
-        run: async () => {
-            apply();
+        run: async (payload) => {
+            apply(payload);
             try {
-                await fn();
+                await fn(payload);
                 onToast?.({ type: 'success', message: 'Done', undo: undefined });
             } catch (err) {
-                revert();
+                revert(payload);
                 onToast?.({ type: 'error', message: err.message ?? 'Action failed' });
             }
         },
