@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import { Sparkles } from 'lucide-react';
 import { usePromptStudio } from '../../hooks/usePromptStudio';
+import { PageHeader } from '../ui/PageHeader';
+import { Button } from '../ui/Button';
 import { PromptLibrary } from './PromptLibrary';
 import { PromptEditor } from './PromptEditor';
 
@@ -54,14 +57,17 @@ export function PromptStudioPage({ currentTier = 'free' }) {
 
     return (
         <div className="max-w-4xl mx-auto p-6">
-            <div className="mb-4 flex items-center">
-                <h1 className="text-2xl font-bold flex-1">Prompt Studio</h1>
-                {view.mode === 'editor' ? (
-                    <button type="button" onClick={() => setView({ mode: 'library' })} className="text-sm text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+            <PageHeader
+                eyebrow="AI Prompts"
+                icon={Sparkles}
+                title="Prompt Studio"
+                description="Manage reusable prompt presets for AI features across the app."
+                actions={view.mode === 'editor' ? (
+                    <Button variant="ghost" size="sm" onClick={() => setView({ mode: 'library' })}>
                         ← Back to library
-                    </button>
+                    </Button>
                 ) : null}
-            </div>
+            />
             {studio.error ? (
                 <div className="mb-4 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-3 text-xs text-red-900 dark:text-red-200">
                     {studio.error}
