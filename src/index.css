@@ -77,6 +77,52 @@
     background-color: var(--ds-surface-dark);
     color: var(--ds-fg-dark);
   }
+
+  /* Page-level scrollbar — premium overlay style.
+     Default browser scrollbar is a chunky gray rail that ruins the look on
+     mobile (where touch scroll doesn't need a visible bar at all) and feels
+     dated on desktop. Mirrors .ds-scrollbar so the page chrome is consistent
+     with every internal scroll container. */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.3s ease;
+  }
+  html:hover {
+    scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+  }
+  html::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  html::-webkit-scrollbar-track { background: transparent; }
+  html::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 20px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    transition: background-color 0.3s ease;
+  }
+  html:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.5);
+  }
+  html::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(148, 163, 184, 0.8);
+  }
+  .dark html:hover { scrollbar-color: rgba(255, 255, 255, 0.2) transparent; }
+  .dark html:hover::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.2); }
+  .dark html::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.4); }
+
+  /* Touch devices / mobile — fully hide the page scrollbar. Native touch
+     scroll already provides the transient overlay indicator the OS draws,
+     and a visible rail on a phone reads as a desktop-leftover artifact. */
+  @media (pointer: coarse), (max-width: 767px) {
+    html {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    html::-webkit-scrollbar { display: none; }
+  }
 }
 
 @layer utilities {
