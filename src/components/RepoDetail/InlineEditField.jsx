@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Pencil } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 
-const INPUT_CLASSES = 'w-full px-2 py-1 -mx-2 -my-1 rounded-md bg-white dark:bg-slate-800 border border-indigo-400 dark:border-indigo-500 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-colors'
+const INPUT_CLASSES = 'w-full px-2 py-1 -mx-2 -my-1 rounded-md bg-white dark:bg-slate-800 border border-indigo-400 dark:border-indigo-500 text-slate-900 dark:text-slate-100 text-sm ds-focus-ring transition-colors'
 
 /**
  * Click-to-edit field used inline in the repo Overview. Hover shows a subtle

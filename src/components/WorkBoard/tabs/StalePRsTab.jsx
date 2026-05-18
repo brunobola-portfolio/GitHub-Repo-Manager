@@ -10,6 +10,7 @@ import { InlineActions } from '../InlineActions'
 import { SkeletonList, UpsellCard } from '../shared/shared-ui'
 import { PingAuthorPopover, AnimatedChipStrip } from '../shared/PingAuthorPopover'
 import { RowIconBadge } from '../../ui/RowIconBadge'
+import { Select } from '../../ui/Select'
 import { dayLabel } from '../shared/formatters'
 import { WorkBoardRowMenu } from '../WorkBoardRowMenu'
 import { WorkBoardRowLink } from '../WorkBoardRowLink'
@@ -186,19 +187,17 @@ export function StalePRsTab({ hasAI = false }) {
         <>
             {/* Controls */}
             <div className="flex items-center gap-3 p-4 border-b border-slate-100 dark:border-slate-800/60">
-                <label htmlFor="stale-prs-after-days" className="text-xs font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">
                     Stale after
-                </label>
-                <select
-                    id="stale-prs-after-days"
-                    value={staleAfterDays}
-                    onChange={e => setStaleAfterDays(Number(e.target.value))}
-                    className="text-xs px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                    {[3, 7, 14, 30].map(d => (
-                        <option key={d} value={d}>{d} days</option>
-                    ))}
-                </select>
+                </span>
+                <Select
+                    size="sm"
+                    label="Stale after"
+                    value={String(staleAfterDays)}
+                    onChange={(v) => setStaleAfterDays(Number(v))}
+                    className="min-w-[110px]"
+                    options={[3, 7, 14, 30].map(d => ({ value: String(d), label: `${d} days` }))}
+                />
             </div>
 
             {prs.length === 0 ? (

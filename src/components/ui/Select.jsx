@@ -279,7 +279,7 @@ export function Select({
                     font-medium
                     text-slate-700 dark:text-slate-200
                     transition-all duration-200
-                    focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900
+                    ds-focus-ring
                     ${disabled
                         ? 'opacity-50 cursor-not-allowed'
                         : 'hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-md cursor-pointer'

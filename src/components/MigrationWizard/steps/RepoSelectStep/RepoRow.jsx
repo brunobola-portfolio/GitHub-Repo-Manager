@@ -99,7 +99,7 @@ export function RepoRow({ repo, isSelected, isActive, density = 'full', onToggle
             type="button"
             onClick={() => onOpenDetail(repo.id)}
             aria-label={`View details for ${repo.name}`}
-            className="p-1 rounded text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+            className="p-1 rounded text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 ds-focus-ring"
           >
             <ChevronRight className="w-4 h-4" aria-hidden="true" />
           </button>
