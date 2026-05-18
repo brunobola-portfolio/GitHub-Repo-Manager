@@ -320,6 +320,43 @@ function AppContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setActiveView])
 
+  // Bidirectional sync: when activeView changes from in-app nav (clicking
+  // bottom-nav tabs, More \xe2\x86\x92 Pricing, breadcrumb-back, etc.) update the URL
+  // hash so the address bar reflects the current view, browser back / forward
+  // work, and the URL is shareable. Inverse of HASH_ROUTES.
+  const VIEW_TO_HASH = useMemo(() => ({
+    'prompt-studio': '#/ai/prompts',
+    'roadmap':       '#/roadmap',
+    'pricing':       '#/pricing',
+    'repos':         '#/repos',
+    'work-board':    '#/work',
+    'teams':         '#/teams',
+    'dashboard':     '', // home strips the hash entirely
+  }), [])
+
+  // Skip the first state→hash run so we don't strip a deep-link hash before
+  // the hash→state effect (declared above) has resolved its startTransition.
+  // Subsequent activeView changes are user-driven navigation and SHOULD sync.
+  const didInitHashSyncRef = useRef(false)
+  useEffect(() => {
+    if (!didInitHashSyncRef.current) {
+      didInitHashSyncRef.current = true
+      return
+    }
+    const desired = VIEW_TO_HASH[activeView]
+    // Only sync when the view is in the deep-link map. Views that live
+    // outside the hash space (repo-detail, pr-review, admin-dlq, etc.)
+    // leave the hash alone.
+    if (desired === undefined) return
+    if (window.location.hash === desired) return
+    // Use replaceState so each nav click doesn't pollute the history stack
+    // with an entry per click; the back button still works because the
+    // hash-driven sync above watches popstate too via hashchange.
+    const newUrl = window.location.pathname + window.location.search + desired
+    window.history.replaceState(null, '', newUrl || window.location.pathname)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView])
+
   // Quota-exceeded surfaces (QuotaExceededState etc) emit
   // 'app:navigate-pricing' instead of mutating window.location.hash. Routing
   // through React state preserves browser-history behaviour and avoids the
