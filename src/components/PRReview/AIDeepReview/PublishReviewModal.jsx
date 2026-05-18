@@ -49,7 +49,7 @@ export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishi
                 </div>
             }
         >
-            <div className="p-5 space-y-4 text-sm">
+            <div className="space-y-4 text-sm">
                 <div className="grid grid-cols-3 gap-3 text-center">
                     <div className="rounded border border-slate-200 dark:border-slate-800 p-3">
                         <div className="text-2xl font-bold">{lineCount}</div>
