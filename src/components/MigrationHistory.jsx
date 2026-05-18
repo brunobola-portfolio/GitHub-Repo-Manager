@@ -247,6 +247,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                         onClick={(e) => { e.stopPropagation(); handleRerunPlan(plan) }}
                                                         className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                                                         title="Re-run migration"
+                                                        aria-label="Re-run migration"
                                                     >
                                                         <RotateCcw className="w-4 h-4" />
                                                     </button>
@@ -256,6 +257,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                         onClick={(e) => { e.stopPropagation(); handleExportReport(plan) }}
                                                         className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                                                         title="Export report"
+                                                        aria-label="Export report"
                                                     >
                                                         <FileText className="w-4 h-4" />
                                                     </button>

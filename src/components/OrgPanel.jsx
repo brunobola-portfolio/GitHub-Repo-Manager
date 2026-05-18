@@ -43,6 +43,7 @@ export function OrgPanel({
 							onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
 							className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-colors duration-200"
 							title={viewMode === 'list' ? "Switch to Grid View" : "Switch to List View"}
+							aria-label={viewMode === 'list' ? "Switch to Grid View" : "Switch to List View"}
 						>
 							{viewMode === 'list' ? <LayoutGrid size={18} /> : <List size={18} />}
 						</button>
@@ -50,6 +51,7 @@ export function OrgPanel({
 							onClick={onCreateOrg}
 							className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-colors duration-200"
 							title="Add Organization"
+							aria-label="Add Organization"
 						>
 							<Plus size={18} />
 						</button>

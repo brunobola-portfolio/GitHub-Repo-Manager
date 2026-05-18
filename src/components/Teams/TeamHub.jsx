@@ -275,6 +275,9 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
                         <button
                             onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
                             className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                            aria-label="Team actions menu"
+                            aria-expanded={showMenu}
+                            aria-haspopup="menu"
                         >
                             <MoreVertical className="w-5 h-5" />
                         </button>

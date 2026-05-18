@@ -243,6 +243,7 @@ export function AuditLogSection() {
                             onClick={() => setPage((p) => Math.max(1, p - 1))}
                             disabled={page === 1 || loading}
                             className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Previous page"
                         >
                             <ChevronLeft className="w-4 h-4" />
                         </button>
@@ -253,6 +254,7 @@ export function AuditLogSection() {
                             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                             disabled={page >= totalPages || loading}
                             className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Next page"
                         >
                             <ChevronRight className="w-4 h-4" />
                         </button>
