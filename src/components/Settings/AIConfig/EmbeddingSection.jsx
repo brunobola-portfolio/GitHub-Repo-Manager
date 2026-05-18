@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { ChevronDown } from 'lucide-react'
 import {
     PROVIDER_IDS,
     PROVIDER_LABELS,
@@ -7,10 +6,11 @@ import {
     PROVIDER_DEFAULTS,
 } from '../../../utils/providerCapabilities'
 import { useEmbeddingModels } from '../../../hooks/useProviderModels'
-import { PROVIDERS_NEEDING_EMBEDDING_OVERRIDE, INPUT_CLS, LABEL_CLS } from './constants'
+import { PROVIDERS_NEEDING_EMBEDDING_OVERRIDE, LABEL_CLS } from './constants'
 import { PriceHint } from './PriceHint'
 import { ModelCombobox } from './ModelCombobox'
 import { Field, Input } from '../../ui/form'
+import { Select } from '../../ui/Select'
 
 // ---------------------------------------------------------------------------
 // Sub-component: EmbeddingSection
@@ -73,20 +73,18 @@ export function EmbeddingSection({ form, onChange }) {
 
             <div>
                 <label htmlFor="embedding-provider" className={LABEL_CLS}>Embedding Provider</label>
-                <div className="relative">
-                    <select
-                        id="embedding-provider"
-                        value={form.embeddingProvider ?? ''}
-                        onChange={(e) => onChange('embeddingProvider', e.target.value || null)}
-                        className={`${INPUT_CLS} pr-8 appearance-none cursor-pointer`}
-                    >
-                        <option value="">— Select embedding provider —</option>
-                        {PROVIDER_IDS.filter((id) => PROVIDER_CAPABILITIES[id]?.semanticSearch === 'yes').map((id) => (
-                            <option key={id} value={id}>{PROVIDER_LABELS[id]}</option>
-                        ))}
-                    </select>
-                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
+                <Select
+                    label="Embedding Provider"
+                    value={form.embeddingProvider ?? ''}
+                    onChange={(value) => onChange('embeddingProvider', value || null)}
+                    placeholder="— Select embedding provider —"
+                    options={[
+                        { value: '', label: '— Select embedding provider —' },
+                        ...PROVIDER_IDS
+                            .filter((id) => PROVIDER_CAPABILITIES[id]?.semanticSearch === 'yes')
+                            .map((id) => ({ value: id, label: PROVIDER_LABELS[id] })),
+                    ]}
+                />
             </div>
 
             {form.embeddingProvider && (
