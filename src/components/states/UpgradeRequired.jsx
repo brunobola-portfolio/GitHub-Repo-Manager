@@ -81,15 +81,13 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
             aria-label={`${tierName(tier)} feature`}
             className={twMerge(
                 'relative isolate overflow-hidden',
-                'rounded-3xl border border-slate-200/70 dark:border-slate-700/50',
-                'bg-white/80 dark:bg-slate-900/70 backdrop-blur-md',
-                'shadow-xl shadow-slate-200/40 dark:shadow-black/40',
+                'rounded-3xl border border-slate-200 dark:border-slate-700/60',
+                'bg-white dark:bg-slate-900',
+                'shadow-lg',
                 'px-6 py-12 sm:px-10 sm:py-16',
                 className
             )}
         >
-            <DecorativeOrbs bg={copy.bg} />
-            <NoiseGrain />
 
             <div className="relative flex flex-col items-center text-center max-w-md mx-auto">
                 {/* Lock medallion */}
@@ -101,7 +99,7 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                         'relative mb-5 inline-flex items-center justify-center',
                         'w-16 h-16 rounded-2xl',
                         copy.bg,
-                        'shadow-2xl',
+                        'shadow-md',
                         'ring-1', copy.ring
                     )}
                 >
@@ -119,7 +117,7 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                     <Sparkles className="w-3 h-3" /> {copy.eyebrow}
                 </span>
 
-                <h3 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900 dark:text-white mb-2 ds-font-display">
+                <h3 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white mb-2 ds-font-display">
                     {feature ? `Unlock ${feature}` : `Upgrade to ${tierName(tier)}`}
                 </h3>
 
@@ -159,8 +157,8 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                         'group inline-flex items-center justify-center gap-2',
                         'px-5 py-2.5 rounded-xl text-sm font-semibold text-white',
                         copy.bg,
-                        'shadow-lg',
-                        'hover:shadow-xl hover:opacity-90 transition-all duration-200',
+                        'shadow-md',
+                        'hover:opacity-90 transition-opacity duration-200',
                         'ds-focus-ring'
                     )}
                 >
@@ -273,40 +271,3 @@ function BannerUpgrade({ tier, feature, copy, pricingHref, onPricingClick, onDis
     )
 }
 
-/* ------------------------------------------------------------------ */
-/* Decorations                                                         */
-/* ------------------------------------------------------------------ */
-
-function DecorativeOrbs({ bg }) {
-    return (
-        <>
-            <div
-                aria-hidden
-                className={twMerge(
-                    'pointer-events-none absolute -top-24 -right-16 w-64 h-64 rounded-full blur-3xl opacity-30 dark:opacity-25',
-                    bg
-                )}
-            />
-            <div
-                aria-hidden
-                className={twMerge(
-                    'pointer-events-none absolute -bottom-32 -left-20 w-72 h-72 rounded-full blur-3xl opacity-20 dark:opacity-20',
-                    bg
-                )}
-            />
-        </>
-    )
-}
-
-function NoiseGrain() {
-    return (
-        <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 opacity-[0.025] dark:opacity-[0.04] mix-blend-overlay"
-            style={{
-                backgroundImage:
-                    "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
-            }}
-        />
-    )
-}

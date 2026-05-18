@@ -65,7 +65,7 @@ class ErrorBoundary extends Component {
 
       return (
         <div className="min-h-[400px] flex items-center justify-center bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-6">
-          <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-black/30 p-8 text-center">
+          <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-8 text-center">
             <div className="w-14 h-14 bg-red-50 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-7 h-7 text-red-500 dark:text-red-400" />
             </div>

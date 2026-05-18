@@ -108,16 +108,6 @@ export function AnalysisLoadingState() {
       exit={{ opacity: 0, y: -10 }}
       className="relative"
     >
-      {/* Atmospheric glow */}
-      <div className="absolute inset-0 -m-4 overflow-hidden rounded-2xl pointer-events-none">
-        <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)' }}
-          animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.8, 0.5] }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      </div>
-
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -150,7 +140,7 @@ export function AnalysisLoadingState() {
 
       {/* Phase list */}
       <div className="space-y-3 relative">
-        <div className="absolute left-5 top-10 bottom-4 w-px bg-gradient-to-b from-violet-500/20 via-slate-200 dark:via-slate-700 to-transparent" />
+        <div className="absolute left-5 top-10 bottom-4 w-px bg-slate-200 dark:bg-slate-700" />
         {ANALYSIS_PHASES.map((phase, i) => (
           <AnalysisPhaseIndicator key={phase.id} phase={phase} index={i} currentPhase={currentPhase} />
         ))}

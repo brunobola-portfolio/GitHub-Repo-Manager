@@ -52,15 +52,15 @@ export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishi
             <div className="space-y-4 text-sm">
                 <div className="grid grid-cols-3 gap-3 text-center">
                     <div className="rounded border border-slate-200 dark:border-slate-800 p-3">
-                        <div className="text-2xl font-bold">{lineCount}</div>
+                        <div className="text-lg font-semibold tabular-nums">{lineCount}</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">Line comments</div>
                     </div>
                     <div className="rounded border border-slate-200 dark:border-slate-800 p-3">
-                        <div className="text-2xl font-bold">{suggestionCount}</div>
+                        <div className="text-lg font-semibold tabular-nums">{suggestionCount}</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">Code suggestions</div>
                     </div>
                     <div className="rounded border border-slate-200 dark:border-slate-800 p-3">
-                        <div className="text-2xl font-bold">{hasMermaid ? '1' : '0'}</div>
+                        <div className="text-lg font-semibold tabular-nums">{hasMermaid ? '1' : '0'}</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">Diagram</div>
                     </div>
                 </div>

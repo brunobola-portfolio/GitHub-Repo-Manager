@@ -94,7 +94,7 @@ export function RateLimitNotice({ retryAt, variant = 'toast', onRetry, onDismiss
                     : 'bg-amber-500/10 dark:bg-amber-400/10 text-amber-700/60 dark:text-amber-300/50 cursor-not-allowed'}
             `}
         >
-            <RotateCcw className={`w-3.5 h-3.5 transition-transform duration-300 ${isReady ? 'group-hover:-rotate-45' : ''}`} />
+            <RotateCcw className="w-3.5 h-3.5" />
             Retry now
         </button>
     )

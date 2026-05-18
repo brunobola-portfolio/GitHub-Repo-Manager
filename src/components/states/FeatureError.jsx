@@ -115,7 +115,7 @@ export function FeatureError({
             transition={{ duration: 0.3 }}
             role="alert"
             className={twMerge(
-                'relative overflow-hidden rounded-2xl border backdrop-blur-md',
+                'relative overflow-hidden rounded-2xl border',
                 'px-5 py-5 sm:px-6',
                 'flex items-start gap-4',
                 palette.surface, palette.ring,

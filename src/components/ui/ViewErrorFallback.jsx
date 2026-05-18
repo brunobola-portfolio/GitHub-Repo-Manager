@@ -62,19 +62,13 @@ export function ViewErrorFallback({
 
   const Card = (
     <>
-      {/* Decorative gradient ring sitting behind the icon — keeps the
-          dialog feeling premium without leaning on a heavy header. */}
       <div className="relative">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 w-24 h-24 rounded-full bg-amber-300/30 blur-2xl"
-        />
         <div className="relative w-14 h-14 mx-auto mb-4 rounded-2xl bg-amber-500 shadow-md flex items-center justify-center ring-1 ring-white/40 dark:ring-white/10">
           <AlertTriangle className="w-7 h-7 text-white" strokeWidth={2.25} aria-hidden="true" />
         </div>
       </div>
 
-      <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 text-center tracking-tight">
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 text-center tracking-tight">
         Something went wrong in {viewName}
       </h2>
       <p className="mt-1.5 text-slate-500 dark:text-slate-400 text-sm text-center leading-relaxed">
@@ -137,7 +131,7 @@ export function ViewErrorFallback({
             exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 16 }}
             transition={reducedMotion ? { duration: 0.15 } : { type: 'spring', duration: 0.4, bounce: 0.18 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.45)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.75)] ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-7 overflow-hidden"
+            className="relative max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl shadow-lg ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-7 overflow-hidden"
           >
             <button
               type="button"
@@ -163,7 +157,7 @@ export function ViewErrorFallback({
       aria-live="assertive"
       className="min-h-[320px] flex items-center justify-center bg-slate-50 dark:bg-slate-900/40 rounded-2xl p-6"
     >
-      <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-black/30 ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-8">
+      <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-lg ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-8">
         {Card}
       </div>
     </div>

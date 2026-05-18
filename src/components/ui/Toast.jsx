@@ -59,7 +59,7 @@ export function Toast({ id, type = 'info', message, content, onDismiss, duration
 			role={type === 'error' ? 'alert' : 'status'}
 			aria-live={type === 'error' ? 'assertive' : 'polite'}
 			aria-atomic="true"
-			className={`flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl dark:shadow-black/70 transition-all duration-300 backdrop-blur-md pointer-events-auto w-full max-w-[calc(100vw-2rem)] sm:max-w-sm ${
+			className={`flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg transition-all duration-300 backdrop-blur-md pointer-events-auto w-full max-w-[calc(100vw-2rem)] sm:max-w-sm ${
 				STYLES[type]
 			} ${isLeaving ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'}`}
 		>

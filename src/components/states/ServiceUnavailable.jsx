@@ -61,14 +61,13 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
             aria-label={`${service} unavailable`}
             className={twMerge(
                 'relative isolate overflow-hidden',
-                'rounded-3xl border border-amber-200/70 dark:border-amber-500/25',
-                'bg-amber-50/70 dark:bg-amber-500/5 backdrop-blur-md',
-                'shadow-lg shadow-amber-100/40 dark:shadow-black/30',
+                'rounded-3xl border border-amber-200 dark:border-amber-500/30',
+                'bg-amber-50 dark:bg-amber-900/20',
+                'shadow-md',
                 'px-6 py-10 sm:px-10 sm:py-12',
                 className
             )}
         >
-            <Halo />
 
             <div className="relative flex flex-col items-center text-center max-w-md mx-auto">
                 <motion.div
@@ -77,7 +76,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                     transition={{ delay: 0.08, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
                     className="mb-5 inline-flex items-center justify-center w-14 h-14 rounded-2xl
                                bg-amber-500
-                               shadow-lg ring-1 ring-amber-500/20"
+                               shadow-md ring-1 ring-amber-500/20"
                 >
                     <Plug className="w-6 h-6 text-white" strokeWidth={2.4} />
                 </motion.div>
@@ -106,7 +105,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                             target={docsHref.startsWith('http') ? '_blank' : undefined}
                             rel={docsHref.startsWith('http') ? 'noopener noreferrer' : undefined}
                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold
-                                       bg-amber-500 text-white shadow-md shadow-amber-500/30
+                                       bg-amber-500 text-white shadow-md
                                        hover:bg-amber-600 transition-colors ds-focus-ring"
                         >
                             <BookOpen className="w-3.5 h-3.5" /> Setup guide
@@ -116,9 +115,9 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                         <a
                             href={`mailto:${contactEmail}${contactSubject ? `?subject=${encodeURIComponent(contactSubject)}` : ''}`}
                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold
-                                       bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200
+                                       bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200
                                        border border-slate-200 dark:border-slate-700
-                                       hover:bg-white dark:hover:bg-slate-800 transition-colors ds-focus-ring"
+                                       hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ds-focus-ring"
                         >
                             <Mail className="w-3.5 h-3.5" /> Contact support
                         </a>
@@ -143,8 +142,8 @@ function BannerService({ service, reason, docsHref, contactEmail, contactSubject
             role="status"
             className={twMerge(
                 'relative overflow-hidden',
-                'rounded-2xl border border-amber-300/60 dark:border-amber-500/30',
-                'bg-amber-50/90 dark:bg-amber-500/10 backdrop-blur-md',
+                'rounded-2xl border border-amber-300 dark:border-amber-500/30',
+                'bg-amber-50 dark:bg-amber-900/20',
                 'px-5 py-4',
                 'flex flex-col sm:flex-row sm:items-center gap-3',
                 className
@@ -211,8 +210,8 @@ function InlineService({ service, reason, className }) {
     return (
         <div className={twMerge(
             'flex items-start gap-2.5 px-3 py-2 rounded-lg',
-            'bg-amber-50/80 dark:bg-amber-500/10',
-            'border border-amber-200/60 dark:border-amber-500/20',
+            'bg-amber-50 dark:bg-amber-900/20',
+            'border border-amber-200 dark:border-amber-500/20',
             'text-xs',
             className
         )}>
@@ -231,13 +230,3 @@ function InlineService({ service, reason, className }) {
     )
 }
 
-function Halo() {
-    return (
-        <div
-            aria-hidden
-            className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2
-                       w-[28rem] h-[28rem] rounded-full blur-3xl opacity-30 dark:opacity-20
-                       bg-amber-400"
-        />
-    )
-}

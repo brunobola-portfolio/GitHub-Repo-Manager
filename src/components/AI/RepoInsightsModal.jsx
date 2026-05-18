@@ -304,7 +304,7 @@ function CircularScore({ value, max = 100 }) {
                 />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden="true">
-                <span className="text-3xl font-bold text-slate-900 dark:text-white tabular-nums">
+                <span className="text-xl font-semibold text-slate-900 dark:text-white tabular-nums">
                     {clamped}
                 </span>
                 <span className="text-xs text-slate-500 dark:text-slate-400">/{max}</span>

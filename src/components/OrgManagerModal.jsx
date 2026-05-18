@@ -452,7 +452,7 @@ function StatCard({ icon: IconComp, label, value, color }) {
     return (
         <div className={`p-4 rounded-lg ${colors[color]} text-center`}>
             <IconComp className="w-5 h-5 mx-auto mb-1 opacity-70" />
-            <div className="text-2xl font-bold">{value}</div>
+            <div className="text-lg font-semibold tabular-nums">{value}</div>
             <div className="text-xs opacity-70">{label}</div>
         </div>
     )
