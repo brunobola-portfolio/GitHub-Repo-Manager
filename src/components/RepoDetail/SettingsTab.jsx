@@ -511,7 +511,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                                 type="button"
                                 onClick={() => handleRemoveTopic(topic)}
                                 disabled={topicsSaving || repoData.archived}
-                                className="rounded-full p-0.5 text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-200 hover:bg-indigo-100 dark:hover:bg-indigo-800/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="rounded-full p-0.5 text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                 title={`Remove "${topic}"`}
                                 aria-label={`Remove topic ${topic}`}
                             >

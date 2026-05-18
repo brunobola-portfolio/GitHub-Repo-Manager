@@ -33,11 +33,12 @@ test.describe('Mobile Responsiveness', () => {
 
   test('should open Quick actions menu when tapping the FAB', async ({ page }) => {
     const fab = page.getByRole('button', { name: 'Quick actions' })
-    // The FAB peeks 55% off-screen by default; force-click bypasses the
-    // pointer interception so we can land the tap without first hovering
-    // to slide it in. Single click only — the FAB toggles open/closed,
-    // so a "belt and braces" double-click would just close it again.
-    await fab.click({ force: true })
+    // The FAB peeks 55% off-screen by default. Use a programmatic
+    // .evaluate(el => el.click()) instead of Playwright's hit-tested click
+    // so the test doesn't race with the peek slide-in transition or the
+    // breathing halo animation under CI's parallel worker load. The FAB
+    // toggles open/closed — a single click is correct.
+    await fab.evaluate((el) => el.click())
 
     // Once open the menu surfaces its items (Create / Import / AI / Search /
     // Dev Toolkit). Any of those being visible confirms the menu mounted.

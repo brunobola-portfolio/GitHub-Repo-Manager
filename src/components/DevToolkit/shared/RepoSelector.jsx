@@ -64,7 +64,7 @@ export function RepoSelector({ repos = [], selected, onSelect }) {
                                     key={repo.id || repo.full_name}
                                     type="button"
                                     onClick={() => { onSelect(repo); setOpen(false); setQuery('') }}
-                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors ${
+                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors ${
                                         selected?.id === repo.id ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
                                     }`}
                                 >

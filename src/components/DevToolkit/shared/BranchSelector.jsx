@@ -73,7 +73,7 @@ export function BranchSelector({ branches = [], selected, onSelect, label, defau
                                     key={name}
                                     type="button"
                                     onClick={() => { onSelect(name); setOpen(false); setQuery('') }}
-                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors flex items-center gap-1.5 ${
+                                    className={`w-full px-3 py-2 text-left text-sm hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center gap-1.5 ${
                                         selected === name ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'
                                     }`}
                                 >

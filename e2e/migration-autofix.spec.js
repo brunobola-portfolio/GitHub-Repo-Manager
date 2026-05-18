@@ -40,11 +40,14 @@ async function installMocks(page) {
     }),
   )
 
-  // Repos list (GET and POST variants)
+  // Repos list (GET and POST variants).
+  // 'huge' size = 11 GB so it exceeds SIZE_CRITICAL_BYTES (10 GB) in
+  // riskRules.js and triggers the SizeStrategyCard + AISuggestionBanner path
+  // the test exercises.
   const repoPayload = JSON.stringify({
     repos: [
       { id: 'r1', name: 'api', size: 1024, branches: 1, isTfvc: false, lastCommitDate: '2025-01-01' },
-      { id: 'r2', name: 'huge', size: 11 * 1024 * 1024, branches: 3, isTfvc: false, lastCommitDate: '2025-01-01' },
+      { id: 'r2', name: 'huge', size: 11 * 1024 * 1024 * 1024, branches: 3, isTfvc: false, lastCommitDate: '2025-01-01' },
     ],
     versionControlType: 'Git',
   })
@@ -128,14 +131,15 @@ test.describe('Migration Auto-Fix Drawer', () => {
     const drawer = page.locator('[role="dialog"][aria-label="Fix issues"]')
     await expect(drawer).toBeVisible({ timeout: 5000 })
 
-    // Accept the AI suggestion for the large repo ("huge") if the banner
-    // surfaces — depends on the AI mock responding within the deadline. The
-    // test's real assertion is the Apply Selected step below, so we treat
-    // the AI Accept click as best-effort to avoid flake on slow CI.
+    // Accept the AI suggestion for the large repo ("huge"). The
+    // /api/ai/migration-size-strategy endpoint short-circuits to a
+    // deterministic { strategy: 'lfs-migrate', confidence: 0.85 } payload
+    // when VITE_MOCK_MODE=true (see server/routes/ai/migration.js), and the
+    // page.route stub above guards against any network slop, so the banner
+    // is guaranteed to mount and we can assert + click deterministically.
     const acceptBtn = drawer.getByRole('button', { name: /Accept/i })
-    if (await acceptBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
-      await acceptBtn.click()
-    }
+    await expect(acceptBtn).toBeVisible()
+    await acceptBtn.click()
 
     // Click "Apply selected (N)"
     const applyButton = drawer.getByRole('button', { name: /Apply selected/i })

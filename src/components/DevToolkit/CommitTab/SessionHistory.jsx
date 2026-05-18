@@ -9,7 +9,7 @@ export function SessionHistory({ items = [], onRestore }) {
                     key={i}
                     type="button"
                     onClick={() => onRestore(msg)}
-                    className="shrink-0 max-w-[200px] truncate px-2 py-0.5 text-[11px] font-mono rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 hover:text-indigo-600 dark:hover:text-indigo-300 border border-slate-200 dark:border-slate-700 transition-colors"
+                    className="shrink-0 max-w-[200px] truncate px-2 py-0.5 text-[11px] font-mono rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-300 border border-slate-200 dark:border-slate-700 transition-colors"
                     title={msg}
                 >
                     {msg.split('\n')[0]}
