@@ -50,7 +50,12 @@ export function MobileQuickActionsFab(props) {
                 )}
             </AnimatePresence>
 
-            <div className="fixed right-4 bottom-[calc(56px+1rem+var(--safe-area-inset-bottom,0px))] z-[var(--ds-z-popover)] flex flex-col items-end gap-3">
+            {/* Group container — hover/focus-within reveals the peek FAB.
+                When idle, the trigger is translated 55 % off-screen to the right
+                so only its left third (~24 px) peeks past the viewport edge.
+                Content underneath gets the full viewport width back; the FAB
+                only re-emerges when the user actually reaches for it. */}
+            <div className="group fixed right-0 bottom-[calc(56px+1rem+var(--safe-area-inset-bottom,0px))] z-[var(--ds-z-popover)] flex flex-col items-end gap-3 pr-4">
                 {/* Bare conditional (not AnimatePresence): jsdom doesn't drive exit
                     animations, so the ESC-closes test wouldn't observe the unmount
                     otherwise. Trade-off: secondary buttons disappear without fade. */}
@@ -102,7 +107,11 @@ export function MobileQuickActionsFab(props) {
                     onClick={() => setOpen(v => !v)}
                     animate={{ rotate: open ? 45 : 0 }}
                     transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
-                    className="w-14 h-14 rounded-full bg-indigo-600 dark:bg-indigo-500 shadow-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 flex items-center justify-center text-white ds-focus-ring"
+                    className={`w-14 h-14 rounded-full bg-indigo-600 dark:bg-indigo-500 shadow-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 flex items-center justify-center text-white ds-focus-ring transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                        open
+                            ? 'translate-x-0'
+                            : 'translate-x-[55%] opacity-90 group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100 group-active:translate-x-0'
+                    }`}
                 >
                     {open ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
                 </motion.button>

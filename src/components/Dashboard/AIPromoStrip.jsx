@@ -60,7 +60,7 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                 transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                 className="overflow-hidden"
             >
-                <div className="relative flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-3 pr-20 sm:pr-5 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-800/40 rounded-2xl">
+                <div className="relative flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-800/40 rounded-2xl">
                     {/* Dismiss — absolute top-right so the action row stays clear of
                         the mobile FAB territory at the bottom-right of the viewport. */}
                     <button
