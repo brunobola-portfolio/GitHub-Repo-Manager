@@ -3,6 +3,7 @@ import {
   AlertCircle, BookOpen, AlertTriangle,
 } from 'lucide-react'
 import { SectionSpinner } from '../../ui/Spinner'
+import { EmptyState } from '../../ui/EmptyState'
 import { Switch } from '../../ui/form'
 import { getCsrfToken } from '../../../utils/api'
 
@@ -119,10 +120,11 @@ export default function WikiStep({ wiki, onUpdate, source }) {
       {wiki.enabled && !loading && !error && fetched && (
         <>
           {wiki.wikis.length === 0 ? (
-            <div className="text-center py-8 text-sm text-slate-400 dark:text-slate-500">
-              <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              No wikis found in this project
-            </div>
+            <EmptyState
+              icon={BookOpen}
+              title="No wikis found"
+              description="There are no wikis in this project."
+            />
           ) : (
             <div className="space-y-3">
               {wiki.wikis.map((w) => {

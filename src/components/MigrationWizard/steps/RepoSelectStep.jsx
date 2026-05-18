@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { Loader2, AlertCircle, AlertTriangle, FolderGit2 } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
+import { EmptyState } from '../../ui/EmptyState'
 import { useEnrichedRepos } from './RepoSelectStep/useEnrichedRepos'
 import { useRiskEngine } from './RepoSelectStep/useRiskEngine'
 import { SelectionDashboard } from './RepoSelectStep/SelectionDashboard'
@@ -190,10 +191,11 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
   }
   if (!loading && scored.length === 0) {
     return (
-      <div className="text-center py-12">
-        <FolderGit2 className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">No repositories found in this project.</p>
-      </div>
+      <EmptyState
+        icon={FolderGit2}
+        title="No repositories found"
+        description="There are no repositories in this project."
+      />
     )
   }
 
