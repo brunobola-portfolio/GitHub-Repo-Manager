@@ -1,20 +1,24 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles, Kanban, Wand2, Palette } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
 import { useToast } from '../hooks/useToast'
 import { API_BASE_URL } from '../config'
-import { ApiKeysSection } from './Settings/ApiKeysSection'
-import { AuditLogSection } from './Settings/AuditLogSection'
-import { LicensePlanSection } from './Settings/LicensePlanSection'
-import { AIConfigSection } from './Settings/AIConfigSection'
-import { AIInstructionsSection } from './Settings/AIInstructionsSection'
-import { WorkBoardSettingsSection } from './Settings/WorkBoard/WorkBoardSettingsSection'
+// Settings tabs lazy-loaded — opening Settings most often means "General" or
+// "API Keys"; the rest (AI Config, Audit Log, License, Work Board) are each
+// hefty enough to split into their own chunks.
+const ApiKeysSection = lazy(() => import('./Settings/ApiKeysSection').then(m => ({ default: m.ApiKeysSection })))
+const AuditLogSection = lazy(() => import('./Settings/AuditLogSection').then(m => ({ default: m.AuditLogSection })))
+const LicensePlanSection = lazy(() => import('./Settings/LicensePlanSection').then(m => ({ default: m.LicensePlanSection })))
+const AIConfigSection = lazy(() => import('./Settings/AIConfigSection').then(m => ({ default: m.AIConfigSection })))
+const AIInstructionsSection = lazy(() => import('./Settings/AIInstructionsSection').then(m => ({ default: m.AIInstructionsSection })))
+const WorkBoardSettingsSection = lazy(() => import('./Settings/WorkBoard/WorkBoardSettingsSection').then(m => ({ default: m.WorkBoardSettingsSection })))
 import { DangerZoneSection } from './Settings/DangerZoneSection'
 import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
 import { Button } from './ui/Button'
 import { Input, Switch } from './ui/form'
-import { ProbeStatsSection } from './Settings/ProbeStatsSection'
+import { SectionSpinner } from './ui/Spinner'
+const ProbeStatsSection = lazy(() => import('./Settings/ProbeStatsSection').then(m => ({ default: m.ProbeStatsSection })))
 import { getCsrfToken } from '../utils/api'
 
 // SettingsIcon defined before TABS so it can be referenced in the array
@@ -149,36 +153,40 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
                     onClearCache={handleClearCache}
                 />
             )}
-            {activeTab === 'api-keys' && <div><ApiKeysSection /></div>}
-            {activeTab === 'ai' && (
-                <div>
-                    <a
-                        href="#/ai/prompts"
-                        onClick={(e) => {
-                            e.preventDefault()
-                            onClose()
-                            window.location.hash = '#/ai/prompts'
-                        }}
-                        className="block rounded-md border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-600 p-3 mb-3 transition-colors"
-                    >
-                        <div className="flex items-start gap-2">
-                            <div className="flex-1">
-                                <div className="font-medium text-sm">Prompt Studio</div>
-                                <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                    Customize how the AI reviewer thinks. Built-in presets (Security, Performance, Accessibility…) plus your own custom prompts at user or repo scope.
+            {activeTab !== 'general' && (
+                <Suspense fallback={<SectionSpinner />}>
+                    {activeTab === 'api-keys' && <div><ApiKeysSection /></div>}
+                    {activeTab === 'ai' && (
+                        <div>
+                            <a
+                                href="#/ai/prompts"
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    onClose()
+                                    window.location.hash = '#/ai/prompts'
+                                }}
+                                className="block rounded-md border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-600 p-3 mb-3 transition-colors"
+                            >
+                                <div className="flex items-start gap-2">
+                                    <div className="flex-1">
+                                        <div className="font-medium text-sm">Prompt Studio</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                            Customize how the AI reviewer thinks. Built-in presets (Security, Performance, Accessibility…) plus your own custom prompts at user or repo scope.
+                                        </div>
+                                    </div>
+                                    <span className="text-slate-400">→</span>
                                 </div>
-                            </div>
-                            <span className="text-slate-400">→</span>
+                            </a>
+                            <AIConfigSection />
                         </div>
-                    </a>
-                    <AIConfigSection />
-                </div>
+                    )}
+                    {activeTab === 'ai-instructions' && <div><AIInstructionsSection /></div>}
+                    {activeTab === 'work-board' && <div><WorkBoardSettingsSection /></div>}
+                    {activeTab === 'license' && <div><LicensePlanSection /></div>}
+                    {activeTab === 'audit' && <div><AuditLogSection /></div>}
+                    {activeTab === 'probe-stats' && <div><ProbeStatsSection isAdmin={isAdmin} /></div>}
+                </Suspense>
             )}
-            {activeTab === 'ai-instructions' && <div><AIInstructionsSection /></div>}
-            {activeTab === 'work-board' && <div><WorkBoardSettingsSection /></div>}
-            {activeTab === 'license' && <div><LicensePlanSection /></div>}
-            {activeTab === 'audit' && <div><AuditLogSection /></div>}
-            {activeTab === 'probe-stats' && <div><ProbeStatsSection isAdmin={isAdmin} /></div>}
         </Modal>
     )
 }

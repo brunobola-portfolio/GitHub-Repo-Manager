@@ -217,10 +217,11 @@ describe('WorkBoardPage', () => {
     // Tab switching
     // ---------------------------------------------------------------------------
 
-    it('clicking Stale PRs tab shows stale PR data', () => {
+    it('clicking Stale PRs tab shows stale PR data', async () => {
         renderPage()
         fireEvent.click(screen.getByRole('tab', { name: /stale prs/i }))
-        expect(screen.getByText('Old PR')).toBeInTheDocument()
+        // Tab is lazy-loaded; wait for it to mount before asserting content.
+        expect(await screen.findByText('Old PR')).toBeInTheDocument()
     })
 
     it('clicking My Issues tab shows issue data with labels', () => {
@@ -231,10 +232,10 @@ describe('WorkBoardPage', () => {
         expect(screen.getAllByText('bug').length).toBeGreaterThan(0)
     })
 
-    it('clicking DORA tab shows KPI metrics', () => {
+    it('clicking DORA tab shows KPI metrics', async () => {
         renderPage()
         fireEvent.click(screen.getByRole('tab', { name: /dora/i }))
-        expect(screen.getByText(/deployments/i)).toBeInTheDocument()
+        expect(await screen.findByText(/deployments/i)).toBeInTheDocument()
         expect(screen.getByText('42')).toBeInTheDocument()
     })
 
@@ -242,14 +243,14 @@ describe('WorkBoardPage', () => {
     // Upsell / tier gating
     // ---------------------------------------------------------------------------
 
-    it('DORA tab shows upsell when 403 from backend', () => {
+    it('DORA tab shows upsell when 403 from backend', async () => {
         const err403 = new Error('upgrade_required')
         err403.status = 403
         mockUseDORASummary.mockReturnValue({ data: null, loading: false, error: err403, refresh: vi.fn() })
 
         renderPage()
         fireEvent.click(screen.getByRole('tab', { name: /dora/i }))
-        expect(screen.getByText(/enterprise feature/i)).toBeInTheDocument()
+        expect(await screen.findByText(/enterprise feature/i)).toBeInTheDocument()
         expect(screen.getByRole('link', { name: /view enterprise pricing/i })).toBeInTheDocument()
     })
 
@@ -258,14 +259,14 @@ describe('WorkBoardPage', () => {
         expect(screen.getByRole('button', { name: /refresh work board/i })).toBeInTheDocument()
     })
 
-    it('Stale PRs tab shows upsell when 403 from backend', () => {
+    it('Stale PRs tab shows upsell when 403 from backend', async () => {
         const err403 = new Error('upgrade_required')
         err403.status = 403
         mockUseStalePRs.mockReturnValue({ data: null, loading: false, error: err403, refresh: vi.fn() })
 
         renderPage()
         fireEvent.click(screen.getByRole('tab', { name: /stale prs/i }))
-        expect(screen.getByText(/pro feature/i)).toBeInTheDocument()
+        expect(await screen.findByText(/pro feature/i)).toBeInTheDocument()
     })
 
     // ---------------------------------------------------------------------------

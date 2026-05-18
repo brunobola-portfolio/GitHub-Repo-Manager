@@ -10,7 +10,7 @@
  *   6. DORA         — deploy freq + lead time (Enterprise+)
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import {
     GitPullRequest, CircleDot, BarChart3,
@@ -42,11 +42,14 @@ import { KeyboardHelpModal } from './KeyboardHelpModal'
 import { AISummaryCard } from './AISummaryCard'
 import { KpiRow } from './KpiRow'
 import { MyReviewsTab } from './tabs/MyReviewsTab'
-import { StalePRsTab } from './tabs/StalePRsTab'
-import { MyIssuesTab } from './tabs/MyIssuesTab'
-import { ReviewLoadTab } from './tabs/ReviewLoadTab'
-import { TechDebtTab } from './tabs/TechDebtTab'
-import { DORATab } from './tabs/DORATab'
+// Non-default tabs lazy-loaded — most sessions land on My Reviews and
+// never visit DORA/Tech Debt. Each tab now ships in its own chunk.
+const StalePRsTab = lazy(() => import('./tabs/StalePRsTab').then(m => ({ default: m.StalePRsTab })))
+const MyIssuesTab = lazy(() => import('./tabs/MyIssuesTab').then(m => ({ default: m.MyIssuesTab })))
+const ReviewLoadTab = lazy(() => import('./tabs/ReviewLoadTab').then(m => ({ default: m.ReviewLoadTab })))
+const TechDebtTab = lazy(() => import('./tabs/TechDebtTab').then(m => ({ default: m.TechDebtTab })))
+const DORATab = lazy(() => import('./tabs/DORATab').then(m => ({ default: m.DORATab })))
+import { SectionSpinner } from '../ui/Spinner'
 import { ManageReposButton } from './ManageReposButton'
 import { MOCK_MODE } from '../../config'
 
@@ -412,9 +415,11 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
                         transition={{ duration: 0.18 }}
                         className="min-h-[380px]"
                     >
-                        <ActiveComponent
-                            {...(activeTab === 'reviews' || activeTab === 'stale' ? { hasAI } : {})}
-                        />
+                        <Suspense fallback={<SectionSpinner />}>
+                            <ActiveComponent
+                                {...(activeTab === 'reviews' || activeTab === 'stale' ? { hasAI } : {})}
+                            />
+                        </Suspense>
                     </motion.div>
                 </AnimatePresence>
             </div>
