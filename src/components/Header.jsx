@@ -89,7 +89,7 @@ export function Header({
                         <Menu className="w-5 h-5 text-slate-600 dark:text-slate-300" />
                       </button>
                     )}
-                    <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-[4px] pr-3 rounded-[13px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
+                    <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-[4px] sm:pr-3 rounded-[13px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
                         <div className="bg-indigo-600 dark:bg-indigo-500 w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shadow-md flex-shrink-0 text-white">
                             <AppLogoIcon className="w-[18px] h-[18px]" />
                         </div>
