@@ -22,13 +22,17 @@ test.describe('AI Assistant — paste URL flow', () => {
     await expect(page.getByText(/AWIP/)).toBeVisible()
     await expect(page.getByText(/Cacadores/)).toBeVisible()
 
-    // Answer 1: target org
-    const targetOrgInput = page.getByRole('textbox', { name: /github.*org.*destino/i })
+    // Answer 1: target org. Use the placeholder text — it's the most stable
+    // handle for the dynamic dialog input (the label regex broke when Field
+    // started wrapping the label in a <span>).
+    const targetOrgInput = page.getByPlaceholder('p.ex. bolalabs')
+    await expect(targetOrgInput).toBeVisible({ timeout: 10000 })
     await targetOrgInput.fill('bolalabs')
     await targetOrgInput.press('Enter')
 
     // Answer 2: target name
-    const nameInput = page.getByRole('textbox', { name: /nome final.*repo/i })
+    const nameInput = page.getByPlaceholder(/escreve "manter" para usar o original/)
+    await expect(nameInput).toBeVisible({ timeout: 10000 })
     await nameInput.fill('manter')
     await nameInput.press('Enter')
 

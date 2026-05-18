@@ -15,7 +15,7 @@ test.describe('Mobile Responsiveness', () => {
   test('should show mobile navigation buttons', async ({ page }) => {
     // The mobile bottom-nav (Header.jsx) renders short labels: Home, Repos,
     // Work, Teams, More. Use exact matches so we don't accidentally hit the
-    // "Open navigation menu" FAB or any "More" sheet trigger.
+    // Quick actions FAB or any "More" sheet trigger.
     const bottomNav = page.getByRole('navigation', { name: /main navigation/i })
     await expect(bottomNav).toBeVisible()
     await expect(bottomNav.getByRole('button', { name: 'Home', exact: true })).toBeVisible()
@@ -23,25 +23,25 @@ test.describe('Mobile Responsiveness', () => {
     await expect(bottomNav.getByRole('button', { name: 'Teams', exact: true })).toBeVisible()
   })
 
-  test('should show floating menu button on mobile', async ({ page }) => {
-    const menuButton = page.getByLabel('Open navigation menu')
-    await expect(menuButton).toBeVisible()
+  test('should show Quick actions FAB on mobile', async ({ page }) => {
+    // The old hamburger drawer FAB was removed (it stacked behind the
+    // primary FAB at the same bottom-right slot). Quick actions is the
+    // single mobile FAB now — its trigger button carries aria-label.
+    const fab = page.getByRole('button', { name: 'Quick actions' })
+    await expect(fab).toBeVisible()
   })
 
-  test('should open mobile drawer when clicking menu button', async ({ page }) => {
-    const menuButton = page.getByLabel('Open navigation menu')
-    // Force-click bypasses pointer interception (dashboard gradient, FABs,
-    // etc.). On slow CI runners the click event sometimes loses races with
-    // hydration, so we also dispatch a programmatic click as a belt-and-
-    // braces — both call the same React onClick handler harmlessly.
-    await menuButton.click({ force: true }).catch(() => {})
-    await menuButton.evaluate((el) => el.click()).catch(() => {})
+  test('should open Quick actions menu when tapping the FAB', async ({ page }) => {
+    const fab = page.getByRole('button', { name: 'Quick actions' })
+    // The FAB peeks 55% off-screen by default; force-click bypasses the
+    // pointer interception so we can land the tap without first hovering
+    // to slide it in. Single click only — the FAB toggles open/closed,
+    // so a "belt and braces" double-click would just close it again.
+    await fab.click({ force: true })
 
-    // Match the dialog by role only — framer-motion wraps the node and the
-    // accessible-name match has been flaky on slow CI even when the dialog
-    // is visibly open. Both MobileDrawer instances (nav + org) share the
-    // same aria-label, so we use .first() to be explicit.
-    await expect(page.locator('[role="dialog"]').first())
+    // Once open the menu surfaces its items (Create / Import / AI / Search /
+    // Dev Toolkit). Any of those being visible confirms the menu mounted.
+    await expect(page.getByRole('menuitem', { name: /create/i }))
       .toBeVisible({ timeout: 15000 })
   })
 

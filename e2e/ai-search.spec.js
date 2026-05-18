@@ -64,9 +64,9 @@ test.describe('AI Search & Features', () => {
     await repoCard.hover()
 
     // The AI insights affordance is the `ai_quality` registry action, surfaced
-    // on RepoCard's quick-actions row with title "Quality Report — AI scores …".
-    // Earlier name "AI Insights" was renamed when the action was registered.
-    const insightsButton = page.getByTitle(/Quality Report/i).first()
+    // on RepoCard's quick-actions row. Each icon button now uses aria-label
+    // (not title) because the Tooltip primitive wraps it for hover hints.
+    const insightsButton = page.getByRole('button', { name: /Quality Report/i }).first()
     await expect(insightsButton).toBeVisible({ timeout: 5000 })
   })
 
@@ -74,7 +74,7 @@ test.describe('AI Search & Features', () => {
     const repoCard = page.getByRole('button', { name: new RegExp(SAMPLE_PUBLIC_REPO, 'i') }).first()
     await repoCard.hover()
 
-    const healthButton = page.getByTitle('Community Health').first()
+    const healthButton = page.getByRole('button', { name: 'Community Health', exact: true }).first()
     await expect(healthButton).toBeVisible({ timeout: 5000 })
   })
 })

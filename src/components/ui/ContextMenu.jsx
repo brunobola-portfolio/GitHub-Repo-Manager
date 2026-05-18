@@ -247,10 +247,15 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 
 	const content = (
 		<>
-			{/* Backdrop for root menu only */}
+			{/* Backdrop for root menu only.
+			    Must sit BELOW the menu (which uses --ds-z-ceiling), or it
+			    intercepts pointer events on the menu's own items including
+			    hover-to-open submenus. The previous z-[99] was a raw layer
+			    above the ceiling token — silently broke right-click \xe2\x86\x92 AI \xe2\x86\x92
+			    hover-to-open-submenu in every spec that exercised it. */}
 			{!isSubmenu && (
 				<div
-					className="fixed inset-0 z-[99]"
+					className="fixed inset-0 z-[var(--ds-z-modal)]"
 					aria-hidden="true"
 					onClick={(e) => { e.stopPropagation(); onClose() }}
 				/>
