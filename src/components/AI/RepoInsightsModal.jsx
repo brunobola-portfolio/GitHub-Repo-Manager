@@ -234,12 +234,9 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
                         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                         Re-analyze
                     </Button>
-                    <button
-                        onClick={onClose}
-                        className="px-6 py-2 bg-indigo-600 dark:bg-indigo-500 text-white font-medium rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all shadow-md"
-                    >
+                    <Button variant="primary" onClick={onClose}>
                         Done
-                    </button>
+                    </Button>
                 </ModalFooter>
             }
         >

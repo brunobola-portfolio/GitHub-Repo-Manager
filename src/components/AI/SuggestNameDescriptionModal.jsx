@@ -330,15 +330,14 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
                     </Button>
                     <div className="flex gap-2 items-center">
                         <Button variant="ghost" onClick={onClose}>Cancel</Button>
-                        <button
-                            type="button"
+                        <Button
+                            variant="primary"
                             onClick={handleApply}
                             disabled={applyDisabled}
-                            className="px-6 py-2 bg-indigo-600 dark:bg-indigo-500 text-white font-medium rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {applying ? <Loader2 className="w-4 h-4 animate-spin inline mr-1" /> : null}
+                            {applying ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
                             Apply changes
-                        </button>
+                        </Button>
                     </div>
                 </ModalFooter>
             }

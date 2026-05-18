@@ -721,13 +721,10 @@ function ActionsTab({ assignedRepos, onShowStats }) {
             {/* Statistics Button */}
             {onShowStats && (
                 <div className="flex justify-end">
-                    <button
-                        onClick={onShowStats}
-                        className="flex items-center gap-2 px-6 py-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all shadow-md"
-                    >
+                    <Button variant="primary" size="lg" onClick={onShowStats}>
                         <Activity className="w-5 h-5" />
-                        <span className="font-semibold">View Actions Statistics</span>
-                    </button>
+                        View Actions Statistics
+                    </Button>
                 </div>
             )}
 

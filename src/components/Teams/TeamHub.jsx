@@ -7,6 +7,7 @@ import { ConfirmModal } from '../ui/ConfirmModal';
 import { PageHeader } from '../ui/PageHeader';
 import { PageShell } from '../ui/PageShell';
 import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
 import { Skeleton } from '../ui/Skeleton';
 import { Field, Input } from '../ui/form';
 import { EmptyState } from '../ui/EmptyState';
@@ -235,13 +236,10 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
                                 Collaborate with teammates, assign repositories, and track team activity. Upgrade to unlock shared workspaces and member management.
                             </p>
-                            <button
-                                onClick={() => onNavigatePricing?.()}
-                                className="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 dark:bg-indigo-500 text-white font-medium rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all shadow-md"
-                            >
+                            <Button variant="primary" onClick={() => onNavigatePricing?.()}>
                                 <Sparkles className="w-4 h-4" />
                                 View Pricing
-                            </button>
+                            </Button>
                         </div>
                     )}
                 </div>

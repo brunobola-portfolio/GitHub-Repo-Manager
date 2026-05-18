@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, CheckCircle2, AlertCircle, Lock, RotateCcw, Ban } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
+import { Button } from '../ui/Button'
 import { useAIPolish } from '../../hooks/useAIPolish'
 import { ContextPicker } from '../AI/ContextPicker'
 import { useContextPrefs } from '../../hooks/useContextPrefs'
@@ -192,24 +193,22 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                 </p>
                 <div className="flex items-center gap-2">
                     {typeof onRequestClose === 'function' && (
-                        <button
-                            type="button"
+                        <Button
+                            variant="ghost"
                             onClick={onRequestClose}
                             disabled={phase === 'applying'}
-                            className="px-4 py-2 text-sm font-medium rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
                         >
                             {phase === 'done' ? 'Close' : 'Cancel'}
-                        </button>
+                        </Button>
                     )}
-                    <button
-                        type="button"
+                    <Button
+                        variant="primary"
                         onClick={handleApply}
                         disabled={applyDisabled}
-                        className="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-medium rounded-lg bg-indigo-600 dark:bg-indigo-500 text-white shadow-md hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {phase === 'applying' ? <Spinner size="xs" /> : <Sparkles className="w-3.5 h-3.5" />}
+                        {phase === 'applying' ? <Spinner size="xs" tone="onPrimary" /> : <Sparkles className="w-3.5 h-3.5" />}
                         Apply to {stats.includedReady} repo{stats.includedReady === 1 ? '' : 's'}
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>
