@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { AlertTriangle, KeyRound, ArrowRight, X } from 'lucide-react'
 import { useState } from 'react'
 import { BANNER_VARIANTS, BANNER_REDUCED_VARIANTS } from './bannerMotion'
+import { Button } from '../ui/Button'
 import { openAISettings } from '../../utils/appEvents'
 
 /**
@@ -68,15 +69,11 @@ export function AINotHealthyBanner({
                         {description}
                     </p>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={openAISettings}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-md"
-                        >
+                        <Button variant="warning" size="sm" onClick={openAISettings}>
                             <KeyRound className="w-3.5 h-3.5" aria-hidden="true" />
                             Verify in Settings
                             <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-                        </button>
+                        </Button>
                     </div>
                 </div>
                 {dismissible && (
