@@ -7,6 +7,161 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.3.0] - 2026-05-18
+
+A **premium-through-restraint** release. The visual language pivots from
+"AI-template" (rainbow gradients, glow shadows, shimmer everywhere) to a
+GitHub-tasteful aesthetic — see
+[`docs/specs/2026-05-14-premium-non-llm-theme-design.md`](docs/specs/2026-05-14-premium-non-llm-theme-design.md).
+121 commits, **3896 unit + 84 e2e tests** green; lint, build, e2e all green
+on `main` for every push.
+
+### Added — Mobile peek FAB with reveal-on-touch UX
+
+- **Peek-out trigger.** `MobileQuickActionsFab` and the PR review AI insights
+  FAB sit translated 55 % off the right edge by default — only ~25 px peeks
+  past the viewport so phone content reclaims the full width. Hover, focus,
+  focus-within, active tap, or opening the menu slides the button fully in
+  via a 300 ms cubic-bezier (or framer-motion spring for the quick actions
+  trigger).
+- **Premium effects.** Indigo → violet 2-stop gradient, soft breathing halo
+  pulse (3.2 s loop), 3 × 24 px white edge stripe, `whileTap` scale 0.92,
+  `shadow-xl` lifting to `shadow-2xl` on reveal. The halo fades on reveal so
+  the lock-in state reads decisive.
+
+### Added — Hash deep-linking
+
+- **Bidirectional sync** between `activeView` state and `window.location.hash`
+  for the six static views: `#/repos`, `#/work`, `#/teams`, `#/roadmap`,
+  `#/pricing`, `#/ai/prompts`. Hash → state runs in `startTransition`; state
+  → hash uses `replaceState` (no history pollution) with a first-render guard
+  so a deep-link hash on mount drives the view rather than being stripped by
+  the state-to-hash effect's initial run.
+- Dashboard is the canonical home: empty hash + `#` + `#/` all route there.
+
+### Added — Premium scrollbar contract
+
+- Page-level `<html>` scrollbar now mirrors `.ds-scrollbar`: transparent
+  default, 8 px overlay thumb on hover (slate-400/50 light, white/20 dark).
+- Under `(pointer: coarse)` or `≤ 767 px`, **every** scrollbar (html + all
+  internal scroll containers) is fully hidden — touch already gets the OS's
+  native transient indicator.
+- The styling is applied to `*` so modals, drawers, dropdowns and tab panes
+  inherit it without needing the `.ds-scrollbar` opt-in class.
+
+### Performance — Lazy chunk splits (~91 KB gzipped deferred from first paint)
+
+- **RepoDetail tabs.** Only `OverviewTab` is eager; Branches / Commits /
+  Releases / Actions / Issues / Pull Requests / Settings each ship as their
+  own chunk loaded behind `Suspense` + `SectionSpinner`. Initial chunk
+  **331 KB → 188 KB (-43 %, gzip 89 → 58 KB)**; per-tab chunks 4.5–32 KB.
+- **WorkBoard tabs.** Five non-default tabs (Stale PRs, My Issues, Review
+  Load, Tech Debt, DORA) lazy-loaded. **75 KB → 42 KB (gzip 19 → 12 KB)**.
+- **SettingsModal sections.** API Keys / AI Config (59 KB) / AI Instructions
+  / Work Board (38 KB) / License / Audit Log / Probe Stats each split per
+  tab. Modal opening chunk **165 KB → 18 KB (gzip 40 → ~5 KB)**.
+- **MigrationWizard late steps.** AIReview / Schedule / Progress / Simple
+  Progress / Summary / WorkItems / Wiki lazy-loaded. **228 KB → 139 KB**.
+
+### Changed — Premium non-LLM theme sweep
+
+Aligned every dialog, toast, banner, empty-state, error-state and
+loading-state surface with the `2026-05-14-premium-non-llm-theme` spec.
+
+- **Modals / dialogs.** `text-2xl font-bold` stat readouts downgraded to
+  `text-lg font-semibold tabular-nums` in `PublishReviewModal`,
+  `OrgManagerModal`; `CircularScore` ring numeric `text-3xl` → `text-xl`.
+- **Toasts / banners.** `SessionBanner` lost its `shadow-amber-500/30`
+  glow; `Toast` and `PendingSyncBanner` shadow scale brought back to
+  `shadow-lg`; `RateLimitNotice` retry icon dropped
+  `group-hover:-rotate-45`.
+- **Empty / error / state surfaces.** `UpgradeRequired` shed its
+  `DecorativeOrbs` (twin `blur-3xl` glow pair) and `NoiseGrain` SVG overlay;
+  `ServiceUnavailable` deleted `Halo()` (28rem `blur-3xl` orb);
+  `FeatureError`, `ViewErrorFallback`, `ErrorBoundary` dropped backdrop
+  blur, colored shadows and glow rings; `EmptyState` CTA buttons now use the
+  `Button` primitive.
+- **AIReview loading.** `AnalysisLoadingState` lost its atmospheric radial
+  glow; the step-connector vertical line went from a 3-stop violet-to-slate
+  gradient to a solid divider.
+
+### Changed — Primitive consolidation (agent-audited surgical sweeps)
+
+- **`<select>` → `<Select>`.** Last native `<select>` in `src/components`
+  migrated (BranchesTab sort, CollaboratorsSection permission picker,
+  StalePRsTab stale-after, EmbeddingSection provider).
+- **`<EmptyState>`.** TeamHub, TeamDetails, three MigrationWizard steps,
+  ActionsTab — all hand-rolled empty cards swapped to the primitive.
+- **`<Button>`.** Five raw indigo CTAs (RepoInsightsModal Done, PolishReview
+  Cancel/Apply, SuggestNameDescriptionModal Apply, TeamHub View Pricing,
+  TeamDetails View Statistics) plus the amber `AINotHealthyBanner` Verify
+  button.
+- **`<PageHeader>`.** Last hand-rolled `<h1 text-2xl font-bold>` migrated
+  (PromptStudioPage).
+- **`<Spinner>` tone-aware.** 14 `Loader2` callsites swapped to
+  `<Spinner tone="...">` where the parent's text colour was stable; sites
+  with variant-switching parents kept `Loader2` for `currentColor`
+  inheritance.
+- **`ds-focus-ring`.** Final raw `focus:outline-none focus:ring-2`
+  patterns unified (Select primitive trigger, InlineEditField,
+  MigrationWizard RepoRow chevron).
+- **Tooltip primitive.** Refactored with `forwardRef` + Radix
+  `useComposedRefs` so it now works inside `<Popover.Trigger asChild>`;
+  rolled out to InlineActions, AISummaryCard, DevToolkit, diff toolbar,
+  Header user dropdown / More sheet, command palette, AI assistant
+  composer, banner dismiss buttons.
+
+### Fixed — Mobile FAB stacking
+
+- Removed the duplicate hamburger Menu FAB in `App.jsx` that stacked
+  behind `MobileQuickActionsFab` at the same bottom-right slot,
+  producing two indigo circles with an 8 px offset. The right-side
+  Sidebar drawer it opened is covered on mobile by the quick-actions
+  menu + SelectionBar + bottom-nav More drawer.
+- Lifted the PR Review AI insights FAB to `bottom-[152 px + safe-area]`
+  with a 24 px breathing gap above the quick-actions trigger, then
+  applied the same peek pattern.
+- AIPromoStrip dismiss `×` moved to the card's top-right (was overlapping
+  the FAB in the action row); actions converted to a 2-col grid with
+  short labels (`Assistant` / `Insights`) on mobile.
+
+### Fixed — Accessibility
+
+- `aria-label` added to seven icon-only buttons that previously surfaced
+  only via `title=` (MigrationHistory rerun / export, OrgPanel view-mode
+  toggle + create-org, TeamHub team menu with `aria-expanded` +
+  `aria-haspopup`, AuditLogSection pagination).
+- Header logo wrapper made symmetric on mobile (`pr-3` gated to `sm:`),
+  killing the dark slate "tail" on the right side of the indigo square.
+
+### Fixed — e2e regressions
+
+- `ui/ContextMenu` root backdrop was `z-[99]` (above `--ds-z-ceiling = 80`),
+  silently intercepting hover on its own menu items. Moved to
+  `z-[var(--ds-z-modal)]` so submenu hover works again — repairs four
+  spec families (context-menu, suggest-name-description, migration-autofix,
+  ai-search).
+- `responsive.spec` — replaced the removed "Open navigation menu" FAB tests
+  with new "Quick actions" coverage; dropped the double-click pattern that
+  toggled open ↔ closed on the toggle FAB; uses `evaluate(el.click())` for
+  the peek-state click to avoid hit-test races under parallel CI workers.
+- `ai-search.spec` — `getByTitle` → `getByRole 'button' { name }` after the
+  quick-action icons moved from `title` to `aria-label` via the Tooltip
+  primitive.
+- `assistant-paste-url.spec` — `getByRole('textbox', { name })` →
+  `getByPlaceholder` after the Field primitive started wrapping labels.
+- `migration-autofix.spec` — mock 'huge' repo size was 11 MB (below the
+  10 GB `SIZE_CRITICAL_BYTES` threshold); fixed to 11 GB so the
+  `SizeStrategyCard` + AI Accept banner actually mounts.
+
+### Removed
+
+- `src/components/ui/MobileFAB.jsx` primitive + companion test (~5 unit
+  tests) — defined but never imported; the peek pattern it documented is
+  now reproduced inline in `MobileQuickActionsFab` and `PRReviewView`.
+- `App.jsx` mobile hamburger FAB + companion right-side Drawer wrapper +
+  `drawerOpen` state.
+
 ## [4.2.0] - 2026-05-13
 
 A premium polish cycle on top of v4.1.1. Three big surfaces — the AI model

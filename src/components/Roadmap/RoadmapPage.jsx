@@ -13,6 +13,10 @@ const STAGES = [
   {
     id: 'next',
     items: [
+      { title: 'Pierre diff + tree primitives', description: 'Adopt @pierre/diffs + @pierre/trees (pending license verification) as the canonical PR / commit diff renderer and repo browser', tier: 'All' },
+      { title: 'Vercel AI Elements migration', description: 'Port AI Assistant, AI Issue Planner and the Dashboard AI narrative onto Vercel’s shadcn-shaped AI Elements (streaming, reasoning, tool calls)', tier: 'Pro' },
+      { title: 'Premium Dashboard Phase 2 (DORA)', description: 'KPI cards + area charts on Tremor primitives, with sparklines, delta badges and CSV export', tier: 'Enterprise' },
+      { title: 'Cross-repo Command Palette (⌘K v2)', description: 'Cross-repo jump, recent-PR / issue search, AI-driven action quick-fire', tier: 'All' },
       { title: 'Azure DevOps Server (On-Premise)', description: 'PAT + URL adaptation for self-hosted Azure DevOps', tier: 'Enterprise' },
       { title: 'GitLab Migration Importer', description: 'Clone GitLab repos with history + issues (best-effort)', tier: 'Pro + Enterprise' },
       { title: 'Bitbucket Migration Importer', tier: 'Pro + Enterprise' },
@@ -39,6 +43,11 @@ const STAGES = [
   {
     id: 'shipped',
     items: [
+      { title: 'Premium non-LLM theme', description: 'GitHub-tasteful aesthetic across modals, toasts, banners, empty/error states — no rainbow gradients, no glow shadows, no shimmer', tier: 'All' },
+      { title: 'Mobile peek FAB', description: 'Quick-actions trigger translated 55 % off-screen with breathing halo + edge stripe; reveals on hover/focus/touch with spring physics', tier: 'All' },
+      { title: 'Hash deep-linking', description: 'Bidirectional sync between activeView and #/repos / #/work / #/teams / #/roadmap / #/pricing / #/ai/prompts — shareable URLs + browser back/forward', tier: 'All' },
+      { title: 'Premium scrollbar', description: 'Transparent-by-default overlay on desktop (slate-400/50 on hover), fully hidden on mobile via (pointer: coarse)', tier: 'All' },
+      { title: 'Lazy-loaded surfaces', description: 'RepoDetail tabs, WorkBoard tabs, SettingsModal sections, MigrationWizard late steps — ~91 KB gzip deferred from first paint', tier: 'All' },
       { title: 'BYOK multi-provider AI', description: 'Gemini, Anthropic, OpenAI, OpenRouter, LMStudio — per-user key config, AES-256-GCM encryption at rest', tier: 'All' },
       { title: 'Custom AI Model Selection', description: 'Choose provider + model per feature via Settings → AI Configuration (covered by BYOK)', tier: 'Pro + Enterprise' },
       { title: 'README Enhance (AI diff)', description: 'AI-suggested improvements over your current README', tier: 'Pro' },
