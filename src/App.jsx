@@ -34,7 +34,7 @@ import { CommandPalette } from './components/CommandPalette'
 import { useResponsiveLayout } from './hooks/useResponsiveLayout'
 import CollapsiblePanel from './components/ui/CollapsiblePanel'
 import { SlimSidebar } from './components/Sidebar'
-import { Menu, Building2, ChevronRight } from 'lucide-react'
+import { Building2, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SessionBanner } from './components/SessionBanner'
 import { BYOKUpgradeBanner } from './components/BYOKUpgradeBanner'
@@ -129,7 +129,6 @@ function AppContent() {
   const [repoDetailEntities, setRepoDetailEntities] = useState({ prs: [], branches: [], issues: [] })
   const [reviewingPR, setReviewingPR] = useState(null)
   const [syncStatus, setSyncStatus] = useState({ lastSync: null, hasUpdates: false })
-  const [drawerOpen, setDrawerOpen] = useState(false)
   const [orgDrawerOpen, setOrgDrawerOpen] = useState(false)
   const [orgOverlayOpen, setOrgOverlayOpen] = useState(false)
   const [sessionExpired, setSessionExpired] = useState(false)
@@ -1573,27 +1572,15 @@ function AppContent() {
         </Suspense>
       </ErrorBoundary>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Drawers — org switcher only.
+          The right-side Sidebar drawer was removed because its FAB trigger
+          duplicated the MobileQuickActionsFab (+) at the same bottom-right
+          slot, creating two stacked indigo circles. Its functionality is
+          covered on mobile by the MobileQuickActionsFab menu (Import / Create
+          / AI / Search), the SelectionBar (bulk actions when items selected),
+          and the bottom-nav More drawer (Pricing / History / Settings). */}
       {user && (
         <>
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="md:hidden fixed z-[var(--ds-z-floating)] p-4 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-colors min-h-[56px] min-w-[56px] flex items-center justify-center safe-area-bottom safe-area-right"
-            style={{
-              bottom: 'calc(5rem + var(--safe-area-inset-bottom))',
-              right: 'calc(1.5rem + var(--safe-area-inset-right))'
-            }}
-            aria-label="Open navigation menu"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-
-          <Drawer side="right" mobileOnly isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} width={320}>
-            <div className="p-4">
-              <Sidebar {...sidebarProps} />
-            </div>
-          </Drawer>
-
           <Drawer side="left" mobileOnly isOpen={orgDrawerOpen} onClose={() => setOrgDrawerOpen(false)} width={320}>
             <div className="p-4">
               <OrgPanel
