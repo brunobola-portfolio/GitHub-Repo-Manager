@@ -3,6 +3,7 @@ import { Sparkles, Wand2, Loader2, CheckCircle2, AlertTriangle, Info } from 'luc
 import { Modal, ModalFooter } from '../ui/Modal'
 import { InsightCard } from '../ui/InsightCard'
 import { Button } from '../ui/Button'
+import { Spinner } from '../ui/Spinner'
 import { Input, Textarea } from '../ui/form'
 import { aiApi } from '../../api/ai'
 import { reposApi } from '../../api/repos'
@@ -335,7 +336,7 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
                             onClick={handleApply}
                             disabled={applyDisabled}
                         >
-                            {applying ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                            {applying ? <Spinner size="md" tone="onPrimary" className="mr-1" /> : null}
                             Apply changes
                         </Button>
                     </div>
@@ -364,7 +365,7 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
                         <div>
                             <p className="mb-1">Could not generate a suggestion. You can still edit and apply changes manually.</p>
                             <Button variant="ghost" size="sm" onClick={fetchSuggestion} disabled={loading}>
-                                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+                                {loading ? <Spinner size="sm" tone="muted" className="mr-1" /> : null}
                                 Retry
                             </Button>
                         </div>

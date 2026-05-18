@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-    Sparkles, Check, X, AlertTriangle, Loader2,
+    Sparkles, Check, X, AlertTriangle,
     Info,
 } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 import { API_BASE_URL } from '../../config'
 import { fetchWithRetry } from '../../utils/api'
 import { useToast } from '../../hooks/useToast'
@@ -508,14 +509,10 @@ export function AIConfigSection() {
                                 </Button>
                             ) : <span />}
 
-                            <button
-                                onClick={handleSave}
-                                disabled={saving || !isDirty}
-                                className="inline-flex items-center gap-1.5 px-5 py-2 text-sm font-semibold text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:bg-slate-400 disabled:shadow-none disabled:cursor-not-allowed rounded-xl shadow-md transition-all"
-                            >
-                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                            <Button variant="primary" onClick={handleSave} disabled={saving || !isDirty}>
+                                {saving ? <Spinner size="md" tone="onPrimary" /> : <Check className="w-4 h-4" />}
                                 {saving ? 'Saving...' : 'Save'}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>

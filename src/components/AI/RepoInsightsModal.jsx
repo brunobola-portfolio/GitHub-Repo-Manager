@@ -231,7 +231,7 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
             footer={
                 <ModalFooter align="right">
                     <Button variant="ghost" onClick={reanalyze} disabled={loading}>
-                        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {loading && <Spinner size="md" tone="muted" />}
                         Re-analyze
                     </Button>
                     <Button variant="primary" onClick={onClose}>

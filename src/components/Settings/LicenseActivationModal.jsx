@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Field, Textarea } from '../ui/form'
-import { Loader2, CheckCircle2, XCircle, Sparkles } from 'lucide-react'
+import { CheckCircle2, XCircle, Sparkles } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 import { fetchWithRetry } from '../../utils/api'
 import { formatUserError } from '../../utils/errors'
 
@@ -80,7 +81,7 @@ export function LicenseActivationModal({ isOpen, onClose }) {
               data-testid="license-activate-button"
             >
               {activating ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Activating…</>
+                <><Spinner size="md" tone="onPrimary" /> Activating…</>
               ) : (
                 <><Sparkles className="w-4 h-4" /> Activate License</>
               )}

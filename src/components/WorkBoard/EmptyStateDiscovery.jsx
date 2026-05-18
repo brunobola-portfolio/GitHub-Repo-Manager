@@ -1,6 +1,8 @@
-import { Sparkles, Loader2 } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { useTrackedRepos } from '../../hooks/useTrackedRepos'
 import { useToast } from '../../hooks/useToast'
+import { Button } from '../ui/Button'
+import { Spinner } from '../ui/Spinner'
 
 export function EmptyStateDiscovery({ plainTitle, plainSubtitle, icon: Icon = Sparkles }) {
     const hook = useTrackedRepos()
@@ -41,17 +43,12 @@ export function EmptyStateDiscovery({ plainTitle, plainSubtitle, icon: Icon = Sp
                     a reviewer, author, or assignee.
                 </p>
             </div>
-            <button
-                type="button"
-                onClick={handleDiscover}
-                disabled={hook.isRefreshing}
-                className="mt-2 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[color:var(--ds-accent-brand)] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed rounded-xl shadow-sm transition-colors"
-            >
+            <Button variant="primary" onClick={handleDiscover} disabled={hook.isRefreshing} className="mt-2">
                 {hook.isRefreshing
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    ? <Spinner size="md" tone="onPrimary" />
                     : <Sparkles className="w-4 h-4" />}
                 Discover my work
-            </button>
+            </Button>
         </div>
     )
 }

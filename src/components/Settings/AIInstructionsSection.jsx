@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
     Sparkles, Save, Undo2, RotateCcw, ChevronDown, ChevronRight,
-    AlertTriangle, CheckCircle2, Loader2, Search, Copy, Check, Wand2,
+    AlertTriangle, CheckCircle2, Search, Copy, Check, Wand2,
 } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
@@ -351,7 +351,7 @@ function PromptEditor({ entry, onSaved, onReset }) {
                         <div>
                             {entry.hasOverride && (
                                 <Button variant="ghost" size="sm" onClick={() => setShowResetConfirm(true)} disabled={saving || resetting}>
-                                    {resetting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <RotateCcw className="w-3.5 h-3.5 mr-1" />}
+                                    {resetting ? <Spinner size="sm" tone="muted" className="mr-1" /> : <RotateCcw className="w-3.5 h-3.5 mr-1" />}
                                     Reset to default
                                 </Button>
                             )}

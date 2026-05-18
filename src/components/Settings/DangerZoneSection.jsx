@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Download, AlertTriangle, Trash2, Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { Download, AlertTriangle, Trash2, CheckCircle2, XCircle } from 'lucide-react'
+import { Spinner } from '../ui/Spinner'
 import { InsightCard } from '../ui/InsightCard'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { Button } from '../ui/Button'
@@ -117,7 +118,7 @@ export function DangerZoneSection({ onErased }) {
                         </p>
                     </div>
                     <Button variant="secondary" size="sm" onClick={handleExport} disabled={exporting} className="shrink-0">
-                        {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                        {exporting ? <Spinner size="sm" tone="muted" /> : <Download className="w-3.5 h-3.5" />}
                         {exporting ? 'Exporting…' : 'Export'}
                     </Button>
                 </div>

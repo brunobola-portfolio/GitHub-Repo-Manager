@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { InsightCard } from '../../../ui/InsightCard'
 import { Textarea } from '../../../ui/form'
-import { MessageSquare, Loader2, Check, Pencil } from 'lucide-react'
+import { Button } from '../../../ui/Button'
+import { Spinner } from '../../../ui/Spinner'
+import { MessageSquare, Check, Pencil } from 'lucide-react'
 
 export function ConversationalEdit({ onInterpret, onApply }) {
     const [prompt, setPrompt] = useState('')
@@ -52,15 +54,10 @@ export function ConversationalEdit({ onInterpret, onApply }) {
                             placeholder="Describe what you want — e.g. mute all forks, keep only tesla org"
                             rows={2}
                         />
-                        <button
-                            type="button"
-                            onClick={handlePreview}
-                            disabled={loading || prompt.trim().length < 3}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                        <Button variant="primary" size="sm" onClick={handlePreview} disabled={loading || prompt.trim().length < 3}>
+                            {loading ? <Spinner size="sm" tone="onPrimary" /> : null}
                             Preview
-                        </button>
+                        </Button>
                     </>
                 )}
 
@@ -72,15 +69,10 @@ export function ConversationalEdit({ onInterpret, onApply }) {
                             {diff.skipped > 0 ? ` · ${diff.skipped} skipped (no access)` : ''}
                         </p>
                         <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={handleApply}
-                                disabled={loading || diff.actions.length === 0}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 transition-colors"
-                            >
-                                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                            <Button variant="primary" size="xs" onClick={handleApply} disabled={loading || diff.actions.length === 0}>
+                                {loading ? <Spinner size="xs" tone="onPrimary" /> : <Check className="w-3 h-3" />}
                                 Apply
-                            </button>
+                            </Button>
                             <button
                                 type="button"
                                 onClick={() => setDiff(null)}

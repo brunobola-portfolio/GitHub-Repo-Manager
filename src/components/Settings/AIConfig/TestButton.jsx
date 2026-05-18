@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, Check, AlertTriangle, Loader2, Info, Lightbulb } from 'lucide-react'
+import { Sparkles, Check, AlertTriangle, Info, Lightbulb } from 'lucide-react'
 import { Button } from '../../ui/Button'
+import { Spinner } from '../../ui/Spinner'
 
 // ---------------------------------------------------------------------------
 // Sub-component: TestButton
@@ -35,7 +36,7 @@ export function TestButton({ onTest, disabled, result, countdown, isDirty }) {
         <div className="space-y-2">
             <Button variant="soft-primary" onClick={onTest} disabled={isDisabled}>
                 {disabled && !countdown ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Spinner size="md" tone="primary" />
                 ) : (
                     <Sparkles className="w-4 h-4" />
                 )}

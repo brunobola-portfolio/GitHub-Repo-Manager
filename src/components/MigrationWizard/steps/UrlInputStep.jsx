@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import {
-  Link2, KeyRound, User, Lock, Loader2, CheckCircle2, XCircle,
+  Link2, KeyRound, User, Lock, CheckCircle2, XCircle,
   Info, ArrowRight,
 } from 'lucide-react'
 import { parseAzureUrl } from '../../../utils/azureUrlParser'
 import { Button } from '../../ui/Button'
+import { Spinner } from '../../ui/Spinner'
 import { Field, Input } from '../../ui/form'
 import { getCsrfToken } from '../../../utils/api'
 
@@ -164,7 +165,7 @@ export default function UrlInputStep({ source, onChange }) {
         <Button variant="primary" type="button" onClick={handleValidate} disabled={!canValidate}>
           {source.urlValidation === 'validating' ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Spinner size="md" tone="onPrimary" />
               Validating...
             </>
           ) : (

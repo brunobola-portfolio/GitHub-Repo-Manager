@@ -550,7 +550,7 @@ function ReviewComposer({ api, prNumber, onSubmitted }) {
                     className="bg-emerald-600 hover:bg-emerald-700"
                 >
                     {submitting === 'APPROVE'
-                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ? <Spinner size="sm" tone="onPrimary" />
                         : <ShieldCheck className="w-3.5 h-3.5" />}
                     Approve
                 </Button>
@@ -573,7 +573,7 @@ function ReviewComposer({ api, prNumber, onSubmitted }) {
                     disabled={!!submitting || !body.trim()}
                 >
                     {submitting === 'COMMENT'
-                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ? <Spinner size="sm" tone="muted" />
                         : <MessageCircle className="w-3.5 h-3.5" />}
                     Comment
                 </Button>
