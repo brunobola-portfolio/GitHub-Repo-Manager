@@ -9,6 +9,7 @@ import { PageShell } from '../ui/PageShell';
 import { Card } from '../ui/Card';
 import { Skeleton } from '../ui/Skeleton';
 import { Field, Input } from '../ui/form';
+import { EmptyState } from '../ui/EmptyState';
 import { listTeams } from '../../api/teams';
 import { getCsrfToken } from '../../utils/api';
 
@@ -213,10 +214,13 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                     ))}
 
                     {teams.length === 0 && !upgradeRequired && (
-                        <div className="col-span-full py-12 text-center text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-                            <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                            <p className="text-lg font-medium">No teams yet</p>
-                            <p className="text-sm">Create your first team to start collaborating.</p>
+                        <div className="col-span-full">
+                            <EmptyState
+                                icon={Users}
+                                title="No teams yet"
+                                description="Create your first team to start collaborating."
+                                action={{ label: 'Create team', onClick: () => setShowCreate(true) }}
+                            />
                         </div>
                     )}
 

@@ -11,6 +11,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { PageHeader } from '../ui/PageHeader';
 import { SectionSpinner } from '../ui/Spinner';
+import { EmptyState } from '../ui/EmptyState';
 import { Input } from '../ui/form';
 import { getCsrfToken } from '../../utils/api';
 
@@ -391,10 +392,12 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                 <RepoCard key={repo.id} repo={repo} teamMembers={members} currentUser={user} />
                             ))}
                             {assignedRepos.length === 0 && (
-                                <div className="col-span-full py-12 text-center text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-700">
-                                    <Github className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                                    <p className="text-lg font-medium">No repositories assigned</p>
-                                    <p className="text-sm">Assign repositories to share them with the team.</p>
+                                <div className="col-span-full">
+                                    <EmptyState
+                                        icon={Github}
+                                        title="No repositories assigned"
+                                        description="Assign repositories to share them with the team."
+                                    />
                                 </div>
                             )}
                         </div>
