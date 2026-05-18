@@ -41,7 +41,7 @@ export function OrgPanel({
 					<div className="flex items-center gap-1">
 						<button
 							onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-							className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-colors duration-200"
+							className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-colors duration-200"
 							title={viewMode === 'list' ? "Switch to Grid View" : "Switch to List View"}
 							aria-label={viewMode === 'list' ? "Switch to Grid View" : "Switch to List View"}
 						>
@@ -49,7 +49,7 @@ export function OrgPanel({
 						</button>
 						<button
 							onClick={onCreateOrg}
-							className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-colors duration-200"
+							className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-colors duration-200"
 							title="Add Organization"
 							aria-label="Add Organization"
 						>
@@ -137,7 +137,7 @@ export function OrgPanel({
 							<button
 								type="button"
 								aria-label="Open user settings menu"
-								className="p-2.5 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-colors duration-200"
+								className="p-2.5 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-colors duration-200"
 							>
 								<Settings size={18} aria-hidden="true" />
 							</button>

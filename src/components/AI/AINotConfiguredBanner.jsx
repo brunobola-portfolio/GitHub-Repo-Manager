@@ -107,7 +107,7 @@ export function AINotConfiguredBanner({
                         type="button"
                         onClick={handleDismiss}
                         aria-label="Dismiss AI configuration notice"
-                        className="shrink-0 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"
+                        className="shrink-0 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-700/60 transition-colors"
                     >
                         <X className="w-4 h-4" aria-hidden="true" />
                     </button>

@@ -286,21 +286,38 @@ function AppContent() {
     return () => window.removeEventListener('app:navigate-dashboard', handleNavigateDashboard)
   }, [setActiveView])
 
-  // Hash-based route: #/ai/prompts opens the Prompt Studio. The app is
-  // otherwise state-routed via setActiveView, but the Prompt Studio is
-  // deep-linkable (Settings, docs, e2e) so we expose it via a hash. On hash
-  // clear we leave the active view alone — the user navigated elsewhere.
+  // Hash-based deep-link routing. The app is state-routed via setActiveView,
+  // but the major static views are deep-linkable (Settings, docs, e2e, browser
+  // back/forward, paste-the-URL share) so we expose them via hash. On hash
+  // clear (back to '' or '#') we route to the dashboard. Repo-detail / PR
+  // review / wizard live in modal-ish state and stay out of the hash space.
+  const HASH_ROUTES = useMemo(() => ({
+    '#/ai/prompts': 'prompt-studio',
+    '#/roadmap':    'roadmap',
+    '#/pricing':    'pricing',
+    '#/repos':      'repos',
+    '#/work':       'work-board',
+    '#/teams':      'teams',
+    '':             null, // dashboard — handled below
+    '#':            null,
+    '#/':           null,
+  }), [])
+
   useEffect(() => {
     const sync = () => {
-      if (window.location.hash === '#/ai/prompts') {
+      const hash = window.location.hash
+      if (hash in HASH_ROUTES) {
+        const next = HASH_ROUTES[hash]
         setSelectedRepoDetail(null)
         setReviewingPR(null)
-        setActiveView('prompt-studio')
+        setActiveView(next ?? 'dashboard')
       }
     }
     sync() // initial mount
     window.addEventListener('hashchange', sync)
     return () => window.removeEventListener('hashchange', sync)
+    // HASH_ROUTES is memoised; setActiveView is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setActiveView])
 
   // Quota-exceeded surfaces (QuotaExceededState etc) emit
