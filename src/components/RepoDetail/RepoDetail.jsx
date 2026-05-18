@@ -1,20 +1,22 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 import { useRepoDetail } from '../../hooks/useRepoDetail'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { OverviewTab } from './OverviewTab'
-import { BranchesTab } from './BranchesTab'
-import { ReleasesTab } from './ReleasesTab'
-import { IssuesTab } from './IssuesTab'
-import { PullRequestsTab } from './PullRequestsTab'
-import { SettingsTab } from './SettingsTab'
-import { ActionsTab } from './ActionsTab'
-import { CommitsTab } from './CommitsTab'
+// Non-default tabs lazy-loaded — most users land on Overview and never
+// open Settings/Releases/Actions. Each tab now ships in its own chunk.
+const BranchesTab = lazy(() => import('./BranchesTab').then(m => ({ default: m.BranchesTab })))
+const ReleasesTab = lazy(() => import('./ReleasesTab').then(m => ({ default: m.ReleasesTab })))
+const IssuesTab = lazy(() => import('./IssuesTab').then(m => ({ default: m.IssuesTab })))
+const PullRequestsTab = lazy(() => import('./PullRequestsTab').then(m => ({ default: m.PullRequestsTab })))
+const SettingsTab = lazy(() => import('./SettingsTab').then(m => ({ default: m.SettingsTab })))
+const ActionsTab = lazy(() => import('./ActionsTab').then(m => ({ default: m.ActionsTab })))
+const CommitsTab = lazy(() => import('./CommitsTab').then(m => ({ default: m.CommitsTab })))
 import {
     ArrowLeft, GitBranch, GitCommit, Tag, CircleDot, GitPullRequest, Settings,
     FileText, Star, Eye, GitFork, ExternalLink, Lock, Globe, Loader2, Zap
 } from 'lucide-react'
-import { Spinner } from '../ui/Spinner'
+import { Spinner, SectionSpinner } from '../ui/Spinner'
 import { TabBar } from '../ui/TabBar'
 import { TrackedChip } from '../WorkBoard/TrackedChip'
 import { PageHeader } from '../ui/PageHeader'
@@ -184,14 +186,16 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
 
             {/* Tab Content */}
             <div role="tabpanel" id={`tabpanel-repo-detail-tabs-${activeTab}`} aria-labelledby={`tab-repo-detail-tabs-${activeTab}`}>
-                {activeTab === 'overview' && <OverviewTab api={api} repoData={r} onUpdate={handleRepoMutated} />}
-                {activeTab === 'branches' && <BranchesTab api={api} repoData={r} />}
-                {activeTab === 'commits' && <CommitsTab repo={r} />}
-                {activeTab === 'releases' && <ReleasesTab api={api} />}
-                {activeTab === 'actions' && <ActionsTab repo={r} />}
-                {activeTab === 'issues' && <IssuesTab api={api} repoFullName={`${owner}/${repoName}`} />}
-                {activeTab === 'pulls' && <PullRequestsTab api={api} onStartReview={onStartReview} onGenerateDescription={onGenerateDescription} />}
-                {activeTab === 'settings' && <SettingsTab owner={owner} repo={repoName} api={api} repoData={r} onUpdate={handleRepoMutated} />}
+                <Suspense fallback={<SectionSpinner />}>
+                    {activeTab === 'overview' && <OverviewTab api={api} repoData={r} onUpdate={handleRepoMutated} />}
+                    {activeTab === 'branches' && <BranchesTab api={api} repoData={r} />}
+                    {activeTab === 'commits' && <CommitsTab repo={r} />}
+                    {activeTab === 'releases' && <ReleasesTab api={api} />}
+                    {activeTab === 'actions' && <ActionsTab repo={r} />}
+                    {activeTab === 'issues' && <IssuesTab api={api} repoFullName={`${owner}/${repoName}`} />}
+                    {activeTab === 'pulls' && <PullRequestsTab api={api} onStartReview={onStartReview} onGenerateDescription={onGenerateDescription} />}
+                    {activeTab === 'settings' && <SettingsTab owner={owner} repo={repoName} api={api} repoData={r} onUpdate={handleRepoMutated} />}
+                </Suspense>
             </div>
         </PageMount>
     )
