@@ -3,6 +3,7 @@ import * as Popover from '@radix-ui/react-popover'
 import { MoreHorizontal, Pin, PinOff, Bell, BellOff, X, ExternalLink, Copy } from 'lucide-react'
 import { clsx } from 'clsx'
 import { formatRelativeTime } from '../../../utils/format'
+import { Tooltip } from '../../ui/Tooltip'
 
 const SIGNAL_LABELS = {
     review_requested: 'review requested',
@@ -70,13 +71,15 @@ export function RepoRow({ repo, onAction, selected = false, onSelectionChange })
 
             <Popover.Root open={menuOpen} onOpenChange={setMenuOpen}>
                 <Popover.Trigger asChild>
-                    <button
-                        type="button"
-                        aria-label="More actions"
-                        className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 focus-within:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
-                    >
-                        <MoreHorizontal className="w-4 h-4 text-slate-500" />
-                    </button>
+                    <Tooltip label="More actions">
+                        <button
+                            type="button"
+                            aria-label="More actions"
+                            className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 focus-within:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ds-focus-ring"
+                        >
+                            <MoreHorizontal className="w-4 h-4 text-slate-500" />
+                        </button>
+                    </Tooltip>
                 </Popover.Trigger>
                 <Popover.Content
                     side="bottom"

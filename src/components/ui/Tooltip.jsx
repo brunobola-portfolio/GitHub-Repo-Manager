@@ -1,22 +1,50 @@
 /**
- * Delayed tooltip primitive (300ms hover delay). Wraps a single child
- * element and injects aria-describedby for screen-reader support.
+ * Delayed tooltip primitive (300ms hover delay) that plays well with
+ * Radix asChild triggers (Popover.Trigger / DropdownMenu.Trigger / …).
  *
- * Limitations:
- *   - Position is fixed above the trigger (no `placement` prop yet).
- *   - Children must be a single React element (Children.only is enforced).
+ * Behaviour
+ *  - Wraps a single React element child
+ *  - Forwards ref onto the *inner* child (not the wrapping span) so
+ *    asChild trigger props (ref + click handlers) reach the real
+ *    button instead of being trapped on our wrapper
+ *  - Merges our hover/focus handlers with any handlers the child OR
+ *    the parent (e.g. Popover.Trigger) already has — neither side
+ *    loses its event
+ *  - Injects aria-describedby for screen-reader support
  *
- * Example:
  *   <Tooltip label="Sync repositories">
  *     <button>Sync</button>
  *   </Tooltip>
+ *
+ *   // Works inside a Radix trigger:
+ *   <Popover.Trigger asChild>
+ *     <Tooltip label="More actions">
+ *       <button><MoreHorizontal /></button>
+ *     </Tooltip>
+ *   </Popover.Trigger>
  */
-import { cloneElement, Children, useId, useRef, useState, useCallback } from 'react'
+import { cloneElement, Children, useId, useRef, useState, useCallback, forwardRef } from 'react'
+import { useComposedRefs } from '@radix-ui/react-compose-refs'
 
-export function Tooltip({ label, children, delay = 300 }) {
+function chain(...fns) {
+  return (event) => {
+    for (const fn of fns) fn?.(event)
+  }
+}
+
+export const Tooltip = forwardRef(function Tooltip(
+  { label, children, delay = 300, ...triggerProps },
+  forwardedRef,
+) {
   const [visible, setVisible] = useState(false)
   const timer = useRef(null)
   const id = useId()
+
+  const child = Children.only(children)
+  // Compose: any forwarded ref (e.g. Popover.Trigger asChild) +
+  // the child's own ref. The merged ref lands on the inner element
+  // (button/anchor), not on our wrapping span.
+  const composedRef = useComposedRefs(forwardedRef, child.ref)
 
   const show = useCallback(() => {
     clearTimeout(timer.current)
@@ -28,24 +56,27 @@ export function Tooltip({ label, children, delay = 300 }) {
     setVisible(false)
   }, [])
 
-  const child = Children.only(children)
-  const { onMouseEnter, onMouseLeave, onFocus, onBlur } = child.props
-
   return (
     <span className="relative inline-flex">
-      {/* eslint-disable-next-line react-hooks/refs -- cloneElement is the standard pattern for aria injection; no ref is passed */}
       {cloneElement(child, {
-        'aria-describedby': visible && label ? id : undefined,
-        onMouseEnter: (e) => { show(); onMouseEnter?.(e) },
-        onMouseLeave: (e) => { hide(); onMouseLeave?.(e) },
-        onFocus: (e) => { show(); onFocus?.(e) },
-        onBlur: (e) => { hide(); onBlur?.(e) },
+        // Forward all other trigger props first (data-state, aria-expanded,
+        // anything else Radix sends), THEN our own props so ours win on the
+        // attributes we care about (aria-describedby, ref).
+        ...triggerProps,
+        ref: composedRef,
+        'aria-describedby': visible && label ? id : (triggerProps['aria-describedby'] ?? child.props['aria-describedby']),
+        onMouseEnter: chain(show, child.props.onMouseEnter, triggerProps.onMouseEnter),
+        onMouseLeave: chain(hide, child.props.onMouseLeave, triggerProps.onMouseLeave),
+        onFocus:      chain(show, child.props.onFocus,      triggerProps.onFocus),
+        onBlur:       chain(hide, child.props.onBlur,       triggerProps.onBlur),
+        onClick:        chain(child.props.onClick,        triggerProps.onClick),
+        onPointerDown:  chain(child.props.onPointerDown,  triggerProps.onPointerDown),
       })}
       {label && visible && (
         <span
           id={id}
           role="tooltip"
-          className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 text-[12px] text-white bg-[color:var(--ds-surface-dark)] rounded-[var(--ds-radius-sm)] whitespace-nowrap pointer-events-none"
+          className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 text-[12px] text-white bg-[color:var(--ds-surface-dark)] rounded-[var(--ds-radius-sm)] whitespace-nowrap pointer-events-none z-[var(--ds-z-popover)]"
         >
           {label}
           <span
@@ -56,4 +87,4 @@ export function Tooltip({ label, children, delay = 300 }) {
       )}
     </span>
   )
-}
+})

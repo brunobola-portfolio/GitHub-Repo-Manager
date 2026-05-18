@@ -4,6 +4,7 @@ import { MoreHorizontal, Pin, PinOff, Bell, BellOff, X, ExternalLink, Copy, Eye 
 import { clsx } from 'clsx'
 import { useTrackedRepos } from '../../hooks/useTrackedRepos'
 import { useToast } from '../../hooks/useToast'
+import { Tooltip } from '../ui/Tooltip'
 
 /**
  * Per-row action menu for the Work Board page. Mirrors the RepoCard
@@ -79,15 +80,17 @@ export function WorkBoardRowMenu({ repoFullName, itemUrl, itemType, itemNumber }
     return (
         <Popover.Root open={open} onOpenChange={setOpen}>
             <Popover.Trigger asChild>
-                <button
-                    type="button"
-                    aria-label="More actions"
-                    onClick={stopBubble}
-                    onMouseDown={stopBubble}
-                    className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 focus-within:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ds-focus-ring"
-                >
-                    <MoreHorizontal className="w-4 h-4 text-slate-500" />
-                </button>
+                <Tooltip label="More actions">
+                    <button
+                        type="button"
+                        aria-label="More actions"
+                        onClick={stopBubble}
+                        onMouseDown={stopBubble}
+                        className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 focus-within:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ds-focus-ring"
+                    >
+                        <MoreHorizontal className="w-4 h-4 text-slate-500" />
+                    </button>
+                </Tooltip>
             </Popover.Trigger>
             <Popover.Content
                 side="bottom"
