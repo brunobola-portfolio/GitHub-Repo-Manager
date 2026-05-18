@@ -13,7 +13,7 @@ const STAGES = [
   {
     id: 'next',
     items: [
-      { title: 'Pierre diff + tree primitives', description: 'Adopt @pierre/diffs + @pierre/trees (pending license verification) as the canonical PR / commit diff renderer and repo browser', tier: 'All' },
+      { title: 'Pierre diff + tree primitives', description: 'Adopt @pierre/diffs (Apache-2.0, AGPL-compatible) as the canonical PR / commit diff renderer; @pierre/trees as the repo file-tree primitive', tier: 'All' },
       { title: 'Vercel AI Elements migration', description: 'Port AI Assistant, AI Issue Planner and the Dashboard AI narrative onto Vercel’s shadcn-shaped AI Elements (streaming, reasoning, tool calls)', tier: 'Pro' },
       { title: 'Premium Dashboard Phase 2 (DORA)', description: 'KPI cards + area charts on Tremor primitives, with sparklines, delta badges and CSV export', tier: 'Enterprise' },
       { title: 'Cross-repo Command Palette (⌘K v2)', description: 'Cross-repo jump, recent-PR / issue search, AI-driven action quick-fire', tier: 'All' },
