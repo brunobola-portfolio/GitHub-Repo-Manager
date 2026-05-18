@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { WizardPanel } from '../ui/WizardPanel'
 import { Button } from '../ui/Button'
@@ -10,6 +10,7 @@ import { useAzureOrganizations } from '../../hooks/useAzureOrganizations'
 import { useToast } from '../../hooks/useToast'
 import { migrationApi } from '../../api/migration'
 import { getCsrfToken } from '../../utils/api'
+// Early steps (everyone sees these on the migration path) stay eager.
 import SourceTypeStep from './steps/SourceTypeStep'
 import SourceStep from './steps/SourceStep'
 import UrlInputStep from './steps/UrlInputStep'
@@ -17,13 +18,17 @@ import GitHubSourceStep from './steps/GitHubSourceStep'
 import TargetConfigStep from './steps/TargetConfigStep'
 import RepoSelectStep from './steps/RepoSelectStep'
 import RepoConfigStep from './steps/RepoConfigStep'
-import WorkItemsStep from './steps/WorkItemsStep'
-import WikiStep from './steps/WikiStep'
-import AIReviewStep from './steps/AIReviewStep'
-import ScheduleStep from './steps/ScheduleStep'
-import ProgressStep from './steps/ProgressStep'
-import SimpleProgressStep from './steps/SimpleProgressStep'
-import SummaryStep from './steps/SummaryStep'
+// Late / optional steps are lazy — many migrations never reach them
+// (workItems/wiki only for Azure, aiReview is gated by a feature flag,
+// progress + summary only after the user kicks off a migration).
+const WorkItemsStep = lazy(() => import('./steps/WorkItemsStep'))
+const WikiStep = lazy(() => import('./steps/WikiStep'))
+const AIReviewStep = lazy(() => import('./steps/AIReviewStep'))
+const ScheduleStep = lazy(() => import('./steps/ScheduleStep'))
+const ProgressStep = lazy(() => import('./steps/ProgressStep'))
+const SimpleProgressStep = lazy(() => import('./steps/SimpleProgressStep'))
+const SummaryStep = lazy(() => import('./steps/SummaryStep'))
+import { SectionSpinner } from '../ui/Spinner'
 import BreadcrumbNav from './BreadcrumbNav'
 import {
   ArrowLeft, ArrowRight, Rocket, Download, AlertCircle, AlertTriangle,
@@ -772,7 +777,7 @@ export default function MigrationWizard({
                   exit="exit"
                   transition={{ duration: 0.25, ease: 'easeInOut' }}
                 >
-                  {renderStep()}
+                  <Suspense fallback={<SectionSpinner />}>{renderStep()}</Suspense>
                 </motion.div>
               </AnimatePresence>
             </div>
