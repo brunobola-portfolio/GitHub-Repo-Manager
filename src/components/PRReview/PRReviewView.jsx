@@ -484,16 +484,17 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
           Both mounts share the same useAIDeepReview hook instance, so
           dismissing/editing in one updates the other. */}
       {/* AI insights FAB on PR Review.
-          bottom-[calc(152px+...)] stacks it above the MobileQuickActionsFab
-          (which sits at 72 px from bottom). 152 leaves a 24 px breathing
-          gap so the two FABs read as distinct actions, not one blob —
-          same offset as ui/MobileFAB shiftAboveBottomBar. */}
+          Peeks out 55 % from the right edge (matching MobileQuickActionsFab)
+          so PR diff content uses the full viewport width. Hover / focus /
+          touch reveal the full button. Sits 152 px above the bottom to
+          stack above MobileQuickActionsFab (which is at 72 px from bottom)
+          with a 24 px breathing gap. */}
       {!composerOpen && (
         <button
           ref={aiFabRef}
           type="button"
           onClick={() => setAiDrawerOpen(true)}
-          className="lg:hidden fixed z-[var(--ds-z-floating)] bottom-[calc(152px+env(safe-area-inset-bottom,0px))] right-4 w-14 h-14 rounded-full bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white shadow-lg flex items-center justify-center transition-colors"
+          className="group lg:hidden fixed z-[var(--ds-z-floating)] bottom-[calc(152px+env(safe-area-inset-bottom,0px))] right-0 mr-4 w-14 h-14 rounded-full bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white shadow-lg flex items-center justify-center transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] translate-x-[55%] opacity-90 hover:translate-x-0 hover:opacity-100 focus:translate-x-0 focus:opacity-100 active:translate-x-0"
           aria-label={
             deep.draft?.lineComments?.length
               ? `Open AI insights (${deep.draft.lineComments.length} draft comments)`
