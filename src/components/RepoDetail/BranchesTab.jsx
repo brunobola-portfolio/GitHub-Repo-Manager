@@ -7,6 +7,7 @@ import { SectionPanel } from '../ui/SectionPanel'
 import { GitBranch, Shield, Trash2, Plus, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { Field, Input } from '../ui/form'
+import { Select } from '../ui/Select'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 import { BranchHygieneCard } from './BranchHygieneCard'
@@ -205,12 +206,17 @@ export function BranchesTab({ api, repoData }) {
                         </button>
                     ))}
                 </div>
-                <select value={sort} onChange={e => setSort(e.target.value)}
-                    className="px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
-                    aria-label="Sort branches">
-                    <option value="recent">Recently active</option>
-                    <option value="name">Name A-Z</option>
-                </select>
+                <Select
+                    size="sm"
+                    label="Sort branches"
+                    value={sort}
+                    onChange={setSort}
+                    className="min-w-[160px]"
+                    options={[
+                        { value: 'recent', label: 'Recently active' },
+                        { value: 'name', label: 'Name A-Z' },
+                    ]}
+                />
             </div>
 
             <ul className="space-y-2">
