@@ -60,7 +60,18 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                 transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                 className="overflow-hidden"
             >
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-800/40 rounded-2xl">
+                <div className="relative flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-3 pr-20 sm:pr-5 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-800/40 rounded-2xl">
+                    {/* Dismiss — absolute top-right so the action row stays clear of
+                        the mobile FAB territory at the bottom-right of the viewport. */}
+                    <button
+                        type="button"
+                        onClick={handleDismiss}
+                        aria-label="Dismiss AI promotion"
+                        title="Hide for now"
+                        className="absolute top-2 right-2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center flex-shrink-0">
                             <Sparkles className="w-4 h-4 text-white" strokeWidth={2.5} />
@@ -74,31 +85,26 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Actions: full-width grid on mobile (no edge collision with the
+                        FAB), inline auto-width row on sm+. */}
+                    <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2 sm:flex-shrink-0">
                         <button
                             type="button"
                             onClick={handleAssistant}
-                            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-500/40 transition-colors"
+                            className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-500/40 transition-colors whitespace-nowrap"
                         >
                             <MessageCircle className="w-3.5 h-3.5" />
-                            Open Assistant
+                            <span className="sm:hidden">Assistant</span>
+                            <span className="hidden sm:inline">Open Assistant</span>
                         </button>
                         <button
                             type="button"
                             onClick={handleInsights}
-                            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+                            className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors whitespace-nowrap"
                         >
-                            Get Insights
+                            <span className="sm:hidden">Insights</span>
+                            <span className="hidden sm:inline">Get Insights</span>
                             <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleDismiss}
-                            aria-label="Dismiss AI promotion"
-                            title="Hide for now"
-                            className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                        >
-                            <X className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
