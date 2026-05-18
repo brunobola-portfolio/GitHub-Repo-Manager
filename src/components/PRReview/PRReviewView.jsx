@@ -483,12 +483,17 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
           Visible below lg, where the third-column AIReviewPanel is hidden.
           Both mounts share the same useAIDeepReview hook instance, so
           dismissing/editing in one updates the other. */}
+      {/* AI insights FAB on PR Review.
+          bottom-[calc(152px+...)] stacks it above the MobileQuickActionsFab
+          (which sits at 72 px from bottom). 152 leaves a 24 px breathing
+          gap so the two FABs read as distinct actions, not one blob —
+          same offset as ui/MobileFAB shiftAboveBottomBar. */}
       {!composerOpen && (
         <button
           ref={aiFabRef}
           type="button"
           onClick={() => setAiDrawerOpen(true)}
-          className="lg:hidden fixed z-[var(--ds-z-floating)] bottom-24 right-4 w-14 h-14 rounded-full bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white shadow-lg flex items-center justify-center transition-colors"
+          className="lg:hidden fixed z-[var(--ds-z-floating)] bottom-[calc(152px+env(safe-area-inset-bottom,0px))] right-4 w-14 h-14 rounded-full bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white shadow-lg flex items-center justify-center transition-colors"
           aria-label={
             deep.draft?.lineComments?.length
               ? `Open AI insights (${deep.draft.lineComments.length} draft comments)`
