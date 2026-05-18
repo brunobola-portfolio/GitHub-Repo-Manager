@@ -130,7 +130,11 @@ export function ActionsTab({ repo }) {
           Recent Runs{selected ? ` — ${selected.name}` : ''}
         </h3>
         {filteredRuns.length === 0 ? (
-          <p className="text-sm text-slate-500">No runs yet.</p>
+          <EmptyState
+            icon={Play}
+            title="No workflow runs"
+            description={selected ? `${selected.name} hasn't been triggered yet.` : 'No workflows have run for this repository yet.'}
+          />
         ) : (
           <ul className="space-y-2">
             {filteredRuns.slice(0, 30).map(run => (
