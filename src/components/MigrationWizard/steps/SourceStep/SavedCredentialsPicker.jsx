@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { KeyRound, Loader2, ChevronDown, Plus, Check, Settings } from 'lucide-react'
+import { KeyRound, ChevronDown, Plus, Check, Settings } from 'lucide-react'
+import { Spinner } from '../../../ui/Spinner'
 
 /**
  * Pick a previously-saved Azure PAT for the current host. Loads /api/azure/
@@ -68,7 +69,7 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
 
       {loading ? (
         <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 px-2 py-1.5">
-          <Loader2 className="w-3.5 h-3.5 animate-spin" /> A carregar…
+          <Spinner size="sm" tone="muted" label="A carregar credenciais" /> A carregar…
         </div>
       ) : (
         <div className="relative">

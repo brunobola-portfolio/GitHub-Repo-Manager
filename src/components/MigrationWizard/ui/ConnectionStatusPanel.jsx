@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle2, XCircle, Loader2, AlertTriangle, Circle, ChevronRight } from 'lucide-react'
+import { CheckCircle2, XCircle, AlertTriangle, Circle, ChevronRight } from 'lucide-react'
+import { SpinnerIcon } from '../../ui/Spinner'
 import { classifyProvider, PROVIDERS } from '../../../utils/azureProvider'
 
 /**
@@ -152,7 +153,7 @@ function StepIcon({ status, index }) {
   if (status === 'ok') return <CheckCircle2 className="w-3.5 h-3.5" />
   if (status === 'error') return <XCircle className="w-3.5 h-3.5" />
   if (status === 'warn') return <AlertTriangle className="w-3.5 h-3.5" />
-  if (status === 'loading') return <Loader2 className="w-3.5 h-3.5 animate-spin" />
+  if (status === 'loading') return <SpinnerIcon className="w-3.5 h-3.5" />
   return <Circle className="w-3.5 h-3.5" />
 }
 
