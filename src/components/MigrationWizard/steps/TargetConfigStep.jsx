@@ -5,6 +5,7 @@ import {
 import { Spinner } from '../../ui/Spinner'
 import { Field, Input, Textarea } from '../../ui/form'
 import { getCsrfToken } from '../../../utils/api'
+import AzureTargetForm from './TargetConfigStep/AzureTargetForm'
 
 /**
  * TargetConfigStep - Configure the target GitHub repository for URL / GitHub imports.
@@ -82,7 +83,12 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
     </>
   )
 
-  return (
+  // Azure source detected (host present) → show 4-mode target picker.
+  // The 'github' sub-mode falls through to the existing GitHub form below.
+  const isAzureSource = !!source.host && source.host !== 'github.com'
+  const azureMode = source.azureTargetMode || 'github'
+
+  const githubForm = (
     <div className="space-y-5">
       {/* Owner dropdown */}
       <div>
@@ -179,4 +185,15 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
       </button>
     </div>
   )
+
+  if (isAzureSource) {
+    return (
+      <AzureTargetForm
+        source={source}
+        onChange={onChange}
+        githubTargetForm={azureMode === 'github' ? githubForm : null}
+      />
+    )
+  }
+  return githubForm
 }

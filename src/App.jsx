@@ -956,12 +956,11 @@ function AppContent() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="text-center">
-          <Spinner size="xl" tone="primary" label="Loading Workspace" className="mx-auto mb-4" />
-          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-            <Spinner size="sm" />
-            <span>Loading Workspace...</span>
-          </div>
+        <div className="flex flex-col items-center gap-5">
+          <Spinner size="xl" tone="primary" label="Loading Workspace" className="w-12 h-12" />
+          <p className="text-sm font-medium tracking-wide text-slate-500 dark:text-slate-400">
+            Loading Workspace…
+          </p>
         </div>
       </div>
     )

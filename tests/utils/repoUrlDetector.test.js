@@ -5,7 +5,7 @@ describe('detectRepoUrl', () => {
   it('returns sourceType=azure with parsed Azure fields', () => {
     expect(detectRepoUrl('https://dev.azure.com/bruno/AWIP/_git/Cacadores')).toEqual({
       sourceType: 'azure',
-      parsed: { org: 'bruno', project: 'AWIP', repo: 'Cacadores' },
+      parsed: { host: 'dev.azure.com', org: 'bruno', project: 'AWIP', repo: 'Cacadores' },
       error: null,
       suggestion: null,
     })
@@ -19,7 +19,7 @@ describe('detectRepoUrl', () => {
   it('returns sourceType=azure for the Azure shorthand (org/project/repo)', () => {
     expect(detectRepoUrl('bruno/AWIP/Cacadores')).toEqual({
       sourceType: 'azure',
-      parsed: { org: 'bruno', project: 'AWIP', repo: 'Cacadores' },
+      parsed: { host: 'dev.azure.com', org: 'bruno', project: 'AWIP', repo: 'Cacadores' },
       error: null,
       suggestion: null,
     })
@@ -63,10 +63,15 @@ describe('detectRepoUrl', () => {
     expect(r.error).toBeTruthy()
   })
 
-  it('returns sourceType=null for on-prem Azure DevOps Server URLs (explicitly unsupported)', () => {
+  it('detects on-prem Azure DevOps Server URLs as azure source (preserves /tfs/ in org)', () => {
     const r = detectRepoUrl('https://tfs.client.local/tfs/DefaultCollection/Proj/_git/Repo')
-    expect(r.sourceType).toBeNull()
-    expect(r.error).toMatch(/on-?prem|server/i)
+    expect(r.sourceType).toBe('azure')
+    expect(r.parsed).toMatchObject({
+      host: 'tfs.client.local',
+      org: 'tfs/DefaultCollection',
+      project: 'Proj',
+      repo: 'Repo'
+    })
   })
 
   it('prefers Azure when the host matches Azure (Azure wins over generic github-like path)', () => {

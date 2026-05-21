@@ -404,6 +404,7 @@ export const webhookCreateSchema = z.object({
 export const createPlanSchema = z.object({
     source: z.object({
         type: z.literal('azure'),
+        host: z.string().min(1).max(253).default('dev.azure.com'),
         org: z.string().min(1).max(100),
         project: z.string().min(1).max(100),
         pat: z.string().min(1).optional()

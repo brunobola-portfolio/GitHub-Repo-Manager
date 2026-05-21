@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
-  Download, CheckCircle2, XCircle, Loader2, Cloud,
+  Download, CheckCircle2, XCircle, Cloud,
   ArrowRight, Clock, FolderGit2, AlertTriangle
 } from 'lucide-react'
-import { SectionSpinner } from '../ui/Spinner'
+import { SectionSpinner, SpinnerIcon } from '../ui/Spinner'
 import { EmptyState } from '../ui/EmptyState'
 import { formatRelativeTime } from '../../utils/format'
 import { useModal } from '../../hooks/useModal'
@@ -12,7 +12,7 @@ import { useModal } from '../../hooks/useModal'
 const STATUS_CONFIG = {
   complete: { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'Completed' },
   failed: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-500/10', label: 'Failed' },
-  running: { icon: Loader2, color: 'text-blue-500', bg: 'bg-blue-500/10', label: 'Running', animate: true },
+  running: { icon: SpinnerIcon, color: 'text-blue-500', bg: 'bg-blue-500/10', label: 'Running', animate: false },
   pending: { icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10', label: 'Pending' },
 }
 
@@ -100,7 +100,7 @@ export function MigrationActivity({ loading: parentLoading }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <MiniStat label="Total Imports" value={stats.total} icon={Download} color="text-indigo-500" onClick={openHistory} />
         <MiniStat label="Successful" value={stats.completed} icon={CheckCircle2} color="text-emerald-500" onClick={openHistory} />
-        <MiniStat label="In Progress" value={stats.running} icon={Loader2} color="text-blue-500" animate={stats.running > 0} onClick={openHistory} />
+        <MiniStat label="In Progress" value={stats.running} icon={stats.running > 0 ? SpinnerIcon : Clock} color="text-blue-500" animate={false} onClick={openHistory} />
         {stats.tfvc > 0 && (
           <MiniStat label="TFVC Converted" value={stats.tfvc} icon={AlertTriangle} color="text-amber-500" onClick={openHistory} />
         )}

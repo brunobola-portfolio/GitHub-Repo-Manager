@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles, Kanban, Wand2, Palette } from 'lucide-react'
+import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles, Kanban, Wand2, Palette, Cloud, ShieldCheck } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
 import { useToast } from '../hooks/useToast'
 import { API_BASE_URL } from '../config'
@@ -7,6 +7,8 @@ import { API_BASE_URL } from '../config'
 // "API Keys"; the rest (AI Config, Audit Log, License, Work Board) are each
 // hefty enough to split into their own chunks.
 const ApiKeysSection = lazy(() => import('./Settings/ApiKeysSection').then(m => ({ default: m.ApiKeysSection })))
+const AzureCredentialsSection = lazy(() => import('./Settings/AzureCredentialsSection'))
+const AzureHostsAllowlistSection = lazy(() => import('./Settings/AzureHostsAllowlistSection'))
 const AuditLogSection = lazy(() => import('./Settings/AuditLogSection').then(m => ({ default: m.AuditLogSection })))
 const LicensePlanSection = lazy(() => import('./Settings/LicensePlanSection').then(m => ({ default: m.LicensePlanSection })))
 const AIConfigSection = lazy(() => import('./Settings/AIConfigSection').then(m => ({ default: m.AIConfigSection })))
@@ -43,6 +45,7 @@ function SettingsIcon({ className }) {
 const TABS = [
     { id: 'general', label: 'General', icon: SettingsIcon },
     { id: 'api-keys', label: 'API Keys', icon: Key },
+    { id: 'azure-credentials', label: 'Azure Credentials', icon: Cloud },
     { id: 'ai', label: 'AI Configuration', icon: Sparkles },
     { id: 'ai-instructions', label: 'AI Instructions', icon: Wand2 },
     { id: 'work-board', label: 'Work Board', icon: Kanban },
@@ -50,9 +53,10 @@ const TABS = [
     { id: 'audit', label: 'Audit Log', icon: Shield },
 ]
 
-// Admin-only tab appended at the end when the user has admin powers. Built
-// at render time so non-admins never see the entry.
+// Admin-only tabs appended when the user has admin powers. Built at render
+// time so non-admins never see them in navigation.
 const ADMIN_TABS = [
+    { id: 'azure-hosts', label: 'Azure Hosts Allowlist', icon: ShieldCheck },
     { id: 'probe-stats', label: 'AI Probes', icon: BadgeCheck },
 ]
 
@@ -156,6 +160,8 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
             {activeTab !== 'general' && (
                 <Suspense fallback={<SectionSpinner />}>
                     {activeTab === 'api-keys' && <div><ApiKeysSection /></div>}
+                    {activeTab === 'azure-credentials' && <div><AzureCredentialsSection /></div>}
+                    {activeTab === 'azure-hosts' && <div><AzureHostsAllowlistSection /></div>}
                     {activeTab === 'ai' && (
                         <div>
                             <a

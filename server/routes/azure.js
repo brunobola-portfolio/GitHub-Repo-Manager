@@ -4,6 +4,52 @@ import rateLimit from 'express-rate-limit';
 import * as azureService from '../azure-service.js';
 import { requireAuth, safeError, errorResponse, isValidGitHubUsername } from '../middleware/auth.js';
 import { encryptCredentials, decryptCredentials } from '../lib/credential-encryption.js';
+import db from '../db.js';
+import {
+    validateAzureHost, isAllowedHost,
+    getAllowedHostPatterns, getEnvHostPatterns, getDbHostEntries,
+    isUsingDefaultAllowlist,
+    addHostToAllowlist, removeHostFromAllowlist,
+} from '../lib/azure-host-validator.js';
+import { requireAdmin } from '../middleware/require-admin.js';
+import { auditLog } from '../lib/audit.js';
+import * as credsVault from '../lib/azure-credentials-manager.js';
+
+const DEFAULT_AZURE_HOST = 'dev.azure.com';
+
+/** Resolve and validate the optional host param. Returns null + sends 400 on failure. */
+async function resolveHost(req, res) {
+    const host = (req.body?.host || req.query?.host || DEFAULT_AZURE_HOST).toString();
+    const check = await validateAzureHost(host);
+    if (!check.ok) {
+        errorResponse(res, 400, `Azure host rejected: ${check.reason}`, 'INVALID_HOST');
+        return null;
+    }
+    return host;
+}
+
+/**
+ * Resolve a PAT from one of three sources, in priority order:
+ *   1. `savedCredentialId` in body → decrypt from per-user vault
+ *      (preferred — never round-trips the raw PAT through the browser)
+ *   2. `pat` in body                → caller pasted it directly
+ *   3. Server env / session         → existing AZURE_PAT fallback
+ *
+ * Returns null when nothing usable was found.
+ */
+function resolvePatFromRequest(req) {
+    const body = req.body || {};
+    if (body.savedCredentialId) {
+        try {
+            const id = Number(body.savedCredentialId);
+            if (Number.isFinite(id)) {
+                const pat = credsVault.decryptForUse(req.session.userId, id);
+                if (pat) return pat;
+            }
+        } catch { /* fall through to other sources */ }
+    }
+    return azureService.resolvePat(body.pat, req.session);
+}
 
 const orgListLimiter = rateLimit({
     windowMs: 60 * 1000,
@@ -37,20 +83,90 @@ router.get('/azure/env-auth', requireAuth, (req, res) => {
     res.json({ available: !!process.env.AZURE_PAT });
 });
 
+// Public host allowlist + per-host check. The UI uses this to:
+//   1. Pre-validate a hostname before the user submits credentials.
+//   2. Show the user exactly which hosts the server will accept.
+//   3. Decide whether to offer a 1-click "Add to allowlist" button (admin)
+//      or a "Ask your admin" message (non-admin).
+//
+// Returns DB-managed entries with metadata so the UI can render a richer
+// management view, while still exposing only the resolved patterns (no raw
+// env strings).
+router.get('/azure/host-allowlist', requireAuth, (req, res) => {
+    const host = (req.query.host || '').toString().trim().toLowerCase();
+    let isAdmin = false;
+    try {
+        const row = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(req.session.userId);
+        isAdmin = !!row?.is_admin;
+    } catch { /* default false */ }
+
+    res.json({
+        patterns: getAllowedHostPatterns(),
+        envPatterns: getEnvHostPatterns(),
+        dbEntries: getDbHostEntries(),
+        usingDefault: isUsingDefaultAllowlist(),
+        host: host || null,
+        allowed: host ? isAllowedHost(host) : null,
+        canEdit: isAdmin,
+    });
+});
+
+// Admin-only: add a host to the DB allowlist. Takes effect immediately
+// (no server restart). Audited via audit_log_v2.
+router.post('/azure/host-allowlist', requireAuth, requireAdmin, (req, res) => {
+    try {
+        const { pattern, notes } = req.body || {};
+        if (!pattern) {
+            return errorResponse(res, 400, 'Pattern is required', 'MISSING_PATTERN');
+        }
+        const result = addHostToAllowlist(pattern, req.session.userId, notes || null);
+        auditLog(req, 'azure_host_allowlist.add', 'azure_host', result.pattern, {
+            notes: notes || null,
+            already_existed: !result.added,
+        });
+        res.status(result.added ? 201 : 200).json(result);
+    } catch (error) {
+        errorResponse(res, error.status || 400, safeError(error, 'Failed to add host to allowlist'));
+    }
+});
+
+// Admin-only: remove a host from the DB allowlist. Patterns coming from
+// the env var cannot be removed via API (they live in .env).
+router.delete('/azure/host-allowlist/:pattern', requireAuth, requireAdmin, (req, res) => {
+    try {
+        const result = removeHostFromAllowlist(req.params.pattern);
+        if (!result.removed) {
+            return errorResponse(res, 404, 'Pattern not found in DB allowlist (note: env-var patterns cannot be removed via API)', 'NOT_FOUND');
+        }
+        auditLog(req, 'azure_host_allowlist.remove', 'azure_host', req.params.pattern, {});
+        res.json(result);
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to remove host from allowlist'));
+    }
+});
+
 router.post('/azure/validate', requireAuth, async (req, res) => {
     try {
-        const { org, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat, req.session);
+        const { org } = req.body;
+        const pat = resolvePatFromRequest(req);
         if (!org) {
             return errorResponse(res, 400, 'Organization is required');
         }
-        if (!isValidGitHubUsername(org)) {
+        // For on-prem TFS the "org" is actually the collection name, which can
+        // contain hyphens — skip the GitHub-username regex for non-cloud hosts.
+        const host = (req.body?.host || DEFAULT_AZURE_HOST).toString();
+        if (host === DEFAULT_AZURE_HOST && !isValidGitHubUsername(org)) {
             return errorResponse(res, 400, 'Invalid organization name');
         }
         if (!pat) {
             return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
         }
-        const result = await azureService.validatePat(org, pat);
+        const validatedHost = await resolveHost(req, res);
+        if (!validatedHost) return;
+        const result = await azureService.validatePat(org, pat, validatedHost);
+        // Surface resolvedOrg so the client can rewrite source.org to the
+        // collection-prefixed form (e.g., "tfs/DefaultCollection") when
+        // auto-discovery applied a fallback on-prem TFS path.
         res.json(result);
     } catch (error) {
         errorResponse(res, 500, safeError(error, 'Azure validation failed'));
@@ -59,21 +175,79 @@ router.post('/azure/validate', requireAuth, async (req, res) => {
 
 router.post('/azure/projects', requireAuth, async (req, res) => {
     try {
-        const { org, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat, req.session);
+        const { org } = req.body;
+        const pat = resolvePatFromRequest(req);
         if (!org) {
             return errorResponse(res, 400, 'Organization is required');
         }
-        if (!isValidGitHubUsername(org)) {
+        const host = (req.body?.host || DEFAULT_AZURE_HOST).toString();
+        if (host === DEFAULT_AZURE_HOST && !isValidGitHubUsername(org)) {
             return errorResponse(res, 400, 'Invalid organization name');
         }
         if (!pat) {
             return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
         }
-        const projects = await azureService.listProjects(org, pat);
+        const validatedHost = await resolveHost(req, res);
+        if (!validatedHost) return;
+        const projects = await azureService.listProjects(org, pat, validatedHost);
         res.json({ projects });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to list Azure projects'));
+    }
+});
+
+// Create a new Azure DevOps project (used by the migration wizard's
+// "create new project + repo" target mode). Polls Operations API until
+// the project is provisioned, then optionally creates a Git repo inside.
+router.post('/azure/projects/create', requireAuth, async (req, res) => {
+    try {
+        const { org, pat: bodyPat, name, description, processTemplateId, sourceControlType, repoName } = req.body || {};
+        const pat = azureService.resolvePat(bodyPat, req.session);
+        if (!org || !name) {
+            return errorResponse(res, 400, 'Organization and project name are required', 'MISSING_PARAMS');
+        }
+        if (!pat) {
+            return errorResponse(res, 400, 'No PAT provided and no server PAT configured', 'MISSING_PAT');
+        }
+        const host = await resolveHost(req, res);
+        if (!host) return;
+
+        const created = await azureService.createProject(org, {
+            name, description, processTemplateId,
+            sourceControlType: sourceControlType || 'Git'
+        }, pat, host);
+
+        // Project creation is async — caller polls until ready. We do a brief
+        // wait here so common-case responses include a usable project handle.
+        let projectInfo = null;
+        for (let i = 0; i < 10; i++) {
+            await new Promise(r => setTimeout(r, 1500));
+            try {
+                projectInfo = await azureService.getProjectInfo(org, name, pat, host);
+                if (projectInfo?.id) break;
+            } catch { /* not ready yet */ }
+        }
+
+        // Optionally create a Git repo inside the new project
+        let createdRepo = null;
+        if (repoName && projectInfo?.id) {
+            try {
+                createdRepo = await azureService.createGitRepo(org, name, repoName, pat, host);
+            } catch (e) {
+                // Surface but don't fail the whole call — caller can retry just the repo
+                return res.status(207).json({
+                    project: { id: projectInfo.id, name, operationId: created.operationId },
+                    repoError: safeError(e, 'Failed to create repository in new project')
+                });
+            }
+        }
+
+        res.status(201).json({
+            project: projectInfo ? { id: projectInfo.id, name: projectInfo.name } : { name, operationId: created.operationId, pending: true },
+            repo: createdRepo
+        });
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to create Azure project'));
     }
 });
 
@@ -84,16 +258,18 @@ router.post('/azure/repos', requireAuth, async (req, res) => {
         if (!org || !project) {
             return errorResponse(res, 400, 'Organization and project are required');
         }
-        if (!isValidGitHubUsername(org)) {
+        const host = (req.body?.host || DEFAULT_AZURE_HOST).toString();
+        if (host === DEFAULT_AZURE_HOST && !isValidGitHubUsername(org)) {
             return errorResponse(res, 400, 'Invalid organization name');
         }
         if (!pat) {
             return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
         }
-        // Fetch Git repos and project info in parallel (always need VCS type)
+        const validatedHost = await resolveHost(req, res);
+        if (!validatedHost) return;
         const [repos, projectInfo] = await Promise.all([
-            azureService.listRepos(org, project, pat),
-            azureService.getProjectInfo(org, project, pat).catch(() => null),
+            azureService.listRepos(org, project, pat, validatedHost),
+            azureService.getProjectInfo(org, project, pat, validatedHost).catch(() => null),
         ]);
         const versionControlType = projectInfo?.versionControlType || 'Git';
         res.json({ repos, versionControlType });
@@ -468,6 +644,99 @@ router.get('/azure/oauth/token', requireAuth, (req, res) => {
         ready: !!req.session.azureTokenReady,
         error: !!req.session.azureTokenError,
     });
+});
+
+// ───────────────────────────────────────────────────────────────────────
+// Azure credentials vault (per-user, encrypted PATs)
+//
+// The migration wizard reads from this vault so users don't re-paste a
+// token on every session. Managed from Settings → Azure Credentials.
+// PAT values are NEVER returned by list/get endpoints — only `prefix`.
+// ───────────────────────────────────────────────────────────────────────
+
+// GET /api/azure/credentials — list current user's saved credentials,
+// optionally filtered by host so the wizard can show host-matching ones.
+router.get('/azure/credentials', requireAuth, (req, res) => {
+    try {
+        const host = req.query.host ? String(req.query.host) : null;
+        const items = credsVault.listForUser(req.session.userId, { host });
+        res.json({ items });
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to list credentials'));
+    }
+});
+
+// POST /api/azure/credentials — store a new credential. Body shape:
+//   { label, host, org?, pat, scopes? }
+router.post('/azure/credentials', requireAuth, (req, res) => {
+    try {
+        const body = req.body || {};
+        const created = credsVault.create(req.session.userId, body);
+        auditLog(req, 'azure_credential.create', 'azure_credential', created.id, {
+            host: created.host, org: created.org, label: created.label,
+        });
+        res.status(201).json(created);
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to save credential'));
+    }
+});
+
+// PATCH /api/azure/credentials/:id — update label / org / scopes (NOT the
+// PAT — to rotate, delete + recreate so the prefix stays in sync).
+router.patch('/azure/credentials/:id', requireAuth, (req, res) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (Number.isNaN(id)) return errorResponse(res, 400, 'Invalid id', 'BAD_ID');
+        const updated = credsVault.update(req.session.userId, id, req.body || {});
+        auditLog(req, 'azure_credential.update', 'azure_credential', id, {});
+        res.json(updated);
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to update credential'));
+    }
+});
+
+// DELETE /api/azure/credentials/:id — revoke (the actual PAT in Azure DevOps
+// is NOT revoked here, only the local cache; user should also delete it on
+// the Azure side via the "Open PAT page" link in the UI).
+router.delete('/azure/credentials/:id', requireAuth, (req, res) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (Number.isNaN(id)) return errorResponse(res, 400, 'Invalid id', 'BAD_ID');
+        const removed = credsVault.remove(req.session.userId, id);
+        auditLog(req, 'azure_credential.remove', 'azure_credential', id, {
+            host: removed.host, org: removed.org, label: removed.label,
+        });
+        res.json({ removed: true, id });
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to delete credential'));
+    }
+});
+
+// POST /api/azure/credentials/:id/test — validate the stored PAT against
+// the linked host/org. Useful from Settings to spot revoked tokens early.
+router.post('/azure/credentials/:id/test', requireAuth, async (req, res) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (Number.isNaN(id)) return errorResponse(res, 400, 'Invalid id', 'BAD_ID');
+        const cred = credsVault.getPublic(req.session.userId, id);
+        if (!cred) return errorResponse(res, 404, 'Credential not found', 'NOT_FOUND');
+        if (!cred.org) {
+            return res.json({
+                valid: false,
+                error: 'Credential has no org configured — edit it and set the organization first.',
+            });
+        }
+        const hostCheck = await validateAzureHost(cred.host);
+        if (!hostCheck.ok) {
+            return res.json({ valid: false, error: `Host check failed: ${hostCheck.reason}` });
+        }
+        const pat = credsVault.decryptForUse(req.session.userId, id);
+        if (!pat) return errorResponse(res, 500, 'Could not decrypt credential', 'DECRYPT_FAILED');
+        const result = await azureService.validatePat(cred.org, pat, cred.host);
+        res.json(result);
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'Failed to test credential'));
+    }
 });
 
 export default router;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Sparkles, Wand2, Loader2, CheckCircle2, AlertTriangle, Info } from 'lucide-react'
+import { Sparkles, Wand2, CheckCircle2, AlertTriangle, Info } from 'lucide-react'
 import { Modal, ModalFooter } from '../ui/Modal'
 import { InsightCard } from '../ui/InsightCard'
 import { Button } from '../ui/Button'
@@ -326,7 +326,7 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
                         disabled={loading || applying}
                         title={aiOff ? 'AI is not configured — uses a deterministic heuristic instead' : undefined}
                     >
-                        {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                        {loading ? <Spinner size="md" tone="primary" className="mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
                         {suggestLabel}
                     </Button>
                     <div className="flex gap-2 items-center">

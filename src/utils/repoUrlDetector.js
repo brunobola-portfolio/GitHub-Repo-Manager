@@ -36,14 +36,14 @@ export function detectRepoUrl(input) {
     }
   }
 
-  // Azure DevOps (cloud) — parseAzureUrl already rejects on-prem + other services
+  // Azure DevOps (cloud, *.visualstudio.com, or on-prem TFS 2018+)
   const az = parseAzureUrl(input)
   if (az.error) {
     return { sourceType: null, parsed: null, error: az.error, suggestion: az.suggestion }
   }
   return {
     sourceType: 'azure',
-    parsed: { org: az.org, project: az.project, repo: az.repo },
+    parsed: { host: az.host, org: az.org, project: az.project, repo: az.repo },
     error: null, suggestion: null,
   }
 }

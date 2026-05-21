@@ -1,18 +1,13 @@
 import { memo } from 'react'
-import { AlertCircle, Archive, Lock, RefreshCw, Search, Plus, Download } from 'lucide-react'
+import { AlertCircle, Archive, Lock, Search, Plus, Download } from 'lucide-react'
 import { Button } from '../ui/Button'
+import { Spinner } from '../ui/Spinner'
 
 /** Full-bleed overlay shown while the page is refreshing the repo list. */
 export function LoadingState() {
 	return (
 		<div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl transition-all duration-300">
-			<div className="relative">
-				<div className="w-16 h-16 rounded-full border-4 border-indigo-100 dark:border-indigo-900/30 animate-pulse"></div>
-				<div className="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-				<div className="absolute inset-0 flex items-center justify-center">
-					<RefreshCw className="w-6 h-6 text-indigo-500 ds-animate-spin-slow" />
-				</div>
-			</div>
+			<Spinner size="xl" tone="primary" label="Loading repositories" />
 			<p className="mt-4 text-slate-600 dark:text-slate-300 font-medium animate-pulse">
 				Loading repositories...
 			</p>

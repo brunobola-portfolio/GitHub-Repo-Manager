@@ -2,13 +2,13 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Package, ClipboardList, BookOpen, CheckCircle2, XCircle,
-  Loader2, Clock, Pause, Ban, RotateCcw, AlertTriangle,
+  Clock, Pause, Ban, RotateCcw, AlertTriangle,
 } from 'lucide-react'
 import { useSSE } from '../../../hooks/useSSE'
 import { useElapsedSeconds } from '../../../hooks/useElapsedSeconds'
 import { formatDurationSeconds } from '../../../utils/format'
 import { migrationApi } from '../../../api/migration'
-import { SectionSpinner } from '../../ui/Spinner'
+import { SectionSpinner, SpinnerIcon } from '../../ui/Spinner'
 
 const STATUS_COLORS = {
   pending: 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400',
@@ -22,7 +22,7 @@ const STATUS_COLORS = {
 
 const STATUS_ICONS = {
   pending: Clock,
-  running: Loader2,
+  running: SpinnerIcon,
   complete: CheckCircle2,
   failed: XCircle,
   retrying: RotateCcw,
@@ -129,7 +129,7 @@ function TaskRow({ task, onRetry }) {
         )}
 
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>
-          <StatusIcon className={`w-3 h-3 ${isRunning ? 'animate-spin' : ''}`} />
+          <StatusIcon className="w-3 h-3" />
           {task.status}
         </span>
 

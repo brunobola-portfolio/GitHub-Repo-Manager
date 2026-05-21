@@ -8,6 +8,7 @@ import { Button } from './ui/Button'
 import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
 import { EmptyState } from './ui/EmptyState'
+import { Spinner } from './ui/Spinner'
 import { Field, Input, Textarea } from './ui/form'
 import { useToast } from '../hooks/useToast'
 import { getCsrfToken } from '../utils/api'
@@ -157,7 +158,7 @@ export function OrgManagerModal({
 
             {loading && !orgDetails ? (
                 <div className="flex items-center justify-center py-12">
-                    <RefreshCw className="w-8 h-8 text-slate-400 animate-spin" />
+                    <Spinner size="xl" tone="muted" label="Loading organization" />
                 </div>
             ) : activeTab === 'overview' ? (
                 <OverviewTab

@@ -44,7 +44,8 @@ describe('SourceStep', () => {
   it('renders credential cards when loaded', async () => {
     render(<SourceStep source={defaultSource} onChange={vi.fn()} oauthHook={mockOauthHook} />)
     // Credential cards appear after fetch resolves — check for the authentication label
-    expect(screen.getByText(/authentication/i)).toBeInTheDocument()
+    // (Portuguese: "Autenticação")
+    expect(screen.getByText(/autentica/i)).toBeInTheDocument()
   })
 
   it('does not render validate button', () => {

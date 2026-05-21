@@ -32,15 +32,16 @@ export class MigrationEngine extends EventEmitter {
   createPlan(userId, source, tasks, options = {}) {
     const createTransaction = this.db.transaction(() => {
       const planResult = this.db.prepare(`
-        INSERT INTO migration_plans (user_id, source_type, source_org, source_project, target_org, is_dry_run)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO migration_plans (user_id, source_type, source_org, source_project, target_org, is_dry_run, azure_host)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `).run(
         userId,
         source.type,
         source.org,
         source.project,
         options.targetOrg || null,
-        options.isDryRun ? 1 : 0
+        options.isDryRun ? 1 : 0,
+        source.host || 'dev.azure.com'
       )
 
       const planId = Number(planResult.lastInsertRowid)
@@ -87,6 +88,7 @@ export class MigrationEngine extends EventEmitter {
             source_type = COALESCE(?, source_type),
             source_org = COALESCE(?, source_org),
             source_project = COALESCE(?, source_project),
+            azure_host = COALESCE(?, azure_host),
             target_org = COALESCE(?, target_org),
             is_dry_run = COALESCE(?, is_dry_run),
             updated_at = datetime('now')
@@ -95,6 +97,7 @@ export class MigrationEngine extends EventEmitter {
           source.type || null,
           source.org || null,
           source.project || null,
+          source.host || null,
           updates.targetOrg !== undefined ? (updates.targetOrg || null) : null,
           updates.isDryRun !== undefined ? (updates.isDryRun ? 1 : 0) : null,
           planId
@@ -577,6 +580,8 @@ export class MigrationEngine extends EventEmitter {
       }
     }
 
+    const azureHost = resolvedCredentials.azureHost || 'dev.azure.com'
+
     switch (task.type) {
       case 'repo': {
         // Parse source_ref: "org/project/repoName"
@@ -585,8 +590,14 @@ export class MigrationEngine extends EventEmitter {
         const azureProject = parts[1]
         const azureRepo = parts.slice(2).join('/')
 
+        // On-prem TFS uses /tfs/DefaultCollection/{org}/...; cloud uses /{org}/...
+        const isCloud = azureHost === 'dev.azure.com' || azureHost.endsWith('.visualstudio.com')
+        const baseClone = isCloud
+          ? `https://${azureHost}`
+          : `https://${azureHost}/tfs/DefaultCollection`
+
         const result = await importRepository({
-          sourceUrl: `https://dev.azure.com/${azureOrg}/${azureProject}/_git/${azureRepo}`,
+          sourceUrl: `${baseClone}/${azureOrg}/${azureProject}/_git/${azureRepo}`,
           credentials: resolvedCredentials.azurePat ? { type: 'pat', token: resolvedCredentials.azurePat } : undefined,
           targetOwner,
           targetName: targetRepo,
@@ -620,18 +631,18 @@ export class MigrationEngine extends EventEmitter {
         // Sanitize temp repo name for Azure DevOps: no leading underscore/period, no invalid chars, max 64 chars
         const safeName = targetRepo.replace(/[/:~&%;@'"?<>|#$*\[\]\\]/g, '-').replace(/^[_.]/, 't') // eslint-disable-line no-useless-escape
         const tempRepoName = `tfvc-import-${safeName}-${Date.now()}`.slice(0, 64)
-        const tempRepo = await azureService.createGitRepo(tfvcOrg, tfvcProject, tempRepoName, azurePat)
+        const tempRepo = await azureService.createGitRepo(tfvcOrg, tfvcProject, tempRepoName, azurePat, azureHost)
 
         try {
           callbacks.onProgress(10, 'Converting TFVC to Git...')
-          const importReq = await azureService.importTfvcToGit(tfvcOrg, tfvcProject, tempRepo.id, tfvcPath, azurePat, true)
+          const importReq = await azureService.importTfvcToGit(tfvcOrg, tfvcProject, tempRepo.id, tfvcPath, azurePat, true, azureHost)
 
           // Poll for completion
           let done = false
           for (let i = 0; i < 120 && !done; i++) {
             if (callbacks.isCancelled()) throw new Error('Migration cancelled')
             await new Promise(r => setTimeout(r, 5000))
-            const status = await azureService.getImportStatus(tfvcOrg, tfvcProject, tempRepo.id, importReq.importRequestId, azurePat)
+            const status = await azureService.getImportStatus(tfvcOrg, tfvcProject, tempRepo.id, importReq.importRequestId, azurePat, azureHost)
             callbacks.onProgress(10 + Math.floor((i / 120) * 30), `Converting TFVC to Git... (${status.status})`)
             if (status.status === 'completed') done = true
             else if (status.status === 'failed' || status.status === 'abandoned') {
@@ -641,7 +652,7 @@ export class MigrationEngine extends EventEmitter {
           if (!done) throw new Error('TFVC conversion timed out')
 
           callbacks.onProgress(45, 'Cloning converted repository...')
-          const repoDetails = await azureService.getRepoDetails(tfvcOrg, tfvcProject, tempRepoName, azurePat)
+          const repoDetails = await azureService.getRepoDetails(tfvcOrg, tfvcProject, tempRepoName, azurePat, azureHost)
           logger.debug({ remoteUrl: repoDetails.remoteUrl?.replace(/\/\/[^@]*@/, '//***@') }, 'TFVC temp repo created')
 
           const result = await importRepository({
@@ -666,13 +677,13 @@ export class MigrationEngine extends EventEmitter {
           }
 
           // Cleanup temp repo
-          try { await azureService.deleteGitRepo(tfvcOrg, tfvcProject, tempRepo.id, azurePat) } catch (cleanupErr) {
+          try { await azureService.deleteGitRepo(tfvcOrg, tfvcProject, tempRepo.id, azurePat, azureHost) } catch (cleanupErr) {
             logger.warn({ err: cleanupErr, tempRepoName }, 'Failed to cleanup temp repo')
           }
           return result
         } catch (err) {
           // Cleanup temp repo on failure
-          try { await azureService.deleteGitRepo(tfvcOrg, tfvcProject, tempRepo.id, azurePat) } catch (cleanupErr) {
+          try { await azureService.deleteGitRepo(tfvcOrg, tfvcProject, tempRepo.id, azurePat, azureHost) } catch (cleanupErr) {
             logger.warn({ err: cleanupErr, tempRepoName }, 'Failed to cleanup temp repo after error')
           }
           throw err
@@ -680,7 +691,7 @@ export class MigrationEngine extends EventEmitter {
       }
       case 'work-items': {
         return await migrateWorkItems(
-          { ...config, org: resolvedCredentials.azureOrg, project: resolvedCredentials.azureProject },
+          { ...config, host: azureHost, org: resolvedCredentials.azureOrg, project: resolvedCredentials.azureProject },
           { pat: resolvedCredentials.azurePat },
           resolvedCredentials.githubToken,
           targetOwner,
@@ -690,7 +701,7 @@ export class MigrationEngine extends EventEmitter {
       }
       case 'wiki': {
         return await migrateWiki(
-          { ...config, org: resolvedCredentials.azureOrg, project: resolvedCredentials.azureProject },
+          { ...config, host: azureHost, org: resolvedCredentials.azureOrg, project: resolvedCredentials.azureProject },
           { pat: resolvedCredentials.azurePat },
           resolvedCredentials.githubToken,
           targetOwner,

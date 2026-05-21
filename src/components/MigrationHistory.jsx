@@ -3,11 +3,11 @@ import { Button } from './ui/Button'
 import { Modal } from './ui/Modal'
 import { EmptyState } from './ui/EmptyState'
 import {
-    History, CheckCircle2, XCircle, Loader2, ExternalLink,
+    History, CheckCircle2, XCircle, ExternalLink,
     Clock, ArrowRight, RefreshCw, Cloud, Globe, GitBranch,
     ChevronDown, ChevronRight, RotateCcw, FileText, ListChecks
 } from 'lucide-react'
-import { SectionSpinner, Spinner } from './ui/Spinner'
+import { SectionSpinner, Spinner, SpinnerIcon } from './ui/Spinner'
 import { migrationApi } from '../api/migration'
 import { apiCall } from '../utils/api'
 
@@ -26,8 +26,8 @@ const STATUS_STYLES = {
     complete: { bg: 'bg-green-100 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-400', icon: CheckCircle2 },
     completed: { bg: 'bg-green-100 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-400', icon: CheckCircle2 },
     failed: { bg: 'bg-red-100 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-400', icon: XCircle },
-    running: { bg: 'bg-blue-100 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400', icon: Loader2 },
-    executing: { bg: 'bg-blue-100 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400', icon: Loader2 },
+    running: { bg: 'bg-blue-100 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400', icon: SpinnerIcon },
+    executing: { bg: 'bg-blue-100 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400', icon: SpinnerIcon },
     pending: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', icon: Clock },
     draft: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', icon: Clock },
     paused: { bg: 'bg-amber-100 dark:bg-amber-900/20', text: 'text-amber-700 dark:text-amber-400', icon: Clock }
@@ -226,7 +226,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                             className={`w-full p-3 flex items-start gap-3 text-left rounded-xl transition-colors ds-focus-ring ${isExpandable ? 'hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer' : ''}`}
                                         >
                                             <div className={`p-1.5 rounded-lg ${status.bg}`}>
-                                                <StatusIcon className={`w-4 h-4 ${status.text} ${plan.status === 'running' || plan.status === 'executing' ? 'animate-spin' : ''}`} />
+                                                <StatusIcon className={`w-4 h-4 ${status.text}`} />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 text-sm">
@@ -281,7 +281,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                         : null
                                                     return (
                                                         <div key={task.id || idx} className="flex items-center gap-2 text-xs">
-                                                            <TaskIcon className={`w-3.5 h-3.5 ${taskStatus.text} ${task.status === 'running' ? 'animate-spin' : ''}`} />
+                                                            <TaskIcon className={`w-3.5 h-3.5 ${taskStatus.text}`} />
                                                             <span className="font-medium text-slate-700 dark:text-slate-300 truncate flex-1">{task.repoName || task.name || `Task ${idx + 1}`}</span>
                                                             <span className={`capitalize ${taskStatus.text}`}>{task.status}</span>
                                                             {task.progressPct > 0 && task.status === 'running' && (
@@ -316,7 +316,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                     <div key={job.id} className="p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                         <div className="flex items-start gap-3">
                                             <div className={`p-1.5 rounded-lg ${status.bg}`}>
-                                                <StatusIcon className={`w-4 h-4 ${status.text} ${job.status === 'running' ? 'animate-spin' : ''}`} />
+                                                <StatusIcon className={`w-4 h-4 ${status.text}`} />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 text-sm">

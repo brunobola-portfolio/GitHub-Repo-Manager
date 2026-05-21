@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { CreditCard, Zap, Building2, Star, AlertTriangle, ExternalLink, RefreshCw, ArrowRight, Shield, Key, ChevronDown, ChevronUp, Info } from 'lucide-react'
+import { CreditCard, Zap, Building2, Star, AlertTriangle, ExternalLink, ArrowRight, Shield, Key, ChevronDown, ChevronUp, Info } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
+import { Spinner } from '../ui/Spinner'
 import { RowIconBadge } from '../ui/RowIconBadge'
 import { useModal } from '../../hooks/useModal'
 import { UsageDashboard } from './UsageDashboard'
@@ -81,7 +82,7 @@ function PlanCard({ tier, status, renewalDate, onManage, onChangePlan, portalLoa
                     {tier !== 'free' && (
                         <Button variant="secondary" size="sm" onClick={onManage} disabled={portalLoading}>
                             {portalLoading ? (
-                                <RefreshCw className="w-4 h-4 animate-spin" />
+                                <Spinner size="md" tone="primary" />
                             ) : (
                                 <ExternalLink className="w-4 h-4" />
                             )}

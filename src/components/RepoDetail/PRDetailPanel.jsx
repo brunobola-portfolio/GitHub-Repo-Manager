@@ -6,7 +6,7 @@ import { Button } from '../ui/Button'
 import { TabBar } from '../ui/TabBar'
 import {
     GitPullRequest, GitMerge, MessageSquare, Clock,
-    ExternalLink, Loader2, Send, CheckCircle2, XCircle,
+    ExternalLink, Send, CheckCircle2, XCircle,
     ArrowLeft, FileText,
     Eye, ShieldCheck, ShieldAlert, MessageCircle, GitBranch, Wand2
 } from 'lucide-react'
@@ -562,7 +562,7 @@ function ReviewComposer({ api, prNumber, onSubmitted }) {
                     className="bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40 border border-orange-200 dark:border-orange-800/50"
                 >
                     {submitting === 'REQUEST_CHANGES'
-                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ? <Spinner size="sm" tone="warning" />
                         : <ShieldAlert className="w-3.5 h-3.5" />}
                     Request changes
                 </Button>

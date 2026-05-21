@@ -213,6 +213,39 @@
 		background-color: rgba(255, 255, 255, 0.4);
 	}
 
+	/* Premium spinner — the centre renders `</>` glyph-by-glyph (typing
+	   effect) inside the rotating gradient ring. The whole mark also
+	   counter-rotates to cancel the parent SVG's `animate-spin`, so the
+	   characters stay visually upright while the arc sweeps around them.
+	   Used by <Spinner> and <SpinnerIcon> in src/components/ui/Spinner.jsx. */
+	@keyframes ds-spinner-counter {
+		to { transform: rotate(-360deg); }
+	}
+	@keyframes ds-spinner-glyph {
+		0%, 4% { opacity: 0; transform: translateY(1px); }
+		14%, 62% { opacity: 1; transform: translateY(0); }
+		78%, 100% { opacity: 0; transform: translateY(-1px); }
+	}
+	.ds-spinner-mark {
+		transform-origin: 25px 25px;
+		transform-box: view-box;
+		animation: ds-spinner-counter 1s linear infinite;
+	}
+	.ds-spinner-mark > path {
+		transform-origin: 25px 25px;
+		transform-box: view-box;
+		animation: ds-spinner-glyph 2.4s ease-in-out infinite;
+	}
+	.ds-spinner-mark > path:nth-child(2) { animation-delay: 0.18s; }
+	.ds-spinner-mark > path:nth-child(3) { animation-delay: 0.36s; }
+	@media (prefers-reduced-motion: reduce) {
+		.ds-spinner-mark,
+		.ds-spinner-mark > path {
+			animation: none;
+		}
+		.ds-spinner-mark > path { opacity: 0.85; transform: none; }
+	}
+
 	/* Hide scrollbar while keeping scroll functionality */
 	.ds-no-scrollbar {
 		-ms-overflow-style: none;
@@ -222,10 +255,6 @@
 		display: none;
 	}
 
-	/* Slow spin animation for loading indicators */
-	.ds-animate-spin-slow {
-		animation: spin 2s linear infinite;
-	}
 
 	/* Safe area inset utilities */
 	.safe-area-top {

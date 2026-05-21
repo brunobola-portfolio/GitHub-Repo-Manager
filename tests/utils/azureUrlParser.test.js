@@ -5,22 +5,23 @@ describe('parseAzureUrl', () => {
   // Standard dev.azure.com
   it('parses org/project URL', () => {
     const r = parseAzureUrl('https://dev.azure.com/brunobola/BolaLabs')
-    expect(r).toEqual({ org: 'brunobola', project: 'BolaLabs', repo: null, error: null, suggestion: null })
+    expect(r).toEqual({ host: 'dev.azure.com', org: 'brunobola', project: 'BolaLabs', repo: null, error: null, suggestion: null })
   })
 
   it('parses org/project/_git/repo URL', () => {
     const r = parseAzureUrl('https://dev.azure.com/brunobola/BolaLabs/_git/MyRepo')
-    expect(r).toEqual({ org: 'brunobola', project: 'BolaLabs', repo: 'MyRepo', error: null, suggestion: null })
+    expect(r).toEqual({ host: 'dev.azure.com', org: 'brunobola', project: 'BolaLabs', repo: 'MyRepo', error: null, suggestion: null })
   })
 
   it('parses org/_git/project (repo = project)', () => {
     const r = parseAzureUrl('https://dev.azure.com/brunobola/_git/BolaLabs')
-    expect(r).toEqual({ org: 'brunobola', project: 'BolaLabs', repo: 'BolaLabs', error: null, suggestion: null })
+    expect(r).toEqual({ host: 'dev.azure.com', org: 'brunobola', project: 'BolaLabs', repo: 'BolaLabs', error: null, suggestion: null })
   })
 
   // URLs with query params, fragments, trailing slashes
   it('strips query params', () => {
     const r = parseAzureUrl('https://dev.azure.com/brunobola/BolaLabs/_git/MyRepo?path=/src&version=GBmain')
+    expect(r.host).toBe('dev.azure.com')
     expect(r.org).toBe('brunobola')
     expect(r.project).toBe('BolaLabs')
     expect(r.repo).toBe('MyRepo')
@@ -41,7 +42,7 @@ describe('parseAzureUrl', () => {
   // Subpages (user browsing Azure DevOps)
   it('parses _git/repo/pullrequests', () => {
     const r = parseAzureUrl('https://dev.azure.com/brunobola/BolaLabs/_git/MyRepo/pullrequests')
-    expect(r).toMatchObject({ org: 'brunobola', project: 'BolaLabs', repo: 'MyRepo' })
+    expect(r).toMatchObject({ host: 'dev.azure.com', org: 'brunobola', project: 'BolaLabs', repo: 'MyRepo' })
   })
 
   it('parses _git/repo/commits', () => {
@@ -102,18 +103,18 @@ describe('parseAzureUrl', () => {
 
   it('parses SSH clone URL', () => {
     const r = parseAzureUrl('git@ssh.dev.azure.com:v3/brunobola/BolaLabs/MyRepo')
-    expect(r).toMatchObject({ org: 'brunobola', project: 'BolaLabs', repo: 'MyRepo' })
+    expect(r).toMatchObject({ host: 'dev.azure.com', org: 'brunobola', project: 'BolaLabs', repo: 'MyRepo' })
   })
 
   // Legacy visualstudio.com
   it('parses visualstudio.com project URL', () => {
     const r = parseAzureUrl('https://brunobola.visualstudio.com/BolaLabs')
-    expect(r).toMatchObject({ org: 'brunobola', project: 'BolaLabs', repo: null })
+    expect(r).toMatchObject({ host: 'brunobola.visualstudio.com', org: 'brunobola', project: 'BolaLabs', repo: null })
   })
 
   it('parses visualstudio.com repo URL', () => {
     const r = parseAzureUrl('https://brunobola.visualstudio.com/BolaLabs/_git/MyRepo')
-    expect(r).toMatchObject({ org: 'brunobola', project: 'BolaLabs', repo: 'MyRepo' })
+    expect(r).toMatchObject({ host: 'brunobola.visualstudio.com', org: 'brunobola', project: 'BolaLabs', repo: 'MyRepo' })
   })
 
   it('parses visualstudio.com with DefaultCollection', () => {
@@ -129,12 +130,12 @@ describe('parseAzureUrl', () => {
   // Shorthand
   it('parses org/project shorthand', () => {
     const r = parseAzureUrl('brunobola/BolaLabs')
-    expect(r).toMatchObject({ org: 'brunobola', project: 'BolaLabs', repo: null })
+    expect(r).toMatchObject({ host: 'dev.azure.com', org: 'brunobola', project: 'BolaLabs', repo: null })
   })
 
   it('parses org/project/repo shorthand', () => {
     const r = parseAzureUrl('brunobola/BolaLabs/MyRepo')
-    expect(r).toMatchObject({ org: 'brunobola', project: 'BolaLabs', repo: 'MyRepo' })
+    expect(r).toMatchObject({ host: 'dev.azure.com', org: 'brunobola', project: 'BolaLabs', repo: 'MyRepo' })
   })
 
   // URL-encoded names
@@ -179,11 +180,78 @@ describe('parseAzureUrl', () => {
     expect(r.suggestion).toMatch(/Bitbucket/)
   })
 
-  // On-premises TFS detection
-  it('detects on-premises TFS URL', () => {
-    const r = parseAzureUrl('https://tfs.company.com/tfs/DefaultCollection/MyProject')
-    expect(r.error).toMatch(/on-premises/)
-    expect(r.suggestion).toMatch(/dev\.azure\.com/)
+  // ---------------------------------------------------------------
+  // On-premises TFS / Azure DevOps Server 2018+
+  // ---------------------------------------------------------------
+  it('parses on-premises TFS short-form project URL', () => {
+    const r = parseAzureUrl('https://tfs.trigenius.com/Trigenius/TGC-GestaoContratosSoftware')
+    expect(r).toEqual({
+      host: 'tfs.trigenius.com',
+      org: 'Trigenius',
+      project: 'TGC-GestaoContratosSoftware',
+      repo: null,
+      error: null,
+      suggestion: null
+    })
+  })
+
+  it('parses on-premises TFS code-search URL (query params stripped)', () => {
+    const r = parseAzureUrl('https://tfs.trigenius.com/Trigenius/TGC-GestaoContratosSoftware/_search?action=contents&text=LogManager%20ext%3Acs&type=code')
+    expect(r).toMatchObject({
+      host: 'tfs.trigenius.com',
+      org: 'Trigenius',
+      project: 'TGC-GestaoContratosSoftware',
+      repo: null
+    })
+    expect(r.error).toBeNull()
+  })
+
+  it('parses on-premises TFS git repo URL', () => {
+    const r = parseAzureUrl('https://tfs.company.local/MyCollection/MyProject/_git/MyRepo')
+    expect(r).toMatchObject({
+      host: 'tfs.company.local',
+      org: 'MyCollection',
+      project: 'MyProject',
+      repo: 'MyRepo'
+    })
+  })
+
+  it('parses on-premises TFS with /tfs/ virtual directory (preserves prefix in org)', () => {
+    const r = parseAzureUrl('https://tfs.company.com/tfs/DefaultCollection/MyProject/_git/MyRepo')
+    expect(r).toMatchObject({
+      host: 'tfs.company.com',
+      org: 'tfs/DefaultCollection',
+      project: 'MyProject',
+      repo: 'MyRepo'
+    })
+  })
+
+  it('parses on-premises TFS without /tfs/ prefix (collection at root)', () => {
+    const r = parseAzureUrl('https://tfs.company.com/MyCollection/MyProject/_git/MyRepo')
+    expect(r).toMatchObject({
+      host: 'tfs.company.com',
+      org: 'MyCollection',
+      project: 'MyProject',
+      repo: 'MyRepo'
+    })
+  })
+
+  it('returns soft error for TFS host with no project', () => {
+    const r = parseAzureUrl('https://tfs.trigenius.com/Trigenius')
+    expect(r.host).toBe('tfs.trigenius.com')
+    expect(r.org).toBe('Trigenius')
+    expect(r.project).toBeNull()
+    expect(r.error).toBeTruthy()
+  })
+
+  it('preserves :port in host for on-prem TFS', () => {
+    const r = parseAzureUrl('https://tfs.company.local:8080/MyColl/MyProject/_git/MyRepo')
+    expect(r).toMatchObject({
+      host: 'tfs.company.local:8080',
+      org: 'MyColl',
+      project: 'MyProject',
+      repo: 'MyRepo'
+    })
   })
 
   // Azure URL without project
@@ -195,12 +263,7 @@ describe('parseAzureUrl', () => {
   })
 
   // Unrecognizable
-  it('returns error for random URL', () => {
-    const r = parseAzureUrl('https://example.com/something')
-    expect(r.error).toBeTruthy()
-  })
-
-  it('returns error for single word', () => {
+  it('returns error for single word (no protocol, no dots)', () => {
     const r = parseAzureUrl('hello')
     expect(r.error).toBeTruthy()
   })

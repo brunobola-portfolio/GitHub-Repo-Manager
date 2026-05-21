@@ -1,14 +1,15 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Link2, Cloud, FolderGit2, X } from 'lucide-react'
+import { Link2, FolderGit2, X, Building2, ChevronRight, Check } from 'lucide-react'
 import { parseAzureUrl } from '../../../../utils/azureUrlParser'
 import { Field, Input } from '../../../ui/form'
+import ProviderBadge from '../../ui/ProviderBadge'
 
 /**
- * Smart Azure DevOps URL paste field with preview confirmation.
+ * Smart Azure DevOps URL paste field with rich preview.
  *
- * Presents detected (org / project / repo) slices and lets the user apply
- * or discard. Parsing itself lives in `parseAzureUrl`; this component only
- * renders the input + preview UI.
+ * The preview makes the parsed result explicit and reviewable BEFORE the
+ * fields are applied to wizard state — eliminates the "I pasted something
+ * and now I don't know what got picked up" confusion.
  */
 export default function SourceUrlForm({
   smartPasteValue,
@@ -18,12 +19,17 @@ export default function SourceUrlForm({
   onDismiss,
 }) {
   const parsedBadge = smartPasteValue ? parseAzureUrl(smartPasteValue) : null
-  const showParseError = !urlPreview && parsedBadge?.error
+  const showParseError = !urlPreview && parsedBadge?.error && smartPasteValue.length > 0
 
   return (
     <div>
       <Field
-        label={<>Paste Azure DevOps URL <span className="text-slate-400 font-normal">(optional)</span></>}
+        label={
+          <span className="flex items-center gap-1.5">
+            Cola URL Azure DevOps ou TFS
+            <span className="text-slate-400 font-normal">(opcional, acelera o preenchimento)</span>
+          </span>
+        }
         htmlFor="source-azure-url"
         hint={showParseError ? parsedBadge.error : undefined}
       >
@@ -32,7 +38,7 @@ export default function SourceUrlForm({
           type="text"
           value={smartPasteValue}
           onChange={(e) => onInput(e.target.value)}
-          placeholder="https://dev.azure.com/org/project or org/project/repo"
+          placeholder="https://dev.azure.com/org/projecto  ou  https://tfs.empresa.com/Colecao/Projecto"
           leadingIcon={Link2}
         />
       </Field>
@@ -43,47 +49,51 @@ export default function SourceUrlForm({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.18 }}
             className="overflow-hidden"
           >
-            <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
-              <span className="text-xs text-slate-500 dark:text-slate-400">URL detectada:</span>
-              <div className="flex items-center gap-1 text-xs font-medium text-indigo-700 dark:text-indigo-300">
-                {urlPreview.org && (
-                  <span className="flex items-center gap-1">
-                    <Cloud className="w-3 h-3" /> {urlPreview.org}
-                  </span>
-                )}
-                {urlPreview.project && (
-                  <>
-                    <span className="text-slate-400">→</span>
-                    <span className="flex items-center gap-1">
-                      <FolderGit2 className="w-3 h-3" /> {urlPreview.project}
-                    </span>
-                  </>
-                )}
-                {urlPreview.repo && (
-                  <>
-                    <span className="text-slate-400">→</span>
-                    <span>{urlPreview.repo}</span>
-                  </>
-                )}
-              </div>
-              <div className="ml-auto flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={onApply}
-                  className="px-2 py-0.5 text-xs font-medium rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
-                >
-                  Preencher
-                </button>
+            <div className="mt-2.5 rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/60 dark:bg-indigo-900/15 overflow-hidden">
+              {/* Header — provider identity */}
+              <div className="px-3.5 py-2 flex items-center gap-2 border-b border-indigo-200/60 dark:border-indigo-800/50 bg-white/40 dark:bg-slate-900/30">
+                <ProviderBadge host={urlPreview.host} variant="inline" />
+                <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  {urlPreview.host}
+                </span>
                 <button
                   type="button"
                   onClick={onDismiss}
-                  className="p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                  aria-label="Descartar"
+                  className="ml-auto p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
+                  aria-label="Descartar preview"
+                  title="Descartar"
                 >
                   <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Parsed breadcrumb + apply */}
+              <div className="px-3.5 py-2.5 flex items-center gap-3">
+                <div className="min-w-0 flex-1 flex items-center gap-1.5 text-sm">
+                  <PreviewChip icon={Building2} label="Organização / Collection" value={urlPreview.org} tone="indigo" />
+                  {urlPreview.project && (
+                    <>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <PreviewChip icon={FolderGit2} label="Projecto" value={urlPreview.project} tone="indigo" />
+                    </>
+                  )}
+                  {urlPreview.repo && urlPreview.repo !== urlPreview.project && (
+                    <>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <PreviewChip label="Repo" value={urlPreview.repo} tone="indigo" />
+                    </>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={onApply}
+                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 shadow-sm transition-colors"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  Aplicar
                 </button>
               </div>
             </div>
@@ -91,5 +101,20 @@ export default function SourceUrlForm({
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+function PreviewChip({ icon: Icon, label, value, tone = 'indigo' }) {
+  const toneText = tone === 'indigo'
+    ? 'text-indigo-700 dark:text-indigo-300'
+    : 'text-slate-700 dark:text-slate-300'
+  return (
+    <span
+      className={`inline-flex items-center gap-1 min-w-0 max-w-full ${toneText} text-xs font-medium`}
+      title={label ? `${label}: ${value}` : value}
+    >
+      {Icon && <Icon className="w-3.5 h-3.5 shrink-0 opacity-70" />}
+      <span className="truncate">{value}</span>
+    </span>
   )
 }

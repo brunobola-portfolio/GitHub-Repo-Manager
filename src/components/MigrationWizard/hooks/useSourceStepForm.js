@@ -31,6 +31,7 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
   )
   const [manualOrgMode, setManualOrgMode] = useState(false)
   const [switchingAuth, setSwitchingAuth] = useState(false)
+  const [hostAllowlist, setHostAllowlist] = useState({ patterns: [], usingDefault: true, allowed: null, canEdit: false })
   const debounceRef = useRef(null)
   const validationAbortRef = useRef(null)
 
@@ -71,33 +72,92 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
     }
   }, [oauthStatusValue, fetchOrganizations])
 
+  // ── fetch allowlist whenever host changes, so the UI can show whether
+  // the current host is permitted by the server before validation runs.
+  // `refreshKey` lets callers force a re-fetch (e.g., after admin adds a
+  // host via the AllowlistFixPanel button).
+  const [allowlistRefreshKey, setAllowlistRefreshKey] = useState(0)
+  const refreshAllowlist = useCallback(() => setAllowlistRefreshKey((k) => k + 1), [])
+
+  useEffect(() => {
+    if (!source.host) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clears derived state when source goes away
+      setHostAllowlist({ patterns: [], usingDefault: true, allowed: null, canEdit: false })
+      return
+    }
+    let cancelled = false
+    fetch(`/api/azure/host-allowlist?host=${encodeURIComponent(source.host)}`, { credentials: 'include' })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (cancelled || !data) return
+        setHostAllowlist({
+          patterns: data.patterns || [],
+          usingDefault: !!data.usingDefault,
+          allowed: data.allowed,
+          canEdit: !!data.canEdit,
+        })
+      })
+      .catch(() => { /* leave previous state */ })
+    return () => { cancelled = true }
+  }, [source.host, allowlistRefreshKey])
+
   // ── smart URL paste ────────────────────────────────────────────────────
+  // When the user types/pastes a valid URL, immediately push host+org+project
+  // into wizard state — no extra "Aplicar" click required. This eliminates the
+  // confusing intermediate state where the preview was shown but state wasn't
+  // updated, leaving downstream code (PAT link, validation) to silently fall
+  // back to dev.azure.com.
+  //
+  // We still set urlPreview as a transient visual confirmation (auto-dismisses
+  // after a short delay), but applying is no longer gated on a click.
   const handleUrlInput = useCallback((value) => {
     setSmartPasteValue(value)
     const parsed = parseAzureUrl(value)
-    if (parsed.org || parsed.project || parsed.repo) {
-      setUrlPreview({
-        org: parsed.org || null,
-        project: parsed.project || null,
-        repo: parsed.repo || null,
-      })
-    } else {
-      setUrlPreview(null)
-    }
-  }, [])
 
-  const applyUrlPreview = useCallback(() => {
-    if (!urlPreview) return
+    const hasUsefulData = parsed.host || parsed.org || parsed.project || parsed.repo
+    if (!hasUsefulData) {
+      setUrlPreview(null)
+      return
+    }
+
+    // Show preview (lets user see what was detected)
+    setUrlPreview({
+      host: parsed.host || null,
+      org: parsed.org || null,
+      project: parsed.project || null,
+      repo: parsed.repo || null,
+    })
+
+    // AUTO-APPLY: push values into wizard state immediately
     const updates = { validated: false }
-    if (urlPreview.org) updates.org = urlPreview.org
-    if (urlPreview.project) updates.urlParsedProject = urlPreview.project
-    if (urlPreview.repo) updates.urlParsedRepo = urlPreview.repo
-    onChange(updates)
-    setProjects([])
-    setValidationError('')
+    if (parsed.host) updates.host = parsed.host
+    if (parsed.org) updates.org = parsed.org
+    if (parsed.project) updates.urlParsedProject = parsed.project
+    if (parsed.repo) updates.urlParsedRepo = parsed.repo
+
+    // Smart credential mode: on-prem hosts almost always need a personal
+    // PAT (server's .env token is typically cloud-scoped). Switch the user
+    // before they hit a confusing 401.
+    const hostLower = (parsed.host || '').toLowerCase().split(':')[0]
+    const isCloudHost = hostLower === 'dev.azure.com' || hostLower.endsWith('.visualstudio.com')
+    if (!isCloudHost && hostLower && source.credentialMode !== 'personalPat') {
+      updates.credentialMode = 'personalPat'
+    }
+
+    if (Object.keys(updates).length > 1) {
+      onChange(updates)
+      setProjects([])
+      setValidationError('')
+      setManualOrgMode(false)
+    }
+  }, [onChange, source.credentialMode])
+
+  // applyUrlPreview is now a no-op confirmation (state already applied in
+  // handleUrlInput). Kept as a callback so existing UI props don't break.
+  // Clicking it just dismisses the preview chrome.
+  const applyUrlPreview = useCallback(() => {
     setUrlPreview(null)
-    setManualOrgMode(false)
-  }, [urlPreview, onChange])
+  }, [])
 
   const dismissUrlPreview = useCallback(() => {
     setUrlPreview(null)
@@ -126,14 +186,24 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
   }, [source.credentialMode, oauthStatusValue, switchingAuth, pausePolling, resumePolling, onChange])
 
   // ── auto-validate ──────────────────────────────────────────────────────
+  // A saved credential from the vault counts as "ready" for the personalPat
+  // mode — the backend decrypts it server-side; the browser never sees the PAT.
   const credentialReady = (
     (source.credentialMode === 'serverPat' && envAuthAvailable) ||
-    (source.credentialMode === 'personalPat' && source.pat?.trim()) ||
+    (source.credentialMode === 'personalPat' && (source.pat?.trim() || source.savedCredentialId)) ||
     (source.credentialMode === 'oauth' && oauthStatusValue === 'success')
   )
 
   const runValidation = useCallback(async () => {
     if (!source.org?.trim() || !credentialReady) return
+    // Hard gate: never silently pick a server. If host isn't set, surface
+    // a clear instruction instead of fetching the wrong cloud and getting
+    // a misleading 404.
+    if (!source.host?.trim()) {
+      setValidationError('Define o servidor primeiro — cola uma URL Azure DevOps / TFS no campo acima ou escolhe o servidor manualmente.')
+      onChange({ validated: false })
+      return
+    }
 
     if (validationAbortRef.current) validationAbortRef.current.abort()
     const controller = new AbortController()
@@ -143,8 +213,16 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
     setValidationError('')
     try {
       const body = {
+        host: source.host,
         org: source.org,
-        pat: source.credentialMode === 'personalPat' ? source.pat : undefined,
+        // Prefer a saved-credential reference over the raw PAT — the
+        // backend decrypts the stored token server-side so the browser
+        // is never the source of truth for the credential.
+        ...(source.credentialMode === 'personalPat'
+          ? (source.savedCredentialId
+              ? { savedCredentialId: source.savedCredentialId }
+              : { pat: source.pat })
+          : {}),
       }
       const csrfToken = await getCsrfToken().catch(() => null)
       const fetchOpts = {
@@ -157,26 +235,45 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
         body: JSON.stringify(body),
         signal: controller.signal,
       }
-      const [validateRes, projectsRes] = await Promise.all([
-        fetch('/api/azure/validate', fetchOpts),
-        fetch('/api/azure/projects', { ...fetchOpts, body: JSON.stringify(body) }),
-      ])
-
+      // Sequential: validate first so any on-prem TFS path auto-discovery
+      // (e.g., `Trigenius` → `tfs/Trigenius`) can rewrite the org before the
+      // projects fetch uses it. Running these in parallel risks projects
+      // probing the wrong collection path.
+      const validateRes = await fetch('/api/azure/validate', fetchOpts)
       if (controller.signal.aborted) return
-
       const validateData = await validateRes.json()
       if (!validateData.valid) {
         onChange({ validated: false })
         setValidationError(validateData.error || 'Invalid credentials')
         return
       }
+      const effectiveOrg = validateData.resolvedOrg || source.org
+      if (effectiveOrg !== source.org) {
+        onChange({ org: effectiveOrg })
+      }
+      const projectsBody = { ...body, org: effectiveOrg }
+      const projectsRes = await fetch('/api/azure/projects', {
+        ...fetchOpts,
+        body: JSON.stringify(projectsBody),
+      })
+      if (controller.signal.aborted) return
       const projectsData = await projectsRes.json()
+      if (!projectsRes.ok) {
+        onChange({ validated: false })
+        setValidationError(projectsData.error || `Failed to list projects (HTTP ${projectsRes.status})`)
+        return
+      }
       const list = projectsData.projects || []
       onChange({ validated: true })
       setProjects(list)
 
-      const match = source.urlParsedProject && list.find((p) => p.name === source.urlParsedProject)
-      if (match) onChange({ project: match.name })
+      // Try exact match first, then case-insensitive — TFS occasionally
+      // normalises project names differently between URL paths and API.
+      if (source.urlParsedProject) {
+        const exact = list.find((p) => p.name === source.urlParsedProject)
+        const ci = exact || list.find((p) => p.name?.toLowerCase() === source.urlParsedProject.toLowerCase())
+        if (ci) onChange({ project: ci.name })
+      }
     } catch (e) {
       if (e.name === 'AbortError') return
       onChange({ validated: false })
@@ -184,7 +281,7 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
     } finally {
       setValidating(false)
     }
-  }, [source.org, source.pat, source.credentialMode, source.urlParsedProject, credentialReady, onChange])
+  }, [source.org, source.pat, source.host, source.savedCredentialId, source.credentialMode, source.urlParsedProject, credentialReady, onChange])
 
   // debounced trigger for org / pat changes
   useEffect(() => {
@@ -222,7 +319,7 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
                 'Content-Type': 'application/json',
                 ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
               },
-              body: JSON.stringify({ org, project: p.name, pat }),
+              body: JSON.stringify({ host: source.host || 'dev.azure.com', org, project: p.name, pat }),
             })
             const data = await res.json()
             meta[p.name] = {
@@ -241,7 +338,7 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
     }
     fetchMeta()
     return () => { cancelled = true }
-  }, [source.validated, source.org, source.pat, source.credentialMode, projects])
+  }, [source.validated, source.org, source.host, source.pat, source.credentialMode, projects])
 
   // ── org field handlers ─────────────────────────────────────────────────
   const handleOrgInputChange = useCallback((e) => {
@@ -306,6 +403,8 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
     oauthHintDismissed,
     manualOrgMode,
     setManualOrgMode,
+    hostAllowlist,
+    refreshAllowlist,
     // derived
     isOAuthMode,
     isDropdownMode,

@@ -1,17 +1,33 @@
 import {
-  KeyRound, Eye, EyeOff, CheckCircle2, XCircle, Loader2,
-  ExternalLink, Server, Globe, ShieldCheck,
+  KeyRound, CheckCircle2, XCircle,
+  Server, Globe, ShieldCheck,
 } from 'lucide-react'
 import { Spinner } from '../../../ui/Spinner'
 import { Skeleton } from '../../../ui/Skeleton'
 import CredCard from './CredCard'
+import PatPasteGuide from './PatPasteGuide'
 import { Button } from '../../../ui/Button'
-import { Input } from '../../../ui/form'
+import { classifyProvider } from '../../../../utils/azureProvider'
 
 /**
- * Credential selection cards (Server PAT / Personal PAT / OAuth) with per-mode
- * inline forms. Matches the original SourceStep.jsx markup verbatim — extracted
- * purely to shrink the top-level component.
+ * Three credential strategies, with crystal-clear identity for each:
+ *
+ *   1. Server PAT     — token in server's .env, shared across users.
+ *                       Use for: dedicated cloud automation accounts.
+ *                       Setup:   admin edits .env, restarts server.
+ *
+ *   2. Personal PAT   — token pasted in this browser session.
+ *                       Use for: most people, especially on-prem TFS.
+ *                       Setup:   create PAT on the server, paste here.
+ *                       (Includes a 3-step guided PatPasteGuide.)
+ *
+ *   3. OAuth          — browser sign-in via Azure AD.
+ *                       Use for: Azure DevOps cloud only.
+ *                       Setup:   admin registers app in Azure Portal.
+ *
+ * The previous implementation showed "Configured" on multiple cards
+ * simultaneously, making it impossible to tell which one was actually
+ * being used. Now exactly one card carries the green "EM USO" pill.
  */
 export default function CredentialsForm({
   source,
@@ -30,140 +46,205 @@ export default function CredentialsForm({
   if (credLoading) {
     return (
       <div>
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Authentication</p>
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Autenticação</p>
         <div className="space-y-2">
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} variant="card" className="h-16" />
-          ))}
+          {[0, 1, 2].map((i) => <Skeleton key={i} variant="card" className="h-16" />)}
         </div>
       </div>
     )
   }
 
+  const provider = classifyProvider(source.host)
+  const isCloud = provider.isCloud
+
+  // "Ready" means: this credential alone is enough to make a successful
+  // call. The card with state="active" is BOTH selected AND ready.
+  const serverReady = envAuthAvailable
+  const personalReady = !!source.pat?.trim()
+  const oauthReady = oauthStatusValue === 'success'
+
+  const stateFor = (mode, ready, available) => {
+    if (!available) return 'unavailable'
+    if (source.credentialMode === mode) return ready ? 'active' : 'selected'
+    return ready ? 'available' : 'available'  // both map to "disponível"
+  }
+
   return (
     <div>
-      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Authentication</p>
+      <div className="flex items-baseline justify-between mb-2">
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Autenticação</p>
+        <span className="text-[11px] text-slate-400 dark:text-slate-500">
+          Escolhe um método — só um é usado de cada vez
+        </span>
+      </div>
       <div className="space-y-2">
 
-        {/* Card 1 — Server PAT */}
+        {/* ── Card 1 — Server PAT (env-based) ─────────────────── */}
         <CredCard
           mode="serverPat"
           icon={Server}
-          label="Server PAT"
-          subtitle="Configured in the server .env file — no credentials entered here."
-          available={envAuthAvailable}
-          active={source.credentialMode === 'serverPat'}
+          label="Server PAT (do ficheiro .env)"
+          subtitle="Token configurado no servidor que corre esta app — partilhado por todos os utilizadores. Útil para um único token de automação."
+          state={stateFor('serverPat', serverReady, envAuthAvailable)}
+          hint={
+            envAuthAvailable
+              ? (isCloud
+                  ? 'AZURE_PAT detectado em .env'
+                  : 'AZURE_PAT detectado em .env — atenção: provavelmente cloud, pode falhar contra TFS on-prem')
+              : 'AZURE_PAT não está definido em .env'
+          }
           onSelect={handleModeSwitch}
         >
           {!envAuthAvailable && (
-            <pre className="text-xs bg-slate-800 text-slate-300 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">{`Add to your server .env file:\n  AZURE_PAT=<your-personal-access-token>\nThen restart the server.`}</pre>
+            <div className="space-y-2">
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                Para activar este modo:
+              </p>
+              <pre className="text-[11px] bg-slate-900 text-slate-200 rounded-lg p-2.5 overflow-x-auto">{`# Edita server/.env
+AZURE_PAT=<token-com-scopes-Code+Project>
+
+# Reinicia o servidor
+npm run dev`}</pre>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                Depois recarrega esta página. Recomendado apenas para ambientes single-user.
+              </p>
+            </div>
+          )}
+          {envAuthAvailable && source.credentialMode === 'serverPat' && (
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Nada para colares aqui — o servidor injecta o token automaticamente quando este card está activo.
+            </p>
           )}
         </CredCard>
 
-        {/* Card 2 — Personal PAT */}
+        {/* ── Card 2 — Personal PAT (paste in browser) ────────── */}
         <CredCard
           mode="personalPat"
           icon={KeyRound}
-          label="Personal Access Token"
-          subtitle="Paste your own PAT — used only for this session, never persisted."
-          available={true}
-          active={source.credentialMode === 'personalPat'}
+          label="Personal Access Token (esta sessão)"
+          subtitle="Cola o teu PAT aqui — fica só nesta sessão do browser. Recomendado para TFS on-prem ou quando queres usar a tua identidade."
+          state={stateFor('personalPat', personalReady, true)}
+          hint={
+            personalReady
+              ? 'Token colado · pronto a validar'
+              : (source.credentialMode === 'personalPat'
+                  ? 'Aguarda token — passos abaixo'
+                  : 'Sem token nesta sessão')
+          }
           onSelect={handleModeSwitch}
         >
           {source.credentialMode === 'personalPat' && (
-            <div className="space-y-2">
-              <Input
-                type={showPat ? 'text' : 'password'}
-                value={source.pat}
-                onChange={(e) => onChange({ pat: e.target.value, validated: false })}
-                placeholder="Paste your Personal Access Token"
-                aria-label="Personal Access Token"
-                trailing={
-                  <button
-                    type="button"
-                    onClick={() => setShowPat((v) => !v)}
-                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                    aria-label={showPat ? 'Hide PAT' : 'Show PAT'}
-                  >
-                    {showPat ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                }
-              />
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                <span>Minimum scope: Code (Read). Add Work Items (Read) + Wiki (Read) for full migration.</span>
-                {source.org && (
-                  <a
-                    href={`https://dev.azure.com/${encodeURIComponent(source.org)}/_usersSettings/tokens`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-500 hover:text-indigo-400 inline-flex items-center gap-1 shrink-0 ml-2"
-                  >
-                    Create PAT <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
-              </div>
-            </div>
+            <PatPasteGuide
+              source={source}
+              onChange={onChange}
+              showPat={showPat}
+              setShowPat={setShowPat}
+            />
           )}
         </CredCard>
 
-        {/* Card 3 — OAuth */}
+        {/* ── Card 3 — OAuth (cloud-only) ─────────────────────── */}
         <CredCard
           mode="oauth"
           icon={ShieldCheck}
           label="OAuth / Browser Login"
-          subtitle="Authenticate via Azure AD — token stored in server session only."
-          available={oauthConfigured}
-          active={source.credentialMode === 'oauth'}
+          subtitle={isCloud
+            ? 'Autenticação via Azure AD — abre uma janela do browser para fazer login.'
+            : 'OAuth via Azure AD não está disponível para TFS on-premises. Usa Personal PAT.'}
+          state={
+            !isCloud
+              ? 'unavailable'
+              : !oauthConfigured
+                ? 'unavailable'
+                : stateFor('oauth', oauthReady, true)
+          }
+          hint={
+            !isCloud
+              ? 'Apenas para Azure DevOps cloud'
+              : !oauthConfigured
+                ? 'Não configurado no servidor'
+                : oauthReady
+                  ? 'Autenticado'
+                  : 'Pronto — clica para abrir o login'
+          }
           onSelect={handleModeSwitch}
-          extra={oauthConfigured && source.credentialMode !== 'oauth' ? (
-            <span className="text-[10px] text-indigo-400">Lista orgs automaticamente</span>
-          ) : null}
         >
-          {!oauthConfigured ? (
-            <pre className="text-xs bg-slate-800 text-slate-300 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">{`1. Register an app in Azure Portal (Azure Active Directory → App Registrations).\n2. Set Redirect URI to: http://localhost:3001/api/azure/oauth/callback\n3. Add to your server .env file:\n     AZURE_CLIENT_ID=<app-client-id>\n     AZURE_CLIENT_SECRET=<app-client-secret>\n     AZURE_TENANT_ID=<tenant-id>  (or "common" for multi-tenant)\n4. Restart the server.`}</pre>
-          ) : source.credentialMode === 'oauth' ? (
+          {!isCloud && (
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Para autenticares em <code>{source.host}</code>, usa <strong>Personal Access Token</strong> acima.
+            </p>
+          )}
+          {isCloud && !oauthConfigured && (
             <div className="space-y-2">
-              {oauthStatusValue === 'idle' && (
-                <Button
-                  variant="primary"
-                  type="button"
-                  onClick={() => {
-                    const popup = window.open('/api/azure/oauth/start', '_blank')
-                    if (!popup) {
-                      setValidationError('Popup blocked — allow popups for this page and try again.')
-                      return
-                    }
-                    startOAuth()
-                  }}
-                >
-                  <Globe className="w-4 h-4" />
-                  Open browser to authenticate
-                </Button>
-              )}
-              {oauthStatusValue === 'pending' && (
-                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                  <Spinner size="md" tone="muted" />
-                  Waiting for browser authentication...
-                </div>
-              )}
-              {oauthStatusValue === 'success' && (
-                <span className="inline-flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Authenticated
-                </span>
-              )}
-              {(oauthStatusValue === 'error' || oauthStatusValue === 'timeout') && (
-                <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
-                  <XCircle className="w-4 h-4" />
-                  {oauthStatusValue === 'timeout' ? 'Authentication timed out — ' : 'Authentication error — '}
-                  <button type="button" onClick={retryOAuth} className="underline">try again</button>
-                </div>
-              )}
+              <p className="text-xs text-slate-600 dark:text-slate-300">Para o admin do servidor activar OAuth:</p>
+              <pre className="text-[11px] bg-slate-900 text-slate-200 rounded-lg p-2.5 overflow-x-auto whitespace-pre-wrap">{`1. Regista uma app em Azure Portal (AAD → App Registrations)
+2. Redirect URI: http://localhost:3001/api/azure/oauth/callback
+3. Adiciona ao server/.env:
+     AZURE_CLIENT_ID=<app-client-id>
+     AZURE_CLIENT_SECRET=<app-client-secret>
+     AZURE_TENANT_ID=<tenant-id>   (ou "common")
+4. Reinicia o servidor.`}</pre>
             </div>
-          ) : null}
+          )}
+          {isCloud && oauthConfigured && source.credentialMode === 'oauth' && (
+            <OAuthSection
+              status={oauthStatusValue}
+              startOAuth={startOAuth}
+              retryOAuth={retryOAuth}
+              setValidationError={setValidationError}
+            />
+          )}
         </CredCard>
 
       </div>
     </div>
   )
+}
+
+function OAuthSection({ status, startOAuth, retryOAuth, setValidationError }) {
+  if (status === 'idle') {
+    return (
+      <Button
+        variant="primary"
+        type="button"
+        onClick={() => {
+          const popup = window.open('/api/azure/oauth/start', '_blank')
+          if (!popup) {
+            setValidationError('Popup bloqueado — permite popups e tenta de novo.')
+            return
+          }
+          startOAuth()
+        }}
+      >
+        <Globe className="w-4 h-4" />
+        Abrir browser para autenticar
+      </Button>
+    )
+  }
+  if (status === 'pending') {
+    return (
+      <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+        <Spinner size="md" tone="muted" />
+        À espera da autenticação no browser…
+      </div>
+    )
+  }
+  if (status === 'success') {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
+        <CheckCircle2 className="w-4 h-4" />
+        Autenticado via Azure AD
+      </span>
+    )
+  }
+  if (status === 'error' || status === 'timeout') {
+    return (
+      <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+        <XCircle className="w-4 h-4" />
+        {status === 'timeout' ? 'Tempo esgotado — ' : 'Erro de autenticação — '}
+        <button type="button" onClick={retryOAuth} className="underline">tentar de novo</button>
+      </div>
+    )
+  }
+  return null
 }

@@ -52,8 +52,14 @@ describe('formatPlanForApi', () => {
     it('emits null source.org/project for legacy rows missing values', () => {
         const row = { ...baseRow, source_org: '', source_project: null }
         const out = formatPlanForApi(row, { taskCount: 0 })
-        expect(out.source).toEqual({ type: 'azure', org: null, project: null })
+        expect(out.source).toEqual({ type: 'azure', host: 'dev.azure.com', org: null, project: null })
         expect(out.taskCount).toBe(0)
+    })
+
+    it('includes azure_host in source when present', () => {
+        const row = { ...baseRow, azure_host: 'tfs.trigenius.com' }
+        const out = formatPlanForApi(row, { taskCount: 0 })
+        expect(out.source).toMatchObject({ host: 'tfs.trigenius.com', org: 'contoso', project: 'platform' })
     })
 
     it('formats and counts tasks when provided', () => {

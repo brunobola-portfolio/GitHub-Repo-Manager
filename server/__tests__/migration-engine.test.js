@@ -42,6 +42,7 @@ function createTestDb() {
       completed_at TEXT,
       ai_analysis TEXT,
       summary TEXT,
+      azure_host TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

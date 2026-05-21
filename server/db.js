@@ -1064,6 +1064,59 @@ export function initDB(targetDb = db) {
         )
     `);
 
+    // Migration 023 (TFS on-prem support): host columns on migration_jobs and
+    // migration_plans so we can target any Azure DevOps host (cloud or
+    // on-premises TFS 2018+), not just dev.azure.com.
+    try {
+        db.exec(`ALTER TABLE migration_jobs ADD COLUMN source_host TEXT`);
+    } catch (err) {
+        if (!err.message?.includes('duplicate column')) throw err;
+    }
+    try {
+        db.exec(`ALTER TABLE migration_plans ADD COLUMN azure_host TEXT`);
+    } catch (err) {
+        if (!err.message?.includes('duplicate column')) throw err;
+    }
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_migration_jobs_host
+             ON migration_jobs(source_host, source_url)`);
+
+    // Migration 024 (TFS on-prem support, phase 2): host allowlist in DB.
+    // Replaces the static env-var-only ALLOWED_AZURE_HOSTS configuration
+    // with a live allowlist admins can edit from the UI — no server
+    // restart required. The env var is still honoured as a baseline
+    // (union with DB entries) for bootstrap and infra-as-code setups.
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS azure_host_allowlist (
+            pattern    TEXT PRIMARY KEY,
+            added_by   INTEGER,
+            added_at   TEXT NOT NULL DEFAULT (datetime('now')),
+            notes      TEXT,
+            FOREIGN KEY (added_by) REFERENCES users(id) ON DELETE SET NULL
+        )
+    `);
+
+    // Migration 025 (Azure credentials vault): per-user, encrypted-at-rest
+    // PATs scoped to a specific Azure host + org. Moves credential
+    // management out of the wizard into Settings — users can name, reuse,
+    // and revoke tokens without re-pasting them every migration.
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS user_azure_credentials (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id         INTEGER NOT NULL,
+            label           TEXT NOT NULL,
+            host            TEXT NOT NULL,
+            org             TEXT,
+            pat_encrypted   TEXT NOT NULL,
+            pat_prefix      TEXT,
+            scopes          TEXT,
+            created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+            last_used_at    TEXT,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_user_azure_creds_user_host
+             ON user_azure_credentials(user_id, host)`);
+
     logger.info('SQLite Database initialized successfully');
 }
 

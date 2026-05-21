@@ -2,12 +2,33 @@
  * Azure DevOps Service
  * Handles all Azure DevOps REST API interactions (API v7.1)
  * Auth: Basic auth with PAT (Personal Access Token)
+ *
+ * Host-aware: every export accepts an optional trailing `host` parameter
+ * (default `'dev.azure.com'`) so the same code paths work for Azure DevOps
+ * cloud, *.visualstudio.com, and on-premises TFS 2018+ servers. Hosts
+ * other than the cloud are routed through `/tfs/DefaultCollection` by
+ * `resolveAzureBaseUrl` in `lib/azure-host-validator.js`.
  */
 
 import { decryptCredentials } from './lib/credential-encryption.js';
+import { resolveAzureBaseUrl, encodePathSegments } from './lib/azure-host-validator.js';
 
-const BASE_URL = 'https://dev.azure.com';
+const DEFAULT_HOST = 'dev.azure.com';
 const API_VERSION = '7.1';
+
+/** Build the per-org base URL for a host. */
+function baseFor(host) {
+    return resolveAzureBaseUrl(host || DEFAULT_HOST);
+}
+
+/**
+ * Encode an org value safely for URL paths. On-prem TFS orgs may include
+ * a collection-prefix slash (e.g. "tfs/DefaultCollection") — those slashes
+ * MUST be preserved literally; only the segment values are URL-escaped.
+ */
+function encOrg(org) {
+    return encodePathSegments(org || '');
+}
 
 /**
  * Resolve PAT: use provided value, or fall back to encrypted session token, or AZURE_PAT env var.
@@ -71,20 +92,51 @@ async function azureFetch(url, pat, options = {}) {
 }
 
 /**
- * Validate a PAT against an Azure DevOps organization
+ * Validate a PAT against an Azure DevOps organization.
+ *
+ * On-prem TFS discovery: if the org isn't already prefixed with `tfs/` and
+ * the first probe returns 404, we retry once with `tfs/<org>` because some
+ * TFS deployments expose collections under a `/tfs/` virtual directory.
+ * Returns the actually-working `org` value via the `resolvedOrg` field so
+ * the caller can persist it (avoids repeating the probe on every request).
  */
-async function validatePat(org, pat) {
+async function validatePat(org, pat, host = DEFAULT_HOST) {
     if (!org || !pat) {
         return { valid: false, error: 'Organization and PAT are required' };
     }
 
-    try {
-        const url = `${BASE_URL}/${encodeURIComponent(org)}/_apis/projects?api-version=${API_VERSION}&$top=1`;
+    const tryProbe = async (orgValue) => {
+        const url = `${baseFor(host)}/${encOrg(orgValue)}/_apis/projects?api-version=${API_VERSION}&$top=1`;
         await azureFetch(url, pat);
-        return { valid: true };
+    };
+
+    try {
+        await tryProbe(org);
+        return { valid: true, resolvedOrg: org };
     } catch (e) {
+        // Only attempt on-prem `/tfs/` fallback for non-cloud hosts and only
+        // when the org isn't already collection-prefixed. Cloud servers will
+        // never need this path.
+        const hostnameOnly = (host || '').toLowerCase().split(':')[0];
+        const isCloud = hostnameOnly === 'dev.azure.com' || hostnameOnly.endsWith('.visualstudio.com');
+        const alreadyPrefixed = org.toLowerCase().startsWith('tfs/');
+        if (!isCloud && !alreadyPrefixed && (e.status === 404 || e.status === 302)) {
+            try {
+                const alt = `tfs/${org}`;
+                await tryProbe(alt);
+                return { valid: true, resolvedOrg: alt };
+            } catch {
+                // fall through to original error
+            }
+        }
         if (e.status === 401 || e.status === 403) {
             return { valid: false, error: 'Invalid or insufficient PAT permissions' };
+        }
+        if (e.status === 404) {
+            return {
+                valid: false,
+                error: `Collection "${org}" not found on ${host}. For TFS on-prem, the collection path may differ — try pasting the full URL with /tfs/<collection>/ if the server uses a virtual directory.`
+            };
         }
         return { valid: false, error: e.message };
     }
@@ -93,8 +145,8 @@ async function validatePat(org, pat) {
 /**
  * List projects in an Azure DevOps organization
  */
-async function listProjects(org, pat) {
-    const url = `${BASE_URL}/${encodeURIComponent(org)}/_apis/projects?api-version=${API_VERSION}&$top=200`;
+async function listProjects(org, pat, host = DEFAULT_HOST) {
+    const url = `${baseFor(host)}/${encOrg(org)}/_apis/projects?api-version=${API_VERSION}&$top=200`;
     const data = await azureFetch(url, pat);
     return (data.value || []).map(p => ({
         id: p.id,
@@ -107,10 +159,74 @@ async function listProjects(org, pat) {
 }
 
 /**
+ * Create a new project (Azure DevOps Projects API). Used by the migration
+ * wizard when the user picks the "create new project + repo" target mode.
+ *
+ * @param {string} org
+ * @param {{ name: string, description?: string, processTemplateId?: string, sourceControlType?: 'Git'|'Tfvc' }} payload
+ * @param {string} pat
+ * @param {string} [host]
+ * @returns {Promise<{ id: string, name: string, url: string, operationId?: string }>}
+ */
+async function createProject(org, payload, pat, host = DEFAULT_HOST) {
+    if (!payload?.name) throw new Error('createProject: project name required');
+    const url = `${baseFor(host)}/${encOrg(org)}/_apis/projects?api-version=${API_VERSION}`;
+    const body = {
+        name: payload.name,
+        description: payload.description || '',
+        capabilities: {
+            versioncontrol: { sourceControlType: payload.sourceControlType || 'Git' },
+            processTemplate: {
+                templateTypeId: payload.processTemplateId || 'adcc42ab-9882-485e-a3ed-7678f01f66bc' // "Agile" default
+            }
+        }
+    };
+    const data = await azureFetch(url, pat, {
+        method: 'POST',
+        body: JSON.stringify(body)
+    });
+    // Project creation is asynchronous — Azure returns an operation reference.
+    return {
+        id: data.id || null,
+        operationId: data.id || null,
+        name: payload.name,
+        url: data.url || ''
+    };
+}
+
+/**
+ * Detect server capabilities by probing well-known API endpoints. Used by
+ * the TFVC migration cascade to decide whether to attempt the modern
+ * Import Request API (TFS 2018+ / Azure DevOps cloud) or fall back to
+ * git-tfs / ZIP snapshot.
+ *
+ * @returns {Promise<{ hasImportApi: boolean, hasTfvcApi: boolean }>}
+ */
+async function detectCapabilities(org, pat, host = DEFAULT_HOST) {
+    const base = baseFor(host);
+    const probe = async (path) => {
+        try {
+            const url = `${base}/${encOrg(org)}/${path}`;
+            await azureFetch(url, pat);
+            return true;
+        } catch (e) {
+            // 404 = endpoint missing on this server; 200/4xx with auth = present
+            if (e.status === 401 || e.status === 403) return true;
+            return false;
+        }
+    };
+    const [hasImportApi, hasTfvcApi] = await Promise.all([
+        probe(`_apis/git/repositories?api-version=${API_VERSION}&$top=1`),
+        probe(`_apis/tfvc/items?api-version=${API_VERSION}&$top=1`)
+    ]);
+    return { hasImportApi, hasTfvcApi };
+}
+
+/**
  * List repositories in a project
  */
-async function listRepos(org, project, pat) {
-    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories?api-version=${API_VERSION}`;
+async function listRepos(org, project, pat, host = DEFAULT_HOST) {
+    const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories?api-version=${API_VERSION}`;
     const data = await azureFetch(url, pat);
     return (data.value || []).map(r => ({
         id: r.id,
@@ -132,8 +248,8 @@ async function listRepos(org, project, pat) {
 /**
  * Get repository details including clone URL
  */
-async function getRepoDetails(org, project, repoName, pat) {
-    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoName)}?api-version=${API_VERSION}`;
+async function getRepoDetails(org, project, repoName, pat, host = DEFAULT_HOST) {
+    const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoName)}?api-version=${API_VERSION}`;
     const data = await azureFetch(url, pat);
     return {
         id: data.id,
@@ -150,8 +266,8 @@ async function getRepoDetails(org, project, repoName, pat) {
 /**
  * List branches for a repository
  */
-async function listBranches(org, project, repoId, pat) {
-    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/refs?filter=heads/&api-version=${API_VERSION}`;
+async function listBranches(org, project, repoId, pat, host = DEFAULT_HOST) {
+    const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/refs?filter=heads/&api-version=${API_VERSION}`;
     const data = await azureFetch(url, pat);
     return (data.value || []).map(ref => ({
         name: ref.name.replace('refs/heads/', ''),
@@ -162,8 +278,8 @@ async function listBranches(org, project, repoId, pat) {
 /**
  * List wikis in a project
  */
-async function listWikis(org, project, pat) {
-    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wiki/wikis?api-version=${API_VERSION}`;
+async function listWikis(org, project, pat, host = DEFAULT_HOST) {
+    const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/wiki/wikis?api-version=${API_VERSION}`;
     const data = await azureFetch(url, pat);
     return (data.value || []).map(w => ({
         id: w.id,
@@ -176,8 +292,9 @@ async function listWikis(org, project, pat) {
 /**
  * Get work item counts grouped by type using WIQL
  */
-async function getWorkItemCounts(org, project, pat) {
-    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/wiql?api-version=${API_VERSION}`;
+async function getWorkItemCounts(org, project, pat, host = DEFAULT_HOST) {
+    const base = baseFor(host);
+    const url = `${base}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/wit/wiql?api-version=${API_VERSION}`;
     const wiql = `SELECT [System.Id], [System.WorkItemType] FROM workitems WHERE [System.TeamProject] = '${escapeWiql(project)}'`;
     const data = await azureFetch(url, pat, {
         method: 'POST',
@@ -187,11 +304,10 @@ async function getWorkItemCounts(org, project, pat) {
     const ids = (data.workItems || []).map(wi => wi.id);
     if (ids.length === 0) return {};
 
-    // Fetch work item details in batches of 200 to get their types
     const counts = {};
     for (let i = 0; i < ids.length; i += 200) {
         const batch = ids.slice(i, i + 200);
-        const detailUrl = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/workitems?ids=${batch.join(',')}&fields=System.WorkItemType&api-version=${API_VERSION}`;
+        const detailUrl = `${base}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/wit/workitems?ids=${batch.join(',')}&fields=System.WorkItemType&api-version=${API_VERSION}`;
         const details = await azureFetch(detailUrl, pat);
         for (const item of (details.value || [])) {
             const type = item.fields?.['System.WorkItemType'] || 'Unknown';
@@ -205,11 +321,12 @@ async function getWorkItemCounts(org, project, pat) {
 /**
  * Preview work items (top 10 per type) using WIQL
  */
-async function previewWorkItems(org, project, pat, types) {
+async function previewWorkItems(org, project, pat, types, host = DEFAULT_HOST) {
+    const base = baseFor(host);
     const items = [];
 
     for (const type of types) {
-        const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/wiql?api-version=${API_VERSION}`;
+        const url = `${base}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/wit/wiql?api-version=${API_VERSION}`;
         const wiql = `SELECT [System.Id] FROM workitems WHERE [System.TeamProject] = '${escapeWiql(project)}' AND [System.WorkItemType] = '${escapeWiql(type)}' ORDER BY [System.Id] DESC`;
         const data = await azureFetch(url, pat, {
             method: 'POST',
@@ -219,7 +336,7 @@ async function previewWorkItems(org, project, pat, types) {
         const ids = (data.workItems || []).slice(0, 10).map(wi => wi.id);
         if (ids.length === 0) continue;
 
-        const detailUrl = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/workitems?ids=${ids.join(',')}&fields=System.Id,System.Title,System.WorkItemType,System.State,System.AssignedTo&api-version=${API_VERSION}`;
+        const detailUrl = `${base}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/wit/workitems?ids=${ids.join(',')}&fields=System.Id,System.Title,System.WorkItemType,System.State,System.AssignedTo&api-version=${API_VERSION}`;
         const details = await azureFetch(detailUrl, pat);
         for (const item of (details.value || [])) {
             items.push({
@@ -238,13 +355,14 @@ async function previewWorkItems(org, project, pat, types) {
 /**
  * Fetch full work item details by IDs (with relations)
  */
-async function fetchWorkItems(org, project, pat, ids) {
+async function fetchWorkItems(org, project, pat, ids, host = DEFAULT_HOST) {
     if (!ids || ids.length === 0) return [];
 
+    const base = baseFor(host);
     const results = [];
     for (let i = 0; i < ids.length; i += 200) {
         const batch = ids.slice(i, i + 200);
-        const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/workitems?ids=${batch.join(',')}&$expand=relations&api-version=${API_VERSION}`;
+        const url = `${base}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/wit/workitems?ids=${batch.join(',')}&$expand=relations&api-version=${API_VERSION}`;
         const data = await azureFetch(url, pat);
         results.push(...(data.value || []));
     }
@@ -255,8 +373,8 @@ async function fetchWorkItems(org, project, pat, ids) {
 /**
  * Get wiki clone URL by wiki ID
  */
-async function getWikiCloneUrl(org, project, pat, wikiId) {
-    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wiki/wikis/${encodeURIComponent(wikiId)}?api-version=${API_VERSION}`;
+async function getWikiCloneUrl(org, project, pat, wikiId, host = DEFAULT_HOST) {
+    const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/wiki/wikis/${encodeURIComponent(wikiId)}?api-version=${API_VERSION}`;
     const data = await azureFetch(url, pat);
     return data.remoteUrl || '';
 }
@@ -264,8 +382,8 @@ async function getWikiCloneUrl(org, project, pat, wikiId) {
 /**
  * Get project info including version control type (Git or Tfvc)
  */
-async function getProjectInfo(org, project, pat) {
-    const url = `${BASE_URL}/${encodeURIComponent(org)}/_apis/projects/${encodeURIComponent(project)}?includeCapabilities=true&api-version=${API_VERSION}`;
+async function getProjectInfo(org, project, pat, host = DEFAULT_HOST) {
+    const url = `${baseFor(host)}/${encOrg(org)}/_apis/projects/${encodeURIComponent(project)}?includeCapabilities=true&api-version=${API_VERSION}`;
     const data = await azureFetch(url, pat);
     return {
         id: data.id,
@@ -277,9 +395,9 @@ async function getProjectInfo(org, project, pat) {
 /**
  * List TFVC items (files/folders) under a given path
  */
-async function listTfvcItems(org, project, pat, scopePath) {
+async function listTfvcItems(org, project, pat, scopePath, host = DEFAULT_HOST) {
     const path = scopePath || `$/${project}`;
-    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/tfvc/items?scopePath=${encodeURIComponent(path)}&recursionLevel=OneLevel&api-version=${API_VERSION}`;
+    const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/tfvc/items?scopePath=${encodeURIComponent(path)}&recursionLevel=OneLevel&api-version=${API_VERSION}`;
     const data = await azureFetch(url, pat);
     return (data.value || []).filter(item => item.path !== path).map(item => ({
         path: item.path,
@@ -292,15 +410,10 @@ async function listTfvcItems(org, project, pat, scopePath) {
 
 /**
  * Get total size of a TFVC folder by recursively listing all files.
- * @param {string} org - Azure DevOps organization
- * @param {string} project - Project name
- * @param {string} pat - Personal Access Token
- * @param {string} scopePath - TFVC folder path (e.g. "$/Project/Folder")
- * @returns {Promise<number>} Total size in bytes
  */
-async function getTfvcFolderSize(org, project, pat, scopePath) {
+async function getTfvcFolderSize(org, project, pat, scopePath, host = DEFAULT_HOST) {
     const path = scopePath || `$/${project}`;
-    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/tfvc/items?scopePath=${encodeURIComponent(path)}&recursionLevel=Full&api-version=${API_VERSION}`;
+    const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/tfvc/items?scopePath=${encodeURIComponent(path)}&recursionLevel=Full&api-version=${API_VERSION}`;
     const data = await azureFetch(url, pat);
     return (data.value || [])
         .filter(item => !item.isFolder)
@@ -310,8 +423,8 @@ async function getTfvcFolderSize(org, project, pat, scopePath) {
 /**
  * Create a new Git repository in Azure DevOps (used as temp target for TFVC import)
  */
-async function createGitRepo(org, project, repoName, pat) {
-    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories?api-version=${API_VERSION}`;
+async function createGitRepo(org, project, repoName, pat, host = DEFAULT_HOST) {
+    const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories?api-version=${API_VERSION}`;
     const data = await azureFetch(url, pat, {
         method: 'POST',
         body: JSON.stringify({ name: repoName })
@@ -327,8 +440,8 @@ async function createGitRepo(org, project, repoName, pat) {
 /**
  * Trigger TFVC-to-Git import using Azure DevOps Import Request API
  */
-async function importTfvcToGit(org, project, repoId, tfvcPath, pat, importHistory = true) {
-    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/importRequests?api-version=${API_VERSION}`;
+async function importTfvcToGit(org, project, repoId, tfvcPath, pat, importHistory = true, host = DEFAULT_HOST) {
+    const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/importRequests?api-version=${API_VERSION}`;
     const data = await azureFetch(url, pat, {
         method: 'POST',
         body: JSON.stringify({
@@ -350,8 +463,8 @@ async function importTfvcToGit(org, project, repoId, tfvcPath, pat, importHistor
 /**
  * Poll TFVC-to-Git import status
  */
-async function getImportStatus(org, project, repoId, importRequestId, pat) {
-    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/importRequests/${encodeURIComponent(importRequestId)}?api-version=${API_VERSION}`;
+async function getImportStatus(org, project, repoId, importRequestId, pat, host = DEFAULT_HOST) {
+    const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/importRequests/${encodeURIComponent(importRequestId)}?api-version=${API_VERSION}`;
     const data = await azureFetch(url, pat);
     return {
         importRequestId: data.importRequestId,
@@ -363,8 +476,8 @@ async function getImportStatus(org, project, repoId, importRequestId, pat) {
 /**
  * Delete a Git repository in Azure DevOps (cleanup temp repo after TFVC import)
  */
-async function deleteGitRepo(org, project, repoId, pat) {
-    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}?api-version=${API_VERSION}`;
+async function deleteGitRepo(org, project, repoId, pat, host = DEFAULT_HOST) {
+    const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}?api-version=${API_VERSION}`;
     const res = await fetch(url, {
         method: 'DELETE',
         headers: getHeaders(pat)
@@ -378,9 +491,9 @@ async function deleteGitRepo(org, project, repoId, pat) {
 /**
  * Download TFVC items as ZIP (fallback for snapshot migration without history)
  */
-async function downloadTfvcItems(org, project, scopePath, pat) {
+async function downloadTfvcItems(org, project, scopePath, pat, host = DEFAULT_HOST) {
     const path = scopePath || `$/${project}`;
-    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/tfvc/items?scopePath=${encodeURIComponent(path)}&recursionLevel=Full&download=true&api-version=${API_VERSION}`;
+    const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/tfvc/items?scopePath=${encodeURIComponent(path)}&recursionLevel=Full&download=true&api-version=${API_VERSION}`;
     const res = await fetch(url, {
         headers: {
             ...getHeaders(pat),
@@ -396,8 +509,6 @@ async function downloadTfvcItems(org, project, scopePath, pat) {
 
 /**
  * Escapes single quotes in a WIQL value to prevent injection.
- * @param {string} value
- * @returns {string}
  */
 function escapeWiql(value) {
     return value.replace(/'/g, "''");
@@ -429,9 +540,9 @@ async function bearerFetch(url, token) {
 /**
  * List organizations the authenticated user has access to (OAuth tokens only).
  * Uses the VSSPS profile + accounts API with Bearer authentication.
+ * NB: VSSPS is cloud-only (no on-prem equivalent) — host parameter ignored.
  */
 async function listOrganizations(token) {
-    // 1. Get the user's profile to retrieve memberId
     const profile = await bearerFetch(
         'https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=7.1',
         token
@@ -441,7 +552,6 @@ async function listOrganizations(token) {
         throw new Error('Could not determine user profile ID');
     }
 
-    // 2. List accounts (organizations) for this member
     const accounts = await bearerFetch(
         `https://app.vssps.visualstudio.com/_apis/accounts?memberId=${encodeURIComponent(memberId)}&api-version=7.1`,
         token
@@ -455,20 +565,17 @@ async function listOrganizations(token) {
 
 function buildAuthenticatedCloneUrl(remoteUrl, pat) {
     if (!remoteUrl || !pat) return null;
-    // Azure DevOps URLs may contain existing userinfo (org@dev.azure.com).
-    // URL.host excludes userinfo, URL.pathname keeps %20 encoding intact.
     const parsed = new URL(remoteUrl);
     return `https://${encodeURIComponent(pat)}@${parsed.host}${parsed.pathname}`;
 }
 
 /**
  * Fetch last-commit metadata for many repos in parallel.
- * Returns { [repoId]: { lastCommitDate, lastCommitAuthor } | { lastCommitDate: null, lastCommitAuthor: null } }.
- * Individual failures are swallowed (activity is a hint, not a requirement).
  */
-async function listRepoActivity(org, project, repos, pat) {
+async function listRepoActivity(org, project, repos, pat, host = DEFAULT_HOST) {
     const { default: pLimit } = await import('p-limit')
     const limit = pLimit(5)
+    const base = baseFor(host)
     const entries = await Promise.all(
         repos.map((repo) =>
             limit(async () => {
@@ -476,7 +583,7 @@ async function listRepoActivity(org, project, repos, pat) {
                 const defaultBranch = (repo.defaultBranch || '').replace(/^refs\/heads\//, '')
                 if (!id || !defaultBranch) return [id, { lastCommitDate: null, lastCommitAuthor: null }]
                 try {
-                    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(id)}/stats/branches?name=${encodeURIComponent(defaultBranch)}&api-version=${API_VERSION}`
+                    const url = `${base}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(id)}/stats/branches?name=${encodeURIComponent(defaultBranch)}&api-version=${API_VERSION}`
                     const data = await azureFetch(url, pat)
                     const entry = Array.isArray(data.value) ? data.value[0] : data
                     const committer = entry?.commit?.committer
@@ -496,20 +603,18 @@ async function listRepoActivity(org, project, repos, pat) {
 /**
  * For each repo, check if its .gitattributes on the default branch contains
  * `filter=lfs` markers. Returns { [repoId]: boolean }.
- *
- * Uses raw fetch instead of azureFetch because the Azure /items endpoint
- * returns plain text when $format=text, not JSON.
  */
-async function checkLfsMarkers(org, project, repos, pat) {
+async function checkLfsMarkers(org, project, repos, pat, host = DEFAULT_HOST) {
     const { default: pLimit } = await import('p-limit')
     const limit = pLimit(5)
+    const base = baseFor(host)
     const entries = await Promise.all(
         repos.map((repo) =>
             limit(async () => {
                 const id = repo.id
                 if (!id) return [id, false]
                 try {
-                    const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(id)}/items?path=/.gitattributes&$format=text&api-version=${API_VERSION}`
+                    const url = `${base}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(id)}/items?path=/.gitattributes&$format=text&api-version=${API_VERSION}`
                     const res = await fetch(url, {
                         headers: {
                             Authorization: `Basic ${Buffer.from(`:${pat}`).toString('base64')}`,
@@ -529,11 +634,11 @@ async function checkLfsMarkers(org, project, repos, pat) {
 }
 
 /** 12-month commit activity histogram for a single repo. */
-async function getCommitActivity(org, project, repoId, defaultBranch, pat, months = 12) {
+async function getCommitActivity(org, project, repoId, defaultBranch, pat, months = 12, host = DEFAULT_HOST) {
   const cutoff = new Date()
   cutoff.setMonth(cutoff.getMonth() - months)
   const branch = (defaultBranch || '').replace(/^refs\/heads\//, '') || 'main'
-  const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/commits?searchCriteria.itemVersion.version=${encodeURIComponent(branch)}&searchCriteria.fromDate=${encodeURIComponent(cutoff.toISOString())}&$top=1000&api-version=${API_VERSION}`
+  const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/commits?searchCriteria.itemVersion.version=${encodeURIComponent(branch)}&searchCriteria.fromDate=${encodeURIComponent(cutoff.toISOString())}&$top=1000&api-version=${API_VERSION}`
   const data = await azureFetch(url, pat)
   const buckets = {}
   for (const c of data.value || []) {
@@ -548,12 +653,13 @@ async function getCommitActivity(org, project, repoId, defaultBranch, pat, month
 }
 
 /** Fetch the repository README (first matching file in root). */
-async function getRepoReadme(org, project, repoId, pat, ref) {
+async function getRepoReadme(org, project, repoId, pat, ref, host = DEFAULT_HOST) {
   const candidates = ['README.md', 'README.MD', 'Readme.md', 'readme.md', 'README.rst', 'README']
+  const base = baseFor(host)
   for (const name of candidates) {
     try {
       const versionDesc = ref ? `&versionDescriptor.version=${encodeURIComponent(ref)}` : ''
-      const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/items?path=/${name}&$format=text${versionDesc}&api-version=${API_VERSION}`
+      const url = `${base}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/items?path=/${name}&$format=text${versionDesc}&api-version=${API_VERSION}`
       const res = await fetch(url, {
         headers: {
           Authorization: `Basic ${Buffer.from(`:${pat}`).toString('base64')}`,
@@ -570,10 +676,10 @@ async function getRepoReadme(org, project, repoId, pat, ref) {
 }
 
 /** Commit count (capped) and unique contributor count over default branch. */
-async function getRepoFullStats(org, project, repoId, defaultBranch, pat) {
+async function getRepoFullStats(org, project, repoId, defaultBranch, pat, host = DEFAULT_HOST) {
   const branch = (defaultBranch || '').replace(/^refs\/heads\//, '') || 'main'
   const CAP = 500
-  const url = `${BASE_URL}/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/commits?searchCriteria.itemVersion.version=${encodeURIComponent(branch)}&$top=${CAP}&api-version=${API_VERSION}`
+  const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/commits?searchCriteria.itemVersion.version=${encodeURIComponent(branch)}&$top=${CAP}&api-version=${API_VERSION}`
   const data = await azureFetch(url, pat)
   const commits = data.value || []
   const contributors = new Set(commits.map((c) => c.author?.email || c.author?.name).filter(Boolean))
@@ -587,6 +693,8 @@ async function getRepoFullStats(org, project, repoId, defaultBranch, pat) {
 export {
     validatePat,
     listProjects,
+    createProject,
+    detectCapabilities,
     listOrganizations,
     listRepos,
     listRepoActivity,

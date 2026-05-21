@@ -1,12 +1,19 @@
 /**
- * Parse any Azure DevOps URL format and extract org, project, and optionally repo.
+ * Parse any Azure DevOps URL format and extract host, org, project, and optionally repo.
  * Pure function — no side effects, no network calls.
  *
- * @param {string} input - URL or shorthand (e.g., "org/project")
- * @returns {{ org: string|null, project: string|null, repo: string|null, error: string|null, suggestion: string|null }}
+ * Supports:
+ *   - Cloud: https://dev.azure.com/{org}/{project}[/_git/{repo}]
+ *   - Legacy: https://{org}.visualstudio.com/{project}[/_git/{repo}]
+ *   - On-prem TFS 2018+: https://{host}/{org}[/DefaultCollection]/{project}[/_git/{repo}]
+ *   - SSH clone URLs: git@ssh.dev.azure.com:v3/{org}/{project}/{repo}
+ *   - Shorthand: {org}/{project}[/{repo}]
+ *
+ * @param {string} input - URL or shorthand
+ * @returns {{ host: string|null, org: string|null, project: string|null, repo: string|null, error: string|null, suggestion: string|null }}
  */
 export function parseAzureUrl(input) {
-  const empty = { org: null, project: null, repo: null, error: null, suggestion: null }
+  const empty = { host: null, org: null, project: null, repo: null, error: null, suggestion: null }
 
   if (!input || typeof input !== 'string') {
     return { ...empty, error: 'Paste an Azure DevOps URL to get started.' }
@@ -23,6 +30,7 @@ export function parseAzureUrl(input) {
   const sshMatch = url.match(/^git@ssh\.dev\.azure\.com:v3\/([^/]+)\/([^/]+)\/([^/]+)\s*$/)
   if (sshMatch) {
     return {
+      host: 'dev.azure.com',
       org: decodeURIComponent(sshMatch[1]).trim(),
       project: decodeURIComponent(sshMatch[2]).trim(),
       repo: decodeURIComponent(sshMatch[3]).trim(),
@@ -39,15 +47,6 @@ export function parseAzureUrl(input) {
   // Pre-process URL
   url = preprocess(url)
 
-  // Detect on-premises TFS (has /tfs/ in path but not dev.azure.com or visualstudio.com)
-  if (isOnPremisesTfs(url)) {
-    return {
-      ...empty,
-      error: 'Azure DevOps Server (on-premises) is not currently supported.',
-      suggestion: 'This tool works with Azure DevOps Services (dev.azure.com).'
-    }
-  }
-
   // Try dev.azure.com
   const devResult = parseDevAzureCom(url)
   if (devResult) return devResult
@@ -56,7 +55,11 @@ export function parseAzureUrl(input) {
   const vsResult = parseVisualStudioCom(url)
   if (vsResult) return vsResult
 
-  return { ...empty, error: 'Could not identify as an Azure DevOps URL.', suggestion: 'Example: https://dev.azure.com/org/project' }
+  // Try on-premises TFS (any other host with a parseable URL structure)
+  const tfsResult = parseOnPremTfs(url)
+  if (tfsResult) return tfsResult
+
+  return { ...empty, error: 'Could not identify as an Azure DevOps URL.', suggestion: 'Example: https://dev.azure.com/org/project or https://tfs.your-corp.com/org/project' }
 }
 
 function preprocess(url) {
@@ -90,100 +93,145 @@ function detectOtherService(url) {
   return null
 }
 
-function isOnPremisesTfs(url) {
-  const lower = url.toLowerCase()
-  return lower.includes('/tfs/') && !lower.includes('dev.azure.com') && !lower.includes('visualstudio.com')
+/**
+ * Strip optional collection prefix (e.g., "DefaultCollection") from path segments.
+ * Used by all three host-specific parsers.
+ */
+function stripCollectionPrefix(segments) {
+  if (segments[0]?.toLowerCase() === 'defaultcollection') return segments.slice(1)
+  return segments
 }
 
 function parseDevAzureCom(url) {
-  // Match https://dev.azure.com/{org}/...
   const match = url.match(/^https?:\/\/dev\.azure\.com\/([^/]+)\/?(.*)$/)
   if (!match) return null
 
   const org = decodeURIComponent(match[1])
   const rest = match[2]
+  const host = 'dev.azure.com'
 
   if (!rest) {
-    return { org, project: null, repo: null, error: `URL recognized (org: ${org}) but no project found.`, suggestion: 'Paste a project or repository URL.' }
+    return { host, org, project: null, repo: null, error: `URL recognized (org: ${org}) but no project found.`, suggestion: 'Paste a project or repository URL.' }
   }
 
-  const segments = rest.split('/').filter(Boolean)
-  // Remove DefaultCollection if present
-  if (segments[0]?.toLowerCase() === 'defaultcollection') segments.shift()
-
-  // Pattern: _git/{repo} (repo = project, project segment omitted)
-  if (segments[0] === '_git' && segments[1]) {
-    const repoName = decodeURIComponent(segments[1])
-    return { org, project: repoName, repo: repoName, error: null, suggestion: null }
-  }
-
-  // Pattern: {project}/...
-  const project = decodeURIComponent(segments[0])
-  const subSegments = segments.slice(1)
-
-  // No further segments — just org/project
-  if (subSegments.length === 0) {
-    return { org, project, repo: null, error: null, suggestion: null }
-  }
-
-  // _git/{repo}/...
-  if (subSegments[0] === '_git' && subSegments[1]) {
-    const repo = decodeURIComponent(subSegments[1])
-    return { org, project, repo, error: null, suggestion: null }
-  }
-
-  // _apis/git/repositories/{repo}
-  if (subSegments[0] === '_apis' && subSegments[1] === 'git' && subSegments[2] === 'repositories' && subSegments[3]) {
-    const repo = decodeURIComponent(subSegments[3])
-    return { org, project, repo, error: null, suggestion: null }
-  }
-
-  // Any other _underscore page (_boards, _build, _workitems, _wiki, _releases, _settings, etc.)
-  if (subSegments[0]?.startsWith('_')) {
-    return { org, project, repo: null, error: null, suggestion: null }
-  }
-
-  // Unknown path after project — treat as project-only
-  return { org, project, repo: null, error: null, suggestion: null }
+  const segments = stripCollectionPrefix(rest.split('/').filter(Boolean))
+  return parseProjectSegments(host, org, segments)
 }
 
 function parseVisualStudioCom(url) {
-  // Match https://{org}.visualstudio.com/...
   const match = url.match(/^https?:\/\/([^.]+)\.visualstudio\.com\/?(.*)$/)
   if (!match) return null
 
   const org = decodeURIComponent(match[1])
   const rest = match[2]
+  const host = `${org}.visualstudio.com`
 
   if (!rest) {
-    return { org, project: null, repo: null, error: `URL recognized (org: ${org}) but no project found.`, suggestion: 'Paste a project or repository URL.' }
+    return { host, org, project: null, repo: null, error: `URL recognized (org: ${org}) but no project found.`, suggestion: 'Paste a project or repository URL.' }
   }
 
-  let segments = rest.split('/').filter(Boolean)
-  // Remove DefaultCollection if present
-  if (segments[0]?.toLowerCase() === 'defaultcollection') segments.shift()
-
+  const segments = stripCollectionPrefix(rest.split('/').filter(Boolean))
   if (segments.length === 0) {
-    return { org, project: null, repo: null, error: `URL recognized (org: ${org}) but no project found.`, suggestion: 'Paste a project or repository URL.' }
+    return { host, org, project: null, repo: null, error: `URL recognized (org: ${org}) but no project found.`, suggestion: 'Paste a project or repository URL.' }
+  }
+
+  return parseProjectSegments(host, org, segments)
+}
+
+/**
+ * Parse on-premises TFS / Azure DevOps Server URLs.
+ *
+ * Expected forms:
+ *   https://{host}/{org}/{project}                          (TFS 2018+ short form)
+ *   https://{host}/{org}/{project}/_git/{repo}
+ *   https://{host}/tfs/{org}/{project}/...                  (with /tfs/ virtual dir)
+ *   https://{host}/{collection}/{project}/_git/{repo}       (treating collection as org)
+ *
+ * The first path segment is treated as the org/collection. We accept any host
+ * that isn't already matched by dev.azure.com or visualstudio.com — the host
+ * allowlist enforcement happens server-side, not in the parser.
+ */
+function parseOnPremTfs(url) {
+  let parsed
+  try {
+    parsed = new URL(url)
+  } catch {
+    return null
+  }
+
+  // Use `host` (includes port) rather than `hostname` so an on-prem server
+  // reachable only on a non-default port like `tfs.x.com:8080` retains the
+  // port end-to-end. The backend allowlist strips the port for matching
+  // and re-attaches it when building outbound URLs.
+  const host = parsed.host
+  if (!host) return null
+
+  // path starts with leading slash — split into segments
+  let segments = parsed.pathname.split('/').filter(Boolean)
+  if (segments.length === 0) {
+    return { host, org: null, project: null, repo: null, error: `URL host recognized (${host}) but no organization/project found.`, suggestion: 'Paste a project or repository URL.' }
+  }
+
+  // The "org" for on-prem TFS is the full collection path. Some servers
+  // expose collections at the root (e.g., /Trigenius/Project) while others
+  // use a "/tfs/" virtual directory (e.g., /tfs/DefaultCollection/Project).
+  // We preserve whichever form the user pasted so backend API calls match.
+  //
+  //   /Trigenius/Project              → org = "Trigenius"
+  //   /tfs/DefaultCollection/Project  → org = "tfs/DefaultCollection"
+  let orgSegmentCount = 1
+  if (segments[0].toLowerCase() === 'tfs' && segments.length >= 2) {
+    orgSegmentCount = 2
+  }
+
+  if (segments.length < orgSegmentCount) {
+    return { host, org: null, project: null, repo: null, error: `URL host recognized (${host}) but no organization/project found.`, suggestion: 'Paste a project or repository URL.' }
+  }
+
+  const orgParts = segments.slice(0, orgSegmentCount).map(decodeURIComponent)
+  const org = orgParts.join('/')
+  const rest = segments.slice(orgSegmentCount)
+
+  if (rest.length === 0) {
+    return { host, org, project: null, repo: null, error: `URL recognized (host: ${host}, org: ${org}) but no project found.`, suggestion: 'Paste a project or repository URL.' }
+  }
+
+  return parseProjectSegments(host, org, rest)
+}
+
+/**
+ * Given path segments after collection/org has been stripped, identify project
+ * and (optionally) repo. Shared by dev.azure.com, visualstudio.com, and on-prem.
+ */
+function parseProjectSegments(host, org, segments) {
+  // Pattern: _git/{repo} (org-level git URL, project = repo)
+  if (segments[0] === '_git' && segments[1]) {
+    const repoName = decodeURIComponent(segments[1])
+    return { host, org, project: repoName, repo: repoName, error: null, suggestion: null }
   }
 
   const project = decodeURIComponent(segments[0])
   const subSegments = segments.slice(1)
 
   if (subSegments.length === 0) {
-    return { org, project, repo: null, error: null, suggestion: null }
+    return { host, org, project, repo: null, error: null, suggestion: null }
   }
 
   if (subSegments[0] === '_git' && subSegments[1]) {
-    const repo = decodeURIComponent(subSegments[1])
-    return { org, project, repo, error: null, suggestion: null }
+    return { host, org, project, repo: decodeURIComponent(subSegments[1]), error: null, suggestion: null }
   }
 
+  if (subSegments[0] === '_apis' && subSegments[1] === 'git' && subSegments[2] === 'repositories' && subSegments[3]) {
+    return { host, org, project, repo: decodeURIComponent(subSegments[3]), error: null, suggestion: null }
+  }
+
+  // Any other _underscore page (_boards, _build, _workitems, _wiki, _search, etc.)
   if (subSegments[0]?.startsWith('_')) {
-    return { org, project, repo: null, error: null, suggestion: null }
+    return { host, org, project, repo: null, error: null, suggestion: null }
   }
 
-  return { org, project, repo: null, error: null, suggestion: null }
+  // Unknown path after project — treat as project-only
+  return { host, org, project, repo: null, error: null, suggestion: null }
 }
 
 function parseShorthand(input) {
@@ -191,6 +239,7 @@ function parseShorthand(input) {
 
   if (segments.length === 2) {
     return {
+      host: 'dev.azure.com',
       org: segments[0],
       project: segments[1],
       repo: null,
@@ -201,6 +250,7 @@ function parseShorthand(input) {
 
   if (segments.length === 3) {
     return {
+      host: 'dev.azure.com',
       org: segments[0],
       project: segments[1],
       repo: segments[2],
@@ -209,5 +259,5 @@ function parseShorthand(input) {
     }
   }
 
-  return { org: null, project: null, repo: null, error: 'Could not identify as an Azure DevOps URL.', suggestion: 'Example: https://dev.azure.com/org/project' }
+  return { host: null, org: null, project: null, repo: null, error: 'Could not identify as an Azure DevOps URL.', suggestion: 'Example: https://dev.azure.com/org/project' }
 }

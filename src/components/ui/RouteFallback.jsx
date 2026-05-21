@@ -1,9 +1,10 @@
+import { Spinner } from './Spinner'
+
 /**
  * RouteFallback — lightweight spinner shown while a lazy route chunk loads.
  *
- * Intentionally has NO dependencies on heavy modules (motion, lucide, etc.) so
- * it can be bundled into the main entry chunk with zero cost — that's what
- * makes it suitable as a Suspense fallback for route-level code splitting.
+ * Uses the shared <Spinner> (pure inline SVG, no icon library) so route
+ * transitions match every other loading state in the app.
  *
  * Use `variant="page"` for full-route transitions (default) and
  * `variant="inline"` inside smaller containers (modals, drawers).
@@ -16,10 +17,7 @@ export function RouteFallback({ variant = 'page', label = 'Loading…' }) {
                 role="status"
                 aria-live="polite"
             >
-                <div
-                    className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"
-                    aria-hidden="true"
-                />
+                <Spinner size="lg" tone="primary" label={label} />
                 <span className="sr-only">{label}</span>
             </div>
         )
@@ -32,10 +30,7 @@ export function RouteFallback({ variant = 'page', label = 'Loading…' }) {
             aria-live="polite"
         >
             <div className="text-center">
-                <div
-                    className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"
-                    aria-hidden="true"
-                />
+                <Spinner size="xl" tone="primary" label={label} className="mx-auto mb-3" />
                 <p className="text-slate-500 dark:text-slate-400 text-sm">{label}</p>
             </div>
         </div>

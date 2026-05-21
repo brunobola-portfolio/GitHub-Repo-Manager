@@ -77,6 +77,7 @@ function getStepsForSourceType(sourceType, workItemsEnabled, wikiEnabled) {
 const INITIAL_SOURCE = {
   sourceType: '',             // 'azure' | 'url' | 'github'
   // Azure fields
+  host: '',                   // 'dev.azure.com' | 'org.visualstudio.com' | 'tfs.corp.com' …
   org: '',
   project: '',
   pat: '',

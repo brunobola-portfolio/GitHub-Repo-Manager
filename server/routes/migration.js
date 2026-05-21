@@ -6,6 +6,7 @@ import { getTierOrder } from '../lib/feature-flags.js';
 import { MigrationEngine } from '../migration-engine.js';
 import { createPlanSchema, updatePlanSchema } from '../lib/validators.js';
 import { analyzeMigration } from '../migration-planner.js';
+import { validateAzureHost } from '../lib/azure-host-validator.js';
 import db from '../db.js';
 
 const router = express.Router();
@@ -26,6 +27,7 @@ function formatPlanForApi(row, { taskCount, tasks } = {}) {
     status: row.status,
     source: {
       type: row.source_type || 'azure',
+      host: row.azure_host || 'dev.azure.com',
       org: row.source_org || null,
       project: row.source_project || null,
     },
@@ -158,12 +160,23 @@ router.post('/plans', requireAuth, async (req, res) => {
         upgradeUrl: '/pricing',
       });
     }
+    // Gate the source host against the allowlist before persisting. Without
+    // this check a user could store an arbitrary hostname in the plan that
+    // bypasses the per-request allowlist enforcement applied to /azure/* and
+    // /import/azure-tfvc routes.
+    if (source.host) {
+      const hostCheck = await validateAzureHost(source.host);
+      if (!hostCheck.ok) {
+        return res.status(400).json({ error: 'invalid_host', message: `Source host rejected: ${hostCheck.reason}` });
+      }
+    }
     const isDryRun = isFree ? true : !!schedule?.isDryRun;
     const planId = engine.createPlan(req.session.userId, source, tasks, { targetOrg, isDryRun });
     if (schedule?.mode === 'scheduled' && schedule?.scheduledAt) {
       const credentials = {
         githubToken: req.session.accessToken,
         azurePat: source.pat || null,
+        azureHost: source.host || 'dev.azure.com',
         azureOrg: source.org,
         azureProject: source.project
       };
@@ -218,6 +231,12 @@ router.put('/plans/:id', requireAuth, async (req, res) => {
     if (plan.status !== 'draft') return res.status(400).json({ error: 'Can only update draft plans' });
     const parsed = updatePlanSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Validation failed', details: parsed.error.flatten() });
+    if (parsed.data.source?.host) {
+      const hostCheck = await validateAzureHost(parsed.data.source.host);
+      if (!hostCheck.ok) {
+        return res.status(400).json({ error: 'invalid_host', message: `Source host rejected: ${hostCheck.reason}` });
+      }
+    }
     engine.updatePlan(id, parsed.data);
     res.json({ success: true });
   } catch (err) {
@@ -271,6 +290,7 @@ router.post('/plans/:id/execute', requireAuth, requireProOrDryRunPlan, async (re
     const credentials = {
       githubToken: req.session.accessToken,
       azurePat,
+      azureHost: plan.azure_host || 'dev.azure.com',
       azureOrg: plan.source_org,
       azureProject: plan.source_project
     };
@@ -321,6 +341,7 @@ router.post('/plans/:id/resume', requireAuth, requireProOrDryRunPlan, async (req
     const resumeCredentials = {
       githubToken: req.session.accessToken,
       azurePat: typeof resumeBody.azurePat === 'string' ? resumeBody.azurePat : null,
+      azureHost: plan.azure_host || 'dev.azure.com',
       azureOrg: plan.source_org,
       azureProject: plan.source_project
     };
@@ -343,6 +364,7 @@ router.post('/plans/:id/tasks/:taskId/retry', requireAuth, requireProOrDryRunPla
     const retryCredentials = {
       githubToken: req.session.accessToken,
       azurePat: typeof retryBody.azurePat === 'string' ? retryBody.azurePat : null,
+      azureHost: plan.azure_host || 'dev.azure.com',
       azureOrg: plan.source_org,
       azureProject: plan.source_project
     };

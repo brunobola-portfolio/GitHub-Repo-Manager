@@ -1,5 +1,6 @@
-import { Sparkles, Loader2, Wand2 } from 'lucide-react'
+import { Sparkles, Wand2 } from 'lucide-react'
 import { Button } from './Button'
+import { Spinner } from './Spinner'
 import { useAIStatus } from '../../hooks/useAIStatus'
 
 /**
@@ -67,7 +68,7 @@ export function AIRunButton({
             title={title}
             {...rest}
         >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Icon className="w-4 h-4 mr-1" />}
+            {loading ? <Spinner size="md" tone={variant === 'primary' ? 'onPrimary' : 'primary'} className="mr-1" /> : <Icon className="w-4 h-4 mr-1" />}
             {effectiveLabel}
         </Button>
     )

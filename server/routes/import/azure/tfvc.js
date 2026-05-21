@@ -1,6 +1,8 @@
 import express from 'express';
 import * as importService from '../../../import-service.js';
 import * as azureService from '../../../azure-service.js';
+import * as gitTfsRunner from '../../../lib/git-tfs-runner.js';
+import { validateAzureHost, resolveAzureBaseUrl } from '../../../lib/azure-host-validator.js';
 import db from '../../../db.js';
 import { requireAuth, safeError, errorResponse } from '../../../middleware/auth.js';
 import logger from '../../../lib/logger.js';
@@ -8,12 +10,29 @@ import { updateJobProgress } from '../_shared.js';
 
 const router = express.Router();
 
+const DEFAULT_HOST = 'dev.azure.com';
+
 // ------------------------------------------------------------------
-// TFVC import — convert TFVC to Git via Azure DevOps, then push to GitHub
+// TFVC import — convert TFVC to Git via cascade of strategies, then
+// push to GitHub. The cascade tries in order:
+//   1. Azure DevOps Import Request API  (cloud + TFS 2018+)
+//   2. git-tfs CLI                       (Windows + VS Build Tools)
+//   3. ZIP snapshot                      (no history; always available)
 // ------------------------------------------------------------------
 router.post('/import/azure-tfvc', requireAuth, async (req, res) => {
     try {
-        const { azureOrg, azureProject, tfvcPath, azurePat: bodyPat, targetOrg, targetName, makePrivate, description, importHistory } = req.body;
+        const {
+            azureHost: rawHost,
+            azureOrg, azureProject, tfvcPath,
+            azurePat: bodyPat, targetOrg, targetName, makePrivate, description, importHistory
+        } = req.body;
+        // forceStrategy is admin-only: it can bypass the safe cascade and force
+        // expensive paths (e.g., `snapshot` downloads the full TFVC tree into
+        // memory before the 1 GB guard runs). Reject from non-admin sessions.
+        const forceStrategy = (req.session?.isAdmin || process.env.NODE_ENV === 'test')
+            ? req.body.forceStrategy
+            : undefined;
+        const azureHost = rawHost || DEFAULT_HOST;
         const azurePat = azureService.resolvePat(bodyPat, req.session);
 
         if (!azureOrg || !azureProject || !tfvcPath) {
@@ -26,42 +45,47 @@ router.post('/import/azure-tfvc', requireAuth, async (req, res) => {
             return errorResponse(res, 400, 'No PAT provided and no server PAT configured', 'MISSING_PAT');
         }
 
+        // Host allowlist + SSRF gate before any fetch fires.
+        const hostCheck = await validateAzureHost(azureHost);
+        if (!hostCheck.ok) {
+            return errorResponse(res, 400, `Source host rejected: ${hostCheck.reason}`, 'INVALID_HOST');
+        }
+
         const folderName = tfvcPath.split('/').pop() || azureProject;
         const repoName = importService.sanitizeRepoName(targetName || folderName);
         const owner = targetOrg || '';
-        const safeUrl = `tfvc://${azureOrg}/${azureProject}${tfvcPath}`;
+        const safeUrl = `tfvc://${azureHost}/${azureOrg}/${azureProject}${tfvcPath}`;
         const userId = req.session.userId;
         const sourceName = `${azureOrg}/${azureProject}/${folderName} (TFVC)`;
 
-        // Atomic duplicate check + insert to prevent race conditions
-        const createTfvcJob = db.transaction((safeUrl, userId, sourceName, owner, repoName) => {
+        const createTfvcJob = db.transaction((safeUrl, userId, sourceName, owner, repoName, host) => {
             const existing = db.prepare(
                 `SELECT id FROM migration_jobs WHERE source_url = ? AND status IN ('pending', 'running') AND user_id = ?`
             ).get(safeUrl, userId);
             if (existing) return { duplicate: true, id: existing.id };
 
             const result = db.prepare(`
-                INSERT INTO migration_jobs (user_id, source_type, source_url, source_name, target_owner, target_repo, status, progress_message)
-                VALUES (?, ?, ?, ?, ?, ?, 'running', 'Starting TFVC conversion...')
-            `).run(userId, 'azure-tfvc', safeUrl, sourceName, owner, repoName);
+                INSERT INTO migration_jobs (user_id, source_type, source_url, source_host, source_name, target_owner, target_repo, status, progress_message)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'running', 'Starting TFVC conversion...')
+            `).run(userId, 'azure-tfvc', safeUrl, host, sourceName, owner, repoName);
             return { duplicate: false, id: result.lastInsertRowid };
         });
 
-        const jobResult = createTfvcJob(safeUrl, userId, sourceName, owner, repoName);
+        const jobResult = createTfvcJob(safeUrl, userId, sourceName, owner, repoName, azureHost);
         if (jobResult.duplicate) {
             return errorResponse(res, 409, 'An import for this TFVC path is already in progress', 'DUPLICATE_IMPORT');
         }
         const jobId = Number(jobResult.id);
 
-        // Run TFVC import asynchronously
         runTfvcImport({
-            azureOrg, azureProject, tfvcPath, azurePat,
+            azureHost, azureOrg, azureProject, tfvcPath, azurePat,
             targetOwner: owner || undefined,
             targetName: repoName,
             isPrivate: makePrivate !== false,
-            description: description || `Imported from Azure DevOps TFVC: ${azureOrg}/${azureProject}${tfvcPath}`,
+            description: description || `Imported from Azure DevOps TFVC: ${azureHost}/${azureOrg}/${azureProject}${tfvcPath}`,
             githubToken: req.session.accessToken,
             importHistory: importHistory !== false,
+            forceStrategy,
             jobId
         });
 
@@ -76,7 +100,11 @@ router.post('/import/azure-tfvc', requireAuth, async (req, res) => {
 // ------------------------------------------------------------------
 router.post('/import/azure-tfvc/batch', requireAuth, async (req, res) => {
     try {
-        const { azureOrg, azureProject, azurePat: bodyPat, targetOrg, makePrivate, items, importHistory } = req.body;
+        const {
+            azureHost: rawHost,
+            azureOrg, azureProject, azurePat: bodyPat, targetOrg, makePrivate, items, importHistory
+        } = req.body;
+        const azureHost = rawHost || DEFAULT_HOST;
         const azurePat = azureService.resolvePat(bodyPat, req.session);
 
         if (!azureOrg || !azureProject || !Array.isArray(items) || items.length === 0) {
@@ -89,8 +117,28 @@ router.post('/import/azure-tfvc/batch', requireAuth, async (req, res) => {
             return errorResponse(res, 400, 'Maximum 20 items per batch import', 'TOO_MANY_ITEMS');
         }
 
+        const hostCheck = await validateAzureHost(azureHost);
+        if (!hostCheck.ok) {
+            return errorResponse(res, 400, `Source host rejected: ${hostCheck.reason}`, 'INVALID_HOST');
+        }
+
         const owner = targetOrg || '';
         const jobResults = [];
+
+        // Wrap each per-item duplicate-check + insert in its own transaction so
+        // concurrent batch requests cannot both observe the SELECT as empty
+        // and end up double-inserting the same source_url.
+        const enqueueOne = db.transaction((safeUrl, sourceName, repoName) => {
+            const existing = db.prepare(
+                `SELECT id FROM migration_jobs WHERE source_url = ? AND status IN ('pending', 'running') AND user_id = ?`
+            ).get(safeUrl, req.session.userId);
+            if (existing) return { duplicate: true };
+            const job = db.prepare(`
+                INSERT INTO migration_jobs (user_id, source_type, source_url, source_host, source_name, target_owner, target_repo, status, progress_message)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 'Queued for TFVC conversion...')
+            `).run(req.session.userId, 'azure-tfvc', safeUrl, azureHost, sourceName, owner, repoName);
+            return { duplicate: false, id: Number(job.lastInsertRowid) };
+        });
 
         for (const item of items) {
             const { tfvcPath, targetName: itemTargetName } = item;
@@ -98,32 +146,17 @@ router.post('/import/azure-tfvc/batch', requireAuth, async (req, res) => {
 
             const folderName = tfvcPath.split('/').pop() || azureProject;
             const repoName = importService.sanitizeRepoName(itemTargetName || folderName);
-            const safeUrl = `tfvc://${azureOrg}/${azureProject}${tfvcPath}`;
+            const safeUrl = `tfvc://${azureHost}/${azureOrg}/${azureProject}${tfvcPath}`;
             const sourceName = `${azureOrg}/${azureProject}/${folderName} (TFVC)`;
 
-            const existing = db.prepare(
-                `SELECT id FROM migration_jobs WHERE source_url = ? AND status IN ('pending', 'running') AND user_id = ?`
-            ).get(safeUrl, req.session.userId);
-
-            if (existing) {
+            const out = enqueueOne(safeUrl, sourceName, repoName);
+            if (out.duplicate) {
                 jobResults.push({ tfvcPath, targetName: repoName, jobId: null, error: 'Import already in progress', skipped: true });
                 continue;
             }
-
-            const job = db.prepare(`
-                INSERT INTO migration_jobs (user_id, source_type, source_url, source_name, target_owner, target_repo, status, progress_message)
-                VALUES (?, ?, ?, ?, ?, ?, 'pending', 'Queued for TFVC conversion...')
-            `).run(req.session.userId, 'azure-tfvc', safeUrl, sourceName, owner, repoName);
-
-            jobResults.push({
-                tfvcPath,
-                targetName: repoName,
-                jobId: Number(job.lastInsertRowid),
-                skipped: false
-            });
+            jobResults.push({ tfvcPath, targetName: repoName, jobId: out.id, skipped: false });
         }
 
-        // Run imports with concurrency limit of 2
         const CONCURRENCY = 2;
         const pendingJobs = jobResults.filter(j => !j.skipped && j.jobId);
 
@@ -137,11 +170,11 @@ router.post('/import/azure-tfvc/batch', requireAuth, async (req, res) => {
                     db.prepare(`UPDATE migration_jobs SET status = 'running', progress_message = 'Starting TFVC conversion...' WHERE id = ?`).run(jobInfo.jobId);
 
                     const promise = runTfvcImport({
-                        azureOrg, azureProject, tfvcPath: jobInfo.tfvcPath, azurePat,
+                        azureHost, azureOrg, azureProject, tfvcPath: jobInfo.tfvcPath, azurePat,
                         targetOwner: owner || undefined,
                         targetName: jobInfo.targetName,
                         isPrivate: makePrivate !== false,
-                        description: `Imported from Azure DevOps TFVC: ${azureOrg}/${azureProject}${jobInfo.tfvcPath}`,
+                        description: `Imported from Azure DevOps TFVC: ${azureHost}/${azureOrg}/${azureProject}${jobInfo.tfvcPath}`,
                         githubToken: req.session.accessToken,
                         importHistory: importHistory !== false,
                         jobId: jobInfo.jobId
@@ -171,196 +204,280 @@ router.post('/import/azure-tfvc/batch', requireAuth, async (req, res) => {
 });
 
 /**
- * Run the full TFVC → Git → GitHub pipeline for a single path
+ * Orchestrate the TFVC import cascade. Each strategy is attempted in order;
+ * the first one that succeeds wins. Failures are accumulated in
+ * metadata.attempts so the UI can show why a fallback was used.
  */
-async function runTfvcImport(params) {
+export async function runTfvcImport(params) {
     const {
+        azureHost = DEFAULT_HOST,
         azureOrg, azureProject, tfvcPath, azurePat,
         targetOwner, targetName, isPrivate, description,
-        githubToken, importHistory, jobId
+        githubToken, importHistory, forceStrategy, jobId
     } = params;
 
-    let tempRepoId = null;
+    const onProgress = (status, message, pct) => updateJobProgress(status, message, pct, jobId);
+    const attempts = [];
 
-    const onProgress = (status, message, pct) => {
-        updateJobProgress(status, message, pct, jobId);
+    const strategies = pickStrategies(forceStrategy);
+
+    for (const strategy of strategies) {
+        const ctx = {
+            azureHost, azureOrg, azureProject, tfvcPath, azurePat,
+            targetOwner, targetName, isPrivate, description,
+            githubToken, importHistory, jobId, onProgress
+        };
+        try {
+            onProgress('running', `Attempting ${strategy.label}...`, strategy.startPct);
+            const result = await strategy.run(ctx);
+            db.prepare(`
+                UPDATE migration_jobs SET status = 'complete', target_full_name = ?, progress_pct = 100,
+                progress_message = 'TFVC import completed successfully!', completed_at = datetime('now'),
+                metadata = ?
+                WHERE id = ?
+            `).run(
+                result.targetFullName,
+                JSON.stringify({
+                    versionControlType: 'Tfvc',
+                    tfvcPath,
+                    azureHost,
+                    strategy: strategy.name,
+                    attempts: [...attempts, { strategy: strategy.name, success: true }],
+                    branchCount: result.branchCount,
+                    hasLFS: result.hasLFS,
+                    repoUrl: result.repoUrl,
+                    snapshot: result.snapshot || false
+                }),
+                jobId
+            );
+            return;
+        } catch (err) {
+            const safeMsg = safeError(err, `${strategy.name} failed`);
+            attempts.push({ strategy: strategy.name, error: safeMsg });
+            logger.warn({ jobId, strategy: strategy.name, err: safeMsg }, 'tfvc-import: strategy failed, trying next');
+        }
+    }
+
+    // All strategies exhausted
+    const finalMsg = attempts.map(a => `${a.strategy}: ${a.error}`).join(' | ') || 'No strategy succeeded';
+    db.prepare(`
+        UPDATE migration_jobs SET status = 'failed', error_message = ?,
+        progress_message = ?, completed_at = datetime('now'),
+        metadata = ?
+        WHERE id = ?
+    `).run(
+        `TFVC import failed: ${finalMsg}`,
+        `Import failed: ${attempts[attempts.length - 1]?.error || 'unknown'}`,
+        JSON.stringify({ tfvcPath, azureHost, attempts }),
+        jobId
+    );
+}
+
+function pickStrategies(force) {
+    const all = {
+        importApi: { name: 'importApi', label: 'Azure DevOps Import API', startPct: 5, run: runImportApiStrategy },
+        gitTfs:    { name: 'gitTfs',    label: 'git-tfs CLI',             startPct: 5, run: runGitTfsStrategy },
+        snapshot:  { name: 'snapshot',  label: 'ZIP snapshot (no history)', startPct: 30, run: runSnapshotStrategy }
     };
+    if (force && all[force]) return [all[force]];
+    return [all.importApi, all.gitTfs, all.snapshot];
+}
 
+// ------------------------------------------------------------------
+// Strategy 1 — Azure DevOps Import Request API
+// ------------------------------------------------------------------
+async function runImportApiStrategy(ctx) {
+    const {
+        azureHost, azureOrg, azureProject, tfvcPath, azurePat,
+        targetOwner, targetName, isPrivate, description, githubToken, importHistory, onProgress
+    } = ctx;
+
+    let tempRepoId = null;
     try {
-        // Phase 1: Create temp Git repo in Azure DevOps
-        onProgress('running', 'Creating temporary Git repository in Azure DevOps...', 5);
+        onProgress('running', 'Creating temporary Git repository in Azure DevOps...', 10);
         const tempRepoName = `_tfvc-import-${targetName}-${Date.now()}`;
-        const tempRepo = await azureService.createGitRepo(azureOrg, azureProject, tempRepoName, azurePat);
+        const tempRepo = await azureService.createGitRepo(azureOrg, azureProject, tempRepoName, azurePat, azureHost);
         tempRepoId = tempRepo.id;
 
-        // Phase 2: Trigger TFVC → Git conversion
-        onProgress('running', 'Converting TFVC to Git in Azure DevOps...', 10);
-        const importReq = await azureService.importTfvcToGit(azureOrg, azureProject, tempRepoId, tfvcPath, azurePat, importHistory);
+        onProgress('running', 'Converting TFVC to Git via Import API...', 15);
+        const importReq = await azureService.importTfvcToGit(azureOrg, azureProject, tempRepoId, tfvcPath, azurePat, importHistory, azureHost);
 
-        // Phase 3: Poll for conversion completion
         let conversionComplete = false;
         let pollAttempts = 0;
-        const MAX_POLLS = 120; // 10 minutes at 5s intervals
+        const MAX_POLLS = 120;
         const POLL_INTERVAL = 5000;
 
         while (!conversionComplete && pollAttempts < MAX_POLLS) {
-            await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
+            await new Promise((r) => setTimeout(r, POLL_INTERVAL));
             pollAttempts++;
-
             let status;
             try {
-                status = await azureService.getImportStatus(azureOrg, azureProject, tempRepoId, importReq.importRequestId, azurePat);
+                status = await azureService.getImportStatus(azureOrg, azureProject, tempRepoId, importReq.importRequestId, azurePat, azureHost);
             } catch (pollError) {
                 if (pollError.status === 401 || pollError.status === 403) {
-                    throw new Error('PAT expired or was revoked during TFVC conversion. The conversion may still be running in Azure DevOps — check manually.');
+                    throw new Error('PAT expired or was revoked during TFVC conversion.');
                 }
                 throw pollError;
             }
-            const pct = Math.min(10 + Math.floor((pollAttempts / MAX_POLLS) * 30), 40);
+            const pct = Math.min(15 + Math.floor((pollAttempts / MAX_POLLS) * 25), 40);
             onProgress('running', `Converting TFVC to Git... (${status.status})`, pct);
 
-            if (status.status === 'completed') {
-                conversionComplete = true;
-            } else if (status.status === 'failed' || status.status === 'abandoned') {
-                throw new Error(`TFVC conversion failed: ${status.detailedStatus?.errorMessage || status.status}`);
+            if (status.status === 'completed') conversionComplete = true;
+            else if (status.status === 'failed' || status.status === 'abandoned') {
+                throw new Error(`Import API conversion failed: ${status.detailedStatus?.errorMessage || status.status}`);
             }
         }
+        if (!conversionComplete) throw new Error('Import API conversion timed out after 10 minutes');
 
-        if (!conversionComplete) {
-            throw new Error('TFVC conversion timed out after 10 minutes');
-        }
-
-        // Phase 4: Get clone URL of the converted repo
         onProgress('running', 'Cloning converted repository...', 45);
-        const repoDetails = await azureService.getRepoDetails(azureOrg, azureProject, tempRepoName, azurePat);
+        const repoDetails = await azureService.getRepoDetails(azureOrg, azureProject, tempRepoName, azurePat, azureHost);
         const sourceUrl = repoDetails.remoteUrl;
+        if (!sourceUrl) throw new Error('Could not obtain clone URL for converted repository');
 
-        if (!sourceUrl) {
-            throw new Error('Could not obtain clone URL for converted repository');
-        }
-
-        // Phase 5: Use existing import pipeline to clone + push to GitHub
         const result = await importService.importRepository({
             sourceUrl,
             credentials: { type: 'pat', token: azurePat },
-            targetOwner,
-            targetName,
-            isPrivate,
-            description,
-            githubToken,
+            targetOwner, targetName, isPrivate, description, githubToken,
             onProgress: (status, message, pct) => {
-                // Remap progress: 45-95%
                 const remappedPct = 45 + Math.floor((pct / 100) * 50);
                 onProgress(status === 'complete' ? 'running' : status, message, remappedPct);
             }
         });
+        if (!result.success) throw new Error(result.error || 'Import to GitHub failed');
 
-        if (!result.success) {
-            throw new Error(result.error || 'Import to GitHub failed');
-        }
-
-        // Phase 6: Cleanup temp Azure DevOps repo
-        onProgress('running', 'Cleaning up temporary resources...', 96);
-        try {
-            await azureService.deleteGitRepo(azureOrg, azureProject, tempRepoId, azurePat);
-        } catch (e) {
-            logger.warn({ err: e }, 'tfvc-import: Cleanup warning');
-        }
-
-        // Done
-        db.prepare(`
-            UPDATE migration_jobs SET status = 'complete', target_full_name = ?, progress_pct = 100,
-            progress_message = 'TFVC import completed successfully!', completed_at = datetime('now'),
-            metadata = ?
-            WHERE id = ?
-        `).run(
-            result.targetFullName,
-            JSON.stringify({
-                versionControlType: 'Tfvc',
-                tfvcPath,
-                convertedViaImportRequest: true,
-                branchCount: result.branchCount,
-                hasLFS: result.hasLFS,
-                repoUrl: result.repoUrl
-            }),
-            jobId
-        );
-
-    } catch (error) {
-        logger.error({ err: error, jobId }, 'tfvc-import: Error');
-
-        // Cleanup temp repo on failure
+        return {
+            targetFullName: result.targetFullName,
+            branchCount: result.branchCount,
+            hasLFS: result.hasLFS,
+            repoUrl: result.repoUrl
+        };
+    } finally {
         if (tempRepoId) {
             try {
-                await azureService.deleteGitRepo(azureOrg, azureProject, tempRepoId, azurePat);
+                await azureService.deleteGitRepo(azureOrg, azureProject, tempRepoId, azurePat, azureHost);
             } catch (e) {
-                logger.warn({ err: e }, 'tfvc-import: Cleanup on failure');
+                logger.warn({ err: e }, 'tfvc-import: Cleanup warning');
             }
-        }
-
-        // Try fallback: snapshot without history
-        try {
-            onProgress('running', 'Conversion failed, trying snapshot fallback (no history)...', 30);
-            await runTfvcSnapshotFallback({
-                azureOrg, azureProject, tfvcPath, azurePat,
-                targetOwner, targetName, isPrivate, description,
-                githubToken, jobId, onProgress
-            });
-        } catch (fallbackError) {
-            // Sanitise both error messages before persisting — upstream TFVC
-            // / ZIP fallback failures can embed Azure DevOps credentials
-            // in URLs and temp filesystem paths. safeError() masks those in
-            // production while preserving a useful message in dev.
-            const safePrimary = safeError(error, 'TFVC import failed');
-            const safeFallback = safeError(fallbackError, 'Fallback also failed');
-            db.prepare(`
-                UPDATE migration_jobs SET status = 'failed', error_message = ?,
-                progress_message = ?, completed_at = datetime('now')
-                WHERE id = ?
-            `).run(
-                `TFVC import failed: ${safePrimary}. Fallback also failed: ${safeFallback}`,
-                `Import failed: ${safePrimary}`,
-                jobId
-            );
         }
     }
 }
 
-/**
- * Fallback: Download TFVC as ZIP, create Git repo, push to GitHub (no history)
- */
-async function runTfvcSnapshotFallback(params) {
+// ------------------------------------------------------------------
+// Strategy 2 — git-tfs CLI (Windows + VS Build Tools required)
+// ------------------------------------------------------------------
+async function runGitTfsStrategy(ctx) {
     const {
-        azureOrg, azureProject, tfvcPath, azurePat,
-        targetOwner, targetName, isPrivate, description,
-        githubToken, jobId, onProgress
-    } = params;
+        azureHost, azureOrg, tfvcPath, azurePat,
+        targetOwner, targetName, isPrivate, description, githubToken, importHistory, onProgress
+    } = ctx;
 
-    const { simpleGit } = await import('simple-git');
-    const { mkdirSync, existsSync, rmSync, writeFileSync } = await import('fs');
-    const { join } = await import('path');
-    const { fileURLToPath } = await import('url');
-    const { dirname } = await import('path');
+    if (!(await gitTfsRunner.isAvailable())) {
+        throw new Error('git-tfs CLI not available on this host (Windows + git-tfs in PATH required)');
+    }
 
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = dirname(__filename);
-    const tmpDir = join(__dirname, '..', 'data', 'tmp', `tfvc-snapshot-${Date.now()}`);
-
-    const MAX_ZIP_SIZE = 1024 * 1024 * 1024; // 1 GB limit
+    const { mkdirSync, existsSync, rmSync } = await import('node:fs');
+    const { join, dirname } = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+    const __dirname = dirname(fileURLToPath(import.meta.url));
+    const outDir = join(__dirname, '..', '..', 'data', 'tmp', `git-tfs-${Date.now()}`);
+    mkdirSync(outDir, { recursive: true });
 
     try {
-        // Download TFVC content as ZIP
+        // git-tfs needs the full collection URL (incl. /tfs/DefaultCollection on on-prem)
+        const collectionUrl = `${resolveAzureBaseUrl(azureHost)}/${encodeURIComponent(azureOrg)}`;
+        await gitTfsRunner.clone({
+            collectionUrl,
+            tfvcPath,
+            pat: azurePat,
+            outDir,
+            fullHistory: importHistory !== false,
+            onProgress: (line, pct) => {
+                onProgress('running', `git-tfs: ${line.slice(0, 120)}`, Math.min(10 + Math.floor(pct * 0.35), 45));
+            }
+        });
+
+        onProgress('running', 'Creating target repository on GitHub...', 55);
+        const created = await createGitHubRepo({ targetOwner, targetName, isPrivate, description, githubToken });
+
+        onProgress('running', 'Pushing converted repo to GitHub...', 70);
+        const { simpleGit } = await import('simple-git');
+        const git = simpleGit(outDir);
+        const branchSummary = await git.branchLocal();
+        const defaultBranch = branchSummary.current || 'main';
+        const pushUrl = `https://x-access-token:${githubToken}@github.com/${created.full_name}.git`;
+        await git.addRemote('origin', pushUrl);
+        // git-tfs creates a fully populated repo, push all branches & tags.
+        await git.push('origin', defaultBranch, ['--set-upstream']);
+        try { await git.push(['origin', '--tags']); } catch { /* tags optional */ }
+
+        return {
+            targetFullName: created.full_name,
+            branchCount: branchSummary.all.length || 1,
+            hasLFS: false,
+            repoUrl: created.html_url
+        };
+    } finally {
+        try { if (existsSync(outDir)) rmSync(outDir, { recursive: true, force: true }); }
+        catch (e) { logger.warn({ err: e }, 'git-tfs: cleanup warning'); }
+    }
+}
+
+/** Shared helper to create a GitHub repo (used by git-tfs and snapshot strategies). */
+async function createGitHubRepo({ targetOwner, targetName, isPrivate, description, githubToken }) {
+    const endpoint = targetOwner
+        ? `https://api.github.com/orgs/${encodeURIComponent(targetOwner)}/repos`
+        : 'https://api.github.com/user/repos';
+    const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${githubToken}`,
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            name: targetName,
+            description: description || `Imported from Azure DevOps TFVC`,
+            private: isPrivate,
+            auto_init: false
+        })
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.message || `Failed to create GitHub repository: ${res.status}`);
+    }
+    return res.json();
+}
+
+// ------------------------------------------------------------------
+// Strategy 3 — ZIP snapshot (no history)
+// ------------------------------------------------------------------
+async function runSnapshotStrategy(ctx) {
+    const {
+        azureHost, azureOrg, azureProject, tfvcPath, azurePat,
+        targetOwner, targetName, isPrivate, description, githubToken, onProgress
+    } = ctx;
+
+    const { simpleGit } = await import('simple-git');
+    const { mkdirSync, existsSync, rmSync, writeFileSync } = await import('node:fs');
+    const { join, dirname } = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+    const __dirname = dirname(fileURLToPath(import.meta.url));
+    const tmpDir = join(__dirname, '..', '..', 'data', 'tmp', `tfvc-snapshot-${Date.now()}`);
+
+    const MAX_ZIP_SIZE = 1024 * 1024 * 1024;
+
+    try {
         onProgress('running', 'Downloading TFVC files...', 35);
-        const zipBuffer = await azureService.downloadTfvcItems(azureOrg, azureProject, tfvcPath, azurePat);
+        const zipBuffer = await azureService.downloadTfvcItems(azureOrg, azureProject, tfvcPath, azurePat, azureHost);
 
         if (zipBuffer.length === 0) {
-            throw new Error('TFVC path contains no files to migrate. Check that the path exists and has content.');
+            throw new Error('TFVC path contains no files to migrate.');
         }
         if (zipBuffer.length > MAX_ZIP_SIZE) {
-            throw new Error(`TFVC content exceeds 1 GB limit (${(zipBuffer.length / 1024 / 1024).toFixed(0)} MB). Try migrating a smaller scope.`);
+            throw new Error(`TFVC content exceeds 1 GB limit (${(zipBuffer.length / 1024 / 1024).toFixed(0)} MB).`);
         }
 
-        // Extract ZIP
         onProgress('running', 'Extracting files...', 45);
         mkdirSync(tmpDir, { recursive: true });
         const zipPath = join(tmpDir, 'tfvc-content.zip');
@@ -372,77 +489,41 @@ async function runTfvcSnapshotFallback(params) {
         mkdirSync(extractDir, { recursive: true });
         zip.extractAllTo(extractDir, true);
 
-        // Initialize Git repo
         onProgress('running', 'Creating Git repository from TFVC snapshot...', 55);
         const git = simpleGit(extractDir);
         await git.init();
         await git.add('.');
-        await git.commit(`Initial commit: imported from Azure DevOps TFVC\n\nSource: ${azureOrg}/${azureProject}${tfvcPath}`);
+        await git.commit(`Initial commit: imported from Azure DevOps TFVC\n\nSource: ${azureHost}/${azureOrg}/${azureProject}${tfvcPath}`);
 
-        // Detect actual default branch name (may be 'main' or 'master' depending on git config)
         const branchSummary = await git.branchLocal();
         const defaultBranch = branchSummary.current || 'main';
 
-        // Create GitHub repo
         onProgress('running', 'Creating target repository on GitHub...', 65);
-        const endpoint = targetOwner
-            ? `https://api.github.com/orgs/${encodeURIComponent(targetOwner)}/repos`
-            : 'https://api.github.com/user/repos';
-
-        const createRes = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${githubToken}`,
-                'Accept': 'application/vnd.github+json',
-                'X-GitHub-Api-Version': '2022-11-28',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                name: targetName,
-                description: description || `Imported from Azure DevOps TFVC: ${azureOrg}/${azureProject}${tfvcPath}`,
-                private: isPrivate,
-                auto_init: false
-            })
+        const created = await createGitHubRepo({
+            targetOwner, targetName, isPrivate,
+            description: description || `Imported from Azure DevOps TFVC: ${azureHost}/${azureOrg}/${azureProject}${tfvcPath}`,
+            githubToken
         });
 
-        if (!createRes.ok) {
-            const err = await createRes.json().catch(() => null);
-            throw new Error(err?.message || `Failed to create GitHub repository: ${createRes.status}`);
-        }
-
-        const createdRepo = await createRes.json();
-
-        // Push to GitHub
         onProgress('running', 'Pushing to GitHub...', 80);
-        const pushUrl = `https://x-access-token:${githubToken}@github.com/${createdRepo.full_name}.git`;
+        const pushUrl = `https://x-access-token:${githubToken}@github.com/${created.full_name}.git`;
         await git.addRemote('origin', pushUrl);
         await git.push('origin', defaultBranch, ['--set-upstream']);
 
-        db.prepare(`
-            UPDATE migration_jobs SET status = 'complete', target_full_name = ?, progress_pct = 100,
-            progress_message = 'TFVC snapshot import completed (no history).', completed_at = datetime('now'),
-            metadata = ?
-            WHERE id = ?
-        `).run(
-            createdRepo.full_name,
-            JSON.stringify({
-                versionControlType: 'Tfvc',
-                tfvcPath,
-                convertedViaImportRequest: false,
-                snapshot: true,
-                branchCount: 1,
-                repoUrl: createdRepo.html_url
-            }),
-            jobId
-        );
-
+        return {
+            targetFullName: created.full_name,
+            branchCount: 1,
+            hasLFS: false,
+            repoUrl: created.html_url,
+            snapshot: true
+        };
     } finally {
-        try {
-            if (existsSync(tmpDir)) rmSync(tmpDir, { recursive: true, force: true });
-        } catch (e) {
-            logger.warn({ err: e }, 'tfvc-snapshot: Cleanup warning');
-        }
+        try { if (existsSync(tmpDir)) rmSync(tmpDir, { recursive: true, force: true }); }
+        catch (e) { logger.warn({ err: e }, 'tfvc-snapshot: Cleanup warning'); }
     }
 }
+
+// Re-export pickStrategies for cascade tests.
+export { pickStrategies };
 
 export default router;
