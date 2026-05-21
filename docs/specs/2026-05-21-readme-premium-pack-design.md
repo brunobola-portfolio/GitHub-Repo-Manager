@@ -80,7 +80,7 @@ The `SCHEMA` constant gains entries for `span` with `className` whose value is i
 
 ### 1. Syntax highlighting (starry-night)
 
-**Eager-loaded grammars (16):** `source.ts`, `source.tsx`, `source.js`, `source.jsx`, `source.json`, `source.yaml`, `source.shell`, `source.python`, `source.go`, `source.rust`, `source.java`, `source.cs`, `source.sql`, `text.html.basic`, `source.css`, `text.md`. Selected because these cover the language tag of >95% of README fenced blocks in our existing test fixtures (mock READMEs in `src/__mocks__/mockRepoDetail.js`) and in the top 100 GitHub-trending repos sampled during the spike.
+**Eager-loaded grammars (20):** `source.ts`, `source.tsx`, `source.js`, `source.jsx`, `source.json`, `source.yaml`, `source.shell`, `source.python`, `source.go`, `source.rust`, `source.java`, `source.cs`, `source.cpp`, `source.c`, `source.php`, `source.ruby`, `source.sql`, `text.html.basic`, `source.css`, `text.md`. Selected to cover the top-20 GitHub languages, which collectively account for the language tag of >97% of README fenced blocks in our existing test fixtures (mock READMEs in `src/__mocks__/mockRepoDetail.js`) and in the top 100 GitHub-trending repos sampled during the spike.
 
 **Lazy grammars:** all other ~600 langs go through `grammars-lazy.js`, which is a `Record<string, () => Promise<Grammar>>`. The rehype plugin checks the eager registry first; on miss it triggers the dynamic import and re-renders the block when the grammar resolves (React `useTransition` on the consumer side keeps the swap non-janky). Unknown language → no highlight, plain monospace, no error.
 
@@ -137,13 +137,13 @@ Target: a new `vendor-markdown` chunk in `vite.config.js` `manualChunks`, gzippe
 | Layer | Estimated gz |
 |---|---|
 | `@wooorm/starry-night` core + WASM | ~95 KB |
-| 16 eager grammars | ~90 KB |
+| 20 eager grammars | ~115 KB |
 | `remark-github-blockquote-alert` | ~2 KB |
 | `remark-gemoji` | ~3 KB |
 | `remark-twemoji-self-hosted` (our code) | ~1 KB |
 | Twemoji SVGs | 0 KB (lazy per-emoji HTTP) |
 | `readme-theme.css` | ~3 KB |
-| **Total chunk** | **~194 KB gz** |
+| **Total chunk** | **~219 KB gz** |
 
 Acceptance: the chunk must stay under **280 KB gz** (headroom for future lazy grammars to be promoted if usage data shows it). The initial dashboard bundle must not grow by more than **+5 KB gz**.
 
@@ -178,7 +178,7 @@ Single deterministic spec, light + dark:
 5. ✅ `vendor-markdown` chunk < 280 KB gz; initial dashboard bundle delta ≤ +5 KB gz.
 6. ✅ All existing `tests/components/ui/RepoMarkdown.test.jsx` assertions still pass (after move).
 7. ✅ New e2e spec passes in light + dark.
-8. ✅ Reversible: URL flag `?premium-readme=0` falls back to the v4.3.0 renderer for the first 2 weeks after merge, then the flag and the legacy code path are removed.
+8. ✅ Reversible via git: change is fully additive (new sub-folder, no edits to call-sites), so a single revert restores the v4.3.0 renderer if any regression surfaces. No runtime feature flag — would double the surface area to test and require a follow-up cleanup PR.
 
 ## Risks
 
@@ -212,6 +212,7 @@ Single deterministic spec, light + dark:
 
 ## Decision matrix — when to revisit
 
-- After 2 weeks of `?premium-readme=1` being default-on: review error/feedback signals; remove flag + legacy path (acceptance criterion 8).
+- 2 weeks after merge: review error/feedback signals on the Overview tab; if regressions, git-revert (acceptance criterion 8).
 - When a Mermaid block first appears in any of our team's READMEs: kick off the Mermaid spec.
 - When `starry-night` cuts a major version (current 1.x): re-evaluate eager grammar list.
+- If a single language outside the eager-20 set shows up in >5% of viewed READMEs (instrument via existing analytics): promote it to eager.
