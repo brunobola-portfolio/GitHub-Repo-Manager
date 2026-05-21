@@ -55,7 +55,6 @@ export function CommitDetailPanel({ owner, repo, sha, onClose }) {
             title={subject || `Commit ${sha?.slice(0, 7)}`}
             subtitle={author?.name ? `by ${author.name}` : undefined}
             icon={GitCommit}
-            iconGradient="primary"
             size="full"
             closeOnBackdrop={false}
             mobileVariant="sheet"

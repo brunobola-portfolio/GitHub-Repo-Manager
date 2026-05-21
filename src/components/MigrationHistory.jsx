@@ -144,7 +144,6 @@ export function MigrationHistory({ isOpen, onClose }) {
             onClose={onClose}
             title="Migration History"
             icon={History}
-            iconGradient="primary"
             size="3xl"
             closeOnBackdrop={false}
             tabs={MIGRATION_TABS}

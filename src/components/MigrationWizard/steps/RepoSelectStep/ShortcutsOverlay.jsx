@@ -22,7 +22,6 @@ export function ShortcutsOverlay({ open, onClose }) {
             title="Keyboard shortcuts"
             subtitle="Repo Select"
             icon={Keyboard}
-            iconGradient="primary"
             size="sm"
         >
             <ul className="space-y-2">

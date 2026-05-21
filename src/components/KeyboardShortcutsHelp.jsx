@@ -14,7 +14,6 @@ export function KeyboardShortcutsHelp({ isOpen, onClose, shortcuts }) {
             onClose={onClose}
             title="Keyboard Shortcuts"
             icon={Keyboard}
-            iconGradient="primary"
             size="sm"
         >
             <div className="space-y-4">

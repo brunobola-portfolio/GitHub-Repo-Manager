@@ -6,11 +6,24 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { useMobileKeyboardFix } from '../../hooks/useMobileKeyboardFix'
 import { TabBar } from './TabBar'
 
+// Per non-LLM theme (docs/specs/2026-05-14-premium-non-llm-theme-design.md),
+// modal headers are GitHub-utilitarian: neutral surface, dark text, border-b.
+// Variant state (danger/warning/info/success) and iconGradient (primary/success
+// affordance) are communicated through the icon tile's soft-tinted background
+// instead of a colored header. `iconGradient="none"` falls through to the
+// variant-derived tile color.
 const ICON_GRADIENT_CLASSES = {
-    none:    'bg-white/15',
-    primary: 'bg-indigo-600 shadow-sm',
-    premium: 'bg-indigo-600 shadow-sm',
-    success: 'bg-emerald-600 shadow-sm',
+    none:    null,
+    primary: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
+    success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+}
+
+const VARIANT_ICON_STYLES = {
+    default: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
+    danger:  'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
+    warning: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+    info:    'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
+    success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
 }
 
 const STAGGER_VARIANTS = {
@@ -45,15 +58,9 @@ const SHEET_SIZE_CLASSES = {
     full:  'md:max-w-[min(96vw,1600px)] md:max-h-[92vh]',
 }
 
-// Variant styles for the header gradient — hoisted to module scope to avoid
-// per-render allocation.
-const VARIANT_STYLES = {
-    default: { headerBg: 'bg-indigo-600',  iconBg: 'bg-white/20', textColor: 'text-white' },
-    danger:  { headerBg: 'bg-red-600',     iconBg: 'bg-white/20', textColor: 'text-white' },
-    warning: { headerBg: 'bg-amber-600',   iconBg: 'bg-white/20', textColor: 'text-white' },
-    info:    { headerBg: 'bg-sky-600',     iconBg: 'bg-white/20', textColor: 'text-white' },
-    success: { headerBg: 'bg-emerald-600', iconBg: 'bg-white/20', textColor: 'text-white' },
-}
+// All variants share the same neutral header (GitHub Primer-style). Semantic
+// state is conveyed by the icon tile color via VARIANT_ICON_STYLES above.
+const HEADER_CLASS = 'border-b border-slate-200 dark:border-[color:var(--ds-border-dark)] text-slate-900 dark:text-slate-100'
 
 /**
  * Modal - Premium base modal component with consistent styling
@@ -98,7 +105,7 @@ export function Modal({
 }) {
     // Use module-level lookup tables so Tailwind's JIT discovers every class.
     const sizeClass = (mobileVariant === 'sheet' ? SHEET_SIZE_CLASSES[size] : SIZE_CLASSES[size]) || SIZE_CLASSES.md
-    const styles = VARIANT_STYLES[variant] || VARIANT_STYLES.default
+    const iconTileClass = ICON_GRADIENT_CLASSES[iconGradient] || VARIANT_ICON_STYLES[variant] || VARIANT_ICON_STYLES.default
 
     const modalRef = useFocusTrap(isOpen, onClose, { disableEscape, initialFocusRef, restoreFocusRef })
     useBodyScrollLock(isOpen)
@@ -151,11 +158,11 @@ export function Modal({
                             className={`
                                 ${sizeClass}
                                 w-full min-w-[320px]
-                                bg-white dark:bg-slate-950
+                                bg-white dark:bg-[color:var(--ds-surface-dark)]
                                 rounded-2xl
                                 ${mobileVariant === 'sheet' ? 'max-md:rounded-t-3xl max-md:rounded-b-none max-md:max-w-none short:rounded-2xl short:max-w-[calc(100%-2rem)]' : ''}
-                                shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)]
-                                ring-1 ring-slate-200/50 dark:ring-slate-700/50
+                                shadow-[var(--ds-shadow-lg)]
+                                ring-1 ring-slate-200/50 dark:ring-[color:var(--ds-border-dark)]
                                 overflow-hidden
                                 flex flex-col
                                 max-h-[92vh] md:max-h-[88vh] short:max-h-[90vh]
@@ -164,14 +171,14 @@ export function Modal({
                             `}
                         >
                             {/* Header */}
-                            <div className={`${styles.headerBg} ${styles.textColor} flex-shrink-0 flex items-center h-12 md:h-[52px] px-4 md:px-5 gap-3`}>
+                            <div className={`${HEADER_CLASS} flex-shrink-0 flex items-center h-12 md:h-[52px] px-4 md:px-5 gap-3`}>
                                 {Icon && (
                                     <div
                                         data-icon-tile="true"
-                                        className={`${ICON_GRADIENT_CLASSES[iconGradient] || ICON_GRADIENT_CLASSES.none} p-1.5 rounded-lg flex-shrink-0`}
+                                        className={`${iconTileClass} p-1.5 rounded-lg flex-shrink-0`}
                                     >
-                                        {/* Icon size matches WizardPanel (w-4 h-4) so every popup primitive
-                                            ships a 28-px gradient tile — uniform header rhythm. */}
+                                        {/* 28-px tile (w-4 icon + 1.5 padding) — uniform header rhythm
+                                            across every popup primitive. Tile is soft-tinted, not solid. */}
                                         <Icon className="w-4 h-4" strokeWidth={2.5} />
                                     </div>
                                 )}
@@ -184,7 +191,7 @@ export function Modal({
                                         title
                                     )}
                                     {subtitle && (
-                                        <p className="text-[11px] text-white/70 truncate mt-0.5">
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                                             {subtitle}
                                         </p>
                                     )}
@@ -192,7 +199,7 @@ export function Modal({
                                 {showCloseButton && (
                                     <button
                                         onClick={onClose}
-                                        className="p-2 hover:bg-white/15 rounded-lg transition-all duration-200 flex-shrink-0 ds-focus-ring"
+                                        className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200 flex-shrink-0 ds-focus-ring"
                                         aria-label="Close modal"
                                     >
                                         <X className="w-4 h-4" strokeWidth={2} />
@@ -221,7 +228,7 @@ export function Modal({
                                 role={tabs && tabs.length > 0 ? 'tabpanel' : undefined}
                                 aria-labelledby={tabs && tabs.length > 0 && activeTab ? `tab-${effectiveTabsLayoutId}-${activeTab}` : undefined}
                                 aria-busy={isBusy || undefined}
-                                className={`flex-1 overflow-y-auto ds-modal-body ds-scrollbar bg-slate-50/30 dark:bg-slate-950 ${tabs && tabs.length > 0 ? 'min-h-[400px] md:min-h-0' : ''} ${bodyClassName}`}
+                                className={`flex-1 overflow-y-auto ds-modal-body ds-scrollbar bg-slate-50/30 dark:bg-[color:var(--ds-surface-dark)] ${tabs && tabs.length > 0 ? 'min-h-[400px] md:min-h-0' : ''} ${bodyClassName}`}
                             >
                                 {staggerChildren ? (
                                     <motion.div

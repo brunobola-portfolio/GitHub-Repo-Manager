@@ -326,7 +326,7 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
                         disabled={loading || applying}
                         title={aiOff ? 'AI is not configured — uses a deterministic heuristic instead' : undefined}
                     >
-                        {loading ? <Spinner size="md" tone="primary" className="mr-1" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                        {loading ? <Spinner size="md" tone="primary" className="mr-1" /> : null}
                         {suggestLabel}
                     </Button>
                     <div className="flex gap-2 items-center">

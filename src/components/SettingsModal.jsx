@@ -124,7 +124,6 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
             onClose={onClose}
             title="Settings"
             icon={SettingsIcon}
-            iconGradient="primary"
             size="3xl"
             closeOnBackdrop={false}
             tabs={isAdmin ? [...TABS, ...ADMIN_TABS] : TABS}

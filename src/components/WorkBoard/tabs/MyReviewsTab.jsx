@@ -196,7 +196,6 @@ function DraftCommentModal({ review, intent, onConfirm, onClose }) {
             onClose={onClose}
             title={title}
             icon={MessageSquare}
-            iconGradient="primary"
             size="lg"
             closeOnBackdrop={false}
             isBusy={draftLoading}

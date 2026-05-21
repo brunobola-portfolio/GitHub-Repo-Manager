@@ -104,7 +104,7 @@ export function Drawer({
                             ...sizeStyle,
                             paddingBottom: isBottom ? 'env(safe-area-inset-bottom, 0px)' : undefined,
                         }}
-                        className={`fixed z-[var(--ds-z-modal)] flex flex-col bg-white dark:bg-slate-900 shadow-2xl ${POSITION_CLASSES[side]} ${mobileOnly ? 'xl:hidden' : ''} ${className}`}
+                        className={`fixed z-[var(--ds-z-modal)] flex flex-col bg-white dark:bg-[color:var(--ds-surface-dark)] shadow-[var(--ds-shadow-lg)] ${POSITION_CLASSES[side]} ${mobileOnly ? 'xl:hidden' : ''} ${className}`}
                     >
                         {dragHandleOn ? (
                             <div className="flex justify-center pt-2 pb-1 shrink-0" aria-hidden="true">
@@ -114,13 +114,13 @@ export function Drawer({
                         {(title || subtitle || Icon || showCloseButton) ? (
                             <div className="flex items-start gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
                                 {Icon ? (
-                                    <span className="shrink-0 w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm">
+                                    <span className="shrink-0 w-9 h-9 rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 flex items-center justify-center">
                                         <Icon className="w-4 h-4" aria-hidden="true" />
                                     </span>
                                 ) : null}
                                 <div className="flex-1 min-w-0">
                                     {title ? (
-                                        <h2 className="ds-font-display text-base font-bold text-slate-900 dark:text-slate-100 truncate">{title}</h2>
+                                        <h2 className="ds-font-display text-base font-semibold text-slate-900 dark:text-slate-100 truncate">{title}</h2>
                                     ) : null}
                                     {subtitle ? (
                                         <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{subtitle}</p>
@@ -140,7 +140,7 @@ export function Drawer({
                         ) : null}
                         <div className="flex-1 min-h-0 overflow-y-auto">{children}</div>
                         {footer ? (
-                            <div className="border-t border-slate-200 dark:border-slate-800 px-4 py-3 shrink-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur">
+                            <div className="border-t border-slate-200 dark:border-[color:var(--ds-border-dark)] px-4 py-3 shrink-0 bg-white/95 dark:bg-[color:var(--ds-surface-dark)] backdrop-blur">
                                 {footer}
                             </div>
                         ) : null}

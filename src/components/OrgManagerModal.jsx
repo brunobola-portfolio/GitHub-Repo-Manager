@@ -132,7 +132,6 @@ export function OrgManagerModal({
             title={isPersonal ? 'Personal Account' : 'Organization Manager'}
             subtitle={org?.login ? `@${org.login}` : undefined}
             icon={isPersonal ? User : Building2}
-            iconGradient="primary"
             size="3xl"
             closeOnBackdrop={false}
             tabs={tabs}

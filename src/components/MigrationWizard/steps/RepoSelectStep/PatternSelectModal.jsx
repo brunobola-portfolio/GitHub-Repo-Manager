@@ -24,7 +24,6 @@ export function PatternSelectModal({ repos, onConfirm, onClose }) {
             onClose={onClose}
             title="Select by pattern"
             icon={Filter}
-            iconGradient="primary"
             size="lg"
             closeOnBackdrop={false}
             footer={

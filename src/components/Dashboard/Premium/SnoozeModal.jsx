@@ -39,10 +39,10 @@ export function SnoozeModal({ open, onConfirm, onClose }) {
             {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
             <div
                 ref={trapRef}
-                className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-2xl"
+                className="w-full max-w-sm rounded-2xl bg-white dark:bg-[color:var(--ds-surface-dark)] p-6 shadow-[var(--ds-shadow-lg)]"
                 onClick={e => e.stopPropagation()}
             >
-                <h3 id="snooze-modal-title" className="text-base font-bold text-zinc-900 dark:text-zinc-100 mb-4 ds-font-display">
+                <h3 id="snooze-modal-title" className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-4 ds-font-display">
                     Snooze until…
                 </h3>
                 <div className="grid grid-cols-2 gap-2">
@@ -51,7 +51,7 @@ export function SnoozeModal({ open, onConfirm, onClose }) {
                             key={p.label}
                             type="button"
                             onClick={() => { onConfirm(p.iso()); onClose?.(); }}
-                            className="px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm text-zinc-800 dark:text-zinc-200"
+                            className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm text-slate-800 dark:text-slate-200"
                         >
                             {p.label}
                         </button>
@@ -60,7 +60,7 @@ export function SnoozeModal({ open, onConfirm, onClose }) {
                 <button
                     type="button"
                     onClick={onClose}
-                    className="mt-4 w-full text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                    className="mt-4 w-full text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                 >
                     Cancel
                 </button>

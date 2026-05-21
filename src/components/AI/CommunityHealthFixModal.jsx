@@ -141,7 +141,7 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 				<div role="alert" className="flex flex-col items-center text-center gap-4 py-8">
 					<RowIconBadge icon={Sparkles} tone="indigo" size="xl" surface="soft" />
 					<div>
-						<h3 className="font-bold text-slate-900 dark:text-white text-lg">AI is not configured</h3>
+						<h3 className="font-semibold text-slate-900 dark:text-white text-lg">AI is not configured</h3>
 						<p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
 							Add a provider key in Settings to use AI-backed file generation.
 						</p>

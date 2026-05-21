@@ -178,7 +178,6 @@ export function CommunityHealthDashboard({ repo, onClose }) {
             title="Community Health"
             subtitle={repo?.full_name}
             icon={Heart}
-            iconGradient="primary"
             size="2xl"
             closeOnBackdrop={false}
             isBusy={loading || refreshing}

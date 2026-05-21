@@ -22,7 +22,7 @@ export function MobileAIPanelDrawer({ isOpen, onClose, children, restoreFocusRef
             onClose={onClose}
             title="AI insights"
             icon={Sparkles}
-            iconGradient="premium"
+            iconGradient="primary"
             size="lg"
             mobileVariant="sheet"
             bodyClassName="!p-0"

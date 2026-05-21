@@ -61,7 +61,6 @@ export function KeyboardHelpOverlay({ isOpen, onClose }) {
             title="Keyboard shortcuts"
             subtitle="Power through reviews"
             icon={Keyboard}
-            iconGradient="primary"
             size="lg"
             mobileVariant="sheet"
         >

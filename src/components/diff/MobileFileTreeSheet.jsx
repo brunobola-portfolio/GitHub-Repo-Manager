@@ -30,7 +30,6 @@ export function MobileFileTreeSheet({
             onClose={onClose}
             title={`Files (${files?.length ?? 0})`}
             icon={Files}
-            iconGradient="primary"
             size="lg"
             mobileVariant="sheet"
             bodyClassName="!p-0"

@@ -31,7 +31,6 @@ export function KeyboardHelpModal({ open, onClose }) {
             title="Keyboard shortcuts"
             subtitle="Work Board"
             icon={Keyboard}
-            iconGradient="primary"
             size="lg"
             closeOnBackdrop={false}
         >

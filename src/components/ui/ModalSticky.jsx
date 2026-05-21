@@ -44,7 +44,7 @@ export function ModalSticky({
 
 	const bodyClass = isMobile ? 'flex-1 overflow-y-auto pb-4' : ''
 	const footerClass = isMobile
-		? 'sticky bottom-0 left-0 right-0 -mx-4 px-4 py-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end gap-2'
+		? 'sticky bottom-0 left-0 right-0 -mx-4 px-4 py-3 bg-white dark:bg-[color:var(--ds-surface-dark)] border-t border-slate-200 dark:border-[color:var(--ds-border-dark)] flex items-center justify-end gap-2'
 		: 'mt-4 flex items-center justify-end gap-2'
 
 	return (

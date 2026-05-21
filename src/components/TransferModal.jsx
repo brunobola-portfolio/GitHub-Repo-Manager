@@ -142,7 +142,6 @@ export function TransferModal({
 			title={action === 'mirror' ? 'Mirror Repositories' : 'Transfer Repositories'}
 			subtitle={repos.length ? `${repos.length} repositor${repos.length !== 1 ? 'ies' : 'y'} selected` : undefined}
 			icon={action === 'mirror' ? Copy : ArrowRightLeft}
-			iconGradient="primary"
 			size="xl"
 			staggerChildren={!isPerforming}
 			mobileVariant="sheet"

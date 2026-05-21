@@ -39,11 +39,11 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
             {/* Header */}
             <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2.5">
-                    <div className="w-9 h-9 rounded-lg bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center shadow-md shrink-0">
-                        <Sparkles className="w-4 h-4 text-white" />
+                    <div className="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-4 h-4" />
                     </div>
                     <div>
-                        <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Polir descriptions com AI</h3>
+                        <h3 className="text-base font-semibold text-slate-800 dark:text-slate-100">Polir descriptions com AI</h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                             {stats.total} repo{stats.total === 1 ? '' : 's'} migrado{stats.total === 1 ? '' : 's'} — sugestões geradas por AI baseadas no README + linguagem.
                         </p>

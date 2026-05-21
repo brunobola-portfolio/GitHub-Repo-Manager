@@ -297,7 +297,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                         transition={{ duration: 0.32, ease: [0.2, 0, 0, 1] }}
                         className="fixed bottom-20 xl:bottom-6 right-3 sm:right-6 z-[45]"
                     >
-                        <Card className={`w-[calc(100vw-2rem)] sm:w-[22rem] md:w-[26rem] flex flex-col shadow-[var(--ds-shadow-overlay)] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden rounded-2xl transition-all duration-300 ${
+                        <Card className={`w-[calc(100vw-2rem)] sm:w-[22rem] md:w-[26rem] flex flex-col shadow-[var(--ds-shadow-overlay)] border border-slate-200 dark:border-[color:var(--ds-border-dark)] bg-white dark:bg-[color:var(--ds-surface-dark)] overflow-hidden rounded-2xl transition-all duration-300 ${
                             isMinimized ? '' : 'h-[65vh] xl:h-[540px]'
                         }`}>
                             {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
@@ -380,7 +380,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
 
                                             <form
                                                 onSubmit={handleSubmit}
-                                                className="p-3 border-t border-white/40 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md shrink-0"
+                                                className="p-3 border-t border-slate-200 dark:border-[color:var(--ds-border-dark)] bg-white/90 dark:bg-[color:var(--ds-surface-dark)] backdrop-blur-md shrink-0"
                                             >
                                                 <div className="flex gap-2 items-end">
                                                     <div className="flex-1 min-w-0">

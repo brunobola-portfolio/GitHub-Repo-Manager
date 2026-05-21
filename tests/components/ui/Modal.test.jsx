@@ -129,14 +129,16 @@ describe('Modal — staggerChildren and iconGradient', () => {
     expect(container.querySelector('[data-stagger-root="true"]')).toBeNull()
   })
 
-  it('renders icon tile with primary solid class when iconGradient=primary', () => {
+  it('renders icon tile with indigo tint when iconGradient=primary', () => {
     const Icon = () => <svg data-testid="icon" />
     const { container } = render(
       <Modal isOpen={true} onClose={() => {}} title="Hi" icon={Icon} iconGradient="primary">x</Modal>
     )
     const iconTile = container.querySelector('[data-icon-tile="true"]')
     expect(iconTile).not.toBeNull()
-    expect(iconTile.className).toMatch(/bg-indigo-6/)
+    // Neutral-header redesign: tile is soft-tinted (bg-indigo-100 in light,
+    // bg-indigo-500/15 in dark) rather than the prior bg-indigo-600 solid.
+    expect(iconTile.className).toMatch(/bg-indigo-(100|500\/15)/)
   })
 })
 

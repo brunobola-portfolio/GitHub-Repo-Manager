@@ -11,16 +11,14 @@ const PANEL_SIZES = {
   xl: 'w-[min(92vw,1140px)]',
 }
 
-// Variant header colors — mirrors Modal.jsx's VARIANT_STYLES so wizards
-// can match the tone of their action (danger flows in red, success in
-// emerald). Keep this list in sync with Modal's, plus any wizard-specific
-// tones (which there are none of right now — keep them in sync).
-const VARIANT_STYLES = {
-  default: 'bg-indigo-600 dark:bg-indigo-700',
-  danger:  'bg-red-600 dark:bg-red-700',
-  warning: 'bg-amber-600 dark:bg-amber-700',
-  info:    'bg-sky-600 dark:bg-sky-700',
-  success: 'bg-emerald-600 dark:bg-emerald-700',
+// Per non-LLM theme: neutral header with soft-tinted icon tile communicates
+// the variant tone. Mirrors Modal.jsx — keep both in sync.
+const VARIANT_ICON_STYLES = {
+  default: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
+  danger:  'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
+  warning: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+  info:    'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
+  success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
 }
 
 // headerGradient prop kept for backward-compat; default header is now solid indigo
@@ -48,7 +46,7 @@ export function WizardPanel({
   const reduced = useReducedMotion()
 
   const effectiveMaximized = isMobile || isMaximized
-  const headerBg = VARIANT_STYLES[variant] || VARIANT_STYLES.default
+  const iconTileClass = VARIANT_ICON_STYLES[variant] || VARIANT_ICON_STYLES.default
 
   // Match Modal.jsx's spring timing exactly so the two shells animate in
   // sync when a flow opens a wizard from inside a modal (or vice-versa).
@@ -89,21 +87,17 @@ export function WizardPanel({
             className={`
               fixed z-[var(--ds-z-modal)] flex flex-col overflow-hidden
               ${effectiveMaximized
-                ? 'inset-0 bg-white dark:bg-slate-950'
-                : `inset-x-0 mx-auto top-[clamp(1.5rem,5vh,4rem)] max-h-[min(90vh,calc(100vh-3rem))] ${PANEL_SIZES[size] || PANEL_SIZES.xl} rounded-2xl bg-white dark:bg-slate-950 shadow-[0_25px_60px_-12px_rgba(0,0,0,0.35)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.7)] ring-1 ring-slate-200/50 dark:ring-slate-700/50`
+                ? 'inset-0 bg-white dark:bg-[color:var(--ds-surface-dark)]'
+                : `inset-x-0 mx-auto top-[clamp(1.5rem,5vh,4rem)] max-h-[min(90vh,calc(100vh-3rem))] ${PANEL_SIZES[size] || PANEL_SIZES.xl} rounded-2xl bg-white dark:bg-[color:var(--ds-surface-dark)] shadow-[var(--ds-shadow-lg)] ring-1 ring-slate-200/50 dark:ring-[color:var(--ds-border-dark)]`
               }
             `}
           >
-            {/* Title Bar */}
-            <div className={`
-              flex-shrink-0 text-white flex items-center h-12 md:h-[52px] px-4 md:px-5 gap-3
-              ${headerBg}
-              ${effectiveMaximized ? '' : 'border-b border-white/10'}
-            `}>
+            {/* Title Bar — neutral GitHub-utilitarian header; variant tone lives in the icon tile only. */}
+            <div className="flex-shrink-0 text-slate-900 dark:text-slate-100 flex items-center h-12 md:h-[52px] px-4 md:px-5 gap-3 border-b border-slate-200 dark:border-[color:var(--ds-border-dark)]">
               {/* Left: Icon + Title */}
               <div className="flex items-center gap-2.5 min-w-0">
                 {Icon && (
-                  <div className="bg-white/15 p-1.5 rounded-lg flex-shrink-0 transition-all">
+                  <div className={`${iconTileClass} p-1.5 rounded-lg flex-shrink-0 transition-all`}>
                     <Icon className="w-4 h-4" strokeWidth={2.5} />
                   </div>
                 )}
@@ -124,9 +118,9 @@ export function WizardPanel({
                       transition={{ duration: 0.2 }}
                       className="text-center"
                     >
-                      <p className="text-[13px] font-medium text-white/90 truncate">{stepInfo.title}</p>
+                      <p className="text-[13px] font-medium text-slate-700 dark:text-slate-300 truncate">{stepInfo.title}</p>
                       {stepInfo.subtitle && (
-                        <p className="text-[11px] text-white/55 truncate">{stepInfo.subtitle}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{stepInfo.subtitle}</p>
                       )}
                     </motion.div>
                   </AnimatePresence>
@@ -139,7 +133,7 @@ export function WizardPanel({
                   <button
                     type="button"
                     onClick={onToggleMaximize}
-                    className="p-2 hover:bg-white/15 rounded-lg transition-colors"
+                    className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                     aria-label={isMaximized ? 'Restore wizard size' : 'Maximize wizard'}
                   >
                     {isMaximized
@@ -151,7 +145,7 @@ export function WizardPanel({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="p-2 hover:bg-white/15 rounded-lg transition-colors ds-focus-ring"
+                  className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors ds-focus-ring"
                   aria-label="Close wizard"
                 >
                   <X className="w-4 h-4" strokeWidth={2} />
@@ -160,34 +154,25 @@ export function WizardPanel({
             </div>
 
             {/* Body: Sidebar + Content */}
-            <div className="flex flex-1 min-h-0 overflow-hidden bg-slate-50/50 dark:bg-slate-950">
+            <div className="flex flex-1 min-h-0 overflow-hidden bg-slate-50/50 dark:bg-[color:var(--ds-surface-dark)]">
               {/* Sidebar — desktop fullscreen only */}
               {sidebar && effectiveMaximized && !isMobile && (
                 <motion.aside
                   initial={{ opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: 0.08 }}
-                  className="flex-shrink-0 w-60 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 overflow-hidden relative"
+                  className="flex-shrink-0 w-60 bg-white dark:bg-[color:var(--ds-surface-subtle-dark)] border-r border-slate-200 dark:border-[color:var(--ds-border-dark)] overflow-hidden"
                 >
-                  {/* Sidebar atmospheric glow */}
-                  <div className="absolute -bottom-20 -left-10 w-40 h-40 bg-indigo-400/[0.06] dark:bg-indigo-400/[0.08] rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
-                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-violet-400/[0.04] dark:bg-violet-400/[0.06] rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
-                  <div className="relative h-full overflow-y-auto ds-scrollbar">
+                  <div className="h-full overflow-y-auto ds-scrollbar">
                     {sidebar}
                   </div>
                 </motion.aside>
               )}
 
               {/* Main content area */}
-              <div className="flex flex-1 flex-col min-w-0 min-h-0 relative">
-                {/* Atmospheric background */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-                  <div className="absolute -top-32 -right-32 w-[420px] h-[420px] bg-indigo-400/[0.04] dark:bg-indigo-400/[0.05] rounded-full blur-3xl" />
-                  <div className="absolute -bottom-24 -left-24 w-[340px] h-[340px] bg-purple-400/[0.03] dark:bg-purple-400/[0.04] rounded-full blur-3xl" />
-                </div>
-
+              <div className="flex flex-1 flex-col min-w-0 min-h-0">
                 {/* Content scrollable area */}
-                <div className="flex-1 overflow-y-auto ds-scrollbar relative">
+                <div className="flex-1 overflow-y-auto ds-scrollbar">
                   {children}
                 </div>
 
@@ -195,7 +180,7 @@ export function WizardPanel({
                     shared Modal primitive (min-h-[64px] md:min-h-[68px], px-4
                     md:px-5) so every popup family has the same footer rhythm. */}
                 {footer && (
-                  <div className="flex-shrink-0 relative flex items-center min-h-[64px] md:min-h-[68px] px-4 md:px-5 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shadow-[var(--ds-shadow-overlay)] safe-area-bottom">
+                  <div className="flex-shrink-0 flex items-center min-h-[64px] md:min-h-[68px] px-4 md:px-5 bg-white dark:bg-[color:var(--ds-surface-dark)] border-t border-slate-200 dark:border-[color:var(--ds-border-dark)] shadow-[var(--ds-shadow-overlay)] safe-area-bottom">
                     <div className="w-full">
                       {footer}
                     </div>

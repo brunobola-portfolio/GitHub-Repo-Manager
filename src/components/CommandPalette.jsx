@@ -409,10 +409,10 @@ export function CommandPalette({
       <Dialog.Description className="sr-only">
         Search commands, repositories, pull requests and issues. Type to filter, press Enter to run, Escape to close. Start with a question mark to ask the AI.
       </Dialog.Description>
-      <div className={`overflow-hidden rounded-xl border bg-white dark:bg-slate-900 shadow-2xl transition-colors ${
+      <div className={`overflow-hidden rounded-xl border bg-white dark:bg-[color:var(--ds-surface-dark)] shadow-[var(--ds-shadow-lg)] transition-colors ${
         askMode
           ? 'border-indigo-400 dark:border-indigo-500 ring-1 ring-indigo-400/30'
-          : 'border-slate-200 dark:border-slate-700'
+          : 'border-slate-200 dark:border-[color:var(--ds-border-dark)]'
       }`}>
         <div className="relative">
           {askMode && (

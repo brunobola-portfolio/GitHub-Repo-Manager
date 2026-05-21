@@ -111,7 +111,7 @@ export function ConfirmModal({
             {requiresInput && (
                 <div className="mt-4">
                     <label htmlFor="confirm-input" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                        Type <span className="font-bold text-red-600 dark:text-red-400">{requiresInput}</span> to confirm:
+                        Type <span className="font-semibold text-red-600 dark:text-red-400">{requiresInput}</span> to confirm:
                     </label>
                     <input
                         id="confirm-input"
