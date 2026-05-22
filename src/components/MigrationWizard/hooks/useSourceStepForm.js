@@ -241,10 +241,19 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
       // probing the wrong collection path.
       const validateRes = await fetch('/api/azure/validate', fetchOpts)
       if (controller.signal.aborted) return
-      const validateData = await validateRes.json()
-      if (!validateData.valid) {
+      const validateData = await validateRes.json().catch(() => ({}))
+      // Backend may return HTTP 400 with { error } (e.g., decrypted PAT
+      // couldn't be retrieved from the vault) or HTTP 200 with { valid: false }
+      // for credential failures. Treat both as validation errors with the
+      // exact backend message — never let the panel hang on "pending".
+      if (!validateRes.ok || !validateData.valid) {
         onChange({ validated: false })
-        setValidationError(validateData.error || 'Invalid credentials')
+        const msg = validateData.error
+          || validateData.message
+          || (validateRes.status === 401 || validateRes.status === 403
+              ? 'Credenciais rejeitadas pelo servidor (401/403)'
+              : `Validação falhou (HTTP ${validateRes.status})`)
+        setValidationError(msg)
         return
       }
       const effectiveOrg = validateData.resolvedOrg || source.org

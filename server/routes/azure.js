@@ -35,20 +35,35 @@ async function resolveHost(req, res) {
  *   2. `pat` in body                → caller pasted it directly
  *   3. Server env / session         → existing AZURE_PAT fallback
  *
- * Returns null when nothing usable was found.
+ * Returns `{ pat: string, source: 'vault'|'pasted'|'env' }` on success.
+ * Returns `{ pat: null, error: string }` when a savedCredentialId was
+ * provided but couldn't be resolved — we deliberately do NOT silently
+ * fall back to the env PAT in that case (it's almost always a cloud
+ * token that would 401 against the on-prem host the saved credential
+ * targeted, producing a confusing error).
  */
 function resolvePatFromRequest(req) {
     const body = req.body || {};
     if (body.savedCredentialId) {
+        const id = Number(body.savedCredentialId);
+        if (!Number.isFinite(id)) {
+            return { pat: null, error: 'Invalid savedCredentialId' };
+        }
+        let pat = null;
         try {
-            const id = Number(body.savedCredentialId);
-            if (Number.isFinite(id)) {
-                const pat = credsVault.decryptForUse(req.session.userId, id);
-                if (pat) return pat;
-            }
-        } catch { /* fall through to other sources */ }
+            pat = credsVault.decryptForUse(req.session.userId, id);
+        } catch { /* treated as null below */ }
+        if (!pat) {
+            return {
+                pat: null,
+                error: 'Saved credential not found or could not be decrypted. It may have been deleted, or the encryption key changed. Open Settings → Azure Credentials to revoke and recreate.',
+            };
+        }
+        return { pat, source: 'vault' };
     }
-    return azureService.resolvePat(body.pat, req.session);
+    const pat = azureService.resolvePat(body.pat, req.session);
+    if (!pat) return { pat: null, error: 'No PAT provided and no server PAT configured' };
+    return { pat, source: body.pat ? 'pasted' : 'env' };
 }
 
 const orgListLimiter = rateLimit({
@@ -148,25 +163,23 @@ router.delete('/azure/host-allowlist/:pattern', requireAuth, requireAdmin, (req,
 router.post('/azure/validate', requireAuth, async (req, res) => {
     try {
         const { org } = req.body;
-        const pat = resolvePatFromRequest(req);
         if (!org) {
             return errorResponse(res, 400, 'Organization is required');
         }
-        // For on-prem TFS the "org" is actually the collection name, which can
-        // contain hyphens — skip the GitHub-username regex for non-cloud hosts.
         const host = (req.body?.host || DEFAULT_AZURE_HOST).toString();
         if (host === DEFAULT_AZURE_HOST && !isValidGitHubUsername(org)) {
             return errorResponse(res, 400, 'Invalid organization name');
         }
-        if (!pat) {
-            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
+        const patResult = resolvePatFromRequest(req);
+        if (!patResult.pat) {
+            // Surface as `{ valid: false, error }` (HTTP 200) so the wizard
+            // ConnectionStatusPanel renders the message in the "validate"
+            // step instead of going to a generic HTTP error state.
+            return res.json({ valid: false, error: patResult.error });
         }
         const validatedHost = await resolveHost(req, res);
         if (!validatedHost) return;
-        const result = await azureService.validatePat(org, pat, validatedHost);
-        // Surface resolvedOrg so the client can rewrite source.org to the
-        // collection-prefixed form (e.g., "tfs/DefaultCollection") when
-        // auto-discovery applied a fallback on-prem TFS path.
+        const result = await azureService.validatePat(org, patResult.pat, validatedHost);
         res.json(result);
     } catch (error) {
         errorResponse(res, 500, safeError(error, 'Azure validation failed'));
@@ -176,7 +189,6 @@ router.post('/azure/validate', requireAuth, async (req, res) => {
 router.post('/azure/projects', requireAuth, async (req, res) => {
     try {
         const { org } = req.body;
-        const pat = resolvePatFromRequest(req);
         if (!org) {
             return errorResponse(res, 400, 'Organization is required');
         }
@@ -184,12 +196,13 @@ router.post('/azure/projects', requireAuth, async (req, res) => {
         if (host === DEFAULT_AZURE_HOST && !isValidGitHubUsername(org)) {
             return errorResponse(res, 400, 'Invalid organization name');
         }
-        if (!pat) {
-            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
+        const patResult = resolvePatFromRequest(req);
+        if (!patResult.pat) {
+            return errorResponse(res, 400, patResult.error, 'MISSING_PAT');
         }
         const validatedHost = await resolveHost(req, res);
         if (!validatedHost) return;
-        const projects = await azureService.listProjects(org, pat, validatedHost);
+        const projects = await azureService.listProjects(org, patResult.pat, validatedHost);
         res.json({ projects });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to list Azure projects'));

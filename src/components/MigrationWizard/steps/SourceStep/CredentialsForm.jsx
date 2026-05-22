@@ -59,8 +59,9 @@ export default function CredentialsForm({
 
   // "Ready" means: this credential alone is enough to make a successful
   // call. The card with state="active" is BOTH selected AND ready.
+  // personalPat is ready when a PAT is pasted OR a saved credential picked.
   const serverReady = envAuthAvailable
-  const personalReady = !!source.pat?.trim()
+  const personalReady = !!(source.pat?.trim() || source.savedCredentialId)
   const oauthReady = oauthStatusValue === 'success'
 
   const stateFor = (mode, ready, available) => {
@@ -122,14 +123,18 @@ npm run dev`}</pre>
           mode="personalPat"
           icon={KeyRound}
           label="Personal Access Token (esta sessão)"
-          subtitle="Cola o teu PAT aqui — fica só nesta sessão do browser. Recomendado para TFS on-prem ou quando queres usar a tua identidade."
+          subtitle={source.savedCredentialId
+            ? 'A usar um token guardado da tua vault — gerido em Settings → Azure Credentials.'
+            : 'Cola o teu PAT aqui — fica só nesta sessão do browser. Recomendado para TFS on-prem ou quando queres usar a tua identidade.'}
           state={stateFor('personalPat', personalReady, true)}
           hint={
-            personalReady
-              ? 'Token colado · pronto a validar'
-              : (source.credentialMode === 'personalPat'
-                  ? 'Aguarda token — passos abaixo'
-                  : 'Sem token nesta sessão')
+            source.savedCredentialId
+              ? 'Token guardado escolhido · pronto a validar'
+              : source.pat?.trim()
+                ? 'Token colado · pronto a validar'
+                : (source.credentialMode === 'personalPat'
+                    ? 'Aguarda token — escolhe um guardado ou cola um novo abaixo'
+                    : 'Sem token nesta sessão')
           }
           onSelect={handleModeSwitch}
         >

@@ -100,9 +100,11 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
   )
   // Compute credential readiness here (mirrors the hook's internal logic)
   // so ConnectionStatusPanel can show the right "Credentials ready" state.
+  // Must include savedCredentialId — picking a stored token from the vault
+  // counts as "ready" since the backend decrypts it server-side.
   const credentialReady = (
     (source.credentialMode === 'serverPat' && envAuthAvailable) ||
-    (source.credentialMode === 'personalPat' && source.pat?.trim()) ||
+    (source.credentialMode === 'personalPat' && (source.pat?.trim() || source.savedCredentialId)) ||
     (source.credentialMode === 'oauth' && oauthStatusValue === 'success')
   )
 
