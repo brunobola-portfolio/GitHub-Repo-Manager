@@ -619,17 +619,57 @@ export class MigrationEngine extends EventEmitter {
         return result
       }
       case 'repo-tfvc': {
-        // TFVC repo migration: convert TFVC → Git in Azure DevOps, then clone + push to GitHub
+        // TFVC repo migration. Two modes:
+        //   - default: TFVC → Git in Azure (temp) → push to GitHub → delete temp
+        //   - in-place (config.inPlace=true): TFVC → Git in Azure with the
+        //     user-chosen name, STAY in Azure, no GitHub push, no cleanup.
         const tfvcParts = task.source_ref.split('/')
         const tfvcOrg = tfvcParts[0]
         const tfvcProject = tfvcParts[1]
         const tfvcFolder = tfvcParts.slice(2).join('/')
         const tfvcPath = `$/${tfvcProject}/${tfvcFolder}`
         const azurePat = resolvedCredentials.azurePat
+        const inPlace = !!config.inPlace
 
-        callbacks.onProgress(5, 'Creating temporary Git repo in Azure DevOps...')
-        // Sanitize temp repo name for Azure DevOps: no leading underscore/period, no invalid chars, max 64 chars
+        // Sanitize repo name for Azure DevOps regardless of mode.
         const safeName = targetRepo.replace(/[/:~&%;@'"?<>|#$*\[\]\\]/g, '-').replace(/^[_.]/, 't') // eslint-disable-line no-useless-escape
+
+        if (inPlace) {
+          // ── In-place flow — create the FINAL repo directly, no GitHub push.
+          // Note: no try/catch here intentionally. On failure we leave the
+          // partially-converted repo for forensic inspection (TFVC imports
+          // sometimes succeed partially with abandoned status) rather than
+          // silently deleting it.
+          callbacks.onProgress(5, `Creating Git repo "${safeName}" in ${tfvcOrg}/${tfvcProject}...`)
+          const finalRepo = await azureService.createGitRepo(tfvcOrg, tfvcProject, safeName, azurePat, azureHost)
+          callbacks.onProgress(10, 'Starting TFVC → Git conversion (Import API)...')
+          const importReq = await azureService.importTfvcToGit(tfvcOrg, tfvcProject, finalRepo.id, tfvcPath, azurePat, true, azureHost)
+          let done = false
+          for (let i = 0; i < 120 && !done; i++) {
+            if (callbacks.isCancelled()) throw new Error('Migration cancelled')
+            await new Promise(r => setTimeout(r, 5000))
+            const status = await azureService.getImportStatus(tfvcOrg, tfvcProject, finalRepo.id, importReq.importRequestId, azurePat, azureHost)
+            callbacks.onProgress(10 + Math.floor((i / 120) * 85), `Converting TFVC to Git... (${status.status})`)
+            if (status.status === 'completed') done = true
+            else if (status.status === 'failed' || status.status === 'abandoned') {
+              throw new Error(`TFVC conversion failed: ${status.detailedStatus?.errorMessage || status.status}`)
+            }
+          }
+          if (!done) throw new Error('TFVC conversion timed out')
+          callbacks.onProgress(100, 'TFVC converted in-place ✓')
+          const fresh = await azureService.getRepoDetails(tfvcOrg, tfvcProject, safeName, azurePat, azureHost)
+          return {
+            success: true,
+            targetFullName: `${tfvcOrg}/${tfvcProject}/${safeName}`,
+            repoUrl: fresh.webUrl,
+            cloneUrl: fresh.remoteUrl,
+            branchCount: 1,
+            inPlace: true,
+          }
+        }
+
+        // ── Default flow — convert in a temp repo, push to GitHub, clean up.
+        callbacks.onProgress(5, 'Creating temporary Git repo in Azure DevOps...')
         const tempRepoName = `tfvc-import-${safeName}-${Date.now()}`.slice(0, 64)
         const tempRepo = await azureService.createGitRepo(tfvcOrg, tfvcProject, tempRepoName, azurePat, azureHost)
 
@@ -670,19 +710,15 @@ export class MigrationEngine extends EventEmitter {
             onProgress: (status, message, pct) => callbacks.onProgress(45 + Math.floor((pct / 100) * 50), message)
           })
 
-          // importRepository catches errors and returns {success:false} instead of throwing —
-          // we must check the result and throw so the engine marks the task as failed
           if (!result.success) {
             throw new Error(result.error || 'GitHub import failed after TFVC conversion')
           }
 
-          // Cleanup temp repo
           try { await azureService.deleteGitRepo(tfvcOrg, tfvcProject, tempRepo.id, azurePat, azureHost) } catch (cleanupErr) {
             logger.warn({ err: cleanupErr, tempRepoName }, 'Failed to cleanup temp repo')
           }
           return result
         } catch (err) {
-          // Cleanup temp repo on failure
           try { await azureService.deleteGitRepo(tfvcOrg, tfvcProject, tempRepo.id, azurePat, azureHost) } catch (cleanupErr) {
             logger.warn({ err: cleanupErr, tempRepoName }, 'Failed to cleanup temp repo after error')
           }

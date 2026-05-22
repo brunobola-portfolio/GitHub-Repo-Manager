@@ -526,4 +526,173 @@ async function runSnapshotStrategy(ctx) {
 // Re-export pickStrategies for cascade tests.
 export { pickStrategies };
 
+// ------------------------------------------------------------------
+// TFVC → Git in-place: convert TFVC to a NEW Git repo inside the
+// SAME Azure DevOps / TFS project. No GitHub push, no cleanup —
+// the converted repo stays in Azure with the user-chosen name.
+//
+// This is the simplest of the four target modes because the Import
+// Request API natively creates the Git repo as part of the conversion;
+// we just stop after step 4 and rename instead of deleting.
+// ------------------------------------------------------------------
+router.post('/import/azure-tfvc/in-place', requireAuth, async (req, res) => {
+    try {
+        const {
+            azureHost: rawHost,
+            azureOrg, azureProject, tfvcPath,
+            azurePat: bodyPat,
+            targetRepoName,            // name for the new Git repo (required)
+            targetProject,             // optional: different project on same org
+            importHistory,
+        } = req.body;
+        const azureHost = rawHost || DEFAULT_HOST;
+        const azurePat = azureService.resolvePat(bodyPat, req.session);
+
+        if (!azureOrg || !azureProject || !tfvcPath) {
+            return errorResponse(res, 400, 'Azure organization, project, and TFVC path are required', 'MISSING_PARAMS');
+        }
+        if (!tfvcPath.startsWith('$/')) {
+            return errorResponse(res, 400, 'TFVC path must start with $/', 'INVALID_PATH');
+        }
+        if (!targetRepoName?.trim()) {
+            return errorResponse(res, 400, 'targetRepoName is required', 'MISSING_TARGET_NAME');
+        }
+        if (!azurePat) {
+            return errorResponse(res, 400, 'No PAT provided and no server PAT configured', 'MISSING_PAT');
+        }
+
+        const hostCheck = await validateAzureHost(azureHost);
+        if (!hostCheck.ok) {
+            return errorResponse(res, 400, `Source host rejected: ${hostCheck.reason}`, 'INVALID_HOST');
+        }
+
+        const destProject = (targetProject?.trim() || azureProject);
+        const repoName = importService.sanitizeRepoName(targetRepoName);
+        const folderName = tfvcPath.split('/').pop() || azureProject;
+        const safeUrl = `tfvc-azure://${azureHost}/${azureOrg}/${azureProject}${tfvcPath}->${destProject}/${repoName}`;
+        const userId = req.session.userId;
+        const sourceName = `${azureOrg}/${azureProject}/${folderName} (TFVC → Azure Git)`;
+
+        // Atomic duplicate-check + insert (same pattern as the GitHub path).
+        const createJob = db.transaction((safeUrl, userId, sourceName, repoName, host) => {
+            const existing = db.prepare(
+                `SELECT id FROM migration_jobs WHERE source_url = ? AND status IN ('pending', 'running') AND user_id = ?`
+            ).get(safeUrl, userId);
+            if (existing) return { duplicate: true, id: existing.id };
+            const result = db.prepare(`
+                INSERT INTO migration_jobs (user_id, source_type, source_url, source_host, source_name, target_owner, target_repo, status, progress_message)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'running', 'Starting in-place TFVC conversion...')
+            `).run(userId, 'azure-tfvc-in-place', safeUrl, host, sourceName, azureOrg, repoName);
+            return { duplicate: false, id: result.lastInsertRowid };
+        });
+
+        const jobResult = createJob(safeUrl, userId, sourceName, repoName, azureHost);
+        if (jobResult.duplicate) {
+            return errorResponse(res, 409, 'An in-place conversion for this TFVC path is already in progress', 'DUPLICATE_IMPORT');
+        }
+        const jobId = Number(jobResult.id);
+
+        // Fire-and-forget: the route returns immediately so the wizard
+        // streams progress via the existing SSE/poll mechanism.
+        runInPlaceTfvcConversion({
+            azureHost, azureOrg, azureProject, destProject,
+            tfvcPath, azurePat, repoName,
+            importHistory: importHistory !== false,
+            jobId,
+        });
+
+        res.status(201).json({ success: true, jobId, message: 'In-place TFVC conversion started' });
+    } catch (error) {
+        errorResponse(res, error.status || 500, safeError(error, 'In-place TFVC conversion failed'));
+    }
+});
+
+/**
+ * Convert TFVC → Git inside the SAME Azure project (or a different one on the
+ * same org). Uses the Import Request API exclusively — there's no fallback to
+ * git-tfs or ZIP because the whole value of in-place is "the converted repo
+ * stays in Azure with full history". A snapshot loses the history; git-tfs
+ * would create a local copy that we'd have to push back (defeats the purpose).
+ *
+ * If the user wants resilience against Import API outages, they should use
+ * the GitHub target which has the full cascade.
+ */
+async function runInPlaceTfvcConversion(params) {
+    const {
+        azureHost, azureOrg, destProject,
+        tfvcPath, azurePat, repoName, importHistory, jobId,
+    } = params;
+
+    const onProgress = (status, message, pct) => updateJobProgress(status, message, pct, jobId);
+
+    try {
+        // Phase 1: Create the Git repo with the user-chosen name.
+        // (Reuses createGitRepo — same API the GitHub flow uses for its temp repo.)
+        onProgress('running', `Creating Git repository "${repoName}" in ${destProject}...`, 10);
+        const newRepo = await azureService.createGitRepo(azureOrg, destProject, repoName, azurePat, azureHost);
+
+        // Phase 2: Trigger the Import API.
+        onProgress('running', 'Starting TFVC → Git conversion via Import API...', 15);
+        const importReq = await azureService.importTfvcToGit(
+            azureOrg, destProject, newRepo.id, tfvcPath, azurePat, importHistory, azureHost,
+        );
+
+        // Phase 3: Poll until done (same loop as runImportApiStrategy).
+        let done = false;
+        const MAX_POLLS = 120;
+        const POLL_INTERVAL = 5000;
+        for (let i = 0; i < MAX_POLLS && !done; i++) {
+            await new Promise((r) => setTimeout(r, POLL_INTERVAL));
+            let status;
+            try {
+                status = await azureService.getImportStatus(azureOrg, destProject, newRepo.id, importReq.importRequestId, azurePat, azureHost);
+            } catch (e) {
+                if (e.status === 401 || e.status === 403) {
+                    throw new Error('PAT expired or was revoked during conversion.');
+                }
+                throw e;
+            }
+            const pct = Math.min(15 + Math.floor((i / MAX_POLLS) * 75), 95);
+            onProgress('running', `Converting TFVC to Git... (${status.status})`, pct);
+            if (status.status === 'completed') done = true;
+            else if (status.status === 'failed' || status.status === 'abandoned') {
+                throw new Error(`Import API conversion failed: ${status.detailedStatus?.errorMessage || status.status}`);
+            }
+        }
+        if (!done) throw new Error('TFVC conversion timed out after 10 minutes');
+
+        // Phase 4: Done — fetch the final repo details so we can record the URL.
+        const finalRepo = await azureService.getRepoDetails(azureOrg, destProject, repoName, azurePat, azureHost);
+
+        db.prepare(`
+            UPDATE migration_jobs SET status = 'complete', target_full_name = ?, progress_pct = 100,
+            progress_message = 'TFVC converted to Git in Azure DevOps!', completed_at = datetime('now'),
+            metadata = ?
+            WHERE id = ?
+        `).run(
+            `${azureOrg}/${destProject}/${repoName}`,
+            JSON.stringify({
+                versionControlType: 'Tfvc',
+                tfvcPath,
+                azureHost,
+                strategy: 'importApi-in-place',
+                inPlace: true,
+                destProject,
+                repoId: finalRepo.id,
+                repoUrl: finalRepo.webUrl,
+                cloneUrl: finalRepo.remoteUrl,
+            }),
+            jobId,
+        );
+    } catch (error) {
+        const safeMsg = safeError(error, 'In-place TFVC conversion failed');
+        logger.error({ err: error, jobId }, 'tfvc-in-place: failed');
+        db.prepare(`
+            UPDATE migration_jobs SET status = 'failed', error_message = ?,
+            progress_message = ?, completed_at = datetime('now')
+            WHERE id = ?
+        `).run(`In-place conversion failed: ${safeMsg}`, `Failed: ${safeMsg}`, jobId);
+    }
+}
+
 export default router;

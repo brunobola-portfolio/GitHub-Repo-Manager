@@ -17,6 +17,7 @@ import { formatFileSize } from '../../../utils/format'
 import { RiskBadge } from '../ui/repo/RiskBadge'
 import { REPO_DESCRIPTION_MAX } from '../../../utils/migrationDescription'
 import { useRepoDescriptionSuggestion } from '../../../hooks/useRepoDescriptionSuggestion'
+import TargetModePicker from './RepoConfigStep/TargetModePicker'
 
 // Wrapper kept to preserve "0 B" empty-state copy and the "0 decimals for B"
 // rendering the wizard expects.
@@ -36,7 +37,7 @@ function formatSize(bytes) {
  *   orgs                - array of GitHub orgs from useOrgs
  *   onChangeDestination - (orgLogin) => void
  */
-export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [], onChangeDestination, onGoToStep }) {
+export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [], onChangeDestination, onChangeSource, onGoToStep }) {
   const [conflicts, setConflicts] = useState({})
   const debounceTimers = useRef({})
   const [expandedBranches, setExpandedBranches] = useState({})
@@ -286,6 +287,11 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
           )}
         </div>
       )}
+      {/* ── Target mode picker (only shown when source is Azure + TFVC) ── */}
+      {onChangeSource && (
+        <TargetModePicker source={source} selectedRepos={repos} onChange={onChangeSource} />
+      )}
+
       {/* ── Dashboard Header ────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}

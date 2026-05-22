@@ -63,6 +63,10 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
       const selectedRepos = (wizard.repos || []).filter(r => r.selected)
       const source = wizard.source || {}
       const targetOrg = source.targetOrg || ''
+      // In-place mode = convert TFVC → Git inside the same Azure project
+      // (no GitHub push). Only meaningful for repo-tfvc tasks; Git→Git
+      // in-place is a noop so we leave those tasks unchanged.
+      const isInPlace = source.azureTargetMode === 'azure-same-project'
       const tasks = selectedRepos
         .filter((repo) => repo.sizeStrategy !== 'exclude')
         .map(repo => {
@@ -71,13 +75,21 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
             makePrivate: repo.visibility === 'private',
             description: repo.description || '',
           }
-          const config = repo.sizeStrategy === 'lfs-migrate'
+          let config = repo.sizeStrategy === 'lfs-migrate'
             ? { ...baseConfig, sizeStrategy: 'lfs-migrate' }
             : baseConfig
+          if (isInPlace && repo.isTfvc) {
+            config = { ...config, inPlace: true }
+          }
+          // For in-place, targetRef is "<azureOrg>/<azureProject>/<repoName>"
+          // — the engine reads it to know where to create the Git repo.
+          const targetRef = isInPlace && repo.isTfvc
+            ? `${source.org}/${source.project}/${repoName}`
+            : (targetOrg ? `${targetOrg}/${repoName}` : repoName)
           return {
             type: repo.isTfvc ? 'repo-tfvc' : 'repo',
             sourceRef: `${source.org}/${source.project}/${repo.name}`,
-            targetRef: targetOrg ? `${targetOrg}/${repoName}` : repoName,
+            targetRef,
             config,
           }
         })

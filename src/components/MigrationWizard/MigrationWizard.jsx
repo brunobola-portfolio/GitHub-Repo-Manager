@@ -671,6 +671,7 @@ export default function MigrationWizard({
             source={source}
             orgs={orgs}
             onChangeDestination={(orgLogin) => updateSource({ targetOrg: orgLogin })}
+            onChangeSource={updateSource}
             onGoToStep={goToStep}
           />
         )
