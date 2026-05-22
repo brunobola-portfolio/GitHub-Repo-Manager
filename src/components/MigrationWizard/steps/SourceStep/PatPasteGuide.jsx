@@ -91,9 +91,12 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
         value={source.savedCredentialId || null}
         onPick={pickSaved}
         onOpenSettings={() => {
-          // Surface Settings → Azure Credentials. Uses hash routing so we
-          // don't have to plumb a callback through the entire wizard tree.
-          window.location.hash = '#/settings/azure-credentials'
+          // App listens for this custom event and opens the Settings modal
+          // at the requested tab — same plumbing used by CommandPalette
+          // and other deep-link sites (see App.jsx:382).
+          window.dispatchEvent(new CustomEvent('app:open-settings', {
+            detail: { tab: 'azure-credentials' },
+          }))
         }}
       />
 
