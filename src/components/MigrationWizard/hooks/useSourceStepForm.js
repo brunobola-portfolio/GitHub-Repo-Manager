@@ -34,6 +34,12 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
   const [hostAllowlist, setHostAllowlist] = useState({ patterns: [], usingDefault: true, allowed: null, canEdit: false })
   const debounceRef = useRef(null)
   const validationAbortRef = useRef(null)
+  // Flag set when the backend's auto-discovery rewrites source.org to a
+  // collection-prefixed form (e.g., `Trigenius` → `tfs/Trigenius`).
+  // The debounce effect watches source.org and would otherwise re-fire
+  // validation with the new org — causing a spurious 400 in the network
+  // tab while the abort controller catches up. Skip exactly that one tick.
+  const orgRewrittenInternallyRef = useRef(false)
 
   const { oauthStatus: oauthStatusValue, startOAuth, retryOAuth, pausePolling, resumePolling } = oauthHook
   const {
@@ -258,6 +264,10 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
       }
       const effectiveOrg = validateData.resolvedOrg || source.org
       if (effectiveOrg !== source.org) {
+        // Mark this rewrite as internally-triggered so the debounce
+        // effect skips its next tick instead of firing a redundant
+        // validate that races with our in-flight projects fetch.
+        orgRewrittenInternallyRef.current = true
         onChange({ org: effectiveOrg })
       }
       const projectsBody = { ...body, org: effectiveOrg }
@@ -294,6 +304,13 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
 
   // debounced trigger for org / pat changes
   useEffect(() => {
+    // Skip one tick when our own auto-discovery rewrote source.org —
+    // the in-flight runValidation already covers the new value via
+    // its projects fetch. Re-validating here causes a redundant 400.
+    if (orgRewrittenInternallyRef.current) {
+      orgRewrittenInternallyRef.current = false
+      return
+    }
     if (!source.org?.trim() || !credentialReady) return
     if (source.credentialMode === 'serverPat' || oauthStatusValue === 'success') {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- runValidation owns its own debounced state machine; calling sync here matches the no-debounce code path
