@@ -37,6 +37,19 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
     return () => { cancelled = true }
   }, [host])
 
+  // If the currently selected credential id no longer belongs to this host's
+  // list (e.g., user switched hosts and the previous pick was for a cloud
+  // account), clear the selection so the backend isn't asked to decrypt a
+  // token meant for a different server. Without this the validation silently
+  // 401s. Runs only after items have loaded — `loading` guards against
+  // wiping the selection during the empty initial render.
+  useEffect(() => {
+    if (loading) return
+    if (value && !items.some((c) => c.id === value)) {
+      onPick(null)
+    }
+  }, [items, loading, value, onPick])
+
   // Best-match: same host + same org. Falls back to same-host-only.
   const matching = items.filter((c) => !org || !c.org || c.org === org)
   const others = items.filter((c) => !matching.includes(c))

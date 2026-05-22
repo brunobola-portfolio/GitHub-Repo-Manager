@@ -691,7 +691,12 @@ export default function MigrationWizard({
               onPause={() => {}}
               onCancel={() => {}}
               onRetryTask={(taskId) => {
-                if (planId) migrationApi.retryTask(planId, taskId).catch(() => {})
+                // Forward the same credential the wizard used at execute time
+                // so retries against TFVC/TFS sources don't 401.
+                if (planId) migrationApi.retryTask(planId, taskId, {
+                  azurePat: source.pat || null,
+                  savedCredentialId: source.savedCredentialId || null,
+                }).catch(() => {})
               }}
               onComplete={() => {
                 setDirection(1)

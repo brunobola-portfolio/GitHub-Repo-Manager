@@ -143,19 +143,71 @@ async function validatePat(org, pat, host = DEFAULT_HOST) {
 }
 
 /**
- * List projects in an Azure DevOps organization
+ * List projects in an Azure DevOps organization.
+ *
+ * Paginates via the `x-ms-continuationtoken` response header so collections
+ * with more than the page size (common on long-lived on-prem TFS servers
+ * with hundreds of projects) return *all* projects rather than just the
+ * first page. Without this, URL paste of a project past the first page
+ * silently failed to match and the user saw "No matches found" + the
+ * wizard's "Project is required" error.
+ *
+ * Hard-capped at 20 pages (10k projects with the default $top=500) so a
+ * malformed server response can't cause an unbounded fetch loop.
  */
 async function listProjects(org, pat, host = DEFAULT_HOST) {
-    const url = `${baseFor(host)}/${encOrg(org)}/_apis/projects?api-version=${API_VERSION}&$top=200`;
-    const data = await azureFetch(url, pat);
-    return (data.value || []).map(p => ({
-        id: p.id,
-        name: p.name,
-        description: p.description || '',
-        state: p.state,
-        url: p.url,
-        lastUpdateTime: p.lastUpdateTime
-    }));
+    const all = [];
+    const seen = new Set();
+    let continuationToken = null;
+    const MAX_PAGES = 20;
+    const PAGE_SIZE = 500;
+
+    for (let page = 0; page < MAX_PAGES; page++) {
+        const params = new URLSearchParams({
+            'api-version': API_VERSION,
+            '$top': String(PAGE_SIZE),
+        });
+        if (continuationToken) params.set('continuationToken', continuationToken);
+        const url = `${baseFor(host)}/${encOrg(org)}/_apis/projects?${params.toString()}`;
+
+        // Inline fetch (instead of azureFetch) because we need the
+        // `x-ms-continuationtoken` response header — azureFetch only
+        // exposes the JSON body. Error handling mirrors azureFetch.
+        const res = await fetch(url, { headers: getHeaders(pat) });
+        const contentType = res.headers.get('content-type') || '';
+        if (!res.ok) {
+            if (contentType.includes('text/html')) {
+                throw new Error(`Azure DevOps authentication failed (HTTP ${res.status}). Check your PAT permissions.`);
+            }
+            const body = await res.json().catch(() => null);
+            const message = body?.message || `Azure DevOps API error: ${res.status} ${res.statusText}`;
+            const error = new Error(message);
+            error.status = res.status;
+            throw error;
+        }
+        if (contentType.includes('text/html')) {
+            throw new Error('Azure DevOps returned HTML instead of JSON. This usually means authentication failed.');
+        }
+        const data = await res.json();
+
+        for (const p of (data.value || [])) {
+            if (seen.has(p.id)) continue;
+            seen.add(p.id);
+            all.push({
+                id: p.id,
+                name: p.name,
+                description: p.description || '',
+                state: p.state,
+                url: p.url,
+                lastUpdateTime: p.lastUpdateTime,
+            });
+        }
+
+        continuationToken = res.headers.get('x-ms-continuationtoken');
+        if (!continuationToken) break;
+    }
+
+    return all;
 }
 
 /**

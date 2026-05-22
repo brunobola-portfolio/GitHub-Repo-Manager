@@ -235,7 +235,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
 
             {/* ── EXECUTION ORDER ── */}
             {aiPlan.executionOrder?.length > 0 && (
-              <ExecutionPipeline order={aiPlan.executionOrder} repos={wizard.repos} />
+              <ExecutionPipeline order={aiPlan.executionOrder} repos={wizard.repos} source={wizard.source} />
             )}
 
             {/* ── RISKS ── */}

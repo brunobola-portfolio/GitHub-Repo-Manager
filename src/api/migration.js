@@ -40,19 +40,28 @@ export const migrationApi = {
   }),
   deletePlan: (id) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}`, { method: 'DELETE' }),
   validatePlan: (id) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}/validate`, { method: 'POST' }),
-  executePlan: (id, { azurePat } = {}) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}/execute`, {
+  executePlan: (id, { azurePat, savedCredentialId } = {}) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}/execute`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ azurePat: azurePat || null })
+    body: JSON.stringify({
+      azurePat: azurePat || null,
+      ...(savedCredentialId ? { savedCredentialId } : {}),
+    })
   }),
   cancelPlan: (id) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}/cancel`, { method: 'POST' }),
   pausePlan: (id) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}/pause`, { method: 'POST' }),
-  resumePlan: (id, { azurePat } = {}) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}/resume`, {
+  resumePlan: (id, { azurePat, savedCredentialId } = {}) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}/resume`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ azurePat: azurePat || null })
+    body: JSON.stringify({
+      azurePat: azurePat || null,
+      ...(savedCredentialId ? { savedCredentialId } : {}),
+    })
   }),
-  retryTask: (id, taskId, { azurePat } = {}) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}/tasks/${taskId}/retry`, {
+  retryTask: (id, taskId, { azurePat, savedCredentialId } = {}) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}/tasks/${taskId}/retry`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ azurePat: azurePat || null })
+    body: JSON.stringify({
+      azurePat: azurePat || null,
+      ...(savedCredentialId ? { savedCredentialId } : {}),
+    })
   }),
   analyze: (data) => migrationCall(API_ENDPOINTS.migrationAnalyze, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },

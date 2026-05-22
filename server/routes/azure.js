@@ -323,7 +323,14 @@ router.post('/azure/repos', requireAuth, async (req, res) => {
             azureService.getProjectInfo(org, project, patResult.pat, validatedHost).catch(() => null),
         ]);
         const versionControlType = projectInfo?.versionControlType || 'Git';
-        res.json({ repos, versionControlType });
+        // Annotate with isEmpty so the wizard can offer "use existing empty repo"
+        // as a TFVC-import target. Azure DevOps reports defaultBranch='' and
+        // size=0 for freshly-created Git repos with no commits.
+        const annotated = repos.map((r) => ({
+            ...r,
+            isEmpty: !r.defaultBranch && (!r.size || r.size === 0),
+        }));
+        res.json({ repos: annotated, versionControlType });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to list Azure repos'));
     }

@@ -243,6 +243,16 @@ const KNOWN_ERRORS = {
         body: 'The summary could not be generated. Try again — if it keeps failing, check your AI provider in Settings → AI.',
         action: { label: 'Retry', kind: 'retry', type: 'retry' },
     },
+    INVALID_HOST: {
+        title: 'Source host not allowed',
+        body: 'The Azure DevOps / TFS server isn’t on the allowlist. An admin must add it under Settings → Azure host allowlist before the migration can run.',
+        action: { label: 'Open Settings', kind: 'open-settings', type: 'configure', settingsTab: 'azure-hosts' },
+    },
+    UPGRADE_REQUIRED: {
+        title: 'Pro plan required',
+        body: 'Real migration execution is part of the Pro plan. Free accounts can still create and run dry-run plans.',
+        action: { label: 'See plans', kind: 'open-pricing', type: 'upgrade' },
+    },
 }
 
 const FALLBACK = {
@@ -252,9 +262,15 @@ const FALLBACK = {
 }
 
 function pickCode(err, ctx) {
+    // Some server routes (notably the migration plan endpoints) put the
+    // machine code under `error` rather than `code` — e.g. `{ error:
+    // 'invalid_host', message: '...' }`. Fall back to that so the toast
+    // maps to a sensible KNOWN_ERRORS entry instead of the generic fallback.
     return err?.code
         || err?.data?.code
         || err?.response?.data?.code
+        || err?.data?.error
+        || err?.response?.data?.error
         || ctx?.code
         || null
 }
@@ -280,6 +296,9 @@ const CODE_ALIASES = {
     ai_model_not_found: 'MODEL_NOT_FOUND',
     ai_canceled: 'AI_REQUEST_FAILED',
     ai_summary_failed: 'AI_SUMMARY_FAILED',
+    // Non-AI server errors that follow the `{ error: '<snake_code>' }` shape.
+    invalid_host: 'INVALID_HOST',
+    upgrade_required: 'UPGRADE_REQUIRED',
 }
 
 function pickRetryAfterSec(err) {

@@ -16,6 +16,23 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
   const repoCount = (wizard.repos || []).filter(r => r.selected).length
   const SourceIcon = sourceType === 'azure' ? AzureIcon : GitHubIcon
 
+  // Destination mode: in-place TFVC→Git (same Azure server, project of choice)
+  // vs default GitHub push. The Configure step sets `azureTargetMode`.
+  const isAzureDevopsTarget = wizard.source?.azureTargetMode === 'azure-devops'
+  const targetProject = wizard.source?.targetProject || sourceProject
+  const sourceHost = wizard.source?.host || ''
+  // For Azure-in-place, the destination "org" is the same Azure org as the
+  // source; for GitHub it's the chosen GitHub org/user.
+  const destOrg = isAzureDevopsTarget ? sourceOrg : (targetOrg || 'GitHub')
+  const destSubLabel = isAzureDevopsTarget ? targetProject : 'github.com'
+  const DestIcon = isAzureDevopsTarget ? AzureIcon : GitHubIcon
+  const destIconClasses = isAzureDevopsTarget
+    ? 'bg-blue-100 dark:bg-blue-500/15'
+    : 'bg-slate-100 dark:bg-white/10'
+  const destIconColor = isAzureDevopsTarget
+    ? 'text-blue-600 dark:text-blue-400'
+    : 'text-slate-700 dark:text-slate-300'
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -75,18 +92,30 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2.5 justify-end">
               <div className="min-w-0 text-right">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                  Destination
-                </p>
+                <div className="flex items-center justify-end gap-1.5">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    Destination
+                  </p>
+                  {isAzureDevopsTarget && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-violet-500/15 border border-violet-500/30 text-[9px] font-bold uppercase tracking-wider text-violet-600 dark:text-violet-300">
+                      in-place
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                  {targetOrg || 'GitHub'}
+                  {destOrg}
                 </p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 ds-font-mono">
-                  github.com
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 ds-font-mono truncate">
+                  {destSubLabel}
                 </p>
+                {isAzureDevopsTarget && sourceHost && (
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 ds-font-mono truncate">
+                    {sourceHost}
+                  </p>
+                )}
               </div>
-              <div className="shrink-0 w-9 h-9 rounded-lg bg-slate-100 dark:bg-white/10 flex items-center justify-center">
-                <GitHubIcon className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+              <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${destIconClasses}`}>
+                <DestIcon className={`w-5 h-5 ${destIconColor}`} />
               </div>
             </div>
           </div>

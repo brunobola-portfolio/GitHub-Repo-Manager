@@ -162,7 +162,20 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
       {!connectionSummary && (
         <ServerPicker
           host={source.host}
-          onHostChange={(newHost) => onChange({ host: newHost, validated: false })}
+          onHostChange={(newHost) => {
+            // Saved credentials and pasted PATs are host-scoped — wipe them
+            // when the user switches servers so a stale cloud token doesn't
+            // get sent against an on-prem host (or vice-versa).
+            const prev = (source.host || '').toLowerCase().split(':')[0]
+            const next = (newHost || '').toLowerCase().split(':')[0]
+            const patch = { host: newHost, validated: false }
+            if (prev && next && prev !== next) {
+              patch.savedCredentialId = null
+              patch.pat = ''
+            }
+            onChange(patch)
+            setValidationError('')
+          }}
           allowlistStatus={hostAllowlist.allowed}
         />
       )}

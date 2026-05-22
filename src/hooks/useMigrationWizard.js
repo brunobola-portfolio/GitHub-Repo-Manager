@@ -150,8 +150,11 @@ const validators = {
   },
   azureConnect: (state) => {
     if (!state.source.org) return 'Organization is required'
-    if (!state.source.project) return 'Project is required'
+    // Validate credentials BEFORE checking project — project is only populated
+    // (auto-picked from the URL or chosen from the dropdown) once validation
+    // succeeds, so a "Project is required" message before that is misleading.
     if (!state.source.validated) return 'Please validate your credentials'
+    if (!state.source.project) return 'Project is required'
     return null
   },
   urlInput: (state) => {

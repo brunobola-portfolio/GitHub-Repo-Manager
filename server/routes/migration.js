@@ -7,7 +7,31 @@ import { MigrationEngine } from '../migration-engine.js';
 import { createPlanSchema, updatePlanSchema } from '../lib/validators.js';
 import { analyzeMigration } from '../migration-planner.js';
 import { validateAzureHost } from '../lib/azure-host-validator.js';
+import * as credsVault from '../lib/azure-credentials-manager.js';
 import db from '../db.js';
+
+/**
+ * Resolve the Azure PAT for a plan execute/resume/retry request.
+ *
+ * Priority:
+ *   1. body.azurePat (caller pasted it directly)
+ *   2. body.savedCredentialId (decrypt from per-user vault)
+ *   3. process.env.AZURE_PAT (server fallback)
+ *
+ * Returns the PAT string or null. Never throws — the engine surfaces a clear
+ * "PAT missing" error downstream when a TFVC task can't authenticate.
+ */
+function resolvePlanExecutionPat(req) {
+  const body = req.body || {};
+  if (typeof body.azurePat === 'string' && body.azurePat.trim()) return body.azurePat;
+  if (body.savedCredentialId) {
+    const id = Number(body.savedCredentialId);
+    if (Number.isFinite(id)) {
+      try { return credsVault.decryptForUse(req.session.userId, id) || null; } catch { return null; }
+    }
+  }
+  return process.env.AZURE_PAT || null;
+}
 
 const router = express.Router();
 const engine = new MigrationEngine(db);
@@ -93,14 +117,29 @@ function requireProOrDryRunPlan(req, res, next) {
 }
 
 /**
- * Generate a human-friendly suggestion for a migration error
+ * Generate a human-friendly suggestion for a migration error.
+ *
+ * Accepts the failed task's config so we can tailor the message — e.g. in-place
+ * TFVC conversion needs Code (Read, Write & Manage) on the destination project,
+ * which a "read-only" PAT does not provide.
  */
-function getSuggestionForError(errorMsg, type) {
+function getSuggestionForError(errorMsg, type, config = null) {
   if (!errorMsg) return '';
   const msg = errorMsg.toLowerCase();
+  const cfg = (() => {
+    try { return typeof config === 'string' ? JSON.parse(config) : (config || {}); } catch { return {}; }
+  })();
+  const isInPlace = !!cfg.inPlace;
   // Auth errors
-  if (msg.includes('authentication') || msg.includes('401') || msg.includes('403') || msg.includes('pat is required'))
-    return 'Your access token may have expired or lacks the required permissions. Verify the token is valid and has repository read access.';
+  if (msg.includes('authentication') || msg.includes('401') || msg.includes('403') || msg.includes('pat is required')) {
+    if (type === 'repo-tfvc' && isInPlace) {
+      return 'The Azure DevOps PAT was rejected. For TFVC → Git in-place conversion the PAT must (1) come from the SAME Azure DevOps / TFS server as the destination, (2) be valid and not expired, and (3) include the "Code (Read, Write & Manage)" scope — a read-only PAT is enough to list repos but cannot create the destination Git repo or trigger the Import API.';
+    }
+    if (type === 'repo-tfvc') {
+      return 'The Azure DevOps PAT was rejected. Verify it is not expired and includes "Code (Read, Write & Manage)" — the TFVC → Git flow creates a temporary Git repo in Azure before pushing.';
+    }
+    return 'Your access token may have expired or lacks the required permissions. Verify the token is valid and has the right scopes (Code: Read on the source; Code: Read, Write & Manage on the destination).';
+  }
   // Not found
   if (msg.includes('not found') || msg.includes('404'))
     return 'The source repository could not be found. Verify the organization, project, and repository name are correct.';
@@ -284,9 +323,11 @@ router.post('/plans/:id/execute', requireAuth, requireProOrDryRunPlan, async (re
       return res.status(409).json({ error: 'Plan is already running or cannot be executed' });
     }
 
-    // Extract credentials from session for immediate execution
-    const body = req.body || {};
-    const azurePat = typeof body.azurePat === 'string' ? body.azurePat : null;
+    // Extract credentials from session for immediate execution. Accepts either
+    // a pasted PAT or a savedCredentialId — the latter is decrypted from the
+    // per-user vault server-side so the raw secret never round-trips through
+    // the browser at execute time.
+    const azurePat = resolvePlanExecutionPat(req);
     const credentials = {
       githubToken: req.session.accessToken,
       azurePat,
@@ -337,10 +378,9 @@ router.post('/plans/:id/resume', requireAuth, requireProOrDryRunPlan, async (req
     const id = parseInt(req.params.id);
     const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
     if (!plan) return res.status(404).json({ error: 'Plan not found' });
-    const resumeBody = req.body || {};
     const resumeCredentials = {
       githubToken: req.session.accessToken,
-      azurePat: typeof resumeBody.azurePat === 'string' ? resumeBody.azurePat : null,
+      azurePat: resolvePlanExecutionPat(req),
       azureHost: plan.azure_host || 'dev.azure.com',
       azureOrg: plan.source_org,
       azureProject: plan.source_project
@@ -360,10 +400,9 @@ router.post('/plans/:id/tasks/:taskId/retry', requireAuth, requireProOrDryRunPla
     const id = parseInt(req.params.id);
     const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
     if (!plan) return res.status(404).json({ error: 'Plan not found' });
-    const retryBody = req.body || {};
     const retryCredentials = {
       githubToken: req.session.accessToken,
-      azurePat: typeof retryBody.azurePat === 'string' ? retryBody.azurePat : null,
+      azurePat: resolvePlanExecutionPat(req),
       azureHost: plan.azure_host || 'dev.azure.com',
       azureOrg: plan.source_org,
       azureProject: plan.source_project
@@ -417,7 +456,7 @@ router.get('/plans/:id/report', requireAuth, async (req, res) => {
     }));
     const errors = plan.tasks.filter(t => t.status === 'failed').map(t => ({
       taskId: t.id, type: t.type, error: t.error_message || 'Unknown error',
-      suggestion: getSuggestionForError(t.error_message, t.type)
+      suggestion: getSuggestionForError(t.error_message, t.type, t.config),
     }));
     res.json({
       plan: { id: plan.id, status: plan.status, isDryRun: !!plan.is_dry_run, startedAt, completedAt, durationSeconds },

@@ -1,13 +1,19 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Route, ArrowRight, FolderGit2 } from 'lucide-react'
-import { GitHubIcon } from './PlatformIcons'
+import { Route, ArrowRight, FolderGit2, Recycle } from 'lucide-react'
+import { GitHubIcon, AzureIcon } from './PlatformIcons'
 
 /* ═══════════════════════════════════════════
    EXECUTION PIPELINE — source → target flow
    ═══════════════════════════════════════════ */
 
-export function ExecutionPipeline({ order, repos }) {
+export function ExecutionPipeline({ order, repos, source }) {
+  const isAzureDevopsTarget = source?.azureTargetMode === 'azure-devops'
+  const targetProject = source?.targetProject || source?.project || ''
+  const TargetIcon = isAzureDevopsTarget ? AzureIcon : GitHubIcon
+  const targetIconClass = isAzureDevopsTarget
+    ? 'text-blue-500 dark:text-blue-400'
+    : 'text-slate-400'
   const repoMap = useMemo(() => {
     const map = {}
     ;(repos || []).filter(r => r.selected).forEach(r => {
@@ -41,6 +47,13 @@ export function ExecutionPipeline({ order, repos }) {
           const isTfvc = repo?.isTfvc
           const hasLfs = repo?.hasLfs
           const sizeMb = repo?.size ? (repo.size / (1024 * 1024)).toFixed(1) : null
+          const usesExisting = isAzureDevopsTarget && repo?.targetType === 'existing-empty'
+          // For Azure in-place, render the destination as "project/repoName" so
+          // it's obvious where the new Git repo lands; default GitHub mode
+          // keeps the plain repoName the user typed.
+          const displayTarget = isAzureDevopsTarget && targetProject
+            ? `${targetProject}/${targetName}`
+            : targetName
 
           return (
             <motion.div
@@ -73,14 +86,20 @@ export function ExecutionPipeline({ order, repos }) {
 
               {/* Target name */}
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                <GitHubIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="text-[13px] font-medium text-slate-700 dark:text-slate-200 truncate ds-font-mono">
-                  {targetName}
+                <TargetIcon className={`w-3.5 h-3.5 shrink-0 ${targetIconClass}`} />
+                <span className="text-[13px] font-medium text-slate-700 dark:text-slate-200 truncate ds-font-mono" title={displayTarget}>
+                  {displayTarget}
                 </span>
               </div>
 
               {/* Badges */}
               <div className="flex items-center gap-1 shrink-0">
+                {usesExisting && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400" title="Reusing an existing empty repo in the target project">
+                    <Recycle className="w-2.5 h-2.5" />
+                    Existing
+                  </span>
+                )}
                 {isTfvc && (
                   <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-violet-100 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400">
                     TFVC

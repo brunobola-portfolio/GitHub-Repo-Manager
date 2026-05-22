@@ -14,6 +14,7 @@ import { SelectionSummaryBar } from './RepoSelectStep/SelectionSummaryBar'
 import { AutoFixDrawer } from './RepoSelectStep/AutoFixDrawer.jsx'
 import { SkeletonRow } from '../ui/repo/SkeletonRow'
 import { ShortcutsOverlay } from './RepoSelectStep/ShortcutsOverlay'
+import { isAIUnavailable, subscribeAIUnavailable } from '../../../utils/aiAvailability'
 
 const FILTER_PREDICATES = {
   'recommended': (r) => r.risk?.level === 'ok' && !r.isDisabled,
@@ -63,9 +64,24 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
     let cancelled = false
     fetch('/api/config/ai-status', { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : { configured: false }))
-      .then((d) => { if (!cancelled) setAiAvailable(!!d?.configured) })
+      .then((d) => {
+        if (cancelled) return
+        // Skip enabling AI features if a previous step in this session already
+        // hit a fatal AI 4xx (wrong model / invalid key / no provider).
+        setAiAvailable(!!d?.configured && !isAIUnavailable())
+      })
       .catch(() => { if (!cancelled) setAiAvailable(false) })
     return () => { cancelled = true }
+  }, [])
+
+  // Disable AI features mid-step if a request from useAutoFixPlan returns a
+  // fatal 4xx. Avoids further spam to the AI endpoints.
+  useEffect(() => {
+    if (isAIUnavailable()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAiAvailable(false)
+    }
+    return subscribeAIUnavailable(() => setAiAvailable(false))
   }, [])
 
   useEffect(() => { localStorage.setItem('repoSelect:viewMode', viewMode) }, [viewMode])

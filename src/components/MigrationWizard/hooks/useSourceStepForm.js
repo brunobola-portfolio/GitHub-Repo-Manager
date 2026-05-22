@@ -145,18 +145,32 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
     // PAT (server's .env token is typically cloud-scoped). Switch the user
     // before they hit a confusing 401.
     const hostLower = (parsed.host || '').toLowerCase().split(':')[0]
+    const currentHostLower = (source.host || '').toLowerCase().split(':')[0]
     const isCloudHost = hostLower === 'dev.azure.com' || hostLower.endsWith('.visualstudio.com')
     if (!isCloudHost && hostLower && source.credentialMode !== 'personalPat') {
       updates.credentialMode = 'personalPat'
     }
 
+    // Stored credentials and pasted PATs are host-scoped. When the user
+    // pastes a URL for a different host, the previous credential won't
+    // authenticate against it (it was either created for cloud or a
+    // different on-prem server) and produces a confusing silent 401.
+    // Wipe the stale auth state so the user is prompted afresh — the
+    // SavedCredentialsPicker re-filters by the new host automatically.
+    const hostChanged = hostLower && currentHostLower && hostLower !== currentHostLower
+    if (hostChanged) {
+      updates.savedCredentialId = null
+      updates.pat = ''
+    }
+
     if (Object.keys(updates).length > 1) {
       onChange(updates)
       setProjects([])
+      setProjectMeta({})
       setValidationError('')
       setManualOrgMode(false)
     }
-  }, [onChange, source.credentialMode])
+  }, [onChange, source.credentialMode, source.host])
 
   // applyUrlPreview is now a no-op confirmation (state already applied in
   // handleUrlInput). Kept as a callback so existing UI props don't break.
@@ -339,7 +353,15 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
     let cancelled = false
     const fetchMeta = async () => {
       const meta = {}
-      const queue = [...projects]
+      // Cap the prefetch at the first 100 projects to protect on-prem TFS
+      // backends from a request storm — large collections can have 1000+
+      // projects, and the dropdown only shows badges for what the user is
+      // actually scrolling. The currently-picked project is always prefetched
+      // first so its badge populates immediately even when it's past the cap.
+      const PREFETCH_CAP = 100
+      const picked = source.project ? projects.find((p) => p.name === source.project) : null
+      const rest = projects.filter((p) => p !== picked).slice(0, PREFETCH_CAP - (picked ? 1 : 0))
+      const queue = picked ? [picked, ...rest] : rest
       const run = async () => {
         while (queue.length > 0) {
           if (cancelled) return
@@ -368,11 +390,11 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
           }
         }
       }
-      await Promise.all(Array.from({ length: Math.min(3, projects.length) }, () => run()))
+      await Promise.all(Array.from({ length: Math.min(3, queue.length) }, () => run()))
     }
     fetchMeta()
     return () => { cancelled = true }
-  }, [source.validated, source.org, source.host, source.pat, source.savedCredentialId, source.credentialMode, projects])
+  }, [source.validated, source.org, source.host, source.pat, source.savedCredentialId, source.credentialMode, source.project, projects])
 
   // ── org field handlers ─────────────────────────────────────────────────
   const handleOrgInputChange = useCallback((e) => {

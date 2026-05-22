@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { defaultRepoDescription, sanitizeRepoDescription } from '../utils/migrationDescription'
 import { getCsrfToken } from '../utils/api'
+import { isAIUnavailable, markAIFromResponse } from '../utils/aiAvailability'
 
 /**
  * Produces a description suggestion for a migration repo, either via Gemini
@@ -45,7 +46,10 @@ export function useRepoDescriptionSuggestion({ aiAvailable } = {}) {
             quotaExceeded: false,
         })
 
-        if (!aiAvailable) return fallback()
+        // Skip the network call entirely if a previous AI call in this session
+        // already returned a fatal status (404 MODEL_NOT_FOUND, 422 INVALID_API_KEY,
+        // 400 AI_NOT_CONFIGURED). Prevents repeated 4xx noise in the console.
+        if (!aiAvailable || isAIUnavailable()) return fallback()
 
         setIsLoading(true)
         try {
@@ -57,7 +61,10 @@ export function useRepoDescriptionSuggestion({ aiAvailable } = {}) {
                 body: JSON.stringify(buildBody(repo, source)),
             })
             if (res.status === 429) return { ...fallback(), quotaExceeded: true }
-            if (!res.ok) return fallback()
+            if (!res.ok) {
+                markAIFromResponse(res, 'migration-description')
+                return fallback()
+            }
             const data = await res.json().catch(() => null)
             const text = data?.description
             if (typeof text !== 'string' || !text.trim()) return fallback()

@@ -5,7 +5,7 @@ import {
   AlertTriangle, RefreshCw, SkipForward, Edit3,
   GitBranch, HardDrive, ChevronDown, ChevronUp,
   Package, MoreHorizontal, Building2, ArrowRight,
-  Globe, Sparkles,
+  Globe, Sparkles, Server, Plus, Recycle,
 } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
 import { EmptyState } from '../../ui/EmptyState'
@@ -17,6 +17,7 @@ import { formatFileSize } from '../../../utils/format'
 import { RiskBadge } from '../ui/repo/RiskBadge'
 import { REPO_DESCRIPTION_MAX } from '../../../utils/migrationDescription'
 import { useRepoDescriptionSuggestion } from '../../../hooks/useRepoDescriptionSuggestion'
+import { isAIUnavailable, subscribeAIUnavailable } from '../../../utils/aiAvailability'
 import TargetModePicker from './RepoConfigStep/TargetModePicker'
 
 // Wrapper kept to preserve "0 B" empty-state copy and the "0 decimals for B"
@@ -24,6 +25,16 @@ import TargetModePicker from './RepoConfigStep/TargetModePicker'
 function formatSize(bytes) {
   if (!bytes || bytes <= 0) return '0 B'
   return formatFileSize(bytes, bytes < 1024 ? 0 : 1).replace('Bytes', 'B')
+}
+
+// Maps a markAIUnavailable("<status>:<endpoint>") reason into a single short
+// user-facing line. Keeps the message specific enough to help debugging
+// (Settings → AI) without dumping HTTP status codes on the user.
+function humanizeAIReason(reason = '') {
+  if (reason.startsWith('404:')) return 'AI indisponível: modelo configurado não foi encontrado. Verifica GEMINI_MODEL nas Definições.'
+  if (reason.startsWith('422:')) return 'AI indisponível: chave inválida ou expirada. Atualiza nas Definições → AI.'
+  if (reason.startsWith('400:')) return 'AI indisponível: nenhuma chave AI configurada. Configura uma nas Definições.'
+  return 'AI indisponível para esta sessão — as sugestões usam o template.'
 }
 
 /**
@@ -46,17 +57,130 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
   const [expandedCards, setExpandedCards] = useState({})
   const [aiAvailable, setAiAvailable] = useState(false)
   const [quotaNotice, setQuotaNotice] = useState('')
+  const [aiNotice, setAiNotice] = useState('')
   const [generatingId, setGeneratingId] = useState(null)
+  const [azureProjectRepoNames, setAzureProjectRepoNames] = useState(null)
+  const [azureEmptyRepos, setAzureEmptyRepos] = useState([]) // [{ id, name, webUrl }, ...]
+  const [azureProjects, setAzureProjects] = useState([]) // [{ id, name }, ...]
+  const [projectsLoading, setProjectsLoading] = useState(false)
   const { suggest } = useRepoDescriptionSuggestion({ aiAvailable })
+
+  const isAzureDevops = source?.azureTargetMode === 'azure-devops'
+  const targetProject = source?.targetProject || source?.project || ''
 
   useEffect(() => {
     let cancelled = false
     fetch('/api/config/ai-status', { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : { configured: false }))
-      .then((d) => { if (!cancelled) setAiAvailable(!!d?.configured) })
+      .then((d) => {
+        if (cancelled) return
+        // Honor any session-scoped unavailability (set by a previous wizard step
+        // that already hit a fatal AI 4xx). Avoids re-enabling AI just because
+        // the config probe says the key exists — the key may exist but point at
+        // a missing model or be revoked.
+        setAiAvailable(!!d?.configured && !isAIUnavailable())
+      })
       .catch(() => { if (!cancelled) setAiAvailable(false) })
     return () => { cancelled = true }
   }, [])
+
+  // React to a fatal AI failure that happens DURING this step (e.g. clicking
+  // Generate with AI returns 404). Downgrade the button to its template-only
+  // state and show a single, dismissible notice.
+  useEffect(() => {
+    if (isAIUnavailable()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAiAvailable(false)
+    }
+    const unsub = subscribeAIUnavailable((reason) => {
+      setAiAvailable(false)
+      setAiNotice(humanizeAIReason(reason))
+    })
+    return unsub
+  }, [])
+
+  // Fetch existing Git repos in the *target* Azure project so we can detect
+  // name conflicts locally (no debounce, no extra API per keystroke) and
+  // populate the "use existing empty repo" dropdown.
+  useEffect(() => {
+    if (!isAzureDevops || !source?.org || !targetProject) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAzureProjectRepoNames(null)
+      setAzureEmptyRepos([])
+      return
+    }
+    let cancelled = false
+    const load = async () => {
+      try {
+        const csrfToken = await getCsrfToken().catch(() => null)
+        const res = await fetch('/api/azure/repos', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+          },
+          body: JSON.stringify({
+            org: source.org,
+            project: targetProject,
+            ...azureCredPayload(source),
+          }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (cancelled || !res.ok || !Array.isArray(data.repos)) return
+        const names = new Set(
+          data.repos
+            .filter((r) => !r.isTfvc && r.name)
+            .map((r) => r.name.toLowerCase())
+        )
+        const empty = data.repos
+          .filter((r) => !r.isTfvc && r.isEmpty)
+          .map((r) => ({ id: r.id, name: r.name, webUrl: r.webUrl }))
+        setAzureProjectRepoNames(names)
+        setAzureEmptyRepos(empty)
+      } catch { /* ignore — leaves cache null, conflict status stays idle */ }
+    }
+    load()
+    return () => { cancelled = true }
+    // We depend on individual source fields rather than `source` to avoid
+    // re-fetching when unrelated properties (targetOrg, validated, etc.) change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAzureDevops, source?.org, targetProject, source?.host, source?.credentialMode, source?.savedCredentialId, source?.pat])
+
+  // Fetch the list of Azure DevOps projects on this org (for the target-project picker).
+  useEffect(() => {
+    if (!isAzureDevops || !source?.org) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAzureProjects([])
+      return
+    }
+    let cancelled = false
+    setProjectsLoading(true)
+    const load = async () => {
+      try {
+        const csrfToken = await getCsrfToken().catch(() => null)
+        const res = await fetch('/api/azure/projects', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+          },
+          body: JSON.stringify({
+            org: source.org,
+            ...azureCredPayload(source),
+          }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (cancelled || !res.ok || !Array.isArray(data.projects)) return
+        setAzureProjects(data.projects.map((p) => ({ id: p.id, name: p.name })))
+      } catch { /* ignore — picker falls back to source.project only */ }
+      finally { if (!cancelled) setProjectsLoading(false) }
+    }
+    load()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAzureDevops, source?.org, source?.host, source?.credentialMode, source?.savedCredentialId, source?.pat])
 
   const handleGenerateDescription = useCallback(async (repo, index) => {
     const key = repo.id ?? index
@@ -117,6 +241,18 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
         return
       }
 
+      // Azure same-project: validate locally against the project's existing
+      // Git repo list. No API call per keystroke.
+      if (isAzureDevops) {
+        if (!azureProjectRepoNames) {
+          setConflicts((prev) => ({ ...prev, [repoName]: 'idle' }))
+          return
+        }
+        const conflict = azureProjectRepoNames.has(targetName.trim().toLowerCase())
+        setConflicts((prev) => ({ ...prev, [repoName]: conflict ? 'conflict' : 'clear' }))
+        return
+      }
+
       setConflicts((prev) => ({ ...prev, [repoName]: 'checking' }))
 
       debounceTimers.current[repoName] = setTimeout(async () => {
@@ -148,8 +284,24 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
         }
       }, 500)
     },
-    [source.targetOrg, source.org]
+    [source.targetOrg, source.org, isAzureDevops, azureProjectRepoNames]
   )
+
+  // When the Azure project repo list arrives (or changes), re-seed conflict
+  // status for every row in same-project mode.
+  useEffect(() => {
+    if (!isAzureDevops || !azureProjectRepoNames) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setConflicts((prev) => {
+      const next = { ...prev }
+      repos.forEach((repo) => {
+        const tn = repo.targetName?.trim()
+        if (!tn) { next[repo.name] = 'idle'; return }
+        next[repo.name] = azureProjectRepoNames.has(tn.toLowerCase()) ? 'conflict' : 'clear'
+      })
+      return next
+    })
+  }, [azureProjectRepoNames, isAzureDevops, repos])
 
   useEffect(() => {
     const timers = debounceTimers.current
@@ -174,6 +326,33 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
   const handleTargetNameChange = (repo, index, value) => {
     onUpdateRepo(index, { targetName: value })
     checkConflict(repo.name, value)
+  }
+
+  const handleTargetTypeChange = (repo, index, nextType) => {
+    if (nextType === 'existing-empty') {
+      // Switching to "existing empty" — clear targetName + existingRepoId,
+      // user must pick one from the dropdown. Conflict status becomes idle
+      // until they choose.
+      onUpdateRepo(index, { targetType: 'existing-empty', existingRepoId: undefined, targetName: '' })
+      setConflicts((prev) => ({ ...prev, [repo.name]: 'idle' }))
+    } else {
+      // Back to "new" — restore the default targetName (the source name) and
+      // re-run conflict check.
+      const restored = repo.name
+      onUpdateRepo(index, { targetType: 'new', existingRepoId: undefined, targetName: restored })
+      checkConflict(repo.name, restored)
+    }
+  }
+
+  const handleExistingRepoPick = (repo, index, existingRepoId) => {
+    const picked = azureEmptyRepos.find((r) => r.id === existingRepoId)
+    if (!picked) return
+    onUpdateRepo(index, {
+      targetType: 'existing-empty',
+      existingRepoId: picked.id,
+      targetName: picked.name,
+    })
+    setConflicts((prev) => ({ ...prev, [repo.name]: 'clear' }))
   }
 
   const handleVisibilityToggle = (index, currentVisibility) => {
@@ -214,6 +393,16 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
     setConflicts({})
   }, [onChangeDestination])
 
+  const handleTargetProjectChange = useCallback((projectName) => {
+    onChangeSource?.({ targetProject: projectName })
+    setConflicts({})
+    // Reset per-repo "use existing empty" choices because the available empty
+    // repos differ between projects. Each repo falls back to "create new".
+    repos.forEach((_, i) => {
+      onUpdateRepo(i, { targetType: 'new', existingRepoId: undefined })
+    })
+  }, [onChangeSource, repos, onUpdateRepo])
+
   // Re-run conflict checks when destination org changes
   const prevTargetOrg = useRef(source.targetOrg)
   useEffect(() => {
@@ -234,7 +423,9 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
     totalSize: repos.reduce((sum, r) => sum + (r.size || 0), 0),
     privateCount: repos.filter((r) => r.visibility === 'private').length,
     publicCount: repos.filter((r) => r.visibility === 'public').length,
-  }), [repos])
+    tfvcCount: repos.filter((r) => r.isTfvc).length,
+    existingInProject: azureProjectRepoNames?.size ?? null,
+  }), [repos, azureProjectRepoNames])
 
   const orgOptions = useMemo(() =>
     orgs.map((org) => ({
@@ -292,6 +483,34 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
         <TargetModePicker source={source} selectedRepos={repos} onChange={onChangeSource} />
       )}
 
+      {/* ── AI unavailable banner (shown once after a fatal AI failure) ── */}
+      <AnimatePresence>
+        {aiNotice && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.18 }}
+            role="status"
+            className="flex items-start gap-3 rounded-xl border border-amber-300/60 bg-amber-50/80 px-3.5 py-2.5 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-900/20 dark:text-amber-100"
+          >
+            <Sparkles className="w-4 h-4 mt-0.5 shrink-0 text-amber-500 dark:text-amber-400" aria-hidden="true" />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium leading-tight">{aiNotice}</p>
+              <p className="text-[11px] opacity-80 mt-0.5">As descrições e sugestões continuam disponíveis via template determinístico.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAiNotice('')}
+              aria-label="Dispensar"
+              className="shrink-0 rounded-md p-1 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900/40"
+            >
+              <XCircle className="w-3.5 h-3.5" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Dashboard Header ────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -301,54 +520,97 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
       >
         {/* Row 1: Destination + Bulk Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-violet-500/15 flex items-center justify-center shrink-0">
-              <Building2 className="w-5 h-5 text-violet-400" />
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-500/10 ring-1 ring-violet-500/30 flex items-center justify-center shrink-0">
+              {isAzureDevops
+                ? <Server className="w-5 h-5 text-violet-400" />
+                : <Building2 className="w-5 h-5 text-violet-400" />}
             </div>
-            <div className="min-w-0">
-              <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Importing to
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  {isAzureDevops ? 'Target project' : 'Importing to'}
+                </span>
+                {isAzureDevops && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-violet-500/15 border border-violet-500/30 text-[9px] font-bold uppercase tracking-wider text-violet-300">
+                    in-place
+                  </span>
+                )}
               </div>
-              {orgOptions.length > 0 ? (
-                <Select
-                  options={orgOptions}
-                  value={source.targetOrg || orgs[0]?.login || ''}
-                  onChange={handleDestinationChange}
-                  placeholder="Select organization..."
-                  size="sm"
-                  label="Destination organization"
-                  className="mt-0.5 min-w-[180px]"
-                />
+              {isAzureDevops ? (
+                <div className="mt-1 flex items-center gap-2 flex-wrap min-w-0">
+                  <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 ring-1 ring-slate-200 dark:ring-slate-700 text-sm font-mono font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
+                    {source.org}
+                  </div>
+                  <span className="text-slate-400 dark:text-slate-500 font-mono select-none">/</span>
+                  {azureProjects.length > 0 ? (
+                    <Select
+                      options={azureProjects.map((p) => ({ value: p.name, label: p.name }))}
+                      value={targetProject}
+                      onChange={handleTargetProjectChange}
+                      placeholder={projectsLoading ? 'A carregar projetos…' : 'Escolhe um projeto…'}
+                      size="md"
+                      label="Destination project"
+                      className="min-w-[220px]"
+                    />
+                  ) : (
+                    <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 ring-1 ring-slate-200 dark:ring-slate-700 text-sm font-mono font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
+                      {targetProject}
+                    </div>
+                  )}
+                  {azureProjects.length > 0 && (
+                    <span className="hidden md:inline text-[11px] text-slate-400 dark:text-slate-500 font-medium tabular-nums">
+                      {azureProjects.length} {azureProjects.length === 1 ? 'projeto' : 'projetos'}
+                    </span>
+                  )}
+                </div>
+              ) : orgOptions.length > 0 ? (
+                <div className="mt-1 flex items-center gap-2 flex-wrap min-w-0">
+                  <Select
+                    options={orgOptions}
+                    value={source.targetOrg || orgs[0]?.login || ''}
+                    onChange={handleDestinationChange}
+                    placeholder="Select organization..."
+                    size="md"
+                    label="Destination organization"
+                    className="min-w-[220px]"
+                  />
+                  <span className="hidden md:inline text-[11px] text-slate-400 dark:text-slate-500 font-medium tabular-nums">
+                    {orgOptions.length} {orgOptions.length === 1 ? 'account' : 'accounts'}
+                  </span>
+                </div>
               ) : (
-                <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                <div className="mt-1 inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 ring-1 ring-slate-200 dark:ring-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
                   {source.targetOrg || source.org || 'Personal Account'}
                 </div>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:shrink-0 flex-wrap">
-            <button
-              type="button"
-              onClick={makeAllPrivate}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
-                bg-violet-500/15 text-violet-400 dark:text-violet-300 border border-violet-500/20
-                hover:bg-violet-500/25 transition-colors"
-            >
-              <Lock className="w-3.5 h-3.5" />
-              All Private
-            </button>
-            <button
-              type="button"
-              onClick={makeAllPublic}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
-                bg-cyan-500/15 text-cyan-400 dark:text-cyan-300 border border-cyan-500/20
-                hover:bg-cyan-500/25 transition-colors"
-            >
-              <Globe className="w-3.5 h-3.5" />
-              All Public
-            </button>
-          </div>
+          {!isAzureDevops && (
+            <div className="flex items-center gap-2 sm:shrink-0 flex-wrap">
+              <button
+                type="button"
+                onClick={makeAllPrivate}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
+                  bg-violet-500/15 text-violet-400 dark:text-violet-300 border border-violet-500/20
+                  hover:bg-violet-500/25 transition-colors"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                All Private
+              </button>
+              <button
+                type="button"
+                onClick={makeAllPublic}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
+                  bg-cyan-500/15 text-cyan-400 dark:text-cyan-300 border border-cyan-500/20
+                  hover:bg-cyan-500/25 transition-colors"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                All Public
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Row 2: Stats Grid */}
@@ -361,14 +623,31 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
             <div className="text-xl font-bold text-cyan-400">{formatSize(stats.totalSize)}</div>
             <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">Total Size</div>
           </div>
-          <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-            <div className="text-xl font-bold text-emerald-400">{stats.privateCount}</div>
-            <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">Private</div>
-          </div>
-          <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-            <div className="text-xl font-bold text-orange-400">{stats.publicCount}</div>
-            <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">Public</div>
-          </div>
+          {isAzureDevops ? (
+            <>
+              <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
+                <div className="text-xl font-bold text-amber-400">{stats.tfvcCount}</div>
+                <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">TFVC paths</div>
+              </div>
+              <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
+                <div className="text-xl font-bold text-slate-500 dark:text-slate-400">
+                  {stats.existingInProject === null ? '—' : stats.existingInProject}
+                </div>
+                <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">Existing in project</div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
+                <div className="text-xl font-bold text-emerald-400">{stats.privateCount}</div>
+                <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">Private</div>
+              </div>
+              <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
+                <div className="text-xl font-bold text-orange-400">{stats.publicCount}</div>
+                <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">Public</div>
+              </div>
+            </>
+          )}
         </div>
       </motion.div>
 
@@ -416,33 +695,84 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
 
                   {/* Source → Target */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate" title={repo.name}>
                         {repo.name}
                       </span>
                       <ArrowRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
-                      <div className="flex-1 max-w-[200px]">
-                        <Input
-                          type="text"
-                          size="sm"
-                          value={repo.targetName || ''}
-                          onChange={(e) => handleTargetNameChange(repo, index, e.target.value)}
-                          aria-label={`Target repository name for ${repo.name}`}
-                          status={conflictStatus === 'conflict' ? 'error' : 'idle'}
-                          trailing={
-                            <>
-                              {conflictStatus === 'checking' && (
-                                <Spinner size="xs" tone="warning" />
-                              )}
-                              {conflictStatus === 'clear' && (
-                                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                              )}
-                              {conflictStatus === 'conflict' && (
-                                <XCircle className="w-3 h-3 text-red-500" />
-                              )}
-                            </>
-                          }
-                        />
+                      {isAzureDevops && repo.isTfvc && (
+                        <div
+                          className="inline-flex rounded-lg overflow-hidden ring-1 ring-slate-200 dark:ring-slate-700 shadow-sm shrink-0"
+                          role="group"
+                          aria-label="Target type"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleTargetTypeChange(repo, index, 'new')}
+                            title="Cria um repo Git novo neste projeto"
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider transition-all
+                              ${(repo.targetType || 'new') === 'new'
+                                ? 'bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-inner'
+                                : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300'}`}
+                          >
+                            <Plus className="w-3 h-3" />
+                            Novo
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleTargetTypeChange(repo, index, 'existing-empty')}
+                            disabled={azureEmptyRepos.length === 0}
+                            title={azureEmptyRepos.length === 0
+                              ? 'Não há repos Git vazios neste projeto'
+                              : `Reutiliza um repo existente vazio (${azureEmptyRepos.length} disponível${azureEmptyRepos.length === 1 ? '' : 'is'})`}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider transition-all border-l border-slate-200 dark:border-slate-700
+                              ${repo.targetType === 'existing-empty'
+                                ? 'bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-inner'
+                                : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-900/60 disabled:hover:text-slate-500 dark:disabled:hover:text-slate-400'}`}
+                          >
+                            <Recycle className="w-3 h-3" />
+                            Existente
+                            {azureEmptyRepos.length > 0 && repo.targetType !== 'existing-empty' && (
+                              <span className="ml-0.5 px-1 rounded-sm bg-violet-500/15 text-violet-600 dark:text-violet-300 text-[9px] tabular-nums">
+                                {azureEmptyRepos.length}
+                              </span>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                      <div className="flex-1 max-w-[220px] min-w-[140px]">
+                        {repo.targetType === 'existing-empty' ? (
+                          <Select
+                            size="sm"
+                            options={azureEmptyRepos.map((r) => ({ value: r.id, label: r.name }))}
+                            value={repo.existingRepoId || ''}
+                            onChange={(v) => handleExistingRepoPick(repo, index, v)}
+                            placeholder="Pick empty repo..."
+                            label={`Existing empty repo for ${repo.name}`}
+                          />
+                        ) : (
+                          <Input
+                            type="text"
+                            size="sm"
+                            value={repo.targetName || ''}
+                            onChange={(e) => handleTargetNameChange(repo, index, e.target.value)}
+                            aria-label={`Target repository name for ${repo.name}`}
+                            status={conflictStatus === 'conflict' ? 'error' : 'idle'}
+                            trailing={
+                              <>
+                                {conflictStatus === 'checking' && (
+                                  <Spinner size="xs" tone="warning" />
+                                )}
+                                {conflictStatus === 'clear' && (
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                )}
+                                {conflictStatus === 'conflict' && (
+                                  <XCircle className="w-3 h-3 text-red-500" />
+                                )}
+                              </>
+                            }
+                          />
+                        )}
                       </div>
                     </div>
                     {/* Metadata badges */}
@@ -472,20 +802,22 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                   {/* Right: visibility + status + expand */}
                   <div className="flex items-center gap-2 shrink-0">
                     <RiskBadge level={repo.risk?.level || 'ok'} flags={repo.risk?.flags || []} />
-                    <button
-                      type="button"
-                      onClick={() => handleVisibilityToggle(index, repo.visibility)}
-                      aria-label={`Toggle visibility: currently ${repo.visibility}`}
-                      aria-pressed={isPrivate}
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg transition-colors
-                        ${isPrivate
-                          ? 'bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-500/20'
-                          : 'bg-cyan-100 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/20'
-                        }`}
-                    >
-                      {isPrivate ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-                      {isPrivate ? 'Private' : 'Public'}
-                    </button>
+                    {!isAzureDevops && (
+                      <button
+                        type="button"
+                        onClick={() => handleVisibilityToggle(index, repo.visibility)}
+                        aria-label={`Toggle visibility: currently ${repo.visibility}`}
+                        aria-pressed={isPrivate}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg transition-colors
+                          ${isPrivate
+                            ? 'bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-500/20'
+                            : 'bg-cyan-100 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/20'
+                          }`}
+                      >
+                        {isPrivate ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                        {isPrivate ? 'Private' : 'Public'}
+                      </button>
+                    )}
 
                     {/* Status dot + label */}
                     <div className="flex items-center gap-1.5 min-w-[70px]">

@@ -6,9 +6,11 @@ import { classifyProvider, providerToneClasses } from '../../../../utils/azurePr
  *
  * Two modes today:
  *   - 'github' (default): push the converted Git history to a new GitHub repo
- *   - 'azure-same-project': create the Git repo *inside the same Azure project*
- *     as the TFVC source. Only useful for TFVC migrations; for Git→Git copies
- *     in the same project we just show a hint that no migration is needed.
+ *   - 'azure-devops': create a new (or reuse an empty existing) Git repo
+ *     inside an Azure DevOps / TFS project on the SAME server. Defaults to
+ *     the source's own project but the Configure step lets the user pick any
+ *     project on the same org. Only useful for TFVC migrations; for Git→Git
+ *     copies we just show a hint that no migration is needed.
  *
  * Renders only when source is Azure. Hidden when there are no TFVC repos
  * selected (in-place mode is currently TFVC-only — Git→Git in-place would
@@ -42,24 +44,24 @@ export default function TargetModePicker({ source, selectedRepos, onChange }) {
           tag="repo público/privado · multi-tenant"
         />
         <ModeCard
-          active={mode === 'azure-same-project'}
-          onClick={() => onChange({ azureTargetMode: 'azure-same-project' })}
+          active={mode === 'azure-devops'}
+          onClick={() => onChange({ azureTargetMode: 'azure-devops' })}
           icon={Server}
-          title={`Mesmo projecto ${provider.shortName}`}
+          title={`${provider.shortName} (mesmo servidor)`}
           subtitle={
             <>
-              Converte TFVC em Git e fica em <code className="px-1 rounded bg-slate-200 dark:bg-slate-700 text-[11px]">{source.org}/{source.project}</code> — não sai do servidor.
+              Converte TFVC em Git e fica num projecto à tua escolha no mesmo <code className="px-1 rounded bg-slate-200 dark:bg-slate-700 text-[11px]">{source.host}</code> — não sai do servidor.
             </>
           }
           tag="conversão in-place · sem GitHub"
           accentClass={tone.iconText}
         />
       </div>
-      {mode === 'azure-same-project' && (
+      {mode === 'azure-devops' && (
         <div className="px-4 py-2.5 text-[11px] text-slate-600 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 bg-white/40 dark:bg-slate-900/30">
-          ℹ️ Vais ficar com um repo Git novo por cada pasta TFVC seleccionada, no
-          {' '}<strong>mesmo projecto</strong> do TFS. A história TFVC é preservada via Import API.
-          O nome de cada repo é o que configurares em &quot;Target name&quot; nas linhas abaixo.
+          ℹ️ Escolhe o <strong>projecto destino</strong> no header abaixo (default: o mesmo da origem).
+          Para cada repo podes criar um <strong>novo</strong> ou reutilizar um <strong>existente vazio</strong> nesse projecto.
+          A história TFVC é preservada via Import API.
         </div>
       )}
     </div>

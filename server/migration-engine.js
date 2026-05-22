@@ -636,19 +636,38 @@ export class MigrationEngine extends EventEmitter {
 
         if (inPlace) {
           // ── In-place flow — create the FINAL repo directly, no GitHub push.
-          // Note: no try/catch here intentionally. On failure we leave the
-          // partially-converted repo for forensic inspection (TFVC imports
-          // sometimes succeed partially with abandoned status) rather than
-          // silently deleting it.
-          callbacks.onProgress(5, `Creating Git repo "${safeName}" in ${tfvcOrg}/${tfvcProject}...`)
-          const finalRepo = await azureService.createGitRepo(tfvcOrg, tfvcProject, safeName, azurePat, azureHost)
+          // Two sub-modes:
+          //   - existing empty repo: skip create, validate emptiness, use its id
+          //   - new repo: create with safeName (default)
+          // Destination project may differ from the TFVC source project on the
+          // same org (config.targetProject); falls back to the source project.
+          // Note: no try/catch — on failure we leave the partially-converted
+          // repo for forensic inspection rather than silently deleting it.
+          const destProject = (config.targetProject || tfvcProject).toString()
+          const existingRepoId = config.existingRepoId || null
+
+          let finalRepo
+          if (existingRepoId) {
+            callbacks.onProgress(3, `Validating existing repo in ${tfvcOrg}/${destProject}...`)
+            const existing = await azureService.getRepoDetails(tfvcOrg, destProject, existingRepoId, azurePat, azureHost)
+            const isEmpty = !existing.defaultBranch && (!existing.size || existing.size === 0)
+            if (!isEmpty) {
+              throw new Error(`Existing repo "${existing.name}" is not empty — cannot import TFVC into a repo that already has commits`)
+            }
+            finalRepo = existing
+            callbacks.onProgress(8, `Using existing empty repo "${existing.name}"...`)
+          } else {
+            callbacks.onProgress(5, `Creating Git repo "${safeName}" in ${tfvcOrg}/${destProject}...`)
+            finalRepo = await azureService.createGitRepo(tfvcOrg, destProject, safeName, azurePat, azureHost)
+          }
+
           callbacks.onProgress(10, 'Starting TFVC → Git conversion (Import API)...')
-          const importReq = await azureService.importTfvcToGit(tfvcOrg, tfvcProject, finalRepo.id, tfvcPath, azurePat, true, azureHost)
+          const importReq = await azureService.importTfvcToGit(tfvcOrg, destProject, finalRepo.id, tfvcPath, azurePat, true, azureHost)
           let done = false
           for (let i = 0; i < 120 && !done; i++) {
             if (callbacks.isCancelled()) throw new Error('Migration cancelled')
             await new Promise(r => setTimeout(r, 5000))
-            const status = await azureService.getImportStatus(tfvcOrg, tfvcProject, finalRepo.id, importReq.importRequestId, azurePat, azureHost)
+            const status = await azureService.getImportStatus(tfvcOrg, destProject, finalRepo.id, importReq.importRequestId, azurePat, azureHost)
             callbacks.onProgress(10 + Math.floor((i / 120) * 85), `Converting TFVC to Git... (${status.status})`)
             if (status.status === 'completed') done = true
             else if (status.status === 'failed' || status.status === 'abandoned') {
@@ -657,10 +676,10 @@ export class MigrationEngine extends EventEmitter {
           }
           if (!done) throw new Error('TFVC conversion timed out')
           callbacks.onProgress(100, 'TFVC converted in-place ✓')
-          const fresh = await azureService.getRepoDetails(tfvcOrg, tfvcProject, safeName, azurePat, azureHost)
+          const fresh = await azureService.getRepoDetails(tfvcOrg, destProject, finalRepo.name, azurePat, azureHost)
           return {
             success: true,
-            targetFullName: `${tfvcOrg}/${tfvcProject}/${safeName}`,
+            targetFullName: `${tfvcOrg}/${destProject}/${finalRepo.name}`,
             repoUrl: fresh.webUrl,
             cloneUrl: fresh.remoteUrl,
             branchCount: 1,

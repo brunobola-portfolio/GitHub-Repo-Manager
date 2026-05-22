@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { buildDeterministicPlan } from './autoFixRules.js'
 import { SIZE_CRITICAL_BYTES } from './riskRules.js'
 import { getCsrfToken } from '../../../../utils/api'
+import { isAIUnavailable, markAIUnavailable } from '../../../../utils/aiAvailability'
 
 // Fix 2: priority-aware error setter (auth > ai-quota)
 const ERROR_RANK = { auth: 2, 'ai-quota': 1 }
@@ -113,7 +114,10 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, confl
     }
 
     const sizeCritical = repos.filter((r) => r.selected && r.size > SIZE_CRITICAL_BYTES)
-    if (aiAvailable && sizeCritical.length > 0) {
+    // Honor the session-scoped AI unavailability cache: if a previous call
+    // already returned a fatal 4xx (wrong model / invalid key / no provider),
+    // skip the network fan-out entirely.
+    if (aiAvailable && !isAIUnavailable() && sizeCritical.length > 0) {
       setIsAILoading(true)
       Promise.allSettled(
         sizeCritical.map(async (repo) => {
@@ -132,6 +136,10 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, confl
             signal: controller.signal,
           })
           if (res.status === 429) throw new Error('quota')
+          if (res.status === 404 || res.status === 422 || res.status === 400) {
+            markAIUnavailable(`${res.status}:migration-size-strategy`)
+            throw new Error('unavailable')
+          }
           if (!res.ok) throw new Error('server')
           const body = await res.json()
           return { repoId: repo.id, body }

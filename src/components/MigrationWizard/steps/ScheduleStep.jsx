@@ -63,10 +63,14 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
       const selectedRepos = (wizard.repos || []).filter(r => r.selected)
       const source = wizard.source || {}
       const targetOrg = source.targetOrg || ''
-      // In-place mode = convert TFVC → Git inside the same Azure project
-      // (no GitHub push). Only meaningful for repo-tfvc tasks; Git→Git
-      // in-place is a noop so we leave those tasks unchanged.
-      const isInPlace = source.azureTargetMode === 'azure-same-project'
+      // In-place mode = convert TFVC → Git inside an Azure DevOps / TFS
+      // project on the same server (no GitHub push). The user picks the
+      // destination project in RepoConfigStep (default: source.project).
+      // Per-repo, they can also choose to reuse an existing empty repo
+      // instead of creating a new one. Only meaningful for repo-tfvc tasks;
+      // Git→Git in-place is a noop so we leave those tasks unchanged.
+      const isInPlace = source.azureTargetMode === 'azure-devops'
+      const targetProject = source.targetProject || source.project
       const tasks = selectedRepos
         .filter((repo) => repo.sizeStrategy !== 'exclude')
         .map(repo => {
@@ -79,12 +83,21 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
             ? { ...baseConfig, sizeStrategy: 'lfs-migrate' }
             : baseConfig
           if (isInPlace && repo.isTfvc) {
-            config = { ...config, inPlace: true }
+            config = {
+              ...config,
+              inPlace: true,
+              targetProject,
+              ...(repo.targetType === 'existing-empty' && repo.existingRepoId
+                ? { existingRepoId: repo.existingRepoId }
+                : {}),
+            }
           }
-          // For in-place, targetRef is "<azureOrg>/<azureProject>/<repoName>"
-          // — the engine reads it to know where to create the Git repo.
+          // targetRef must be 2 parts ("owner/repoName") because the engine's
+          // validation regex rejects slashes in the repo segment. For in-place,
+          // we encode owner=source.org and pass the destination project via
+          // config.targetProject (the engine reads both).
           const targetRef = isInPlace && repo.isTfvc
-            ? `${source.org}/${source.project}/${repoName}`
+            ? `${source.org}/${repoName}`
             : (targetOrg ? `${targetOrg}/${repoName}` : repoName)
           return {
             type: repo.isTfvc ? 'repo-tfvc' : 'repo',
@@ -122,6 +135,11 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
       const planData = {
         source: {
           type: wizard.source?.type || 'azure',
+          // Forward the resolved host so the backend validates against the
+          // actual server the wizard used (e.g. tfs.empresa.com), not zod's
+          // 'dev.azure.com' default which fails when the allowlist doesn't
+          // include cloud Azure.
+          ...(wizard.source?.host ? { host: wizard.source.host } : {}),
           org: wizard.source?.org,
           project: wizard.source?.project,
           ...(wizard.source?.pat ? { pat: wizard.source.pat } : {}),
@@ -145,8 +163,14 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
         setScheduled(true)
         toast.success('Migration scheduled')
       } else {
-        // Execute immediately and go to progress
-        await migrationApi.executePlan(planId, { azurePat: wizard.source?.pat || null })
+        // Execute immediately and go to progress. Forward either the pasted
+        // PAT or the savedCredentialId so the backend can decrypt it from
+        // the per-user vault — without one of the two, TFVC migrations fail
+        // with 401 Unauthorized against the on-prem TFS host.
+        await migrationApi.executePlan(planId, {
+          azurePat: wizard.source?.pat || null,
+          savedCredentialId: wizard.source?.savedCredentialId || null,
+        })
         if (wizard.setPlanId) wizard.setPlanId(planId)
         if (wizard.nextStep) wizard.nextStep()
         toast.success('Migration queued')

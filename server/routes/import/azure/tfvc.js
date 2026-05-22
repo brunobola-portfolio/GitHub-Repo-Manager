@@ -541,8 +541,9 @@ router.post('/import/azure-tfvc/in-place', requireAuth, async (req, res) => {
             azureHost: rawHost,
             azureOrg, azureProject, tfvcPath,
             azurePat: bodyPat,
-            targetRepoName,            // name for the new Git repo (required)
+            targetRepoName,            // name for the new Git repo (required if existingRepoId absent)
             targetProject,             // optional: different project on same org
+            existingRepoId,            // optional: reuse an existing empty Git repo instead of creating
             importHistory,
         } = req.body;
         const azureHost = rawHost || DEFAULT_HOST;
@@ -554,8 +555,8 @@ router.post('/import/azure-tfvc/in-place', requireAuth, async (req, res) => {
         if (!tfvcPath.startsWith('$/')) {
             return errorResponse(res, 400, 'TFVC path must start with $/', 'INVALID_PATH');
         }
-        if (!targetRepoName?.trim()) {
-            return errorResponse(res, 400, 'targetRepoName is required', 'MISSING_TARGET_NAME');
+        if (!existingRepoId && !targetRepoName?.trim()) {
+            return errorResponse(res, 400, 'targetRepoName is required (or pass existingRepoId)', 'MISSING_TARGET_NAME');
         }
         if (!azurePat) {
             return errorResponse(res, 400, 'No PAT provided and no server PAT configured', 'MISSING_PAT');
@@ -567,9 +568,9 @@ router.post('/import/azure-tfvc/in-place', requireAuth, async (req, res) => {
         }
 
         const destProject = (targetProject?.trim() || azureProject);
-        const repoName = importService.sanitizeRepoName(targetRepoName);
+        const repoName = targetRepoName ? importService.sanitizeRepoName(targetRepoName) : null;
         const folderName = tfvcPath.split('/').pop() || azureProject;
-        const safeUrl = `tfvc-azure://${azureHost}/${azureOrg}/${azureProject}${tfvcPath}->${destProject}/${repoName}`;
+        const safeUrl = `tfvc-azure://${azureHost}/${azureOrg}/${azureProject}${tfvcPath}->${destProject}/${repoName || `existing:${existingRepoId}`}`;
         const userId = req.session.userId;
         const sourceName = `${azureOrg}/${azureProject}/${folderName} (TFVC → Azure Git)`;
 
@@ -596,7 +597,7 @@ router.post('/import/azure-tfvc/in-place', requireAuth, async (req, res) => {
         // streams progress via the existing SSE/poll mechanism.
         runInPlaceTfvcConversion({
             azureHost, azureOrg, azureProject, destProject,
-            tfvcPath, azurePat, repoName,
+            tfvcPath, azurePat, repoName, existingRepoId,
             importHistory: importHistory !== false,
             jobId,
         });
@@ -620,16 +621,28 @@ router.post('/import/azure-tfvc/in-place', requireAuth, async (req, res) => {
 async function runInPlaceTfvcConversion(params) {
     const {
         azureHost, azureOrg, destProject,
-        tfvcPath, azurePat, repoName, importHistory, jobId,
+        tfvcPath, azurePat, repoName, existingRepoId, importHistory, jobId,
     } = params;
 
     const onProgress = (status, message, pct) => updateJobProgress(status, message, pct, jobId);
 
     try {
-        // Phase 1: Create the Git repo with the user-chosen name.
-        // (Reuses createGitRepo — same API the GitHub flow uses for its temp repo.)
-        onProgress('running', `Creating Git repository "${repoName}" in ${destProject}...`, 10);
-        const newRepo = await azureService.createGitRepo(azureOrg, destProject, repoName, azurePat, azureHost);
+        // Phase 1: Resolve the target Git repo — either reuse an existing
+        // empty one (skip create, validate emptiness) or create a new one.
+        let newRepo;
+        if (existingRepoId) {
+            onProgress('running', `Validating existing repo in ${destProject}...`, 8);
+            const existing = await azureService.getRepoDetails(azureOrg, destProject, existingRepoId, azurePat, azureHost);
+            const isEmpty = !existing.defaultBranch && (!existing.size || existing.size === 0);
+            if (!isEmpty) {
+                throw new Error(`Existing repo "${existing.name}" is not empty — cannot import TFVC into a repo that already has commits`);
+            }
+            newRepo = existing;
+            onProgress('running', `Using existing empty repo "${existing.name}"...`, 12);
+        } else {
+            onProgress('running', `Creating Git repository "${repoName}" in ${destProject}...`, 10);
+            newRepo = await azureService.createGitRepo(azureOrg, destProject, repoName, azurePat, azureHost);
+        }
 
         // Phase 2: Trigger the Import API.
         onProgress('running', 'Starting TFVC → Git conversion via Import API...', 15);
@@ -662,7 +675,9 @@ async function runInPlaceTfvcConversion(params) {
         if (!done) throw new Error('TFVC conversion timed out after 10 minutes');
 
         // Phase 4: Done — fetch the final repo details so we can record the URL.
-        const finalRepo = await azureService.getRepoDetails(azureOrg, destProject, repoName, azurePat, azureHost);
+        // Use the resolved repo name (set when reusing an existing repo) or the requested one.
+        const resolvedRepoName = newRepo.name || repoName;
+        const finalRepo = await azureService.getRepoDetails(azureOrg, destProject, resolvedRepoName, azurePat, azureHost);
 
         db.prepare(`
             UPDATE migration_jobs SET status = 'complete', target_full_name = ?, progress_pct = 100,
@@ -670,7 +685,7 @@ async function runInPlaceTfvcConversion(params) {
             metadata = ?
             WHERE id = ?
         `).run(
-            `${azureOrg}/${destProject}/${repoName}`,
+            `${azureOrg}/${destProject}/${resolvedRepoName}`,
             JSON.stringify({
                 versionControlType: 'Tfvc',
                 tfvcPath,
