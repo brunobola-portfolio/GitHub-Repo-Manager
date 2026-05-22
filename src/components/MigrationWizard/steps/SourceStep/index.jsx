@@ -8,6 +8,7 @@ import OrgField from './OrgField'
 import CredentialsForm from './CredentialsForm'
 import ServerPicker from './ServerPicker'
 import AllowlistFixPanel from './AllowlistFixPanel'
+import RestartServerHint from './RestartServerHint'
 import ProviderBadge from '../../ui/ProviderBadge'
 import ConnectionStatusPanel from '../../ui/ConnectionStatusPanel'
 import { classifyProvider } from '../../../../utils/azureProvider'
@@ -258,6 +259,15 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
             setTimeout(() => { runValidation() }, 400)
           }}
         />
+      )}
+
+      {/* Stale-backend self-fix: the "resolves to a non-public address"
+          message is the SSRF DNS check rejecting an on-prem TFS that
+          resolves to RFC1918. Newer server code bypasses this for
+          allowlisted on-prem hosts; if the user still sees the message,
+          their backend hasn't been restarted to pick up the fix. */}
+      {!validating && validationError && /non-public address|private(?:\s+|-)?(?:ip|address)|rebinding/i.test(validationError) && source.host && hostAllowlist.allowed && (
+        <RestartServerHint host={source.host} />
       )}
 
       {/* Inline action for all other validation failures — keep retry
