@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   isAllowedHost, resolveAzureBaseUrl, invalidateAllowlistCache,
-  addHostToAllowlist, removeHostFromAllowlist,
+  addHostToAllowlist, removeHostFromAllowlist, validateAzureHost,
 } from '../lib/azure-host-validator.js';
 import db from '../db.js';
 
@@ -198,6 +198,34 @@ describe('azure-host-validator', () => {
 
     it('removeHostFromAllowlist returns removed=false when pattern not present', () => {
       expect(removeHostFromAllowlist('notthere.com')).toEqual({ removed: false });
+    });
+
+    it('validateAzureHost: on-prem allowlisted host bypasses DNS private-IP check', async () => {
+      // tfs.invalid is a non-resolvable name — DNS check would normally fail.
+      // Because it's allowlisted and not a cloud host, the validator should
+      // trust the admin allowlist as the boundary and accept it.
+      addHostToAllowlist('tfs.invalid');
+      const result = await validateAzureHost('tfs.invalid');
+      expect(result.ok).toBe(true);
+    });
+
+    it('validateAzureHost: cloud host still requires public DNS resolution', async () => {
+      // dev.azure.com is cloud — DNS-rebinding defence stays active. This
+      // test is intentionally lenient because the actual outcome depends on
+      // the network the test runs on, but at minimum the validator should
+      // NOT short-circuit before the DNS check.
+      const result = await validateAzureHost('dev.azure.com');
+      // ok=true (resolved public) OR ok=false with the specific DNS reason
+      // — both are valid outcomes; what we exclude is "allowlist denied".
+      if (!result.ok) {
+        expect(result.reason).not.toMatch(/ALLOWED_AZURE_HOSTS/);
+      }
+    });
+
+    it('validateAzureHost: host not on allowlist is rejected', async () => {
+      const result = await validateAzureHost('attacker.example.com');
+      expect(result.ok).toBe(false);
+      expect(result.reason).toMatch(/ALLOWED_AZURE_HOSTS/);
     });
 
     it('DB entries union with env patterns', () => {

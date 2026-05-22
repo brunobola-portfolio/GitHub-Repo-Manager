@@ -91,6 +91,16 @@ export function isAllowedHost(host) {
 /**
  * Full check: validate that the given Azure host is on the allowlist AND
  * passes the SSRF + DNS-rebinding guard for an example URL on that host.
+ *
+ * Trust model:
+ *   - Cloud hosts (dev.azure.com, *.visualstudio.com) MUST resolve to a
+ *     public IP. There's no legitimate reason for them to live behind
+ *     RFC1918 — if they do, it's a rebinding attempt.
+ *   - On-prem hosts (anything else explicitly allowlisted by an admin)
+ *     are EXPECTED to resolve to private addresses (corporate LAN, VPN).
+ *     The allowlist IS the trust boundary here — admin intent overrides
+ *     the generic SSRF heuristic. We still run the synchronous URL check
+ *     to catch scheme/userinfo/localhost-literal attacks.
  */
 export async function validateAzureHost(host) {
   if (!isAllowedHost(host)) {
@@ -102,6 +112,13 @@ export async function validateAzureHost(host) {
     assertSafeExternalUrl(probeUrl);
   } catch (e) {
     return { ok: false, reason: String(e.message || '').replace(/^ssrf_guard:\s*/, '') };
+  }
+  // Skip the DNS private-IP check for on-prem hosts — TFS servers are
+  // normally deployed inside corporate networks and resolve to RFC1918.
+  // Cloud hosts keep the full DNS-rebinding defence.
+  const isCloud = probeHost === 'dev.azure.com' || probeHost.endsWith('.visualstudio.com');
+  if (!isCloud) {
+    return { ok: true };
   }
   const dnsOk = await resolveAndValidateHost(probeUrl);
   if (!dnsOk) {

@@ -241,7 +241,7 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
       {/* Allowlist-specific self-fix: when the backend rejects the host
           because of ALLOWED_AZURE_HOSTS, render the dedicated panel with
           a copy-paste .env snippet — far more useful than a generic retry. */}
-      {!validating && validationError && /ALLOWED_AZURE_HOSTS|not in ALLOWED|Azure host rejected/i.test(validationError) && source.host && (
+      {!validating && validationError && /ALLOWED_AZURE_HOSTS|not in ALLOWED|not in allowlist/i.test(validationError) && source.host && (
         <AllowlistFixPanel
           host={source.host}
           currentPatterns={hostAllowlist.patterns}
@@ -263,7 +263,7 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
           guidance (no retry possible) or the allowlist error (handled above). */}
       {!validating && validationError
         && !validationError.includes('Define o servidor')
-        && !/ALLOWED_AZURE_HOSTS|not in ALLOWED|Azure host rejected/i.test(validationError) && (
+        && !/ALLOWED_AZURE_HOSTS|not in ALLOWED|not in allowlist/i.test(validationError) && (
         <div className="flex items-center justify-between gap-3 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700">
           <div className="text-xs text-slate-600 dark:text-slate-400 min-w-0">
             {isAccessError && !provider.isCloud
