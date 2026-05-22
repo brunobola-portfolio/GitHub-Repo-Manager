@@ -6,6 +6,7 @@ import { SectionSpinner } from '../../ui/Spinner'
 import { EmptyState } from '../../ui/EmptyState'
 import { Switch } from '../../ui/form'
 import { getCsrfToken } from '../../../utils/api'
+import { azureCredPayload } from '../../../utils/azureRequestPayload'
 
 /**
  * WikiStep - Configure wiki migration for the Migration Wizard.
@@ -39,7 +40,7 @@ export default function WikiStep({ wiki, onUpdate, source }) {
           body: JSON.stringify({
             org: source.org,
             project: source.project,
-            pat: source.credentialMode === 'personalPat' ? source.pat : undefined,
+            ...azureCredPayload(source),
           }),
         })
         const data = await res.json()
@@ -57,7 +58,7 @@ export default function WikiStep({ wiki, onUpdate, source }) {
     }
 
     fetchWikis()
-  }, [wiki.enabled, fetched, source.org, source.project, source.credentialMode, source.pat, onUpdate])
+  }, [wiki.enabled, fetched, source, onUpdate])
 
   const handleToggleEnabled = useCallback(() => {
     const next = !wiki.enabled

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { getCsrfToken } from '../../../../utils/api'
+import { azureCredPayload } from '../../../../utils/azureRequestPayload'
 
 /**
  * Orchestrates the Select step's data lifecycle:
@@ -38,7 +39,7 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
           body: JSON.stringify({
             org: source.org,
             project: source.project,
-            pat: source.credentialMode === 'personalPat' ? source.pat : undefined,
+            ...azureCredPayload(source),
           }),
         })
         const data = await res.json()
@@ -69,7 +70,7 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
               headers: { 'Content-Type': 'application/json', ...csrfHeaders },
               body: JSON.stringify({
                 org: source.org, project: source.project,
-                pat: source.credentialMode === 'personalPat' ? source.pat : undefined,
+                ...azureCredPayload(source),
               }),
             })
             const tfvcData = await tfvcRes.json()
@@ -112,7 +113,7 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
     let cancelled = false
     const payload = {
       org: source.org, project: source.project,
-      pat: source.credentialMode === 'personalPat' ? source.pat : undefined,
+      ...azureCredPayload(source),
       repos: gitRepos.map((r) => ({ id: r.id, defaultBranch: r.defaultBranch })),
     }
     setEnriching(true)

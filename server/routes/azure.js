@@ -66,6 +66,46 @@ function resolvePatFromRequest(req) {
     return { pat, source: body.pat ? 'pasted' : 'env' };
 }
 
+/**
+ * One-shot resolver for the org/project/pat/host quartet every Azure
+ * endpoint repeats. Centralises:
+ *   - Required-field validation
+ *   - Cloud-only org name regex (TFS collection names allow hyphens)
+ *   - PAT resolution (vault > paste > env)
+ *   - Host allowlist + SSRF gate
+ *
+ * On any failure it writes the HTTP error directly and returns null,
+ * so callers can `if (!ctx) return;` and stay readable.
+ *
+ * @returns {Promise<{ org: string, project: string|null, pat: string, host: string } | null>}
+ */
+async function resolveAzureContext(req, res, { requireProject = true, requireOrg = true } = {}) {
+    const body = req.body || {};
+    const org = body.org;
+    const project = body.project;
+    if (requireOrg && !org) {
+        errorResponse(res, 400, 'Organization is required', 'MISSING_ORG');
+        return null;
+    }
+    if (requireProject && !project) {
+        errorResponse(res, 400, 'Project is required', 'MISSING_PROJECT');
+        return null;
+    }
+    const hostRaw = (body.host || DEFAULT_AZURE_HOST).toString();
+    if (org && hostRaw === DEFAULT_AZURE_HOST && !isValidGitHubUsername(org)) {
+        errorResponse(res, 400, 'Invalid organization name', 'INVALID_ORG');
+        return null;
+    }
+    const patResult = resolvePatFromRequest(req);
+    if (!patResult.pat) {
+        errorResponse(res, 401, patResult.error, 'MISSING_PAT');
+        return null;
+    }
+    const host = await resolveHost(req, res);
+    if (!host) return null; // resolveHost already wrote the response
+    return { org: org || null, project: project || null, pat: patResult.pat, host };
+}
+
 const orgListLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 10,
@@ -214,16 +254,14 @@ router.post('/azure/projects', requireAuth, async (req, res) => {
 // the project is provisioned, then optionally creates a Git repo inside.
 router.post('/azure/projects/create', requireAuth, async (req, res) => {
     try {
-        const { org, pat: bodyPat, name, description, processTemplateId, sourceControlType, repoName } = req.body || {};
-        const pat = azureService.resolvePat(bodyPat, req.session);
-        if (!org || !name) {
-            return errorResponse(res, 400, 'Organization and project name are required', 'MISSING_PARAMS');
+        const { name, description, processTemplateId, sourceControlType, repoName } = req.body || {};
+        if (!name) {
+            return errorResponse(res, 400, 'Project name is required', 'MISSING_PARAMS');
         }
-        if (!pat) {
-            return errorResponse(res, 400, 'No PAT provided and no server PAT configured', 'MISSING_PAT');
-        }
-        const host = await resolveHost(req, res);
-        if (!host) return;
+        // `requireProject: false` because we're CREATING the project here.
+        const ctx = await resolveAzureContext(req, res, { requireProject: false });
+        if (!ctx) return;
+        const { org, pat, host } = ctx;
 
         const created = await azureService.createProject(org, {
             name, description, processTemplateId,
@@ -293,15 +331,9 @@ router.post('/azure/repos', requireAuth, async (req, res) => {
 
 router.post('/azure/wikis', requireAuth, async (req, res) => {
     try {
-        const { org, project, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat, req.session);
-        if (!org || !project) {
-            return errorResponse(res, 400, 'Organization and project are required');
-        }
-        if (!pat) {
-            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
-        }
-        const wikis = await azureService.listWikis(org, project, pat);
+        const ctx = await resolveAzureContext(req, res);
+        if (!ctx) return;
+        const wikis = await azureService.listWikis(ctx.org, ctx.project, ctx.pat, ctx.host);
         res.json({ wikis });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to list Azure wikis'));
@@ -310,15 +342,9 @@ router.post('/azure/wikis', requireAuth, async (req, res) => {
 
 router.post('/azure/work-items/counts', requireAuth, async (req, res) => {
     try {
-        const { org, project, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat, req.session);
-        if (!org || !project) {
-            return errorResponse(res, 400, 'Organization and project are required');
-        }
-        if (!pat) {
-            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
-        }
-        const counts = await azureService.getWorkItemCounts(org, project, pat);
+        const ctx = await resolveAzureContext(req, res);
+        if (!ctx) return;
+        const counts = await azureService.getWorkItemCounts(ctx.org, ctx.project, ctx.pat, ctx.host);
         res.json({ counts });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to get work item counts'));
@@ -327,15 +353,9 @@ router.post('/azure/work-items/counts', requireAuth, async (req, res) => {
 
 router.post('/azure/work-items/preview', requireAuth, async (req, res) => {
     try {
-        const { org, project, pat: bodyPat, types } = req.body;
-        const pat = azureService.resolvePat(bodyPat, req.session);
-        if (!org || !project) {
-            return errorResponse(res, 400, 'Organization and project are required');
-        }
-        if (!pat) {
-            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
-        }
-        const items = await azureService.previewWorkItems(org, project, pat, types || []);
+        const ctx = await resolveAzureContext(req, res);
+        if (!ctx) return;
+        const items = await azureService.previewWorkItems(ctx.org, ctx.project, ctx.pat, req.body?.types || [], ctx.host);
         res.json({ items });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to preview work items'));
@@ -344,15 +364,9 @@ router.post('/azure/work-items/preview', requireAuth, async (req, res) => {
 
 router.post('/azure/project-info', requireAuth, async (req, res) => {
     try {
-        const { org, project, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat, req.session);
-        if (!org || !project) {
-            return errorResponse(res, 400, 'Organization and project are required');
-        }
-        if (!pat) {
-            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
-        }
-        const info = await azureService.getProjectInfo(org, project, pat);
+        const ctx = await resolveAzureContext(req, res);
+        if (!ctx) return;
+        const info = await azureService.getProjectInfo(ctx.org, ctx.project, ctx.pat, ctx.host);
         res.json(info);
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to get project info'));
@@ -361,15 +375,11 @@ router.post('/azure/project-info', requireAuth, async (req, res) => {
 
 router.post('/azure/branches', requireAuth, async (req, res) => {
     try {
-        const { org, project, repoId, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat, req.session);
-        if (!org || !project || !repoId) {
-            return errorResponse(res, 400, 'Organization, project, and repoId are required');
-        }
-        if (!pat) {
-            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
-        }
-        const branches = await azureService.listBranches(org, project, repoId, pat);
+        const { repoId } = req.body || {};
+        if (!repoId) return errorResponse(res, 400, 'repoId is required', 'MISSING_REPO_ID');
+        const ctx = await resolveAzureContext(req, res);
+        if (!ctx) return;
+        const branches = await azureService.listBranches(ctx.org, ctx.project, repoId, ctx.pat, ctx.host);
         res.json({ branches });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to list branches'));
@@ -378,34 +388,15 @@ router.post('/azure/branches', requireAuth, async (req, res) => {
 
 router.post('/azure/pat-permissions', requireAuth, async (req, res) => {
     try {
-        const { org, project, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat, req.session);
-        if (!org || !project) {
-            return errorResponse(res, 400, 'Organization and project are required');
-        }
-        if (!pat) {
-            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
-        }
+        const ctx = await resolveAzureContext(req, res);
+        if (!ctx) return;
 
         const permissions = { code: false, workItems: false, wiki: false };
 
-        // Test Code (Read) — try listing repos
-        try {
-            await azureService.listRepos(org, project, pat);
-            permissions.code = true;
-        } catch { /* permission denied or error */ }
-
-        // Test Work Items (Read) — try WIQL query
-        try {
-            await azureService.getWorkItemCounts(org, project, pat);
-            permissions.workItems = true;
-        } catch { /* permission denied or error */ }
-
-        // Test Wiki (Read) — try listing wikis
-        try {
-            await azureService.listWikis(org, project, pat);
-            permissions.wiki = true;
-        } catch { /* permission denied or error */ }
+        // Probe each scope independently so a missing one doesn't mask the others.
+        try { await azureService.listRepos(ctx.org, ctx.project, ctx.pat, ctx.host); permissions.code = true; } catch { /* denied */ }
+        try { await azureService.getWorkItemCounts(ctx.org, ctx.project, ctx.pat, ctx.host); permissions.workItems = true; } catch { /* denied */ }
+        try { await azureService.listWikis(ctx.org, ctx.project, ctx.pat, ctx.host); permissions.wiki = true; } catch { /* denied */ }
 
         res.json({ permissions });
     } catch (error) {
@@ -415,17 +406,14 @@ router.post('/azure/pat-permissions', requireAuth, async (req, res) => {
 
 router.post('/azure/repos/activity', requireAuth, enrichedRepoLimiter, async (req, res) => {
     try {
-        const { org, project, repos, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat, req.session);
-        if (!org || !project || !Array.isArray(repos)) {
-            return errorResponse(res, 400, 'org, project and repos[] required');
-        }
+        const { repos } = req.body || {};
+        if (!Array.isArray(repos)) return errorResponse(res, 400, 'repos[] required', 'MISSING_REPOS');
         if (repos.length > MAX_BATCH_REPOS) {
-            return errorResponse(res, 400, `Too many repos per request (max ${MAX_BATCH_REPOS})`);
+            return errorResponse(res, 400, `Too many repos per request (max ${MAX_BATCH_REPOS})`, 'TOO_MANY_REPOS');
         }
-        if (!isValidGitHubUsername(org)) return errorResponse(res, 400, 'Invalid organization name');
-        if (!pat) return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
-        const result = await azureService.listRepoActivity(org, project, repos, pat);
+        const ctx = await resolveAzureContext(req, res);
+        if (!ctx) return;
+        const result = await azureService.listRepoActivity(ctx.org, ctx.project, repos, ctx.pat, ctx.host);
         res.json({ activity: result });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to fetch repo activity'));
@@ -434,17 +422,14 @@ router.post('/azure/repos/activity', requireAuth, enrichedRepoLimiter, async (re
 
 router.post('/azure/repos/lfs-check', requireAuth, enrichedRepoLimiter, async (req, res) => {
     try {
-        const { org, project, repos, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat, req.session);
-        if (!org || !project || !Array.isArray(repos)) {
-            return errorResponse(res, 400, 'org, project and repos[] required');
-        }
+        const { repos } = req.body || {};
+        if (!Array.isArray(repos)) return errorResponse(res, 400, 'repos[] required', 'MISSING_REPOS');
         if (repos.length > MAX_BATCH_REPOS) {
-            return errorResponse(res, 400, `Too many repos per request (max ${MAX_BATCH_REPOS})`);
+            return errorResponse(res, 400, `Too many repos per request (max ${MAX_BATCH_REPOS})`, 'TOO_MANY_REPOS');
         }
-        if (!isValidGitHubUsername(org)) return errorResponse(res, 400, 'Invalid organization name');
-        if (!pat) return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
-        const result = await azureService.checkLfsMarkers(org, project, repos, pat);
+        const ctx = await resolveAzureContext(req, res);
+        if (!ctx) return;
+        const result = await azureService.checkLfsMarkers(ctx.org, ctx.project, repos, ctx.pat, ctx.host);
         res.json({ lfs: result });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to check LFS markers'));
@@ -453,12 +438,11 @@ router.post('/azure/repos/lfs-check', requireAuth, enrichedRepoLimiter, async (r
 
 router.post('/azure/repos/commit-activity', requireAuth, enrichedRepoLimiter, async (req, res) => {
     try {
-        const { org, project, repoId, defaultBranch, months, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat, req.session);
-        if (!org || !project || !repoId) return errorResponse(res, 400, 'org, project, repoId required');
-        if (!isValidGitHubUsername(org)) return errorResponse(res, 400, 'Invalid organization name');
-        if (!pat) return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
-        const activity = await azureService.getCommitActivity(org, project, repoId, defaultBranch, pat, months || 12);
+        const { repoId, defaultBranch, months } = req.body || {};
+        if (!repoId) return errorResponse(res, 400, 'repoId is required', 'MISSING_REPO_ID');
+        const ctx = await resolveAzureContext(req, res);
+        if (!ctx) return;
+        const activity = await azureService.getCommitActivity(ctx.org, ctx.project, repoId, defaultBranch, ctx.pat, months || 12, ctx.host);
         res.json({ activity });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to fetch commit activity'));
@@ -467,12 +451,11 @@ router.post('/azure/repos/commit-activity', requireAuth, enrichedRepoLimiter, as
 
 router.post('/azure/repos/readme', requireAuth, enrichedRepoLimiter, async (req, res) => {
     try {
-        const { org, project, repoId, ref, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat, req.session);
-        if (!org || !project || !repoId) return errorResponse(res, 400, 'org, project, repoId required');
-        if (!isValidGitHubUsername(org)) return errorResponse(res, 400, 'Invalid organization name');
-        if (!pat) return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
-        const readme = await azureService.getRepoReadme(org, project, repoId, pat, ref);
+        const { repoId, ref } = req.body || {};
+        if (!repoId) return errorResponse(res, 400, 'repoId is required', 'MISSING_REPO_ID');
+        const ctx = await resolveAzureContext(req, res);
+        if (!ctx) return;
+        const readme = await azureService.getRepoReadme(ctx.org, ctx.project, repoId, ctx.pat, ref, ctx.host);
         res.json(readme);
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to fetch README'));
@@ -481,12 +464,11 @@ router.post('/azure/repos/readme', requireAuth, enrichedRepoLimiter, async (req,
 
 router.post('/azure/repos/full-stats', requireAuth, enrichedRepoLimiter, async (req, res) => {
     try {
-        const { org, project, repoId, defaultBranch, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat, req.session);
-        if (!org || !project || !repoId) return errorResponse(res, 400, 'org, project, repoId required');
-        if (!isValidGitHubUsername(org)) return errorResponse(res, 400, 'Invalid organization name');
-        if (!pat) return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
-        const stats = await azureService.getRepoFullStats(org, project, repoId, defaultBranch, pat);
+        const { repoId, defaultBranch } = req.body || {};
+        if (!repoId) return errorResponse(res, 400, 'repoId is required', 'MISSING_REPO_ID');
+        const ctx = await resolveAzureContext(req, res);
+        if (!ctx) return;
+        const stats = await azureService.getRepoFullStats(ctx.org, ctx.project, repoId, defaultBranch, ctx.pat, ctx.host);
         res.json(stats);
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to fetch full stats'));
@@ -495,20 +477,15 @@ router.post('/azure/repos/full-stats', requireAuth, enrichedRepoLimiter, async (
 
 router.post('/azure/tfvc/items', requireAuth, async (req, res) => {
     try {
-        const { org, project, pat: bodyPat, scopePath } = req.body;
-        const pat = azureService.resolvePat(bodyPat, req.session);
-        if (!org || !project) {
-            return errorResponse(res, 400, 'Organization and project are required');
-        }
-        if (!pat) {
-            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
-        }
-        const items = await azureService.listTfvcItems(org, project, pat, scopePath);
+        const { scopePath } = req.body || {};
+        const ctx = await resolveAzureContext(req, res);
+        if (!ctx) return;
+        const items = await azureService.listTfvcItems(ctx.org, ctx.project, ctx.pat, scopePath, ctx.host);
         // Compute actual folder sizes via recursive listing
         const enriched = await Promise.all(items.map(async (item) => {
             if (item.isFolder && item.path) {
                 try {
-                    const size = await azureService.getTfvcFolderSize(org, project, pat, item.path);
+                    const size = await azureService.getTfvcFolderSize(ctx.org, ctx.project, ctx.pat, item.path, ctx.host);
                     return { ...item, size };
                 } catch {
                     return item; // keep original (0) on error

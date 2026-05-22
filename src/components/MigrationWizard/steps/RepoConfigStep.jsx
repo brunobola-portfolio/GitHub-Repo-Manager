@@ -10,6 +10,7 @@ import {
 import { Spinner } from '../../ui/Spinner'
 import { EmptyState } from '../../ui/EmptyState'
 import { getCsrfToken } from '../../../utils/api'
+import { azureCredPayload } from '../../../utils/azureRequestPayload'
 import { Select } from '../../ui/Select'
 import { Input, Textarea, Switch } from '../../ui/form'
 import { formatFileSize } from '../../../utils/format'
@@ -92,7 +93,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
             org: source.org,
             project: source.project,
             repoId: repo.id,
-            pat: source.credentialMode === 'personalPat' ? source.pat : undefined,
+            ...azureCredPayload(source),
           }),
         })
         const data = await res.json()
@@ -102,7 +103,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
       } catch { /* ignore */ }
       setLoadingBranches((prev) => ({ ...prev, [key]: false }))
     }
-  }, [expandedBranches, branchCache, source.org, source.project, source.pat, source.credentialMode])
+  }, [expandedBranches, branchCache, source])
 
   const checkConflict = useCallback(
     (repoName, targetName) => {

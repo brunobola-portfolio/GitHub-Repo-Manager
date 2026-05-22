@@ -6,6 +6,7 @@ import {
 import { SectionSpinner } from '../../ui/Spinner'
 import { Input, Switch } from '../../ui/form'
 import { getCsrfToken } from '../../../utils/api'
+import { azureCredPayload } from '../../../utils/azureRequestPayload'
 
 const DEFAULT_LABEL_MAPPING = {
   Bug: 'bug',
@@ -56,7 +57,7 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
           body: JSON.stringify({
             org: source.org,
             project: source.project,
-            pat: source.credentialMode === 'personalPat' ? source.pat : undefined,
+            ...azureCredPayload(source),
           }),
         })
         const data = await res.json()
@@ -79,7 +80,7 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
     }
 
     fetchCounts()
-  }, [workItems.enabled, typeCounts, source.org, source.project, source.credentialMode, source.pat, workItems.types.length, onUpdate])
+  }, [workItems.enabled, typeCounts, source, workItems.types.length, onUpdate])
 
   const handleToggleEnabled = useCallback(() => {
     const next = !workItems.enabled

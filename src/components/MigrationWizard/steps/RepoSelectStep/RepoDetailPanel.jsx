@@ -5,6 +5,7 @@ import { Tooltip } from '../../../ui/Tooltip'
 import { RepoMetaBadges } from '../../ui/repo/RepoMetaBadges'
 import { RepoRiskReport } from '../../ui/repo/RepoRiskReport'
 import { getCsrfToken } from '../../../../utils/api'
+import { azureCredPayload } from '../../../../utils/azureRequestPayload'
 
 export function RepoDetailPanel({ repo, source, onClose, onPrev, onNext, onRiskAction }) {
   const [stats, setStats] = useState(null)
@@ -16,7 +17,7 @@ export function RepoDetailPanel({ repo, source, onClose, onPrev, onNext, onRiskA
     let cancelled = false
     const payload = {
       org: source.org, project: source.project, repoId: repo.id, defaultBranch: repo.defaultBranch,
-      pat: source.credentialMode === 'personalPat' ? source.pat : undefined,
+      ...azureCredPayload(source),
     }
     ;(async () => {
       const csrfToken = await getCsrfToken().catch(() => null)
@@ -44,7 +45,7 @@ export function RepoDetailPanel({ repo, source, onClose, onPrev, onNext, onRiskA
       setActivity(activityRes?.activity || [])
     })()
     return () => { cancelled = true }
-  }, [repo, source.org, source.project, source.credentialMode, source.pat])
+  }, [repo, source])
 
   if (!repo) return null
   return (
