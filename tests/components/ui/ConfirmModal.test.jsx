@@ -152,4 +152,35 @@ describe('ConfirmModal', () => {
       expect(screen.getByText('Processing...')).toBeInTheDocument()
     })
   })
+
+  it('shows the "(case-sensitive)" hint when requiresInput is set', () => {
+    // The hint helps users notice that "delete" won't match "DELETE" before
+    // they type — pairs with the case-only mismatch error below.
+    render(
+      <ConfirmModal
+        isOpen={true}
+        onClose={onClose}
+        onConfirm={onConfirm}
+        requiresInput="DELETE"
+      />
+    )
+    expect(screen.getByText(/case-sensitive/i)).toBeInTheDocument()
+  })
+
+  it('emits a distinct error for a case-only mismatch on requiresInput', () => {
+    render(
+      <ConfirmModal
+        isOpen={true}
+        onClose={onClose}
+        onConfirm={onConfirm}
+        requiresInput="DELETE"
+      />
+    )
+    // Right letters, wrong case — used to fall back to the generic
+    // "Please type DELETE" prompt and looked broken to users.
+    fireEvent.change(screen.getByPlaceholderText('DELETE'), { target: { value: 'delete' } })
+    fireEvent.click(screen.getByText('Confirm'))
+    expect(onConfirm).not.toHaveBeenCalled()
+    expect(screen.getByText(/exactly \(case-sensitive\)/)).toBeInTheDocument()
+  })
 })

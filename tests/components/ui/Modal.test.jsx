@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
 import { Modal } from '@/components/ui/Modal'
 
@@ -139,6 +139,204 @@ describe('Modal — staggerChildren and iconGradient', () => {
     // Neutral-header redesign: tile is soft-tinted (bg-indigo-100 in light,
     // bg-indigo-500/15 in dark) rather than the prior bg-indigo-600 solid.
     expect(iconTile.className).toMatch(/bg-indigo-(100|500\/15)/)
+  })
+})
+
+describe('Modal — semantic variants', () => {
+  afterEach(() => { cleanup(); document.body.style.overflow = '' })
+
+  // Soft-tinted icon tile communicates variant state — see
+  // src/components/ui/_variants.js VARIANT_ICON_STYLES.
+  const Icon = () => <svg data-testid="icon" />
+
+  it.each([
+    ['danger',  /bg-red-(100|500\/15)/],
+    ['warning', /bg-amber-(100|500\/15)/],
+    ['info',    /bg-sky-(100|500\/15)/],
+    ['success', /bg-emerald-(100|500\/15)/],
+  ])('renders %s variant with the matching soft-tinted icon tile', (variant, pattern) => {
+    const { container } = render(
+      <Modal isOpen={true} onClose={() => {}} title="X" icon={Icon} variant={variant}>x</Modal>
+    )
+    const iconTile = container.querySelector('[data-icon-tile="true"]')
+    expect(iconTile).not.toBeNull()
+    expect(iconTile.className).toMatch(pattern)
+  })
+
+  it('iconGradient="none" falls through to the variant tile (variant wins)', () => {
+    // ConfirmModal sets iconGradient="none" so the danger variant's red tile
+    // shows through. Guards against accidental "none = neutral slate" reading.
+    const { container } = render(
+      <Modal isOpen={true} onClose={() => {}} title="X" icon={Icon} variant="danger" iconGradient="none">x</Modal>
+    )
+    const iconTile = container.querySelector('[data-icon-tile="true"]')
+    expect(iconTile.className).toMatch(/bg-red-(100|500\/15)/)
+  })
+
+  it('iconGradient="primary" overrides a danger variant (affordance wins over semantic)', () => {
+    const { container } = render(
+      <Modal isOpen={true} onClose={() => {}} title="X" icon={Icon} variant="danger" iconGradient="primary">x</Modal>
+    )
+    const iconTile = container.querySelector('[data-icon-tile="true"]')
+    expect(iconTile.className).toMatch(/bg-indigo-(100|500\/15)/)
+    expect(iconTile.className).not.toMatch(/bg-red-/)
+  })
+
+  it('default variant + iconGradient="none" renders the neutral slate tile', () => {
+    const { container } = render(
+      <Modal isOpen={true} onClose={() => {}} title="X" icon={Icon} variant="default" iconGradient="none">x</Modal>
+    )
+    const iconTile = container.querySelector('[data-icon-tile="true"]')
+    expect(iconTile.className).toMatch(/bg-slate-(200|700)/)
+  })
+
+  it('unknown variant string falls back to the default neutral tile', () => {
+    const { container } = render(
+      <Modal isOpen={true} onClose={() => {}} title="X" icon={Icon} variant="bogus">x</Modal>
+    )
+    const iconTile = container.querySelector('[data-icon-tile="true"]')
+    expect(iconTile.className).toMatch(/bg-slate-(200|700)/)
+  })
+})
+
+describe('Modal — interactions', () => {
+  afterEach(() => { cleanup(); document.body.style.overflow = '' })
+
+  it('fires onClose when the close button is clicked', () => {
+    const onClose = vi.fn()
+    render(<Modal isOpen={true} onClose={onClose} title="Hi">x</Modal>)
+    fireEvent.click(screen.getByRole('button', { name: /close modal/i }))
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides the close button when showCloseButton=false', () => {
+    render(<Modal isOpen={true} onClose={() => {}} title="Hi" showCloseButton={false}>x</Modal>)
+    expect(screen.queryByRole('button', { name: /close modal/i })).not.toBeInTheDocument()
+  })
+
+  it('fires onClose when the backdrop is clicked (default)', () => {
+    const onClose = vi.fn()
+    const { container } = render(<Modal isOpen={true} onClose={onClose} title="Hi">x</Modal>)
+    const backdrop = container.querySelector('[data-modal-backdrop="true"]')
+    fireEvent.click(backdrop)
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('does NOT fire onClose on backdrop click when closeOnBackdrop=false', () => {
+    const onClose = vi.fn()
+    const { container } = render(
+      <Modal isOpen={true} onClose={onClose} title="Hi" closeOnBackdrop={false}>x</Modal>
+    )
+    const backdrop = container.querySelector('[data-modal-backdrop="true"]')
+    fireEvent.click(backdrop)
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('forwards isBusy to aria-busy on the body region', () => {
+    const { container } = render(<Modal isOpen={true} onClose={() => {}} title="Hi" isBusy>body</Modal>)
+    // Body is the only descendant with role attributes — narrow via the
+    // ds-modal-body class the body div carries.
+    const body = container.querySelector('.ds-modal-body')
+    expect(body).not.toBeNull()
+    expect(body.getAttribute('aria-busy')).toBe('true')
+  })
+
+  it('omits aria-busy when isBusy is falsy', () => {
+    const { container } = render(<Modal isOpen={true} onClose={() => {}} title="Hi">body</Modal>)
+    const body = container.querySelector('.ds-modal-body')
+    expect(body.getAttribute('aria-busy')).toBeNull()
+  })
+})
+
+describe('Modal — title edge cases', () => {
+  afterEach(() => { cleanup(); document.body.style.overflow = '' })
+
+  it('renders the h2 with the title id for a non-empty string title', () => {
+    const { container } = render(<Modal isOpen={true} onClose={() => {}} title="Hello">x</Modal>)
+    const dialog = container.querySelector('[role="dialog"]')
+    const labelledBy = dialog.getAttribute('aria-labelledby')
+    expect(labelledBy).toBeTruthy()
+    const heading = container.querySelector(`#${labelledBy}`)
+    expect(heading).not.toBeNull()
+    expect(heading.tagName).toBe('H2')
+    expect(heading.textContent).toBe('Hello')
+  })
+
+  it('skips the h2 AND aria-labelledby when title is empty string', () => {
+    // Previously an empty title rendered an empty <h2> that aria-labelledby
+    // still pointed at — screen readers announced "" as the dialog label.
+    const { container } = render(<Modal isOpen={true} onClose={() => {}} title="">x</Modal>)
+    const dialog = container.querySelector('[role="dialog"]')
+    expect(dialog.getAttribute('aria-labelledby')).toBeNull()
+    expect(container.querySelector('h2')).toBeNull()
+  })
+
+  it('skips the h2 AND aria-labelledby when title is whitespace only', () => {
+    const { container } = render(<Modal isOpen={true} onClose={() => {}} title="   ">x</Modal>)
+    const dialog = container.querySelector('[role="dialog"]')
+    expect(dialog.getAttribute('aria-labelledby')).toBeNull()
+    expect(container.querySelector('h2')).toBeNull()
+  })
+
+  it('renders a ReactNode title without imposing aria-labelledby', () => {
+    // ReactNode titles let callers compose their own a11y label; Modal does
+    // not assume it knows the text content.
+    const node = <span data-testid="custom-title">Custom heading</span>
+    const { container } = render(<Modal isOpen={true} onClose={() => {}} title={node}>x</Modal>)
+    const dialog = container.querySelector('[role="dialog"]')
+    expect(dialog.getAttribute('aria-labelledby')).toBeNull()
+    expect(screen.getByTestId('custom-title')).toBeInTheDocument()
+  })
+})
+
+describe('Modal — trapped-close dev warning', () => {
+  let originalWarn
+  let originalDev
+  beforeEach(() => {
+    originalWarn = console.warn
+    console.warn = vi.fn()
+    // Force the DEV branch on regardless of the test runner's env so the
+    // guard fires deterministically.
+    originalDev = import.meta.env.DEV
+    import.meta.env.DEV = true
+  })
+  afterEach(() => {
+    console.warn = originalWarn
+    import.meta.env.DEV = originalDev
+    cleanup()
+    document.body.style.overflow = ''
+  })
+
+  it('warns in dev when ALL dismiss vectors are disabled', () => {
+    render(
+      <Modal
+        isOpen={true}
+        onClose={() => {}}
+        title="Trapped"
+        showCloseButton={false}
+        closeOnBackdrop={false}
+        disableEscape={true}
+      >
+        x
+      </Modal>
+    )
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('[Modal]'))
+  })
+
+  it('does NOT warn when at least one dismiss vector remains', () => {
+    render(
+      <Modal
+        isOpen={true}
+        onClose={() => {}}
+        title="Has escape"
+        showCloseButton={false}
+        closeOnBackdrop={false}
+        disableEscape={false}
+      >
+        x
+      </Modal>
+    )
+    expect(console.warn).not.toHaveBeenCalled()
   })
 })
 
