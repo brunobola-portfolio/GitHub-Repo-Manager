@@ -266,8 +266,7 @@ router.post('/azure/projects/create', requireAuth, async (req, res) => {
 
 router.post('/azure/repos', requireAuth, async (req, res) => {
     try {
-        const { org, project, pat: bodyPat } = req.body;
-        const pat = azureService.resolvePat(bodyPat, req.session);
+        const { org, project } = req.body;
         if (!org || !project) {
             return errorResponse(res, 400, 'Organization and project are required');
         }
@@ -275,14 +274,15 @@ router.post('/azure/repos', requireAuth, async (req, res) => {
         if (host === DEFAULT_AZURE_HOST && !isValidGitHubUsername(org)) {
             return errorResponse(res, 400, 'Invalid organization name');
         }
-        if (!pat) {
-            return errorResponse(res, 400, 'No PAT provided and no server PAT configured');
+        const patResult = resolvePatFromRequest(req);
+        if (!patResult.pat) {
+            return errorResponse(res, 401, patResult.error, 'MISSING_PAT');
         }
         const validatedHost = await resolveHost(req, res);
         if (!validatedHost) return;
         const [repos, projectInfo] = await Promise.all([
-            azureService.listRepos(org, project, pat, validatedHost),
-            azureService.getProjectInfo(org, project, pat, validatedHost).catch(() => null),
+            azureService.listRepos(org, project, patResult.pat, validatedHost),
+            azureService.getProjectInfo(org, project, patResult.pat, validatedHost).catch(() => null),
         ]);
         const versionControlType = projectInfo?.versionControlType || 'Git';
         res.json({ repos, versionControlType });

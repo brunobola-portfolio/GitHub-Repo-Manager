@@ -309,7 +309,15 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
   useEffect(() => {
     if (!source.validated || projects.length === 0) return
     const org = source.org
-    const pat = source.credentialMode === 'personalPat' ? source.pat : undefined
+    // Credential payload: prefer the saved-credential reference over the
+    // raw PAT (backend decrypts server-side; browser never holds the value).
+    // Without this, picking a saved token caused the metadata fetch to
+    // POST with pat=undefined → 401 from the backend.
+    const credPayload = source.credentialMode === 'personalPat'
+      ? (source.savedCredentialId
+          ? { savedCredentialId: source.savedCredentialId }
+          : { pat: source.pat })
+      : {}
 
     let cancelled = false
     const fetchMeta = async () => {
@@ -328,7 +336,7 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
                 'Content-Type': 'application/json',
                 ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
               },
-              body: JSON.stringify({ host: source.host || 'dev.azure.com', org, project: p.name, pat }),
+              body: JSON.stringify({ host: source.host || 'dev.azure.com', org, project: p.name, ...credPayload }),
             })
             const data = await res.json()
             meta[p.name] = {
@@ -347,7 +355,7 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
     }
     fetchMeta()
     return () => { cancelled = true }
-  }, [source.validated, source.org, source.host, source.pat, source.credentialMode, projects])
+  }, [source.validated, source.org, source.host, source.pat, source.savedCredentialId, source.credentialMode, projects])
 
   // ── org field handlers ─────────────────────────────────────────────────
   const handleOrgInputChange = useCallback((e) => {
