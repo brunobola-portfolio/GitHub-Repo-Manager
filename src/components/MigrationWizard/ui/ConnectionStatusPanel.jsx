@@ -73,7 +73,7 @@ export default function ConnectionStatusPanel({
           ? validationError
           : validateStep === 'ok'
             ? 'PAT aceite'
-            : 'Aguarda paso anterior',
+            : 'Aguarda passo anterior',
       status: validateStep,
     },
     {

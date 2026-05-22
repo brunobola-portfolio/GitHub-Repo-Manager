@@ -3,22 +3,13 @@ import { X, Maximize2, Minimize2 } from 'lucide-react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { useMobileKeyboardFix } from '../../hooks/useMobileKeyboardFix'
+import { VARIANT_ICON_STYLES, MODAL_BACKDROP_CLASS } from './_variants'
 
 const PANEL_SIZES = {
   sm: 'w-[min(92vw,520px)]',
   md: 'w-[min(92vw,680px)]',
   lg: 'w-[min(92vw,900px)]',
   xl: 'w-[min(92vw,1140px)]',
-}
-
-// Per non-LLM theme: neutral header with soft-tinted icon tile communicates
-// the variant tone. Mirrors Modal.jsx — keep both in sync.
-const VARIANT_ICON_STYLES = {
-  default: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
-  danger:  'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
-  warning: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
-  info:    'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
-  success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
 }
 
 // headerGradient prop kept for backward-compat; default header is now solid indigo
@@ -68,7 +59,7 @@ export function WizardPanel({
             animate={{ opacity: effectiveMaximized ? 0 : 1 }}
             exit={{ opacity: 0 }}
             transition={backdropTransition}
-            className="fixed inset-0 z-[var(--ds-z-modal)] bg-black/60 dark:bg-black/75 backdrop-blur-md"
+            className={MODAL_BACKDROP_CLASS}
             style={{ pointerEvents: effectiveMaximized ? 'none' : 'auto' }}
             aria-hidden="true"
           />

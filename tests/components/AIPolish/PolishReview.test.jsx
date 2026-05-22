@@ -71,9 +71,11 @@ describe('<PolishReview />', () => {
         expect(screen.getByText(/context/i)).toBeInTheDocument()
     })
 
-    it('renders the confidence dot with aria-label="Confidence high" for a high-confidence row', () => {
+    it('renders the confidence dot with aria-label="Confiança high" for a high-confidence row', () => {
+        // Labels were converted to PT-PT alongside the rest of the modal (header
+        // was "Polir descrições com AI" — the body now matches).
         render(<PolishReview repoFullNames={['me/repo']} />)
-        expect(screen.getByLabelText(/confidence high/i)).toBeInTheDocument()
+        expect(screen.getByLabelText(/confiança high/i)).toBeInTheDocument()
     })
 
     it('renders the description input pre-populated with the proposed description', () => {

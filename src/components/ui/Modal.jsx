@@ -5,26 +5,15 @@ import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { useMobileKeyboardFix } from '../../hooks/useMobileKeyboardFix'
 import { TabBar } from './TabBar'
+import { HEADER_CLASS, MODAL_BACKDROP_CLASS, resolveIconTileClass } from './_variants'
 
 // Per non-LLM theme (docs/specs/2026-05-14-premium-non-llm-theme-design.md),
 // modal headers are GitHub-utilitarian: neutral surface, dark text, border-b.
 // Variant state (danger/warning/info/success) and iconGradient (primary/success
 // affordance) are communicated through the icon tile's soft-tinted background
 // instead of a colored header. `iconGradient="none"` falls through to the
-// variant-derived tile color.
-const ICON_GRADIENT_CLASSES = {
-    none:    null,
-    primary: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
-    success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
-}
-
-const VARIANT_ICON_STYLES = {
-    default: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
-    danger:  'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
-    warning: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
-    info:    'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
-    success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
-}
+// variant-derived tile color. Icon-tile + variant tables live in ./_variants.js
+// so Modal and WizardPanel can't drift out of sync.
 
 const STAGGER_VARIANTS = {
     hidden:  {},
@@ -57,10 +46,6 @@ const SHEET_SIZE_CLASSES = {
     '3xl': 'md:max-w-[min(92vw,1440px)]',
     full:  'md:max-w-[min(96vw,1600px)] md:max-h-[92vh]',
 }
-
-// All variants share the same neutral header (GitHub Primer-style). Semantic
-// state is conveyed by the icon tile color via VARIANT_ICON_STYLES above.
-const HEADER_CLASS = 'border-b border-slate-200 dark:border-[color:var(--ds-border-dark)] text-slate-900 dark:text-slate-100'
 
 /**
  * Modal - Premium base modal component with consistent styling
@@ -104,8 +89,17 @@ export function Modal({
     ...rest
 }) {
     // Use module-level lookup tables so Tailwind's JIT discovers every class.
-    const sizeClass = (mobileVariant === 'sheet' ? SHEET_SIZE_CLASSES[size] : SIZE_CLASSES[size]) || SIZE_CLASSES.md
-    const iconTileClass = ICON_GRADIENT_CLASSES[iconGradient] || VARIANT_ICON_STYLES[variant] || VARIANT_ICON_STYLES.default
+    const isSheet = mobileVariant === 'sheet'
+    const sizeClass = (isSheet ? SHEET_SIZE_CLASSES[size] : SIZE_CLASSES[size]) || SIZE_CLASSES.md
+    const iconTileClass = resolveIconTileClass(iconGradient, variant)
+
+    // Defensive guard: a modal that disables every dismiss vector (no close X,
+    // no Escape key, no backdrop click) traps the user with no way out. Warn
+    // in dev so callers notice before shipping. Production silently allows it
+    // (some workflows legitimately need it during a mid-running async step).
+    if (import.meta.env.DEV && isOpen && !showCloseButton && disableEscape && !closeOnBackdrop) {
+        console.warn('[Modal] All dismiss vectors disabled (no close button, no Escape, no backdrop). Users cannot close this modal — verify this is intentional.')
+    }
 
     const modalRef = useFocusTrap(isOpen, onClose, { disableEscape, initialFocusRef, restoreFocusRef })
     useBodyScrollLock(isOpen)
@@ -115,6 +109,12 @@ export function Modal({
     const reactId = useId()
     const titleId = `modal-title-${reactId}`
     const bodyId = `modal-body-${reactId}`
+    // Only point aria-labelledby at the title id when we'll actually render a
+    // string heading at that id. ReactNode titles are the caller's responsibility
+    // (they must include their own accessible label); empty strings produce no
+    // heading and would orphan aria-labelledby otherwise.
+    const hasStringTitle = typeof title === 'string' && title.trim().length > 0
+    const ariaLabelledBy = hasStringTitle ? titleId : undefined
     // Per-instance fallback so two modals with tabs that don't pass an
     // explicit tabsLayoutId don't collide on DOM tab/tabpanel ids.
     const effectiveTabsLayoutId = tabsLayoutId || `modal-tabs-${reactId}`
@@ -137,22 +137,25 @@ export function Modal({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         onClick={handleBackdropClick}
-                        className={`fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-md z-[var(--ds-z-modal)] flex justify-center md:items-center md:p-4 ${mobileVariant === 'sheet' ? 'items-end p-0 short:items-center short:p-4' : 'items-center max-md:p-4'}`}
+                        className={`${MODAL_BACKDROP_CLASS} flex justify-center md:items-center md:p-4 ${isSheet ? 'items-end p-0 short:items-center short:p-4' : 'items-center max-md:p-4'}`}
                     >
                         {/* Modal Container */}
                         <motion.div
                             ref={modalRef}
                             role="dialog"
                             aria-modal="true"
-                            aria-labelledby={titleId}
-                            // Only set aria-describedby when the body still has bodyId.
-                            // When tabs are active, the body div takes a tabpanel id
-                            // instead (see below), so pointing at bodyId would orphan.
-                            aria-describedby={tabs && tabs.length > 0 ? undefined : bodyId}
+                            aria-labelledby={ariaLabelledBy}
+                            // Only set aria-describedby when the body still owns bodyId.
+                            // The body div only switches to a tabpanel id when BOTH tabs
+                            // exist AND an activeTab is selected — otherwise bodyId stays
+                            // (see id assignment below). aria-describedby must mirror that
+                            // exact condition or screen readers lose the body relation when
+                            // tabs are configured but no tab is active yet.
+                            aria-describedby={tabs && tabs.length > 0 && activeTab ? undefined : bodyId}
                             {...rest}
-                            initial={reducedMotion ? { opacity: 0 } : (mobileVariant === 'sheet' ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 })}
+                            initial={reducedMotion ? { opacity: 0 } : (isSheet ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 })}
                             animate={reducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
-                            exit={reducedMotion ? { opacity: 0 } : (mobileVariant === 'sheet' ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 })}
+                            exit={reducedMotion ? { opacity: 0 } : (isSheet ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 })}
                             transition={reducedMotion ? { duration: 0.15 } : { type: 'spring', duration: 0.4, bounce: 0.12 }}
                             onClick={(e) => e.stopPropagation()}
                             className={`
@@ -160,7 +163,7 @@ export function Modal({
                                 w-full min-w-[320px]
                                 bg-white dark:bg-[color:var(--ds-surface-dark)]
                                 rounded-2xl
-                                ${mobileVariant === 'sheet' ? 'max-md:rounded-t-3xl max-md:rounded-b-none max-md:max-w-none short:rounded-2xl short:max-w-[calc(100%-2rem)]' : ''}
+                                ${isSheet ? 'max-md:rounded-t-3xl max-md:rounded-b-none max-md:max-w-none short:rounded-2xl short:max-w-[calc(100%-2rem)]' : ''}
                                 shadow-[var(--ds-shadow-lg)]
                                 ring-1 ring-slate-200/50 dark:ring-[color:var(--ds-border-dark)]
                                 overflow-hidden
@@ -183,13 +186,13 @@ export function Modal({
                                     </div>
                                 )}
                                 <div className="flex-1 min-w-0">
-                                    {typeof title === 'string' ? (
-                                        <h2 id={titleId} className="text-sm font-semibold tracking-tight truncate">
-                                            {title}
-                                        </h2>
-                                    ) : (
-                                        title
-                                    )}
+                                    {typeof title === 'string'
+                                        ? title.trim() && (
+                                            <h2 id={titleId} className="text-sm font-semibold tracking-tight truncate">
+                                                {title}
+                                            </h2>
+                                        )
+                                        : title}
                                     {subtitle && (
                                         <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                                             {subtitle}
@@ -207,7 +210,7 @@ export function Modal({
                                 )}
                             </div>
                             {tabs && tabs.length > 0 && (
-                                <div className="flex-shrink-0 px-4 md:px-5 bg-slate-50/80 dark:bg-slate-900/70 border-b border-slate-200/50 dark:border-slate-800/40 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,transparent,black_24px,black_calc(100%-24px),transparent)]">
+                                <div className="flex-shrink-0 px-4 md:px-5 bg-slate-50/80 dark:bg-[color:var(--ds-surface-subtle-dark)] border-b border-slate-200/50 dark:border-[color:var(--ds-border-dark)] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,transparent,black_24px,black_calc(100%-24px),transparent)]">
                                     <TabBar
                                         tabs={tabs}
                                         activeTab={activeTab}
@@ -248,7 +251,7 @@ export function Modal({
                             {/* Footer */}
                             {footer && (
                                 <div
-                                    className={`flex-shrink-0 flex items-center min-h-[64px] md:min-h-[68px] px-4 md:px-5 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shadow-[var(--ds-shadow-overlay)] ${mobileVariant === 'sheet' ? 'pb-[calc(1rem+env(safe-area-inset-bottom))] md:pb-0' : ''}`}
+                                    className={`flex-shrink-0 flex items-center min-h-[64px] md:min-h-[68px] px-4 md:px-5 bg-white dark:bg-[color:var(--ds-surface-subtle-dark)] border-t border-slate-200 dark:border-[color:var(--ds-border-dark)] shadow-[var(--ds-shadow-overlay)] ${isSheet ? 'pb-[calc(1rem+env(safe-area-inset-bottom))] md:pb-0' : ''}`}
                                 >
                                     <div className="w-full">
                                         {footer}

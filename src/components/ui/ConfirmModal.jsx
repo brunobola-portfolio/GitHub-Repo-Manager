@@ -44,7 +44,15 @@ export function ConfirmModal({
         if (isSubmitting) return
         if (requiresInput) {
             if (inputValue !== requiresInput) {
-                setInputError(`Please type "${requiresInput}" to confirm`)
+                // Distinct message when the user got the letters right but the case
+                // wrong — otherwise "type DELETE" silently rejects "Delete" with the
+                // same prompt and looks broken.
+                const caseMismatch = inputValue.toLowerCase() === requiresInput.toLowerCase()
+                setInputError(
+                    caseMismatch
+                        ? `Please type "${requiresInput}" exactly (case-sensitive)`
+                        : `Please type "${requiresInput}" to confirm`
+                )
                 return
             }
         }
@@ -112,6 +120,7 @@ export function ConfirmModal({
                 <div className="mt-4">
                     <label htmlFor="confirm-input" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                         Type <span className="font-semibold text-red-600 dark:text-red-400">{requiresInput}</span> to confirm:
+                        <span className="ml-1 text-xs font-normal text-slate-500 dark:text-slate-400">(case-sensitive)</span>
                     </label>
                     <input
                         id="confirm-input"

@@ -68,7 +68,11 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 px-2 py-1.5">
+        <div
+          aria-live="polite"
+          aria-atomic="true"
+          className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 px-2 py-1.5"
+        >
           <Spinner size="sm" tone="muted" label="A carregar credenciais" /> A carregar…
         </div>
       ) : (
@@ -112,7 +116,7 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
                         </span>
                         {isExactOrg && (
                           <span className="shrink-0 text-[10px] uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40">
-                            exact match
+                            correspondência exacta
                           </span>
                         )}
                       </div>
