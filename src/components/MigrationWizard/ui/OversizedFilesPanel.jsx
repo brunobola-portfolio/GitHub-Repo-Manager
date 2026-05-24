@@ -1,16 +1,14 @@
-import { useState } from 'react'
 import { Database, ExternalLink, Copy, Check, FileWarning } from 'lucide-react'
 import { formatFileSize } from '../../../utils/format'
+import { useCopyToClipboard } from '../../../hooks/useCopyToClipboard'
 
 export function OversizedFilesPanel({ files, fallback }) {
-  const [copied, setCopied] = useState(false)
+  const { copied, copy } = useCopyToClipboard()
   const total = files.reduce((sum, f) => sum + (f.sizeBytes || 0), 0)
 
   const handleCopy = () => {
     const text = files.map((f) => `${f.path}\t${formatFileSize(f.sizeBytes, 1)}`).join('\n')
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    copy(text)
   }
 
   return (

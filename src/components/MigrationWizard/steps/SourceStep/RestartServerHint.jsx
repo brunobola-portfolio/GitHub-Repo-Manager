@@ -1,5 +1,5 @@
-import { useState } from 'react'
 import { RefreshCw, Terminal, Copy, Check } from 'lucide-react'
+import { useCopyToClipboard } from '../../../../hooks/useCopyToClipboard'
 
 /**
  * Self-help banner for "stale backend" errors. Some validation failures
@@ -11,16 +11,10 @@ import { RefreshCw, Terminal, Copy, Check } from 'lucide-react'
  * sees the actionable fix first, not the raw technical message.
  */
 export default function RestartServerHint({ host }) {
-  const [copied, setCopied] = useState(false)
+  const { copied, copy: copyToClipboard } = useCopyToClipboard(1500)
   const cmd = 'npm run dev'
 
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(cmd)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    } catch { /* clipboard blocked */ }
-  }
+  const copy = () => { copyToClipboard(cmd) }
 
   return (
     <div className="rounded-2xl border border-indigo-300 dark:border-indigo-700 bg-indigo-50/60 dark:bg-indigo-900/15 overflow-hidden">

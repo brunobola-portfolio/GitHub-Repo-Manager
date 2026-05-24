@@ -11,6 +11,7 @@ import { Field, Input, Textarea } from '../ui/form'
 import { PanelHeader } from '../ui/PanelHeader'
 import { EmptyState } from '../ui/EmptyState'
 import { useToast } from '../../hooks/useToast'
+import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import { apiCall } from '../../utils/api'
 
 const READONLY_CLASSES = 'w-full px-3.5 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/70 text-slate-700 dark:text-slate-200 text-sm font-mono leading-relaxed whitespace-pre-wrap break-words overflow-auto'
@@ -62,18 +63,10 @@ function CategoryBadge({ category }) {
 }
 
 function CopyButton({ getText, label = 'Copy' }) {
-    const [copied, setCopied] = useState(false)
-    const onClick = async () => {
+    const { copied, copy } = useCopyToClipboard(1500)
+    const onClick = () => {
         const text = getText()
-        if (!text) return
-        try {
-            await navigator.clipboard.writeText(text)
-            setCopied(true)
-            setTimeout(() => setCopied(false), 1500)
-        } catch {
-            // Clipboard API can fail in iframes / insecure contexts. Silent —
-            // the user still has the text visible to copy manually.
-        }
+        if (text) copy(text)
     }
     return (
         <button

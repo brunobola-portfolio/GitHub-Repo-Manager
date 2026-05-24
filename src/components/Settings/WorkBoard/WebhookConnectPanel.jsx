@@ -1,20 +1,16 @@
-import { useState } from 'react'
 import { InsightCard } from '../../ui/InsightCard'
 import { Zap, Copy, ExternalLink, Check } from 'lucide-react'
+import { useCopyToClipboard } from '../../../hooks/useCopyToClipboard'
 
 const WEBHOOK_PATH = '/api/v1/webhooks/github'
 const DOCS_URL = 'https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks'
 
 export function WebhookConnectPanel({ tier }) {
-    const [copied, setCopied] = useState(false)
+    const { copied, copy } = useCopyToClipboard()
     const origin = typeof window !== 'undefined' ? window.location.origin : ''
     const fullUrl = `${origin}${WEBHOOK_PATH}`
 
-    const handleCopy = () => {
-        navigator.clipboard?.writeText(fullUrl)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-    }
+    const handleCopy = () => { copy(fullUrl) }
 
     const isProPlus = tier === 'pro' || tier === 'enterprise'
 
