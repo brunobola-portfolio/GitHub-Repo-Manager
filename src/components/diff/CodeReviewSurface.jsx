@@ -1,10 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react'
 import { FileTree } from '../PRReview/FileTree/FileTree'
-import { DiffRenderer } from '../PRReview/DiffPanel/DiffRenderer'
 import { Spinner } from '../ui/Spinner'
 import { CodeReviewToolbar } from './CodeReviewToolbar'
 import { MobileFileTreeSheet } from './MobileFileTreeSheet'
 import { useDiffPreferences } from '../../hooks/useDiffPreferences'
+
+// DiffRenderer pulls in @git-diff-view/react + shiki (~303 KB gzipped).
+// Match the lazy-loading already used by DiffPanel.jsx so the chunk only
+// ships when the user actually opens a diff view (RepoDetail's PR Files
+// or commit-detail tabs).
+const DiffRenderer = lazy(() =>
+  import('../PRReview/DiffPanel/DiffRenderer').then((m) => ({ default: m.DiffRenderer }))
+)
 
 function loadReviewed(storageKey) {
     if (!storageKey) return new Set()
@@ -166,16 +173,18 @@ export function CodeReviewSurface({
                                 <span className="flex-shrink-0 text-red-600 dark:text-red-400">−{activeFile.deletions}</span>
                             </div>
                             {activeFile.patch ? (
-                                <DiffRenderer
-                                    filename={activeFile.filename}
-                                    patch={activeFile.patch}
-                                    viewMode={prefs.mode}
-                                    tabWidth={prefs.tabWidth}
-                                    wrap={prefs.wrap}
-                                    additions={activeFile.additions || 0}
-                                    deletions={activeFile.deletions || 0}
-                                    storageKey={storageKey}
-                                />
+                                <Suspense fallback={<div className="flex items-center justify-center h-40"><Spinner size="md" /></div>}>
+                                    <DiffRenderer
+                                        filename={activeFile.filename}
+                                        patch={activeFile.patch}
+                                        viewMode={prefs.mode}
+                                        tabWidth={prefs.tabWidth}
+                                        wrap={prefs.wrap}
+                                        additions={activeFile.additions || 0}
+                                        deletions={activeFile.deletions || 0}
+                                        storageKey={storageKey}
+                                    />
+                                </Suspense>
                             ) : (
                                 <div className="p-6 text-sm text-slate-500 dark:text-slate-400">
                                     No diff available for this file (binary or too large).

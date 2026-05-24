@@ -28,13 +28,13 @@ const ScheduleStep = lazy(() => import('./steps/ScheduleStep'))
 const ProgressStep = lazy(() => import('./steps/ProgressStep'))
 const SimpleProgressStep = lazy(() => import('./steps/SimpleProgressStep'))
 const SummaryStep = lazy(() => import('./steps/SummaryStep'))
-import { SectionSpinner } from '../ui/Spinner'
+import { SectionSpinner, Spinner } from '../ui/Spinner'
 import BreadcrumbNav from './BreadcrumbNav'
 import {
   ArrowLeft, ArrowRight, Rocket, Download, AlertCircle, AlertTriangle,
   Check, Radio, Link2, GitFork, Settings2, Sparkles,
   CalendarClock, Activity, Flag, Cloud, ChevronRight, Zap,
-  Loader2, MinusCircle, XCircle,
+  MinusCircle, XCircle,
 } from 'lucide-react'
 
 const STEP_LABELS = {
@@ -159,7 +159,7 @@ function StepDisc({ status, index, icon: Icon }) {
   if (status === 'loading') {
     return (
       <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-300 dark:ring-indigo-700">
-        <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2.5} />
+        <Spinner size="md" tone="primary" />
       </div>
     )
   }
