@@ -276,6 +276,29 @@ export function initDB(targetDb = db) {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_task_plan ON migration_tasks(plan_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_task_status ON migration_tasks(status)`);
 
+        // Migration marks table (provenance marks written to source/destination/git after a migration)
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS migration_marks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                plan_id INTEGER NOT NULL,
+                task_id INTEGER,
+                scope TEXT NOT NULL,
+                target_kind TEXT NOT NULL,
+                target_id TEXT NOT NULL,
+                payload TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                skip_reason TEXT,
+                error_message TEXT,
+                written_at TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (plan_id) REFERENCES migration_plans(id) ON DELETE CASCADE,
+                FOREIGN KEY (task_id) REFERENCES migration_tasks(id) ON DELETE CASCADE
+            )
+        `);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_marks_plan ON migration_marks(plan_id)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_marks_status ON migration_marks(status)`);
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_marks_target ON migration_marks(target_kind, target_id)`);
+
         // Audit log for destructive operations
         db.exec(`
             CREATE TABLE IF NOT EXISTS audit_log (
@@ -1074,6 +1097,11 @@ export function initDB(targetDb = db) {
     }
     try {
         db.exec(`ALTER TABLE migration_plans ADD COLUMN azure_host TEXT`);
+    } catch (err) {
+        if (!err.message?.includes('duplicate column')) throw err;
+    }
+    try {
+        db.exec(`ALTER TABLE migration_plans ADD COLUMN tagging_policy TEXT`);
     } catch (err) {
         if (!err.message?.includes('duplicate column')) throw err;
     }
