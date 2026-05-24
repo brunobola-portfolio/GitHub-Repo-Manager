@@ -151,17 +151,26 @@ export function createMigrationTaggingService({
       })
     }
 
-    // ----- Git annotated tag (per repo task, when local workdir resolvable) -----
+    // ----- Git annotated tag (per repo task, when workdir resolver provided) -----
+    // Resolver may return:
+    //   string                                 → legacy shape, repoDir only
+    //   { repoDir, cleanup?, remotes? }        → preferred shape, cleanup called after
+    //   null / undefined                       → skip this task's git tag
     if (policy.writeGitTag && writers.gitTag && repoDirResolver) {
       for (const task of tasks) {
         let meta = {}
         try { meta = task.metadata ? JSON.parse(task.metadata) : {} } catch { /* malformed */ }
-        let repoDir = null
+        let resolved = null
         try {
-          repoDir = await repoDirResolver({ plan, task, meta })
+          resolved = await repoDirResolver({ plan, task, meta })
         } catch (err) {
           logger.warn({ err, taskId: task.id }, 'tagging: repoDirResolver failed')
         }
+        if (!resolved) continue
+
+        const repoDir = typeof resolved === 'string' ? resolved : resolved.repoDir
+        const remotes = (typeof resolved === 'object' && resolved.remotes) ? resolved.remotes : (meta.remotes || [])
+        const cleanup = typeof resolved === 'object' ? resolved.cleanup : null
         if (!repoDir) continue
 
         const tagName = gitTagName({ planId, dateIso })
@@ -172,18 +181,24 @@ export function createMigrationTaggingService({
           dateIso,
           executedBy: plan.user_id
         })
-        await runMark({
-          scope: SCOPES.GIT_TAG,
-          targetKind: TARGET_KINDS.GIT_ANNOTATED_TAG,
-          targetId: tagName,
-          taskId: task.id,
-          fn: () => writers.gitTag.createAnnotatedTag({
-            repoDir,
-            tagName,
-            message,
-            remotes: meta.remotes || []
+        try {
+          await runMark({
+            scope: SCOPES.GIT_TAG,
+            targetKind: TARGET_KINDS.GIT_ANNOTATED_TAG,
+            targetId: tagName,
+            taskId: task.id,
+            fn: () => writers.gitTag.createAnnotatedTag({
+              repoDir,
+              tagName,
+              message,
+              remotes
+            })
           })
-        })
+        } finally {
+          if (cleanup) {
+            try { cleanup() } catch (err) { logger.warn({ err, taskId: task.id }, 'tagging: workdir cleanup failed') }
+          }
+        }
       }
     }
 

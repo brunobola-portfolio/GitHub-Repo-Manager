@@ -186,6 +186,48 @@ describe('migration-tagging-service.applyTaggingForPlan', () => {
     expect(events.some(e => e[0] === 'progress')).toBe(true)
   })
 
+  it('calls cleanup() on the resolved workdir object after the git-tag writer runs', async () => {
+    const db = makeDb()
+    const { planId } = seedPlan(db, { policy: JSON.stringify({ enabled: true, writeSource: false, writeDestination: false, writeGitTag: true }) })
+    const writers = makeWriters()
+    const cleanup = vi.fn()
+    const repoDirResolver = vi.fn().mockResolvedValue({ repoDir: '/tmp/fake', remotes: [{ name: 'origin' }], cleanup })
+
+    const svc = createMigrationTaggingService({
+      db,
+      writersFactory: () => writers,
+      credentialsResolver: async () => ({ github: 'x' }),
+      repoDirResolver,
+      logger: silentLogger
+    })
+    await svc.applyTaggingForPlan(planId)
+    expect(repoDirResolver).toHaveBeenCalled()
+    expect(writers.gitTag.createAnnotatedTag).toHaveBeenCalledWith(expect.objectContaining({
+      repoDir: '/tmp/fake',
+      remotes: [{ name: 'origin' }]
+    }))
+    expect(cleanup).toHaveBeenCalledOnce()
+  })
+
+  it('cleanup is called even when the git-tag writer throws', async () => {
+    const db = makeDb()
+    const { planId } = seedPlan(db, { policy: JSON.stringify({ enabled: true, writeSource: false, writeDestination: false, writeGitTag: true }) })
+    const writers = makeWriters({
+      gitTag: { createAnnotatedTag: vi.fn().mockRejectedValue(new Error('push denied')) }
+    })
+    const cleanup = vi.fn()
+    const svc = createMigrationTaggingService({
+      db,
+      writersFactory: () => writers,
+      credentialsResolver: async () => ({ github: 'x' }),
+      repoDirResolver: async () => ({ repoDir: '/tmp/fake', remotes: [], cleanup }),
+      logger: silentLogger
+    })
+    const summary = await svc.applyTaggingForPlan(planId)
+    expect(summary.failed).toBe(1)
+    expect(cleanup).toHaveBeenCalledOnce()
+  })
+
   it('removeMarksForPlan deletes all marks for a plan', async () => {
     const db = makeDb()
     const { planId } = seedPlan(db)

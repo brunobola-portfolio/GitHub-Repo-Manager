@@ -14,6 +14,7 @@ import { createGithubWriter } from '../lib/tagging/github-writer.js';
 import { createAzureWriter } from '../lib/tagging/azure-writer.js';
 import { createGitTagWriter } from '../lib/tagging/git-tag-writer.js';
 import { createHttpShim } from '../lib/tagging/http-shim.js';
+import { createTaggingWorkdirResolver } from '../lib/tagging/tagging-workdir-resolver.js';
 
 /**
  * Resolve the Azure PAT for a plan execute/resume/retry request.
@@ -63,10 +64,20 @@ const taggingService = createMigrationTaggingService({
       : null,
     gitTag: createGitTagWriter()
   }),
-  // repoDirResolver will be plumbed once import-service exposes a stable
-  // per-task workdir handle. Until then, git-tag marks are no-ops at runtime
-  // (the policy still records `enabled:true`, but no resolver → no tag).
-  repoDirResolver: null,
+  // Resolver builds a transient shallow clone of the destination repo so the
+  // git-tag writer can attach + push an annotated tag. The import-service
+  // tears down its own workdir in `finally` before plan-complete fires, so
+  // we re-acquire one on demand here. Resolver returns null when no GitHub
+  // token is available, gracefully degrading to "no git-tag mark".
+  repoDirResolver: async ({ plan, task, meta }) => {
+    const stored = engine.credentials.retrieve(plan.id);
+    if (!stored?.githubToken) return null;
+    const resolve = createTaggingWorkdirResolver({
+      credentials: { github: stored.githubToken },
+      logger
+    });
+    return resolve({ plan, task, meta });
+  },
   logger
 });
 
