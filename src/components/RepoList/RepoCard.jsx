@@ -8,6 +8,7 @@ import { Badge } from '../ui/Badge'
 import { Tooltip } from '../ui/Tooltip'
 import { formatCompact } from '../../utils/format'
 import { TrackedDot } from '../WorkBoard/TrackedDot'
+import { MigratedPill } from './MigratedPill'
 import { RepoHealthBadge } from '../AI/RepoHealthBadge'
 import { useRepoMetadata } from '../../hooks/useRepoMetadata'
 import { repoActions } from '../../actions/repoActions'
@@ -161,6 +162,7 @@ export const RepoCard = memo(function RepoCard({
 								</button>
 							</h3>
 							<TrackedDot repoFullName={repo.full_name} size="sm" />
+							<MigratedPill fullName={repo.full_name} />
 							{aiMeta?.health_score != null && (
 								<RepoHealthBadge
 									score={aiMeta.health_score}
