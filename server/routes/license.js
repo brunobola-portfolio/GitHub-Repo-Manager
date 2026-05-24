@@ -194,7 +194,7 @@ router.post('/install', requireAuth, installLimiter, async (req, res) => {
       issuedAt: payload.iat ? new Date(payload.iat * 1000).toISOString() : null,
     })
   } catch (err) {
-    logger.error({ err: err.message }, 'License install failed')
+    logger.error({ err }, 'License install failed')
     res.status(500).json({ error: 'Failed to install license' })
   }
 })

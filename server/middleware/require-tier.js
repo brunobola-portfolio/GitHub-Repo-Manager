@@ -11,6 +11,7 @@ import { validateLicenseKey, isLicenseExpired } from '../lib/license.js'
 import { config } from '../config.js'
 import { getStoredLicense } from '../lib/license-store.js'
 import logger from '../lib/logger.js'
+import { tierRequiredPayload } from '../lib/usage-meter.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -111,18 +112,16 @@ export function getLicenseSource() {
   return cachedLicenseSource
 }
 
-export function requireTier(minTier) {
+export function requireTier(minTier, feature = null) {
   const minOrder = getTierOrder(minTier)
   return (req, res, next) => {
     const userTier = getUserTier(req.session?.userId || req.tenantId)
     req.userTier = userTier
     if (getTierOrder(userTier) >= minOrder) return next()
-    return res.status(403).json({
-      error: 'upgrade_required',
-      message: `This feature requires the ${minTier} plan`,
-      currentTier: userTier,
-      requiredTier: minTier,
-    })
+    // Canonical 403 payload — every tier-gated route now uses the same shape
+    // so QuotaExceededState on the frontend can render uniformly.
+    const featureName = feature || req.baseUrl + req.path
+    return res.status(403).json(tierRequiredPayload(userTier, minTier, featureName))
   }
 }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Lock, Unlock, Loader2, CheckCircle2, XCircle,
+  Lock, Unlock, CheckCircle2, XCircle,
   AlertTriangle, RefreshCw, SkipForward, Edit3,
   GitBranch, HardDrive, ChevronDown, ChevronUp,
   Package, MoreHorizontal, Building2, ArrowRight,
