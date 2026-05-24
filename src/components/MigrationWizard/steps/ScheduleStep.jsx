@@ -10,6 +10,8 @@ import { migrationApi } from '../../../api/migration'
 import { useToast } from '../../../hooks/useToast'
 import { StatCard } from '../ui/repo/StatCard'
 import { formatFileSize } from '../../../utils/format'
+import { TaggingPolicyPanel } from './TaggingPolicyPanel'
+import { DEFAULT_TAGGING_POLICY } from './taggingDefaults'
 
 function SummaryCard({ wizard }) {
   const selectedRepos = (wizard.repos || []).filter(r => r.selected)
@@ -153,6 +155,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
             ? { scheduledAt: new Date(schedule.scheduledAt).toISOString() }
             : {}),
         },
+        ...(wizard.taggingPolicy ? { taggingPolicy: wizard.taggingPolicy } : {}),
       }
 
       const { planId } = await migrationApi.createPlan(planData)
@@ -293,6 +296,14 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
           </p>
         </div>
       </label>
+
+      {/* Tagging policy */}
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 bg-white/30 dark:bg-slate-800/30">
+        <TaggingPolicyPanel
+          policy={wizard.taggingPolicy || DEFAULT_TAGGING_POLICY}
+          onChange={(p) => wizard.updateTaggingPolicy?.(p)}
+        />
+      </div>
 
       {/* Error */}
       {execError && (

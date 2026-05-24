@@ -135,6 +135,14 @@ const INITIAL_SCHEDULE = {
   isDryRun: false,
 }
 
+const INITIAL_TAGGING_POLICY = {
+  enabled: true,
+  writeSource: true,
+  writeDestination: true,
+  writeGitTag: true,
+  hideSourceName: false,
+}
+
 const INITIAL_IMPORT_JOBS = {
   jobId: null,
   jobStatus: null,
@@ -256,6 +264,10 @@ export function useMigrationWizard({
     isDryRun: initialDryRun,
     ...(hydrated.current?.schedule || {}),
   }))
+  const [taggingPolicy, setTaggingPolicy] = useState(() => ({
+    ...INITIAL_TAGGING_POLICY,
+    ...(hydrated.current?.taggingPolicy || {}),
+  }))
   /* eslint-enable react-hooks/refs */
   const [planId, setPlanId] = useState(null)
   const [importJobs, setImportJobs] = useState(INITIAL_IMPORT_JOBS)
@@ -361,6 +373,13 @@ export function useMigrationWizard({
     setSchedule((prev) => ({ ...prev, ...updates }))
   }, [])
 
+  const updateTaggingPolicy = useCallback((nextOrFn) => {
+    setTaggingPolicy((prev) => {
+      const next = typeof nextOrFn === 'function' ? nextOrFn(prev) : nextOrFn
+      return { ...prev, ...next }
+    })
+  }, [])
+
   const updateImportJobs = useCallback((updatesOrFn) => {
     setImportJobs((prev) => {
       const updates = typeof updatesOrFn === 'function' ? updatesOrFn(prev) : updatesOrFn
@@ -376,6 +395,7 @@ export function useMigrationWizard({
     setWiki(INITIAL_WIKI)
     setAiPlan(INITIAL_AI_PLAN)
     setSchedule(INITIAL_SCHEDULE)
+    setTaggingPolicy(INITIAL_TAGGING_POLICY)
     setPlanId(null)
     setImportJobs(INITIAL_IMPORT_JOBS)
     setError(null)
@@ -406,8 +426,9 @@ export function useMigrationWizard({
       workItems,
       wiki,
       schedule,
+      taggingPolicy,
     })
-  }, [persistDraft, currentStepIndex, currentStep, source, repos, workItems, wiki, schedule])
+  }, [persistDraft, currentStepIndex, currentStep, source, repos, workItems, wiki, schedule, taggingPolicy])
 
   return {
     // Step navigation
@@ -428,6 +449,7 @@ export function useMigrationWizard({
     wiki,
     aiPlan,
     schedule,
+    taggingPolicy,
     planId,
     importJobs,
     error,
@@ -440,6 +462,7 @@ export function useMigrationWizard({
     updateWiki,
     updateAiPlan,
     updateSchedule,
+    updateTaggingPolicy,
     setPlanId,
     updateImportJobs,
 

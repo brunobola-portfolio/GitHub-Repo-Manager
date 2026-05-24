@@ -223,7 +223,7 @@ router.post('/plans', requireAuth, async (req, res) => {
       logger.warn({ errors: flat }, 'Migration plan validation failed');
       return res.status(400).json({ error: 'Validation failed', details: flat });
     }
-    const { source, tasks, targetOrg, schedule } = parsed.data;
+    const { source, tasks, targetOrg, schedule, taggingPolicy } = parsed.data;
     // Free tier gate — "real migration execution requires Pro" per pricing page.
     // Previously this silently coerced isDryRun=true when a Free user explicitly
     // requested a real run; that was surprising (the API appeared to accept the
@@ -251,6 +251,14 @@ router.post('/plans', requireAuth, async (req, res) => {
     }
     const isDryRun = isFree ? true : !!schedule?.isDryRun;
     const planId = engine.createPlan(req.session.userId, source, tasks, { targetOrg, isDryRun });
+    if (taggingPolicy) {
+      try {
+        db.prepare('UPDATE migration_plans SET tagging_policy = ? WHERE id = ?')
+          .run(JSON.stringify(taggingPolicy), planId);
+      } catch (err) {
+        logger.warn({ err, planId }, 'failed to persist tagging_policy on plan; using defaults');
+      }
+    }
     if (schedule?.mode === 'scheduled' && schedule?.scheduledAt) {
       const credentials = {
         githubToken: req.session.accessToken,

@@ -463,7 +463,14 @@ export const createPlanSchema = z.object({
         mode: z.enum(['now', 'scheduled']).default('now'),
         scheduledAt: z.string().datetime().optional(),
         isDryRun: z.boolean().default(false)
-    }).default({ mode: 'now', isDryRun: false })
+    }).default({ mode: 'now', isDryRun: false }),
+    taggingPolicy: z.object({
+        enabled: z.boolean().default(true),
+        writeSource: z.boolean().default(true),
+        writeDestination: z.boolean().default(true),
+        writeGitTag: z.boolean().default(true),
+        hideSourceName: z.boolean().default(false)
+    }).optional()
 });
 
 export const updatePlanSchema = createPlanSchema.partial();
