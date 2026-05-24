@@ -384,14 +384,9 @@ router.post('/plans/:id/execute', requireAuth, requireProOrDryRunPlan, async (re
       azureProject: plan.source_project
     };
 
-    // Stash credentials so the post-completion tagging service can retrieve
-    // them in its `plan-complete` listener. Stored encrypted; auto-purged
-    // after the credential manager's grace period (48h) regardless.
-    try { engine.credentials.store(id, credentials); } catch (err) {
-      logger.warn({ err, planId: id }, 'failed to stash credentials for tagging; tagging may degrade');
-    }
-
-    // Start execution asynchronously
+    // Start execution asynchronously. `executePlan` now stashes credentials
+    // itself so the tagging service (and any other plan-complete consumer)
+    // can retrieve them in the async listener path.
     engine.executePlan(id, credentials).catch(err => {
       logger.error({ err, planId: req.params.id }, 'Plan execution error');
     });

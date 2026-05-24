@@ -247,6 +247,15 @@ export class MigrationEngine extends EventEmitter {
       throw new Error(`Cannot execute plan with status '${plan.status}'`)
     }
 
+    // Stash credentials so the post-completion tagging service (and any other
+    // plan-complete subscriber) can resolve them via `engine.credentials.retrieve()`
+    // — covers immediate execute, scheduled tick, and retry/resume flows
+    // uniformly. The 48h grace period on the credential manager handles cleanup.
+    if (credentials) {
+      try { this.credentials.store(planId, credentials) }
+      catch (err) { logger.warn({ err, planId }, 'failed to stash credentials at execute; post-complete consumers may degrade') }
+    }
+
     // Transition to running (skip if already running from retry)
     if (plan.status !== 'running') {
       this.db.prepare(
@@ -801,11 +810,11 @@ export class MigrationEngine extends EventEmitter {
     ).all()
 
     for (const plan of duePlans) {
-      // Read credentials through the manager, then clear immediately so a
-      // crash in executePlan cannot leave a plan with a decryptable blob
-      // sitting around longer than necessary.
+      // Read credentials through the manager and forward to executePlan, which
+      // re-stashes them so the post-complete tagging service can pick them up
+      // via `engine.credentials.retrieve()` in its async listener. The 48h
+      // grace period on the credential manager bounds total exposure.
       const credentials = this.credentials.retrieve(plan.id)
-      this.credentials.forget(plan.id)
       this.executePlan(plan.id, credentials).catch(err => {
         logger.error({ err, planId: plan.id }, 'Scheduled plan failed')
       })
