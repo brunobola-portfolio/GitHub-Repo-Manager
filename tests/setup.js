@@ -4,11 +4,21 @@ import { afterEach, vi } from 'vitest'
 if (typeof window !== 'undefined') {
 
 await import('@testing-library/jest-dom')
-const { cleanup } = await import('@testing-library/react')
+const { cleanup, configure } = await import('@testing-library/react')
 
-// Cleanup after each test
+// Default waitFor / find* timeout was 1s — too tight for cold CI runners,
+// which silently flaked ~37% of async assertions when CPU was contended.
+// 4s is the React Testing Library recommendation for shared CI.
+configure({ asyncUtilTimeout: 4000 })
+
+// Cleanup after each test. We also defensively reset fake timers + clear any
+// pending timer state so a test that called vi.useFakeTimers() without an
+// explicit useRealTimers() at the end cannot contaminate later tests in the
+// same worker (cross-file timer leak observed in useWorkBoard suite).
 afterEach(() => {
   cleanup()
+  try { vi.useRealTimers() } catch { /* not in fake-timer mode */ }
+  try { vi.clearAllTimers() } catch { /* no pending timers */ }
 })
 
 // Mock window.matchMedia for theme tests

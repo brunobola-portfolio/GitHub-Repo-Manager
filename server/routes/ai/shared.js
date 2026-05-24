@@ -104,7 +104,9 @@ const RETRYABLE_CODES = new Set([
 ]);
 
 const DEFAULT_RETRIES = 3;
-const DEFAULT_BASE_DELAY_MS = 400;
+// Tests can collapse the backoff to ~1ms by setting AI_RETRY_BASE_DELAY_MS=1
+// — keeps retry-path tests fast without bypassing the real retry logic.
+const DEFAULT_BASE_DELAY_MS = Number.parseInt(process.env.AI_RETRY_BASE_DELAY_MS ?? '400', 10);
 const MAX_RETRY_AFTER_MS = 60_000;
 
 function computeBackoff(attempt, baseDelayMs) {

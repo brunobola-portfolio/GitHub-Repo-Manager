@@ -138,6 +138,9 @@ describe('email service', () => {
         process.env.EMAIL_PROVIDER = 'resend'
         process.env.RESEND_API_KEY = 'key'
         process.env.EMAIL_FROM = 'from@test.com'
+        // Collapse backoff (default 1s/3s/9s) to ~1ms so the retry path tests
+        // in <10ms instead of >4s real time.
+        process.env.EMAIL_RETRY_BASE_DELAY_MS = '1'
 
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
             ok: false,
@@ -150,6 +153,8 @@ describe('email service', () => {
         const result = await sendEmail({ to: 'user@example.com', subject: 'S', html: '<p>X</p>' })
         expect(result.ok).toBe(false)
         expect(result.error).toBeTruthy()
+
+        delete process.env.EMAIL_RETRY_BASE_DELAY_MS
     })
 
     // -------------------------------------------------------------------------

@@ -92,7 +92,13 @@ async function buildApp() {
 }
 
 describe('POST /api/ai/chat (JSON mode with actions)', () => {
-    beforeEach(() => vi.clearAllMocks())
+    beforeEach(() => {
+        vi.clearAllMocks()
+        // Collapse retry backoff so the 503-retry test path runs in <50ms
+        // instead of ~3s. Production default (400ms base, exponential) is
+        // restored by the cleanup line at the end of each test file lifecycle.
+        process.env.AI_RETRY_BASE_DELAY_MS = '1'
+    })
 
     it('returns reply + actions when the model emits a valid JSON payload', async () => {
         mockGenerateContent.mockResolvedValue({
