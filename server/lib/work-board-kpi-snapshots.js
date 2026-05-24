@@ -5,6 +5,7 @@ import {
     listMyOpenIssues,
     listTechDebtIssues,
 } from './event-aggregations.js';
+import { todayISO } from './dates.js';
 
 /**
  * Write one KPI snapshot row for userId into the given db.
@@ -15,7 +16,7 @@ export function writeSnapshot(db, userId) {
     const user = db.prepare('SELECT username FROM users WHERE id = ?').get(userId);
     if (!user) return { inserted: false };
 
-    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const today = todayISO();
     const existing = db.prepare(
         `SELECT 1 FROM work_board_kpi_snapshots
          WHERE user_id = ? AND date(snapped_at) = ?`

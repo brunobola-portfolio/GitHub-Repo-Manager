@@ -8,6 +8,7 @@ import {
   azureProjectProperties, gitTagName, gitTagMessage
 } from './lib/migration-tagging-constants.js'
 import { parseRepoFullName } from './lib/repo-full-name.js'
+import { todayISO } from './lib/dates.js'
 
 export function createMigrationTaggingService({
   db,
@@ -57,7 +58,7 @@ export function createMigrationTaggingService({
     }
     const writers = writersFactory({ plan, credentials })
 
-    const dateIso = new Date().toISOString().slice(0, 10)
+    const dateIso = todayISO()
     const sourceUrl = `${plan.source_type}://${plan.source_org}/${plan.source_project}`
 
     const tally = (mark) => {

@@ -47,6 +47,7 @@ import {
 import { filterOutSnoozed } from '../lib/work-board-snooze.js';
 import { applyTrackedFilter } from '../lib/work-board-filter.js';
 import { getSnapshots } from '../lib/work-board-kpi-snapshots.js';
+import { todayISO } from '../lib/dates.js';
 import db from '../db.js';
 
 const router = express.Router();
@@ -408,7 +409,7 @@ router.get('/dora.csv', requireAuth, requireTier('enterprise'), (req, res) => {
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader(
             'Content-Disposition',
-            `attachment; filename="dora-${environment}-${new Date().toISOString().slice(0, 10)}.csv"`,
+            `attachment; filename="dora-${environment}-${todayISO()}.csv"`,
         );
         res.send(csv);
     } catch (err) {

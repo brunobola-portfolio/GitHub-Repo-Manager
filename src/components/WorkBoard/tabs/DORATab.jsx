@@ -5,6 +5,7 @@ import { hoursLabel } from '../shared/formatters'
 import { MOCK_MODE, API_BASE_URL } from '../../../config'
 import { Card } from '../../ui/Card'
 import { Skeleton } from '../../ui/Skeleton'
+import { todayISO } from '../../../utils/dates'
 
 function SparkLine({ perDay }) {
     if (!perDay || perDay.length === 0) return null
@@ -94,7 +95,7 @@ export function DORATab() {
             const url = URL.createObjectURL(blob)
             const a = document.createElement('a')
             a.href = url
-            a.download = `dora-production-${new Date().toISOString().slice(0, 10)}.csv`
+            a.download = `dora-production-${todayISO()}.csv`
             document.body.appendChild(a)
             a.click()
             a.remove()

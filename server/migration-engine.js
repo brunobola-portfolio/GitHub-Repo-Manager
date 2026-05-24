@@ -8,6 +8,7 @@ import { isSchedulingEnabled } from './lib/credential-encryption.js'
 import { createMigrationCredentialManager } from './lib/migration-credential-manager.js'
 import { githubApi } from './lib/github-api.js'
 import logger from './lib/logger.js'
+import { safeJson } from './lib/safe-json.js'
 
 export class MigrationEngine extends EventEmitter {
   constructor(db) {
@@ -185,25 +186,18 @@ export class MigrationEngine extends EventEmitter {
       throw new Error(`Plan ${planId} not found`)
     }
 
-    // Parse JSON fields on the plan
-    if (plan.ai_analysis) {
-      try { plan.ai_analysis = JSON.parse(plan.ai_analysis) } catch { /* keep as string */ }
-    }
-    if (plan.summary) {
-      try { plan.summary = JSON.parse(plan.summary) } catch { /* keep as string */ }
-    }
+    // Parse JSON fields on the plan; fall back to the raw string on malformed
+    // data so legacy rows still render somewhere meaningful.
+    if (plan.ai_analysis) plan.ai_analysis = safeJson(plan.ai_analysis, plan.ai_analysis)
+    if (plan.summary) plan.summary = safeJson(plan.summary, plan.summary)
 
     const tasks = this.db.prepare(
       'SELECT * FROM migration_tasks WHERE plan_id = ? ORDER BY execution_order'
     ).all(planId)
 
     for (const task of tasks) {
-      if (task.config) {
-        try { task.config = JSON.parse(task.config) } catch { /* keep as string */ }
-      }
-      if (task.metadata) {
-        try { task.metadata = JSON.parse(task.metadata) } catch { /* keep as string */ }
-      }
+      if (task.config) task.config = safeJson(task.config, task.config)
+      if (task.metadata) task.metadata = safeJson(task.metadata, task.metadata)
     }
 
     return { ...plan, tasks }
