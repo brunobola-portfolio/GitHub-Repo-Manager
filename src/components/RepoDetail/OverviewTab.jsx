@@ -7,6 +7,7 @@ import { useModal } from '../../hooks/useModal'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 import { InlineEditField } from './InlineEditField'
+import { MigrationProvenanceCard } from './MigrationProvenanceCard'
 
 /**
  * Decode a GitHub contents-API README payload into a UTF-8 string.
@@ -63,6 +64,11 @@ export function OverviewTab({ api, repoData, onUpdate }) {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Migration provenance — renders only when this repo carries marks */}
+            <div className="lg:col-span-3">
+                <MigrationProvenanceCard fullName={repoData?.full_name} />
+            </div>
+
             {/* AI Insights entry point */}
             <div className="lg:col-span-3">
                 <button
