@@ -298,7 +298,7 @@ export function PricingPage({ onGetStarted } = {}) {
             className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight ds-font-display mb-5"
           >
             <span className="text-slate-800 dark:text-white">Plans that</span>{' '}
-            <span className="text-slate-900 dark:text-white font-semibold">grow with you</span>
+            <span className="text-slate-900 dark:text-slate-100 font-semibold">grow with you</span>
           </motion.h1>
 
           <motion.p

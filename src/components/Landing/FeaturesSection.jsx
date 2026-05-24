@@ -108,9 +108,9 @@ export function FeaturesSection() {
           <p className="text-xs font-semibold tracking-widest uppercase text-indigo-500 dark:text-indigo-400 mb-3 ds-font-display">
             Features
           </p>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white tracking-tight ds-font-display mb-4">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 tracking-tight ds-font-display mb-4">
             Everything you need,{' '}
-            <span className="text-slate-900 dark:text-white font-semibold">nothing you don&apos;t</span>
+            <span className="text-slate-900 dark:text-slate-100 font-semibold">nothing you don&apos;t</span>
           </h2>
           <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto text-lg leading-relaxed ds-font-display">
             A complete toolkit for developers and engineering teams who take GitHub seriously.
@@ -153,7 +153,7 @@ export function FeaturesSection() {
                 />
               </div>
 
-              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2 ds-font-display">
+              <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-2 ds-font-display">
                 {feat.title}
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">

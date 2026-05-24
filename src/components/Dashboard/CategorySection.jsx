@@ -84,7 +84,7 @@ export function CategorySection({
                             </span>
                         )}
                         <span className="flex items-center gap-2 flex-wrap">
-                            <span className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white ds-font-display truncate">
+                            <span className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100 ds-font-display truncate">
                                 {title}
                             </span>
                             {typeof count === 'number' && (

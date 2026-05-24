@@ -116,7 +116,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 						</p>
 						<div className="flex items-end gap-2 mb-2">
 							<span
-								className={`text-4xl font-bold tracking-tight ds-font-display ${plan.popular ? 'text-white' : 'text-slate-900 dark:text-white'}`}
+								className={`text-4xl font-bold tracking-tight ds-font-display ${plan.popular ? 'text-white' : 'text-slate-900 dark:text-slate-100'}`}
 							>
 								{plan.price}
 							</span>
@@ -202,9 +202,9 @@ export function PricingPreview({ onSignIn }) {
           <p className="text-xs font-semibold tracking-widest uppercase text-indigo-500 dark:text-indigo-400 mb-3 ds-font-display">
             Pricing
           </p>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white tracking-tight ds-font-display mb-4">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 tracking-tight ds-font-display mb-4">
             Simple,{' '}
-            <span className="text-slate-900 dark:text-white font-semibold">transparent pricing</span>
+            <span className="text-slate-900 dark:text-slate-100 font-semibold">transparent pricing</span>
           </h2>
           <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto text-lg ds-font-display">
             Start free, scale when you&apos;re ready. Or self-host for free forever.

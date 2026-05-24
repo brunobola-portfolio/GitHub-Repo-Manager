@@ -185,7 +185,7 @@ export function CommitTab({ toolkit }) {
                         onClick={() => setInputMode(m.id)}
                         className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
                             inputMode === m.id
-                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                         }`}
                     >

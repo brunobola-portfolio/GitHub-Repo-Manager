@@ -88,7 +88,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                     <AlertTriangle className="w-3 h-3" /> Not configured
                 </span>
 
-                <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white mb-2 ds-font-display">
+                <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 mb-2 ds-font-display">
                     {service} isn't available on this instance
                 </h3>
 

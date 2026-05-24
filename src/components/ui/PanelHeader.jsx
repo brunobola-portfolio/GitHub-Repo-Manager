@@ -44,7 +44,7 @@ export function PanelHeader({
                     </div>
                 )}
                 {title && (
-                    <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-900 dark:text-white ds-font-display">
+                    <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100 ds-font-display">
                         {title}
                     </h2>
                 )}

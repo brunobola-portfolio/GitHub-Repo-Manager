@@ -552,7 +552,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
             <section data-testid="ai-suggested-topics" className="mt-6 p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                 <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="w-4 h-4 text-indigo-500" />
-                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">AI-suggested topics</h3>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">AI-suggested topics</h3>
                 </div>
 
                 {topicsState.kind === 'idle' && (

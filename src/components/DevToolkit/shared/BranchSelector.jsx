@@ -36,7 +36,7 @@ export function BranchSelector({ branches = [], selected, onSelect, label, defau
             >
                 <span className="flex items-center gap-1.5">
                     <GitBranch className="w-3.5 h-3.5 text-slate-400" />
-                    <span className={selected ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}>
+                    <span className={selected ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500'}>
                         {displayName}
                     </span>
                     {isDefault && <Star className="w-3 h-3 text-amber-500 fill-amber-500" />}

@@ -69,7 +69,7 @@ export function DashboardHero({
 
             <motion.h1
                 variants={childVariants}
-                className="text-xl sm:text-2xl font-semibold tracking-tight ds-font-display text-slate-900 dark:text-white"
+                className="text-xl sm:text-2xl font-semibold tracking-tight ds-font-display text-slate-900 dark:text-slate-100"
             >
                 {greeting}
             </motion.h1>

@@ -30,7 +30,7 @@ export function RepoSelector({ repos = [], selected, onSelect }) {
                 onClick={() => setOpen(!open)}
                 className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/80 text-sm hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors"
             >
-                <span className={selected ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}>
+                <span className={selected ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500'}>
                     {selected?.full_name || 'Select repository...'}
                 </span>
                 <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />

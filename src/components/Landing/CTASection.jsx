@@ -42,10 +42,10 @@ export function CTASection({ onSignIn }) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white ds-font-display mb-5"
+          className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-slate-100 ds-font-display mb-5"
         >
           Ready to level up your{' '}
-          <span className="text-slate-900 dark:text-white font-semibold">repo management?</span>
+          <span className="text-slate-900 dark:text-slate-100 font-semibold">repo management?</span>
         </motion.h2>
 
         {/* Sub */}

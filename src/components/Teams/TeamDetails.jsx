@@ -235,7 +235,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
 
                         {showInvite && (
                             <Card glass={false} className="mb-6 p-4 animate-in fade-in slide-in-from-top-2">
-                                <h3 className="font-semibold text-slate-900 dark:text-white mb-3">Add Member</h3>
+                                <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">Add Member</h3>
                                 <div className="relative">
                                     <Input
                                         type="text"
@@ -282,7 +282,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                                 >
                                                     <img src={u.avatar_url} alt={u.login} className="w-8 h-8 rounded-full" />
                                                     <div>
-                                                        <div className="font-semibold text-slate-900 dark:text-white">{u.login}</div>
+                                                        <div className="font-semibold text-slate-900 dark:text-slate-100">{u.login}</div>
                                                         <div className="text-xs text-slate-500">GitHub User</div>
                                                     </div>
                                                     <Plus className="w-4 h-4 ml-auto text-indigo-500" />
@@ -329,7 +329,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
 
                         {showAssign && (
                             <Card glass={false} className="mb-6 p-4 animate-in fade-in slide-in-from-top-2">
-                                <h3 className="font-semibold text-slate-900 dark:text-white mb-3">Assign Repository</h3>
+                                <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">Assign Repository</h3>
                                 <div className="mb-4">
                                     <Input
                                         type="text"
@@ -367,7 +367,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                                     </div>
                                                     <div className="min-w-0 flex-1">
                                                         <div className="flex items-center justify-between">
-                                                            <div className="font-medium text-slate-900 dark:text-white truncate text-sm">{repo.name}</div>
+                                                            <div className="font-medium text-slate-900 dark:text-slate-100 truncate text-sm">{repo.name}</div>
                                                             {repo.language && (
                                                                 <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                                     <span className={`w-1.5 h-1.5 rounded-full ${langColor}`} />
@@ -442,7 +442,7 @@ function MemberCard({ member, currentUserRole, onUpdateRole, onRemove, isMe }) {
         <Card glass={false} className="flex items-center gap-4 p-4 hover:shadow-md transition-shadow group">
             <img src={member.avatar_url} alt={member.username} className="w-12 h-12 rounded-full border-2 border-slate-100 dark:border-slate-700" />
             <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-slate-900 dark:text-white truncate">{member.username}</h4>
+                <h4 className="font-bold text-slate-900 dark:text-slate-100 truncate">{member.username}</h4>
                 <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-slate-400">Joined {new Date(member.joined_at).toLocaleDateString()}</span>
                     {isMe && <span className="text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 px-1.5 py-0.5 rounded-full">You</span>}
@@ -582,7 +582,7 @@ function RepoCard({ repo, teamMembers }) {
                 </div>
             </div>
 
-            <h4 className="font-bold text-slate-900 dark:text-white truncate mb-1" title={repo.repo_full_name}>
+            <h4 className="font-bold text-slate-900 dark:text-slate-100 truncate mb-1" title={repo.repo_full_name}>
                 {repo.repo_full_name}
             </h4>
 
@@ -731,7 +731,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 {/* Repo List Sidebar */}
                 <div className="lg:col-span-1 space-y-2">
-                    <h3 className="font-semibold text-slate-900 dark:text-white mb-4 px-2">Select Repository</h3>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-4 px-2">Select Repository</h3>
                 {assignedRepos.map(repo => (
                     <button
                         key={repo.id}
@@ -759,7 +759,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                     <div className="space-y-8">
                         {/* Workflows List */}
                         <Card className="p-6">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
                                 <Play className="w-5 h-5 text-indigo-500" />
                                 Available Workflows
                             </h3>
@@ -770,7 +770,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                                     workflows.map(wf => (
                                         <Card key={wf.id} glass={false} shadow="none" className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50">
                                             <div>
-                                                <div className="font-semibold text-slate-900 dark:text-white">{wf.name}</div>
+                                                <div className="font-semibold text-slate-900 dark:text-slate-100">{wf.name}</div>
                                                 <div className="text-sm text-slate-500">{wf.path}</div>
                                             </div>
                                             <Button variant="soft-primary" size="sm" onClick={() => handleRunWorkflow(wf.id, selectedRepo)}>
@@ -784,7 +784,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
 
                         {/* Recent Runs */}
                         <Card className="p-6">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
                                 <Clock className="w-5 h-5 text-slate-500" />
                                 Recent Runs
                             </h3>
@@ -800,7 +800,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                                                 <Spinner size="md" tone="warning" />
                                             )}
                                             <div>
-                                                <div className="font-medium text-slate-900 dark:text-white">{run.name}</div>
+                                                <div className="font-medium text-slate-900 dark:text-slate-100">{run.name}</div>
                                                 <div className="text-xs text-slate-500">
                                                     {run.event} • {run.head_branch} • {new Date(run.created_at).toLocaleString()}
                                                 </div>

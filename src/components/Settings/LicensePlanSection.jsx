@@ -62,7 +62,7 @@ function PlanCard({ tier, status, renewalDate, onManage, onChangePlan, portalLoa
                     </div>
                     <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{config.label} Plan</h3>
+                            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{config.label} Plan</h3>
                             <Badge variant={config.badgeVariant}>{config.label}</Badge>
                             {status && (
                                 <Badge variant={STATUS_VARIANT[status] || 'default'}>
@@ -177,7 +177,7 @@ function LicenseCard({ license, onChangeLicenseKey }) {
                     </div>
                     <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{tierConfig.label} Plan</h3>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{tierConfig.label} Plan</h3>
                             <Badge variant={tierConfig.badgeVariant}>Licensed</Badge>
                         </div>
                         {license.org && (
@@ -377,7 +377,7 @@ export function LicensePlanSection() {
             <div className="flex items-center gap-3">
                 <RowIconBadge icon={Shield} tone="purple" size="lg" surface="soft" />
                 <div>
-                    <h2 className="text-base font-semibold text-slate-900 dark:text-white">License & Plan</h2>
+                    <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">License & Plan</h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">Manage your license, plan and usage</p>
                 </div>
             </div>

@@ -154,7 +154,7 @@ export const RepoCard = memo(function RepoCard({
 					</div>
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2">
-							<h3 className="font-semibold text-slate-900 dark:text-white truncate group-hover:text-indigo-500 transition-colors ds-font-display">
+							<h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate group-hover:text-indigo-500 transition-colors ds-font-display">
 								<button type="button" onClick={(e) => { e.stopPropagation(); onRepoClick?.(repo) }}
 									data-testid="repo-card-open"
 									className="hover:underline focus:outline-none focus-visible:underline text-left truncate">

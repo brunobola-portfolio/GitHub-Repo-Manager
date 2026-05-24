@@ -32,7 +32,7 @@ export function OrgPanel({
 			{/* Header */}
 			<div className="p-5 border-b border-slate-200/60 dark:border-slate-700/40">
 				<div className="flex items-center justify-between mb-4">
-					<h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2.5">
+					<h2 className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
 						<div className="p-2 rounded-xl bg-indigo-600 dark:bg-indigo-500 text-white shadow-md">
 							<Building2 className="w-4 h-4" />
 						</div>
@@ -125,7 +125,7 @@ export function OrgPanel({
 						className="w-11 h-11 rounded-xl ring-2 ring-white dark:ring-slate-700 shadow-lg shadow-slate-300/50 dark:shadow-black/40"
 					/>
 					<div className="flex-1 min-w-0">
-						<h4 className="font-semibold text-slate-900 dark:text-white truncate">
+						<h4 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
 							{user?.name || user?.login}
 						</h4>
 						<p className="text-xs text-slate-500 dark:text-slate-400 truncate">

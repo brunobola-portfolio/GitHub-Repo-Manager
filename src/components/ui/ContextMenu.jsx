@@ -325,7 +325,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 										? 'bg-red-500/10 dark:bg-red-500/15 text-red-600 dark:text-red-400'
 										: 'text-red-600 dark:text-red-400'
 									: isHovered && !item.disabled
-										? 'bg-black/[0.06] dark:bg-white/[0.08] text-slate-900 dark:text-white'
+										? 'bg-black/[0.06] dark:bg-white/[0.08] text-slate-900 dark:text-slate-100'
 										: 'text-slate-700 dark:text-slate-300'
 								}
 							${isKeyboardFocused ? 'ring-2 ring-inset ring-indigo-500/70 dark:ring-indigo-400/70' : ''}

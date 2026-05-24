@@ -152,7 +152,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                         className="mb-8"
                     >
                         <Card className="p-6">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">
                             {isEditing ? 'Edit Team' : 'Create New Team'}
                         </h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
@@ -230,7 +230,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                             <div className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-2xl bg-indigo-600 dark:bg-indigo-500 shadow-md">
                                 <Sparkles className="w-7 h-7 text-white" strokeWidth={2.5} />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">
                                 Teams are a Pro feature
                             </h3>
                             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
@@ -312,7 +312,7 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
                 )}
             </div>
 
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-1 group-hover:text-indigo-500 transition-colors truncate">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1 group-hover:text-indigo-500 transition-colors truncate">
                 {team.name}
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 line-clamp-2 min-h-[2.5rem]">

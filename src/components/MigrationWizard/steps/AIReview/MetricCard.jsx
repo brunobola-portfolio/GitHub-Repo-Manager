@@ -22,7 +22,7 @@ export function MetricCard({ icon: Icon, label, value, unit, iconColor, iconBg, 
           <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 leading-none mb-1">
             {label}
           </p>
-          <p className="text-xl font-bold text-slate-900 dark:text-white leading-none">
+          <p className="text-xl font-bold text-slate-900 dark:text-slate-100 leading-none">
             <AnimatedCounter value={typeof value === 'number' ? value : 0} />
             {unit && <span className="text-xs font-medium text-slate-400 dark:text-slate-500 ml-0.5">{unit}</span>}
           </p>

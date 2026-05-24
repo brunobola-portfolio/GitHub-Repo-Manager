@@ -512,7 +512,7 @@ function NotConfiguredState({ onOpenSettings }) {
             <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center ring-1 ring-slate-200 dark:ring-slate-700">
                 <Key className="w-7 h-7 text-[color:var(--ds-accent-brand)]" />
             </div>
-            <h4 className="text-lg font-semibold text-slate-900 dark:text-white ds-font-display">Setup required</h4>
+            <h4 className="text-lg font-semibold text-slate-900 dark:text-slate-100 ds-font-display">Setup required</h4>
             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-[260px]">
                 The AI assistant needs a Gemini API key. Add <code className="font-mono text-xs bg-slate-100 dark:bg-slate-800 rounded px-1.5 py-0.5">GEMINI_API_KEY</code> in <code className="font-mono text-xs">server/.env</code>, or configure it from settings.
             </p>

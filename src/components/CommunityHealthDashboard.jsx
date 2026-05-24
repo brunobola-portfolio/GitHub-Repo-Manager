@@ -82,7 +82,7 @@ function HealthScoreRing({ score }) {
                 />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center rotate-0">
-                <span className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white">{displayScore}</span>
+                <span className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-slate-100">{displayScore}</span>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{config.label}</span>
             </div>
         </div>
@@ -213,7 +213,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                         <HealthScoreRing score={health.score} />
                                         <div className="text-center sm:text-left space-y-1">
                                             <div className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400">Overall Health Score</div>
-                                            <div className="text-4xl font-bold text-slate-900 dark:text-white">{health.score}<span className="text-lg text-slate-400">%</span></div>
+                                            <div className="text-4xl font-bold text-slate-900 dark:text-slate-100">{health.score}<span className="text-lg text-slate-400">%</span></div>
                                             <ScoreBadge score={health.score} />
                                         </div>
                                     </div>
@@ -244,7 +244,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                             >
                                                 {activeTab === 'files' && (
                                                     <div className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60">
-                                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                                                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
                                                             <FileText className="w-5 h-5 text-indigo-500" />
                                                             Community Files
                                                         </h3>
@@ -267,7 +267,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
 
                                                 {activeTab === 'recommendations' && (
                                                     <div className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60">
-                                                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                                                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
                                                             <TrendingUp className="w-5 h-5 text-indigo-500" />
                                                             Recommendations
                                                         </h3>
@@ -295,7 +295,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                             transition={{ delay: 0.2, duration: 0.4 }}
                                             className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60"
                                         >
-                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
                                                 <FileText className="w-5 h-5 text-indigo-500" />
                                                 Community Files
                                             </h3>
@@ -319,7 +319,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                             transition={{ delay: 0.6, duration: 0.4 }}
                                             className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60"
                                         >
-                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
                                                 <TrendingUp className="w-5 h-5 text-indigo-500" />
                                                 Recommendations
                                             </h3>
@@ -439,7 +439,7 @@ function MetricCard({ title, value, icon: Icon, color, index = 0 }) {
             <div className={`p-3 rounded-xl bg-gradient-to-br ${gradientColors[color]} w-fit mb-4`}>
                 <Icon className={`w-6 h-6 ${iconColors[color]}`} />
             </div>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
+            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">
                 <AnimatedNumber value={value} />
             </div>
             <div className="text-sm text-slate-500 dark:text-slate-400">{title}</div>
@@ -474,7 +474,7 @@ function RecommendationItem({ recommendation }) {
                 <AlertCircle className={`w-4 h-4 ${iconColors[recommendation.priority]}`} />
             </div>
             <div className="flex-1">
-                <div className="font-medium text-slate-900 dark:text-white">{recommendation.action}</div>
+                <div className="font-medium text-slate-900 dark:text-slate-100">{recommendation.action}</div>
                 <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                     Category: {recommendation.category}
                 </div>

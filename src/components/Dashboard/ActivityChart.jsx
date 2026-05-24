@@ -79,7 +79,7 @@ export function ActivityChart({ activity = [], timeRange, loading }) {
                 style={{ minHeight: `${chartHeight + 60}px` }}
             >
                 <div className="flex items-center mb-6">
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                    <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                         <Activity className="w-5 h-5 text-indigo-500" />
                         Activity Trends
                     </h3>

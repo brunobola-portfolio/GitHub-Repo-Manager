@@ -98,7 +98,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                         <div className="w-16 h-16 mb-5 mx-auto rounded-2xl bg-[color:var(--ds-accent-brand)] flex items-center justify-center">
                             <Icon className="w-8 h-8 text-white" strokeWidth={2.5} />
                         </div>
-                        <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">{step.title}</h2>
+                        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">{step.title}</h2>
                         <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{step.body}</p>
                     </motion.div>
                 </AnimatePresence>

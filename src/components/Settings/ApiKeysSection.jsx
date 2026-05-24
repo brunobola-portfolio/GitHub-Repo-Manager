@@ -413,7 +413,7 @@ export function ApiKeysSection() {
                 <div className="flex items-center gap-3">
                     <RowIconBadge icon={Key} tone="indigo" size="lg" surface="soft" />
                     <div>
-                        <h2 className="text-base font-semibold text-slate-900 dark:text-white">API Keys</h2>
+                        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">API Keys</h2>
                         <p className="text-xs text-slate-500 dark:text-slate-400">Manage programmatic access to the API</p>
                     </div>
                 </div>

@@ -182,7 +182,7 @@ function MiniStat({ label, value, icon: Icon, color, animate, onClick }) {
     <>
       <Icon className={`w-4 h-4 ${color} shrink-0 ${animate ? 'animate-spin' : ''}`} />
       <div className="min-w-0">
-        <div className="text-lg font-bold text-slate-900 dark:text-white leading-none">{value}</div>
+        <div className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-none">{value}</div>
         <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">{label}</div>
       </div>
     </>

@@ -346,7 +346,7 @@ export function DashboardPremium({
                                         <div className="flex items-center gap-3 mb-3">
                                             <RowIconBadge icon={Users} tone="indigo" size="lg" surface="soft" />
                                             <div className="min-w-0">
-                                                <h3 className="font-bold text-slate-900 dark:text-white truncate">
+                                                <h3 className="font-bold text-slate-900 dark:text-slate-100 truncate">
                                                     {team.name}
                                                 </h3>
                                                 {team.description && (
@@ -496,7 +496,7 @@ function HealthOverview({ repos, openModalWithData }) {
                     >
                         <RowIconBadge icon={Heart} tone="emerald" size="lg" surface="soft" />
                         <div className="min-w-0 flex-1">
-                            <h4 className="font-semibold text-sm text-slate-900 dark:text-white truncate">
+                            <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
                                 {repo.name}
                             </h4>
                             <div className="flex items-center gap-2 mt-0.5">
@@ -540,7 +540,7 @@ function DiscoverCard({ icon: Icon, title, description, href, actionText, onClic
             className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:border-indigo-300 dark:hover:border-indigo-500/40 transition-colors"
         >
             <Icon className="w-8 h-8 text-indigo-500 mb-3" />
-            <h3 className="font-bold text-slate-900 dark:text-white mb-2">
+            <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-2">
                 {title}
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">

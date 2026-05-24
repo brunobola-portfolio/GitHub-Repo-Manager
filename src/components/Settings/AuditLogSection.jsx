@@ -105,7 +105,7 @@ export function AuditLogSection() {
             <div className="flex items-center gap-3">
                 <RowIconBadge icon={Shield} tone="purple" size="lg" surface="soft" />
                 <div>
-                    <h2 className="text-base font-semibold text-slate-900 dark:text-white">Audit Log</h2>
+                    <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Audit Log</h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">Track all account activity and changes</p>
                 </div>
             </div>

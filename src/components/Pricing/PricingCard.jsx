@@ -157,7 +157,7 @@ export function PricingCard({
                       }`}
                   >
                     {typeof included === 'string' || typeof included === 'number'
-                      ? <><strong className={highlighted ? 'text-white' : enterprise ? 'text-amber-700 dark:text-amber-300' : 'text-slate-900 dark:text-white'}>{included}</strong> {label}</>
+                      ? <><strong className={highlighted ? 'text-white' : enterprise ? 'text-amber-700 dark:text-amber-300' : 'text-slate-900 dark:text-slate-100'}>{included}</strong> {label}</>
                       : label
                     }
                   </span>

@@ -8,7 +8,7 @@ const VARIANT_CONTAINER = {
 
 const VARIANT_BUTTON = {
     pill: {
-        active: 'text-slate-900 dark:text-white',
+        active: 'text-slate-900 dark:text-slate-100',
         inactive: 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300',
     },
     underline: {

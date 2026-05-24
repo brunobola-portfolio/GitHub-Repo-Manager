@@ -58,7 +58,7 @@ export const OrganizationCard = memo(function OrganizationCard({ org, repos = []
                             )}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-base text-slate-900 dark:text-white truncate ds-font-display">
+                            <h3 className="font-semibold text-base text-slate-900 dark:text-slate-100 truncate ds-font-display">
                                 {org.login}
                             </h3>
                             <div className="flex items-center gap-2 mt-1">
@@ -143,7 +143,7 @@ const StatItem = memo(function StatItem({ icon: Icon, value, label, color }) {
                 <Icon className="w-4 h-4" strokeWidth={2.5} />
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
                     {value}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 truncate">

@@ -65,7 +65,7 @@ export const StatCard = memo(function StatCard({
                             {title}
                         </p>
                         <motion.h3
-                            className="text-2xl font-semibold text-slate-900 dark:text-white mt-2 ds-font-mono"
+                            className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mt-2 ds-font-mono"
                             transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
                         >
                             {isNumeric ? (

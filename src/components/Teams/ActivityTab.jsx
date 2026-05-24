@@ -129,7 +129,7 @@ function ActivityItem({ event }) {
 
     const getEventDescription = (event) => {
         const repo = event.repo_name ? event.repo_name.split('/')[1] : 'unknown-repo';
-        const actor = <span className="font-medium text-slate-900 dark:text-white">{event.actor.login}</span>;
+        const actor = <span className="font-medium text-slate-900 dark:text-slate-100">{event.actor.login}</span>;
         const repoLink = <span className="font-medium text-indigo-500">{repo}</span>;
         const payload = event.payload || {};
 

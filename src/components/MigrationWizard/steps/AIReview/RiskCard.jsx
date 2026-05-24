@@ -62,7 +62,7 @@ export function RiskCard({ risk, index }) {
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1.5">
-              <span className="text-[13px] font-semibold text-slate-900 dark:text-white leading-tight">
+              <span className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 leading-tight">
                 {risk.title}
               </span>
               <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${config.badge} shadow-sm`}>

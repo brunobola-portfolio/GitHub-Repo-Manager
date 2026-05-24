@@ -164,7 +164,7 @@ export default function SourceTypeStep({ source, onChange, onAdvance }) {
                   <span className={`
                     font-semibold tracking-tight
                     ${selected
-                      ? 'text-slate-900 dark:text-white'
+                      ? 'text-slate-900 dark:text-slate-100'
                       : 'text-slate-800 dark:text-slate-100'
                     }
                   `}>

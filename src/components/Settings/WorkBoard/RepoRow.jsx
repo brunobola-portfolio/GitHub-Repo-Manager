@@ -59,7 +59,7 @@ export function RepoRow({ repo, onAction, selected = false, onSelectionChange })
             )}
 
             <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm text-slate-900 dark:text-white truncate">
+                <div className="font-medium text-sm text-slate-900 dark:text-slate-100 truncate">
                     {repo.repo_full_name}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">

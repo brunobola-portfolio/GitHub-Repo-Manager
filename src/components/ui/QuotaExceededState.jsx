@@ -39,7 +39,7 @@ export function QuotaExceededState({
       <div className="w-16 h-16 mb-5 mx-auto rounded-2xl bg-amber-500 flex items-center justify-center">
         <Gauge className="w-8 h-8 text-white" strokeWidth={2.5} />
       </div>
-      <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Quota reached</h3>
+      <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">Quota reached</h3>
       <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
         You&apos;ve used your monthly <strong>{feature}</strong> allowance
         {tierLabel ? <> on the <strong>{tierLabel}</strong> tier</> : null}.

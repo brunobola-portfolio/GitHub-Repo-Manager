@@ -69,8 +69,8 @@ export function HeroSection({ onSignIn }) {
         {...fadeUp(0.1)}
         className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.08] mb-6 max-w-4xl ds-font-display"
       >
-        <span className="text-slate-900 dark:text-white">Manage your GitHub repos with </span>
-        <span className="text-slate-900 dark:text-white font-semibold">AI superpowers</span>
+        <span className="text-slate-900 dark:text-slate-100">Manage your GitHub repos with </span>
+        <span className="text-slate-900 dark:text-slate-100 font-semibold">AI superpowers</span>
       </motion.h1>
 
       {/* Subtitle */}

@@ -90,7 +90,7 @@ function LandingFooter() {
 
 export function LandingPage({ onSignIn }) {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-x-hidden">
 
       {/* Minimal top nav */}
       <motion.nav

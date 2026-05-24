@@ -117,7 +117,7 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                     <Sparkles className="w-3 h-3" /> {copy.eyebrow}
                 </span>
 
-                <h3 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white mb-2 ds-font-display">
+                <h3 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 mb-2 ds-font-display">
                     {feature ? `Unlock ${feature}` : `Upgrade to ${tierName(tier)}`}
                 </h3>
 

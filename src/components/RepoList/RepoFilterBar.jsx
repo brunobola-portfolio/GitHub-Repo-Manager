@@ -320,7 +320,7 @@ export function RepoFilterBar({
 					side="bottom"
 				>
 					<div className="flex flex-col gap-4 px-4 py-3 pb-2">
-						<h3 className="text-sm font-semibold text-slate-900 dark:text-white">Filter repositories</h3>
+						<h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Filter repositories</h3>
 						<div className="flex flex-col gap-3">
 							<div>
 								<div className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Type</div>

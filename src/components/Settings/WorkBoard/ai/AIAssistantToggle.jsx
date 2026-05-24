@@ -22,7 +22,7 @@ export function AIAssistantToggle() {
                         <Sparkles className="w-5 h-5 text-indigo-500" />
                     </div>
                     <div className="flex-1">
-                        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">AI Assistant</h3>
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">AI Assistant</h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                             Natural-language commands and smart suggestions. Opt-in; uses your BYOK provider.
                         </p>

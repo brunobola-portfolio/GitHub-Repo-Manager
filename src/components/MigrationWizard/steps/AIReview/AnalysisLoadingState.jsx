@@ -70,7 +70,7 @@ function AnalysisPhaseIndicator({ phase, index, currentPhase }) {
           isComplete
             ? 'text-emerald-600 dark:text-emerald-400'
             : isActive
-              ? 'text-slate-900 dark:text-white'
+              ? 'text-slate-900 dark:text-slate-100'
               : 'text-slate-400 dark:text-slate-500'
         }`}>
           {isComplete ? phase.done : phase.label}
@@ -129,7 +129,7 @@ export function AnalysisLoadingState() {
           />
         </div>
         <div>
-          <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
             Analyzing migration plan
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">

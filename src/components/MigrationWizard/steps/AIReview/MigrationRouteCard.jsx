@@ -62,7 +62,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
                 <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
                   Source
                 </p>
-                <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                   {sourceOrg}
                 </p>
                 {sourceProject && (
@@ -102,7 +102,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
                     </span>
                   )}
                 </div>
-                <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                   {destOrg}
                 </p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 ds-font-mono truncate">

@@ -24,7 +24,7 @@ export function PageHeader({
     titleAccessory,
     className = '',
 }) {
-    const titleClass = `mt-1 text-xl font-semibold tracking-tight ds-font-display text-slate-900 dark:text-white ${titleAccessory ? 'truncate' : ''}`.trim()
+    const titleClass = `mt-1 text-xl font-semibold tracking-tight ds-font-display text-slate-900 dark:text-slate-100 ${titleAccessory ? 'truncate' : ''}`.trim()
 
     return (
         <header className={`flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6 ${className}`.trim()}>
