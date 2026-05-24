@@ -88,7 +88,7 @@ export function ModelDropdown({
                 <button
                     type="button"
                     onClick={() => setShowLegacy(true)}
-                    className="w-full flex items-center justify-center gap-1 px-3 py-2 text-[11px] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/70 border-t border-slate-100 dark:border-slate-800"
+                    className="w-full flex items-center justify-center gap-1 px-3 py-2 ds-text-meta text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/70 border-t border-slate-100 dark:border-slate-800"
                 >
                     <ChevronDown className="w-3 h-3" aria-hidden="true" />
                     Show {legacyCount} legacy model{legacyCount === 1 ? '' : 's'}

@@ -316,7 +316,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                     </div>
                                     <div className="leading-tight">
                                         <h3 className="font-semibold text-sm tracking-tight ds-font-display">Gemini Assistant</h3>
-                                        <span className="text-[11px] text-white/80 flex items-center gap-1">
+                                        <span className="ds-text-meta text-white/80 flex items-center gap-1">
                                             <span className={`inline-block w-1.5 h-1.5 rounded-full ${isLoading ? 'bg-amber-300 animate-pulse' : 'bg-emerald-300'}`} aria-hidden="true" />
                                             {isLoading ? 'Thinking…' : 'Online'}
                                         </span>

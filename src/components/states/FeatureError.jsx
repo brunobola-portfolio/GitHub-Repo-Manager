@@ -95,7 +95,7 @@ export function FeatureError({
                         onClick={onRetry}
                         disabled={!canRetry}
                         className={twMerge(
-                            'inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold ds-focus-ring',
+                            'inline-flex items-center gap-1 px-2 py-1 rounded-md ds-text-meta font-semibold ds-focus-ring',
                             'border transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
                             palette.chip
                         )}

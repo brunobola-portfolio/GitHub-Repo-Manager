@@ -252,7 +252,7 @@ function QuickActions({
                     Quick Actions
                 </h3>
                 {hasSelection && (
-                    <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-[color:var(--ds-surface-muted)] dark:bg-[color:var(--ds-surface-muted-dark)] text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
+                    <span className="ds-text-micro font-medium px-2.5 py-1 rounded-full bg-[color:var(--ds-surface-muted)] dark:bg-[color:var(--ds-surface-muted-dark)] text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
                         {selectedCount} SELECTED
                     </span>
                 )}
@@ -268,7 +268,7 @@ function QuickActions({
                             <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
                                 No repositories selected
                             </p>
-                            <p className="text-[10px] text-slate-400 mt-1">
+                            <p className="ds-text-micro text-slate-400 mt-1">
                                 Select items to perform bulk actions
                             </p>
                         </div>
@@ -286,7 +286,7 @@ function QuickActions({
                                 </div>
                                 <div className="text-left">
                                     <div className="text-xs font-semibold">Import Repository</div>
-                                    <div className="text-[10px] text-white/75">Git URL, Azure, GitHub</div>
+                                    <div className="ds-text-micro text-white/75">Git URL, Azure, GitHub</div>
                                 </div>
                                 <ChevronRight className="w-4 h-4 ml-auto" />
                             </button>
@@ -416,17 +416,17 @@ function ActionHistory({ results, isPerforming, message }) {
                                             <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
                                                 {ACTION_LABELS[r.action] || r.action}
                                             </div>
-                                            <span className="text-[10px] text-slate-400">
+                                            <span className="ds-text-micro text-slate-400">
                                                 {new Date(r.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
-                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
+                                        <div className="ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
                                             {r.message}
                                         </div>
                                         {!r.success && r.details?.length > 0 && (
                                             <div className="mt-1 space-y-0.5">
                                                 {r.details.map((d, j) => (
-                                                    <div key={j} className="text-[10px] text-red-500/80 dark:text-red-400/70 leading-tight">
+                                                    <div key={j} className="ds-text-micro text-red-500/80 dark:text-red-400/70 leading-tight">
                                                         {d.field ? `${d.field}: ` : ''}{d.message}
                                                     </div>
                                                 ))}
@@ -441,7 +441,7 @@ function ActionHistory({ results, isPerforming, message }) {
             </div>
 
             {/* Status Bar */}
-            <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800/60 text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-2">
+            <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800/60 ds-text-meta text-slate-500 dark:text-slate-400 truncate flex items-center gap-2">
                 <div className={`w-1.5 h-1.5 rounded-full ${
                     isPerforming ? 'bg-amber-400 animate-pulse'
                     : results[0]?.success === false ? 'bg-red-400'
@@ -502,14 +502,14 @@ function ActivityListBody({ activity, now }) {
                                     <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate hover:text-indigo-500 cursor-pointer">
                                         {event.repo?.name || 'Unknown Repo'}
                                     </div>
-                                    <span className="text-[10px] text-slate-400 whitespace-nowrap">{timeAgo}</span>
+                                    <span className="ds-text-micro text-slate-400 whitespace-nowrap">{timeAgo}</span>
                                 </div>
-                                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight line-clamp-2">
+                                <div className="ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5 leading-tight line-clamp-2">
                                     {getEventDescription(event)}
                                 </div>
                                 <div className="mt-1.5 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
-                                        className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                                        className="ds-text-micro font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
                                         aria-label="View activity details"
                                         onClick={() => {
                                             const repoName = event.repo?.name

@@ -55,7 +55,7 @@ export function AIQuotaExhaustedCard({
                             </p>
                         )}
                         {(resetRel || resetAbs) && (
-                            <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                            <p className="mt-0.5 ds-text-meta text-slate-500 dark:text-slate-400">
                                 {resetRel && <>Resets {resetRel}</>}
                                 {resetRel && resetAbs && <> · </>}
                                 {resetAbs}
@@ -88,7 +88,7 @@ export function AIQuotaExhaustedCard({
                         </div>
 
                         {upgradeTo === 'pro' && (
-                            <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+                            <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-1 ds-text-meta text-slate-500 dark:text-slate-400">
                                 <li>· 5,000 queries / month</li>
                                 <li>· Unlimited semantic search</li>
                                 <li>· Unlimited repo insights</li>

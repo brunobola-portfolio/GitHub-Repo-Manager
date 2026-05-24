@@ -40,7 +40,7 @@ function KeyChip({ label }) {
             {parts.map((p, i) => (
                 <kbd
                     key={i}
-                    className="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5 rounded-md border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-[11px] font-mono text-slate-700 dark:text-slate-200 shadow-sm"
+                    className="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-1.5 rounded-md border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 ds-text-meta font-mono text-slate-700 dark:text-slate-200 shadow-sm"
                 >
                     {p}
                 </kbd>

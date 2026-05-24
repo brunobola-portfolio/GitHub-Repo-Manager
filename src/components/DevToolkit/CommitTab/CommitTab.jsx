@@ -224,7 +224,7 @@ export function CommitTab({ toolkit }) {
             {displayError && (
                 <div className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 text-xs text-red-600 dark:text-red-400 flex items-center justify-between">
                     <span>{displayError}</span>
-                    {retryCount > 0 && <span className="text-red-400 text-[10px]">Retry {retryCount}/3</span>}
+                    {retryCount > 0 && <span className="text-red-400 ds-text-micro">Retry {retryCount}/3</span>}
                 </div>
             )}
 

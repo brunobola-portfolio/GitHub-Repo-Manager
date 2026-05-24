@@ -61,7 +61,7 @@ export function AINotHealthyBanner({
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-semibold text-slate-900 dark:text-slate-100">{title}</h4>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-200 ring-1 ring-inset ring-amber-200 dark:ring-amber-800">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wide bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-200 ring-1 ring-inset ring-amber-200 dark:ring-amber-800">
                             Action needed
                         </span>
                     </div>

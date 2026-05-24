@@ -100,7 +100,7 @@ export function PingAuthorPopover({ cacheKey, requestPayload, onPing, disabled =
                 avoidCollisions
                 className="z-[var(--ds-z-popover)] w-72 rounded-xl border border-white/10 bg-slate-900 p-3 shadow-xl"
             >
-                <p className="mb-2 text-[11px] text-slate-400">AI draft — edit before sending</p>
+                <p className="mb-2 ds-text-meta text-slate-400">AI draft — edit before sending</p>
                 <Textarea
                     defaultValue={pingBody}
                     onChange={e => setPingBody(e.target.value)}

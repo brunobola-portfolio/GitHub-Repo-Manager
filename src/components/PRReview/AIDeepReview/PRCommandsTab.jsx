@@ -179,10 +179,10 @@ function TestPlanResult({ result }) {
                 {cases.map((c, i) => (
                     <li key={i} className="rounded border border-slate-200 dark:border-slate-700 p-2 text-xs">
                         <div className="flex items-center gap-2 mb-1">
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase ${priorityTone(c.priority)}`}>
+                            <span className={`px-1.5 py-0.5 rounded ds-text-micro font-semibold uppercase ${priorityTone(c.priority)}`}>
                                 {c.priority}
                             </span>
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-100 dark:bg-slate-800">{c.type}</span>
+                            <span className="px-1.5 py-0.5 rounded ds-text-micro font-mono bg-slate-100 dark:bg-slate-800">{c.type}</span>
                             <span className="font-medium truncate">{c.name}</span>
                         </div>
                         {Array.isArray(c.steps) && c.steps.length > 0 ? (
@@ -206,7 +206,7 @@ function ImproveResult({ result }) {
                 {suggestions.map((s, i) => (
                     <li key={i} className="rounded border border-slate-200 dark:border-slate-700 p-2 text-xs">
                         <div className="flex items-center gap-2 mb-1">
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase ${severityTone(s.severity)}`}>
+                            <span className={`px-1.5 py-0.5 rounded ds-text-micro font-semibold uppercase ${severityTone(s.severity)}`}>
                                 {s.severity}
                             </span>
                             <span className="font-mono text-slate-700 dark:text-slate-300 truncate" title={s.path}>
@@ -215,7 +215,7 @@ function ImproveResult({ result }) {
                         </div>
                         <p className="text-slate-700 dark:text-slate-200 whitespace-pre-line">{s.body}</p>
                         {s.suggestion ? (
-                            <pre className="mt-2 overflow-x-auto rounded bg-slate-100 dark:bg-slate-800 p-2 text-[11px]"><code>{s.suggestion}</code></pre>
+                            <pre className="mt-2 overflow-x-auto rounded bg-slate-100 dark:bg-slate-800 p-2 ds-text-meta"><code>{s.suggestion}</code></pre>
                         ) : null}
                     </li>
                 ))}

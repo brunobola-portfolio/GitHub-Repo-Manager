@@ -249,7 +249,7 @@ function GeneralTabContent({
                                     aria-label="Cache duration in minutes"
                                     className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                                 />
-                                <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                                <div className="flex justify-between ds-text-meta text-slate-500 dark:text-slate-400">
                                     <span>1 min</span>
                                     <span>60 min</span>
                                 </div>
@@ -263,11 +263,11 @@ function GeneralTabContent({
                             {clearing ? 'Clearing…' : 'Clear cache now'}
                         </Button>
                         {cacheMessage ? (
-                            <p role="status" className={`text-[11px] font-medium ${cacheMessage.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            <p role="status" className={`ds-text-meta font-medium ${cacheMessage.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                 {cacheMessage.text}
                             </p>
                         ) : (
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                            <p className="ds-text-meta text-slate-500 dark:text-slate-400">
                                 Cached stats improve loading times. Clear if you see stale data.
                             </p>
                         )}

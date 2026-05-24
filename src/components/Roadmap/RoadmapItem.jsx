@@ -28,7 +28,7 @@ export function RoadmapItem({ title, description, tier, index = 0 }) {
         <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-snug">
           {title}
         </h4>
-        <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeStyle}`}>
+        <span className={`flex-shrink-0 ds-text-micro font-bold px-2 py-0.5 rounded-full ${badgeStyle}`}>
           {tier}
         </span>
       </div>

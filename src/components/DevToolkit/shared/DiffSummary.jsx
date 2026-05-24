@@ -52,7 +52,7 @@ export function DiffSummary({ files = [], summary, loading }) {
                                     transition={{ duration: 0.2 }}
                                     className="overflow-hidden"
                                 >
-                                    <pre className="px-4 py-2 text-[11px] font-mono bg-slate-900 dark:bg-slate-950 text-slate-300 overflow-x-auto max-h-40">{file.patch}</pre>
+                                    <pre className="px-4 py-2 ds-text-meta font-mono bg-slate-900 dark:bg-slate-950 text-slate-300 overflow-x-auto max-h-40">{file.patch}</pre>
                                 </motion.div>
                             )}
                         </AnimatePresence>

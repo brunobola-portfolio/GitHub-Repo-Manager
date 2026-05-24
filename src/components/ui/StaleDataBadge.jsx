@@ -24,7 +24,7 @@ export function StaleDataBadge({ fetchedAt, onRetry, className = '' }) {
             data-testid="stale-data-badge"
             role="status"
             aria-live="polite"
-            className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/50 text-amber-700 dark:text-amber-300 ${className}`}
+            className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full ds-text-meta font-medium bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/50 text-amber-700 dark:text-amber-300 ${className}`}
         >
             <CloudOff className="w-3 h-3" aria-hidden="true" />
             <span>

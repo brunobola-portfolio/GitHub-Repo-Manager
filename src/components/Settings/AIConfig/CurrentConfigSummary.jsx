@@ -70,7 +70,7 @@ export function CurrentConfigSummary({ form }) {
             <div className="rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 space-y-4">
                 <div className="flex items-center gap-2">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
+                    <span className="ds-text-micro font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
                         Current configuration
                     </span>
                 </div>
@@ -130,7 +130,7 @@ export function CurrentConfigSummary({ form }) {
                                     <Sparkles className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" aria-hidden="true" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                                    <div className="ds-text-micro font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
                                         Per-feature health
                                     </div>
                                     <div className="mt-1 flex flex-wrap gap-1">
@@ -141,7 +141,7 @@ export function CurrentConfigSummary({ form }) {
                                             return (
                                                 <span
                                                     key={feature}
-                                                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ring-1 ring-inset ${meta.cls}`}
+                                                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full ds-text-micro font-medium ring-1 ring-inset ${meta.cls}`}
                                                     title={`${FEATURE_LABEL[feature]}: ${meta.label}`}
                                                 >
                                                     <Icon className="w-2.5 h-2.5" aria-hidden="true" />
@@ -154,12 +154,12 @@ export function CurrentConfigSummary({ form }) {
                             </div>
                         )}
                         {form.serverFallbackAvailable && !hasKey && (
-                            <div className="mt-1 text-[11px] text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 ring-1 ring-inset ring-amber-200/60 dark:ring-amber-800/50 rounded-lg px-2 py-1.5">
+                            <div className="mt-1 ds-text-meta text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 ring-1 ring-inset ring-amber-200/60 dark:ring-amber-800/50 rounded-lg px-2 py-1.5">
                                 Falling back to server key.
                             </div>
                         )}
                         {savedAgo && (
-                            <div className="flex items-center gap-1.5 pt-2 -mb-1 border-t border-slate-200/70 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400">
+                            <div className="flex items-center gap-1.5 pt-2 -mb-1 border-t border-slate-200/70 dark:border-slate-800 ds-text-micro text-slate-500 dark:text-slate-400">
                                 <Clock className="w-3 h-3" aria-hidden="true" />
                                 <span>Saved {savedAgo}</span>
                                 <span className="ml-auto inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
@@ -188,11 +188,11 @@ function SummaryRow({ label, icon: Icon, value, hint, mono = false, accent }) {
                 <Icon className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" aria-hidden="true" />
             </div>
             <div className="flex-1 min-w-0">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">{label}</div>
+                <div className="ds-text-micro font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">{label}</div>
                 <div className={`text-sm font-semibold ${accentColor} ${mono ? 'font-mono text-xs' : ''} truncate`} title={typeof value === 'string' ? value : undefined}>
                     {value}
                 </div>
-                {hint && <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{hint}</div>}
+                {hint && <div className="ds-text-meta text-slate-500 dark:text-slate-400 truncate">{hint}</div>}
             </div>
         </div>
     )

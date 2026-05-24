@@ -26,7 +26,7 @@ function Badge({ icon: Icon, children, tone = 'slate' }) {
     violet: 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400',
   }[tone]
   return (
-    <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-medium ${toneCls}`}>
+    <span className={`inline-flex items-center gap-1 ds-text-micro px-1.5 py-0.5 rounded font-medium ${toneCls}`}>
       {Icon && <Icon className="w-3 h-3" aria-hidden="true" />}
       {children}
     </span>

@@ -26,7 +26,7 @@ export function StreamingOutput({ content, streamingText, isStreaming, onCancel,
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
                     <div className="flex items-center gap-2">
                         {retryCount > 0 && (
-                            <span className="text-[10px] text-amber-400 animate-pulse">Reconnecting ({retryCount}/3)...</span>
+                            <span className="ds-text-micro text-amber-400 animate-pulse">Reconnecting ({retryCount}/3)...</span>
                         )}
                         {isStreaming && (
                             <button type="button" onClick={onCancel} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-red-400 hover:text-red-300 rounded transition-colors">

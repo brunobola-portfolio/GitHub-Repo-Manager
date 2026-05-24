@@ -682,7 +682,7 @@ function SuggestionsGrid({ data, loading, error, onRetry }) {
                                                     {s.title}
                                                 </h4>
                                                 <span
-                                                    className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ${style.badgeBg}`}
+                                                    className={`ds-text-micro font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ${style.badgeBg}`}
                                                 >
                                                     {label}
                                                 </span>

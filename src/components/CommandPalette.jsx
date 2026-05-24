@@ -452,7 +452,7 @@ export function CommandPalette({
           {MOCK_MODE && (
             <div
               data-testid="command-palette-demo-hint"
-              className="mx-1 mb-1 px-3 py-1.5 rounded-md text-[11px] text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/50"
+              className="mx-1 mb-1 px-3 py-1.5 rounded-md ds-text-meta text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/50"
             >
               <strong>[Demo]</strong> Live GitHub search and Ask mode (?) are disabled in demo mode.
             </div>
@@ -476,7 +476,7 @@ export function CommandPalette({
                 </p>
               </div>
               {ask.data.queries.length === 0 && (
-                <div className="px-3 pb-3 text-[11px] text-slate-400 dark:text-slate-500">
+                <div className="px-3 pb-3 ds-text-meta text-slate-400 dark:text-slate-500">
                   No GitHub query inferred. Try rephrasing or remove the leading "?".
                 </div>
               )}
@@ -492,7 +492,7 @@ export function CommandPalette({
                       <GitPullRequest className={`w-4 h-4 shrink-0 ${pr.state === 'open' ? 'text-emerald-500' : 'text-purple-500'}`} />
                       <div className="flex-1 min-w-0">
                         <div className="truncate font-medium">{pr.title}</div>
-                        <div className="text-[11px] text-slate-400 truncate">
+                        <div className="ds-text-meta text-slate-400 truncate">
                           {pr.repoFullName} #{pr.number}
                         </div>
                       </div>
@@ -512,7 +512,7 @@ export function CommandPalette({
                       <CircleDot className={`w-4 h-4 shrink-0 ${it.state === 'open' ? 'text-emerald-500' : 'text-slate-400'}`} />
                       <div className="flex-1 min-w-0">
                         <div className="truncate font-medium">{it.title}</div>
-                        <div className="text-[11px] text-slate-400 truncate">
+                        <div className="ds-text-meta text-slate-400 truncate">
                           {it.repoFullName} #{it.number}
                         </div>
                       </div>
@@ -533,7 +533,7 @@ export function CommandPalette({
                       <div className="flex-1 min-w-0">
                         <div className="truncate font-medium">{repo.fullName}</div>
                         {repo.description && (
-                          <div className="text-[11px] text-slate-400 truncate">{repo.description}</div>
+                          <div className="ds-text-meta text-slate-400 truncate">{repo.description}</div>
                         )}
                       </div>
                     </Command.Item>
@@ -571,7 +571,7 @@ export function CommandPalette({
                   >
                     <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />
                     {entry.label}
-                    <span className="ml-auto text-[10px] uppercase tracking-wide text-slate-400">
+                    <span className="ml-auto ds-text-micro uppercase tracking-wide text-slate-400">
                       {entry.kind}
                     </span>
                   </Command.Item>
@@ -927,7 +927,7 @@ export function CommandPalette({
                   <GitPullRequest className={`w-4 h-4 shrink-0 ${pr.state === 'open' ? 'text-emerald-500' : 'text-purple-500'}`} />
                   <div className="flex-1 min-w-0">
                     <div className="truncate font-medium">{pr.title}</div>
-                    <div className="text-[11px] text-slate-400 truncate">
+                    <div className="ds-text-meta text-slate-400 truncate">
                       {pr.repoFullName} #{pr.number} · {pr.state}{pr.draft ? ' · draft' : ''}
                     </div>
                   </div>
@@ -948,7 +948,7 @@ export function CommandPalette({
                   <CircleDot className={`w-4 h-4 shrink-0 ${issue.state === 'open' ? 'text-emerald-500' : 'text-slate-400'}`} />
                   <div className="flex-1 min-w-0">
                     <div className="truncate font-medium">{issue.title}</div>
-                    <div className="text-[11px] text-slate-400 truncate">
+                    <div className="ds-text-meta text-slate-400 truncate">
                       {issue.repoFullName} #{issue.number} · {issue.state}
                     </div>
                   </div>
@@ -970,11 +970,11 @@ export function CommandPalette({
                   <div className="flex-1 min-w-0">
                     <div className="truncate font-medium">{repo.fullName}</div>
                     {repo.description && (
-                      <div className="text-[11px] text-slate-400 truncate">{repo.description}</div>
+                      <div className="ds-text-meta text-slate-400 truncate">{repo.description}</div>
                     )}
                   </div>
                   {repo.stars > 0 && (
-                    <span className="text-[11px] text-slate-400 shrink-0">★ {repo.stars}</span>
+                    <span className="ds-text-meta text-slate-400 shrink-0">★ {repo.stars}</span>
                   )}
                 </Command.Item>
               ))}
@@ -982,7 +982,7 @@ export function CommandPalette({
           )}
           </>)}
         </Command.List>
-        <div className={`border-t px-3 py-2 text-[11px] flex items-center justify-between ${
+        <div className={`border-t px-3 py-2 ds-text-meta flex items-center justify-between ${
           askMode
             ? 'border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-300 bg-indigo-50/40 dark:bg-indigo-950/20'
             : 'border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'

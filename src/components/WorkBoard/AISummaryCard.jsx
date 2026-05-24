@@ -29,7 +29,7 @@ function UrgencyGauge({ score }) {
         <svg width="56" height="34" viewBox="0 0 56 34" aria-label={`urgency ${(clamped * 100).toFixed(0)}%`}>
             <path d={`M${cx - r},${cy} A${r},${r} 0 0 1 ${cx + r},${cy}`} fill="none" stroke="currentColor" strokeOpacity="0.15" strokeWidth="4" strokeLinecap="round" />
             {path && <path d={path} fill="none" stroke={stroke} strokeWidth="4" strokeLinecap="round" />}
-            <text x="28" y="30" textAnchor="middle" className="text-[10px] font-semibold fill-slate-600 dark:fill-slate-300">
+            <text x="28" y="30" textAnchor="middle" className="ds-text-micro font-semibold fill-slate-600 dark:fill-slate-300">
                 {(clamped * 100).toFixed(0)}
             </text>
         </svg>
@@ -108,7 +108,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                 <div className="flex items-center gap-2 mb-1.5">
                     <Sparkles className="w-4 h-4 text-amber-500" aria-hidden="true" />
                     <span className="font-medium text-sm text-slate-800 dark:text-slate-200">AI Work Summary</span>
-                    <span className="text-[10px] uppercase tracking-wide opacity-60 text-amber-700 dark:text-amber-300">demo</span>
+                    <span className="ds-text-micro uppercase tracking-wide opacity-60 text-amber-700 dark:text-amber-300">demo</span>
                     <button
                         type="button"
                         onClick={() => setDismissed(true)}
@@ -175,7 +175,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
 
             {/* Left column — gauge + controls */}
             <div className="relative flex flex-col items-center gap-2 min-w-[100px] sm:pl-2 sm:pr-4 sm:border-r sm:border-slate-200/50 sm:dark:border-slate-700/40">
-                <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-500 dark:text-indigo-400 self-start sm:self-center">
+                <div className="inline-flex items-center gap-1.5 ds-text-micro font-semibold uppercase tracking-[0.18em] text-indigo-500 dark:text-indigo-400 self-start sm:self-center">
                     <Sparkles className="w-3 h-3" aria-hidden="true" />
                     AI summary
                 </div>
@@ -184,7 +184,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                     {severityLabel}
                 </span>
                 {(provider || model) && (
-                    <span className="mt-1 px-2 py-0.5 text-[10px] rounded-full bg-slate-100 dark:bg-slate-700/80 text-slate-500 dark:text-slate-400">
+                    <span className="mt-1 px-2 py-0.5 ds-text-micro rounded-full bg-slate-100 dark:bg-slate-700/80 text-slate-500 dark:text-slate-400">
                         {provider}{model ? ` · ${model}` : ''}
                     </span>
                 )}
@@ -255,7 +255,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                     </motion.ul>
                 </AnimatePresence>
                 {generatedAt && (
-                    <p className="mt-auto pt-2 text-[11px] text-slate-500 text-right">
+                    <p className="mt-auto pt-2 ds-text-meta text-slate-500 text-right">
                         Generated {timeAgo(generatedAt)}
                     </p>
                 )}

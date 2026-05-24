@@ -143,7 +143,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                     ) : null}
                 </div>
                 {scope === 'org' ? (
-                    <p className="text-[11px] opacity-70 -mt-1">
+                    <p className="ds-text-meta opacity-70 -mt-1">
                         Org-shared presets are visible to every active member of the organization. Only you (the author) can edit or delete this preset.
                     </p>
                 ) : null}
@@ -160,7 +160,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                             className="font-mono"
                         />
                     </Field>
-                    <div className="text-[10px] opacity-60 mt-1">{systemPrompt.length} / 8000</div>
+                    <div className="ds-text-micro opacity-60 mt-1">{systemPrompt.length} / 8000</div>
                 </div>
                 <div>
                     <label className="block text-xs font-medium mb-1" htmlFor="prompt-editor-severity">Severity floor (drops below-floor comments)</label>
@@ -189,7 +189,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                             + Add
                         </button>
                         {pathRules.length >= MAX_PATH_RULES ? (
-                            <span className="text-[10px] text-amber-600 dark:text-amber-400 ml-2">Maximum {MAX_PATH_RULES} rules</span>
+                            <span className="ds-text-micro text-amber-600 dark:text-amber-400 ml-2">Maximum {MAX_PATH_RULES} rules</span>
                         ) : null}
                     </div>
                     {pathRules.length === 0 ? (

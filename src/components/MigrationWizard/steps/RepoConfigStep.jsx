@@ -497,7 +497,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
             <Sparkles className="w-4 h-4 mt-0.5 shrink-0 text-amber-500 dark:text-amber-400" aria-hidden="true" />
             <div className="flex-1 min-w-0">
               <p className="font-medium leading-tight">{aiNotice}</p>
-              <p className="text-[11px] opacity-80 mt-0.5">As descrições e sugestões continuam disponíveis via template determinístico.</p>
+              <p className="ds-text-meta opacity-80 mt-0.5">As descrições e sugestões continuam disponíveis via template determinístico.</p>
             </div>
             <button
               type="button"
@@ -528,7 +528,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                <span className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                   {isAzureDevops ? 'Target project' : 'Importing to'}
                 </span>
                 {isAzureDevops && (
@@ -559,7 +559,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                     </div>
                   )}
                   {azureProjects.length > 0 && (
-                    <span className="hidden md:inline text-[11px] text-slate-400 dark:text-slate-500 font-medium tabular-nums">
+                    <span className="hidden md:inline ds-text-meta text-slate-400 dark:text-slate-500 font-medium tabular-nums">
                       {azureProjects.length} {azureProjects.length === 1 ? 'projeto' : 'projetos'}
                     </span>
                   )}
@@ -575,7 +575,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                     label="Destination organization"
                     className="min-w-[220px]"
                   />
-                  <span className="hidden md:inline text-[11px] text-slate-400 dark:text-slate-500 font-medium tabular-nums">
+                  <span className="hidden md:inline ds-text-meta text-slate-400 dark:text-slate-500 font-medium tabular-nums">
                     {orgOptions.length} {orgOptions.length === 1 ? 'account' : 'accounts'}
                   </span>
                 </div>
@@ -617,34 +617,34 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
             <div className="text-xl font-bold text-violet-400">{stats.count}</div>
-            <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">Repositories</div>
+            <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Repositories</div>
           </div>
           <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
             <div className="text-xl font-bold text-cyan-400">{formatSize(stats.totalSize)}</div>
-            <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">Total Size</div>
+            <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Total Size</div>
           </div>
           {isAzureDevops ? (
             <>
               <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
                 <div className="text-xl font-bold text-amber-400">{stats.tfvcCount}</div>
-                <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">TFVC paths</div>
+                <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">TFVC paths</div>
               </div>
               <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
                 <div className="text-xl font-bold text-slate-500 dark:text-slate-400">
                   {stats.existingInProject === null ? '—' : stats.existingInProject}
                 </div>
-                <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">Existing in project</div>
+                <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Existing in project</div>
               </div>
             </>
           ) : (
             <>
               <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
                 <div className="text-xl font-bold text-emerald-400">{stats.privateCount}</div>
-                <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">Private</div>
+                <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Private</div>
               </div>
               <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
                 <div className="text-xl font-bold text-orange-400">{stats.publicCount}</div>
-                <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">Public</div>
+                <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Public</div>
               </div>
             </>
           )}
@@ -710,7 +710,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                             type="button"
                             onClick={() => handleTargetTypeChange(repo, index, 'new')}
                             title="Cria um repo Git novo neste projeto"
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider transition-all
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 ds-text-micro font-semibold uppercase tracking-wider transition-all
                               ${(repo.targetType || 'new') === 'new'
                                 ? 'bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-inner'
                                 : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300'}`}
@@ -725,7 +725,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                             title={azureEmptyRepos.length === 0
                               ? 'Não há repos Git vazios neste projeto'
                               : `Reutiliza um repo existente vazio (${azureEmptyRepos.length} disponível${azureEmptyRepos.length === 1 ? '' : 'is'})`}
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider transition-all border-l border-slate-200 dark:border-slate-700
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 ds-text-micro font-semibold uppercase tracking-wider transition-all border-l border-slate-200 dark:border-slate-700
                               ${repo.targetType === 'existing-empty'
                                 ? 'bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-inner'
                                 : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-900/60 disabled:hover:text-slate-500 dark:disabled:hover:text-slate-400'}`}
@@ -778,20 +778,20 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                     {/* Metadata badges */}
                     <div className="flex items-center gap-1.5 mt-1.5">
                       {repo.language && (
-                        <span className="text-[10px] bg-slate-200 dark:bg-slate-900 text-slate-600 dark:text-slate-500 px-1.5 py-0.5 rounded">
+                        <span className="ds-text-micro bg-slate-200 dark:bg-slate-900 text-slate-600 dark:text-slate-500 px-1.5 py-0.5 rounded">
                           {repo.language}
                         </span>
                       )}
-                      <span className="text-[10px] bg-slate-200 dark:bg-slate-900 text-slate-600 dark:text-slate-500 px-1.5 py-0.5 rounded">
+                      <span className="ds-text-micro bg-slate-200 dark:bg-slate-900 text-slate-600 dark:text-slate-500 px-1.5 py-0.5 rounded">
                         {formatSize(repo.size)}
                       </span>
                       {repo.isTfvc ? (
-                        <span className="text-[10px] bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded">
+                        <span className="ds-text-micro bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded">
                           TFVC
                         </span>
                       ) : (
                         repo.branches > 0 && (
-                          <span className="text-[10px] bg-slate-200 dark:bg-slate-900 text-slate-600 dark:text-slate-500 px-1.5 py-0.5 rounded">
+                          <span className="ds-text-micro bg-slate-200 dark:bg-slate-900 text-slate-600 dark:text-slate-500 px-1.5 py-0.5 rounded">
                             {repo.branches} {repo.branches === 1 ? 'branch' : 'branches'}
                           </span>
                         )
@@ -827,7 +827,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                         conflictStatus === 'conflict' ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' :
                         'bg-slate-300 dark:bg-slate-600'
                       }`} />
-                      <span className={`text-[11px] ${
+                      <span className={`ds-text-meta ${
                         conflictStatus === 'clear' ? 'text-emerald-600 dark:text-emerald-400' :
                         conflictStatus === 'checking' ? 'text-amber-600 dark:text-amber-400' :
                         conflictStatus === 'conflict' ? 'text-red-600 dark:text-red-400' :
@@ -1046,7 +1046,7 @@ function DescriptionField({ repo, index, aiAvailable, isGenerating, onChange, on
       <div className="flex items-center justify-between mb-1">
         <label
           htmlFor={`repo-desc-${index}`}
-          className="text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400"
+          className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400"
         >
           Description
         </label>
@@ -1057,7 +1057,7 @@ function DescriptionField({ repo, index, aiAvailable, isGenerating, onChange, on
           title={aiAvailable
             ? 'Generate a professional description with AI'
             : 'Template-based — enable Gemini in Settings for AI-generated descriptions'}
-          className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium
+          className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md ds-text-meta font-medium
             transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed
             ${aiAvailable
               ? 'text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-sm hover:shadow-md'
@@ -1081,7 +1081,7 @@ function DescriptionField({ repo, index, aiAvailable, isGenerating, onChange, on
           placeholder="Optional description..."
           status={over ? 'error' : 'idle'}
         />
-        <span className={`pointer-events-none absolute bottom-1.5 right-2 text-[10px] font-mono tabular-nums ${counterTone}`}>
+        <span className={`pointer-events-none absolute bottom-1.5 right-2 ds-text-micro font-mono tabular-nums ${counterTone}`}>
           {length}/{REPO_DESCRIPTION_MAX}
         </span>
       </div>

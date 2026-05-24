@@ -79,7 +79,7 @@ export function CategorySection({
                     )}
                     <span className="min-w-0 flex-1">
                         {eyebrow && (
-                            <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                            <span className="block ds-text-micro font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                                 {eyebrow}
                             </span>
                         )}
@@ -88,12 +88,12 @@ export function CategorySection({
                                 {title}
                             </span>
                             {typeof count === 'number' && (
-                                <span className="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 text-[11px] font-bold tabular-nums rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 ring-1 ring-slate-200/70 dark:ring-slate-700/70">
+                                <span className="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 ds-text-meta font-bold tabular-nums rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 ring-1 ring-slate-200/70 dark:ring-slate-700/70">
                                     {count}
                                 </span>
                             )}
                             {badge && !count && (
-                                <span className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
+                                <span className="px-2.5 py-0.5 ds-text-meta font-semibold rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
                                     {badge}
                                 </span>
                             )}

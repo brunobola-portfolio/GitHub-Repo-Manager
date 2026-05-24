@@ -122,7 +122,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
         title="Abre a página de criação de PAT"
         subtitle={
           hasContext
-            ? <>No teu servidor <code className="px-1 rounded bg-slate-100 dark:bg-slate-800 text-[11px]">{host}</code> · org <code className="px-1 rounded bg-slate-100 dark:bg-slate-800 text-[11px]">{org}</code></>
+            ? <>No teu servidor <code className="px-1 rounded bg-slate-100 dark:bg-slate-800 ds-text-meta">{host}</code> · org <code className="px-1 rounded bg-slate-100 dark:bg-slate-800 ds-text-meta">{org}</code></>
             : <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
                 <AlertTriangle className="w-3 h-3" />
                 Cola primeiro a URL Azure DevOps / TFS acima — sem isso não sabemos para que servidor criar o PAT
@@ -140,7 +140,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
           {openedAt ? 'Reabrir página de PAT' : hasContext ? `Abrir PAT em ${provider.shortName}` : 'Cola URL primeiro'}
         </button>
         {hasContext && (
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 font-mono break-all">
+          <p className="ds-text-meta text-slate-500 dark:text-slate-400 mt-1.5 font-mono break-all">
             {patUrl}
           </p>
         )}
@@ -197,7 +197,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
               <div className="text-xs font-medium text-emerald-800 dark:text-emerald-200">
                 Guardar para futuras sessões?
               </div>
-              <div className="text-[11px] text-emerald-700/80 dark:text-emerald-300/80">
+              <div className="ds-text-meta text-emerald-700/80 dark:text-emerald-300/80">
                 Encripta este PAT na base de dados — só tu o consegues usar e nunca volta para o browser.
               </div>
               <div className="mt-1.5 flex items-center gap-1.5">
@@ -220,7 +220,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
                     : <><Bookmark className="w-3 h-3" /> Guardar</>}
                 </button>
               </div>
-              {saveError && <div className="text-[11px] text-red-600 dark:text-red-400 mt-1">✗ {saveError}</div>}
+              {saveError && <div className="ds-text-meta text-red-600 dark:text-red-400 mt-1">✗ {saveError}</div>}
             </div>
           </div>
         )}
@@ -249,7 +249,7 @@ function Step({ n, title, subtitle, children, highlight = false }) {
       className={`flex gap-3 ${highlight ? 'p-3 rounded-xl bg-indigo-50/40 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-800' : ''}`}
     >
       <div
-        className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold mt-0.5
+        className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center ds-text-meta font-bold mt-0.5
           ${highlight
             ? 'bg-indigo-500 text-white'
             : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'}`}
@@ -315,10 +315,10 @@ function CliAlternative({ cmd }) {
     <details className="group">
       <summary className="cursor-pointer text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 inline-flex items-center gap-1.5">
         <Terminal className="w-3.5 h-3.5" />
-        Alternativa por CLI (<code className="text-[11px]">az devops</code>)
+        Alternativa por CLI (<code className="ds-text-meta">az devops</code>)
       </summary>
       <div className="mt-2 flex items-stretch gap-1">
-        <code className="flex-1 text-[11px] font-mono px-2 py-1.5 rounded-lg bg-slate-900 text-slate-200 overflow-x-auto whitespace-nowrap">
+        <code className="flex-1 ds-text-meta font-mono px-2 py-1.5 rounded-lg bg-slate-900 text-slate-200 overflow-x-auto whitespace-nowrap">
           {cmd}
         </code>
         <button
@@ -330,7 +330,7 @@ function CliAlternative({ cmd }) {
           {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
       </div>
-      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+      <p className="ds-text-micro text-slate-400 dark:text-slate-500 mt-1">
         Requer <code>az</code> + extensão <code>azure-devops</code>. Cola depois o token devolvido no campo acima.
       </p>
     </details>

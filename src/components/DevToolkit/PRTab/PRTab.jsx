@@ -222,7 +222,7 @@ export function PRTab({ toolkit }) {
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-400">
                             <Info className="w-3.5 h-3.5 shrink-0" />
                             PR #{prContext.number} exists on this branch
-                            <span className="ml-auto px-1.5 py-0.5 rounded bg-blue-500/20 text-[10px] font-medium">Update existing</span>
+                            <span className="ml-auto px-1.5 py-0.5 rounded bg-blue-500/20 ds-text-micro font-medium">Update existing</span>
                         </div>
                     )}
                     {generatedCommit && (

@@ -49,13 +49,13 @@ export function MultiCommitSplit({ commits = [], onDismiss, onUseAll }) {
                         transition={{ delay: idx * 0.05 }}
                         className="flex items-start gap-2 px-3 py-2"
                     >
-                        <span className="shrink-0 w-5 h-5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-200 text-[10px] font-bold flex items-center justify-center mt-0.5">
+                        <span className="shrink-0 w-5 h-5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-200 ds-text-micro font-bold flex items-center justify-center mt-0.5">
                             {idx + 1}
                         </span>
                         <div className="flex-1 min-w-0">
                             <p className="text-xs font-mono text-slate-800 dark:text-slate-200 break-words">{commit.message}</p>
                             {commit.files && (
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{commit.files.join(', ')}</p>
+                                <p className="ds-text-micro text-slate-500 dark:text-slate-400 mt-0.5">{commit.files.join(', ')}</p>
                             )}
                         </div>
                         <Tooltip label={copiedIdx === idx ? 'Copied!' : 'Copy commit message'}>

@@ -15,7 +15,7 @@ export function InboxSection({ label, count = 0, active = false, onClick }) {
             <span
                 aria-live="polite"
                 className={[
-                    'shrink-0 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full text-[11px] font-semibold ds-font-mono tabular-nums',
+                    'shrink-0 inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full ds-text-meta font-semibold ds-font-mono tabular-nums',
                     count > 0
                         ? 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300'
                         : 'bg-slate-200/60 dark:bg-slate-800 text-slate-500',

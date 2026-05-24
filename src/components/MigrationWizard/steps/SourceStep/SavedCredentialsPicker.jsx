@@ -73,7 +73,7 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
         <button
           type="button"
           onClick={onOpenSettings}
-          className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 inline-flex items-center gap-1"
+          className="ds-text-meta text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 inline-flex items-center gap-1"
         >
           <Settings className="w-3 h-3" />
           Gerir
@@ -128,12 +128,12 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
                           {c.label}
                         </span>
                         {isExactOrg && (
-                          <span className="shrink-0 text-[10px] uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40">
+                          <span className="shrink-0 ds-text-micro uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40">
                             correspondência exacta
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 ml-5 mt-0.5 font-mono truncate">
+                      <div className="ds-text-meta text-slate-500 dark:text-slate-400 ml-5 mt-0.5 font-mono truncate">
                         {c.org ? `${c.org} · ` : ''}{c.prefix}
                         {c.lastUsedAt && <> · usado {formatRelative(c.lastUsedAt)}</>}
                       </div>
@@ -160,7 +160,7 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
       )}
 
       {picked && (
-        <p className="text-[11px] text-emerald-700/80 dark:text-emerald-300/80 px-1">
+        <p className="ds-text-meta text-emerald-700/80 dark:text-emerald-300/80 px-1">
           ✓ A usar token guardado · o PAT nunca sai do servidor (decriptado on-demand)
         </p>
       )}

@@ -177,7 +177,7 @@ export function ModelCombobox({
             )}
 
             {value && !exactMatch && (
-                <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                <p className="mt-1 ds-text-meta text-slate-500 dark:text-slate-400">
                     Using custom model id — not in suggested list.
                 </p>
             )}

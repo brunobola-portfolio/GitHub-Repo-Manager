@@ -103,7 +103,7 @@ export function Header({
                                 Repo Manager
                                 <LicenseBadge />
                             </h2>
-                            <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-none mt-0.5">Organize & migrate</p>
+                            <p className="ds-text-meta text-slate-400 dark:text-slate-500 leading-none mt-0.5">Organize & migrate</p>
                         </div>
                     </div>
                 </div>
@@ -114,7 +114,7 @@ export function Header({
                     onClick={onOpenCommandPalette}
                     aria-label="Open command palette (Ctrl+K)"
                     title="Open command palette (Ctrl+K)"
-                    className="hidden min-[1340px]:inline-flex items-center gap-1.5 px-2 h-[28px] rounded-lg text-[11px] font-medium text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/50 bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
+                    className="hidden min-[1340px]:inline-flex items-center gap-1.5 px-2 h-[28px] rounded-lg ds-text-meta font-medium text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/50 bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
                 >
                     <kbd className="font-mono">⌘K</kbd>
                 </button>
@@ -209,7 +209,7 @@ export function Header({
                                         {notif.totalCount > 0 && (
                                             <span
                                                 aria-hidden="true"
-                                                className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-indigo-500 text-white text-[10px] font-bold leading-[16px] text-center ring-2 ring-slate-100 dark:ring-slate-950"
+                                                className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-indigo-500 text-white ds-text-micro font-bold leading-[16px] text-center ring-2 ring-slate-100 dark:ring-slate-950"
                                             >
                                                 {notif.totalCount > 99 ? '99+' : notif.totalCount}
                                             </span>
@@ -340,7 +340,7 @@ export function Header({
                       <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white/80 dark:ring-slate-900/80" />
                     )}
                   </span>
-                  <span className="relative text-[10px] font-medium leading-none">{label}</span>
+                  <span className="relative ds-text-micro font-medium leading-none">{label}</span>
                 </button>
                 )
               })}
@@ -472,7 +472,7 @@ function NavButton({ active, onClick, icon, label, badge }) {
             {badge > 0 && (
                 <span
                     aria-label={`${badge} items need attention`}
-                    className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold rounded-full bg-indigo-500 text-white"
+                    className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 ds-text-micro font-bold rounded-full bg-indigo-500 text-white"
                 >
                     {badge > 9 ? '9+' : badge}
                 </span>
@@ -545,7 +545,7 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
                 </MenuButton>
                 {isAdmin && onOpenAdminDLQ && (
                     <div className="border-t border-slate-100 dark:border-slate-700 mt-2 pt-2">
-                        <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        <div className="px-3 pb-1 ds-text-micro font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                             Admin
                         </div>
                         <MenuButton icon={ShieldAlert} onClick={() => { onOpenAdminDLQ?.(); onClose() }}>
@@ -599,7 +599,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
         <div className="absolute right-0 top-full mt-2 w-96 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
             <div className="px-4 pt-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
+                    <p className="ds-text-micro font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
                         {sinceLabel ? `Since ${sinceLabel}` : 'Activity digest'}
                     </p>
                     <h3 className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100 ds-font-display">
@@ -610,7 +610,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
                     <button
                         type="button"
                         onClick={() => onMarkSeen?.()}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-300 transition-colors ds-focus-ring"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded ds-text-meta font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-300 transition-colors ds-focus-ring"
                     >
                         <Check className="w-3 h-3" aria-hidden="true" /> Mark as read
                     </button>
@@ -626,7 +626,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
                     <div className="px-4 py-10 text-center">
                         <Sparkles className="w-6 h-6 text-indigo-400/70 mx-auto mb-2" aria-hidden="true" />
                         <p className="text-sm text-slate-600 dark:text-slate-400">Nothing pending right now.</p>
-                        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">We'll let you know when something needs you.</p>
+                        <p className="ds-text-meta text-slate-400 dark:text-slate-500 mt-1">We'll let you know when something needs you.</p>
                     </div>
                 ) : (
                     <ul className="py-1">
@@ -642,7 +642,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
                     </ul>
                 )}
                 {error && totalCount === 0 && (
-                    <p className="px-4 pb-3 text-[11px] text-amber-600 dark:text-amber-400">
+                    <p className="px-4 pb-3 ds-text-meta text-amber-600 dark:text-amber-400">
                         Couldn't load digest — we'll try again on next focus.
                     </p>
                 )}
@@ -661,10 +661,10 @@ function DigestCategory({ kind, count, items, onItemClick }) {
         <li>
             <div className="px-4 pt-3 pb-1.5 flex items-center gap-2">
                 <Icon className={`w-3.5 h-3.5 ${meta.accent}`} aria-hidden="true" />
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <span className="ds-text-meta font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     {meta.label}
                 </span>
-                <span className={`ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white ${meta.dot}`}>
+                <span className={`ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full ds-text-micro font-bold text-white ${meta.dot}`}>
                     {count}
                 </span>
             </div>
@@ -673,7 +673,7 @@ function DigestCategory({ kind, count, items, onItemClick }) {
                     <DigestItemRow key={`${kind}-${item.repo}-${item.prNumber ?? item.issueNumber ?? item.jobId ?? item.since}`} kind={kind} item={item} onClick={onItemClick} />
                 ))}
                 {count > items.length && (
-                    <li className="px-3 py-1 text-[11px] text-slate-400 dark:text-slate-500">
+                    <li className="px-3 py-1 ds-text-meta text-slate-400 dark:text-slate-500">
                         +{count - items.length} more…
                     </li>
                 )}
@@ -700,12 +700,12 @@ function DigestItemRow({ kind, item, onClick }) {
                     <p className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">
                         {item.title || item.reason || 'Update'}
                     </p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                    <p className="ds-text-micro text-slate-500 dark:text-slate-400 truncate">
                         {item.repo}
                     </p>
                 </div>
                 <div className="shrink-0 flex flex-col items-end gap-0.5">
-                    {ago && <span className="text-[10px] text-slate-400 dark:text-slate-500">{ago}</span>}
+                    {ago && <span className="ds-text-micro text-slate-400 dark:text-slate-500">{ago}</span>}
                     {url && (
                         <ExternalLink className="w-3 h-3 text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 transition-colors" aria-hidden="true" />
                     )}
@@ -800,7 +800,7 @@ function SystemHealthIndicator() {
                             </div>
                         )}
                         {lastCheckedAt && (
-                            <div className="pt-2 mt-2 border-t border-slate-100 dark:border-slate-700 text-[11px] text-slate-400 dark:text-slate-500">
+                            <div className="pt-2 mt-2 border-t border-slate-100 dark:border-slate-700 ds-text-meta text-slate-400 dark:text-slate-500">
                                 Last checked: {relative || 'just now'}
                             </div>
                         )}

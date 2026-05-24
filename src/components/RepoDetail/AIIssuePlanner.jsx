@@ -81,7 +81,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
                     </div>
                     <div>
                         <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">AI Issue-to-Plan</h4>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        <p className="ds-text-meta text-slate-500 dark:text-slate-400">
                             Structured plan only — no branches or PRs are created.
                         </p>
                     </div>
@@ -110,7 +110,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
                                 placeholder="e.g. scope to the frontend, avoid DB migrations, reuse existing auth middleware…"
                             />
                         </Field>
-                        <span className="block text-[10px] text-right text-slate-400 mt-0.5">
+                        <span className="block ds-text-micro text-right text-slate-400 mt-0.5">
                             {extra.length}/2000
                         </span>
                     </div>
@@ -189,7 +189,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
 
                     {plan.approach && (
                         <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                            <p className="ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
                                 Approach
                             </p>
                             <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
@@ -200,7 +200,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
 
                     {plan.files?.length > 0 && (
                         <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                            <p className="ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                                 Files to touch ({plan.files.length})
                             </p>
                             <div className="space-y-1.5">
@@ -215,15 +215,15 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
                                             <Icon className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${meta.color}`} />
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-baseline gap-2">
-                                                    <span className={`text-[10px] font-bold uppercase ${meta.color}`}>
+                                                    <span className={`ds-text-micro font-bold uppercase ${meta.color}`}>
                                                         {meta.label}
                                                     </span>
-                                                    <span className="font-mono text-[11px] text-slate-800 dark:text-slate-200 truncate">
+                                                    <span className="font-mono ds-text-meta text-slate-800 dark:text-slate-200 truncate">
                                                         {f.path}
                                                     </span>
                                                 </div>
                                                 {f.notes && (
-                                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                                                    <p className="ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                                                         {f.notes}
                                                     </p>
                                                 )}
@@ -237,7 +237,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
 
                     {plan.tests && (
                         <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1.5">
+                            <p className="ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1.5">
                                 <FlaskConical className="w-3 h-3" /> Tests
                             </p>
                             <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
@@ -248,7 +248,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
 
                     {plan.risks && (
                         <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1.5">
+                            <p className="ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1.5">
                                 <ShieldAlert className="w-3 h-3" /> Risks
                             </p>
                             <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">

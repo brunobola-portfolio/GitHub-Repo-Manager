@@ -33,7 +33,7 @@ export function WorkBoardCapReachedBanner({ spentCents, capCents, className = ''
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-semibold text-slate-900 dark:text-slate-100">AI monthly cap reached</h4>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-200 ring-1 ring-inset ring-rose-200 dark:ring-rose-800">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wide bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-200 ring-1 ring-inset ring-rose-200 dark:ring-rose-800">
                             <AlertTriangle className="w-2.5 h-2.5" aria-hidden="true" /> Blocked
                         </span>
                     </div>
@@ -46,7 +46,7 @@ export function WorkBoardCapReachedBanner({ spentCents, capCents, className = ''
                             : 100
                         return (
                             <div className="mt-3">
-                                <div className="flex items-center justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                                <div className="flex items-center justify-between ds-text-meta font-medium text-slate-500 dark:text-slate-400 mb-1">
                                     <span>Spent this month</span>
                                     <span className="text-slate-700 dark:text-slate-200">
                                         {formatCents(spentCents)} <span className="text-slate-400">/ {formatCents(capCents)}</span>

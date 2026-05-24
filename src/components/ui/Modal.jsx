@@ -194,7 +194,7 @@ export function Modal({
                                         )
                                         : title}
                                     {subtitle && (
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                                        <p className="ds-text-meta text-slate-500 dark:text-slate-400 truncate mt-0.5">
                                             {subtitle}
                                         </p>
                                     )}

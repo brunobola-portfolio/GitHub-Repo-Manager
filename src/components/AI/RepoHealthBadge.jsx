@@ -30,7 +30,7 @@ function pickTone(score) {
 export function RepoHealthBadge({ score, className = '', onClick }) {
     const tone = pickTone(score)
     if (!tone) return null
-    const baseClasses = `inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ring-1 ring-inset ${tone.bg} ${tone.text} ${className}`.trim()
+    const baseClasses = `inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full ds-text-micro font-semibold ring-1 ring-inset ${tone.bg} ${tone.text} ${className}`.trim()
     const content = (
         <>
             <Heart className="w-2.5 h-2.5" aria-hidden="true" />

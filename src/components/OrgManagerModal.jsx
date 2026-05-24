@@ -298,13 +298,13 @@ function OverviewTab({ org, isPersonal, editing, editForm, setEditForm, onEdit, 
 function AccountTypeBadge({ isPersonal }) {
     if (isPersonal) {
         return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200 ring-1 ring-inset ring-indigo-200/60 dark:ring-indigo-800/60">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 ds-text-meta font-medium rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200 ring-1 ring-inset ring-indigo-200/60 dark:ring-indigo-800/60">
                 <User className="w-3 h-3" /> Personal
             </span>
         )
     }
     return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200 ring-1 ring-inset ring-purple-200/60 dark:ring-purple-800/60">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 ds-text-meta font-medium rounded-full bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200 ring-1 ring-inset ring-purple-200/60 dark:ring-purple-800/60">
             <Building2 className="w-3 h-3" /> Organization
         </span>
     )

@@ -113,7 +113,7 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                 ) : (
                     <ProgressRing percent={percent} tone={tone} />
                 )}
-                <span className={`text-[11px] font-semibold tabular-nums ${tone.label}`}>
+                <span className={`ds-text-meta font-semibold tabular-nums ${tone.label}`}>
                     {unlimited ? 'Unlimited' : `${current} / ${limit}`}
                 </span>
             </button>
@@ -131,8 +131,8 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between gap-2 mb-2">
-                            <span className="text-[10px] uppercase tracking-[0.2em] font-semibold text-slate-500 dark:text-slate-400">AI quota</span>
-                            <span className="text-[10px] uppercase font-semibold text-slate-400 dark:text-slate-500">{tier}</span>
+                            <span className="ds-text-micro uppercase tracking-[0.2em] font-semibold text-slate-500 dark:text-slate-400">AI quota</span>
+                            <span className="ds-text-micro uppercase font-semibold text-slate-400 dark:text-slate-500">{tier}</span>
                         </div>
                         {unlimited ? (
                             <p className="text-sm text-slate-700 dark:text-slate-200">
@@ -151,7 +151,7 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                                     />
                                 </div>
                                 {reset && (
-                                    <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">Resets {reset}.</p>
+                                    <p className="mt-2 ds-text-meta text-slate-500 dark:text-slate-400">Resets {reset}.</p>
                                 )}
                             </>
                         )}

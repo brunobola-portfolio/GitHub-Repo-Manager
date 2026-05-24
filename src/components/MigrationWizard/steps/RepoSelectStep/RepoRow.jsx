@@ -75,7 +75,7 @@ export function RepoRow({ repo, isSelected, isActive, density = 'full', onToggle
                 </span>
               )}
               {repo.isDisabled && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 font-semibold uppercase tracking-wide">
+                <span className="ds-text-micro px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 font-semibold uppercase tracking-wide">
                   Archived
                 </span>
               )}

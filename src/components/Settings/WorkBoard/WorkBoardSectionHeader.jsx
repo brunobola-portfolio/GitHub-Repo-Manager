@@ -7,9 +7,9 @@ export function WorkBoardSectionHeader({ step, title, description, meta }) {
     return (
         <div className="flex items-start justify-between gap-3 mb-3">
             <div className="min-w-0">
-                <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">
+                <div className="flex items-center gap-2 ds-text-micro font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">
                     {step && (
-                        <span className="font-mono text-[10px] text-indigo-500/70 dark:text-indigo-400/60">
+                        <span className="font-mono ds-text-micro text-indigo-500/70 dark:text-indigo-400/60">
                             {String(step).padStart(2, '0')}
                         </span>
                     )}

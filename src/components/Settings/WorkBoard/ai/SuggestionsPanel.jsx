@@ -28,7 +28,7 @@ export function SuggestionsPanel({ suggestions, onApply, onDismiss }) {
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{s.description}</p>
                                 </div>
                                 {s.repos?.length > 0 && (
-                                    <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 truncate">
+                                    <p className="ds-text-meta font-mono text-slate-500 dark:text-slate-400 truncate">
                                         {s.repos.slice(0, 3).join(', ')}{s.repos.length > 3 ? ` +${s.repos.length - 3} more` : ''}
                                     </p>
                                 )}

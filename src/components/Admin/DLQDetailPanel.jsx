@@ -56,7 +56,7 @@ function BodyBlock({ title, content, pretty = false }) {
             <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                 {title}
             </h3>
-            <pre className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-[11px] leading-relaxed font-mono whitespace-pre-wrap break-all overflow-x-auto max-h-[300px]">
+            <pre className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 ds-text-meta leading-relaxed font-mono whitespace-pre-wrap break-all overflow-x-auto max-h-[300px]">
                 {rendered}
             </pre>
         </section>

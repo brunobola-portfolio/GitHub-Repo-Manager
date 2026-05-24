@@ -230,7 +230,7 @@ function DraftCommentModal({ review, intent, onConfirm, onClose }) {
                 </Field>
             </div>
             {!draftLoading && (
-                <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
+                <p className="mt-1 flex items-center gap-1 ds-text-meta text-slate-500">
                     <Sparkles className="w-3 h-3" /> AI draft — edit before sending
                 </p>
             )}

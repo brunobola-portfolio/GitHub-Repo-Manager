@@ -34,7 +34,7 @@ export function CapabilityMatrix({ activeProvider }) {
         <div className="rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-md ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 p-4 space-y-3">
             <div className="flex items-center gap-2">
                 <Cpu className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
-                <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
+                <span className="ds-text-micro font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
                     Provider Capabilities
                 </span>
             </div>
@@ -47,7 +47,7 @@ export function CapabilityMatrix({ activeProvider }) {
                 {FEATURE_KEYS.map((fk, i) => (
                     <li
                         key={fk}
-                        className="inline-flex items-center gap-1.5 text-[10px] font-medium text-slate-500 dark:text-slate-400"
+                        className="inline-flex items-center gap-1.5 ds-text-micro font-medium text-slate-500 dark:text-slate-400"
                     >
                         <span className="font-mono text-[9px] text-slate-400 dark:text-slate-500 w-3 text-right">{i + 1}</span>
                         {FEATURE_LABELS[fk]}
@@ -103,14 +103,14 @@ export function CapabilityMatrix({ activeProvider }) {
                 })}
             </ul>
 
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 border-t border-slate-200/70 dark:border-slate-800 text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 border-t border-slate-200/70 dark:border-slate-800 ds-text-micro uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 <Legend state="yes" label="Supported" />
                 <Legend state="depends" label="Depends" />
                 <Legend state="no" label="Unavailable" />
             </div>
 
             {activeProvider && PROVIDER_CAPABILITIES[activeProvider]?.semanticSearch !== 'yes' && (
-                <p className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 ring-1 ring-inset ring-amber-200/60 dark:ring-amber-800/50 rounded-lg px-2 py-1.5">
+                <p className="flex items-start gap-1.5 ds-text-meta text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 ring-1 ring-inset ring-amber-200/60 dark:ring-amber-800/50 rounded-lg px-2 py-1.5">
                     <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden="true" />
                     <span>Semantic search needs an embedding provider. Configure one above or switch to Gemini / OpenAI.</span>
                 </p>

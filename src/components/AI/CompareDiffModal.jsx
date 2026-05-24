@@ -87,14 +87,14 @@ function FilePane({ label, loading, result }) {
     const truncated = lines.length > 200
     return (
         <div>
-            <div className="text-[10px] uppercase tracking-wider text-slate-400 mb-1 flex items-center justify-between">
+            <div className="ds-text-micro uppercase tracking-wider text-slate-400 mb-1 flex items-center justify-between">
                 <span>{label}</span>
                 <span>
                     {lines.length} lines
                     {truncated ? ' (first 200 shown)' : ''}
                 </span>
             </div>
-            <pre className="font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-words p-3 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/40 text-slate-800 dark:text-slate-200 max-h-[340px] overflow-y-auto">
+            <pre className="font-mono ds-text-meta leading-relaxed whitespace-pre-wrap break-words p-3 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/40 text-slate-800 dark:text-slate-200 max-h-[340px] overflow-y-auto">
                 {displayed || '(empty)'}
             </pre>
         </div>
@@ -188,7 +188,7 @@ export function CompareDiffModal({ isOpen, onClose, source, target, targetLabel 
                 </div>
             </div>
 
-            <p className="mt-3 text-[11px] text-slate-500 dark:text-slate-400">
+            <p className="mt-3 ds-text-meta text-slate-500 dark:text-slate-400">
                 This is a quick side-by-side view of canonical files (README, package.json). For a full line-by-line diff, use GitHub's compare view:{' '}
                 <code className="font-mono text-xs">github.com/{sourceLabel}/compare/main...{targetDisplay.replace('/', ':')}:main</code>
             </p>

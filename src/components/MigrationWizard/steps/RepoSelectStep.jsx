@@ -259,7 +259,7 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
       />
 
       {enriching && (
-        <p className="text-[11px] text-slate-500">
+        <p className="ds-text-meta text-slate-500">
           <Spinner size="xs" className="inline mr-1" /> Loading activity & LFS signals…
         </p>
       )}

@@ -99,7 +99,7 @@ export function SmartSelectMenu({ repos, onSelect }) {
                   >
                     <Icon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
                     <span className="flex-1">{p.label}</span>
-                    <span className="text-[11px] text-slate-500 tabular-nums">{count}</span>
+                    <span className="ds-text-meta text-slate-500 tabular-nums">{count}</span>
                   </button>
                 </li>
               )

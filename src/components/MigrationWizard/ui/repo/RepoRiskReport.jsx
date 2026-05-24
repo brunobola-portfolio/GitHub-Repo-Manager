@@ -27,7 +27,7 @@ export function RepoRiskReport({ flags, onAction }) {
                         <a
                           key={a.id}
                           href={a.href} target="_blank" rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 ds-text-meta font-medium rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
                         >
                           {a.label}
                         </a>
@@ -36,7 +36,7 @@ export function RepoRiskReport({ flags, onAction }) {
                           key={a.id}
                           type="button"
                           onClick={() => onAction(a.id)}
-                          className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
+                          className="inline-flex items-center gap-1 px-2 py-0.5 ds-text-meta font-medium rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
                         >
                           {a.label}
                         </button>

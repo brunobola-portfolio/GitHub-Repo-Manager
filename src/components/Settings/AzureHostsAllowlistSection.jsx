@@ -117,7 +117,7 @@ function Header({ canEdit }) {
         <ShieldCheck className="w-4 h-4 text-emerald-500" />
         Allowlist de hosts Azure / TFS
         {!canEdit && (
-          <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 inline-flex items-center gap-1">
+          <span className="ds-text-micro uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 inline-flex items-center gap-1">
             <Lock className="w-3 h-3" /> só leitura
           </span>
         )}
@@ -140,7 +140,7 @@ function Section({ title, description, icon: Icon, children }) {
           <Icon className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
           <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{title}</span>
         </div>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>
+        <p className="ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>
       </div>
       <ul className="divide-y divide-slate-100 dark:divide-slate-800">
         {children}
@@ -161,7 +161,7 @@ function RowReadOnly({ pattern }) {
       <code className="flex-1 min-w-0 text-sm font-mono text-slate-800 dark:text-slate-200 truncate">
         {pattern}
       </code>
-      <span className="shrink-0 text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+      <span className="shrink-0 ds-text-micro uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
         .env
       </span>
     </li>
@@ -205,7 +205,7 @@ function RowDb({ entry, canEdit, onDeleted }) {
         <code className="block text-sm font-mono text-slate-800 dark:text-slate-200 truncate">
           {entry.pattern}
         </code>
-        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+        <div className="ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5">
           {entry.added_by_username
             ? <>Adicionado por <strong>{entry.added_by_username}</strong></>
             : 'Adicionado'}
@@ -316,7 +316,7 @@ function AddHostForm({ onAdded }) {
           Adicionar
         </button>
       </div>
-      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+      <p className="ds-text-meta text-slate-500 dark:text-slate-400">
         Wildcard subdomínio: <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">*.empresa.com</code> (cobre todos os subdomínios).
         Porta opcional: <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">tfs.empresa.com:8080</code>.
       </p>

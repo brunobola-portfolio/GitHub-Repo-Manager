@@ -21,7 +21,7 @@ export function StatCard({ icon: Icon, label, value, tone = 'indigo' }) {
         </div>
       )}
       <div className={`text-xl font-bold ${toneClass} tabular-nums`}>{value}</div>
-      <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-0.5">
+      <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">
         {label}
       </div>
     </Card>

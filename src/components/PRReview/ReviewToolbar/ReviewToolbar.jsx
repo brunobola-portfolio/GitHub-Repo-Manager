@@ -181,7 +181,7 @@ export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleVi
 
           {/* Pending count badge */}
           {pendingCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-4 h-4 rounded-full bg-amber-400 text-[10px] font-bold text-slate-900 leading-none">
+            <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-4 h-4 rounded-full bg-amber-400 ds-text-micro font-bold text-slate-900 leading-none">
               {pendingCount > 9 ? '9+' : pendingCount}
             </span>
           )}

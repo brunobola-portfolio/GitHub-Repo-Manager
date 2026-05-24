@@ -26,7 +26,7 @@ export default function RestartServerHint({ host }) {
       </div>
       <div className="p-4 space-y-2.5">
         <p className="text-sm text-slate-700 dark:text-slate-200">
-          O servidor está a rejeitar <code className="px-1 rounded bg-indigo-100 dark:bg-indigo-900/40 text-[11px]">{host}</code>{' '}
+          O servidor está a rejeitar <code className="px-1 rounded bg-indigo-100 dark:bg-indigo-900/40 ds-text-meta">{host}</code>{' '}
           por resolver para um IP privado — comportamento corrigido em código mais recente.
           Esta é a forma <strong>normal</strong> de um TFS interno funcionar (LAN corporativa) e o teu host
           já está autorizado na allowlist.
@@ -49,7 +49,7 @@ export default function RestartServerHint({ host }) {
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
             </button>
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+          <p className="ds-text-meta text-slate-500 dark:text-slate-400">
             Pára o servidor (<code>Ctrl+C</code>) e arranca de novo. Depois clica em
             {' '}<strong>Tentar de novo</strong> abaixo.
           </p>

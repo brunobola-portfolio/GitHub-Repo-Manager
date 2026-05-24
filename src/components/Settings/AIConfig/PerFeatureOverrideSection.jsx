@@ -52,7 +52,7 @@ export function PerFeatureOverrideSection({
                         </span>
                         <span className="text-xs font-normal text-slate-400">(optional)</span>
                         {activeOverrides > 0 && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200">
+                            <span className="inline-flex items-center px-1.5 py-0.5 ds-text-micro font-semibold uppercase tracking-wide rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200">
                                 {activeOverrides} set
                             </span>
                         )}
@@ -100,11 +100,11 @@ export function PerFeatureOverrideSection({
                                                 >
                                                     <span>{FEATURE_KEY_LABELS[key]}</span>
                                                     {isOverridden ? (
-                                                        <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-indigo-500 text-white">
+                                                        <span className="ds-text-micro font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-indigo-500 text-white">
                                                             override
                                                         </span>
                                                     ) : (
-                                                        <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                                                        <span className="ds-text-micro font-medium text-slate-400 dark:text-slate-500">
                                                             · default
                                                         </span>
                                                     )}
@@ -117,7 +117,7 @@ export function PerFeatureOverrideSection({
                                                             delete next[key]
                                                             onChange('featureOverrides', next)
                                                         }}
-                                                        className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
+                                                        className="inline-flex items-center gap-1 ds-text-meta text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
                                                         aria-label={`Reset ${FEATURE_KEY_LABELS[key]} to default`}
                                                     >
                                                         <RotateCcw className="w-3 h-3" aria-hidden="true" />

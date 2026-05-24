@@ -85,7 +85,7 @@ function StatePill({ state }) {
   const v = map[state]
   if (!v) return null
   return (
-    <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md font-semibold ${v.cls}`}>
+    <span className={`ds-text-micro uppercase tracking-wider px-1.5 py-0.5 rounded-md font-semibold ${v.cls}`}>
       {v.label}
     </span>
   )

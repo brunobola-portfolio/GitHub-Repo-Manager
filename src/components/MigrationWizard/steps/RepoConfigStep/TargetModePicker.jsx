@@ -30,7 +30,7 @@ export default function TargetModePicker({ source, selectedRepos, onChange }) {
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50/60 dark:bg-slate-900/40">
       <div className="px-4 py-2 bg-slate-100/60 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-700">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+        <div className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
           Para onde queres migrar?
         </div>
       </div>
@@ -50,7 +50,7 @@ export default function TargetModePicker({ source, selectedRepos, onChange }) {
           title={`${provider.shortName} (mesmo servidor)`}
           subtitle={
             <>
-              Converte TFVC em Git e fica num projecto à tua escolha no mesmo <code className="px-1 rounded bg-slate-200 dark:bg-slate-700 text-[11px]">{source.host}</code> — não sai do servidor.
+              Converte TFVC em Git e fica num projecto à tua escolha no mesmo <code className="px-1 rounded bg-slate-200 dark:bg-slate-700 ds-text-meta">{source.host}</code> — não sai do servidor.
             </>
           }
           tag="conversão in-place · sem GitHub"
@@ -58,7 +58,7 @@ export default function TargetModePicker({ source, selectedRepos, onChange }) {
         />
       </div>
       {mode === 'azure-devops' && (
-        <div className="px-4 py-2.5 text-[11px] text-slate-600 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 bg-white/40 dark:bg-slate-900/30">
+        <div className="px-4 py-2.5 ds-text-meta text-slate-600 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 bg-white/40 dark:bg-slate-900/30">
           ℹ️ Escolhe o <strong>projecto destino</strong> no header abaixo (default: o mesmo da origem).
           Para cada repo podes criar um <strong>novo</strong> ou reutilizar um <strong>existente vazio</strong> nesse projecto.
           A história TFVC é preservada via Import API.
@@ -96,7 +96,7 @@ function ModeCard({ active, onClick, icon: Icon, title, subtitle, tag, accentCla
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>
           {tag && (
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-mono uppercase tracking-wider">
+            <p className="ds-text-micro text-slate-400 dark:text-slate-500 mt-1 font-mono uppercase tracking-wider">
               {tag}
             </p>
           )}

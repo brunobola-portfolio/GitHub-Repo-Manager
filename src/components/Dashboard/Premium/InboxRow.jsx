@@ -34,11 +34,11 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                         <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                             {item.title}
                         </span>
-                        <span className="px-1.5 py-0.5 text-[10px] uppercase tracking-wider rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        <span className="px-1.5 py-0.5 ds-text-micro uppercase tracking-wider rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                             {KIND_LABEL[item.kind] ?? item.kind}
                         </span>
                     </div>
-                    <div className="mt-0.5 flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
+                    <div className="mt-0.5 flex items-center gap-3 ds-text-meta text-slate-500 dark:text-slate-400">
                         <span className="ds-font-mono">{item.repoFullName}</span>
                         {item.authorLogin && <span>by {item.authorLogin}</span>}
                         {ago && <span>{ago}</span>}

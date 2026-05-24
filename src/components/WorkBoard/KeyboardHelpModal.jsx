@@ -37,11 +37,11 @@ export function KeyboardHelpModal({ open, onClose }) {
             <div className="grid gap-5">
                 {ROWS.map(section => (
                     <section key={section.group}>
-                        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">{section.group}</h3>
+                        <h3 className="ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">{section.group}</h3>
                         <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
                             {section.items.map(([k, d]) => (
                                 <div key={k} className="contents">
-                                    <kbd className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 justify-self-start">{k}</kbd>
+                                    <kbd className="font-mono ds-text-meta px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 justify-self-start">{k}</kbd>
                                     <span className="text-slate-600 dark:text-slate-300">{d}</span>
                                 </div>
                             ))}

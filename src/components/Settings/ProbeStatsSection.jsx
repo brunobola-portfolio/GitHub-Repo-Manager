@@ -135,7 +135,7 @@ export function ProbeStatsSection({ isAdmin = false }) {
                         <Card key={stateKey} glass={false} shadow="sm" className="p-4">
                             <div className="flex items-center gap-2">
                                 <span className={`w-2 h-2 rounded-full ${meta.dot}`} aria-hidden="true" />
-                                <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                                <span className="ds-text-meta font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                                     {meta.label}
                                 </span>
                             </div>
@@ -143,7 +143,7 @@ export function ProbeStatsSection({ isAdmin = false }) {
                                 <span className={`text-2xl font-bold tabular-nums ds-font-display ${meta.accent}`}>
                                     {count}
                                 </span>
-                                <span className="text-[11px] text-slate-400 dark:text-slate-500 pb-1">
+                                <span className="ds-text-meta text-slate-400 dark:text-slate-500 pb-1">
                                     {pct}%
                                 </span>
                             </div>
@@ -152,7 +152,7 @@ export function ProbeStatsSection({ isAdmin = false }) {
                 })}
             </div>
 
-            <p className="text-[11px] text-slate-400 dark:text-slate-500">
+            <p className="ds-text-meta text-slate-400 dark:text-slate-500">
                 Counters live in process memory and reset on server restart by design — this is a short-window operational signal, not long-term metrics.
             </p>
         </div>

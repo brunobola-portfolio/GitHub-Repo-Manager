@@ -75,7 +75,7 @@ export function AINotConfiguredBanner({
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                         <h4 className="font-semibold text-slate-900 dark:text-slate-100">AI not configured</h4>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-200 ring-1 ring-inset ring-indigo-200 dark:ring-indigo-800">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wide bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-200 ring-1 ring-inset ring-indigo-200 dark:ring-indigo-800">
                             <Sparkles className="w-2.5 h-2.5" aria-hidden="true" /> Preview
                         </span>
                     </div>

@@ -74,7 +74,7 @@ export default function CredentialsForm({
     <div>
       <div className="flex items-baseline justify-between mb-2">
         <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Autenticação</p>
-        <span className="text-[11px] text-slate-400 dark:text-slate-500">
+        <span className="ds-text-meta text-slate-400 dark:text-slate-500">
           Escolhe um método — só um é usado de cada vez
         </span>
       </div>
@@ -101,12 +101,12 @@ export default function CredentialsForm({
               <p className="text-xs text-slate-600 dark:text-slate-300">
                 Para activar este modo:
               </p>
-              <pre className="text-[11px] bg-slate-900 text-slate-200 rounded-lg p-2.5 overflow-x-auto">{`# Edita server/.env
+              <pre className="ds-text-meta bg-slate-900 text-slate-200 rounded-lg p-2.5 overflow-x-auto">{`# Edita server/.env
 AZURE_PAT=<token-com-scopes-Code+Project>
 
 # Reinicia o servidor
 npm run dev`}</pre>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              <p className="ds-text-meta text-slate-500 dark:text-slate-400">
                 Depois recarrega esta página. Recomendado apenas para ambientes single-user.
               </p>
             </div>
@@ -182,7 +182,7 @@ npm run dev`}</pre>
           {isCloud && !oauthConfigured && (
             <div className="space-y-2">
               <p className="text-xs text-slate-600 dark:text-slate-300">Para o admin do servidor activar OAuth:</p>
-              <pre className="text-[11px] bg-slate-900 text-slate-200 rounded-lg p-2.5 overflow-x-auto whitespace-pre-wrap">{`1. Regista uma app em Azure Portal (AAD → App Registrations)
+              <pre className="ds-text-meta bg-slate-900 text-slate-200 rounded-lg p-2.5 overflow-x-auto whitespace-pre-wrap">{`1. Regista uma app em Azure Portal (AAD → App Registrations)
 2. Redirect URI: http://localhost:3001/api/azure/oauth/callback
 3. Adiciona ao server/.env:
      AZURE_CLIENT_ID=<app-client-id>

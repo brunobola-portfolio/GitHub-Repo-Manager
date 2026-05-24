@@ -228,7 +228,7 @@ export function RepoFilterBar({
 						<SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
 						<span>Filter</span>
 						{activeFilterCount > 0 && (
-							<span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-semibold rounded-full bg-indigo-500 text-white">
+							<span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 ds-text-micro font-semibold rounded-full bg-indigo-500 text-white">
 								{activeFilterCount}
 							</span>
 						)}
@@ -400,7 +400,7 @@ export function RepoFilterBar({
 			individual filters or the whole set with one click. */}
 		{activeChips.length > 0 && (
 			<div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/40 flex flex-wrap items-center gap-2">
-				<span className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
+				<span className="ds-text-meta uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
 					Filtering
 					{typeof totalCount === 'number' && typeof filteredCount === 'number' && (
 						<span className="ml-1 normal-case tracking-normal font-medium text-slate-500/80 dark:text-slate-400/80">

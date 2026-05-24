@@ -130,7 +130,7 @@ export function DashboardShell({ anchors, onViewChange, children }) {
                                             type="button"
                                             onClick={() => scrollToSection(a.id)}
                                             aria-current={isActive ? 'true' : undefined}
-                                            className={`shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[11px] font-semibold whitespace-nowrap ds-focus-ring transition-colors border ${
+                                            className={`shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-full ds-text-meta font-semibold whitespace-nowrap ds-focus-ring transition-colors border ${
                                                 isActive
                                                     ? 'bg-indigo-600 text-white border-indigo-600 dark:bg-indigo-500 dark:border-indigo-500 shadow-sm'
                                                     : 'bg-white/70 dark:bg-slate-900/60 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/40'
@@ -139,7 +139,7 @@ export function DashboardShell({ anchors, onViewChange, children }) {
                                             {a.label}
                                             {typeof a.count === 'number' && (
                                                 <span
-                                                    className={`text-[10px] font-bold tabular-nums ${
+                                                    className={`ds-text-micro font-bold tabular-nums ${
                                                         isActive ? 'opacity-90' : 'opacity-70'
                                                     }`}
                                                 >
@@ -174,7 +174,7 @@ export function DashboardShell({ anchors, onViewChange, children }) {
                     <div className="sticky top-6 space-y-5">
                         {safeAnchors.length > 0 && (
                             <div>
-                                <p className="px-2 mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                <p className="px-2 mb-2 ds-text-micro font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                                     <LayoutGrid className="w-3 h-3" aria-hidden="true" />
                                     On this page
                                 </p>
@@ -203,7 +203,7 @@ export function DashboardShell({ anchors, onViewChange, children }) {
                                                     <span className="truncate">{a.label}</span>
                                                     {typeof a.count === 'number' && a.count > 0 && (
                                                         <span
-                                                            className={`text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-md ${
+                                                            className={`ds-text-micro font-bold tabular-nums px-1.5 py-0.5 rounded-md ${
                                                                 isActive
                                                                     ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300'
                                                                     : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
@@ -222,7 +222,7 @@ export function DashboardShell({ anchors, onViewChange, children }) {
 
                         {typeof onViewChange === 'function' && (
                             <div>
-                                <p className="px-2 mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                                <p className="px-2 mb-2 ds-text-micro font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                                     Jump to
                                 </p>
                                 <ul className="space-y-1">

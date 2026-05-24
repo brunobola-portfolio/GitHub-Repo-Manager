@@ -38,10 +38,10 @@ export function ReviewLoadTab() {
 
     return (
         <div className="p-4 space-y-3">
-            <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-3 ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 <Users className="w-3.5 h-3.5" />
                 <span>Review load — last 30 days</span>
-                <span className="ml-auto flex items-center gap-3 normal-case font-medium text-[10px]">
+                <span className="ml-auto flex items-center gap-3 normal-case font-medium ds-text-micro">
                     <span className="inline-flex items-center gap-1">
                         <span className="w-2 h-2 rounded-sm bg-emerald-500" />
                         Submitted

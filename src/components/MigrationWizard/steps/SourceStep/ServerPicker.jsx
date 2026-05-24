@@ -82,7 +82,7 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
             Cancelar
           </button>
         </div>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+        <p className="ds-text-meta text-slate-500 dark:text-slate-400">
           💡 Dica: ainda mais rápido — cola a URL completa Azure DevOps / TFS no campo do topo e este servidor é detectado automaticamente.
         </p>
       </div>
@@ -99,19 +99,19 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
+            <span className="ds-text-micro uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
               Servidor
             </span>
             <span className={`text-sm font-semibold ${tone.text}`}>{provider.label}</span>
             {!host && (
-              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-amber-600 dark:text-amber-400 font-semibold">
+              <span className="inline-flex items-center gap-1 ds-text-micro uppercase tracking-wider text-amber-600 dark:text-amber-400 font-semibold">
                 <AlertCircle className="w-3 h-3" />
                 não definido
               </span>
             )}
             {host && allowlistStatus === true && (
               <span
-                className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-semibold"
+                className="inline-flex items-center gap-1 ds-text-micro uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-semibold"
                 title="Servidor autorizado pelo backend (.env)"
               >
                 <ShieldCheck className="w-3 h-3" />
@@ -120,7 +120,7 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
             )}
             {host && allowlistStatus === false && (
               <span
-                className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-amber-600 dark:text-amber-400 font-semibold"
+                className="inline-flex items-center gap-1 ds-text-micro uppercase tracking-wider text-amber-600 dark:text-amber-400 font-semibold"
                 title="O backend tem allowlist e este host não está incluído"
               >
                 <ShieldAlert className="w-3 h-3" />

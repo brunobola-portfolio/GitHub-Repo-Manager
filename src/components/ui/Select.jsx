@@ -372,7 +372,7 @@ export function Select({
                                 return (
                                     <div key={section.title || sIdx} role="group" aria-label={section.title || undefined}>
                                         {section.title && (
-                                            <div className="px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                            <div className="px-3 pt-3 pb-1 ds-text-meta font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                                 {section.title}
                                             </div>
                                         )}

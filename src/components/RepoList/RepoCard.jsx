@@ -170,7 +170,7 @@ export const RepoCard = memo(function RepoCard({
 								/>
 							)}
 							{repo.archived && (
-								<Badge variant="secondary" className="text-[10px] py-0 h-5">Archived</Badge>
+								<Badge variant="secondary" className="ds-text-micro py-0 h-5">Archived</Badge>
 							)}
 						</div>
 						<p className="text-xs text-slate-500 dark:text-slate-400 truncate">

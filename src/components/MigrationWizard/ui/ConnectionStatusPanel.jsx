@@ -103,7 +103,7 @@ export default function ConnectionStatusPanel({
           {overall.label}
         </span>
         {provider.type === PROVIDERS.ON_PREM && (
-          <span className="ml-auto text-[10px] uppercase tracking-wider text-violet-500 dark:text-violet-400">
+          <span className="ml-auto ds-text-micro uppercase tracking-wider text-violet-500 dark:text-violet-400">
             on-premises
           </span>
         )}
@@ -121,7 +121,7 @@ function StepRow({ step, index }) {
   const tone = stepToneClasses(step.status)
   return (
     <li className="flex items-start gap-3 px-4 py-2.5">
-      <div className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${tone.bg} ${tone.text} text-[10px] font-bold`}>
+      <div className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${tone.bg} ${tone.text} ds-text-micro font-bold`}>
         <StepIcon status={step.status} index={index} />
       </div>
       <div className="min-w-0 flex-1 -mt-0.5">

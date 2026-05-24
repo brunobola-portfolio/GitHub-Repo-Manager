@@ -182,7 +182,7 @@ export function CommitsTab({ repo }) {
 // — visible enough to discover the affordance, subtle enough to ignore.
 function KeyboardHint() {
     return (
-        <span className="hidden md:inline-flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 ml-1">
+        <span className="hidden md:inline-flex items-center gap-1 ds-text-micro text-slate-400 dark:text-slate-500 ml-1">
             <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">j</kbd>
             <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">k</kbd>
             <span>to navigate</span>

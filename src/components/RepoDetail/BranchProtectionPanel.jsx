@@ -156,7 +156,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
         if (upgradeRequired) {
             return (
                 <a href="https://github.com/pricing" target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/50 hover:underline">
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/50 hover:underline">
                     ⚠ Pro to protect
                 </a>
             )
@@ -165,15 +165,15 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
             return (
                 <span
                     title="You need admin access on this repository to view or change branch protection rules."
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/40">
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-medium bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/40">
                     🔒 admin only
                 </span>
             )
         }
         if (!savedRules) {
-            return <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500">unprotected</span>
+            return <span className="inline-flex items-center gap-1 ds-text-micro text-slate-400 dark:text-slate-500">unprotected</span>
         }
-        return <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">protected</span>
+        return <span className="inline-flex items-center gap-1 ds-text-micro text-emerald-600 dark:text-emerald-400">protected</span>
     }
 
     return (

@@ -369,7 +369,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                                         <div className="flex items-center justify-between">
                                                             <div className="font-medium text-slate-900 dark:text-slate-100 truncate text-sm">{repo.name}</div>
                                                             {repo.language && (
-                                                                <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                                                <span className="flex items-center gap-1 ds-text-micro px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                                     <span className={`w-1.5 h-1.5 rounded-full ${langColor}`} />
                                                                     {repo.language}
                                                                 </span>
@@ -445,7 +445,7 @@ function MemberCard({ member, currentUserRole, onUpdateRole, onRemove, isMe }) {
                 <h4 className="font-bold text-slate-900 dark:text-slate-100 truncate">{member.username}</h4>
                 <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-slate-400">Joined {new Date(member.joined_at).toLocaleDateString()}</span>
-                    {isMe && <span className="text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 px-1.5 py-0.5 rounded-full">You</span>}
+                    {isMe && <span className="ds-text-micro bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 px-1.5 py-0.5 rounded-full">You</span>}
                 </div>
             </div>
 
@@ -603,7 +603,7 @@ function RepoCard({ repo, teamMembers }) {
 
                             {/* Existing Collaborators */}
                             <div>
-                                <h5 className="text-[10px] uppercase font-bold text-slate-400 mb-2">Collaborators</h5>
+                                <h5 className="ds-text-micro uppercase font-bold text-slate-400 mb-2">Collaborators</h5>
                                 {loadingCollabs ? (
                                     <Spinner size="sm" className="mx-auto" />
                                 ) : (
@@ -625,7 +625,7 @@ function RepoCard({ repo, teamMembers }) {
                             {/* Missing Team Members */}
                             {missingMembers.length > 0 && (
                                 <div>
-                                    <h5 className="text-[10px] uppercase font-bold text-slate-400 mb-2">Not in Repo</h5>
+                                    <h5 className="ds-text-micro uppercase font-bold text-slate-400 mb-2">Not in Repo</h5>
                                     <div className="space-y-1">
                                         {missingMembers.map(m => (
                                             <div key={m.username} className="flex items-center justify-between text-xs bg-slate-50 dark:bg-slate-700/30 p-1.5 rounded-lg border border-slate-100 dark:border-slate-700">

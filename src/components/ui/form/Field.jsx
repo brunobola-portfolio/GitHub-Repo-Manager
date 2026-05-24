@@ -66,7 +66,7 @@ export function Field({
                         </span>
                     )}
                     {optional && !required && (
-                        <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
+                        <span className="ds-text-meta font-normal text-slate-400 dark:text-slate-500">
                             (optional)
                         </span>
                     )}

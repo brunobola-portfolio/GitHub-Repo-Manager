@@ -253,7 +253,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                                 <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                                     {isPrivate ? 'Private' : 'Public'}
                                 </span>
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                <p className="ds-text-meta text-slate-500 dark:text-slate-400">
                                     {isPrivate
                                         ? 'Only you and collaborators can see this repository'
                                         : 'Anyone on the internet can see this repository'}

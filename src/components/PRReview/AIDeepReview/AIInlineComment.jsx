@@ -33,7 +33,7 @@ export function AIInlineComment({ comment, idx, onDismiss, onEdit }) {
             </span>
             <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">AI</span>
             {comment.severity && (
-                <span className={`shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${severityClass}`}>
+                <span className={`shrink-0 px-1.5 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wide ${severityClass}`}>
                     {comment.severity}
                 </span>
             )}

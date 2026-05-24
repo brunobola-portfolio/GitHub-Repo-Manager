@@ -59,14 +59,14 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
                 }`} />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <p className="ds-text-meta font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
                   Source
                 </p>
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                   {sourceOrg}
                 </p>
                 {sourceProject && (
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate ds-font-mono">
+                  <p className="ds-text-meta text-slate-500 dark:text-slate-400 truncate ds-font-mono">
                     {sourceProject}
                   </p>
                 )}
@@ -83,7 +83,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
             >
               <ArrowRight className="w-4 h-4 text-white" />
             </motion.div>
-            <span className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 tabular-nums">
+            <span className="ds-text-micro font-bold text-indigo-500 dark:text-indigo-400 tabular-nums">
               {repoCount} {repoCount === 1 ? 'repo' : 'repos'}
             </span>
           </div>
@@ -93,7 +93,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
             <div className="flex items-center gap-2.5 justify-end">
               <div className="min-w-0 text-right">
                 <div className="flex items-center justify-end gap-1.5">
-                  <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  <p className="ds-text-meta font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     Destination
                   </p>
                   {isAzureDevopsTarget && (
@@ -105,11 +105,11 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                   {destOrg}
                 </p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 ds-font-mono truncate">
+                <p className="ds-text-meta text-slate-500 dark:text-slate-400 ds-font-mono truncate">
                   {destSubLabel}
                 </p>
                 {isAzureDevopsTarget && sourceHost && (
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 ds-font-mono truncate">
+                  <p className="ds-text-micro text-slate-400 dark:text-slate-500 ds-font-mono truncate">
                     {sourceHost}
                   </p>
                 )}

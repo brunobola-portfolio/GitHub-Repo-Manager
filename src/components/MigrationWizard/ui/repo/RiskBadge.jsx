@@ -25,7 +25,7 @@ export function RiskBadge({ level, flags, size = 'sm', onClick }) {
   const Icon = style.icon
   const count = flags?.length || 0
   const label = `${count} ${style.aria}${count === 1 ? '' : 's'}`
-  const padding = size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-1 text-xs'
+  const padding = size === 'sm' ? 'px-1.5 py-0.5 ds-text-micro' : 'px-2 py-1 text-xs'
   return (
     <button
       type="button"

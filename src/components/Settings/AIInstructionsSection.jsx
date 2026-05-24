@@ -56,7 +56,7 @@ function countLineDifferences(a, b) {
 function CategoryBadge({ category }) {
     if (!category || category === 'General') return null
     return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/40">
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full ds-text-micro font-medium uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/40">
             {category}
         </span>
     )
@@ -72,7 +72,7 @@ function CopyButton({ getText, label = 'Copy' }) {
         <button
             type="button"
             onClick={onClick}
-            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors"
+            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md ds-text-meta font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors"
         >
             {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
             {copied ? 'Copied' : label}
@@ -202,11 +202,11 @@ function PromptEditor({ entry, onSaved, onReset }) {
                     <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{entry.title}</h4>
                         {entry.hasOverride ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-700/40">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-700/40">
                                 <CheckCircle2 className="w-3 h-3" /> Customized
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                 Default
                             </span>
                         )}
@@ -235,7 +235,7 @@ function PromptEditor({ entry, onSaved, onReset }) {
                         </div>
                         <div className="flex items-center gap-1">
                             {diffCount > 0 && (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md ds-text-meta font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
                                     {diffCount} line{diffCount === 1 ? '' : 's'} differ
                                 </span>
                             )}
@@ -281,14 +281,14 @@ function PromptEditor({ entry, onSaved, onReset }) {
                                 />
                             </Field>
                             <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
-                                <p className="text-[11px] text-slate-400">
+                                <p className="ds-text-meta text-slate-400">
                                     {draft.length}/8000 chars
                                     {!entry.hasOverride && draft.length === 0 && ' · placeholder shows the default prompt'}
                                 </p>
                                 <button
                                     type="button"
                                     onClick={fillFromDefault}
-                                    className="inline-flex items-center gap-1 text-[11px] text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300"
+                                    className="inline-flex items-center gap-1 ds-text-meta text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300"
                                 >
                                     <Wand2 className="w-3 h-3" /> Copy default into editor
                                 </button>
@@ -308,7 +308,7 @@ function PromptEditor({ entry, onSaved, onReset }) {
                             <pre className={READONLY_CLASSES} style={{ maxHeight: 480 }}>
                                 {entry.defaultPrompt}
                             </pre>
-                            <p className="text-[11px] text-slate-400 mt-1.5">
+                            <p className="ds-text-meta text-slate-400 mt-1.5">
                                 {(entry.defaultPrompt || '').length} chars · read-only reference
                             </p>
                         </div>
@@ -326,7 +326,7 @@ function PromptEditor({ entry, onSaved, onReset }) {
                             <pre className={READONLY_CLASSES} style={{ maxHeight: 480 }}>
                                 {previewText}
                             </pre>
-                            <p className="text-[11px] text-slate-400 mt-1.5">
+                            <p className="ds-text-meta text-slate-400 mt-1.5">
                                 {entry.variables?.length
                                     ? `Sample values shown for ${entry.variables.map(v => `{${v}}`).join(', ')}.`
                                     : 'No variables for this prompt — preview matches the prompt verbatim.'}
@@ -473,7 +473,7 @@ export function AIInstructionsSection() {
                                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 leading-tight">
                                     {customizedCount} of {totalCount} with overrides
                                 </p>
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                <p className="ds-text-meta text-slate-500 dark:text-slate-400">
                                     {totalCount - customizedCount} feature{totalCount - customizedCount === 1 ? '' : 's'} using built-in defaults
                                 </p>
                             </div>

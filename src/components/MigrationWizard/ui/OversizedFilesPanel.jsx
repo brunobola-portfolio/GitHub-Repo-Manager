@@ -30,7 +30,7 @@ export function OversizedFilesPanel({ files, fallback }) {
       {/* File list */}
       <div className="relative group/files">
         <div className="rounded-lg border border-red-500/15 bg-red-950/10 dark:bg-red-950/30 overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-red-500/10 text-[10px] font-semibold uppercase tracking-wider text-red-500/80">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-red-500/10 ds-text-micro font-semibold uppercase tracking-wider text-red-500/80">
             <span>Offending paths</span>
             <button
               type="button"
@@ -68,7 +68,7 @@ export function OversizedFilesPanel({ files, fallback }) {
         </div>
         <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
           Run a new migration with the <strong>Migrate to Git LFS</strong> strategy selected for this
-          repository. The server runs <code className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-[var(--ds-font-mono)] text-[11px]">git lfs migrate import --above=100M --everything</code> on a
+          repository. The server runs <code className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-[var(--ds-font-mono)] ds-text-meta">git lfs migrate import --above=100M --everything</code> on a
           fresh bare clone before pushing, which rewrites the affected blobs as LFS pointers without
           losing history.
         </p>
@@ -98,7 +98,7 @@ export function OversizedFilesPanel({ files, fallback }) {
       </div>
 
       {fallback && (
-        <p className="text-[11px] text-slate-500 italic">{fallback}</p>
+        <p className="ds-text-meta text-slate-500 italic">{fallback}</p>
       )}
     </div>
   )

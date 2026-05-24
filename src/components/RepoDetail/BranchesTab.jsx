@@ -229,7 +229,7 @@ export function BranchesTab({ api, repoData }) {
                             <div className="flex-1 min-w-0">
                                 <span className="font-medium text-sm text-slate-900 dark:text-slate-100">{b.name}</span>
                                 {b.name === repoData?.default_branch && (
-                                    <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide bg-indigo-600 text-white">default</span>
+                                    <span className="ml-1.5 px-1.5 py-0.5 rounded ds-text-micro uppercase tracking-wide bg-indigo-600 text-white">default</span>
                                 )}
                                 {b.commit?.sha && (
                                     <span className="text-xs text-slate-500 dark:text-slate-400 ml-2 font-mono">{b.commit.sha.substring(0, 7)}</span>

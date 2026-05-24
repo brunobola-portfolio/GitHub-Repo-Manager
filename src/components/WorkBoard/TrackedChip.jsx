@@ -40,7 +40,7 @@ export function TrackedChip({ repoFullName }) {
                     runAction(hook.track, `Added ${repoFullName}`)
                 }}
                 aria-label={`Track ${repoFullName}`}
-                className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-0.5 ds-text-meta font-medium rounded-full border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
             >
                 + Track
             </button>
@@ -59,7 +59,7 @@ export function TrackedChip({ repoFullName }) {
                     onClick={(e) => e.stopPropagation()}
                     aria-label={`${chipLabel} ${repoFullName}`}
                     className={clsx(
-                        'inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full border transition-colors',
+                        'inline-flex items-center gap-1 px-2 py-0.5 ds-text-meta font-medium rounded-full border transition-colors',
                         isMuted
                             ? 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400'
                             : 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700/50 text-indigo-700 dark:text-indigo-300'

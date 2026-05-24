@@ -203,7 +203,7 @@ export function FeatureComparison() {
                 >
                   {tier}
                   {i === 1 && (
-                    <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500 text-white align-middle">
+                    <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded ds-text-micro font-bold bg-indigo-500 text-white align-middle">
                       Popular
                     </span>
                   )}

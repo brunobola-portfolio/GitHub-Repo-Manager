@@ -50,7 +50,7 @@ function DeltaBadge({ pct }) {
     const color = flat ? 'text-slate-400' : up ? 'text-amber-400' : 'text-emerald-400'
     return (
         <motion.span
-            className={clsx('text-[10px] font-medium tabular-nums', color)}
+            className={clsx('ds-text-micro font-medium tabular-nums', color)}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.35, duration: 0.3 }}
@@ -105,10 +105,10 @@ function KpiTile({ icon: Icon, label, value, hint, loading, accent = 'indigo', o
                         <Sparkline history={history} accent={a.sparkColor} />
                     </div>
                 </div>
-                <div className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <div className="mt-2 ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     {label}
                 </div>
-                {hint && <div className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">{hint}</div>}
+                {hint && <div className="mt-0.5 ds-text-meta text-slate-400 dark:text-slate-500">{hint}</div>}
             </div>
         </button>
     )

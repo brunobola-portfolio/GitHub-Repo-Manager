@@ -28,7 +28,7 @@ const sizes = {
     // inline chrome (toolbar pills, banner CTAs) where the surrounding
     // layout already constrains the click area. Use sparingly; sm/md/lg
     // should stay the default for primary CTAs.
-    xs: 'px-2 py-1 text-[11px] gap-1',
+    xs: 'px-2 py-1 ds-text-meta gap-1',
     sm: 'px-3 py-1.5 text-xs gap-1.5',
     md: 'px-4 py-2 text-sm gap-2',
     lg: 'px-6 py-3 text-base gap-2.5',

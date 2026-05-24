@@ -142,7 +142,7 @@ export function MigrationActivity({ loading: parentLoading }) {
                       <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-900/20 text-amber-400 font-bold uppercase tracking-wider shrink-0">TFVC</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  <div className="flex items-center gap-2 ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5">
                     {job.targetFullName && (
                       <>
                         <ArrowRight className="w-3 h-3" />
@@ -183,7 +183,7 @@ function MiniStat({ label, value, icon: Icon, color, animate, onClick }) {
       <Icon className={`w-4 h-4 ${color} shrink-0 ${animate ? 'animate-spin' : ''}`} />
       <div className="min-w-0">
         <div className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-none">{value}</div>
-        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">{label}</div>
+        <div className="ds-text-micro text-slate-500 dark:text-slate-400 mt-0.5 truncate">{label}</div>
       </div>
     </>
   )

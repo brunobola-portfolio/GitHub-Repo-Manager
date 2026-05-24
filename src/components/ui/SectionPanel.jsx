@@ -57,7 +57,7 @@ export function SectionPanel({
             ) : null}
             <div className="flex-1 min-w-0">
                 {eyebrow ? (
-                    <div className="text-[10px] uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400 font-semibold mb-0.5">
+                    <div className="ds-text-micro uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400 font-semibold mb-0.5">
                         {eyebrow}
                     </div>
                 ) : null}

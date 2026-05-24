@@ -19,7 +19,7 @@ const ERROR_PALETTE = {
 function ErrorChip({ children }) {
     return (
         <span
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium border ${ERROR_PALETTE.chip}`}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md ds-text-meta font-medium border ${ERROR_PALETTE.chip}`}
         >
             {children}
         </span>
@@ -129,11 +129,11 @@ function FailureCard({ result }) {
                 )}
 
                 {showRaw && (
-                    <details className="text-[11px] opacity-80">
+                    <details className="ds-text-meta opacity-80">
                         <summary className="cursor-pointer select-none hover:opacity-100">
                             Upstream details
                         </summary>
-                        <pre className="mt-1.5 px-2.5 py-2 rounded-md bg-black/5 dark:bg-black/30 whitespace-pre-wrap break-words font-mono text-[11px] leading-snug">
+                        <pre className="mt-1.5 px-2.5 py-2 rounded-md bg-black/5 dark:bg-black/30 whitespace-pre-wrap break-words font-mono ds-text-meta leading-snug">
                             {result.upstreamRaw}
                         </pre>
                     </details>

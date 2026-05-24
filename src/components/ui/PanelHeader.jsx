@@ -38,7 +38,7 @@ export function PanelHeader({
             />
             <div className="pl-3 flex-1 min-w-0">
                 {eyebrow && (
-                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
+                    <div className="flex items-center gap-2 ds-text-micro font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
                         {EyebrowIcon && <EyebrowIcon className="w-3 h-3" aria-hidden="true" />}
                         <span>{eyebrow}</span>
                     </div>

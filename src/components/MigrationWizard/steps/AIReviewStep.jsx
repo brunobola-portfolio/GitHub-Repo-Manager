@@ -311,7 +311,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                   <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                     Optimization Suggestions
                   </h4>
-                  <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                  <span className="ds-text-meta text-slate-400 dark:text-slate-500">
                     ({acceptedCount}/{(aiPlan.suggestions || []).length} accepted)
                   </span>
                 </div>
@@ -340,7 +340,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
               >
                 <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-amber-200/40 dark:border-amber-500/10">
                   <CircleAlert className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                  <span className="ds-text-meta font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
                     Warnings ({aiPlan.warnings.length})
                   </span>
                 </div>

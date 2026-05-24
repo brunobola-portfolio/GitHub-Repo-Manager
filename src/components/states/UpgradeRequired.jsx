@@ -110,7 +110,7 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                 {/* Eyebrow */}
                 <span className={twMerge(
                     'inline-flex items-center gap-1.5 px-2.5 py-1 mb-3',
-                    'text-[10px] font-semibold uppercase tracking-[0.14em]',
+                    'ds-text-micro font-semibold uppercase tracking-[0.14em]',
                     'rounded-full text-white',
                     copy.bg
                 )}>

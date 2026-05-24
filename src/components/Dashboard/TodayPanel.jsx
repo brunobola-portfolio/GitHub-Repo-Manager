@@ -97,7 +97,7 @@ export function TodayPanel({
                     <div className="min-w-0 space-y-2.5">
                         <motion.p
                             variants={childVariants}
-                            className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400"
+                            className="ds-text-micro font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400"
                         >
                             {eyebrow}
                         </motion.p>

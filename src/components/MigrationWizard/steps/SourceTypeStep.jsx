@@ -172,7 +172,7 @@ export default function SourceTypeStep({ source, onChange, onAdvance }) {
                   </span>
                   {st.recommended && (
                     <span className={`
-                      inline-flex items-center gap-1 text-[11px] font-semibold
+                      inline-flex items-center gap-1 ds-text-meta font-semibold
                       px-2 py-0.5 rounded-full
                       ${accent.badge} text-white
                       shadow-sm

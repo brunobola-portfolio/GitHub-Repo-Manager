@@ -111,7 +111,7 @@ export function WizardPanel({
                     >
                       <p className="text-[13px] font-medium text-slate-700 dark:text-slate-300 truncate">{stepInfo.title}</p>
                       {stepInfo.subtitle && (
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{stepInfo.subtitle}</p>
+                        <p className="ds-text-meta text-slate-500 dark:text-slate-400 truncate">{stepInfo.subtitle}</p>
                       )}
                     </motion.div>
                   </AnimatePresence>

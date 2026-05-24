@@ -18,7 +18,7 @@ function SourceBadge({ source }) {
     if (!source) return null
     const isAI = source === 'ai'
     return (
-        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wider ${
             isAI
                 ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30'
                 : 'bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-500/20'
@@ -92,7 +92,7 @@ function FieldCard({
                 ) : (
                     <Input type="text" {...editProps} />
                 )}
-                <p className="text-[11px] text-slate-400 mt-2">Edit manually, or use “Suggest with AI” below to fill this in.</p>
+                <p className="ds-text-meta text-slate-400 mt-2">Edit manually, or use “Suggest with AI” below to fill this in.</p>
             </InsightCard>
         )
     }
@@ -116,18 +116,18 @@ function FieldCard({
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
                 <div>
-                    <p className="text-[11px] uppercase tracking-wider text-slate-400 mb-1">Current</p>
+                    <p className="ds-text-meta uppercase tracking-wider text-slate-400 mb-1">Current</p>
                     <p className={`text-sm break-words ${emptyCurrent ? 'italic text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>
                         {emptyCurrent ? '(no description set)' : currentValue}
                     </p>
                 </div>
                 <div>
                     <div className="flex items-center justify-between mb-1">
-                        <p className="text-[11px] uppercase tracking-wider text-indigo-500">Proposed</p>
+                        <p className="ds-text-meta uppercase tracking-wider text-indigo-500">Proposed</p>
                         <button
                             type="button"
                             onClick={onRestore}
-                            className="text-[11px] text-slate-500 hover:text-indigo-500"
+                            className="ds-text-meta text-slate-500 hover:text-indigo-500"
                             title="Restore original suggestion"
                         >
                             Restore

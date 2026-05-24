@@ -190,7 +190,7 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
             <div>
                 <header className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 border-b border-slate-200/60 dark:border-slate-800">
                     <div className="min-w-0">
-                        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                        <div className="flex items-center gap-2 ds-text-micro font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                             <Sparkles className="w-3 h-3" aria-hidden="true" />
                             Attention feed
                         </div>
@@ -274,7 +274,7 @@ function AttentionRow({ item, onClick, narrative = null }) {
                         <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                             {item.repoFullName}
                         </span>
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset ${badgeClass}`}>
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wide ring-1 ring-inset ${badgeClass}`}>
                             {KIND_LABEL[item.kind] ?? item.kind}
                         </span>
                     </div>
@@ -282,7 +282,7 @@ function AttentionRow({ item, onClick, narrative = null }) {
                         {item.title}
                     </p>
                     {item.hint && (
-                        <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                        <p className="mt-1 ds-text-meta text-slate-500 dark:text-slate-400 line-clamp-2">
                             {item.hint}
                         </p>
                     )}
@@ -290,13 +290,13 @@ function AttentionRow({ item, onClick, narrative = null }) {
                         <Skeleton className="mt-1.5 h-3 w-2/3" aria-hidden="true" />
                     )}
                     {!narrative?.loading && narrative?.text && (
-                        <p className="mt-1.5 flex items-start gap-1.5 text-[11px] italic text-indigo-700 dark:text-indigo-300">
+                        <p className="mt-1.5 flex items-start gap-1.5 ds-text-meta italic text-indigo-700 dark:text-indigo-300">
                             <Sparkles className="w-3 h-3 shrink-0 mt-[2px]" aria-hidden="true" />
                             <span>{narrative.text}</span>
                         </p>
                     )}
                 </div>
-                <div className="shrink-0 flex flex-col items-end gap-1 text-[10px] text-slate-400 dark:text-slate-500">
+                <div className="shrink-0 flex flex-col items-end gap-1 ds-text-micro text-slate-400 dark:text-slate-500">
                     {ago && <span>{ago}</span>}
                     <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 transition-colors" aria-hidden="true" />
                 </div>

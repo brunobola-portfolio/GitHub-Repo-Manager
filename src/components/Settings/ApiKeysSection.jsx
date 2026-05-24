@@ -45,7 +45,7 @@ function UsageMeter({ current, max, tier }) {
                     <span className="text-slate-600 dark:text-slate-300 font-medium">
                         {current} / {isUnlimited ? 'Unlimited' : max} active keys
                     </span>
-                    <Badge variant={isNearLimit ? 'warning' : 'default'} className="text-[10px]">
+                    <Badge variant={isNearLimit ? 'warning' : 'default'} className="ds-text-micro">
                         {tier}
                     </Badge>
                 </div>

@@ -76,7 +76,7 @@ function Chip({ icon: Icon, label, count, active, onClick, tone = 'slate' }) {
     >
       {Icon && <Icon className="w-3.5 h-3.5" aria-hidden="true" />}
       <span>{label}</span>
-      <span className="text-[10px] opacity-80 tabular-nums" aria-hidden="true">{count}</span>
+      <span className="ds-text-micro opacity-80 tabular-nums" aria-hidden="true">{count}</span>
     </button>
   )
 }

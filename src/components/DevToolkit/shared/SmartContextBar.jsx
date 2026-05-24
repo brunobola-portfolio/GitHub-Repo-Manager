@@ -50,7 +50,7 @@ export function SmartContextBar({ analysis, diffSummary, loading, onSuggestionCl
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 mt-1.5 flex-wrap">
                         <Lightbulb className="w-3 h-3 text-amber-400 shrink-0" />
                         {analysis.suggestions.map((s, i) => (
-                            <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] rounded-full bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 border border-indigo-500/20 transition-colors">
+                            <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 ds-text-meta rounded-full bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 border border-indigo-500/20 transition-colors">
                                 <button type="button" onClick={() => onSuggestionClick?.(s)} className="hover:underline">{s.message}</button>
                                 <button type="button" onClick={() => onDismissSuggestion?.(i)} className="ml-0.5 hover:text-white" aria-label="Dismiss">
                                     <X className="w-2.5 h-2.5" />

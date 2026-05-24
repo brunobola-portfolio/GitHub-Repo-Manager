@@ -9,7 +9,7 @@ import { Textarea } from '../../ui/form'
  */
 const avatarSizeClasses = {
   6: 'w-6 h-6 text-xs',
-  5: 'w-5 h-5 text-[10px]',
+  5: 'w-5 h-5 ds-text-micro',
 }
 
 function Avatar({ login, size = 6 }) {

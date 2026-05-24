@@ -82,7 +82,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                 </motion.div>
 
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 mb-3
-                                 text-[10px] font-semibold uppercase tracking-[0.14em]
+                                 ds-text-micro font-semibold uppercase tracking-[0.14em]
                                  rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300
                                  border border-amber-500/20">
                     <AlertTriangle className="w-3 h-3" /> Not configured

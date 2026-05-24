@@ -62,7 +62,7 @@ export function DashboardHero({
             <HeroHalo palette="indigo" intensity="default" position="top" />
             <motion.p
                 variants={childVariants}
-                className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400"
+                className="ds-text-micro font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400"
             >
                 {eyebrow}
             </motion.p>

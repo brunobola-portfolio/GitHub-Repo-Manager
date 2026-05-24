@@ -353,7 +353,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 								{item.description && (
 									<div
 										data-testid="menu-item-description"
-										className={`text-[11px] truncate leading-tight mt-0.5 ${
+										className={`ds-text-meta truncate leading-tight mt-0.5 ${
 											(item.danger || item.intent === 'destructive')
 												? 'text-red-500/80 dark:text-red-400/80'
 												: 'text-slate-500 dark:text-slate-400'

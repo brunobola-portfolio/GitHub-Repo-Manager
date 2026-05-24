@@ -16,7 +16,7 @@ export function MigratedPill({ fullName }) {
     <span
       title={`Migrado${date ? ` em ${date}` : ''}`}
       aria-label="repo migrated"
-      className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 text-violet-700 dark:text-violet-300 ring-1 ring-inset ring-violet-500/30 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
+      className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 text-violet-700 dark:text-violet-300 ring-1 ring-inset ring-violet-500/30 px-2 py-0.5 ds-text-micro font-medium uppercase tracking-wider"
     >
       <span aria-hidden>✦</span>migrado
     </span>

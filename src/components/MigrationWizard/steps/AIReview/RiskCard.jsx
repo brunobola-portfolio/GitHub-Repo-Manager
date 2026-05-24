@@ -85,7 +85,7 @@ export function RiskCard({ risk, index }) {
               >
                 <ShieldCheck className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-0.5">
+                  <p className="ds-text-micro font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-0.5">
                     Mitigation
                   </p>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">

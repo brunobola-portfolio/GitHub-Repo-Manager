@@ -19,7 +19,7 @@ export function MetricCard({ icon: Icon, label, value, unit, iconColor, iconBg, 
           <Icon className={`w-4.5 h-4.5 ${iconColor}`} />
         </div>
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 leading-none mb-1">
+          <p className="ds-text-micro font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 leading-none mb-1">
             {label}
           </p>
           <p className="text-xl font-bold text-slate-900 dark:text-slate-100 leading-none">

@@ -87,7 +87,7 @@ export default function AllowlistFixPanel({
         <span className="text-sm font-semibold text-amber-800 dark:text-amber-200">
           Servidor não autorizado pelo backend
         </span>
-        <span className="ml-auto text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 font-semibold">
+        <span className="ml-auto ds-text-micro uppercase tracking-wider text-amber-700 dark:text-amber-400 font-semibold">
           {canEdit ? 'pode resolver com 1 clique' : 'pede ao teu admin'}
         </span>
       </div>
@@ -95,7 +95,7 @@ export default function AllowlistFixPanel({
       <div className="p-4 space-y-3">
         <p className="text-sm text-slate-700 dark:text-slate-200">
           O backend tem uma <strong>allowlist de hosts Azure</strong> (para prevenir SSRF). O servidor
-          {' '}<code className="px-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 font-mono text-[11px]">{host}</code>{' '}
+          {' '}<code className="px-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 font-mono ds-text-meta">{host}</code>{' '}
           ainda não está autorizado.
         </p>
 
@@ -113,7 +113,7 @@ export default function AllowlistFixPanel({
           <NonAdminGuidance host={host} envLine={envLine} envCopied={copied} onEnvCopy={copy} />
         )}
 
-        <div className="pt-2 border-t border-amber-200 dark:border-amber-800 text-[11px] text-slate-500 dark:text-slate-400">
+        <div className="pt-2 border-t border-amber-200 dark:border-amber-800 ds-text-meta text-slate-500 dark:text-slate-400">
           <strong>Porque isto existe?</strong> Sem allowlist, alguém poderia abusar do servidor para fazer requests a
           hosts internos (SSRF). A lista define que servidores externos o backend é autorizado a contactar.
           Para wildcards usa <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">*.empresa.com</code>.
@@ -184,7 +184,7 @@ function NonAdminGuidance({ host, envLine, envCopied, onEnvCopy }) {
                   navigator.clipboard.writeText(host)
                 } catch { /* ignore */ }
               }}
-              className="text-[11px] text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline"
+              className="ds-text-meta text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline"
             >
               copiar host
             </button>
@@ -211,7 +211,7 @@ function EnvSnippet({ envLine, envCopied, onEnvCopy }) {
         <li>2. Adiciona (ou substitui) esta linha:</li>
       </ol>
       <div className="flex items-stretch gap-1">
-        <code className="flex-1 text-[11px] font-mono px-2.5 py-2 rounded-lg bg-slate-900 text-emerald-300 overflow-x-auto whitespace-nowrap">
+        <code className="flex-1 ds-text-meta font-mono px-2.5 py-2 rounded-lg bg-slate-900 text-emerald-300 overflow-x-auto whitespace-nowrap">
           {envLine}
         </code>
         <button
@@ -223,7 +223,7 @@ function EnvSnippet({ envLine, envCopied, onEnvCopy }) {
           {envCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
       </div>
-      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+      <p className="ds-text-meta text-slate-500 dark:text-slate-400">
         3. Reinicia o servidor (<code className="px-1 rounded bg-slate-200 dark:bg-slate-700">npm run dev</code>)
       </p>
     </div>

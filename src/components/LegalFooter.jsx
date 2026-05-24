@@ -17,7 +17,7 @@ export function LegalFooter() {
       aria-label="Legal and source-code attribution"
       // On mobile a stacked pair of FABs (search + quick-actions) sits at the
       // bottom-right; pr-20 keeps the right-aligned links out of their way.
-      className="px-4 pr-20 md:pr-4 py-2 text-[11px] text-slate-500 dark:text-slate-500 border-t border-slate-200/60 dark:border-slate-800/60 bg-slate-50/60 dark:bg-slate-950/60"
+      className="px-4 pr-20 md:pr-4 py-2 ds-text-meta text-slate-500 dark:text-slate-500 border-t border-slate-200/60 dark:border-slate-800/60 bg-slate-50/60 dark:bg-slate-950/60"
     >
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <span>

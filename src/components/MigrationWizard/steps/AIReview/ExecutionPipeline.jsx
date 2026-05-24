@@ -35,7 +35,7 @@ export function ExecutionPipeline({ order, repos, source }) {
         <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
           Execution Order
         </h4>
-        <span className="text-[11px] text-slate-400 dark:text-slate-500">
+        <span className="ds-text-meta text-slate-400 dark:text-slate-500">
           ({order.length} {order.length === 1 ? 'step' : 'steps'})
         </span>
       </div>
@@ -69,7 +69,7 @@ export function ExecutionPipeline({ order, repos, source }) {
                 transition-all duration-200 group"
             >
               {/* Step number */}
-              <span className="shrink-0 w-6 h-6 rounded-md bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center text-[11px] font-bold shadow-sm">
+              <span className="shrink-0 w-6 h-6 rounded-md bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center ds-text-meta font-bold shadow-sm">
                 {i + 1}
               </span>
 
@@ -111,7 +111,7 @@ export function ExecutionPipeline({ order, repos, source }) {
                   </span>
                 )}
                 {sizeMb && parseFloat(sizeMb) > 0 && (
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 tabular-nums whitespace-nowrap">
+                  <span className="ds-text-micro text-slate-400 dark:text-slate-500 tabular-nums whitespace-nowrap">
                     {sizeMb} MB
                   </span>
                 )}

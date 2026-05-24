@@ -79,7 +79,7 @@ function CategoryCard({ category, data, onClick }) {
             <div className={`w-8 h-8 rounded-lg ${tone.iconBg} flex items-center justify-center`}>
                 <Icon className={`w-4 h-4 ${tone.iconColor}`} />
             </div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <div className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                 {category.label}
             </div>
             <div className="flex items-end justify-between gap-2">
@@ -97,7 +97,7 @@ function CategoryCard({ category, data, onClick }) {
                 )}
             </div>
             {showDelta && (
-                <div className="text-[10px] text-slate-400 dark:text-slate-500">{deltaContext(data.baselineAt)}</div>
+                <div className="ds-text-micro text-slate-400 dark:text-slate-500">{deltaContext(data.baselineAt)}</div>
             )}
             <div className="text-xs font-medium text-indigo-600 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                 Open <ArrowRight className="w-3 h-3" />

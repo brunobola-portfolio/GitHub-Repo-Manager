@@ -64,7 +64,7 @@ export function MyIssuesTab() {
                                         {(issue.labels || []).map(label => (
                                             <span
                                                 key={label}
-                                                className="px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-medium"
+                                                className="px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 ds-text-micro font-medium"
                                             >
                                                 {label}
                                             </span>

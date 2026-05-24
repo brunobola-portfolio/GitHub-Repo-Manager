@@ -19,7 +19,7 @@ export function SizeStrategyCard({ repo, aiSuggestion, selectedStrategy, onSelec
           <Package className="h-4 w-4 text-amber-500" />
           {repo.name}
           {repo.sizeStrategy && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-950/30 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-300">
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-950/30 px-2 py-0.5 ds-text-micro font-medium uppercase tracking-wide text-emerald-300">
               <CheckCircle2 className="h-3 w-3" />
               Fix applied
             </span>
@@ -54,7 +54,7 @@ export function SizeStrategyCard({ repo, aiSuggestion, selectedStrategy, onSelec
                 <Icon className="h-3.5 w-3.5" />
                 {label}
               </span>
-              <span className="text-[11px] text-slate-400">{desc}</span>
+              <span className="ds-text-meta text-slate-400">{desc}</span>
             </button>
           )
         })}
@@ -78,7 +78,7 @@ function AISuggestionBanner({ suggestion, onAccept }) {
       <button
         type="button"
         onClick={onAccept}
-        className="shrink-0 rounded bg-indigo-500 px-2 py-1 text-[11px] font-medium text-white hover:bg-indigo-400"
+        className="shrink-0 rounded bg-indigo-500 px-2 py-1 ds-text-meta font-medium text-white hover:bg-indigo-400"
       >
         Accept
       </button>

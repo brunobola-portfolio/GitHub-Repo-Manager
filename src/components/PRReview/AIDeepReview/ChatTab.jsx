@@ -50,7 +50,7 @@ export function ChatTab({ owner, repo, prNumber, headSha }) {
             <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 dark:border-slate-800 text-xs">
                 <div className="text-slate-500 dark:text-slate-400">
                     Chat about PR #{prNumber}
-                    {headShaShort ? <span className="ml-1.5 font-mono text-[11px]">· {headShaShort}</span> : null}
+                    {headShaShort ? <span className="ml-1.5 font-mono ds-text-meta">· {headShaShort}</span> : null}
                 </div>
                 <button
                     type="button"

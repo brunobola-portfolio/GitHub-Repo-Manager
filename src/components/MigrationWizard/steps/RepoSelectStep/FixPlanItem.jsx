@@ -39,7 +39,7 @@ export function FixPlanItem({ item, checked, conflictStatus, onToggle, onEdit })
           />
         </div>
       </div>
-      <span className="shrink-0 rounded bg-slate-700 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
+      <span className="shrink-0 rounded bg-slate-700 px-2 py-0.5 ds-text-micro uppercase tracking-wide text-slate-300">
         {TYPE_LABEL[item.type] || item.type}
       </span>
       <ConflictIcon status={conflictStatus} />

@@ -112,7 +112,7 @@ export function PresetDropdown({ currentFilters, onApply }) {
                                 Save
                             </button>
                         </div>
-                        {saveError && <div className="px-2 pb-2 text-[11px] text-rose-500">{saveError}</div>}
+                        {saveError && <div className="px-2 pb-2 ds-text-meta text-rose-500">{saveError}</div>}
                     </motion.div>
                 )}
             </AnimatePresence>

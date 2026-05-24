@@ -186,7 +186,7 @@ function StepDisc({ status, index, icon: Icon }) {
   }
   // pending
   return (
-    <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-center text-[11px] font-semibold tabular-nums text-slate-400 dark:text-slate-500">
+    <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-center ds-text-meta font-semibold tabular-nums text-slate-400 dark:text-slate-500">
       {index + 1}
     </div>
   )
@@ -247,7 +247,7 @@ function SidebarStepper({
             <button
               type="button"
               onClick={() => onBreadcrumbNavigate('org')}
-              className="text-[11px] font-semibold text-indigo-500 dark:text-indigo-400 hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors truncate max-w-[60px]"
+              className="ds-text-meta font-semibold text-indigo-500 dark:text-indigo-400 hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors truncate max-w-[60px]"
             >
               {source.org}
             </button>
@@ -255,14 +255,14 @@ function SidebarStepper({
             <button
               type="button"
               onClick={() => onBreadcrumbNavigate('project')}
-              className="text-[11px] font-semibold text-indigo-500 dark:text-indigo-400 hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors truncate max-w-[70px]"
+              className="ds-text-meta font-semibold text-indigo-500 dark:text-indigo-400 hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors truncate max-w-[70px]"
             >
               {source.project}
             </button>
             {selectedCount > 0 && (
               <>
                 <ChevronRight className="w-2.5 h-2.5 text-slate-400 dark:text-slate-600 shrink-0" />
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap inline-flex items-center gap-1 ${
+                <span className={`ds-text-micro font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap inline-flex items-center gap-1 ${
                   totalWarnings > 0
                     ? 'text-amber-500 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-500/15'
                     : 'text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/15'
@@ -279,13 +279,13 @@ function SidebarStepper({
       {/* Progress header — premium pill + slim bar */}
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center justify-between mb-2.5">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+          <span className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
             Progresso
           </span>
           <div className="inline-flex items-baseline gap-0.5 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 font-bold tabular-nums">
             <span className="text-[13px] leading-none">{effectiveCurrent}</span>
-            <span className="text-[10px] leading-none opacity-60">/</span>
-            <span className="text-[11px] leading-none opacity-70">{effectiveTotal}</span>
+            <span className="ds-text-micro leading-none opacity-60">/</span>
+            <span className="ds-text-meta leading-none opacity-70">{effectiveTotal}</span>
           </div>
         </div>
         <div className="relative h-1.5 rounded-full bg-slate-100 dark:bg-slate-800/70 overflow-hidden">
@@ -416,7 +416,7 @@ function HorizontalStepper({ steps, currentStepIndex, onGoToStep }) {
                 >
                   {isCompleted ? <Check className="w-3 h-3" /> : index + 1}
                 </button>
-                <span className={`mt-1 text-[10px] font-medium truncate max-w-[52px] text-center
+                <span className={`mt-1 ds-text-micro font-medium truncate max-w-[52px] text-center
                   ${isActive ? 'text-indigo-600 dark:text-indigo-400' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
                   {label}
                 </span>

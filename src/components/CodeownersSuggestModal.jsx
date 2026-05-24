@@ -198,7 +198,7 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
                     {/* Hotspots */}
                     {hotspots.length > 0 && (
                         <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                            <p className="ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
                                 Most-contended paths
                             </p>
                             <div className="flex flex-wrap gap-2">
@@ -219,12 +219,12 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
 
                     {/* Rules table */}
                     <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                        <p className="ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
                             Suggested rules
                         </p>
                         <Card glass={false} shadow="none" className="rounded-xl">
                             <table className="w-full text-sm">
-                                <thead className="bg-slate-50 dark:bg-slate-900/60 text-left text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                <thead className="bg-slate-50 dark:bg-slate-900/60 text-left ds-text-meta uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                     <tr>
                                         <th className="px-3 py-2 font-semibold">Path</th>
                                         <th className="px-3 py-2 font-semibold">Owners</th>
@@ -255,7 +255,7 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
 
                     {/* Preview — plain textarea so users can Ctrl+A on denied clipboards. */}
                     <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                        <p className="ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
                             .github/CODEOWNERS preview
                         </p>
                         <Textarea
@@ -266,7 +266,7 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
                             className="font-mono text-xs"
                             onFocus={(e) => e.target.select()}
                         />
-                        <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                        <p className="mt-1 ds-text-meta text-slate-500 dark:text-slate-400">
                             Paste into <code className="font-mono">.github/CODEOWNERS</code> on the default branch and open a PR — GitHub will pick it up automatically.
                         </p>
                     </div>

@@ -100,7 +100,7 @@ export function ViewErrorFallback({
             <span className="inline-block w-1 h-1 rounded-full bg-current" />
             Technical details
           </summary>
-          <pre className="mt-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-900/60 ring-1 ring-slate-200/60 dark:ring-slate-800 text-[11px] text-slate-600 dark:text-slate-400 overflow-auto max-h-40 whitespace-pre-wrap break-words">
+          <pre className="mt-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-900/60 ring-1 ring-slate-200/60 dark:ring-slate-800 ds-text-meta text-slate-600 dark:text-slate-400 overflow-auto max-h-40 whitespace-pre-wrap break-words">
             {error.message}
           </pre>
         </details>

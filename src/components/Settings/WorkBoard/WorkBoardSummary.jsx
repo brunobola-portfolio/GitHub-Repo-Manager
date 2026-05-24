@@ -22,7 +22,7 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
             <div className="rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 space-y-4">
                 <div className="flex items-center gap-2">
                     <Activity className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
+                    <span className="ds-text-micro font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
                         Board status
                     </span>
                 </div>
@@ -33,7 +33,7 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
                     <StatTile label="Muted" value={mutedCount} icon={VolumeX} color="slate" />
                 </div>
 
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-200/70 dark:border-slate-800">
+                <div className="flex items-center gap-1.5 ds-text-meta text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-200/70 dark:border-slate-800">
                     <Clock className="w-3 h-3" aria-hidden="true" />
                     <span>Last sync</span>
                     <span className="ml-auto font-medium text-slate-700 dark:text-slate-200">
@@ -41,10 +41,10 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
                     </span>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-1.5 ds-text-meta text-slate-500 dark:text-slate-400">
                     <Crown className="w-3 h-3" aria-hidden="true" />
                     <span>Plan</span>
-                    <span className={`ml-auto inline-flex items-center px-1.5 py-0.5 rounded-full font-semibold text-[10px] uppercase tracking-wide ${
+                    <span className={`ml-auto inline-flex items-center px-1.5 py-0.5 rounded-full font-semibold ds-text-micro uppercase tracking-wide ${
                         tier === 'enterprise'
                             ? 'bg-amber-500 text-white'
                             : tier === 'pro'
@@ -55,10 +55,10 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
                     </span>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-1.5 ds-text-meta text-slate-500 dark:text-slate-400">
                     <Sparkles className="w-3 h-3" aria-hidden="true" />
                     <span>AI Assistant</span>
-                    <span className={`ml-auto inline-flex items-center gap-1 font-semibold text-[10px] uppercase tracking-wide ${
+                    <span className={`ml-auto inline-flex items-center gap-1 font-semibold ds-text-micro uppercase tracking-wide ${
                         ai.enabled
                             ? 'text-emerald-600 dark:text-emerald-400'
                             : 'text-slate-400 dark:text-slate-500'

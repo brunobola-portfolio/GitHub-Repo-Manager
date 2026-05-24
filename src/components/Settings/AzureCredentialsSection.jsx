@@ -202,14 +202,14 @@ function CredentialRow({ cred, onDeleted, onTested }) {
             <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
               {cred.label}
             </span>
-            <span className={`text-[10px] uppercase tracking-wider font-semibold ${tone.text}`}>
+            <span className={`ds-text-micro uppercase tracking-wider font-semibold ${tone.text}`}>
               {provider.label}
             </span>
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono truncate">
             {cred.host}{cred.org ? ` · ${cred.org}` : ''} · {cred.prefix}
           </div>
-          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+          <div className="ds-text-meta text-slate-400 dark:text-slate-500 mt-0.5">
             Criado em {formatDate(cred.createdAt)} · {lastUsed}
             {cred.scopes && cred.scopes.length > 0 && (
               <> · {cred.scopes.join(', ')}</>
@@ -371,7 +371,7 @@ function AddCredentialForm({ onClose, onCreated }) {
             required
           />
           {host && (
-            <div className={`mt-1 text-[11px] inline-flex items-center gap-1 ${tone.text}`}>
+            <div className={`mt-1 ds-text-meta inline-flex items-center gap-1 ${tone.text}`}>
               {provider.isCloud ? <Cloud className="w-3 h-3" /> : <Server className="w-3 h-3" />}
               {provider.label}
             </div>
@@ -386,7 +386,7 @@ function AddCredentialForm({ onClose, onCreated }) {
             placeholder="ex: Trigenius  ou  tfs/DefaultCollection"
             className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono"
           />
-          <p className="text-[10px] text-slate-500 mt-1">Permite o botão "Testar" e auto-match no wizard.</p>
+          <p className="ds-text-micro text-slate-500 mt-1">Permite o botão "Testar" e auto-match no wizard.</p>
         </Field>
 
         <Field label="Scopes (informativo)">
@@ -442,7 +442,7 @@ function AddCredentialForm({ onClose, onCreated }) {
             href={patUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-1 inline-flex items-center gap-1 text-[11px] text-indigo-500 hover:text-indigo-400"
+            className="mt-1 inline-flex items-center gap-1 ds-text-meta text-indigo-500 hover:text-indigo-400"
           >
             Criar PAT em {host} <ExternalLink className="w-3 h-3" />
           </a>

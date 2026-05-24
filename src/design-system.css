@@ -176,6 +176,42 @@
 .ds-font-display { font-family: var(--ds-font-sans); }
 .ds-font-mono    { font-family: var(--ds-font-mono); }
 
+/* ===== TYPOGRAPHY SIZES (token-backed) =====
+ * 200+ callsites previously used arbitrary "text-[10px]" / "text-[11px]" /
+ * "text-[13px]" Tailwind values for dense metadata labels. These utility
+ * classes give those sizes a name + a single tweak-point. The 10/11 px
+ * migrations happened mechanically (see commit message); 13 px is opt-in. */
+.ds-text-micro   { font-size: 10px;  line-height: 14px; }
+.ds-text-meta    { font-size: 11px;  line-height: 16px; }
+.ds-text-body-sm { font-size: var(--ds-text-sm); line-height: 18px; }
+
+/* ===== SEMANTIC COLOR UTILITIES (token-backed) =====
+ * Replace the most-repeated slate combos with a single class. Lets future
+ * theme tweaks (e.g. shifting the muted scale a half-step) happen in one
+ * file instead of ~1000 callsites. Adopt incrementally — old classes
+ * continue to work side-by-side.
+ *
+ *   text-slate-700 dark:text-slate-300            → ds-text-primary    (~521 occurrences)
+ *   text-slate-500 dark:text-slate-400            → ds-text-muted      (~200 occurrences)
+ *   text-slate-600 dark:text-slate-400            → ds-text-secondary  (~128 occurrences)
+ *   text-slate-900 dark:text-slate-100            → ds-text-heading    (~186 occurrences)
+ *   border-slate-200 dark:border-slate-700        → ds-border-subtle   (~144 occurrences)
+ *   bg-white dark:bg-slate-800                    → ds-surface-card    (~94 occurrences) */
+.ds-text-heading   { color: var(--ds-fg); }
+.ds-text-primary   { color: var(--ds-fg); }
+.ds-text-secondary { color: var(--ds-fg-muted); }
+.ds-text-muted     { color: var(--ds-fg-subtle); }
+.dark .ds-text-heading   { color: var(--ds-fg-dark); }
+.dark .ds-text-primary   { color: var(--ds-fg-dark); }
+.dark .ds-text-secondary { color: var(--ds-fg-muted-dark); }
+.dark .ds-text-muted     { color: var(--ds-fg-muted-dark); }
+
+.ds-border-subtle { border-color: var(--ds-border); }
+.dark .ds-border-subtle { border-color: var(--ds-border-dark); }
+
+.ds-surface-card { background-color: var(--ds-surface); }
+.dark .ds-surface-card { background-color: var(--ds-surface-subtle-dark); }
+
 /* ===== FOCUS RING (premium) ===== */
 .ds-focus-ring { outline: none; transition: box-shadow var(--ds-duration-fast) var(--ds-ease); }
 .ds-focus-ring:focus-visible {

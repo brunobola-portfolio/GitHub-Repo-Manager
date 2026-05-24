@@ -506,7 +506,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
           {deep.draft?.lineComments?.length > 0 && (
             <span
               data-testid="fab-comment-badge"
-              className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-950"
+              className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-rose-500 text-white ds-text-micro font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-950"
             >
               {deep.draft.lineComments.length > 99 ? '99+' : deep.draft.lineComments.length}
             </span>

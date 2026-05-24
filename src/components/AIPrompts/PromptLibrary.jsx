@@ -71,15 +71,15 @@ export function PromptLibrary({ presets, loading, onNew, onEdit, onDelete, onSet
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className="font-medium">{p.name}</span>
-                                    {p.builtin ? <span className="text-[10px] uppercase tracking-wide opacity-50 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">built-in</span> : null}
+                                    {p.builtin ? <span className="ds-text-micro uppercase tracking-wide opacity-50 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">built-in</span> : null}
                                     {isOrgShared ? (
-                                        <span className="text-[10px] uppercase tracking-wide text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950">
+                                        <span className="ds-text-micro uppercase tracking-wide text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950">
                                             shared · {p.scopeTarget}
                                         </span>
                                     ) : null}
-                                    {p.isDefault ? <span className="text-[10px] uppercase tracking-wide text-emerald-600">default</span> : null}
+                                    {p.isDefault ? <span className="ds-text-micro uppercase tracking-wide text-emerald-600">default</span> : null}
                                     {isOrgShared && p.ownedByUser === false ? (
-                                        <span className="text-[10px] uppercase tracking-wide opacity-60">read-only</span>
+                                        <span className="ds-text-micro uppercase tracking-wide opacity-60">read-only</span>
                                     ) : null}
                                 </div>
                                 <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">

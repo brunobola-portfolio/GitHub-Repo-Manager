@@ -30,7 +30,7 @@ export function ShortcutsOverlay({ open, onClose }) {
                         <span className="text-slate-600 dark:text-slate-400">{s.label}</span>
                         <span className="flex gap-1" aria-label={s.keys.join(' plus ')}>
                             {s.keys.map((k) => (
-                                <kbd key={k} className="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300">{k}</kbd>
+                                <kbd key={k} className="px-1.5 py-0.5 ds-text-micro font-mono bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-slate-700 dark:text-slate-300">{k}</kbd>
                             ))}
                         </span>
                     </li>
