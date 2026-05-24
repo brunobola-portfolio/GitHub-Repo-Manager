@@ -10,6 +10,30 @@ import {
 import { SectionSpinner, Spinner, SpinnerIcon } from './ui/Spinner'
 import { migrationApi } from '../api/migration'
 import { apiCall } from '../utils/api'
+import { MarksBadge } from './MigrationHistory/MarksBadge.jsx'
+import { MarksDetailModal } from './MigrationHistory/MarksDetailModal.jsx'
+import { useMarksForPlan } from '../hooks/useMigrationMarks.js'
+
+function PlanMarksCell({ planId }) {
+    const { marks, byScope, loading } = useMarksForPlan(planId)
+    const [open, setOpen] = useState(false)
+    if (loading) return null
+    if (!marks.length) return null
+    return (
+        <>
+            <MarksBadge
+                marks={marks}
+                onClick={(e) => { e?.stopPropagation?.(); setOpen(true) }}
+            />
+            <MarksDetailModal
+                open={open}
+                onClose={() => setOpen(false)}
+                planId={planId}
+                byScope={byScope}
+            />
+        </>
+    )
+}
 
 const MIGRATION_TABS = [
     { id: 'plans', label: 'Plans', icon: ListChecks },
@@ -241,6 +265,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 shrink-0">
+                                                <PlanMarksCell planId={plan.id} />
                                                 {plan.status === 'failed' && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleRerunPlan(plan) }}
