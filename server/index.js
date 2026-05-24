@@ -38,6 +38,8 @@ import { verifySecretsAtStartup } from './lib/startup-secrets-check.js';
 import { startWorkBoardSweeper, stopWorkBoardSweeper, startKpiSnapshotJob, stopKpiSnapshotJob } from './lib/work-board-sweeper.js';
 import { startEmailRetryWorker, stopEmailRetryWorker } from './lib/email-retry-worker.js';
 import { startWebhookRetryWorker, stopWebhookRetryWorker } from './lib/webhook-retry-worker.js';
+import { startGhOutboxWorker, stopGhOutboxWorker } from './lib/gh-outbox.js';
+import { createSessionTokenLookup } from './lib/session-token-lookup.js';
 
 // API v1 route aggregator
 import v1Routes from './routes/v1/index.js';
@@ -329,6 +331,13 @@ startEmailRetryWorker();
 // Start background worker that re-drives the GitHub webhook dead-letter queue
 startWebhookRetryWorker();
 
+// Start background worker that re-drives the gh-outbox (queued mutations like
+// PR comments / merges that landed in the outbox when GitHub was down).
+// Token lookup scans the active sessions table for the latest accessToken
+// belonging to the row's user_id — see server/lib/session-token-lookup.js
+// for the SQLite/Redis caveats.
+startGhOutboxWorker({ tokenLookup: createSessionTokenLookup(db) });
+
 server.on('error', (e) => {
     if (e.code === 'EADDRINUSE') {
         logger.fatal({ port: config.port }, 'Port is already in use');
@@ -391,6 +400,12 @@ function gracefulShutdown(signal) {
             stopWebhookRetryWorker();
         } catch (e) {
             logger.warn({ err: e }, 'Could not stop webhook retry worker');
+        }
+
+        try {
+            stopGhOutboxWorker();
+        } catch (e) {
+            logger.warn({ err: e }, 'Could not stop gh-outbox worker');
         }
 
         try {
