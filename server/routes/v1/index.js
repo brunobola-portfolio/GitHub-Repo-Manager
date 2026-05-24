@@ -12,6 +12,7 @@ import azureRoutes from '../azure.js';
 import importRoutes from '../import.js';
 import webhooksRoutes from '../webhooks.js';
 import migrationRoutes from '../migration.js';
+import { createMarksRouter } from '../migration-marks.js';
 import reposRoutes from '../repos.js';
 import orgsRoutes from '../orgs.js';
 import aiRoutes from '../ai.js';
@@ -54,6 +55,7 @@ router.use('/', webhooksRoutes);
 // Migration routes: Free tier gets dry-run only (enforced in migration.js per-route
 // and by forcing isDryRun=true on plan creation). Real execution requires Pro+.
 router.use('/migration', migrationRoutes);
+router.use('/migration/marks', requireAuth, createMarksRouter({ db }));
 router.use('/repos', reposRoutes);
 router.use('/orgs', orgsRoutes);
 router.use('/', aiRoutes);

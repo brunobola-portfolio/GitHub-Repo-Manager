@@ -9,6 +9,11 @@ import { analyzeMigration } from '../migration-planner.js';
 import { validateAzureHost } from '../lib/azure-host-validator.js';
 import * as credsVault from '../lib/azure-credentials-manager.js';
 import db from '../db.js';
+import { createMigrationTaggingService } from '../migration-tagging-service.js';
+import { createGithubWriter } from '../lib/tagging/github-writer.js';
+import { createAzureWriter } from '../lib/tagging/azure-writer.js';
+import { createGitTagWriter } from '../lib/tagging/git-tag-writer.js';
+import { createHttpShim } from '../lib/tagging/http-shim.js';
 
 /**
  * Resolve the Azure PAT for a plan execute/resume/retry request.
@@ -35,6 +40,41 @@ function resolvePlanExecutionPat(req) {
 
 const router = express.Router();
 const engine = new MigrationEngine(db);
+
+// Tagging service: wired post-execution so the engine stays focused on
+// plan/task orchestration. Failure of marks NEVER aborts the migration —
+// the engine has already committed the plan as completed by the time we run.
+const githubApi = createHttpShim({ baseURL: 'https://api.github.com' });
+const rawHttp = createHttpShim();
+const taggingService = createMigrationTaggingService({
+  db,
+  credentialsResolver: async (plan) => {
+    const stored = engine.credentials.retrieve(plan.id);
+    if (!stored) return {};
+    return {
+      github: stored.githubToken || null,
+      azure: stored.azurePat ? { pat: stored.azurePat } : null
+    };
+  },
+  writersFactory: ({ plan, credentials }) => ({
+    github: credentials.github ? createGithubWriter({ api: githubApi, token: credentials.github }) : null,
+    azure: credentials.azure?.pat
+      ? createAzureWriter({ api: rawHttp, host: plan.azure_host || 'dev.azure.com', org: plan.source_org, pat: credentials.azure.pat })
+      : null,
+    gitTag: createGitTagWriter()
+  }),
+  // repoDirResolver will be plumbed once import-service exposes a stable
+  // per-task workdir handle. Until then, git-tag marks are no-ops at runtime
+  // (the policy still records `enabled:true`, but no resolver → no tag).
+  repoDirResolver: null,
+  logger
+});
+
+engine.on('plan-complete', ({ planId, status }) => {
+  if (status !== 'completed') return;
+  taggingService.applyTaggingForPlan(planId)
+    .catch(err => logger.error({ err, planId }, 'tagging service failed for plan'));
+});
 
 function parseJsonField(value) {
   if (value == null || typeof value === 'object') return value ?? null;
@@ -336,6 +376,13 @@ router.post('/plans/:id/execute', requireAuth, requireProOrDryRunPlan, async (re
       azureProject: plan.source_project
     };
 
+    // Stash credentials so the post-completion tagging service can retrieve
+    // them in its `plan-complete` listener. Stored encrypted; auto-purged
+    // after the credential manager's grace period (48h) regardless.
+    try { engine.credentials.store(id, credentials); } catch (err) {
+      logger.warn({ err, planId: id }, 'failed to stash credentials for tagging; tagging may degrade');
+    }
+
     // Start execution asynchronously
     engine.executePlan(id, credentials).catch(err => {
       logger.error({ err, planId: req.params.id }, 'Plan execution error');
@@ -467,5 +514,5 @@ router.get('/plans/:id/report', requireAuth, async (req, res) => {
   }
 });
 
-export { engine };
+export { engine, taggingService };
 export default router;
