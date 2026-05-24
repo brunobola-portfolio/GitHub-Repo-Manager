@@ -2,10 +2,7 @@
 // surface the "Migrated" pill, the badge in MigrationHistory, and the
 // provenance card on RepoDetail.
 import express from 'express'
-
-function safeJson(s) {
-  try { return JSON.parse(s) } catch { return s }
-}
+import { safeJson } from '../lib/safe-json.js'
 
 export function createMarksRouter({ db }) {
   const router = express.Router()

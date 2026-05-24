@@ -7,6 +7,7 @@
  */
 
 import { fetchWorkItems } from './azure-service.js'
+import { basicAuthHeader } from './lib/basic-auth-header.js'
 
 /**
  * Escapes single quotes in a WIQL value to prevent injection.
@@ -453,7 +454,7 @@ async function migrateWorkItems(config, azureCreds, githubToken, targetOwner, ta
     {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${Buffer.from(`:${pat}`).toString('base64')}`,
+        'Authorization': basicAuthHeader('', pat),
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ query: wiqlQuery })

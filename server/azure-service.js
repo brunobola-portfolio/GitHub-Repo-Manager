@@ -12,6 +12,7 @@
 
 import { decryptCredentials } from './lib/credential-encryption.js';
 import { resolveAzureBaseUrl, encodePathSegments } from './lib/azure-host-validator.js';
+import { basicAuthHeader } from './lib/basic-auth-header.js';
 
 const DEFAULT_HOST = 'dev.azure.com';
 const API_VERSION = '7.1';
@@ -50,9 +51,8 @@ function resolvePat(pat, session) {
 }
 
 function getHeaders(pat) {
-    const encoded = Buffer.from(`:${pat}`).toString('base64');
     return {
-        'Authorization': `Basic ${encoded}`,
+        'Authorization': basicAuthHeader('', pat),
         'Content-Type': 'application/json'
     };
 }
@@ -669,7 +669,7 @@ async function checkLfsMarkers(org, project, repos, pat, host = DEFAULT_HOST) {
                     const url = `${base}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(id)}/items?path=/.gitattributes&$format=text&api-version=${API_VERSION}`
                     const res = await fetch(url, {
                         headers: {
-                            Authorization: `Basic ${Buffer.from(`:${pat}`).toString('base64')}`,
+                            Authorization: basicAuthHeader('', pat),
                             Accept: 'text/plain',
                         },
                     })
@@ -714,7 +714,7 @@ async function getRepoReadme(org, project, repoId, pat, ref, host = DEFAULT_HOST
       const url = `${base}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/items?path=/${name}&$format=text${versionDesc}&api-version=${API_VERSION}`
       const res = await fetch(url, {
         headers: {
-          Authorization: `Basic ${Buffer.from(`:${pat}`).toString('base64')}`,
+          Authorization: basicAuthHeader('', pat),
           Accept: 'text/plain',
         },
       })

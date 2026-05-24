@@ -1,13 +1,13 @@
 // Azure DevOps source writer. Handles project-level properties (JSON-Patch)
 // and per-repo description updates. Knows nothing about plans or persistence.
 import { DESCRIPTION_SUFFIX_REGEX, STATUS, SKIP_REASONS } from '../migration-tagging-constants.js'
+import { basicAuthHeader } from '../basic-auth-header.js'
 
 const API_VERSION = '7.1-preview.1'
 
 export function createAzureWriter({ api, host, org, pat }) {
   const baseUrl = `https://${host}/${encodeURIComponent(org)}`
-  const auth = Buffer.from(`:${pat}`).toString('base64')
-  const headers = { Authorization: `Basic ${auth}`, Accept: 'application/json' }
+  const headers = { Authorization: basicAuthHeader('', pat), Accept: 'application/json' }
 
   function classifyErr(err) {
     const code = err?.response?.status
