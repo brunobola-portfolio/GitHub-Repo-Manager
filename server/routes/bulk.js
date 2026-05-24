@@ -27,6 +27,7 @@ import { requireTier } from '../middleware/require-tier.js';
 import { bulkVisibilitySchema, bulkArchiveSchema, bulkDeleteSchema, bulkTransferSchema, bulkMirrorSchema, checkConflictsSchema } from '../lib/validators.js';
 import { validateBody } from '../middleware/validate-request.js';
 import { performBulk } from '../lib/bulk-helpers.js';
+import { parseRepoFullName } from '../lib/repo-full-name.js';
 
 const router = express.Router();
 
@@ -307,7 +308,9 @@ router.post('/community-health/compare', requireAuth, async (req, res) => {
         const comparison = [];
 
         for (const repoFullName of repos) {
-            const [owner, repo] = repoFullName.split('/');
+            const parsed = parseRepoFullName(repoFullName);
+            if (!parsed) continue;
+            const { owner, repo } = parsed;
             const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
 
             const cached = db.prepare('SELECT health_score FROM community_health_cache WHERE user_id = ? AND repo_id = ?')

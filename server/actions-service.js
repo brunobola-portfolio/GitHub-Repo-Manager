@@ -1,5 +1,6 @@
 import db from './db.js';
 import logger from './lib/logger.js';
+import { parseRepoFullName } from './lib/repo-full-name.js';
 
 class ActionsService {
     /**
@@ -332,7 +333,9 @@ class ActionsService {
      * @param {number} [userId=0] - Tenant user ID for multi-tenancy
      */
     async syncWorkflowRuns(repoFullName, token, userId = 0) {
-        const [owner, repo] = repoFullName.split('/');
+        const parsed = parseRepoFullName(repoFullName);
+        if (!parsed) return { ok: false, error: `invalid full_name: ${repoFullName}` };
+        const { owner, repo } = parsed;
 
         try {
             const response = await fetch(

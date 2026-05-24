@@ -7,6 +7,7 @@ import {
   parsePolicy, githubTopics, descriptionSuffix,
   azureProjectProperties, gitTagName, gitTagMessage
 } from './lib/migration-tagging-constants.js'
+import { parseRepoFullName } from './lib/repo-full-name.js'
 
 export function createMigrationTaggingService({
   db,
@@ -92,8 +93,9 @@ export function createMigrationTaggingService({
         let meta = {}
         try { meta = task.metadata ? JSON.parse(task.metadata) : {} } catch { /* malformed */ }
         const full = meta.targetFullName || task.target_ref
-        if (!full || !full.includes('/')) continue
-        const [owner, repo] = full.split('/')
+        const parsed = parseRepoFullName(full)
+        if (!parsed) continue
+        const { owner, repo } = parsed
 
         const topics = githubTopics({
           sourceType: plan.source_type,

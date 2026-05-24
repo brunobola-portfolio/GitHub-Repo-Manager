@@ -60,3 +60,37 @@ export function parseGitHubUrl(input) {
 
   return { owner, repo, error: null, suggestion: null }
 }
+
+/**
+ * Parse the simple "owner/repo" form returned by GitHub's REST `full_name`
+ * field. Returns null for any non-string, empty, or malformed input.
+ *
+ * Sister to parseGitHubUrl — most callsites already have the `full_name`
+ * string, not a URL, and shouldn't pay for the URL parser.
+ *
+ * @param {string} fullName e.g. "octocat/Hello-World"
+ * @returns {{ owner: string, repo: string } | null}
+ */
+export function parseRepoFullName(fullName) {
+  if (typeof fullName !== 'string') return null
+  const trimmed = fullName.trim()
+  if (!trimmed) return null
+  const idx = trimmed.indexOf('/')
+  if (idx <= 0 || idx === trimmed.length - 1) return null
+  return { owner: trimmed.slice(0, idx), repo: trimmed.slice(idx + 1) }
+}
+
+/**
+ * Extract the owner login from either a `full_name` string or a GitHub-API
+ * repo object (which has `owner.login` plus `full_name`). Tolerates both
+ * shapes so list views (object) and shallower caches (string) share one call.
+ *
+ * @param {string | { owner?: { login?: string }, full_name?: string } | null | undefined} repo
+ * @returns {string | null}
+ */
+export function getRepoOwner(repo) {
+  if (!repo) return null
+  if (typeof repo === 'string') return parseRepoFullName(repo)?.owner ?? null
+  if (typeof repo.owner?.login === 'string') return repo.owner.login
+  return parseRepoFullName(repo.full_name)?.owner ?? null
+}
