@@ -47,6 +47,22 @@ router.get('/export', requireAuth, (req, res) => {
         const login = user.username;
         const all = (sql, ...params) => db.prepare(sql).all(...params);
 
+        // Cap each table at MAX_EXPORT_ROWS to bound the in-memory JSON build
+        // and the response size. Heavy-volume tables (webhook events,
+        // workflow runs) on a long-tenured user could otherwise produce a
+        // multi-GB JSON blob and OOM the process. We tag the payload with
+        // a `truncated` map so the caller knows which tables were capped.
+        const MAX_EXPORT_ROWS = 50_000;
+        const truncated = {};
+        const capped = (key, sql, ...params) => {
+            const rows = db.prepare(`${sql} LIMIT ${MAX_EXPORT_ROWS + 1}`).all(...params);
+            if (rows.length > MAX_EXPORT_ROWS) {
+                truncated[key] = { limit: MAX_EXPORT_ROWS, note: 'export truncated; contact support for a full dump' };
+                return rows.slice(0, MAX_EXPORT_ROWS);
+            }
+            return rows;
+        };
+
         const payload = {
             exportedAt: new Date().toISOString(),
             schemaVersion: 1,
@@ -57,19 +73,20 @@ router.get('/export', requireAuth, (req, res) => {
                 'SELECT id, name, scopes, created_at, last_used_at, revoked_at FROM api_keys WHERE user_id = ?',
                 userId,
             ), // note: NEVER export key material — only the metadata
-            migrationJobs: all('SELECT * FROM migration_jobs WHERE user_id = ?', userId),
-            migrationPlans: all('SELECT * FROM migration_plans WHERE user_id = ?', userId),
-            prEvents: login ? all('SELECT * FROM pr_events WHERE author_login = ?', login) : [],
-            issueEvents: login ? all('SELECT * FROM issue_events WHERE author_login = ?', login) : [],
+            migrationJobs: capped('migrationJobs', 'SELECT * FROM migration_jobs WHERE user_id = ?', userId),
+            migrationPlans: capped('migrationPlans', 'SELECT * FROM migration_plans WHERE user_id = ?', userId),
+            prEvents: login ? capped('prEvents', 'SELECT * FROM pr_events WHERE author_login = ?', login) : [],
+            issueEvents: login ? capped('issueEvents', 'SELECT * FROM issue_events WHERE author_login = ?', login) : [],
             reviewAssignments: login
-                ? all('SELECT * FROM review_assignments WHERE reviewer_login = ?', login)
+                ? capped('reviewAssignments', 'SELECT * FROM review_assignments WHERE reviewer_login = ?', login)
                 : [],
             communityHealthCache: all('SELECT * FROM community_health_cache WHERE user_id = ?', userId),
             repoMetadata: all('SELECT * FROM repo_metadata WHERE user_id = ?', userId),
-            workflowRuns: all('SELECT * FROM workflow_runs WHERE user_id = ?', userId),
+            workflowRuns: capped('workflowRuns', 'SELECT * FROM workflow_runs WHERE user_id = ?', userId),
             workflowsMeta: all('SELECT * FROM workflows_meta WHERE user_id = ?', userId),
-            usageMetrics: all('SELECT * FROM usage_metrics WHERE user_id = ?', userId),
+            usageMetrics: capped('usageMetrics', 'SELECT * FROM usage_metrics WHERE user_id = ?', userId),
             teamMemberships: all('SELECT * FROM team_members WHERE user_id = ?', userId),
+            truncated,
         };
 
         auditLog(req, 'user.data.export', 'user', userId, {

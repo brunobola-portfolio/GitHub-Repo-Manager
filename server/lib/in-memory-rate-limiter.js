@@ -105,10 +105,33 @@ export function createCooldownLimiter({
     cooldownMs,
     code = 'COOLDOWN',
     label = 'request',
+    sweepIntervalMs,
 } = {}) {
     if (!Number.isFinite(cooldownMs) || cooldownMs <= 0) throw new Error('cooldownMs must be > 0')
 
     const lastCall = new Map()
+
+    // Sweep: drop entries older than the cooldown window — they can't possibly
+    // trigger another cooldown. Without this the Map grows by one entry per
+    // unique userId for the lifetime of the process (a real leak — was the
+    // root cause of three ad-hoc Maps in prompt-studio / user-ai-config /
+    // work-board-actions that the original helper was meant to replace).
+    // Skip in tests so unit tests don't have to clean up the interval.
+    const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST
+    const periodMs = sweepIntervalMs ?? Math.max(cooldownMs, 60_000)
+
+    function runSweep() {
+        const cutoff = Date.now() - cooldownMs
+        for (const [userId, t] of lastCall) {
+            if (t < cutoff) lastCall.delete(userId)
+        }
+    }
+
+    let sweepTimer = null
+    if (!isTest) {
+        sweepTimer = setInterval(runSweep, periodMs)
+        if (sweepTimer && typeof sweepTimer.unref === 'function') sweepTimer.unref()
+    }
 
     const middleware = (req, res, next) => {
         const userId = req.session?.userId
@@ -133,6 +156,8 @@ export function createCooldownLimiter({
 
     return {
         middleware,
+        runSweep,
+        stop() { if (sweepTimer) clearInterval(sweepTimer); sweepTimer = null },
         reset() { lastCall.clear() },
         _lastCall: lastCall,
     }

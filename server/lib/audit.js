@@ -27,22 +27,75 @@ export function computeRowHash(row) {
     return crypto.createHash('sha256').update(parts.join('|')).digest('hex');
 }
 
+// Lazy-init prepared statements + transaction wrapper.
+// Cannot prepare at module-load time because some test fixtures lazily swap
+// the underlying db via a Proxy. Cached after first call so the work is
+// done exactly once per process — that was the win we wanted vs the old
+// "prepare inside every call" pattern.
+//
+// Wrapping the read+compute+write trio in a transaction also fixes a race:
+// two concurrent auditLog() calls could produce two rows with the same
+// prev_hash, which would break verifyAuditChain on the second row.
+let stmtCache = null;
+function getStmts() {
+    if (stmtCache) return stmtCache;
+    const selectLast = db.prepare(
+        `SELECT id, row_hash FROM audit_log_v2 ORDER BY id DESC LIMIT 1`
+    );
+    const selectSeq = db.prepare(
+        `SELECT seq FROM sqlite_sequence WHERE name = 'audit_log_v2'`
+    );
+    const insertRow = db.prepare(`
+        INSERT INTO audit_log_v2
+            (user_id, action, resource_type, resource_id, details,
+             ip_address, user_agent, api_key_id, prev_hash, row_hash, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const writeTx = db.transaction((row) => {
+        const lastRow = selectLast.get();
+        const prevHash = lastRow?.row_hash ?? '';
+        const seqRow = selectSeq.get();
+        const anticipatedId = seqRow ? seqRow.seq + 1 : 1;
+        const createdAt = new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+        const rowHash = computeRowHash({
+            id: anticipatedId,
+            action: row.action,
+            resource_type: row.resource_type,
+            resource_id: String(row.resource_id ?? ''),
+            user_id: row.user_id,
+            created_at: createdAt,
+            details: row.details,
+            prev_hash: prevHash,
+        });
+        const info = insertRow.run(
+            row.user_id,
+            row.action,
+            row.resource_type,
+            String(row.resource_id ?? ''),
+            row.details,
+            row.ip_address || '',
+            row.user_agent || '',
+            row.api_key_id || null,
+            prevHash,
+            rowHash,
+            createdAt,
+        );
+        return { anticipatedId, actualId: info.lastInsertRowid };
+    });
+    stmtCache = { writeTx };
+    return stmtCache;
+}
+
+// Test-only helper: reset the cached prepared statements so a test that swaps
+// the underlying db handle (via vi.mock + Proxy) re-prepares against the new
+// handle. Production code never calls this.
+export function _resetAuditStatementCache() { stmtCache = null; }
+
 /**
  * Write a structured audit entry to audit_log_v2 with hash-chain columns.
  *
  * The signature is kept identical to the previous version so every call
  * site continues to work without changes.
- *
- * Hash-chain strategy (single-phase, no UPDATE needed):
- *   1. Read the last row's row_hash → prev_hash for this row.
- *   2. Determine the next ROWID from the SQLite sequence.
- *   3. Compute row_hash using the anticipated id + wall-clock timestamp.
- *   4. INSERT with all four columns populated in one statement.
- *
- * The anticipated id may rarely differ from the actual lastInsertRowid when
- * concurrent writers race (very unlikely in single-process SQLite). If they
- * differ we log a warning; the row is still written and the chain is still
- * valid (verifyAuditChain re-computes every hash from stored fields).
  *
  * @param {import('express').Request} req
  * @param {string} action
@@ -52,65 +105,21 @@ export function computeRowHash(row) {
  */
 export function auditLog(req, action, resourceType, resourceId, details = {}) {
     try {
-        const userId = req.tenantId || req.session?.userId || 0;
-        const detailsJson = JSON.stringify(details);
-        const ipAddress = req.ip || '';
-        const userAgent = req.headers?.['user-agent'] || '';
-        const apiKeyId = req.apiKeyId || null;
-
-        // 1. Grab the last row's hash to form the chain link.
-        const lastRow = db.prepare(
-            `SELECT id, row_hash FROM audit_log_v2 ORDER BY id DESC LIMIT 1`
-        ).get();
-        const prevHash = lastRow?.row_hash ?? '';
-
-        // 2. Predict the next id from the SQLite autoincrement sequence.
-        //    sqlite_sequence holds the last used rowid per table.
-        const seqRow = db.prepare(
-            `SELECT seq FROM sqlite_sequence WHERE name = 'audit_log_v2'`
-        ).get();
-        const anticipatedId = seqRow ? seqRow.seq + 1 : 1;
-
-        // 3. Determine the timestamp we'll store (sqlite DEFAULT uses datetime('now')
-        //    at INSERT time; we replicate that here for hash computation).
-        const createdAt = new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
-
-        // 4. Pre-compute the row hash.
-        const rowHash = computeRowHash({
-            id: anticipatedId,
+        const result = getStmts().writeTx({
+            user_id: req.tenantId || req.session?.userId || 0,
             action,
             resource_type: resourceType,
-            resource_id: String(resourceId ?? ''),
-            user_id: userId,
-            created_at: createdAt,
-            details: detailsJson,
-            prev_hash: prevHash,
+            resource_id: resourceId,
+            details: JSON.stringify(details),
+            ip_address: req.ip || '',
+            user_agent: req.headers?.['user-agent'] || '',
+            api_key_id: req.apiKeyId || null,
         });
 
-        // 5. Single INSERT — no subsequent UPDATE required (triggers not tripped).
-        const info = db.prepare(`
-            INSERT INTO audit_log_v2
-                (user_id, action, resource_type, resource_id, details,
-                 ip_address, user_agent, api_key_id, prev_hash, row_hash, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-            userId,
-            action,
-            resourceType,
-            String(resourceId ?? ''),
-            detailsJson,
-            ipAddress,
-            userAgent,
-            apiKeyId,
-            prevHash,
-            rowHash,
-            createdAt,
-        );
-
-        if (info.lastInsertRowid !== anticipatedId) {
+        if (result.actualId !== result.anticipatedId) {
             logger.warn(
-                { anticipatedId, actual: info.lastInsertRowid },
-                '[audit] ROWID mismatch — hash was computed for anticipated id; chain remains valid but re-run verifyAuditChain to confirm'
+                { anticipatedId: result.anticipatedId, actual: result.actualId },
+                '[audit] ROWID mismatch — chain remains valid; run verifyAuditChain to confirm'
             );
         }
     } catch (err) {
@@ -132,56 +141,20 @@ export function auditLog(req, action, resourceType, resourceId, details = {}) {
  */
 export function auditLogDirect({ actor_user_id, action, entity_type, entity_id, metadata = {} }) {
     try {
-        const userId = actor_user_id ?? 0;
-        const detailsJson = JSON.stringify(metadata);
-
-        // 1. Grab the last row's hash to form the chain link.
-        const lastRow = db.prepare(
-            `SELECT id, row_hash FROM audit_log_v2 ORDER BY id DESC LIMIT 1`
-        ).get();
-        const prevHash = lastRow?.row_hash ?? '';
-
-        // 2. Predict the next id from the SQLite autoincrement sequence.
-        const seqRow = db.prepare(
-            `SELECT seq FROM sqlite_sequence WHERE name = 'audit_log_v2'`
-        ).get();
-        const anticipatedId = seqRow ? seqRow.seq + 1 : 1;
-
-        // 3. Determine the timestamp.
-        const createdAt = new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
-
-        // 4. Pre-compute the row hash.
-        const rowHash = computeRowHash({
-            id: anticipatedId,
+        const result = getStmts().writeTx({
+            user_id: actor_user_id ?? 0,
             action,
             resource_type: entity_type,
-            resource_id: String(entity_id ?? ''),
-            user_id: userId,
-            created_at: createdAt,
-            details: detailsJson,
-            prev_hash: prevHash,
+            resource_id: entity_id,
+            details: JSON.stringify(metadata),
+            ip_address: '',
+            user_agent: '',
+            api_key_id: null,
         });
 
-        // 5. Single INSERT — same schema as auditLog().
-        const info = db.prepare(`
-            INSERT INTO audit_log_v2
-                (user_id, action, resource_type, resource_id, details,
-                 ip_address, user_agent, api_key_id, prev_hash, row_hash, created_at)
-            VALUES (?, ?, ?, ?, ?, '', '', NULL, ?, ?, ?)
-        `).run(
-            userId,
-            action,
-            entity_type,
-            String(entity_id ?? ''),
-            detailsJson,
-            prevHash,
-            rowHash,
-            createdAt,
-        );
-
-        if (info.lastInsertRowid !== anticipatedId) {
+        if (result.actualId !== result.anticipatedId) {
             logger.warn(
-                { anticipatedId, actual: info.lastInsertRowid },
+                { anticipatedId: result.anticipatedId, actual: result.actualId },
                 '[audit] auditLogDirect ROWID mismatch — chain remains valid'
             );
         }

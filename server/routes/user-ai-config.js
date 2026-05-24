@@ -26,36 +26,23 @@ import { createProviderForUser } from '../lib/ai-provider.js';
 import { invalidate as invalidateAIHealth, recordState as recordAIHealth } from '../lib/ai-health-probe.js';
 import { formatAIErrorForUser, getProviderLabel } from '../lib/ai-error-format.js';
 import logger from '../lib/logger.js';
+import { createCooldownLimiter } from '../lib/in-memory-rate-limiter.js';
 
 const router = express.Router();
 
-// ---------------------------------------------------------------------------
-// Simple per-user in-memory rate limiter for /test
-// Maps userId → last call timestamp (ms)
-// ---------------------------------------------------------------------------
-export const testLastCall = new Map();
-const TEST_COOLDOWN_MS = 10_000; // 10 seconds
-
-function testRateLimiter(req, res, next) {
-    const userId = req.session?.userId;
-    if (!userId) return next(); // auth will reject below
-
-    const now = Date.now();
-    const last = testLastCall.get(userId) ?? 0;
-
-    if (now - last < TEST_COOLDOWN_MS) {
-        const retryAfter = Math.ceil((TEST_COOLDOWN_MS - (now - last)) / 1000);
-        res.setHeader('Retry-After', retryAfter);
-        return res.status(429).json({
-            error: 'Too many test requests. Wait a moment before testing again.',
-            code: 'RATE_LIMITED',
-            retryAfterSeconds: retryAfter,
-        });
-    }
-
-    testLastCall.set(userId, now);
-    next();
-}
+// Cooldown limiter for /test — 1 call per 10s per user. Backed by the shared
+// helper so the per-user bucket Map gets swept (previous local Map had no
+// sweeper, leaking one entry per unique user forever).
+//
+// `testLastCall` remains exported as a back-compat shim for tests that called
+// .clear() — it now points at the helper's internal Map.
+const testCooldown = createCooldownLimiter({
+    cooldownMs: 10_000,
+    code: 'RATE_LIMITED',
+    label: 'test',
+});
+export const testLastCall = testCooldown._lastCall;
+const testRateLimiter = testCooldown.middleware;
 
 // ---------------------------------------------------------------------------
 // GET /api/user/ai-config

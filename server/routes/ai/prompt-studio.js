@@ -26,6 +26,7 @@
 import express from 'express';
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
 import { requireTier } from '../../middleware/require-tier.js';
+import { createCooldownLimiter } from '../../lib/in-memory-rate-limiter.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { promptPresetCreateSchema, promptPresetUpdateSchema } from '../../lib/validators.js';
 import {
@@ -70,22 +71,16 @@ router.param('id', (req, res, next, val) => {
 // user could trivially burn provider quota by hammering the button.
 // ---------------------------------------------------------------------------
 
-const testBuckets = new Map();
-const TEST_COOLDOWN_MS = 10_000;
-
-function testRateLimit(req, res, next) {
-    const userId = req.session?.userId;
-    if (!userId) return next();
-    const last = testBuckets.get(userId) ?? 0;
-    const now = Date.now();
-    if (now - last < TEST_COOLDOWN_MS) {
-        const retryAfter = Math.ceil((TEST_COOLDOWN_MS - (now - last)) / 1000);
-        res.setHeader('Retry-After', String(retryAfter));
-        return errorResponse(res, 429, `Wait ${retryAfter}s before testing again`, 'RATE_LIMITED');
-    }
-    testBuckets.set(userId, now);
-    next();
-}
+// Cooldown limiter from the shared helper: 1 call per 10s per user, with a
+// background sweeper so the per-user bucket Map doesn't grow forever. The
+// previous local Map had no sweeper — every user who ever hit /test added a
+// permanent entry.
+const testCooldown = createCooldownLimiter({
+    cooldownMs: 10_000,
+    code: 'RATE_LIMITED',
+    label: 'test',
+});
+const testRateLimit = testCooldown.middleware;
 
 /**
  * Test-only helper: clear the per-user /test cooldown buckets between tests.
@@ -93,7 +88,7 @@ function testRateLimit(req, res, next) {
  * directly from this module.
  */
 export function _resetTestBuckets() {
-    testBuckets.clear();
+    testCooldown.reset();
 }
 
 // ---------------------------------------------------------------------------

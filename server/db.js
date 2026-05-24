@@ -298,6 +298,9 @@ export function initDB(targetDb = db) {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_marks_plan ON migration_marks(plan_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_marks_status ON migration_marks(status)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_marks_target ON migration_marks(target_kind, target_id)`);
+        // ORDER BY created_at DESC LIMIT 200 in routes/migration-marks.js. Without
+        // this the unfiltered listing sorts the whole table.
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_marks_created ON migration_marks(created_at DESC)`);
 
         // Audit log for destructive operations
         db.exec(`
@@ -639,6 +642,9 @@ export function initDB(targetDb = db) {
         `);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_pr_events_repo_pr ON pr_events(repo_id, pr_number)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_pr_events_repo_created ON pr_events(repo_id, created_at)`);
+        // Dashboard inbox hot path (listMyOpenPRs filters by author_login + action).
+        // Without this composite index every inbox load full-scans pr_events.
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_pr_events_author_action ON pr_events(author_login, action)`);
 
         // Issue lifecycle events
         db.exec(`
@@ -658,6 +664,8 @@ export function initDB(targetDb = db) {
             )
         `);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_issue_events_repo_issue ON issue_events(repo_id, issue_number)`);
+        // GDPR delete + dashboard "mentions" path filter by author_login.
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_issue_events_author ON issue_events(author_login)`);
 
         // Deployment events — DORA deploy frequency + MTTR
         db.exec(`

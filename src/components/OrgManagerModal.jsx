@@ -391,6 +391,8 @@ function MembersTab({ members, orgLogin }) {
                         href={member.html_url}
                         target="_blank"
                         rel="noopener noreferrer"
+                        aria-label={`Open ${member.login}'s GitHub profile in new tab`}
+                        title={`Open ${member.login}'s GitHub profile`}
                         className="text-slate-400 dark:text-slate-300 hover:text-slate-600 dark:hover:text-slate-100"
                     >
                         <ExternalLink className="w-4 h-4" />

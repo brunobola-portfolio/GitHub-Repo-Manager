@@ -366,6 +366,7 @@ CREATE INDEX IF NOT EXISTS idx_task_status ON migration_tasks(status);
 CREATE INDEX IF NOT EXISTS idx_marks_plan ON migration_marks(plan_id);
 CREATE INDEX IF NOT EXISTS idx_marks_status ON migration_marks(status);
 CREATE INDEX IF NOT EXISTS idx_marks_target ON migration_marks(target_kind, target_id);
+CREATE INDEX IF NOT EXISTS idx_marks_created ON migration_marks(created_at DESC);
 
 -- Audit log
 CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id);

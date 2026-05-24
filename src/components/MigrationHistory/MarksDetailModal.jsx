@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 
 function statusIcon(s) {
   return s === 'written' ? '✓' : s === 'skipped' ? '⚠' : s === 'failed' ? '✗' : '·'
@@ -37,6 +38,10 @@ function ScopeSection({ scope, marks }) {
 
 export function MarksDetailModal({ open, onClose, planId, byScope }) {
   const scopes = byScope || { source: [], destination: [], 'git-tag': [] }
+  // Trap focus inside the dialog while open and restore it to the trigger on
+  // close. The hook also wires Escape → onClose, which the previous ad-hoc
+  // implementation lacked.
+  const trapRef = useFocusTrap(open, onClose)
 
   return (
     <AnimatePresence>
@@ -47,11 +52,13 @@ export function MarksDetailModal({ open, onClose, planId, byScope }) {
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[var(--ds-z-modal)] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4"
           onClick={onClose}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Migration marks detail"
         >
           <motion.div
+            ref={trapRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="marks-detail-title"
+            tabIndex={-1}
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
@@ -60,11 +67,13 @@ export function MarksDetailModal({ open, onClose, planId, byScope }) {
             className="max-w-2xl w-full rounded-2xl border border-white/10 bg-slate-900/90 backdrop-blur-md shadow-2xl p-6"
           >
             <div className="flex items-baseline justify-between mb-4">
-              <h3 className="ds-font-display text-xl text-slate-100">Migration marks · plan #{planId}</h3>
+              <h3 id="marks-detail-title" className="ds-font-display text-xl text-slate-100">
+                Migration marks · plan #{planId}
+              </h3>
               <button
                 onClick={onClose}
                 className="text-slate-400 hover:text-slate-200 transition"
-                aria-label="Close"
+                aria-label="Close migration marks dialog"
               >
                 ✕
               </button>

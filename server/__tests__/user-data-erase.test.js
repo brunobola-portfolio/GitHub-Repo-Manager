@@ -34,6 +34,7 @@ vi.mock('../lib/logger.js', () => ({
 // ---------------------------------------------------------------------------
 
 import userDataRouter from '../routes/user-data.js';
+import { _resetAuditStatementCache } from '../lib/audit.js';
 
 // ---------------------------------------------------------------------------
 // Schema builder
@@ -268,6 +269,9 @@ function seedSubscription(userId = 42, status = 'active') {
 
 beforeEach(() => {
     _db = buildDb();
+    // audit.js caches prepared statements bound to a db handle. Reset
+    // between tests so each new in-memory db gets fresh statements.
+    _resetAuditStatementCache();
 });
 
 afterEach(() => {

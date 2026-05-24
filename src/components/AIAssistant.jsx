@@ -53,7 +53,19 @@ function loadInitialMessages() {
 export function AIAssistant({ askAI, user, checkAIStatus }) {
     const [isOpen, setIsOpen] = useState(false)
     const [isMinimized, setIsMinimized] = useState(false)
-    const [messages, setMessages] = useState(loadInitialMessages)
+    // The persisted slice is already capped at CHAT_STORAGE_MAX_MESSAGES, but
+    // the live in-memory array previously grew unboundedly. Wrap the setter
+    // so every append also truncates — bounds a long-lived tab's memory at
+    // the same ~200-message cap as sessionStorage.
+    const [messages, setMessagesRaw] = useState(loadInitialMessages)
+    const setMessages = useCallback((updater) => {
+        setMessagesRaw((prev) => {
+            const next = typeof updater === 'function' ? updater(prev) : updater
+            return next.length > CHAT_STORAGE_MAX_MESSAGES
+                ? next.slice(-CHAT_STORAGE_MAX_MESSAGES)
+                : next
+        })
+    }, [])
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const messagesEndRef = useRef(null)
@@ -147,7 +159,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
         }
         window.addEventListener('ai-assistant:inject-message', onInject)
         return () => window.removeEventListener('ai-assistant:inject-message', onInject)
-    }, [])
+    }, [setMessages])
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -226,7 +238,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
         } finally {
             setIsLoading(false)
         }
-    }, [askAI, user?.login])
+    }, [askAI, user?.login, setMessages])
 
     const handleSubmit = (e) => {
         e.preventDefault()

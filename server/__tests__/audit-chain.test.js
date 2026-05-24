@@ -73,7 +73,7 @@ function createSchema(database) {
 // Module-under-test — imported once; relies on the _db Proxy being mutable.
 // ---------------------------------------------------------------------------
 
-import { auditLog, verifyAuditChain, computeRowHash } from '../lib/audit.js';
+import { auditLog, verifyAuditChain, computeRowHash, _resetAuditStatementCache } from '../lib/audit.js';
 
 // ---------------------------------------------------------------------------
 // Lifecycle
@@ -82,6 +82,9 @@ import { auditLog, verifyAuditChain, computeRowHash } from '../lib/audit.js';
 beforeEach(() => {
     _db = new Database(':memory:');
     createSchema(_db);
+    // The audit module caches prepared statements bound to its db handle.
+    // Reset between tests so each new in-memory db gets fresh statements.
+    _resetAuditStatementCache();
 });
 
 afterEach(() => {

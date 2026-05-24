@@ -368,6 +368,8 @@ export function MigrationHistory({ isOpen, onClose }) {
                                             </div>
                                             {meta?.repoUrl && job.status === 'complete' && (
                                                 <a href={meta.repoUrl} target="_blank" rel="noopener noreferrer"
+                                                    aria-label="Open migrated repository in new tab"
+                                                    title="Open migrated repository in new tab"
                                                     className="text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300 shrink-0">
                                                     <ExternalLink className="w-4 h-4" />
                                                 </a>

@@ -223,9 +223,23 @@ router.delete('/presets/:id', requireAuth, validateParams(presetIdParamsSchema),
     } catch (e) { errorResponse(res, 500, safeError(e, 'Failed to delete preset')); }
 });
 
+// Per-user "last AI-summary call" timestamps. Inline (not the cooldown
+// middleware) because the gate composes with a cache freshness check.
+// Background sweeper prevents the Map from growing forever — without it,
+// every unique user added a permanent entry for the process lifetime.
 const aiSummaryLastCall = new Map(); // userId → ms timestamp
 const AI_SUMMARY_COOLDOWN_MS = 5 * 60 * 1000;
 const AI_SUMMARY_CACHE_TTL_SEC = 300;
+
+if (!process.env.VITEST && process.env.NODE_ENV !== 'test') {
+    const sweepTimer = setInterval(() => {
+        const cutoff = Date.now() - AI_SUMMARY_COOLDOWN_MS;
+        for (const [userId, t] of aiSummaryLastCall) {
+            if (t < cutoff) aiSummaryLastCall.delete(userId);
+        }
+    }, AI_SUMMARY_COOLDOWN_MS);
+    if (sweepTimer.unref) sweepTimer.unref();
+}
 
 function loadDataSources(userId, userLogin) {
     // Each pluck wraps BOTH the cache read AND the live aggregation in
