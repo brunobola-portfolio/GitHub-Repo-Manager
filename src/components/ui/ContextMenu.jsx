@@ -288,7 +288,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 						return (
 							<div
 								key={`hdr-${index}`}
-								className="text-[10.5px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-[0.08em] px-2.5 pt-1.5 pb-1 select-none"
+								className="text-[10.5px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.08em] px-2.5 pt-1.5 pb-1 select-none"
 								role="presentation"
 							>
 								{item.label}

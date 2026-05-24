@@ -108,15 +108,15 @@ export function InboxPanel({ onSelectItem }) {
     return (
         <section
             aria-labelledby="inbox-panel-title"
-            className="rounded-2xl bg-white dark:bg-slate-900 border border-zinc-200 dark:border-slate-700"
+            className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
         >
-            <header className="px-5 pt-5 pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
+            <header className="px-5 pt-5 pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
                             <Inbox className="w-3 h-3" /> Live inbox
                         </div>
-                        <h3 id="inbox-panel-title" className="mt-1 text-base font-bold text-zinc-900 dark:text-zinc-100 ds-font-display">
+                        <h3 id="inbox-panel-title" className="mt-1 text-base font-bold text-slate-900 dark:text-slate-100 ds-font-display">
                             What needs your eyes
                         </h3>
                     </div>
@@ -132,7 +132,7 @@ export function InboxPanel({ onSelectItem }) {
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-[200px_1fr]">
-                <nav aria-label="Inbox sections" className="px-3 py-3 space-y-1 border-r border-zinc-200/60 dark:border-zinc-800/60">
+                <nav aria-label="Inbox sections" className="px-3 py-3 space-y-1 border-r border-slate-200/60 dark:border-slate-800/60">
                     {sections.map(s => (
                         <InboxSection
                             key={s.key}
@@ -158,7 +158,7 @@ export function InboxPanel({ onSelectItem }) {
                     {loading && (
                         <ul aria-busy="true" aria-label="Loading inbox">
                             {[0, 1, 2, 3].map(i => (
-                                <li key={i} className="border-b border-zinc-200/60 dark:border-zinc-800/60 px-4 py-3">
+                                <li key={i} className="border-b border-slate-200/60 dark:border-slate-800/60 px-4 py-3">
                                     <div className="flex items-center gap-3">
                                         <Skeleton className="w-4 h-4" />
                                         <div className="flex-1 space-y-1.5">
@@ -172,7 +172,7 @@ export function InboxPanel({ onSelectItem }) {
                     )}
                     {error && <p className="p-6 text-sm text-red-600">{String(error.message || error)}</p>}
                     {!loading && !error && active && active.items.length === 0 && (
-                        <p className="p-6 text-sm text-zinc-500">{EMPTY_STATE_COPY[active.key] ?? 'Nothing here.'}</p>
+                        <p className="p-6 text-sm text-slate-500">{EMPTY_STATE_COPY[active.key] ?? 'Nothing here.'}</p>
                     )}
                     {!loading && !error && active && active.items.length > 0 && (
                         <ul>

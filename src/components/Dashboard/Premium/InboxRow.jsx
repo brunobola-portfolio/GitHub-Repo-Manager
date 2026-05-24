@@ -9,14 +9,14 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
     const ago = formatRelativeTime(item.since);
 
     return (
-        <li className="border-b border-zinc-200/60 dark:border-zinc-800/60">
-            <div className="group flex items-center gap-3 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-colors">
+        <li className="border-b border-slate-200/60 dark:border-slate-800/60">
+            <div className="group flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
                 <button
                     type="button"
                     aria-label={expanded ? `Collapse: ${item.title}` : `Expand: ${item.title}`}
                     aria-expanded={expanded}
                     onClick={() => setExpanded(v => !v)}
-                    className="shrink-0 text-zinc-400 hover:text-indigo-500"
+                    className="shrink-0 text-slate-400 hover:text-indigo-500"
                     style={{
                         transition: `transform var(--ds-duration-row-expand) var(--ds-ease-row-expand)`,
                         transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
@@ -31,14 +31,14 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                     className="flex-1 min-w-0 text-left"
                 >
                     <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                        <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                             {item.title}
                         </span>
-                        <span className="px-1.5 py-0.5 text-[10px] uppercase tracking-wider rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                        <span className="px-1.5 py-0.5 text-[10px] uppercase tracking-wider rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                             {KIND_LABEL[item.kind] ?? item.kind}
                         </span>
                     </div>
-                    <div className="mt-0.5 flex items-center gap-3 text-[11px] text-zinc-500 dark:text-zinc-400">
+                    <div className="mt-0.5 flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
                         <span className="ds-font-mono">{item.repoFullName}</span>
                         {item.authorLogin && <span>by {item.authorLogin}</span>}
                         {ago && <span>{ago}</span>}
@@ -50,7 +50,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                         type="button"
                         aria-label="Snooze item"
                         onClick={() => onSnooze?.(item)}
-                        className="p-1.5 rounded-md text-zinc-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus-visible:opacity-100"
+                        className="p-1.5 rounded-md text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus-visible:opacity-100"
                     >
                         <Clock className="w-3.5 h-3.5" />
                     </button>
@@ -58,7 +58,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                         type="button"
                         aria-label="Archive item"
                         onClick={() => onArchive?.(item.id)}
-                        className="p-1.5 rounded-md text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus-visible:opacity-100"
+                        className="p-1.5 rounded-md text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus-visible:opacity-100"
                     >
                         <Archive className="w-3.5 h-3.5" />
                     </button>
@@ -66,12 +66,12 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
             </div>
 
             {expanded && (
-                <div className="px-12 pb-3 text-xs text-zinc-600 dark:text-zinc-300">
+                <div className="px-12 pb-3 text-xs text-slate-600 dark:text-slate-300">
                     {narrative?.text && (
                         <p className="italic text-indigo-700 dark:text-indigo-300">{narrative.text}</p>
                     )}
                     {!narrative?.text && (
-                        <p className="text-zinc-500">No AI summary available for this item.</p>
+                        <p className="text-slate-500">No AI summary available for this item.</p>
                     )}
                 </div>
             )}
