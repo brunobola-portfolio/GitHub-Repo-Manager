@@ -123,10 +123,13 @@ describe('composeInbox — stale_drafts section', () => {
     });
 });
 
-describe('composeInbox — dependabot_ready section', () => {
-    it('returns empty array when no dependabot PRs (placeholder until repos-security wired)', () => {
-        const result = composeInbox(USER_ID, { userLogin: LOGIN, sections: ['dependabot_ready'] });
-        expect(result.sections[0].items).toEqual([]);
+describe('composeInbox — unknown sections', () => {
+    it('silently drops sections that are not in SECTION_KEYS (e.g. retired phase-2 stubs)', () => {
+        // failing_ci and dependabot_ready were removed when Phase 2/3 backing data
+        // was not implemented — this guards against accidentally re-introducing them
+        // without the corresponding builder.
+        const result = composeInbox(USER_ID, { userLogin: LOGIN, sections: ['dependabot_ready', 'failing_ci'] });
+        expect(result.sections).toEqual([]);
     });
 });
 

@@ -9,20 +9,22 @@
 import db from '../db.js';
 import { listMyPendingReviews, listMyOpenPRs, listMyOpenIssues, listStalePRs } from './event-aggregations.js';
 
-const SECTION_KEYS = ['needs_review', 'my_prs', 'mentions', 'failing_ci', 'stale_drafts', 'dependabot_ready'];
+// `failing_ci` and `dependabot_ready` were stubs reserved for Premium Dashboard
+// Phase 2 (DORA) and Phase 3 (Scorecards). They were enumerated alongside live
+// sections, which surfaced two permanently-empty rows to every user. Removed
+// from the live shape until the backing data wiring lands; re-add to both
+// SECTION_KEYS and SECTION_BUILDERS together when implementing.
+const SECTION_KEYS = ['needs_review', 'my_prs', 'mentions', 'stale_drafts'];
 
 const SECTION_LABEL = {
     needs_review: 'Needs my review',
     my_prs: 'My open PRs',
     mentions: 'Mentions',
-    failing_ci: 'Failing CI',
     stale_drafts: 'Stale drafts',
-    dependabot_ready: 'Dependabot ready',
 };
 
 // Priority order — earlier sections "win" ownership of a duplicated id.
-// Failing CI is most urgent → it claims the PR if also in my_prs.
-const SECTION_PRIORITY = ['failing_ci', 'needs_review', 'stale_drafts', 'mentions', 'dependabot_ready', 'my_prs'];
+const SECTION_PRIORITY = ['needs_review', 'stale_drafts', 'mentions', 'my_prs'];
 
 function prKey(repoFullName, prNumber) {
     return `pr:${repoFullName}#${prNumber}`;
@@ -89,8 +91,6 @@ const SECTION_BUILDERS = {
             ageDays: r.ageDays,
         }));
     },
-    // Phase 2 (DORA card): wire gh-cache CI status for items in my_prs
-    failing_ci: () => [],
     stale_drafts: (_userId, opts) => {
         const rows = listStalePRs({ staleAfterDays: 7 });
         return rows
@@ -107,8 +107,6 @@ const SECTION_BUILDERS = {
                 ageDays: r.ageDays,
             }));
     },
-    // Phase 3 (scorecard): wire repos-security.listDependabotReadyToMerge
-    dependabot_ready: () => [],
 };
 
 /**

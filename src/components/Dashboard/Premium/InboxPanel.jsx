@@ -20,9 +20,7 @@ const EMPTY_STATE_COPY = {
     needs_review: "No PRs waiting for your review — you're all caught up.",
     my_prs: 'No open PRs of yours right now.',
     mentions: 'No issues assigned to you. Nice and quiet.',
-    failing_ci: 'No failing CI runs on your PRs.',
     stale_drafts: 'No stale drafts. You ship clean.',
-    dependabot_ready: 'No Dependabot PRs ready to merge.',
 };
 
 export function InboxPanel({ onSelectItem }) {

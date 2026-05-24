@@ -3,7 +3,7 @@ import { fetchInbox, archiveInboxItem, restoreInboxItem, snoozeInboxItem } from 
 import { useOptimisticMutation } from './useOptimisticMutation';
 import { useToast } from './useToast';
 
-const ALL_SECTIONS = ['needs_review', 'my_prs', 'mentions', 'failing_ci', 'stale_drafts', 'dependabot_ready'];
+const ALL_SECTIONS = ['needs_review', 'my_prs', 'mentions', 'stale_drafts'];
 
 function removeFromSections(state, itemId) {
     return {
