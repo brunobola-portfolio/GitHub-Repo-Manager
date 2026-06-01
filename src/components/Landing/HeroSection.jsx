@@ -60,7 +60,7 @@ export function HeroSection({ onSignIn }) {
           <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
         </span>
         <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 tracking-wide ds-font-display">
-          Open-source · AI-powered · v2.5
+          Open-source · AI-powered · v{import.meta.env.VITE_APP_VERSION}
         </span>
       </motion.div>
 

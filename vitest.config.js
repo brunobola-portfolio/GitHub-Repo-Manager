@@ -1,9 +1,17 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+import { createRequire } from 'module'
 import path from 'path'
+
+// Mirror vite.config.js so import.meta.env.VITE_APP_VERSION resolves under the
+// test runner (separate config) and components reading it don't render "vundefined".
+const pkg = createRequire(import.meta.url)('./package.json')
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version),
+  },
   test: {
     globals: true,
     environment: 'happy-dom',

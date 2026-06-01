@@ -1,7 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { createRequire } from 'module'
 import path from 'path'
+
+// Single source of truth for the displayed app version: package.json. Injected
+// as import.meta.env.VITE_APP_VERSION so UI (e.g. the Landing hero badge) never
+// drifts from the real release the way a hardcoded literal did.
+const pkg = createRequire(import.meta.url)('./package.json')
 
 // Opt-in bundle analyzer — enabled via `npm run build:analyze`
 // (sets ANALYZE=true). Pure observer: does not alter chunk contents.
@@ -18,6 +24,9 @@ const analyzePlugins = process.env.ANALYZE === 'true'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), ...analyzePlugins],
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version),
+  },
   server: {
     proxy: {
       // Proxy API requests to the Express backend
