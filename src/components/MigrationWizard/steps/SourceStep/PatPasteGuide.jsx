@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ExternalLink, Copy, Check, Terminal, Eye, EyeOff, Lock, AlertTriangle, Bookmark, Loader2 } from 'lucide-react'
+import { ExternalLink, Copy, Check, Terminal, Eye, EyeOff, Lock, AlertTriangle, Bookmark } from 'lucide-react'
+import { SpinnerIcon } from '../../../ui/Spinner'
 import { buildPatSettingsUrl, buildAzCliCommand, classifyProvider } from '../../../../utils/azureProvider'
 import { Input } from '../../../ui/form'
 import { getCsrfToken } from '../../../../utils/api'
@@ -216,7 +217,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
                   className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
                 >
                   {savingPat
-                    ? <><Loader2 className="w-3 h-3 animate-spin" /> A guardar</>
+                    ? <><SpinnerIcon className="w-3 h-3" /> A guardar</>
                     : <><Bookmark className="w-3 h-3" /> Guardar</>}
                 </button>
               </div>

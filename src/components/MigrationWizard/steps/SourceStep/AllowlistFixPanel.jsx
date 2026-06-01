@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ShieldAlert, ShieldCheck, Copy, Check, Terminal, Sparkles, Loader2, Lock } from 'lucide-react'
+import { ShieldAlert, ShieldCheck, Copy, Check, Terminal, Sparkles, Lock } from 'lucide-react'
+import { SpinnerIcon } from '../../../ui/Spinner'
 import { getCsrfToken } from '../../../../utils/api'
 
 /**
@@ -141,7 +142,7 @@ function AdminQuickFix({ host, adding, error, onAdd, envLine, envCopied, onEnvCo
           className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors shadow-sm"
         >
           {adding
-            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> A adicionar…</>
+            ? <><SpinnerIcon className="w-3.5 h-3.5" /> A adicionar…</>
             : <><ShieldCheck className="w-3.5 h-3.5" /> Adicionar {host}</>}
         </button>
       </div>
