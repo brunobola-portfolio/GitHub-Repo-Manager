@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
+import { isAbort } from '../utils/errorClassification'
 import {
     safeParseJson,
     fetchWithRetry,
@@ -123,7 +124,7 @@ export function useRepos(user) {
             setPage(pageToLoad)
             setPerPage(per)
         } catch (e) {
-            if (e.name === 'AbortError') return
+            if (isAbort(e)) return
             const info = getErrorInfo(e)
             setError(info.message)
             setErrorInfo(info)

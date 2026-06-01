@@ -60,6 +60,28 @@ export function isExtensionError(error, source) {
 }
 
 /**
+ * Single source of truth for "was this an aborted/cancelled request?".
+ *
+ * Returns true when either the AbortController's signal is already aborted OR
+ * the caught error is an AbortError (by name, or by a stack/message mention for
+ * the cases where the name is lost across a wrapper). Pass the signal too when
+ * you have it — a fetch can reject for an unrelated reason on the same tick the
+ * signal aborts, and the bare error name alone would miss that.
+ *
+ * Replaces ~25 hand-rolled `e?.name === 'AbortError'` variants that each risked
+ * forgetting the `signal.aborted` half.
+ *
+ * @param {unknown} error  the caught error (may be null when only checking a signal)
+ * @param {{ aborted?: boolean }} [signal]  an AbortSignal, if available
+ */
+export function isAbort(error, signal) {
+    if (signal?.aborted) return true
+    if (error?.name === 'AbortError') return true
+    const message = error instanceof Error ? error.message : (typeof error === 'string' ? error : '')
+    return /\bAbortError\b/.test(message)
+}
+
+/**
  * Returns true for errors that are noisy but not actionable — extension noise,
  * ResizeObserver loops, opaque cross-origin script errors, aborted fetches.
  * Use to silently drop telemetry without reporting or surfacing in the UI.
@@ -70,6 +92,6 @@ export function shouldIgnoreClientError(error, source) {
     const message = error instanceof Error ? error.message : (typeof error === 'string' ? error : '')
     if (matchesAny(message, BENIGN_NOISE_PATTERNS)) return true
     // StrictMode and route changes routinely abort in-flight fetches.
-    if (error?.name === 'AbortError' || /\bAbortError\b/.test(message)) return true
+    if (isAbort(error)) return true
     return false
 }

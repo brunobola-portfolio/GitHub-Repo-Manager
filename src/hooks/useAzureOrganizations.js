@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { getCsrfToken } from '../utils/api'
+import { isAbort } from '../utils/errorClassification'
 
 const MAX_CONCURRENT = 5
 
@@ -65,7 +66,7 @@ export function useAzureOrganizations() {
     } catch (e) {
       clearTimeout(timeoutId)
       if (!mountedRef.current) return []
-      if (e.name === 'AbortError') {
+      if (isAbort(e)) {
         // Auto-retry once on timeout
         if (retryCount < 1 && mountedRef.current) {
           // eslint-disable-next-line react-hooks/immutability -- intentional self-recursion via useCallback (deps: [])

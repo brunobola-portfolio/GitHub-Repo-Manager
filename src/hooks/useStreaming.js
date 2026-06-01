@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { getCsrfToken } from '../utils/api'
+import { isAbort } from '../utils/errorClassification'
 
 const DEFAULT_MAX_RETRIES = 3
 const DEFAULT_INITIAL_DELAY = 1000
@@ -99,7 +100,7 @@ export function useStreaming({ maxRetries = DEFAULT_MAX_RETRIES } = {}) {
             setRetryCount(0)
             return finalResult
         } catch (err) {
-            if (err.name === 'AbortError') {
+            if (isAbort(err)) {
                 setIsStreaming(false)
                 return null
             }

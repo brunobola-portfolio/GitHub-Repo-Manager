@@ -8,6 +8,7 @@
 
 import { trackBreadcrumb } from '../lib/observability'
 import { enqueueMutation, replayQueue } from './retry-queue'
+import { isAbort } from './errorClassification'
 
 // ============ Error Types ============
 
@@ -215,7 +216,7 @@ export function categorizeError(status, error = null, url = null) {
         return new ApiError(ErrorType.OFFLINE)
     }
 
-    if (error?.name === 'AbortError') {
+    if (isAbort(error)) {
         return new ApiError(ErrorType.TIMEOUT)
     }
 
@@ -271,7 +272,7 @@ function isNetworkErrorInstance(err) {
             || err.type === ErrorType.BACKEND_UNAVAILABLE
             || err.type === ErrorType.TIMEOUT
     }
-    if (err?.name === 'AbortError') return true
+    if (isAbort(err)) return true
     if (err?.name === 'TypeError' && typeof err?.message === 'string' && err.message.includes('fetch')) return true
     return false
 }
