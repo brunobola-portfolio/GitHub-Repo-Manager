@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { isAbort } from '../utils/errorClassification'
 
 /**
  * Standardised loader for RepoDetail tabs (Branches, Releases, Issues, PRs,
@@ -42,7 +43,7 @@ export function useTabData(loader, deps) {
             const result = await loaderRef.current(controller.signal)
             if (!controller.signal.aborted) setData(result)
         } catch (e) {
-            if (controller.signal.aborted || e?.name === 'AbortError') return
+            if (isAbort(e, controller.signal)) return
             setError(e)
         } finally {
             if (!controller.signal.aborted) setLoading(false)
@@ -60,7 +61,7 @@ export function useTabData(loader, deps) {
                 const result = await loaderRef.current(controller.signal)
                 if (!controller.signal.aborted) setData(result)
             } catch (e) {
-                if (controller.signal.aborted || e?.name === 'AbortError') return
+                if (isAbort(e, controller.signal)) return
                 setError(e)
             } finally {
                 if (!controller.signal.aborted) setLoading(false)

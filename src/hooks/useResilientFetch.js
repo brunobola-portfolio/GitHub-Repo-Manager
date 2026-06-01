@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { API_BASE_URL } from '../config'
+import { isAbort } from '../utils/errorClassification'
 
 /**
  * useResilientFetch — fetch a JSON endpoint and surface stale-cache state.
@@ -69,7 +70,7 @@ export function useResilientFetch(path, { skip = false } = {}) {
             setStale(cacheState === 'stale')
             setFetchedAt(fetchedAtHeader || null)
         } catch (err) {
-            if (err.name === 'AbortError') return
+            if (isAbort(err, controller.signal)) return
             setError(err)
         } finally {
             if (!controller.signal.aborted) setLoading(false)

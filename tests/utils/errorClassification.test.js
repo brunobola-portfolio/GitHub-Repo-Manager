@@ -1,5 +1,37 @@
 import { describe, it, expect } from 'vitest'
-import { isExtensionError, shouldIgnoreClientError } from '@/utils/errorClassification'
+import { isExtensionError, shouldIgnoreClientError, isAbort } from '@/utils/errorClassification'
+
+describe('isAbort', () => {
+    it('flags an AbortError by name', () => {
+        const err = new Error('The user aborted a request.')
+        err.name = 'AbortError'
+        expect(isAbort(err)).toBe(true)
+    })
+
+    it('flags an aborted signal even when there is no error', () => {
+        expect(isAbort(null, { aborted: true })).toBe(true)
+        expect(isAbort(undefined, { aborted: true })).toBe(true)
+    })
+
+    it('flags when an unrelated error coincides with an aborted signal', () => {
+        // A fetch can reject for another reason on the same tick the signal
+        // aborts — the signal half is what catches it.
+        expect(isAbort(new TypeError('Failed to fetch'), { aborted: true })).toBe(true)
+    })
+
+    it('flags an AbortError mentioned in the message (name lost across a wrapper)', () => {
+        expect(isAbort(new Error('wrapped: AbortError: aborted'))).toBe(true)
+    })
+
+    it('does NOT flag a genuine error with a non-aborted signal', () => {
+        expect(isAbort(new Error('real failure'), { aborted: false })).toBe(false)
+    })
+
+    it('does NOT flag null/undefined with no signal', () => {
+        expect(isAbort(null)).toBe(false)
+        expect(isAbort(undefined, undefined)).toBe(false)
+    })
+})
 
 describe('isExtensionError', () => {
     it('flags errors whose stack lives in chrome-extension://', () => {
