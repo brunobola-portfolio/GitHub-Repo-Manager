@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Sparkles } from 'lucide-react';
 import { usePromptStudio } from '../../hooks/usePromptStudio';
+import { useDangerAction } from '../../hooks/useDangerAction';
 import { PageHeader } from '../ui/PageHeader';
 import { Button } from '../ui/Button';
 import { PromptLibrary } from './PromptLibrary';
@@ -16,6 +17,18 @@ export function PromptStudioPage({ currentTier = 'free' }) {
     const studio = usePromptStudio();
     const [view, setView] = useState({ mode: 'library' }); // {mode:'library'} | {mode:'editor', initial?}
     const [saving, setSaving] = useState(false);
+
+    // Destructive confirm via the shared premium ConfirmModal (dark-mode aware)
+    // instead of the native window.confirm dialog. The id varies per call, so
+    // it's stashed in a ref the (always-fresh) onConfirm closure reads.
+    const pendingDeleteId = useRef(null);
+    const deletePreset = useDangerAction({
+        title: 'Delete preset?',
+        message: 'This permanently deletes this prompt preset and cannot be undone.',
+        variant: 'danger',
+        confirmText: 'Delete',
+        onConfirm: () => studio.remove(pendingDeleteId.current),
+    });
 
     async function handleEdit(id) {
         const full = await studio.getPreset(id);
@@ -44,11 +57,8 @@ export function PromptStudioPage({ currentTier = 'free' }) {
     }
 
     async function handleDelete(id) {
-        // Project-wide pattern for ad-hoc confirms; switch to ConfirmModal if
-        // we expand the surface beyond this page.
-         
-        if (!window.confirm('Delete this preset?')) return;
-        await studio.remove(id);
+        pendingDeleteId.current = id;
+        await deletePreset.run();
     }
 
     async function handleSetDefault(id) {
