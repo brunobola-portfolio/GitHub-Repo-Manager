@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  KeyRound, Plus, Trash2, Cloud, Server, Eye, EyeOff, Loader2,
+  KeyRound, Plus, Trash2, Cloud, Server, Eye, EyeOff,
   CheckCircle2, XCircle, ExternalLink, Sparkles, AlertCircle,
 } from 'lucide-react'
+import { SpinnerIcon } from '../ui/Spinner'
 import { getCsrfToken } from '../../utils/api'
 import { classifyProvider, providerToneClasses, PROVIDERS, buildPatSettingsUrl } from '../../utils/azureProvider'
 
@@ -225,7 +226,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
             title="Validar o token contra o servidor"
           >
             {testing
-              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ? <SpinnerIcon className="w-3.5 h-3.5" />
               : 'Testar'}
           </button>
           {patUrl && (
@@ -469,7 +470,7 @@ function AddCredentialForm({ onClose, onCreated }) {
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
         >
           {submitting
-            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> A guardar…</>
+            ? <><SpinnerIcon className="w-3.5 h-3.5" /> A guardar…</>
             : <><CheckCircle2 className="w-3.5 h-3.5" /> Guardar token encriptado</>}
         </button>
       </div>
