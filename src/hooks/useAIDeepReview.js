@@ -1,50 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { fetchJSON, fetchJSONWithTimeout } from '../utils/aiFetch';
 // NOTE: Mock data is loaded via dynamic `await import()` inside the inlined
 // env-checked branches below — do NOT add a top-level static import. Static
 // imports of `__mocks__/*` pin the entire mock module in production bundles
 // even when the runtime branch is dead-code-eliminated. See
 // feedback_vite_inline_dce_guards in project memory.
-
-async function fetchJSON(url, options = {}) {
-    const res = await fetch(url, {
-        credentials: 'include',
-        ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            ...(options.headers || {}),
-        },
-    });
-    if (res.status === 204) return null;
-    let body = null;
-    try { body = await res.json(); } catch { /* empty */ }
-    if (!res.ok) {
-        const err = new Error(body?.error || `HTTP ${res.status}`);
-        err.status = res.status;
-        err.code = body?.code;
-        throw err;
-    }
-    return body;
-}
-
-// Wrap fetchJSON with a client-side timeout that synthesises a typed error
-// so consumers can map it through formatUserError without relying on the
-// server to report it.
-async function fetchJSONWithTimeout(url, options = {}, timeoutMs = 90_000) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-        return await fetchJSON(url, { ...options, signal: controller.signal });
-    } catch (err) {
-        if (err?.name === 'AbortError') {
-            const timeoutErr = new Error(`AI Deep Review timed out after ${Math.round(timeoutMs / 1000)}s.`);
-            timeoutErr.code = 'AI_TIMEOUT';
-            throw timeoutErr;
-        }
-        throw err;
-    } finally {
-        clearTimeout(timeoutId);
-    }
-}
 
 /**
  * Drives the AI Deep Review surface for one PR.
@@ -121,7 +81,7 @@ export function useAIDeepReview(owner, repo, prNumber) {
             const result = await fetchJSONWithTimeout(
                 `/api/ai/deep-review/${owner}/${repo}/${prNumber}${qs}`,
                 { method: 'POST', body: JSON.stringify({}) },
-                90_000,
+                { timeoutMs: 90_000, label: 'AI Deep Review' },
             );
             if (!aliveRef.current) return;
             setDraftId(result.draftId);
