@@ -23,11 +23,12 @@ const BUDGETS = {
     // vendor-diff (highlight.js common-langs + @git-diff-view, shim replaces all→common)
     // was 332 KB gzip before P5 code-split; now capped at 86 KB (-74%).
     'vendor-diff-': { maxGzipKB: 86, name: 'vendor-diff' },
-    // vendor-charts-* (recharts v3 + d3 transitively): 108 KB gzip.
-    // recharts v2 was tested in v4.1.1 — neutral on gzip (v2 inlines d3
-    // where v3 wraps via victory-vendor; same compressed payload). Real
-    // fix requires Rolldown advancedChunks (currently conflicts with
-    // manualChunks in 1.0.0-rc.15) or a library swap (visx / nivo).
+    // vendor-charts-* (recharts v3 + d3 transitively): ~102 KB gzip today.
+    // Ceiling carries ~8 KB headroom so the single biggest payload offender
+    // can't grow unnoticed. Real reduction requires Rolldown advancedChunks
+    // (currently conflicts with manualChunks in 1.0.0-rc.15) or a library
+    // swap (visx / nivo).
+    'vendor-charts-': { maxGzipKB: 110, name: 'vendor-charts' },
 }
 
 const dist = 'dist/assets'
