@@ -14,7 +14,18 @@ export async function startTransition(cb) {
   if (typeof document === 'undefined') return cb()
   if (typeof document.startViewTransition === 'function') {
     const t = document.startViewTransition(() => cb())
-    await t.finished
+    // `ready` rejects with AbortError "Transition was skipped" when a newer
+    // transition interrupts this one (rapid navigation / the double nav on
+    // initial load). That's expected, not a failure — handle it so it never
+    // surfaces as an "Uncaught (in promise)" rejection.
+    t.ready?.catch(() => {})
+    try {
+      await t.finished
+    } catch (err) {
+      // `finished` only rejects if the update callback throws; let genuine
+      // errors propagate, but swallow the abort noise from a skipped transition.
+      if (err?.name !== 'AbortError') throw err
+    }
     return
   }
   return cb()
