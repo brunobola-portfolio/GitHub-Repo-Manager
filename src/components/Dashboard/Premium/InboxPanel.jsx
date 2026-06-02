@@ -97,6 +97,10 @@ export function InboxPanel({ onSelectItem }) {
                 e.target.tagName === 'SELECT' ||
                 e.target.isContentEditable
             ) return;
+            // The inbox sits on the dashboard behind any modal/drawer. Don't let
+            // the destructive 'e' (archive) / 's' (snooze) fire while a dialog is
+            // open — the user isn't looking at the inbox and never meant to act on it.
+            if (document.querySelector('[role="dialog"], [aria-modal="true"]')) return;
             if (!active?.items?.length) return;
             if (e.key === 'e') archive(active.items[0].id).catch(e => toast.errorFromException(e, { fallbackTitle: 'Archive failed' }));
             else if (e.key === 's') setSnoozingItem(active.items[0]);
