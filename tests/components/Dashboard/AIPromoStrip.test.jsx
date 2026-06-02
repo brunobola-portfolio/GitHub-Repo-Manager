@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import { onAppEvent, APP_EVENTS } from '../../../src/utils/appEvents'
 
 beforeEach(() => {
     localStorage.clear()
@@ -39,11 +40,11 @@ describe('AIPromoStrip', () => {
 
     it('dispatches ai-assistant:open event when Open Assistant is clicked', () => {
         const listener = vi.fn()
-        window.addEventListener('ai-assistant:open', listener)
+        const off = onAppEvent(APP_EVENTS.AI_ASSISTANT_OPEN, listener)
         render(<AIPromoStrip {...baseProps} />)
         fireEvent.click(screen.getByRole('button', { name: /open assistant/i }))
         expect(listener).toHaveBeenCalled()
-        window.removeEventListener('ai-assistant:open', listener)
+        off()
     })
 
     it('calls onOpenInsights with first repo when Get Insights is clicked', () => {

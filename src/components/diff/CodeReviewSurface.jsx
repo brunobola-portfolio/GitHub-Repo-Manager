@@ -4,6 +4,7 @@ import { Spinner } from '../ui/Spinner'
 import { CodeReviewToolbar } from './CodeReviewToolbar'
 import { MobileFileTreeSheet } from './MobileFileTreeSheet'
 import { useDiffPreferences } from '../../hooks/useDiffPreferences'
+import { onAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 // DiffRenderer pulls in @git-diff-view/react + shiki (~303 KB gzipped).
 // Match the lazy-loading already used by DiffPanel.jsx so the chunk only
@@ -76,8 +77,7 @@ export function CodeReviewSurface({
             const filename = e?.detail?.filename
             if (filename) handleFileSelect(filename)
         }
-        window.addEventListener('code-review-surface:select-file', onSelect)
-        return () => window.removeEventListener('code-review-surface:select-file', onSelect)
+        return onAppEvent(APP_EVENTS.CODE_REVIEW_SELECT_FILE, onSelect)
     }, [handleFileSelect])
 
     const activeFile = sortedFiles[activeIndex] ?? null

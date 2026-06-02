@@ -20,6 +20,7 @@ import { Drawer } from './ui/Drawer'
 import { MobileQuickActionsFab } from './MobileQuickActionsFab'
 import { Tooltip } from './ui/Tooltip'
 import { Spinner } from './ui/Spinner'
+import { emitAppEvent, APP_EVENTS } from '../utils/appEvents'
 
 export function Header({
     user,
@@ -396,7 +397,7 @@ export function Header({
             onImport={onImport}
             onOpenDevToolkit={onOpenDevToolkit}
             onOpenCommandPalette={onOpenCommandPalette}
-            onOpenAIAssistant={() => window.dispatchEvent(new CustomEvent('ai-assistant:open'))}
+            onOpenAIAssistant={() => emitAppEvent(APP_EVENTS.AI_ASSISTANT_OPEN)}
           />
           </>
         )}

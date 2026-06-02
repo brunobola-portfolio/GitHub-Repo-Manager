@@ -12,6 +12,7 @@ import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 import { useFocusedRow } from '../../hooks/useFocusedRow'
 import { issueActions } from '../../actions/issueActions'
+import { emitAppEvent, onAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 export function IssuesTab({ api, repoFullName }) {
     const { toast } = useToast()
@@ -31,7 +32,7 @@ export function IssuesTab({ api, repoFullName }) {
     // command palette's "Issue actions" group can enumerate them.
     useEffect(() => {
         if (!Array.isArray(issues)) return
-        window.dispatchEvent(new CustomEvent('repo-detail:issues-loaded', { detail: issues }))
+        emitAppEvent(APP_EVENTS.REPO_DETAIL_ISSUES_LOADED, issues)
     }, [issues])
 
     const [showCreate, setShowCreate] = useState(false)
@@ -63,12 +64,11 @@ export function IssuesTab({ api, repoFullName }) {
             const issue = ev.detail
             if (issue && typeof issue.number === 'number') setSelectedIssue(issue)
         }
-        window.addEventListener('repo-detail:select-issue', onSelect)
-        window.addEventListener('repo-detail:plan-issue', onPlan)
-        return () => {
-            window.removeEventListener('repo-detail:select-issue', onSelect)
-            window.removeEventListener('repo-detail:plan-issue', onPlan)
-        }
+        const offs = [
+            onAppEvent(APP_EVENTS.REPO_DETAIL_SELECT_ISSUE, onSelect),
+            onAppEvent(APP_EVENTS.REPO_DETAIL_PLAN_ISSUE, onPlan),
+        ]
+        return () => offs.forEach(off => off())
     }, [])
 
     const handleCreate = async () => {

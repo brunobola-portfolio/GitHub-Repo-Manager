@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { QuotaExceededState } from '@/components/ui/QuotaExceededState'
+import { onAppEvent, APP_EVENTS } from '../../../src/utils/appEvents'
 
 describe('QuotaExceededState', () => {
   beforeEach(() => {
@@ -33,12 +34,12 @@ describe('QuotaExceededState', () => {
     // a CustomEvent that App.jsx routes via setActiveView('pricing'), which
     // preserves browser history + works with deep-linkable URLs.
     const fn = vi.fn()
-    window.addEventListener('app:navigate-pricing', fn)
+    const off = onAppEvent(APP_EVENTS.NAVIGATE_PRICING, fn)
     render(<QuotaExceededState feature="x" currentTier="free" upgradeTo="pro" />)
     fireEvent.click(screen.getByRole('button', { name: /upgrade to pro/i }))
     expect(fn).toHaveBeenCalledTimes(1)
     expect(fn.mock.calls[0][0].detail).toEqual({ focus: 'pro' })
-    window.removeEventListener('app:navigate-pricing', fn)
+    off()
   })
 
   it('omits upgrade CTA when upgradeTo is null', () => {
@@ -48,10 +49,10 @@ describe('QuotaExceededState', () => {
 
   it('shows BYOK link that dispatches the open-settings event', () => {
     const fn = vi.fn()
-    window.addEventListener('app:open-settings', fn)
+    const off = onAppEvent(APP_EVENTS.OPEN_SETTINGS, fn)
     render(<QuotaExceededState feature="x" />)
     fireEvent.click(screen.getByRole('button', { name: /configure your own ai key/i }))
     expect(fn).toHaveBeenCalled()
-    window.removeEventListener('app:open-settings', fn)
+    off()
   })
 })

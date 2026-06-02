@@ -1,15 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { AINotHealthyBanner } from '../../../src/components/AI/AINotHealthyBanner'
+import { onAppEvent, APP_EVENTS } from '../../../src/utils/appEvents'
 
 describe('AINotHealthyBanner', () => {
     let listener
+    let off
     beforeEach(() => {
         listener = vi.fn()
-        window.addEventListener('app:open-settings', listener)
+        off = onAppEvent(APP_EVENTS.OPEN_SETTINGS, listener)
     })
     afterEach(() => {
-        window.removeEventListener('app:open-settings', listener)
+        off()
     })
 
     it('defaults to "AI key rejected" with the Verify CTA', () => {

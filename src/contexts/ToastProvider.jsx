@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { ToastContext } from './contexts'
 import { trackBreadcrumb } from '../lib/observability'
 import { formatUserError } from '../utils/errors'
+import { emitAppEvent, onAppEvent, APP_EVENTS } from '../utils/appEvents'
 
 function dispatchAction(action, ctx = {}) {
     if (!action) return
@@ -13,13 +14,13 @@ function dispatchAction(action, ctx = {}) {
             window.location.href = '/api/auth/github'
             break
         case 'open-settings':
-            window.dispatchEvent(new CustomEvent('app:open-settings', { detail: { tab: action.settingsTab } }))
+            emitAppEvent(APP_EVENTS.OPEN_SETTINGS, { tab: action.settingsTab })
             break
         case 'open-pricing':
             window.location.hash = '#pricing'
             break
         case 'open-quota':
-            window.dispatchEvent(new CustomEvent('app:show-quota-exceeded', { detail: ctx.detail || {} }))
+            emitAppEvent(APP_EVENTS.SHOW_QUOTA_EXCEEDED, ctx.detail || {})
             break
         default:
             ctx.onRetry?.()
@@ -184,8 +185,7 @@ export function ToastProvider({ children }) {
                 ),
             })
         }
-        window.addEventListener('app:unhandled-error', handler)
-        return () => window.removeEventListener('app:unhandled-error', handler)
+        return onAppEvent(APP_EVENTS.UNHANDLED_ERROR, handler)
     }, [addToastRecord])
 
     const value = useMemo(

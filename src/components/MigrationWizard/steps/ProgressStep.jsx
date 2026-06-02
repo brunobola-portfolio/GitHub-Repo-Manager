@@ -9,6 +9,7 @@ import { useElapsedSeconds } from '../../../hooks/useElapsedSeconds'
 import { formatDurationSeconds } from '../../../utils/format'
 import { migrationApi } from '../../../api/migration'
 import { SectionSpinner, SpinnerIcon } from '../../ui/Spinner'
+import { emitAppEvent, APP_EVENTS } from '../../../utils/appEvents'
 
 const STATUS_COLORS = {
   pending: 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400',
@@ -234,9 +235,7 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
         // wants to react — the AI Assistant uses this to offer a follow-up
         // polish flow without blocking the wizard's auto-advance.
         if (type === 'plan-complete' && Array.isArray(data.createdRepos) && data.createdRepos.length > 0) {
-          window.dispatchEvent(new CustomEvent('migration:complete', {
-            detail: { createdRepos: data.createdRepos, planId: data.planId },
-          }))
+          emitAppEvent(APP_EVENTS.MIGRATION_COMPLETE, { createdRepos: data.createdRepos, planId: data.planId })
         }
       }
     }

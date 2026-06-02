@@ -18,6 +18,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
 import { listTeams } from './api/teams'
 import { onSessionExpired, onRateLimit, resetSessionExpired, fetchWithRetry, safeParseJson } from './utils/api'
+import { emitAppEvent, onAppEvent, APP_EVENTS } from './utils/appEvents'
 import { trackBreadcrumb, mark } from './lib/observability'
 import { SelectionProvider } from './contexts/SelectionContext'
 import { ModalProvider } from './contexts/ModalContext'
@@ -145,8 +146,7 @@ function AppContent() {
   const quotaCardRef = useFocusTrap(!!quotaModal, () => setQuotaModal(null))
   useEffect(() => {
     const handler = (e) => setQuotaModal(e.detail || {})
-    window.addEventListener('app:show-quota-exceeded', handler)
-    return () => window.removeEventListener('app:show-quota-exceeded', handler)
+    return onAppEvent(APP_EVENTS.SHOW_QUOTA_EXCEEDED, handler)
   }, [])
 
   // Onboarding tour: shown on first visit (after a brief delay so the
@@ -167,8 +167,7 @@ function AppContent() {
   }, [onboarding.shouldShow])
   useEffect(() => {
     const handler = () => setTourOpen(true)
-    window.addEventListener('app:show-onboarding', handler)
-    return () => window.removeEventListener('app:show-onboarding', handler)
+    return onAppEvent(APP_EVENTS.SHOW_ONBOARDING, handler)
   }, [])
   const { toasts, toast, dismissToast } = useToast()
   const { modalStates, openModal, openModalWithData, closeModal, getModalData } = useModal()
@@ -288,8 +287,7 @@ function AppContent() {
       setReviewingPR(null)
       setActiveView('dashboard')
     }
-    window.addEventListener('app:navigate-dashboard', handleNavigateDashboard)
-    return () => window.removeEventListener('app:navigate-dashboard', handleNavigateDashboard)
+    return onAppEvent(APP_EVENTS.NAVIGATE_DASHBOARD, handleNavigateDashboard)
   }, [setActiveView])
 
   // Hash-based deep-link routing. The app is state-routed via setActiveView,
@@ -399,12 +397,11 @@ function AppContent() {
       setReviewingPR(null)
       setActiveView('pricing')
     }
-    window.addEventListener('app:navigate-pricing', handler)
-    window.addEventListener('app:open-billing', handler)
-    return () => {
-      window.removeEventListener('app:navigate-pricing', handler)
-      window.removeEventListener('app:open-billing', handler)
-    }
+    const offs = [
+      onAppEvent(APP_EVENTS.NAVIGATE_PRICING, handler),
+      onAppEvent(APP_EVENTS.OPEN_BILLING, handler),
+    ]
+    return () => offs.forEach(off => off())
   }, [setActiveView])
 
   // Open Settings modal to a specific tab via custom event (e.g. from CommandPalette AI commands)
@@ -412,8 +409,7 @@ function AppContent() {
     const handler = (ev) => {
       openModalWithData('showSettings', { initialTab: ev.detail?.tab ?? 'general' })
     }
-    window.addEventListener('app:open-settings', handler)
-    return () => window.removeEventListener('app:open-settings', handler)
+    return onAppEvent(APP_EVENTS.OPEN_SETTINGS, handler)
   }, [openModalWithData])
 
   // Hoist PR / branch / issue lists from RepoDetail tabs so the command
@@ -425,14 +421,12 @@ function AppContent() {
     const onPrs = (ev) => setRepoDetailEntities(s => ({ ...s, prs: Array.isArray(ev.detail) ? ev.detail : [] }))
     const onBranches = (ev) => setRepoDetailEntities(s => ({ ...s, branches: Array.isArray(ev.detail) ? ev.detail : [] }))
     const onIssues = (ev) => setRepoDetailEntities(s => ({ ...s, issues: Array.isArray(ev.detail) ? ev.detail : [] }))
-    window.addEventListener('repo-detail:prs-loaded', onPrs)
-    window.addEventListener('repo-detail:branches-loaded', onBranches)
-    window.addEventListener('repo-detail:issues-loaded', onIssues)
-    return () => {
-      window.removeEventListener('repo-detail:prs-loaded', onPrs)
-      window.removeEventListener('repo-detail:branches-loaded', onBranches)
-      window.removeEventListener('repo-detail:issues-loaded', onIssues)
-    }
+    const offs = [
+      onAppEvent(APP_EVENTS.REPO_DETAIL_PRS_LOADED, onPrs),
+      onAppEvent(APP_EVENTS.REPO_DETAIL_BRANCHES_LOADED, onBranches),
+      onAppEvent(APP_EVENTS.REPO_DETAIL_ISSUES_LOADED, onIssues),
+    ]
+    return () => offs.forEach(off => off())
   }, [])
 
   // Memo-derived prop for the palette: empty entity lists when the user is
@@ -452,7 +446,7 @@ function AppContent() {
     const onOpenPRDetail = (ev) => {
       const pr = ev.detail
       if (!pr) return
-      window.dispatchEvent(new CustomEvent('repo-detail:select-pr', { detail: pr }))
+      emitAppEvent(APP_EVENTS.REPO_DETAIL_SELECT_PR, pr)
     }
     const onStartReview = (ev) => {
       const pr = ev.detail
@@ -472,25 +466,21 @@ function AppContent() {
     const onOpenIssueDetail = (ev) => {
       const detail = ev.detail
       if (!detail?.issue) return
-      window.dispatchEvent(new CustomEvent('repo-detail:select-issue', { detail }))
+      emitAppEvent(APP_EVENTS.REPO_DETAIL_SELECT_ISSUE, detail)
     }
     const onPlanIssueWithAI = (ev) => {
       const issue = ev.detail
       if (!issue) return
-      window.dispatchEvent(new CustomEvent('repo-detail:plan-issue', { detail: issue }))
+      emitAppEvent(APP_EVENTS.REPO_DETAIL_PLAN_ISSUE, issue)
     }
-    window.addEventListener('app:open-pr-detail', onOpenPRDetail)
-    window.addEventListener('app:start-pr-review', onStartReview)
-    window.addEventListener('app:generate-pr-description', onGenerateDescription)
-    window.addEventListener('app:open-issue-detail', onOpenIssueDetail)
-    window.addEventListener('app:plan-issue-with-ai', onPlanIssueWithAI)
-    return () => {
-      window.removeEventListener('app:open-pr-detail', onOpenPRDetail)
-      window.removeEventListener('app:start-pr-review', onStartReview)
-      window.removeEventListener('app:generate-pr-description', onGenerateDescription)
-      window.removeEventListener('app:open-issue-detail', onOpenIssueDetail)
-      window.removeEventListener('app:plan-issue-with-ai', onPlanIssueWithAI)
-    }
+    const offs = [
+      onAppEvent(APP_EVENTS.OPEN_PR_DETAIL, onOpenPRDetail),
+      onAppEvent(APP_EVENTS.START_PR_REVIEW, onStartReview),
+      onAppEvent(APP_EVENTS.GENERATE_PR_DESCRIPTION, onGenerateDescription),
+      onAppEvent(APP_EVENTS.OPEN_ISSUE_DETAIL, onOpenIssueDetail),
+      onAppEvent(APP_EVENTS.PLAN_ISSUE_WITH_AI, onPlanIssueWithAI),
+    ]
+    return () => offs.forEach(off => off())
   }, [selectedRepoDetail, openModalWithData, setActiveView])
 
   // Open the per-repo Settings tab via the AI assistant action.
@@ -509,8 +499,7 @@ function AppContent() {
       const target = found || { name: repoName, full_name: fullName, owner: { login: owner } }
       handleOpenRepo(target, { tab: ev.detail?.tab || 'settings' })
     }
-    window.addEventListener('app:open-repo-settings', handler)
-    return () => window.removeEventListener('app:open-repo-settings', handler)
+    return onAppEvent(APP_EVENTS.OPEN_REPO_SETTINGS, handler)
   }, [repos, orgRepos, handleOpenRepo])
 
   // Mirror of the settings listener for the "Open Details" context-menu
@@ -532,8 +521,7 @@ function AppContent() {
       const target = found || { name: repoName, full_name: fullName, owner: { login: owner } }
       handleOpenRepo(target, { tab: ev.detail?.tab || 'overview' })
     }
-    window.addEventListener('app:open-repo-detail', handler)
-    return () => window.removeEventListener('app:open-repo-detail', handler)
+    return onAppEvent(APP_EVENTS.OPEN_REPO_DETAIL, handler)
   }, [repos, orgRepos, handleOpenRepo])
 
   // ── Post-migration AI Polish bridge ─────────────────────────────────────
@@ -547,19 +535,16 @@ function AppContent() {
       if (createdRepos.length === 0) return
       const fullNames = createdRepos.map(r => r.full_name).filter(Boolean)
       if (fullNames.length === 0) return
-      window.dispatchEvent(new CustomEvent('ai-assistant:inject-message', {
-        detail: {
-          text: `Acabei de detectar ${fullNames.length} repo${fullNames.length === 1 ? '' : 's'} migrado${fullNames.length === 1 ? '' : 's'}. Queres que sugira descriptions com AI para todos de uma vez?`,
-          actions: [{
-            type: 'open_ai_polish',
-            label: `✨ Polir ${fullNames.length} repo${fullNames.length === 1 ? '' : 's'}`,
-            payload: { repoFullNames: fullNames },
-          }],
-        },
-      }))
+      emitAppEvent(APP_EVENTS.AI_ASSISTANT_INJECT_MESSAGE, {
+        text: `Acabei de detectar ${fullNames.length} repo${fullNames.length === 1 ? '' : 's'} migrado${fullNames.length === 1 ? '' : 's'}. Queres que sugira descriptions com AI para todos de uma vez?`,
+        actions: [{
+          type: 'open_ai_polish',
+          label: `✨ Polir ${fullNames.length} repo${fullNames.length === 1 ? '' : 's'}`,
+          payload: { repoFullNames: fullNames },
+        }],
+      })
     }
-    window.addEventListener('migration:complete', onMigrationComplete)
-    return () => window.removeEventListener('migration:complete', onMigrationComplete)
+    return onAppEvent(APP_EVENTS.MIGRATION_COMPLETE, onMigrationComplete)
   }, [])
 
   // Action-driven entry: clicking the Assistant action validates the payload
@@ -571,8 +556,7 @@ function AppContent() {
       if (fullNames.length === 0) return
       openModalWithData('aiPolish', { repoFullNames: fullNames })
     }
-    window.addEventListener('app:open-ai-polish', handler)
-    return () => window.removeEventListener('app:open-ai-polish', handler)
+    return onAppEvent(APP_EVENTS.OPEN_AI_POLISH, handler)
   }, [openModalWithData])
 
   // Cross-surface "open this PR/issue inside the app" plumbing. The Work
@@ -600,12 +584,11 @@ function AppContent() {
     }
     const onPR = open('pr')
     const onIssue = open('issue')
-    window.addEventListener('app:open-repo-pr', onPR)
-    window.addEventListener('app:open-repo-issue', onIssue)
-    return () => {
-      window.removeEventListener('app:open-repo-pr', onPR)
-      window.removeEventListener('app:open-repo-issue', onIssue)
-    }
+    const offs = [
+      onAppEvent(APP_EVENTS.OPEN_REPO_PR, onPR),
+      onAppEvent(APP_EVENTS.OPEN_REPO_ISSUE, onIssue),
+    ]
+    return () => offs.forEach(off => off())
   }, [repos, orgRepos, handleOpenRepo])
 
   // When the PR/Issue tab finishes loading its rows, fulfil the pending
@@ -621,19 +604,18 @@ function AppContent() {
       pendingItemRef.current = null
       if (!match) return
       if (kind === 'pr') {
-        window.dispatchEvent(new CustomEvent('repo-detail:select-pr', { detail: match }))
+        emitAppEvent(APP_EVENTS.REPO_DETAIL_SELECT_PR, match)
       } else {
-        window.dispatchEvent(new CustomEvent('repo-detail:select-issue', { detail: { issue: match } }))
+        emitAppEvent(APP_EVENTS.REPO_DETAIL_SELECT_ISSUE, { issue: match })
       }
     }
     const onPRs = fulfil('pr')
     const onIssues = fulfil('issue')
-    window.addEventListener('repo-detail:prs-loaded', onPRs)
-    window.addEventListener('repo-detail:issues-loaded', onIssues)
-    return () => {
-      window.removeEventListener('repo-detail:prs-loaded', onPRs)
-      window.removeEventListener('repo-detail:issues-loaded', onIssues)
-    }
+    const offs = [
+      onAppEvent(APP_EVENTS.REPO_DETAIL_PRS_LOADED, onPRs),
+      onAppEvent(APP_EVENTS.REPO_DETAIL_ISSUES_LOADED, onIssues),
+    ]
+    return () => offs.forEach(off => off())
   }, [])
 
   // Rate-limit toasts — one at a time, auto-dismisses after the countdown ends.

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { copyToClipboard } from '../utils/clipboard'
 import { buildActionCommands } from './buildActionCommands'
+import { emitAppEvent, APP_EVENTS } from '../utils/appEvents'
 
 /**
  * Repository action registry — single source of truth for what actions
@@ -49,9 +50,7 @@ export const repoActions = {
 		surfaces: ['contextMenu', 'quickAction', 'commandPalette'],
 		quickActionPriority: 10,
 		run: async (repo) => {
-			window.dispatchEvent(new CustomEvent('app:open-repo-detail', {
-				detail: { owner: repo.owner?.login, repo: repo.name, repoObject: repo },
-			}))
+			emitAppEvent(APP_EVENTS.OPEN_REPO_DETAIL, { owner: repo.owner?.login, repo: repo.name, repoObject: repo })
 		},
 	},
 	open_repo_settings: {
@@ -62,9 +61,7 @@ export const repoActions = {
 		intent: 'navigation',
 		surfaces: ['contextMenu', 'commandPalette'],
 		run: async (repo) => {
-			window.dispatchEvent(new CustomEvent('app:open-repo-settings', {
-				detail: { owner: repo.owner?.login, repo: repo.name },
-			}))
+			emitAppEvent(APP_EVENTS.OPEN_REPO_SETTINGS, { owner: repo.owner?.login, repo: repo.name })
 		},
 	},
 	open_on_github: {

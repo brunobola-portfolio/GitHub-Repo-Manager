@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AIErrorState } from '../../../src/components/ui/AIErrorState'
+import { onAppEvent, APP_EVENTS } from '../../../src/utils/appEvents'
 
 describe('AIErrorState', () => {
     beforeEach(() => {
@@ -30,26 +31,26 @@ describe('AIErrorState', () => {
 
     it('fires app:open-settings CustomEvent for configure-typed actions', async () => {
         const handler = vi.fn()
-        window.addEventListener('app:open-settings', handler)
+        const off = onAppEvent(APP_EVENTS.OPEN_SETTINGS, handler)
         try {
             render(<AIErrorState error={{ code: 'INVALID_API_KEY' }} />)
             await userEvent.click(screen.getByRole('button', { name: /update key/i }))
             expect(handler).toHaveBeenCalledTimes(1)
             expect(handler.mock.calls[0][0].detail).toEqual({ tab: 'ai' })
         } finally {
-            window.removeEventListener('app:open-settings', handler)
+            off()
         }
     })
 
     it('fires app:open-billing CustomEvent for upgrade-typed actions', async () => {
         const handler = vi.fn()
-        window.addEventListener('app:open-billing', handler)
+        const off = onAppEvent(APP_EVENTS.OPEN_BILLING, handler)
         try {
             render(<AIErrorState error={{ code: 'QUOTA_EXCEEDED' }} />)
             await userEvent.click(screen.getByRole('button', { name: /see options/i }))
             expect(handler).toHaveBeenCalledTimes(1)
         } finally {
-            window.removeEventListener('app:open-billing', handler)
+            off()
         }
     })
 

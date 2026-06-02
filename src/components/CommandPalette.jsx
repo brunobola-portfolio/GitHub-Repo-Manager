@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { isAbort } from '../utils/errorClassification'
+import { emitAppEvent, onAppEvent, APP_EVENTS } from '../utils/appEvents'
 import { Skeleton } from './ui/Skeleton'
 import { Kbd } from './ui/Kbd'
 import { searchApi } from '../api/search'
@@ -246,12 +247,11 @@ export function CommandPalette({
   useEffect(() => {
     const onFocused = () => setPrReviewFocused(true)
     const onBlurred = () => setPrReviewFocused(false)
-    window.addEventListener('pr-review:focused', onFocused)
-    window.addEventListener('pr-review:blurred', onBlurred)
-    return () => {
-      window.removeEventListener('pr-review:focused', onFocused)
-      window.removeEventListener('pr-review:blurred', onBlurred)
-    }
+    const offs = [
+      onAppEvent(APP_EVENTS.PR_REVIEW_FOCUSED, onFocused),
+      onAppEvent(APP_EVENTS.PR_REVIEW_BLURRED, onBlurred),
+    ]
+    return () => offs.forEach(off => off())
   }, [])
   const { askMode, askQuery } = parseAskMode(input)
   const displayRepos = repos.slice(0, 10)
@@ -288,11 +288,11 @@ export function CommandPalette({
     openModalWithData: repoActionCtx.openModalWithData,
     refresh: repoActionCtx.refresh,
     repoFullName: selectedRepoDetail?.full_name ?? null,
-    onSelectPR: (pr) => window.dispatchEvent(new CustomEvent('app:open-pr-detail', { detail: pr })),
-    onStartReview: (pr) => window.dispatchEvent(new CustomEvent('app:start-pr-review', { detail: pr })),
-    onGenerateDescription: (pr) => window.dispatchEvent(new CustomEvent('app:generate-pr-description', { detail: pr })),
-    onSelectIssue: (issue, opts) => window.dispatchEvent(new CustomEvent('app:open-issue-detail', { detail: { issue, ...opts } })),
-    onPlanWithAI: (issue) => window.dispatchEvent(new CustomEvent('app:plan-issue-with-ai', { detail: issue })),
+    onSelectPR: (pr) => emitAppEvent(APP_EVENTS.OPEN_PR_DETAIL, pr),
+    onStartReview: (pr) => emitAppEvent(APP_EVENTS.START_PR_REVIEW, pr),
+    onGenerateDescription: (pr) => emitAppEvent(APP_EVENTS.GENERATE_PR_DESCRIPTION, pr),
+    onSelectIssue: (issue, opts) => emitAppEvent(APP_EVENTS.OPEN_ISSUE_DETAIL, { issue, ...opts }),
+    onPlanWithAI: (issue) => emitAppEvent(APP_EVENTS.PLAN_ISSUE_WITH_AI, issue),
   }
   const prCommands = activeView === 'repo-detail' && Array.isArray(selectedRepoDetailEntities?.prs)
     ? buildPRActionCommands(selectedRepoDetailEntities.prs.slice(0, 3), entitiesCtx)
@@ -319,9 +319,7 @@ export function CommandPalette({
           }
           break
         case 'event':
-          window.dispatchEvent(new CustomEvent(item.event, {
-            detail: item.tab ?? item.detail ?? null,
-          }))
+          emitAppEvent(item.event, item.tab ?? item.detail ?? null)
           break
         case 'run':
           if (typeof item.run === 'function') {
@@ -346,10 +344,10 @@ export function CommandPalette({
         case 'unmute': result = await trackedHook.unmute(item.repoFullName); break
         case 'untrack': result = await trackedHook.untrack(item.repoFullName); break
         case 'refresh-discovery': result = await trackedHook.discover(); break
-        case 'refresh-board': window.dispatchEvent(new CustomEvent('workboard:refresh-all')); break
-        case 'toggle-muted': window.dispatchEvent(new CustomEvent('workboard:toggle-muted')); break
-        case 'clear-filters': window.dispatchEvent(new CustomEvent('workboard:clear-filters')); break
-        case 'ai-open-settings': window.dispatchEvent(new CustomEvent('app:open-settings', { detail: { tab: 'work-board' } })); break
+        case 'refresh-board': emitAppEvent(APP_EVENTS.WORKBOARD_REFRESH_ALL); break
+        case 'toggle-muted': emitAppEvent(APP_EVENTS.WORKBOARD_TOGGLE_MUTED); break
+        case 'clear-filters': emitAppEvent(APP_EVENTS.WORKBOARD_CLEAR_FILTERS); break
+        case 'ai-open-settings': emitAppEvent(APP_EVENTS.OPEN_SETTINGS, { tab: 'work-board' }); break
         default: return
       }
       if (result?.operation_id) {
@@ -883,7 +881,7 @@ export function CommandPalette({
                     key={item.id}
                     value={item.label}
                     onSelect={() => {
-                      window.dispatchEvent(new CustomEvent(item.event, { detail: item.detail }))
+                      emitAppEvent(item.event, item.detail)
                       onClose()
                     }}
                     className={ITEM_CLASSES}

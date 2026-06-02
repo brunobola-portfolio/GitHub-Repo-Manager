@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { AIQuotaExhaustedCard } from '../../../src/components/ui/AIQuotaExhaustedCard'
+import { onAppEvent, APP_EVENTS } from '../../../src/utils/appEvents'
 
 describe('AIQuotaExhaustedCard', () => {
     it('renders the headline, used/limit and reset countdown', () => {
@@ -22,7 +23,7 @@ describe('AIQuotaExhaustedCard', () => {
 
     it('renders Upgrade CTA for free tier and dispatches navigate-pricing', () => {
         const fn = vi.fn()
-        window.addEventListener('app:navigate-pricing', fn)
+        const off = onAppEvent(APP_EVENTS.NAVIGATE_PRICING, fn)
         render(
             <AIQuotaExhaustedCard
                 feature="ai_queries"
@@ -37,7 +38,7 @@ describe('AIQuotaExhaustedCard', () => {
         fireEvent.click(cta)
         expect(fn).toHaveBeenCalledTimes(1)
         expect(fn.mock.calls[0][0].detail).toEqual({ focus: 'pro' })
-        window.removeEventListener('app:navigate-pricing', fn)
+        off()
     })
 
     it('omits Upgrade CTA when upgradeTo is null (pro/enterprise)', () => {
@@ -61,12 +62,12 @@ describe('AIQuotaExhaustedCard', () => {
 
     it('renders Manage usage link that opens Settings on the usage tab', () => {
         const fn = vi.fn()
-        window.addEventListener('app:open-settings', fn)
+        const off = onAppEvent(APP_EVENTS.OPEN_SETTINGS, fn)
         render(<AIQuotaExhaustedCard feature="ai_queries" upgradeTo="pro" currentTier="free" />)
         fireEvent.click(screen.getByRole('button', { name: /manage usage/i }))
         expect(fn).toHaveBeenCalled()
         expect(fn.mock.calls[0][0].detail).toEqual({ tab: 'usage' })
-        window.removeEventListener('app:open-settings', fn)
+        off()
     })
 
     it('shows Upgrade CTA for enterprise but omits the Pro-only benefits list', () => {

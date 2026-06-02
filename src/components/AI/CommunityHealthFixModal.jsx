@@ -8,6 +8,7 @@ import { AIErrorState } from '../ui/AIErrorState'
 import { Input, Textarea } from '../ui/form'
 import { RowIconBadge } from '../ui/RowIconBadge'
 import { getCsrfToken } from '../../utils/api'
+import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 /**
  * State machine: idle | generating | preview | committing | committed | error
@@ -152,7 +153,7 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 						onClick={(e) => {
 							e.preventDefault()
 							onClose?.()
-							window.dispatchEvent(new CustomEvent('app:open-settings', { detail: { section: 'ai' } }))
+							emitAppEvent(APP_EVENTS.OPEN_SETTINGS, { section: 'ai' })
 						}}
 					>
 						<SettingsIcon className="w-4 h-4" /> Configure AI

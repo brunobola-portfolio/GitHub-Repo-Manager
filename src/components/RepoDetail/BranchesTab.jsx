@@ -14,6 +14,7 @@ import { BranchHygieneCard } from './BranchHygieneCard'
 import { branchActions } from '../../actions/branchActions'
 import { BranchProtectionPanel } from './BranchProtectionPanel'
 import { formatRelativeTime } from '../../utils/format'
+import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 // Computed once at module load — avoids calling Date.now() during render.
 const STALE_MS = 90 * 24 * 60 * 60 * 1000
@@ -34,7 +35,7 @@ export function BranchesTab({ api, repoData }) {
     // command palette's "Branch actions" group can enumerate them.
     useEffect(() => {
         if (!Array.isArray(branches)) return
-        window.dispatchEvent(new CustomEvent('repo-detail:branches-loaded', { detail: branches }))
+        emitAppEvent(APP_EVENTS.REPO_DETAIL_BRANCHES_LOADED, branches)
     }, [branches])
 
     const [showCreate, setShowCreate] = useState(false)

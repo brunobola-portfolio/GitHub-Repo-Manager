@@ -9,6 +9,8 @@
  *   Only keys listed here are forwarded; unknown keys are dropped silently
  *   so a hallucinated `description: '...'` never reaches the dispatcher.
  */
+import { emitAppEvent, APP_EVENTS } from './appEvents'
+
 export const AI_ACTIONS = {
   open_migration_wizard: {
     modal: 'showMigrationWizard',
@@ -31,7 +33,7 @@ export const AI_ACTIONS = {
     defaultLabel: 'Open Settings',
   },
   open_repo_settings: {
-    event: 'app:open-repo-settings',
+    event: APP_EVENTS.OPEN_REPO_SETTINGS,
     defaultLabel: 'Open Repo Settings',
     payloadShape: {
       owner: (v) => typeof v === 'string' && /^[A-Za-z0-9-]{1,39}$/.test(v),
@@ -39,7 +41,7 @@ export const AI_ACTIONS = {
     },
   },
   open_ai_polish: {
-    event: 'app:open-ai-polish',
+    event: APP_EVENTS.OPEN_AI_POLISH,
     defaultLabel: 'Polish repos with AI',
     payloadShape: {
       repoFullNames: (v) => Array.isArray(v)
@@ -98,8 +100,8 @@ export function dispatchAction(action, { openModal } = {}) {
     openModal(entry.modal)
     return true
   }
-  if (entry.event && typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent(entry.event, { detail: validated.payload || {} }))
+  if (entry.event) {
+    emitAppEvent(entry.event, validated.payload || {})
     return true
   }
   return false

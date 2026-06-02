@@ -52,6 +52,7 @@ const DORATab = lazy(() => import('./tabs/DORATab').then(m => ({ default: m.DORA
 import { SectionSpinner } from '../ui/Spinner'
 import { ManageReposButton } from './ManageReposButton'
 import { MOCK_MODE } from '../../config'
+import { emitAppEvent, onAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 // ---------------------------------------------------------------------------
 // Tab definitions
@@ -221,7 +222,7 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
         const onGoTab = (e) => {
             if (typeof e.detail === 'string') setActiveTab(e.detail)
         }
-        const onRegen = () => window.dispatchEvent(new CustomEvent('workboard:ai-regenerate-internal'))
+        const onRegen = () => emitAppEvent(APP_EVENTS.WORKBOARD_AI_REGENERATE_INTERNAL)
         const onSave = () => {
             // Lightweight first pass: nudge user to the filter-bar PresetDropdown.
             // A deeper integration would open the dropdown + focus its input; we
@@ -230,14 +231,12 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
                 window.alert('Use the Presets dropdown in the filter bar to save the current filters as a preset.')
             }
         }
-        window.addEventListener('workboard:go-tab', onGoTab)
-        window.addEventListener('workboard:regenerate-ai', onRegen)
-        window.addEventListener('workboard:save-preset', onSave)
-        return () => {
-            window.removeEventListener('workboard:go-tab', onGoTab)
-            window.removeEventListener('workboard:regenerate-ai', onRegen)
-            window.removeEventListener('workboard:save-preset', onSave)
-        }
+        const offs = [
+            onAppEvent(APP_EVENTS.WORKBOARD_GO_TAB, onGoTab),
+            onAppEvent(APP_EVENTS.WORKBOARD_REGENERATE_AI, onRegen),
+            onAppEvent(APP_EVENTS.WORKBOARD_SAVE_PRESET, onSave),
+        ]
+        return () => offs.forEach(off => off())
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 

@@ -6,6 +6,7 @@ import { CheckCircle2, XCircle } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { fetchWithRetry } from '../../utils/api'
 import { formatUserError } from '../../utils/errors'
+import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 export function LicenseActivationModal({ isOpen, onClose }) {
   const [keyInput, setKeyInput] = useState('')
@@ -31,7 +32,7 @@ export function LicenseActivationModal({ isOpen, onClose }) {
       setResult(data)
       // Notify the rest of the app (useLicense + TierContext consumers) so
       // Pro-gated surfaces unlock immediately, no refresh needed.
-      window.dispatchEvent(new CustomEvent('app:license-changed'))
+      emitAppEvent(APP_EVENTS.LICENSE_CHANGED)
     } catch (err) {
       // ApiError on non-2xx — surface the server message verbatim. Network
       // blips fall through to formatUserError so the catch path never leaks

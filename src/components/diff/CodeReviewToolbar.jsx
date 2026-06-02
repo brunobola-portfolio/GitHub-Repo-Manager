@@ -1,5 +1,6 @@
 import { Columns2, AlignLeft, ChevronLeft, ChevronRight, ChevronsDown, ChevronsUp, Files, PanelRightClose, PanelRightOpen, WrapText } from 'lucide-react'
 import { Tooltip } from '../ui/Tooltip'
+import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 export function CodeReviewToolbar({
     filesCount, additions, deletions, reviewedCount,
@@ -71,7 +72,7 @@ export function CodeReviewToolbar({
 
                 <button
                     type="button"
-                    onClick={() => window.dispatchEvent(new CustomEvent('diff-collapser:expand-all'))}
+                    onClick={() => emitAppEvent(APP_EVENTS.DIFF_EXPAND_ALL)}
                     className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
                     title="Expand all collapsed diffs"
                     aria-label="Expand all"
@@ -80,7 +81,7 @@ export function CodeReviewToolbar({
                 </button>
                 <button
                     type="button"
-                    onClick={() => window.dispatchEvent(new CustomEvent('diff-collapser:collapse-all'))}
+                    onClick={() => emitAppEvent(APP_EVENTS.DIFF_COLLAPSE_ALL)}
                     className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
                     title="Collapse all large diffs"
                     aria-label="Collapse all"

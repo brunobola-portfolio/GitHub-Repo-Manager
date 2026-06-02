@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { AIAssistant } from '../../src/components/AIAssistant'
 import { ModalProvider } from '../../src/contexts/ModalContext.jsx'
 import { useModal } from '../../src/hooks/useModal'
+import { emitAppEvent, APP_EVENTS } from '../../src/utils/appEvents'
 
 function renderAssistant({ askAI, checkAIStatus = async () => ({ configured: true }) } = {}) {
     return render(
@@ -267,16 +268,14 @@ describe('AIAssistant', () => {
       // Dispatch the inject event before opening — it should both pop the
       // panel open AND append the message.
       await act(async () => {
-        window.dispatchEvent(new CustomEvent('ai-assistant:inject-message', {
-          detail: {
-            text: 'Migrei 3 repos. Polimos?',
-            actions: [{
-              type: 'open_ai_polish',
-              label: 'Polish 3 repos',
-              payload: { repoFullNames: ['acme/r1', 'acme/r2', 'acme/r3'] },
-            }],
-          },
-        }))
+        emitAppEvent(APP_EVENTS.AI_ASSISTANT_INJECT_MESSAGE, {
+          text: 'Migrei 3 repos. Polimos?',
+          actions: [{
+            type: 'open_ai_polish',
+            label: 'Polish 3 repos',
+            payload: { repoFullNames: ['acme/r1', 'acme/r2', 'acme/r3'] },
+          }],
+        })
       })
 
       // Panel auto-opened
@@ -294,17 +293,15 @@ describe('AIAssistant', () => {
       renderAssistant({ askAI: vi.fn() })
 
       await act(async () => {
-        window.dispatchEvent(new CustomEvent('ai-assistant:inject-message', {
-          detail: {
-            text: 'Hello there',
-            actions: [
-              // Unknown action type — must be dropped
-              { type: 'delete_universe', label: 'NukeAll' },
-              // Valid action — must render
-              { type: 'open_ai_polish', label: 'KeepThis', payload: { repoFullNames: ['acme/api'] } },
-            ],
-          },
-        }))
+        emitAppEvent(APP_EVENTS.AI_ASSISTANT_INJECT_MESSAGE, {
+          text: 'Hello there',
+          actions: [
+            // Unknown action type — must be dropped
+            { type: 'delete_universe', label: 'NukeAll' },
+            // Valid action — must render
+            { type: 'open_ai_polish', label: 'KeepThis', payload: { repoFullNames: ['acme/api'] } },
+          ],
+        })
       })
 
       await screen.findByText('Hello there')
@@ -316,12 +313,8 @@ describe('AIAssistant', () => {
       renderAssistant({ askAI: vi.fn() })
 
       await act(async () => {
-        window.dispatchEvent(new CustomEvent('ai-assistant:inject-message', {
-          detail: { text: '   ', actions: [] },
-        }))
-        window.dispatchEvent(new CustomEvent('ai-assistant:inject-message', {
-          detail: { actions: [] },
-        }))
+        emitAppEvent(APP_EVENTS.AI_ASSISTANT_INJECT_MESSAGE, { text: '   ', actions: [] })
+        emitAppEvent(APP_EVENTS.AI_ASSISTANT_INJECT_MESSAGE, { actions: [] })
       })
 
       // Panel should NOT have auto-opened — no valid messages were injected.

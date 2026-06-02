@@ -24,6 +24,7 @@
  */
 import { AlertTriangle, RotateCcw, Home, X } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 export function ViewErrorFallback({
   viewName = 'this view',
@@ -44,9 +45,7 @@ export function ViewErrorFallback({
       return
     }
     try {
-      const event = new CustomEvent('app:navigate-dashboard')
-      const handled = window.dispatchEvent(event)
-      if (!handled) window.location.assign('/')
+      emitAppEvent(APP_EVENTS.NAVIGATE_DASHBOARD)
     } catch {
       window.location.assign('/')
     }

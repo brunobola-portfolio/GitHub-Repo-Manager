@@ -14,6 +14,7 @@ import { prActions } from '../../actions/prActions'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 import { useFocusedRow } from '../../hooks/useFocusedRow'
+import { emitAppEvent, onAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
     const { toast } = useToast()
@@ -32,7 +33,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
     // Keeps the tab decoupled from App state — App.jsx listens once.
     useEffect(() => {
         if (!Array.isArray(pulls)) return
-        window.dispatchEvent(new CustomEvent('repo-detail:prs-loaded', { detail: pulls }))
+        emitAppEvent(APP_EVENTS.REPO_DETAIL_PRS_LOADED, pulls)
     }, [pulls])
 
     const [showCreate, setShowCreate] = useState(false)
@@ -61,8 +62,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
             const pr = ev.detail
             if (pr && typeof pr.number === 'number') setSelectedPR(pr)
         }
-        window.addEventListener('repo-detail:select-pr', handler)
-        return () => window.removeEventListener('repo-detail:select-pr', handler)
+        return onAppEvent(APP_EVENTS.REPO_DETAIL_SELECT_PR, handler)
     }, [])
 
     // Load branches when create form opens

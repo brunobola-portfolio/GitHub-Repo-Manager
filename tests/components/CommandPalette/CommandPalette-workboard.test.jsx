@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { onAppEvent, APP_EVENTS } from '../../../src/utils/appEvents'
 
 const mockHook = {
     repos: [
@@ -96,11 +97,11 @@ describe('CommandPalette — Work Board commands', () => {
 
     it('selecting Refresh Work Board dispatches workboard:refresh-all event', () => {
         const listener = vi.fn()
-        window.addEventListener('workboard:refresh-all', listener)
+        const off = onAppEvent(APP_EVENTS.WORKBOARD_REFRESH_ALL, listener)
         render(<CommandPalette {...baseProps} />)
         fireEvent.click(screen.getByText(/Refresh Work Board/i))
         expect(listener).toHaveBeenCalled()
-        window.removeEventListener('workboard:refresh-all', listener)
+        off()
     })
 
     it('selecting a mutation surfaces an undo toast when operation_id is present', async () => {

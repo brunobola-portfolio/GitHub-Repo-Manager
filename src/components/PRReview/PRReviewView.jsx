@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useCallback, useRef, useState } from 'react'
 import { useRepoDetail } from '../../hooks/useRepoDetail'
+import { emitAppEvent, onAppEvent, APP_EVENTS } from '../../utils/appEvents'
 import { useReviewState } from './hooks/useReviewState'
 import { useReviewData } from './hooks/useReviewData'
 import { useReviewAI, heuristicRisk, sortFilesByRisk } from './hooks/useReviewAI'
@@ -81,12 +82,11 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   useEffect(() => {
     const onOpen = () => setComposerOpen(true)
     const onClose = () => setComposerOpen(false)
-    window.addEventListener('pr-review:composer-open', onOpen)
-    window.addEventListener('pr-review:composer-close', onClose)
-    return () => {
-      window.removeEventListener('pr-review:composer-open', onOpen)
-      window.removeEventListener('pr-review:composer-close', onClose)
-    }
+    const offs = [
+      onAppEvent(APP_EVENTS.PR_REVIEW_COMPOSER_OPEN, onOpen),
+      onAppEvent(APP_EVENTS.PR_REVIEW_COMPOSER_CLOSE, onClose),
+    ]
+    return () => offs.forEach(off => off())
   }, [])
 
   // Stamp original indices on the AI comments we hand to DiffPanel so child
@@ -149,8 +149,8 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   // commands (Approve, Request changes, Mark viewed, ...) appear in
   // cmd+k while the user is here. Loose coupling via window events.
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent('pr-review:focused'))
-    return () => window.dispatchEvent(new CustomEvent('pr-review:blurred'))
+    emitAppEvent(APP_EVENTS.PR_REVIEW_FOCUSED)
+    return () => emitAppEvent(APP_EVENTS.PR_REVIEW_BLURRED)
   }, [])
 
   // Dispatch AI summary when it arrives
@@ -279,20 +279,15 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     const onToggleTree = () => dispatch({ type: 'TOGGLE_FILE_TREE' })
     const onShowHelp = () => setHelpOpen(true)
 
-    window.addEventListener('pr-review:toggle-reviewed', onToggleReviewed)
-    window.addEventListener('pr-review:approve', onApprove)
-    window.addEventListener('pr-review:request-changes', onRequestChanges)
-    window.addEventListener('pr-review:comment', onComment)
-    window.addEventListener('pr-review:toggle-tree', onToggleTree)
-    window.addEventListener('pr-review:show-help', onShowHelp)
-    return () => {
-      window.removeEventListener('pr-review:toggle-reviewed', onToggleReviewed)
-      window.removeEventListener('pr-review:approve', onApprove)
-      window.removeEventListener('pr-review:request-changes', onRequestChanges)
-      window.removeEventListener('pr-review:comment', onComment)
-      window.removeEventListener('pr-review:toggle-tree', onToggleTree)
-      window.removeEventListener('pr-review:show-help', onShowHelp)
-    }
+    const offs = [
+      onAppEvent(APP_EVENTS.PR_REVIEW_TOGGLE_REVIEWED, onToggleReviewed),
+      onAppEvent(APP_EVENTS.PR_REVIEW_APPROVE, onApprove),
+      onAppEvent(APP_EVENTS.PR_REVIEW_REQUEST_CHANGES, onRequestChanges),
+      onAppEvent(APP_EVENTS.PR_REVIEW_COMMENT, onComment),
+      onAppEvent(APP_EVENTS.PR_REVIEW_TOGGLE_TREE, onToggleTree),
+      onAppEvent(APP_EVENTS.PR_REVIEW_SHOW_HELP, onShowHelp),
+    ]
+    return () => offs.forEach(off => off())
   }, [state.activeFile, handleSubmitReview, dispatch])
 
   // Loading state

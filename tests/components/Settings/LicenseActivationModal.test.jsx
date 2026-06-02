@@ -9,6 +9,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { LicenseActivationModal } from '../../../src/components/Settings/LicenseActivationModal'
+import { onAppEvent, APP_EVENTS } from '../../../src/utils/appEvents'
 
 // fetchWithRetry is a thin wrapper over fetch — replace it so we don't
 // pull in the CSRF + retry pipeline for unit tests.
@@ -21,17 +22,15 @@ beforeEach(() => {
     fetchWithRetry.mockReset()
 })
 
-const dispatchSpy = vi.fn()
-const originalDispatch = window.dispatchEvent
+// Capture the app-event the modal fires on success via the emitter.
+let licenseChangedCount = 0
+let offLicenseChanged
 beforeEach(() => {
-    dispatchSpy.mockReset()
-    window.dispatchEvent = (...args) => {
-        dispatchSpy(...args)
-        return originalDispatch.call(window, ...args)
-    }
+    licenseChangedCount = 0
+    offLicenseChanged = onAppEvent(APP_EVENTS.LICENSE_CHANGED, () => { licenseChangedCount += 1 })
 })
 afterEach(() => {
-    window.dispatchEvent = originalDispatch
+    offLicenseChanged?.()
 })
 
 function fillKey(value = 'grm_lic_test_payload') {
@@ -92,8 +91,7 @@ describe('LicenseActivationModal', () => {
         fireEvent.click(screen.getByTestId('license-activate-button'))
 
         await waitFor(() => {
-            const events = dispatchSpy.mock.calls.map((c) => c[0]?.type)
-            expect(events).toContain('app:license-changed')
+            expect(licenseChangedCount).toBeGreaterThan(0)
         })
     })
 

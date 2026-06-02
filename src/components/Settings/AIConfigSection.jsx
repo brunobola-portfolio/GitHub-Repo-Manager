@@ -14,6 +14,7 @@ import { Button } from '../ui/Button'
 import { PanelHeader } from '../ui/PanelHeader'
 import { PROVIDER_DEFAULTS } from '../../utils/providerCapabilities'
 import { PRICING_LAST_UPDATED } from '../../utils/providerPricing'
+import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 import { FeatureState, parseApiError } from '../states'
 
@@ -545,7 +546,7 @@ export function AIConfigSection() {
                     onClick={() => {
                         try { window.localStorage.removeItem('grm.onboarding.completedAt') } catch { /* noop */ }
                         try { window.localStorage.removeItem('grm.onboarding.lastSeenAt') } catch { /* noop */ }
-                        window.dispatchEvent(new CustomEvent('app:show-onboarding'))
+                        emitAppEvent(APP_EVENTS.SHOW_ONBOARDING)
                     }}
                     className="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 underline-offset-2 hover:underline"
                 >

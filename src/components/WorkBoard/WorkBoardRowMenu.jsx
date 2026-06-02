@@ -5,6 +5,7 @@ import { clsx } from 'clsx'
 import { useTrackedRepos } from '../../hooks/useTrackedRepos'
 import { useToast } from '../../hooks/useToast'
 import { Tooltip } from '../ui/Tooltip'
+import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 /**
  * Per-row action menu for the Work Board page. Mirrors the RepoCard
@@ -69,8 +70,8 @@ export function WorkBoardRowMenu({ repoFullName, itemUrl, itemType, itemNumber }
     const handleOpenInApp = () => {
         setOpen(false)
         if (!itemType || !Number.isFinite(itemNumber)) return
-        const eventName = itemType === 'pr' ? 'app:open-repo-pr' : 'app:open-repo-issue'
-        window.dispatchEvent(new CustomEvent(eventName, { detail: { repoFullName, number: itemNumber } }))
+        const eventName = itemType === 'pr' ? APP_EVENTS.OPEN_REPO_PR : APP_EVENTS.OPEN_REPO_ISSUE
+        emitAppEvent(eventName, { repoFullName, number: itemNumber })
     }
 
     const stopBubble = (e) => {
