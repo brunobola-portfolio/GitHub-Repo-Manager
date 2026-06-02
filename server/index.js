@@ -338,6 +338,17 @@ startWebhookRetryWorker();
 // for the SQLite/Redis caveats.
 startGhOutboxWorker({ tokenLookup: createSessionTokenLookup(db) });
 
+// Recover migration plans orphaned by a previous crash/restart: any plan left
+// 'running' in the DB has no live execution loop now, so reset its in-flight
+// tasks and auto-resume (when credentials are still available) or mark it
+// 'interrupted' for a manual resume. Guarded so a recovery hiccup never blocks
+// the server from coming up.
+try {
+    migrationEngine.recoverInterruptedPlans();
+} catch (err) {
+    logger.error({ err }, 'migration-engine: startup recovery failed');
+}
+
 server.on('error', (e) => {
     if (e.code === 'EADDRINUSE') {
         logger.fatal({ port: config.port }, 'Port is already in use');
