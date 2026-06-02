@@ -11,6 +11,7 @@ import { sanitizeActions, dispatchAction } from '../utils/aiActions'
 import { detectRepoUrl } from '../utils/repoUrlDetector'
 import { AIAssistantPasteCard } from './AIAssistantPasteCard'
 import { buildWizardPayload } from '../utils/pasteDialogPayload'
+import { onAppEvent, APP_EVENTS } from '../utils/appEvents'
 
 let msgIdCounter = 0
 const nextMsgId = () => `msg-${Date.now()}-${++msgIdCounter}`
@@ -131,8 +132,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
 
     useEffect(() => {
         const handler = () => { setIsOpen(true); setIsMinimized(false) }
-        window.addEventListener('ai-assistant:open', handler)
-        return () => window.removeEventListener('ai-assistant:open', handler)
+        return onAppEvent(APP_EVENTS.AI_ASSISTANT_OPEN, handler)
     }, [])
 
     // System-level message injection — used when other parts of the app want
@@ -157,8 +157,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
             setIsOpen(true)
             setIsMinimized(false)
         }
-        window.addEventListener('ai-assistant:inject-message', onInject)
-        return () => window.removeEventListener('ai-assistant:inject-message', onInject)
+        return onAppEvent(APP_EVENTS.AI_ASSISTANT_INJECT_MESSAGE, onInject)
     }, [setMessages])
 
     useEffect(() => {

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { CodeReviewToolbar } from '../../../src/components/diff/CodeReviewToolbar'
+import { onAppEvent, APP_EVENTS } from '../../../src/utils/appEvents'
 
 const BASE_PROPS = {
     filesCount: 3,
@@ -54,25 +55,25 @@ describe('CodeReviewToolbar', () => {
 describe('CodeReviewToolbar — expand/collapse all', () => {
     it('dispatches diff-collapser:expand-all when "Expand all" is clicked', () => {
         const spy = vi.fn()
-        window.addEventListener('diff-collapser:expand-all', spy)
+        const off = onAppEvent(APP_EVENTS.DIFF_EXPAND_ALL, spy)
         try {
             render(<CodeReviewToolbar {...BASE_PROPS} />)
             fireEvent.click(screen.getByRole('button', { name: /expand all/i }))
             expect(spy).toHaveBeenCalledTimes(1)
         } finally {
-            window.removeEventListener('diff-collapser:expand-all', spy)
+            off()
         }
     })
 
     it('dispatches diff-collapser:collapse-all when "Collapse all" is clicked', () => {
         const spy = vi.fn()
-        window.addEventListener('diff-collapser:collapse-all', spy)
+        const off = onAppEvent(APP_EVENTS.DIFF_COLLAPSE_ALL, spy)
         try {
             render(<CodeReviewToolbar {...BASE_PROPS} />)
             fireEvent.click(screen.getByRole('button', { name: /collapse all/i }))
             expect(spy).toHaveBeenCalledTimes(1)
         } finally {
-            window.removeEventListener('diff-collapser:collapse-all', spy)
+            off()
         }
     })
 })

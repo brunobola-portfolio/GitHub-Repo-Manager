@@ -3,6 +3,7 @@ import { InlineComment } from './InlineComment'
 import { AIInlineComment } from '../AIDeepReview/AIInlineComment'
 import { Textarea } from '../../ui/form'
 import { Skeleton } from '../../ui/Skeleton'
+import { emitAppEvent, APP_EVENTS } from '../../../utils/appEvents'
 
 // DiffRenderer pulls in @git-diff-view/react + shiki (~1 MB / ~332 KB gzipped).
 // Lazy-load so mounting the PR Review view itself doesn't trigger that download —
@@ -147,8 +148,8 @@ export function DiffPanel({
   // review 2026-05-09 (Onda 1.2).
   useEffect(() => {
     if (commentingLine) {
-      window.dispatchEvent(new CustomEvent('pr-review:composer-open'))
-      return () => window.dispatchEvent(new CustomEvent('pr-review:composer-close'))
+      emitAppEvent(APP_EVENTS.PR_REVIEW_COMPOSER_OPEN)
+      return () => emitAppEvent(APP_EVENTS.PR_REVIEW_COMPOSER_CLOSE)
     }
   }, [commentingLine])
 

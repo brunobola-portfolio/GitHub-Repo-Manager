@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ChevronRight, FileText } from 'lucide-react'
+import { onAppEvent, APP_EVENTS } from '../../../utils/appEvents'
 
 // localStorage prefix for the per-PR/per-commit expanded-files set.
 // Final key is `${EXPANDED_STORAGE_KEY}:${storageKey}` where storageKey is
@@ -66,12 +67,11 @@ export function DiffCollapser({ filename, additions = 0, deletions = 0, storageK
     useEffect(() => {
         const onExpandAll = () => { setExpanded(true); persist(true) }
         const onCollapseAll = () => { setExpanded(false); persist(false) }
-        window.addEventListener('diff-collapser:expand-all', onExpandAll)
-        window.addEventListener('diff-collapser:collapse-all', onCollapseAll)
-        return () => {
-            window.removeEventListener('diff-collapser:expand-all', onExpandAll)
-            window.removeEventListener('diff-collapser:collapse-all', onCollapseAll)
-        }
+        const offs = [
+            onAppEvent(APP_EVENTS.DIFF_EXPAND_ALL, onExpandAll),
+            onAppEvent(APP_EVENTS.DIFF_COLLAPSE_ALL, onCollapseAll),
+        ]
+        return () => offs.forEach(off => off())
     }, [persist])
 
     if (expanded) return children({ collapsed: false })

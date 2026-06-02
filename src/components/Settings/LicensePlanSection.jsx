@@ -12,6 +12,7 @@ import { useModal } from '../../hooks/useModal'
 import { UsageDashboard } from './UsageDashboard'
 import { formatDate as formatDateBase } from '../../utils/format'
 import { getCsrfToken } from '../../utils/api'
+import { onAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 const TIER_CONFIG = {
     free: {
@@ -332,8 +333,7 @@ export function LicensePlanSection() {
     // updates without a manual refresh.
     useEffect(() => {
         const handler = () => fetchSubscription()
-        window.addEventListener('app:license-changed', handler)
-        return () => window.removeEventListener('app:license-changed', handler)
+        return onAppEvent(APP_EVENTS.LICENSE_CHANGED, handler)
     }, [fetchSubscription])
 
     const handleManageSubscription = useCallback(async () => {

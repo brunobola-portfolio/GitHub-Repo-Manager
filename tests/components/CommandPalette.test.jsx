@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { onAppEvent, APP_EVENTS } from '../../src/utils/appEvents'
 
 // cmdk uses Radix Dialog which uses portals - happy-dom supports this
 // We need to mock some things for the dialog environment
@@ -207,14 +208,14 @@ describe('CommandPalette', () => {
   it('selecting "Open Tech Debt" dispatches workboard:go-tab with detail "techdebt" and closes', () => {
     const { props } = renderPalette({ activeView: 'work-board' })
     const handler = vi.fn()
-    window.addEventListener('workboard:go-tab', handler)
+    const off = onAppEvent(APP_EVENTS.WORKBOARD_GO_TAB, handler)
     try {
       fireEvent.click(screen.getByText('Open Tech Debt'))
       expect(handler).toHaveBeenCalledTimes(1)
       expect(handler.mock.calls[0][0].detail).toBe('techdebt')
       expect(props.onClose).toHaveBeenCalled()
     } finally {
-      window.removeEventListener('workboard:go-tab', handler)
+      off()
     }
   })
 

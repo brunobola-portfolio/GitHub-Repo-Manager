@@ -7,6 +7,7 @@ import { fetchWithRetry } from '../../utils/api'
 import { MOCK_MODE } from '../../config'
 import { AIErrorState } from '../ui/AIErrorState'
 import { Skeleton } from '../ui/Skeleton'
+import { onAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 function bulletHref(link) {
     if (!link || !link.repo || !link.number) return null
@@ -92,8 +93,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
     // Listen for the command-palette-originated regenerate event.
     useEffect(() => {
         const h = () => fetchSummary()
-        window.addEventListener('workboard:ai-regenerate-internal', h)
-        return () => window.removeEventListener('workboard:ai-regenerate-internal', h)
+        return onAppEvent(APP_EVENTS.WORKBOARD_AI_REGENERATE_INTERNAL, h)
     }, [fetchSummary])
 
     if (dismissed) return null

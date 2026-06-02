@@ -1,15 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { AINotConfiguredBanner } from '../../../src/components/AI/AINotConfiguredBanner'
+import { onAppEvent, APP_EVENTS } from '../../../src/utils/appEvents'
 
 describe('AINotConfiguredBanner', () => {
     let listener
+    let off
     beforeEach(() => {
         listener = vi.fn()
-        window.addEventListener('app:open-settings', listener)
+        off = onAppEvent(APP_EVENTS.OPEN_SETTINGS, listener)
     })
     afterEach(() => {
-        window.removeEventListener('app:open-settings', listener)
+        off()
     })
 
     it('renders the title and Configure CTA', () => {

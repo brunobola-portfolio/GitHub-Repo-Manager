@@ -4,6 +4,7 @@ import { SpinnerIcon } from '../../../ui/Spinner'
 import { buildPatSettingsUrl, buildAzCliCommand, classifyProvider } from '../../../../utils/azureProvider'
 import { Input } from '../../../ui/form'
 import { getCsrfToken } from '../../../../utils/api'
+import { emitAppEvent, APP_EVENTS } from '../../../../utils/appEvents'
 import SavedCredentialsPicker from './SavedCredentialsPicker'
 
 /**
@@ -95,9 +96,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
           // App listens for this custom event and opens the Settings modal
           // at the requested tab — same plumbing used by CommandPalette
           // and other deep-link sites (see App.jsx:382).
-          window.dispatchEvent(new CustomEvent('app:open-settings', {
-            detail: { tab: 'azure-credentials' },
-          }))
+          emitAppEvent(APP_EVENTS.OPEN_SETTINGS, { tab: 'azure-credentials' })
         }}
       />
 

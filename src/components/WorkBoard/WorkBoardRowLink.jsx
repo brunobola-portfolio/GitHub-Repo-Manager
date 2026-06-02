@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { ExternalLink } from 'lucide-react'
 import { Tooltip } from '../ui/Tooltip'
+import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 /**
  * Shared row-wrapper for every Work Board tab. Click the row → open the
@@ -39,15 +40,15 @@ export function WorkBoardRowLink({
             return // let the secondary GitHub link handle it (or the parent <a>)
         }
         e.preventDefault()
-        const eventName = itemType === 'pr' ? 'app:open-repo-pr' : 'app:open-repo-issue'
-        window.dispatchEvent(new CustomEvent(eventName, { detail: { repoFullName, number } }))
+        const eventName = itemType === 'pr' ? APP_EVENTS.OPEN_REPO_PR : APP_EVENTS.OPEN_REPO_ISSUE
+        emitAppEvent(eventName, { repoFullName, number })
     }
 
     const onKeyDown = (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
-            const eventName = itemType === 'pr' ? 'app:open-repo-pr' : 'app:open-repo-issue'
-            window.dispatchEvent(new CustomEvent(eventName, { detail: { repoFullName, number } }))
+            const eventName = itemType === 'pr' ? APP_EVENTS.OPEN_REPO_PR : APP_EVENTS.OPEN_REPO_ISSUE
+            emitAppEvent(eventName, { repoFullName, number })
         }
     }
 

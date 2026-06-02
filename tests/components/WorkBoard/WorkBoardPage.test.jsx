@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import { emitAppEvent, onAppEvent, APP_EVENTS } from '../../../src/utils/appEvents'
 
 // ---------------------------------------------------------------------------
 // Mock MOCK_MODE=true so no real fetches happen during component tests
@@ -282,7 +283,7 @@ describe('WorkBoardPage', () => {
     it('dispatching workboard:go-tab switches the active tab', async () => {
         renderPage()
         act(() => {
-            window.dispatchEvent(new CustomEvent('workboard:go-tab', { detail: 'techdebt' }))
+            emitAppEvent(APP_EVENTS.WORKBOARD_GO_TAB, 'techdebt')
         })
         await waitFor(() => {
             expect(screen.getByRole('tab', { name: /tech debt/i })).toHaveAttribute('aria-selected', 'true')
@@ -292,14 +293,14 @@ describe('WorkBoardPage', () => {
     it('dispatching workboard:regenerate-ai re-fires workboard:ai-regenerate-internal', () => {
         renderPage()
         const innerHandler = vi.fn()
-        window.addEventListener('workboard:ai-regenerate-internal', innerHandler)
+        const off = onAppEvent(APP_EVENTS.WORKBOARD_AI_REGENERATE_INTERNAL, innerHandler)
         try {
             act(() => {
-                window.dispatchEvent(new CustomEvent('workboard:regenerate-ai'))
+                emitAppEvent(APP_EVENTS.WORKBOARD_REGENERATE_AI)
             })
             expect(innerHandler).toHaveBeenCalledTimes(1)
         } finally {
-            window.removeEventListener('workboard:ai-regenerate-internal', innerHandler)
+            off()
         }
     })
 

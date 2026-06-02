@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { API_BASE_URL, MOCK_MODE } from '../config'
+import { onAppEvent, APP_EVENTS } from '../utils/appEvents'
 
 /**
  * useLicense — fetches the current license/plan from the backend.
@@ -11,17 +12,14 @@ import { API_BASE_URL, MOCK_MODE } from '../config'
  * consumer (typically defaulting to 'free').
  *
  * Reactivity: re-runs the fetch when:
- *   - the `app:license-changed` window event fires
+ *   - the `APP_EVENTS.LICENSE_CHANGED` app event fires
  *   - the window regains focus (e.g. license was activated in another tab,
  *     or the user re-focused after editing .env + restarting the server)
  *
- * TODO: Components that change license state (activation flows,
- * upgrade callbacks, billing portal returns, etc.) should
- * `window.dispatchEvent(new CustomEvent('app:license-changed'))`
- * to trigger a refetch here. Today the LicenseActivationModal only
- * validates a key and instructs the user to update .env + restart, so
- * no in-app dispatch site exists yet — but the listener is wired so any
- * future hot-activation path picks it up automatically.
+ * Components that change license state (activation flows, upgrade callbacks,
+ * billing portal returns, etc.) should `emitAppEvent(APP_EVENTS.LICENSE_CHANGED)`
+ * to trigger a refetch here — LicenseActivationModal already does this on a
+ * successful in-app activation so Pro-gated surfaces unlock without a refresh.
  */
 export function useLicense() {
     const [license, setLicense] = useState(() => MOCK_MODE ? { tier: 'free' } : null)
@@ -65,10 +63,10 @@ export function useLicense() {
         if (MOCK_MODE) return undefined
         const handler = () => refetch()
         const focusHandler = () => refetch()
-        window.addEventListener('app:license-changed', handler)
+        const offLicenseChanged = onAppEvent(APP_EVENTS.LICENSE_CHANGED, handler)
         window.addEventListener('focus', focusHandler)
         return () => {
-            window.removeEventListener('app:license-changed', handler)
+            offLicenseChanged()
             window.removeEventListener('focus', focusHandler)
         }
     }, [refetch])

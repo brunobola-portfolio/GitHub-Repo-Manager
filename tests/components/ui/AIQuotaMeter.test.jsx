@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { AIQuotaMeter } from '../../../src/components/ui/AIQuotaMeter'
+import { onAppEvent, APP_EVENTS } from '../../../src/utils/appEvents'
 
 // Mock framer-motion so AnimatePresence is a transparent passthrough in tests.
 // This keeps exit animations out of happy-dom while preserving the real API in production.
@@ -73,12 +74,12 @@ describe('AIQuotaMeter', () => {
 
     it('dispatches navigate-pricing when Upgrade is clicked', () => {
         const fn = vi.fn()
-        window.addEventListener('app:navigate-pricing', fn)
+        const off = onAppEvent(APP_EVENTS.NAVIGATE_PRICING, fn)
         render(<AIQuotaMeter current={199} limit={200} tier="free" />)
         fireEvent.click(screen.getByRole('button', { name: /ai quota/i }))
         fireEvent.click(screen.getByRole('button', { name: /upgrade to pro/i }))
         expect(fn).toHaveBeenCalledTimes(1)
-        window.removeEventListener('app:navigate-pricing', fn)
+        off()
     })
 
     it('closes the popover when the user clicks outside', () => {

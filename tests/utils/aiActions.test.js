@@ -6,6 +6,7 @@ import {
   sanitizeActions,
   dispatchAction,
 } from '../../src/utils/aiActions'
+import { onAppEvent, APP_EVENTS } from '../../src/utils/appEvents'
 
 describe('aiActions registry', () => {
   it('exposes the whitelisted actions', () => {
@@ -103,7 +104,7 @@ describe('dispatchAction', () => {
 
   it('dispatches event-based actions via window CustomEvent with validated payload', () => {
     const handler = vi.fn()
-    window.addEventListener('app:open-repo-settings', handler)
+    const off = onAppEvent(APP_EVENTS.OPEN_REPO_SETTINGS, handler)
     const result = dispatchAction(
       { type: 'open_repo_settings', label: 'Open settings', payload: { owner: 'alice', repo: 'demo' } },
       { openModal: vi.fn() }
@@ -111,18 +112,18 @@ describe('dispatchAction', () => {
     expect(result).toBe(true)
     expect(handler).toHaveBeenCalledTimes(1)
     expect(handler.mock.calls[0][0].detail).toEqual({ owner: 'alice', repo: 'demo' })
-    window.removeEventListener('app:open-repo-settings', handler)
+    off()
   })
 
   it('drops invalid payload fields silently before dispatching', () => {
     const handler = vi.fn()
-    window.addEventListener('app:open-repo-settings', handler)
+    const off = onAppEvent(APP_EVENTS.OPEN_REPO_SETTINGS, handler)
     dispatchAction(
       { type: 'open_repo_settings', payload: { owner: 'alice', repo: 'demo', extra: 'evil', description: 'hijack' } },
       { openModal: vi.fn() }
     )
     expect(handler.mock.calls[0][0].detail).toEqual({ owner: 'alice', repo: 'demo' })
-    window.removeEventListener('app:open-repo-settings', handler)
+    off()
   })
 
   it('rejects payload with malformed owner/repo (script tags, slashes)', () => {

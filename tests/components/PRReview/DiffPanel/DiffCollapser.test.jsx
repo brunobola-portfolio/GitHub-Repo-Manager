@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { DiffCollapser, EXPANDED_STORAGE_KEY } from '@/components/PRReview/DiffPanel/DiffCollapser'
+import { emitAppEvent, APP_EVENTS } from '../../../../src/utils/appEvents'
 
 afterEach(() => {
     cleanup()
@@ -65,7 +66,7 @@ describe('DiffCollapser', () => {
         )
         expect(screen.queryByTestId('full')).not.toBeInTheDocument()
         act(() => {
-            window.dispatchEvent(new CustomEvent('diff-collapser:expand-all'))
+            emitAppEvent(APP_EVENTS.DIFF_EXPAND_ALL)
         })
         expect(screen.getByTestId('full')).toBeInTheDocument()
     })
@@ -80,7 +81,7 @@ describe('DiffCollapser', () => {
         )
         expect(screen.getByTestId('full')).toBeInTheDocument()
         act(() => {
-            window.dispatchEvent(new CustomEvent('diff-collapser:collapse-all'))
+            emitAppEvent(APP_EVENTS.DIFF_COLLAPSE_ALL)
         })
         expect(screen.queryByTestId('full')).not.toBeInTheDocument()
     })

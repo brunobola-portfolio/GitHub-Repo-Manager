@@ -7,6 +7,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, render, screen, waitFor, cleanup } from '@testing-library/react'
+import { emitAppEvent, APP_EVENTS } from '../src/utils/appEvents'
 
 // We mock useGitHub to return a logged-in user, so App lets the
 // repo-detail view render. Mock has the full destructured shape — missing
@@ -82,26 +83,24 @@ describe('App window-event navigation', () => {
     await renderApp()
 
     await act(async () => {
-      window.dispatchEvent(new CustomEvent('app:open-repo-detail', {
-        detail: {
-          owner: 'acme',
-          repo: 'demo',
-          repoObject: {
-            id: 42,
-            name: 'demo',
-            full_name: 'acme/demo',
-            owner: { login: 'acme' },
-            description: 'Test repo',
-            html_url: 'https://github.com/acme/demo',
-            private: false,
-            stargazers_count: 0,
-            watchers_count: 0,
-            forks_count: 0,
-            open_issues_count: 0,
-            default_branch: 'main',
-          },
+      emitAppEvent(APP_EVENTS.OPEN_REPO_DETAIL, {
+        owner: 'acme',
+        repo: 'demo',
+        repoObject: {
+          id: 42,
+          name: 'demo',
+          full_name: 'acme/demo',
+          owner: { login: 'acme' },
+          description: 'Test repo',
+          html_url: 'https://github.com/acme/demo',
+          private: false,
+          stargazers_count: 0,
+          watchers_count: 0,
+          forks_count: 0,
+          open_issues_count: 0,
+          default_branch: 'main',
         },
-      }))
+      })
     })
 
     // RepoDetail renders the full_name as the page title via PageHeader.
@@ -119,8 +118,8 @@ describe('App window-event navigation', () => {
     await renderApp()
 
     await act(async () => {
-      window.dispatchEvent(new CustomEvent('app:open-repo-detail', { detail: {} }))
-      window.dispatchEvent(new CustomEvent('app:open-repo-detail', {}))
+      emitAppEvent(APP_EVENTS.OPEN_REPO_DETAIL, {})
+      emitAppEvent(APP_EVENTS.OPEN_REPO_DETAIL)
     })
 
     // No throw, no navigation — repo detail was never opened.

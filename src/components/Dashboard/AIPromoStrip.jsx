@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, MessageCircle, ArrowRight, X } from 'lucide-react'
 import { useAIPromoVisibility } from '../../hooks/useAIPromoVisibility'
+import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 const COPY = {
     free: {
@@ -35,7 +36,7 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
     }
 
     const handleAssistant = () => {
-        window.dispatchEvent(new CustomEvent('ai-assistant:open'))
+        emitAppEvent(APP_EVENTS.AI_ASSISTANT_OPEN)
     }
 
     const handleInsights = () => {

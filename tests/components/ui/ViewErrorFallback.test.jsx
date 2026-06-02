@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ViewErrorFallback } from '@/components/ui/ViewErrorFallback'
+import { onAppEvent, APP_EVENTS } from '../../../src/utils/appEvents'
 
 describe('ViewErrorFallback', () => {
   let originalLocation
@@ -59,11 +60,11 @@ describe('ViewErrorFallback', () => {
 
   it('dispatches app:navigate-dashboard event when no onGoHome provided', () => {
     const listener = vi.fn()
-    window.addEventListener('app:navigate-dashboard', listener)
+    const off = onAppEvent(APP_EVENTS.NAVIGATE_DASHBOARD, listener)
     render(<ViewErrorFallback viewName="X" />)
     fireEvent.click(screen.getByRole('button', { name: /Go to Dashboard/i }))
     expect(listener).toHaveBeenCalledTimes(1)
-    window.removeEventListener('app:navigate-dashboard', listener)
+    off()
   })
 
   it('shows error.message inside collapsed details when provided', () => {

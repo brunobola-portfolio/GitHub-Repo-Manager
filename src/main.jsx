@@ -17,6 +17,7 @@ import { ThemeProvider } from './hooks/useTheme.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { ToastProvider } from './contexts/ToastProvider.jsx'
 import { shouldIgnoreClientError } from './utils/errorClassification.js'
+import { emitAppEvent, APP_EVENTS } from './utils/appEvents'
 
 // The public status page mounts at /status without any auth/app context.
 // Lazy-loaded so the tiny chunk is only fetched when needed and doesn't
@@ -42,14 +43,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 // front via shouldIgnoreClientError so it never reaches Sentry/the UI.
 if (typeof window !== 'undefined') {
   const broadcast = (error, source) => {
-    try {
-      window.dispatchEvent(new CustomEvent('app:unhandled-error', {
-        detail: { error, source },
-      }))
-    } catch {
-      // CustomEvent unavailable in ancient browsers — falling back silently is
-      // fine; we've already logged + reported to Sentry above this call.
-    }
+    emitAppEvent(APP_EVENTS.UNHANDLED_ERROR, { error, source })
   }
 
   window.addEventListener('unhandledrejection', (event) => {

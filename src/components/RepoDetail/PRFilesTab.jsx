@@ -2,6 +2,7 @@ import { CodeReviewSurface } from '../diff/CodeReviewSurface'
 import { AISummaryPanel } from '../PRReview/AIInsights/AISummaryPanel'
 import { useReviewAI, sortFilesByRisk } from '../PRReview/hooks/useReviewAI'
 import { MOCK_MODE } from '../../config'
+import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 /**
  * PRFilesTab — thin adapter over CodeReviewSurface for the PR review surface.
@@ -33,7 +34,7 @@ export function PRFilesTab({ files = [], owner, repo, pr }) {
             onRetry={retryAI}
             onFileClick={(filename) => {
                 // The surface listens for this event globally and jumps to the file.
-                window.dispatchEvent(new CustomEvent('code-review-surface:select-file', { detail: { filename } }))
+                emitAppEvent(APP_EVENTS.CODE_REVIEW_SELECT_FILE, { filename })
             }}
         />
     )
