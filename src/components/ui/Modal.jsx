@@ -188,7 +188,7 @@ export function Modal({
                                 <div className="flex-1 min-w-0">
                                     {typeof title === 'string'
                                         ? title.trim() && (
-                                            <h2 id={titleId} className="text-sm font-semibold tracking-tight truncate">
+                                            <h2 id={titleId} className="text-sm font-semibold tracking-tight ds-font-display truncate">
                                                 {title}
                                             </h2>
                                         )
