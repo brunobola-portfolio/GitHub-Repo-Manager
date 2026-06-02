@@ -7,14 +7,16 @@ const __dirname = import.meta.dirname
 const css = readFileSync(resolve(__dirname, '../../src/design-system.css'), 'utf8')
 
 const EXPECTED_TOKENS = {
+  // Neutral palette is slate-aligned (matches the dominant in-app Tailwind
+  // slate callsites). Accent/status/radius below are unchanged.
   '--ds-surface': '#ffffff',
-  '--ds-surface-subtle': '#f6f8fa',
-  '--ds-surface-muted': '#eaeef2',
-  '--ds-border': '#d1d9e0',
-  '--ds-fg': '#1f2328',
-  '--ds-fg-muted': '#59636e',
-  '--ds-surface-dark': '#0d1117',
-  '--ds-fg-dark': '#f0f6fc',
+  '--ds-surface-subtle': '#f8fafc',
+  '--ds-surface-muted': '#f1f5f9',
+  '--ds-border': '#e2e8f0',
+  '--ds-fg': '#0f172a',
+  '--ds-fg-muted': '#64748b',
+  '--ds-surface-dark': '#0f172a',
+  '--ds-fg-dark': '#f1f5f9',
   '--ds-accent-link': '#0969da',
   '--ds-accent-link-dark': '#4493f8',
   '--ds-accent-brand': '#4f46e5',
