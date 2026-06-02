@@ -5,6 +5,7 @@ import {
 	Upload, FlaskConical, Download, Sparkles, Heart,
 } from 'lucide-react'
 import { copyToClipboard } from '../utils/clipboard'
+import { buildActionCommands } from './buildActionCommands'
 
 /**
  * Repository action registry — single source of truth for what actions
@@ -503,20 +504,9 @@ export const repoActions = {
  * palette gains selection-awareness.
  */
 export function buildRepoActionCommands(repos, ctx) {
-	const out = []
-	for (const action of Object.values(repoActions)) {
-		if (!action.surfaces.includes('commandPalette')) continue
-		if (action.isBatchSafe) continue
-		for (const repo of repos) {
-			if (action.isApplicable && !action.isApplicable(repo)) continue
-			const resolveDyn = (val) => (typeof val === 'function' ? val(repo) : val)
-			out.push({
-				id: `${action.id}::${repo.id}`,
-				label: `${resolveDyn(action.label)} — ${repo.full_name}`,
-				description: resolveDyn(action.description),
-				run: () => action.run(repo, ctx),
-			})
-		}
-	}
-	return out
+	return buildActionCommands(repoActions, repos, ctx, {
+		keyOf: (repo) => repo.id,
+		labelOf: (repo) => repo.full_name,
+		skipBatchSafe: true,
+	})
 }

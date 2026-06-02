@@ -12,6 +12,7 @@
 
 import { Eye, Copy, Trash2, ShieldCheck } from 'lucide-react'
 import { copyToClipboard } from '../utils/clipboard'
+import { buildActionCommands } from './buildActionCommands'
 
 /**
  * @typedef {Object} BranchTarget
@@ -116,19 +117,8 @@ export const branchActions = {
  * @param {Object} ctx — must include repoFullName for url-shaped actions
  */
 export function buildBranchActionCommands(branches, ctx) {
-    const out = []
-    for (const action of Object.values(branchActions)) {
-        if (!action.surfaces.includes('commandPalette')) continue
-        for (const branch of branches) {
-            if (action.isApplicable && !action.isApplicable(branch, ctx)) continue
-            const resolveDyn = (val) => (typeof val === 'function' ? val(branch) : val)
-            out.push({
-                id: `${action.id}::${branch.name}`,
-                label: `${resolveDyn(action.label)} — ${branch.name}`,
-                description: resolveDyn(action.description),
-                run: () => action.run(branch, ctx),
-            })
-        }
-    }
-    return out
+    return buildActionCommands(branchActions, branches, ctx, {
+        keyOf: (branch) => branch.name,
+        labelOf: (branch) => branch.name,
+    })
 }
