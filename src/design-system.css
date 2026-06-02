@@ -38,25 +38,30 @@
   --ds-text-xl: 1.5rem;
   --ds-text-2xl: 2rem;
 
-  /* ===== PALETTE (light) ===== */
+  /* ===== PALETTE (light, slate-aligned) =====
+   * Mapped to Tailwind slate — the dominant in-app palette (~5.9k slate
+   * callsites vs ~470 token uses), so token-backed surfaces match the slate
+   * sea around them instead of sitting on a separate Primer-gray scale. */
   --ds-surface: #ffffff;
-  --ds-surface-subtle: #f6f8fa;
-  --ds-surface-muted: #eaeef2;
-  --ds-border: #d1d9e0;
-  --ds-border-strong: #59636e;
-  --ds-fg: #1f2328;
-  --ds-fg-muted: #59636e;
-  --ds-fg-subtle: #6e7781;
+  --ds-surface-subtle: #f8fafc;   /* slate-50  */
+  --ds-surface-muted: #f1f5f9;    /* slate-100 */
+  --ds-border: #e2e8f0;           /* slate-200 */
+  --ds-border-strong: #94a3b8;    /* slate-400 */
+  --ds-fg: #0f172a;               /* slate-900 */
+  --ds-fg-muted: #64748b;         /* slate-500 (dominant muted text) */
+  --ds-fg-subtle: #94a3b8;        /* slate-400 */
 
-  /* ===== PALETTE (dark, Primer-aligned) ===== */
-  --ds-surface-dark: #0d1117;
-  --ds-surface-subtle-dark: #151b23;
-  --ds-surface-muted-dark: #21262d;
-  --ds-border-dark: #3d444d;
-  --ds-border-strong-dark: #9198a1;
-  --ds-fg-dark: #f0f6fc;
-  --ds-fg-muted-dark: #9198a1;
-  --ds-fg-subtle-dark: #6e7681;
+  /* ===== PALETTE (dark, slate-aligned) =====
+   * 3-step surface scale matches the dominant dark backgrounds:
+   * canvas slate-900, card slate-800, elevated slate-700. */
+  --ds-surface-dark: #0f172a;        /* slate-900 (canvas) */
+  --ds-surface-subtle-dark: #1e293b; /* slate-800 (card)   */
+  --ds-surface-muted-dark: #334155;  /* slate-700 (raised) */
+  --ds-border-dark: #334155;         /* slate-700 */
+  --ds-border-strong-dark: #64748b;  /* slate-500 */
+  --ds-fg-dark: #f1f5f9;             /* slate-100 */
+  --ds-fg-muted-dark: #94a3b8;       /* slate-400 (dominant dark muted text) */
+  --ds-fg-subtle-dark: #64748b;      /* slate-500 */
 
   /* ===== ACCENTS (V3 hybrid) ===== */
   --ds-accent-link: #0969da;
