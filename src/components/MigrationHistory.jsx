@@ -54,7 +54,11 @@ const STATUS_STYLES = {
     executing: { bg: 'bg-blue-100 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400', icon: SpinnerIcon },
     pending: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', icon: Clock },
     draft: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', icon: Clock },
-    paused: { bg: 'bg-amber-100 dark:bg-amber-900/20', text: 'text-amber-700 dark:text-amber-400', icon: Clock }
+    paused: { bg: 'bg-amber-100 dark:bg-amber-900/20', text: 'text-amber-700 dark:text-amber-400', icon: Clock },
+    // Plan was mid-flight when the server restarted; recoverInterruptedPlans
+    // reset its in-flight tasks. Auto-resumes when credentials are still held,
+    // otherwise awaits a manual resume.
+    interrupted: { bg: 'bg-amber-100 dark:bg-amber-900/20', text: 'text-amber-700 dark:text-amber-400', icon: RotateCcw }
 }
 
 export function MigrationHistory({ isOpen, onClose }) {
@@ -136,6 +140,13 @@ export function MigrationHistory({ isOpen, onClose }) {
                 wiki: plan.wiki,
                 schedule: plan.schedule
             })
+            loadPlans()
+        } catch { /* ignore */ }
+    }
+
+    const handleResumePlan = async (plan) => {
+        try {
+            await migrationApi.resumePlan(plan.id)
             loadPlans()
         } catch { /* ignore */ }
     }
@@ -272,6 +283,16 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                         className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                                                         title="Re-run migration"
                                                         aria-label="Re-run migration"
+                                                    >
+                                                        <RotateCcw className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                {(plan.status === 'interrupted' || plan.status === 'paused') && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleResumePlan(plan) }}
+                                                        className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20 transition-colors"
+                                                        title="Resume migration"
+                                                        aria-label="Resume migration"
                                                     >
                                                         <RotateCcw className="w-4 h-4" />
                                                     </button>

@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import Database from 'better-sqlite3'
 import { MigrationEngine } from '../migration-engine.js'
 
@@ -693,6 +693,103 @@ describe('MigrationEngine', () => {
       expect(engine.getPlanStatus(planId).status).toBe('paused')
       await engine.resumePlan(planId)
       expect(engine.getPlanStatus(planId).status).toBe('completed')
+    })
+  })
+
+  describe('recoverInterruptedPlans', () => {
+    // Build a plan whose process "died" mid-run: plan left 'running', task[0]
+    // mid-flight ('running' with progress), task[1] never started ('pending').
+    const makeOrphan = () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [
+          { type: 'repo', sourceRef: 'r1', targetRef: 't1', config: {} },
+          { type: 'repo', sourceRef: 'r2', targetRef: 't2', config: {} },
+        ]
+      )
+      const taskIds = engine.getPlanStatus(planId).tasks.map(t => t.id)
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('running', planId)
+      db.prepare(
+        "UPDATE migration_tasks SET status = 'running', progress_pct = 42, progress_message = 'working', started_at = datetime('now') WHERE id = ?"
+      ).run(taskIds[0])
+      return { planId, taskIds }
+    }
+
+    it('resets an in-flight task to pending and marks the plan interrupted', () => {
+      engine.credentials.retrieve = () => null
+      const { planId, taskIds } = makeOrphan()
+
+      const summary = engine.recoverInterruptedPlans()
+
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.status).toBe('interrupted')
+      const t0 = plan.tasks.find(t => t.id === taskIds[0])
+      expect(t0.status).toBe('pending')
+      expect(t0.retries).toBe(1)        // bumped to bound crash loops
+      expect(t0.progress_pct).toBe(0)   // progress reset
+      expect(t0.started_at).toBeNull()
+      // the never-started sibling stays queued
+      expect(plan.tasks.find(t => t.id === taskIds[1]).status).toBe('pending')
+      expect(summary).toMatchObject({ recovered: 1, autoResumed: 0, awaitingManual: 1, exhausted: 0 })
+    })
+
+    it('emits a plan-interrupted event', () => {
+      engine.credentials.retrieve = () => null
+      const { planId } = makeOrphan()
+      const events = []
+      engine.on('plan-interrupted', e => events.push(e))
+      engine.recoverInterruptedPlans()
+      expect(events).toEqual([{ planId, status: 'interrupted' }])
+    })
+
+    it('fails a task that has exhausted max_retries instead of looping forever', () => {
+      engine.credentials.retrieve = () => null
+      const { planId, taskIds } = makeOrphan()
+      db.prepare('UPDATE migration_tasks SET retries = 3, max_retries = 3 WHERE id = ?').run(taskIds[0])
+
+      const summary = engine.recoverInterruptedPlans()
+
+      const t0 = engine.getPlanStatus(planId).tasks.find(t => t.id === taskIds[0])
+      expect(t0.status).toBe('failed')
+      expect(t0.error_message).toMatch(/interrupted|restart/i)
+      expect(summary.exhausted).toBe(1)
+    })
+
+    it('auto-resumes when credentials are still available', async () => {
+      const executeSpy = vi.fn().mockResolvedValue(undefined)
+      engine.executePlan = executeSpy
+      engine.credentials.retrieve = () => ({ azurePat: 'x', githubToken: 'y' })
+      const { planId } = makeOrphan()
+
+      const summary = engine.recoverInterruptedPlans()
+
+      expect(summary).toMatchObject({ recovered: 1, autoResumed: 1, awaitingManual: 0 })
+      // resumePlan → executePlan runs fire-and-forget; let the microtask settle.
+      await new Promise(r => setTimeout(r, 0))
+      expect(executeSpy).toHaveBeenCalledWith(planId, { azurePat: 'x', githubToken: 'y' })
+    })
+
+    it('does NOT auto-resume a plan with no pending work, even with credentials', () => {
+      engine.executePlan = vi.fn().mockResolvedValue(undefined)
+      engine.credentials.retrieve = () => ({ azurePat: 'x' })
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const taskId = engine.getPlanStatus(planId).tasks[0].id
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('running', planId)
+      db.prepare("UPDATE migration_tasks SET status = 'completed', completed_at = datetime('now') WHERE id = ?").run(taskId)
+
+      const summary = engine.recoverInterruptedPlans()
+
+      expect(engine.getPlanStatus(planId).status).toBe('interrupted')
+      expect(summary).toMatchObject({ recovered: 1, autoResumed: 0, awaitingManual: 1 })
+      expect(engine.executePlan).not.toHaveBeenCalled()
+    })
+
+    it('is a no-op when there are no orphaned plans', () => {
+      const summary = engine.recoverInterruptedPlans()
+      expect(summary).toEqual({ recovered: 0, autoResumed: 0, awaitingManual: 0, exhausted: 0 })
     })
   })
 

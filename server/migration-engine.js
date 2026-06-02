@@ -236,8 +236,9 @@ export class MigrationEngine extends EventEmitter {
       throw new Error(`Plan ${planId} not found`)
     }
 
-    // Only draft, paused, or running (retry) plans can be executed
-    if (plan.status !== 'draft' && plan.status !== 'paused' && plan.status !== 'running') {
+    // Only draft, paused, running (retry), or interrupted (crash-recovery)
+    // plans can be executed
+    if (plan.status !== 'draft' && plan.status !== 'paused' && plan.status !== 'running' && plan.status !== 'interrupted') {
       throw new Error(`Cannot execute plan with status '${plan.status}'`)
     }
 
@@ -452,7 +453,8 @@ export class MigrationEngine extends EventEmitter {
   }
 
   /**
-   * Resumes a paused plan — continues processing pending tasks.
+   * Resumes a paused or interrupted plan — continues processing pending tasks.
+   * ('interrupted' plans are produced by recoverInterruptedPlans after a crash.)
    * @param {number} planId
    */
   async resumePlan(planId, credentials = null) {
@@ -460,15 +462,108 @@ export class MigrationEngine extends EventEmitter {
     if (!plan) {
       throw new Error(`Plan ${planId} not found`)
     }
-    if (plan.status !== 'paused') {
+    if (plan.status !== 'paused' && plan.status !== 'interrupted') {
       throw new Error(`Cannot resume plan with status '${plan.status}'`)
     }
 
     this._pausedPlans.delete(planId)
 
-    // DB already has status 'paused' — executePlan accepts 'paused' and
-    // transitions it to 'running', then processes remaining pending tasks
+    // DB has status 'paused'/'interrupted' — executePlan accepts both and
+    // transitions to 'running', then processes remaining pending tasks
     await this.executePlan(planId, credentials)
+  }
+
+  /**
+   * Recovers migration plans orphaned by a server crash or restart.
+   *
+   * A plan left `status = 'running'` in the DB has no live execution loop after
+   * the process restarts — its in-flight tasks are frozen and nothing finishes
+   * them. On boot we reset each interrupted task back to 'pending' (bumping
+   * `retries`; a task that has burned through `max_retries` restarts is failed
+   * instead, so a poison task can't crash-loop the server forever), mark the
+   * plan 'interrupted', and then either:
+   *   - auto-resume it, when the encrypted credentials are still retrievable
+   *     (same path the scheduler uses), or
+   *   - leave it 'interrupted' for the user to resume manually (re-supplying
+   *     credentials via POST /plans/:id/resume) — the UI already renders this
+   *     state and ProgressStep listens for the `plan-interrupted` event.
+   *
+   * Idempotent and safe to call once at server startup. Synchronous DB work
+   * (status resets) completes before returning; any auto-resume runs in the
+   * background. Returns a summary for logging/tests.
+   *
+   * @returns {{ recovered: number, autoResumed: number, awaitingManual: number, exhausted: number }}
+   */
+  recoverInterruptedPlans() {
+    const orphans = this.db.prepare(
+      "SELECT id FROM migration_plans WHERE status = 'running'"
+    ).all()
+
+    const summary = { recovered: 0, autoResumed: 0, awaitingManual: 0, exhausted: 0 }
+    const toAutoResume = []
+
+    const resetTask = this.db.prepare(
+      "UPDATE migration_tasks SET status = 'pending', progress_pct = 0, progress_message = NULL, started_at = NULL, retries = ? WHERE id = ?"
+    )
+    const failTask = this.db.prepare(
+      "UPDATE migration_tasks SET status = 'failed', error_message = ?, completed_at = datetime('now') WHERE id = ?"
+    )
+
+    for (const { id: planId } of orphans) {
+      try {
+        // Reset tasks that were mid-flight when the process died. A task that
+        // has already survived max_retries restarts is failed instead of reset,
+        // bounding crash loops on a task that reliably kills the process.
+        const runningTasks = this.db.prepare(
+          "SELECT id, retries, max_retries FROM migration_tasks WHERE plan_id = ? AND status = 'running'"
+        ).all(planId)
+
+        for (const t of runningTasks) {
+          if (t.retries >= t.max_retries) {
+            failTask.run('Repeatedly interrupted by server restarts (max retries exhausted)', t.id)
+            summary.exhausted++
+          } else {
+            resetTask.run(t.retries + 1, t.id)
+          }
+        }
+
+        const pending = this.db.prepare(
+          "SELECT COUNT(*) AS n FROM migration_tasks WHERE plan_id = ? AND status = 'pending'"
+        ).get(planId).n
+
+        this.db.prepare("UPDATE migration_plans SET status = 'interrupted' WHERE id = ?").run(planId)
+        this.emit('plan-status', { planId, status: 'interrupted' })
+        this.emit('plan-interrupted', { planId, status: 'interrupted' })
+        summary.recovered++
+
+        // Auto-resume only when there's outstanding work AND we can still get
+        // the credentials; otherwise wait for a manual resume.
+        let credentials = null
+        try { credentials = this.credentials.retrieve(planId) } catch { credentials = null }
+
+        if (pending > 0 && credentials) {
+          toAutoResume.push({ planId, credentials })
+          summary.autoResumed++
+        } else {
+          summary.awaitingManual++
+        }
+      } catch (err) {
+        logger.error({ err, planId }, 'migration-engine: failed to recover interrupted plan')
+      }
+    }
+
+    // Kick off auto-resumes after the synchronous reset pass so the DB is in a
+    // consistent state first. Fire-and-forget — never block server startup.
+    for (const { planId, credentials } of toAutoResume) {
+      this.resumePlan(planId, credentials).catch(err => {
+        logger.error({ err, planId }, 'migration-engine: auto-resume of interrupted plan failed')
+      })
+    }
+
+    if (summary.recovered > 0) {
+      logger.info({ summary }, 'migration-engine: recovered interrupted plans on startup')
+    }
+    return summary
   }
 
   /**
