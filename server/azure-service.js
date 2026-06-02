@@ -57,18 +57,81 @@ function getHeaders(pat) {
     };
 }
 
+// Hard request timeout. A slow or unreachable on-prem TFS would otherwise hang
+// a request indefinitely, tying up an Express connection. Tuned generously so
+// legitimately slow servers still complete; large downloads override it.
+const AZURE_TIMEOUT_MS = 30_000;
+// Idempotent GET/polling requests retry on transient upstream failures
+// (network error, timeout, 429, 5xx). Base delay doubles each attempt.
+const AZURE_RETRY_ATTEMPTS = 2;
+const AZURE_RETRY_BASE_MS = Number(process.env.AZURE_RETRY_BASE_MS) || 400;
+
+function azureSleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableAzureStatus(status) {
+    return status === 429 || (status >= 500 && status <= 599);
+}
+
+/**
+ * fetch wrapper for Azure DevOps. Enforces a hard timeout via
+ * `AbortSignal.timeout` (so a slow/on-prem TFS can't hang forever) and, for
+ * idempotent requests (`retry: true`), retries transient failures — network
+ * error, timeout, 429, 5xx — with exponential backoff honouring `Retry-After`.
+ * Mutations (POST/PUT/PATCH/DELETE) must NOT set `retry` so they never replay.
+ *
+ * Returns the raw Response so callers keep using res.ok / res.json() / res.text().
+ */
+async function azureRawFetch(url, options = {}, { retry = false, timeoutMs = AZURE_TIMEOUT_MS } = {}) {
+    const maxAttempts = retry ? AZURE_RETRY_ATTEMPTS + 1 : 1;
+    let lastErr;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            const res = await fetch(url, { ...options, signal: AbortSignal.timeout(timeoutMs) });
+            if (retry && attempt < maxAttempts && isRetryableAzureStatus(res.status)) {
+                const retryAfter = parseInt(res.headers.get('retry-after') || '', 10);
+                const delay = Number.isFinite(retryAfter) && retryAfter > 0
+                    ? retryAfter * 1000
+                    : AZURE_RETRY_BASE_MS * 2 ** (attempt - 1);
+                await azureSleep(delay);
+                continue;
+            }
+            return res;
+        } catch (err) {
+            lastErr = err;
+            // AbortSignal.timeout -> TimeoutError; aborted -> AbortError;
+            // network failure -> TypeError. All transient for idempotent reads.
+            const transient = err?.name === 'TimeoutError' || err?.name === 'AbortError' || err?.name === 'TypeError';
+            if (retry && transient && attempt < maxAttempts) {
+                await azureSleep(AZURE_RETRY_BASE_MS * 2 ** (attempt - 1));
+                continue;
+            }
+            if (err?.name === 'TimeoutError' || err?.name === 'AbortError') {
+                const timeoutErr = new Error(`Azure DevOps request timed out after ${Math.round(timeoutMs / 1000)}s. The server may be slow or unreachable.`);
+                timeoutErr.status = 504;
+                timeoutErr.code = 'azure_timeout';
+                throw timeoutErr;
+            }
+            throw err;
+        }
+    }
+    throw lastErr;
+}
+
 async function azureFetch(url, pat, options = {}) {
     if (!pat) {
         throw new Error('Azure DevOps PAT is required. Configure AZURE_PAT in .env or provide a personal PAT.');
     }
 
-    const res = await fetch(url, {
+    const method = (options.method || 'GET').toUpperCase();
+    const res = await azureRawFetch(url, {
         ...options,
         headers: {
             ...getHeaders(pat),
             ...options.headers
         }
-    });
+    }, { retry: method === 'GET' });
 
     // Check content-type before parsing — Azure returns HTML on auth failures
     const contentType = res.headers.get('content-type') || '';
@@ -173,7 +236,7 @@ async function listProjects(org, pat, host = DEFAULT_HOST) {
         // Inline fetch (instead of azureFetch) because we need the
         // `x-ms-continuationtoken` response header — azureFetch only
         // exposes the JSON body. Error handling mirrors azureFetch.
-        const res = await fetch(url, { headers: getHeaders(pat) });
+        const res = await azureRawFetch(url, { headers: getHeaders(pat) }, { retry: true });
         const contentType = res.headers.get('content-type') || '';
         if (!res.ok) {
             if (contentType.includes('text/html')) {
@@ -530,7 +593,7 @@ async function getImportStatus(org, project, repoId, importRequestId, pat, host 
  */
 async function deleteGitRepo(org, project, repoId, pat, host = DEFAULT_HOST) {
     const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}?api-version=${API_VERSION}`;
-    const res = await fetch(url, {
+    const res = await azureRawFetch(url, {
         method: 'DELETE',
         headers: getHeaders(pat)
     });
@@ -546,12 +609,14 @@ async function deleteGitRepo(org, project, repoId, pat, host = DEFAULT_HOST) {
 async function downloadTfvcItems(org, project, scopePath, pat, host = DEFAULT_HOST) {
     const path = scopePath || `$/${project}`;
     const url = `${baseFor(host)}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/tfvc/items?scopePath=${encodeURIComponent(path)}&recursionLevel=Full&download=true&api-version=${API_VERSION}`;
-    const res = await fetch(url, {
+    // Snapshot ZIPs can be large; allow a much longer ceiling than the default
+    // and don't retry (re-downloading a multi-MB body on a blip is wasteful).
+    const res = await azureRawFetch(url, {
         headers: {
             ...getHeaders(pat),
             'Accept': 'application/zip'
         }
-    });
+    }, { timeoutMs: 600_000 });
     if (!res.ok) {
         const body = await res.json().catch(() => null);
         throw new Error(body?.message || `Failed to download TFVC items: ${res.status}`);
@@ -571,12 +636,12 @@ function escapeWiql(value) {
  * OAuth tokens require Bearer auth, unlike PATs which use Basic auth.
  */
 async function bearerFetch(url, token) {
-    const res = await fetch(url, {
+    const res = await azureRawFetch(url, {
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
         }
-    });
+    }, { retry: true });
 
     if (!res.ok) {
         const body = await res.json().catch(() => null);
@@ -667,12 +732,12 @@ async function checkLfsMarkers(org, project, repos, pat, host = DEFAULT_HOST) {
                 if (!id) return [id, false]
                 try {
                     const url = `${base}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(id)}/items?path=/.gitattributes&$format=text&api-version=${API_VERSION}`
-                    const res = await fetch(url, {
+                    const res = await azureRawFetch(url, {
                         headers: {
                             Authorization: basicAuthHeader('', pat),
                             Accept: 'text/plain',
                         },
-                    })
+                    }, { retry: true })
                     if (!res.ok) return [id, false]
                     const body = await res.text()
                     return [id, /filter\s*=\s*lfs/.test(body)]
@@ -712,12 +777,12 @@ async function getRepoReadme(org, project, repoId, pat, ref, host = DEFAULT_HOST
     try {
       const versionDesc = ref ? `&versionDescriptor.version=${encodeURIComponent(ref)}` : ''
       const url = `${base}/${encOrg(org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/items?path=/${name}&$format=text${versionDesc}&api-version=${API_VERSION}`
-      const res = await fetch(url, {
+      const res = await azureRawFetch(url, {
         headers: {
           Authorization: basicAuthHeader('', pat),
           Accept: 'text/plain',
         },
-      })
+      }, { retry: true })
       if (res.ok) {
         const text = await res.text()
         return { name, content: text.slice(0, 4096) }
