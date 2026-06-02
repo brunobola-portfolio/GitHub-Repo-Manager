@@ -209,7 +209,7 @@ export function WizardPanel({
                     <Icon className="w-4 h-4" strokeWidth={2.5} />
                   </div>
                 )}
-                <h2 id="wizard-panel-title" className="text-sm font-semibold tracking-tight truncate">
+                <h2 id="wizard-panel-title" className="text-sm font-semibold tracking-tight ds-font-display truncate">
                   {title}
                 </h2>
               </div>

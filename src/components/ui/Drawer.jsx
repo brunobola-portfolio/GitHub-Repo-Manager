@@ -120,7 +120,7 @@ export function Drawer({
                                 ) : null}
                                 <div className="flex-1 min-w-0">
                                     {title ? (
-                                        <h2 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-slate-100 truncate">{title}</h2>
+                                        <h2 className="text-sm font-semibold tracking-tight ds-font-display text-slate-900 dark:text-slate-100 truncate">{title}</h2>
                                     ) : null}
                                     {subtitle ? (
                                         <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{subtitle}</p>

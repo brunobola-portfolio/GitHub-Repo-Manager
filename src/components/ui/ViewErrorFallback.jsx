@@ -68,7 +68,7 @@ export function ViewErrorFallback({
         </div>
       </div>
 
-      <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 text-center tracking-tight">
+      <h2 className="text-lg font-semibold ds-font-display text-slate-900 dark:text-slate-100 text-center tracking-tight">
         Something went wrong in {viewName}
       </h2>
       <p className="mt-1.5 text-slate-500 dark:text-slate-400 text-sm text-center leading-relaxed">
