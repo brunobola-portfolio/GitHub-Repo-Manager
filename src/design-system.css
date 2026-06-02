@@ -204,7 +204,9 @@
 .dark .ds-text-heading   { color: var(--ds-fg-dark); }
 .dark .ds-text-primary   { color: var(--ds-fg-dark); }
 .dark .ds-text-secondary { color: var(--ds-fg-muted-dark); }
-.dark .ds-text-muted     { color: var(--ds-fg-muted-dark); }
+/* muted is one step dimmer than secondary — keep that hierarchy in dark too
+ * (both previously collapsed onto --ds-fg-muted-dark, flattening the scale). */
+.dark .ds-text-muted     { color: var(--ds-fg-subtle-dark); }
 
 .ds-border-subtle { border-color: var(--ds-border); }
 .dark .ds-border-subtle { border-color: var(--ds-border-dark); }

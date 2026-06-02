@@ -49,7 +49,7 @@ export const StatCard = memo(function StatCard({
     return (
         <motion.div
             transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
-            className="rounded-2xl focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-inset"
+            className="rounded-2xl ds-focus-ring"
             role={interactive ? 'button' : undefined}
             tabIndex={interactive ? 0 : undefined}
             aria-label={interactive ? `${title}${hint ? ` — ${hint}` : ''}` : undefined}
