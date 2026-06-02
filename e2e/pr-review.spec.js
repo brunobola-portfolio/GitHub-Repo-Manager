@@ -64,19 +64,22 @@ const MOCK_PR_FILES = [
         sha: 'f1',
         filename: 'server/middleware/rate-limit.js',
         status: 'added',
-        additions: 35,
+        additions: 2,
         deletions: 0,
-        changes: 35,
-        patch: '@@ -0,0 +1,3 @@\n+export const rateLimit = () => {}\n+// mock patch\n',
+        changes: 2,
+        // Hunk header must match the content lines (2 added) — a mismatched
+        // count (`+1,3` with 2 lines) makes @git-diff-view's split-view walk
+        // past real line data and throw, crashing the whole PR Review view.
+        patch: '@@ -0,0 +1,2 @@\n+export const rateLimit = () => {}\n+// mock patch\n',
     },
     {
         sha: 'f2',
         filename: 'server/routes/auth.js',
         status: 'modified',
-        additions: 5,
-        deletions: 5,
-        changes: 10,
-        patch: '@@ -1,3 +1,3 @@\n-// before\n+// after\n',
+        additions: 1,
+        deletions: 1,
+        changes: 2,
+        patch: '@@ -1 +1 @@\n-// before\n+// after\n',
     },
 ]
 
