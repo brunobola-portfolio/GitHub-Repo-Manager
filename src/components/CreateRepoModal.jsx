@@ -8,6 +8,7 @@ import { Select } from './ui/Select'
 import { Button } from './ui/Button'
 import { Field, Input, Textarea, Switch } from './ui/form'
 import { useDebounce } from '../hooks/useDebounce'
+import { isAbort } from '../utils/errorClassification'
 import { Plus, Sparkles, CheckCircle2, XCircle, Lock, Globe } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { getCsrfToken } from '../utils/api'
@@ -60,7 +61,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                     setNameStatus(null)
                 }
             } catch (err) {
-                if (controller.signal.aborted || err?.name === 'AbortError') return
+                if (isAbort(err, controller.signal)) return
                 setNameStatus(null)
             }
         })()

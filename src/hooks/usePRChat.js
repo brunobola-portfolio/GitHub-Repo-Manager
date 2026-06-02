@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getCsrfToken } from '../utils/api';
+import { isAbort } from '../utils/errorClassification';
 // NOTE: Mock data is loaded via dynamic `await import()` inside the inlined
 // env-checked branches below — do NOT add a top-level static import. Static
 // imports of `__mocks__/*` pin the mock module in production bundles even
@@ -197,7 +198,7 @@ export function usePRChat(owner, repo, prNumber) {
                 }]);
             }
         } catch (err) {
-            if (err?.name === 'AbortError') {
+            if (isAbort(err)) {
                 // Cancelled — leave any partial text dropped, no error UI.
                 return;
             }

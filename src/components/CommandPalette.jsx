@@ -10,6 +10,7 @@ import {
   Check, ShieldCheck, MessageCircle, LogOut,
 } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
+import { isAbort } from '../utils/errorClassification'
 import { Skeleton } from './ui/Skeleton'
 import { Kbd } from './ui/Kbd'
 import { searchApi } from '../api/search'
@@ -121,7 +122,7 @@ function useDebouncedGitHubSearch(query, enabled) {
         })
       })
       .catch((err) => {
-        if (err?.name === 'AbortError' || controller.signal.aborted) return
+        if (isAbort(err, controller.signal)) return
         setResult((prev) => ({ ...prev, loading: false, error: err?.code || 'SEARCH_FAILED' }))
       })
     return () => controllerRef.current?.abort()

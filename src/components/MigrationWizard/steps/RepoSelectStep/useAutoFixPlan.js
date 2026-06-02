@@ -4,6 +4,7 @@ import { buildDeterministicPlan } from './autoFixRules.js'
 import { SIZE_CRITICAL_BYTES } from './riskRules.js'
 import { getCsrfToken } from '../../../../utils/api'
 import { isAIUnavailable, markAIUnavailable } from '../../../../utils/aiAvailability'
+import { isAbort } from '../../../../utils/errorClassification'
 
 // Fix 2: priority-aware error setter (auth > ai-quota)
 const ERROR_RANK = { auth: 2, 'ai-quota': 1 }
@@ -98,7 +99,7 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, confl
           })
         })
         .catch((e) => {
-          if (e.name === 'AbortError') return
+          if (isAbort(e)) return
           const unchecked = {}
           plan.forEach((p) => { unchecked[repos[p.repoIndex].id] = 'unchecked' })
           // Fix 3: prune stale entries from conflictStatuses

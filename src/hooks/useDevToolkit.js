@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
 import { API_BASE } from '../config'
 import { getCsrfToken } from '../utils/api'
+import { isAbort } from '../utils/errorClassification'
 
 const TAB_STORAGE_KEY = 'devToolkit_activeTab'
 const PANEL_WIDTH_KEY = 'devToolkit_panelWidth'
@@ -86,7 +87,7 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
                 },
             })
         } catch (err) {
-            if (err.name !== 'AbortError') setCompareData(null)
+            if (!isAbort(err)) setCompareData(null)
         } finally {
             setCompareLoading(false)
         }

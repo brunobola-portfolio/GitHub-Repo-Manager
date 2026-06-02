@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Eye } from 'lucide-react'
 import { useStreaming } from '../../../hooks/useStreaming'
+import { isAbort } from '../../../utils/errorClassification'
 import { ChatInput } from '../shared/ChatInput'
 import { PRSelector } from './PRSelector'
 import { QuickSummary } from './QuickSummary'
@@ -35,7 +36,7 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
             .then(r => r.ok ? r.json() : [])
             .then(setPulls)
             .catch((err) => {
-                if (err.name !== 'AbortError') setPulls([])
+                if (!isAbort(err)) setPulls([])
             })
             .finally(() => setPullsLoading(false))
 

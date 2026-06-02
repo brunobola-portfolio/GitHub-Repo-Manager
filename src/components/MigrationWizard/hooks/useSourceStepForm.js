@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { parseAzureUrl } from '../../../utils/azureUrlParser'
 import { getCsrfToken } from '../../../utils/api'
+import { isAbort } from '../../../utils/errorClassification'
 
 const DEBOUNCE_MS = 400
 
@@ -308,7 +309,7 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
         if (ci) onChange({ project: ci.name })
       }
     } catch (e) {
-      if (e.name === 'AbortError') return
+      if (isAbort(e)) return
       onChange({ validated: false })
       setValidationError(e.message || 'Connection error')
     } finally {

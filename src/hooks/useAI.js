@@ -8,6 +8,7 @@
 
 import { useCallback } from 'react'
 import { safeParseJson, isSessionExpired, getCsrfToken } from '../utils/api'
+import { isAbort } from '../utils/errorClassification'
 import { MOCK_MODE, API_BASE } from '../config'
 
 /**
@@ -86,7 +87,7 @@ export function useAI() {
                 signal: controller.signal,
             })
         } catch (networkErr) {
-            if (networkErr?.name === 'AbortError') {
+            if (isAbort(networkErr)) {
                 const err = new Error('AI request timed out after 60s. Please try again.')
                 err.code = 'AI_TIMEOUT'
                 throw err

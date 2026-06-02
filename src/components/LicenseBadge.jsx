@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { FlaskConical, Crown, Gem, AlertTriangle } from 'lucide-react'
 import { MOCK_MODE } from '../config'
 import { MS_PER_DAY } from '../utils/time'
+import { isAbort } from '../utils/errorClassification'
 
 /**
  * LicenseBadge — visible evidence of the active license tier in the header.
@@ -36,7 +37,7 @@ export default function LicenseBadge() {
       })
       .then((data) => { if (!controller.signal.aborted) setInfo(data) })
       .catch((err) => {
-        if (controller.signal.aborted || err?.name === 'AbortError') return
+        if (isAbort(err, controller.signal)) return
         setError(true)
       })
     return () => controller.abort()
