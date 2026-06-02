@@ -1,10 +1,7 @@
 import { useState, useLayoutEffect, useCallback, useRef } from 'react'
+import { BREAKPOINTS } from './useMediaQuery'
 
 const STORAGE_KEY = 'repo-manager-layout-prefs'
-const BREAKPOINTS = {
-  md: 768,
-  xl: 1280,
-}
 
 function getDefaultMode(width) {
   if (width < BREAKPOINTS.md) return 'drawer'
