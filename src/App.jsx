@@ -46,6 +46,7 @@ import { DemoModeBanner } from './components/DemoModeBanner'
 import { RouteFallback } from './components/ui/RouteFallback'
 import { ViewErrorFallback } from './components/ui/ViewErrorFallback'
 import { startTransition } from './utils/viewTransitions'
+import { parseRepoHash, buildRepoHash } from './utils/repoDetailHash'
 import { useTheme } from './hooks/useTheme.jsx'
 
 // Lazy load Pricing page
@@ -122,6 +123,10 @@ function AppContent() {
   const [org, setOrg] = useState('')
   const [selectedRepoDetail, setSelectedRepoDetail] = useState(null)
   const [repoDetailInitialTab, setRepoDetailInitialTab] = useState('overview')
+  // Current repo-detail tab, lifted from RepoDetail so the URL hash can reflect
+  // it. `repoDetailInitialTab` is the tab to OPEN at (set by nav / deep-link);
+  // `repoDetailActiveTab` is what's showing now (drives the hash).
+  const [repoDetailActiveTab, setRepoDetailActiveTab] = useState('overview')
   // Lifted from RepoDetail tabs via window CustomEvents (`repo-detail:*-loaded`).
   // The command palette consumes these to enumerate the PR / branch / issue
   // action registries inside the active repo. Reset whenever the user leaves
@@ -241,6 +246,7 @@ function AppContent() {
   const handleOpenRepo = useCallback((repo, { tab = 'overview' } = {}) => {
     setSelectedRepoDetail(repo)
     setRepoDetailInitialTab(tab)
+    setRepoDetailActiveTab(tab)
     setActiveView('repo-detail')
   }, [setActiveView])
 
@@ -306,6 +312,23 @@ function AppContent() {
   useEffect(() => {
     const sync = () => {
       const hash = window.location.hash
+      // Deep-linkable repo-detail: #/repo/:owner/:name(/:tab). On a cold load
+      // we only have owner/name from the URL, so seed a minimal stub —
+      // RepoDetail re-fetches the full repo from owner/name on mount.
+      const repoRoute = parseRepoHash(hash)
+      if (repoRoute) {
+        const { owner, name, tab } = repoRoute
+        setSelectedRepoDetail((prev) => {
+          const prevOwner = prev?.owner?.login || prev?.full_name?.split('/')[0]
+          if (prevOwner === owner && prev?.name === name) return prev // keep rich object
+          return { name, full_name: `${owner}/${name}`, owner: { login: owner } }
+        })
+        setRepoDetailInitialTab(tab)
+        setRepoDetailActiveTab(tab)
+        setReviewingPR(null)
+        setActiveView('repo-detail')
+        return
+      }
       if (hash in HASH_ROUTES) {
         const next = HASH_ROUTES[hash]
         setSelectedRepoDetail(null)
@@ -343,10 +366,16 @@ function AppContent() {
       didInitHashSyncRef.current = true
       return
     }
-    const desired = VIEW_TO_HASH[activeView]
-    // Only sync when the view is in the deep-link map. Views that live
-    // outside the hash space (repo-detail, pr-review, admin-dlq, etc.)
-    // leave the hash alone.
+    let desired
+    if (activeView === 'repo-detail' && selectedRepoDetail) {
+      // repo-detail carries its own owner/name/tab in the hash.
+      const owner = selectedRepoDetail.owner?.login || selectedRepoDetail.full_name?.split('/')[0]
+      desired = buildRepoHash(owner, selectedRepoDetail.name, repoDetailActiveTab)
+    } else {
+      desired = VIEW_TO_HASH[activeView]
+    }
+    // Only sync when the view is in the deep-link map. Views still outside the
+    // hash space (pr-review, admin-dlq, etc.) leave the hash alone.
     if (desired === undefined) return
     if (window.location.hash === desired) return
     // Use replaceState so each nav click doesn't pollute the history stack
@@ -355,7 +384,7 @@ function AppContent() {
     const newUrl = window.location.pathname + window.location.search + desired
     window.history.replaceState(null, '', newUrl || window.location.pathname)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeView])
+  }, [activeView, selectedRepoDetail, repoDetailActiveTab])
 
   // Quota-exceeded surfaces (QuotaExceededState etc) emit
   // 'app:navigate-pricing' instead of mutating window.location.hash. Routing
@@ -1214,8 +1243,10 @@ function AppContent() {
             <ErrorBoundary fallback={<ViewErrorFallback viewName="Repository Detail" onGoHome={() => { setSelectedRepoDetail(null); setActiveView('dashboard') }} />}>
               <Suspense fallback={<LoadingFallback />}>
                 <RepoDetail
+                  key={selectedRepoDetail.full_name || `${selectedRepoDetail.owner?.login}/${selectedRepoDetail.name}`}
                   repo={selectedRepoDetail}
                   initialTab={repoDetailInitialTab}
+                  onTabChange={setRepoDetailActiveTab}
                   onRepoMutated={handleSelectedRepoMutated}
                   onBack={() => {
                     setSelectedRepoDetail(null)

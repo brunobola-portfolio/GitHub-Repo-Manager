@@ -34,7 +34,7 @@ const TABS = [
     { id: 'settings', label: 'Settings', icon: Settings }
 ]
 
-export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription, initialTab = 'overview', onRepoMutated }) {
+export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription, initialTab = 'overview', onRepoMutated, onTabChange }) {
     const [activeTab, setActiveTab] = useState(initialTab)
     const [repoData, setRepoData] = useState(repo)
     const [loadingRepo, setLoadingRepo] = useState(false)
@@ -73,6 +73,18 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
         // eslint-disable-next-line react-hooks/set-state-in-effect
         loadRepo()
     }, [loadRepo])
+
+    // Report the active tab up so App can mirror it into the URL hash.
+    useEffect(() => {
+        onTabChange?.(activeTab)
+    }, [activeTab, onTabChange])
+
+    // Follow `initialTab` when it changes from outside (browser back/forward
+    // landing on a different #/repo/.../:tab for the repo already on screen).
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setActiveTab(initialTab)
+    }, [initialTab])
 
     // Local repo-data setter that also notifies the App-level repos list
     // so RepoList / Dashboard cards reflect the change without a refetch.
