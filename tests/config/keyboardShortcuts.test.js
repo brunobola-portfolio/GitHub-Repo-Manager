@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
     GLOBAL_SHORTCUTS,
+    DOCS_ONLY_SHORTCUTS,
     collectRegistryShortcuts,
     getAllShortcuts,
 } from '../../src/config/keyboardShortcuts'
@@ -40,10 +41,29 @@ describe('collectRegistryShortcuts', () => {
     })
 })
 
+describe('DOCS_ONLY_SHORTCUTS', () => {
+    it('documents Ctrl+K and the Live Inbox shortcuts', () => {
+        const keys = DOCS_ONLY_SHORTCUTS.map(s => s.key)
+        expect(keys).toEqual(expect.arrayContaining(['Ctrl+K', 'e', 's']))
+    })
+
+    it('carries NO action — these are owned by other surfaces, so the global hook must not dispatch them', () => {
+        for (const s of DOCS_ONLY_SHORTCUTS) {
+            expect(s.action).toBeUndefined()
+        }
+    })
+
+    it('is frozen', () => {
+        expect(Object.isFrozen(DOCS_ONLY_SHORTCUTS)).toBe(true)
+    })
+})
+
 describe('getAllShortcuts', () => {
-    it('returns the union of global + registry shortcuts', () => {
+    it('returns the union of global + docs-only + registry shortcuts', () => {
         const all = getAllShortcuts()
-        expect(all.length).toBe(GLOBAL_SHORTCUTS.length + collectRegistryShortcuts().length)
+        expect(all.length).toBe(
+            GLOBAL_SHORTCUTS.length + DOCS_ONLY_SHORTCUTS.length + collectRegistryShortcuts().length,
+        )
         // Global ones come first.
         for (let i = 0; i < GLOBAL_SHORTCUTS.length; i++) {
             expect(all[i].key).toBe(GLOBAL_SHORTCUTS[i].key)

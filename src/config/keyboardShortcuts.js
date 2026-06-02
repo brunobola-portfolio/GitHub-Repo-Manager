@@ -47,6 +47,20 @@ export const GLOBAL_SHORTCUTS = Object.freeze([
 ])
 
 /**
+ * Shortcuts owned by dedicated surfaces (the command palette and the Live
+ * Inbox) rather than the global hook. Listed here purely so the help modal
+ * documents them — they carry no `action`, and the hook iterates
+ * GLOBAL_SHORTCUTS (not this list), so nothing is double-bound.
+ *
+ * @type {KeyboardShortcut[]}
+ */
+export const DOCS_ONLY_SHORTCUTS = Object.freeze([
+    { key: 'Ctrl+K', description: 'Open command palette', scope: 'global' },
+    { key: 'e', description: 'Archive top item (Live Inbox)', scope: 'inbox' },
+    { key: 's', description: 'Snooze top item (Live Inbox)', scope: 'inbox' },
+])
+
+/**
  * Walks the action registries and emits their `keyboardShortcut` declarations
  * so the help modal can document them alongside the global ones. Execution
  * of repo-scoped shortcuts is the consuming surface's responsibility (a
@@ -80,5 +94,5 @@ export function collectRegistryShortcuts() {
  * @returns {KeyboardShortcut[]}
  */
 export function getAllShortcuts() {
-    return [...GLOBAL_SHORTCUTS, ...collectRegistryShortcuts()]
+    return [...GLOBAL_SHORTCUTS, ...DOCS_ONLY_SHORTCUTS, ...collectRegistryShortcuts()]
 }
