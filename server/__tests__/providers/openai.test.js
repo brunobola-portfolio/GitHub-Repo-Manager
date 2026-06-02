@@ -175,10 +175,28 @@ describe('OpenAIProvider.generate()', () => {
             .rejects.toMatchObject({ code: AI_ERROR_CODE.AUTH });
     });
 
-    it('maps 429 to QUOTA error', async () => {
+    it('maps 429 to RATE_LIMITED (retryable), not QUOTA', async () => {
         vi.stubGlobal('fetch', () => errorResponse(429, 'Rate limit exceeded'));
         await expect(provider.generate({ prompt: 'test' }))
-            .rejects.toMatchObject({ code: AI_ERROR_CODE.QUOTA });
+            .rejects.toMatchObject({ code: AI_ERROR_CODE.RATE_LIMITED });
+    });
+
+    it('honours Retry-After on a 429 (retryAfterMs)', async () => {
+        vi.stubGlobal('fetch', () => Promise.resolve({
+            ok: false,
+            status: 429,
+            headers: { get: (k) => (String(k).toLowerCase() === 'retry-after' ? '2' : null) },
+            json: () => Promise.resolve({ error: { message: 'slow down' } }),
+            body: null,
+        }));
+        await expect(provider.generate({ prompt: 'test' }))
+            .rejects.toMatchObject({ code: AI_ERROR_CODE.RATE_LIMITED, retryAfterMs: 2000 });
+    });
+
+    it('maps 403 to UNKNOWN, not AUTH (region/policy/access, not a bad key)', async () => {
+        vi.stubGlobal('fetch', () => errorResponse(403, 'Country, region, or territory not supported'));
+        await expect(provider.generate({ prompt: 'test' }))
+            .rejects.toMatchObject({ code: AI_ERROR_CODE.UNKNOWN, status: 403 });
     });
 
     it('maps 500 to UNKNOWN error', async () => {

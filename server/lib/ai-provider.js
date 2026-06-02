@@ -145,7 +145,7 @@ function parseRetryAfterToMs(headerValue) {
  *   - err.headers['retry-after']
  *   - err.response.headers.get('retry-after')
  */
-function extractRetryAfterMs(err) {
+export function extractRetryAfterMs(err) {
     if (!err || typeof err !== 'object') return null;
 
     if (typeof err.retryAfterMs === 'number' && Number.isFinite(err.retryAfterMs)) {
