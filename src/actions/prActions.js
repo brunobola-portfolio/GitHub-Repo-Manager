@@ -18,6 +18,7 @@ import {
     Eye, ExternalLink, Copy, GitMerge, X, Wand2, MessageCircle,
 } from 'lucide-react'
 import { copyToClipboard } from '../utils/clipboard'
+import { buildActionCommands } from './buildActionCommands'
 
 /**
  * @typedef {Object} PRTarget
@@ -176,19 +177,8 @@ export const prActions = {
  * @returns {Array<{id, label, description, run}>}
  */
 export function buildPRActionCommands(prs, ctx) {
-    const out = []
-    for (const action of Object.values(prActions)) {
-        if (!action.surfaces.includes('commandPalette')) continue
-        for (const pr of prs) {
-            if (action.isApplicable && !action.isApplicable(pr)) continue
-            const resolveDyn = (val) => (typeof val === 'function' ? val(pr) : val)
-            out.push({
-                id: `${action.id}::${pr.number}`,
-                label: `${resolveDyn(action.label)} — #${pr.number} ${pr.title}`,
-                description: resolveDyn(action.description),
-                run: () => action.run(pr, ctx),
-            })
-        }
-    }
-    return out
+    return buildActionCommands(prActions, prs, ctx, {
+        keyOf: (pr) => pr.number,
+        labelOf: (pr) => `#${pr.number} ${pr.title}`,
+    })
 }

@@ -14,6 +14,7 @@ import {
     Eye, ExternalLink, Copy, CheckCircle2, RotateCcw, Sparkles, MessageSquare,
 } from 'lucide-react'
 import { copyToClipboard } from '../utils/clipboard'
+import { buildActionCommands } from './buildActionCommands'
 
 /**
  * @typedef {Object} IssueTarget
@@ -155,19 +156,8 @@ export const issueActions = {
  * @param {Object} ctx
  */
 export function buildIssueActionCommands(issues, ctx) {
-    const out = []
-    for (const action of Object.values(issueActions)) {
-        if (!action.surfaces.includes('commandPalette')) continue
-        for (const issue of issues) {
-            if (action.isApplicable && !action.isApplicable(issue)) continue
-            const resolveDyn = (val) => (typeof val === 'function' ? val(issue) : val)
-            out.push({
-                id: `${action.id}::${issue.number}`,
-                label: `${resolveDyn(action.label)} — #${issue.number} ${issue.title}`,
-                description: resolveDyn(action.description),
-                run: () => action.run(issue, ctx),
-            })
-        }
-    }
-    return out
+    return buildActionCommands(issueActions, issues, ctx, {
+        keyOf: (issue) => issue.number,
+        labelOf: (issue) => `#${issue.number} ${issue.title}`,
+    })
 }
