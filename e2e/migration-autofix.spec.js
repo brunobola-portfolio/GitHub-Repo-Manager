@@ -90,6 +90,14 @@ test.describe('Migration Auto-Fix Drawer', () => {
     // Step 1: SourceTypeStep — click Azure DevOps (auto-advances to azureConnect)
     await page.getByRole('button', { name: /Azure DevOps/i }).click()
 
+    // Step 1b: pick the Cloud server preset. The redesigned SourceStep
+    // (ServerPicker, commit cda09e7) intentionally removed the silent
+    // dev.azure.com fallback, so validation now bails until a host is set —
+    // without this the project picker never renders.
+    const cloudPreset = page.getByRole('button', { name: 'Cloud', exact: true })
+    await expect(cloudPreset).toBeVisible({ timeout: 10000 })
+    await cloudPreset.click()
+
     // Step 2: azureConnect (SourceStep)
     // With env-auth available, credentialMode defaults to 'serverPat'.
     // Type an org name — the debounced auto-validate fires against the mocked endpoints.
