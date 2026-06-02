@@ -10,6 +10,7 @@ import { useMemo } from 'react'
 import { useToast } from '../hooks/useToast'
 import { useModal } from '../hooks/useModal'
 import { useGitHub } from '../hooks/useGitHub'
+import { openConfirm } from '../utils/openConfirm'
 import { reposApi } from '../api/repos'
 
 /**
@@ -69,12 +70,8 @@ export function useRepoActionContext() {
     performAction,  // see DOUBLE-REFRESH RULE in JSDoc — do NOT pair with triggersRefresh:true
     archiveRepos,   // see DOUBLE-REFRESH RULE in JSDoc — do NOT pair with triggersRefresh:true
     deleteRepos,    // see DOUBLE-REFRESH RULE in JSDoc — do NOT pair with triggersRefresh:true
-    confirmGate: (cfg) => new Promise((resolve) => {
-      openModalWithData('showConfirm', {
-        ...cfg,
-        onConfirm: () => { closeModal('showConfirm'); resolve(true) },
-        onClose:   () => { closeModal('showConfirm'); resolve(false) },
-      })
-    }),
+    // Pure gate: resolves true/false; the matching action.run() does the work
+    // afterwards (see runAction). Delegates to the shared openConfirm primitive.
+    confirmGate: (cfg) => openConfirm({ openModalWithData, closeModal }, cfg),
   }), [toast, openModal, openModalWithData, closeModal, refresh, performAction, archiveRepos, deleteRepos])
 }
