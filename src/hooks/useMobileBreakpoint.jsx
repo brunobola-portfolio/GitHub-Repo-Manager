@@ -1,20 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useBelowBreakpoint } from './useMediaQuery'
 
-// TODO: Consider consolidating with useResponsiveLayout which provides
-// richer breakpoint info (drawer/slim/expanded). This hook overlaps with
-// useResponsiveLayout's breakpointMode === 'drawer' check. Skipping
-// refactor for now due to multiple consumers (CreateRepoModal, MigrationWizard).
-const MOBILE_QUERY = '(max-width: 767px)'
-
+/**
+ * True below the `md` breakpoint (`max-width: 767px`). Thin alias over the
+ * shared {@link useBelowBreakpoint} primitive — kept as a named hook because
+ * several modal/list surfaces (CreateRepoModal, MigrationWizard, RepoList,
+ * RepoFilterBar, ModalSticky) read it by this name.
+ *
+ * @returns {boolean}
+ */
 export function useMobileBreakpoint() {
-    const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_QUERY).matches)
-
-    useEffect(() => {
-        const mql = window.matchMedia(MOBILE_QUERY)
-        const onChange = (e) => setIsMobile(e.matches)
-        mql.addEventListener('change', onChange)
-        return () => mql.removeEventListener('change', onChange)
-    }, [])
-
-    return isMobile
+  return useBelowBreakpoint('md')
 }

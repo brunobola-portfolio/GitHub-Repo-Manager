@@ -1,25 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import { Building2, Check } from 'lucide-react'
 import { HeroChip } from './HeroChip'
 import { Drawer } from '../ui/Drawer'
-
-// TODO: consolidate with src/hooks/useMobileBreakpoint.jsx — that hook uses
-// (max-width: 767px) for md; this chip needs sm (639px). Should grow into a
-// shared `useBreakpoint(name)` rather than two near-duplicate hooks.
-function useIsMobile() {
-    const [isMobile, setIsMobile] = useState(() => {
-        if (typeof window === 'undefined') return false
-        return window.matchMedia('(max-width: 639px)').matches
-    })
-    useEffect(() => {
-        const mq = window.matchMedia('(max-width: 639px)')
-        const handler = (e) => setIsMobile(e.matches)
-        mq.addEventListener('change', handler)
-        return () => mq.removeEventListener('change', handler)
-    }, [])
-    return isMobile
-}
+import { useBelowBreakpoint } from '../../hooks/useMediaQuery'
 
 function OrgList({ orgs, selectedOrg, onSelect }) {
     return (
@@ -62,7 +46,7 @@ function OrgList({ orgs, selectedOrg, onSelect }) {
 
 export function HeroOrgChip({ orgs = [], selectedOrg, onSelectOrg, loading }) {
     const [open, setOpen] = useState(false)
-    const isMobile = useIsMobile()
+    const isMobile = useBelowBreakpoint('sm')
     const selected = orgs.find(o => o.login === selectedOrg)
     const label = selectedOrg || 'All organizations'
     const ariaLabel = `Filter by organization, currently ${label}`
