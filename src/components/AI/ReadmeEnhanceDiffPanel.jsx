@@ -6,6 +6,7 @@ import { Sparkles, Copy, Check } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { SectionSpinner } from '../ui/Spinner'
 import { AIErrorState } from '../ui/AIErrorState'
+import { isAbort } from '../../utils/errorClassification'
 
 export function ReadmeEnhanceDiffPanel({ repo }) {
   const [loading, setLoading] = useState(true)
@@ -54,7 +55,7 @@ export function ReadmeEnhanceDiffPanel({ repo }) {
         setLoading(false)
       })
       .catch(err => {
-        if (controller.signal.aborted || err?.name === 'AbortError') return
+        if (isAbort(err, controller.signal)) return
         // Preserve the full err so AIErrorState can map .code → CTA.
         setError(err)
         setLoading(false)

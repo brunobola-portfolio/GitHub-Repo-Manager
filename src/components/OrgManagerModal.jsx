@@ -8,6 +8,7 @@ import { Button } from './ui/Button'
 import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
 import { EmptyState } from './ui/EmptyState'
+import { isAbort } from '../utils/errorClassification'
 import { Spinner } from './ui/Spinner'
 import { Field, Input, Textarea } from './ui/form'
 import { useToast } from '../hooks/useToast'
@@ -83,7 +84,7 @@ export function OrgManagerModal({
                 setMembers(Array.isArray(data) ? data : [])
             }
         } catch (e) {
-            if (e?.name === 'AbortError' || signal?.aborted) return
+            if (isAbort(e, signal)) return
             setError(e?.message || 'Failed to load organization details')
         } finally {
             if (!signal?.aborted) setLoading(false)
