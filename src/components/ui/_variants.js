@@ -46,6 +46,16 @@ export const MODAL_BACKDROP_CLASS =
     'fixed inset-0 bg-black/60 dark:bg-black/75 backdrop-blur-md z-[var(--ds-z-modal)]'
 
 /**
+ * Lighter backdrop used by WizardPanel in its floating (restored) mode. The
+ * wizard is a workspace tool, not a blocking dialog — a softer dim + minimal
+ * blur keeps the page legible behind it (more premium, less "lightbox"), while
+ * the focus trap still anchors attention. Maximized mode fades this out
+ * entirely, so it only ever shows while floating.
+ */
+export const WIZARD_BACKDROP_CLASS =
+    'fixed inset-0 bg-black/40 dark:bg-black/55 backdrop-blur-[2px] z-[var(--ds-z-modal)]'
+
+/**
  * Neutral header chrome shared by Modal and WizardPanel — text color + the
  * single border-b that separates header from body. No background of its own
  * (inherits the shell's surface) so swapping shell colors doesn't ripple.
