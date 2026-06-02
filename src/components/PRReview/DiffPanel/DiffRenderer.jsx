@@ -7,6 +7,7 @@ import { useTheme } from '../../../hooks/useTheme'
 import { pickRenderStrategy } from './diffSize'
 import { DiffCollapser } from './DiffCollapser'
 import { DiffComputeOnDemand } from './DiffComputeOnDemand'
+import ErrorBoundary from '../../ErrorBoundary'
 
 // Silence a dev-only sanity warning from @git-diff-view/core that fires
 // because we feed it GitHub patch fragments (no full file content). The
@@ -170,20 +171,35 @@ export function DiffRenderer({
   }
 
   // The lib's actual diff. Wrapped or unwrapped depending on file size.
+  // DiffView is third-party (@git-diff-view) and is fed partial GitHub patch
+  // fragments; certain inputs trip internal split-view edge cases (e.g.
+  // getSplitLeftLine reading null). A diff-local error boundary keeps that
+  // contained to "this file's diff" instead of bubbling up and taking down the
+  // whole PR Review view (which would kill the breadcrumb + back navigation).
+  // Keyed by filename so switching files starts with a fresh, un-errored boundary.
   const diffElement = (
     <div className={`diff-renderer overflow-auto text-sm font-mono${wrap ? ' diff-wrap-on' : ''}`}>
-      <DiffView
-        data={diffData}
-        diffViewMode={diffMode}
-        diffViewTheme={isDark ? 'dark' : 'light'}
-        diffViewHighlight
-        diffViewAddWidget={Boolean(onAddComment)}
-        onAddWidgetClick={
-          onAddComment
-            ? (lineNumber, side) => onAddComment({ lineNumber, side })
-            : undefined
-        }
-      />
+      <ErrorBoundary
+        key={filename}
+        fallback={() => (
+          <div className="flex items-center justify-center h-24 px-4 text-center text-sm text-slate-400 dark:text-slate-500 italic select-none">
+            Couldn&apos;t render the diff for this file. The rest of the review is unaffected.
+          </div>
+        )}
+      >
+        <DiffView
+          data={diffData}
+          diffViewMode={diffMode}
+          diffViewTheme={isDark ? 'dark' : 'light'}
+          diffViewHighlight
+          diffViewAddWidget={Boolean(onAddComment)}
+          onAddWidgetClick={
+            onAddComment
+              ? (lineNumber, side) => onAddComment({ lineNumber, side })
+              : undefined
+          }
+        />
+      </ErrorBoundary>
     </div>
   )
 
