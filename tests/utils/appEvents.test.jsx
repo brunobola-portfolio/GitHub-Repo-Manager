@@ -59,15 +59,19 @@ describe('emitAppEvent / onAppEvent', () => {
     offA(); offB()
   })
 
-  it('a throwing handler does not stop the others', () => {
+  it('a throwing handler does not stop the others (error logged, not re-thrown)', () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const bad = () => { throw new Error('boom') }
     const good = vi.fn()
     const offBad = onAppEvent('test:throw', bad)
     const offGood = onAppEvent('test:throw', good)
-    // The throw is re-raised asynchronously, so this synchronous emit is safe.
+    // The error is caught + logged (never re-thrown), so emit stays synchronous
+    // and safe — no uncaught async exception leaks into the test runner.
     expect(() => emitAppEvent('test:throw', {})).not.toThrow()
     expect(good).toHaveBeenCalledOnce()
+    expect(errSpy).toHaveBeenCalled()
     offBad(); offGood()
+    errSpy.mockRestore()
   })
 
   it('is a no-op with no subscribers', () => {

@@ -90,8 +90,10 @@ const registry = new Map()
 
 /**
  * Publish an event. Handlers receive `{ detail }`. A handler that throws does
- * not stop the others (mirrors independent DOM listeners); the error is
- * re-thrown asynchronously so it still reaches the global error handler.
+ * not stop the others, and the error is logged rather than re-thrown — mirroring
+ * how the browser isolates and reports a throwing DOM listener. (Re-throwing
+ * would let a benign handler error escalate to window.onerror / the app's error
+ * surface, which is never what a fire-and-forget event should do.)
  *
  * @param {string} name
  * @param {*} [detail]
@@ -105,7 +107,7 @@ export function emitAppEvent(name, detail) {
     try {
       handler(payload)
     } catch (err) {
-      setTimeout(() => { throw err }, 0)
+      console.error(`[appEvents] "${name}" handler threw`, err)
     }
   }
 }
