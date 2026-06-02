@@ -5,11 +5,27 @@
  * Spec: docs/specs/2026-05-14-premium-non-llm-theme-design.md
  */
 
+/* Mona Sans — GitHub's own typeface (SIL OFL 1.1), self-hosted as a single
+ * variable woff2 (~40 KB). Drives the display/heading face so the product
+ * reads as designed rather than defaulting to the generic system stack.
+ * License: public/fonts/Mona-Sans-LICENSE.txt */
+@font-face {
+  font-family: "Mona Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url("/fonts/mona-sans.woff2") format("woff2");
+}
+
 :root {
   /* ===== TYPOGRAPHY ===== */
   --ds-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
                   Helvetica, Arial, sans-serif, "Apple Color Emoji",
                   "Segoe UI Emoji";
+  /* Display face for headings — distinctive Mona Sans, falling back to the
+   * system sans so text still renders premium before the font loads. */
+  --ds-font-display: "Mona Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+                     "Noto Sans", Helvetica, Arial, sans-serif;
   --ds-font-mono: ui-monospace, "JetBrains Mono", "Cascadia Code",
                   "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono",
                   monospace;
@@ -173,7 +189,7 @@
 /* No translate, no scale — premium contract enforces idle→hover via bg/border only. */
 
 /* ===== FONT UTILITIES ===== */
-.ds-font-display { font-family: var(--ds-font-sans); }
+.ds-font-display { font-family: var(--ds-font-display); letter-spacing: -0.01em; }
 .ds-font-mono    { font-family: var(--ds-font-mono); }
 
 /* ===== TYPOGRAPHY SIZES (token-backed) =====
