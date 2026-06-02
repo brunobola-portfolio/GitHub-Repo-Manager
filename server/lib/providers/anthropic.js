@@ -13,7 +13,7 @@
  *    → AsyncGenerator<string>
  */
 
-import { AIError, AI_ERROR_CODE, toAIError, extractRetryAfterMs } from '../ai-provider.js';
+import { AIError, AI_ERROR_CODE, toAIError, extractRetryAfterMs, throwIfCanceled } from '../ai-provider.js';
 import { computeCostUSD } from '../provider-pricing.js';
 
 const ANTHROPIC_API_BASE = 'https://api.anthropic.com';
@@ -177,9 +177,7 @@ export class AnthropicProvider {
                 signal,
             });
         } catch (networkErr) {
-            if (networkErr?.name === 'AbortError') {
-                throw new AIError({ code: AI_ERROR_CODE.CANCELED, message: 'Request aborted', cause: networkErr });
-            }
+            throwIfCanceled(networkErr, signal, 'Request aborted');
             throw toAIError(networkErr);
         }
 
@@ -371,9 +369,7 @@ export class AnthropicProvider {
                 try {
                     ({ done, value } = await reader.read());
                 } catch (readErr) {
-                    if (readErr?.name === 'AbortError' || signal?.aborted) {
-                        throw new AIError({ code: AI_ERROR_CODE.CANCELED, message: 'Generation was cancelled', cause: readErr });
-                    }
+                    throwIfCanceled(readErr, signal);
                     throw readErr;
                 }
 
@@ -402,9 +398,7 @@ export class AnthropicProvider {
             }
         } catch (err) {
             if (err instanceof AIError) throw err;
-            if (err?.name === 'AbortError' || signal?.aborted) {
-                throw new AIError({ code: AI_ERROR_CODE.CANCELED, message: 'Generation was cancelled', cause: err });
-            }
+            throwIfCanceled(err, signal);
             throw err;
         } finally {
             reader.releaseLock();

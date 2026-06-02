@@ -193,6 +193,21 @@ function isNetworkErrorShape(err) {
 }
 
 /**
+ * Throw a CANCELED AIError when an error / signal indicates a client abort;
+ * no-op otherwise (the caller re-throws the original). Dedups the identical
+ * abort-detection that was copy-pasted across the streaming providers.
+ *
+ * @param {unknown} err
+ * @param {{ aborted?: boolean }} [signal]
+ * @param {string} [message]
+ */
+export function throwIfCanceled(err, signal, message = 'Generation was cancelled') {
+    if (err?.name === 'AbortError' || signal?.aborted) {
+        throw new AIError({ code: AI_ERROR_CODE.CANCELED, message, cause: err });
+    }
+}
+
+/**
  * Convert an arbitrary vendor SDK error into an AIError.
  * Preserves the original error in `.cause` for logging.
  *
