@@ -1,9 +1,11 @@
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { X, Maximize2, Minimize2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { motion, AnimatePresence, useReducedMotion, useDragControls, useMotionValue } from 'framer-motion'
+import { X, Maximize2, Minimize2, GripHorizontal } from 'lucide-react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { useMobileKeyboardFix } from '../../hooks/useMobileKeyboardFix'
-import { VARIANT_ICON_STYLES, MODAL_BACKDROP_CLASS } from './_variants'
+import { VARIANT_ICON_STYLES, WIZARD_BACKDROP_CLASS } from './_variants'
+import { clampPanelSize } from './wizardPanelGeometry'
 
 const PANEL_SIZES = {
   sm: 'w-[min(92vw,520px)]',
@@ -39,6 +41,87 @@ export function WizardPanel({
   const effectiveMaximized = isMobile || isMaximized
   const iconTileClass = VARIANT_ICON_STYLES[variant] || VARIANT_ICON_STYLES.default
 
+  // Drag + resize are desktop-floating affordances only. When maximized (or on
+  // mobile, which is always maximized) the panel is edge-to-edge and neither
+  // gesture makes sense, so they're fully disabled there. `active` is the one
+  // state where they live — floating AND open.
+  const floating = !effectiveMaximized
+  const active = floating && isOpen
+
+  // Position is owned by framer's drag (x/y motion values); size is local state
+  // that overrides the Tailwind width/height once the user resizes. Both reset
+  // whenever the panel maximizes or closes so every open starts centered.
+  const dragControls = useDragControls()
+  const constraintsRef = useRef(null)
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  const resizeState = useRef(null)
+  const [dimensions, setDimensions] = useState(null)
+
+  // Reset the resized size when leaving the floating/open state — done during
+  // render via the "store previous prop" pattern rather than an effect, so it
+  // doesn't trigger a cascading setState-in-effect render.
+  const [prevActive, setPrevActive] = useState(active)
+  if (active !== prevActive) {
+    setPrevActive(active)
+    if (!active && dimensions !== null) setDimensions(null)
+  }
+
+  // Zero the drag offset (framer motion values — an external store, the
+  // legitimate use of an effect) whenever drag/resize isn't live.
+  useEffect(() => {
+    if (!active) {
+      x.set(0)
+      y.set(0)
+    }
+  }, [active, x, y])
+
+  // Drag starts from the title bar only (so body clicks/selection still work),
+  // and never from the header's control buttons.
+  const startDrag = useCallback((event) => {
+    if (!floating) return
+    if (event.target.closest('button')) return
+    dragControls.start(event)
+  }, [floating, dragControls])
+
+  // Corner resize. Pointer capture keeps move/up events flowing to the grip
+  // even when the cursor outruns it. Horizontal growth is compensated against
+  // the panel's centering (mx-auto) so the left edge stays put and the corner
+  // tracks the cursor — a top-left-anchored resize.
+  const onResizePointerDown = useCallback((event) => {
+    if (!floating) return
+    event.preventDefault()
+    event.stopPropagation()
+    const rect = panelRef.current?.getBoundingClientRect()
+    if (!rect) return
+    resizeState.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      startW: rect.width,
+      startH: rect.height,
+      startXOffset: x.get(),
+    }
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+  }, [floating, panelRef, x])
+
+  const onResizePointerMove = useCallback((event) => {
+    const s = resizeState.current
+    if (!s) return
+    const next = clampPanelSize(
+      s.startW + (event.clientX - s.startX),
+      s.startH + (event.clientY - s.startY),
+      window.innerWidth,
+      window.innerHeight,
+    )
+    setDimensions(next)
+    x.set(s.startXOffset + (next.width - s.startW) / 2)
+  }, [x])
+
+  const onResizePointerUp = useCallback((event) => {
+    resizeState.current = null
+    event.currentTarget.releasePointerCapture?.(event.pointerId)
+  }, [])
+
   // Match Modal.jsx's spring timing exactly so the two shells animate in
   // sync when a flow opens a wizard from inside a modal (or vice-versa).
   // Reduced-motion users get a short fade so the entrance is calm but the
@@ -48,6 +131,19 @@ export function WizardPanel({
     : { type: 'spring', duration: 0.4, bounce: 0.12 }
   const backdropTransition = reduced ? { duration: 0 } : { duration: 0.18 }
 
+  // Floating mode drives x/y via drag, so its entrance must not also animate y
+  // (the two would fight over the same motion value). Maximized mode keeps the
+  // original lift-in. Both respect reduced-motion.
+  const panelInitial = reduced
+    ? { opacity: 0 }
+    : floating ? { opacity: 0, scale: 0.98 } : { opacity: 0, y: 24, scale: 0.98 }
+  const panelAnimate = reduced
+    ? { opacity: 1 }
+    : floating ? { opacity: 1, scale: 1 } : { opacity: 1, y: 0, scale: 1 }
+  const panelExit = reduced
+    ? { opacity: 0 }
+    : floating ? { opacity: 0, scale: 0.98 } : { opacity: 0, y: 24, scale: 0.98 }
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -55,14 +151,21 @@ export function WizardPanel({
           {/* Backdrop */}
           <motion.div
             key="wizard-backdrop"
+            data-testid="wizard-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: effectiveMaximized ? 0 : 1 }}
             exit={{ opacity: 0 }}
             transition={backdropTransition}
-            className={MODAL_BACKDROP_CLASS}
+            className={WIZARD_BACKDROP_CLASS}
             style={{ pointerEvents: effectiveMaximized ? 'none' : 'auto' }}
             aria-hidden="true"
           />
+
+          {/* Drag boundary — keeps the floating panel from being dragged off
+              screen. Pointer-events-none so it never intercepts clicks. */}
+          {floating && (
+            <div ref={constraintsRef} className="fixed inset-0 pointer-events-none z-[var(--ds-z-modal)]" aria-hidden="true" />
+          )}
 
           {/* Panel */}
           <motion.div
@@ -71,20 +174,34 @@ export function WizardPanel({
             role="dialog"
             aria-modal="true"
             aria-labelledby="wizard-panel-title"
-            initial={reduced ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.98 }}
-            animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
-            exit={reduced ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.98 }}
+            initial={panelInitial}
+            animate={panelAnimate}
+            exit={panelExit}
             transition={panelTransition}
+            drag={floating}
+            dragListener={false}
+            dragControls={dragControls}
+            dragConstraints={constraintsRef}
+            dragMomentum={false}
+            dragElastic={0}
+            style={floating
+              ? { x, y, ...(dimensions ? { width: dimensions.width, height: dimensions.height } : null) }
+              : undefined}
             className={`
               fixed z-[var(--ds-z-modal)] flex flex-col overflow-hidden
               ${effectiveMaximized
                 ? 'inset-0 bg-white dark:bg-[color:var(--ds-surface-dark)]'
-                : `inset-x-0 mx-auto top-[clamp(1.5rem,5vh,4rem)] max-h-[min(90vh,calc(100vh-3rem))] ${PANEL_SIZES[size] || PANEL_SIZES.xl} rounded-2xl bg-white dark:bg-[color:var(--ds-surface-dark)] shadow-[var(--ds-shadow-lg)] ring-1 ring-slate-200/50 dark:ring-[color:var(--ds-border-dark)]`
+                : `inset-x-0 mx-auto top-[clamp(1.5rem,5vh,4rem)] ${dimensions ? '' : 'max-h-[min(90vh,calc(100vh-3rem))]'} ${PANEL_SIZES[size] || PANEL_SIZES.xl} rounded-2xl bg-white dark:bg-[color:var(--ds-surface-dark)] shadow-[var(--ds-shadow-lg)] ring-1 ring-slate-200/50 dark:ring-[color:var(--ds-border-dark)]`
               }
             `}
           >
-            {/* Title Bar — neutral GitHub-utilitarian header; variant tone lives in the icon tile only. */}
-            <div className="flex-shrink-0 text-slate-900 dark:text-slate-100 flex items-center h-12 md:h-[52px] px-4 md:px-5 gap-3 border-b border-slate-200 dark:border-[color:var(--ds-border-dark)]">
+            {/* Title Bar — neutral GitHub-utilitarian header; variant tone lives in the icon tile only.
+                In floating mode it doubles as the drag handle. */}
+            <div
+              onPointerDown={startDrag}
+              data-testid="wizard-titlebar"
+              className={`flex-shrink-0 text-slate-900 dark:text-slate-100 flex items-center h-12 md:h-[52px] px-4 md:px-5 gap-3 border-b border-slate-200 dark:border-[color:var(--ds-border-dark)] ${floating ? 'cursor-grab active:cursor-grabbing select-none touch-none' : ''}`}
+            >
               {/* Left: Icon + Title */}
               <div className="flex items-center gap-2.5 min-w-0">
                 {Icon && (
@@ -179,6 +296,23 @@ export function WizardPanel({
                 )}
               </div>
             </div>
+
+            {/* Resize grip — floating desktop mode only. Sits over the rounded
+                corner; touch-none so it owns the pointer gesture outright. */}
+            {floating && (
+              <div
+                role="button"
+                tabIndex={-1}
+                aria-label="Resize wizard"
+                data-testid="wizard-resize-handle"
+                onPointerDown={onResizePointerDown}
+                onPointerMove={onResizePointerMove}
+                onPointerUp={onResizePointerUp}
+                className="absolute bottom-0 right-0 z-20 flex items-end justify-end w-6 h-6 p-0.5 cursor-nwse-resize touch-none text-slate-400/70 dark:text-slate-500/70 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              >
+                <GripHorizontal className="w-3.5 h-3.5 rotate-45" strokeWidth={2.25} aria-hidden="true" />
+              </div>
+            )}
           </motion.div>
         </>
       )}
