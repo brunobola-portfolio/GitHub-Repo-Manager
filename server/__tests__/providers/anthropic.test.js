@@ -178,10 +178,28 @@ describe('AnthropicProvider.generate()', () => {
             .rejects.toMatchObject({ code: AI_ERROR_CODE.OVERLOAD, status: 529 });
     });
 
-    it('maps 429 to QUOTA error', async () => {
+    it('maps 429 to RATE_LIMITED (retryable), not QUOTA', async () => {
         vi.stubGlobal('fetch', () => errorResponse(429, 'Rate limit exceeded', 'rate_limit_error'));
         await expect(provider.generate({ prompt: 'test' }))
-            .rejects.toMatchObject({ code: AI_ERROR_CODE.QUOTA });
+            .rejects.toMatchObject({ code: AI_ERROR_CODE.RATE_LIMITED, status: 429 });
+    });
+
+    it('honours Retry-After on a 429 (retryAfterMs)', async () => {
+        vi.stubGlobal('fetch', () => Promise.resolve({
+            ok: false,
+            status: 429,
+            headers: { get: (k) => (String(k).toLowerCase() === 'retry-after' ? '3' : null) },
+            json: () => Promise.resolve({ error: { message: 'slow down', type: 'rate_limit_error' } }),
+            body: null,
+        }));
+        await expect(provider.generate({ prompt: 'test' }))
+            .rejects.toMatchObject({ code: AI_ERROR_CODE.RATE_LIMITED, retryAfterMs: 3000 });
+    });
+
+    it('maps 400 invalid_request to UNKNOWN (not INVALID_RESPONSE)', async () => {
+        vi.stubGlobal('fetch', () => errorResponse(400, 'prompt is too long', 'invalid_request_error'));
+        await expect(provider.generate({ prompt: 'test' }))
+            .rejects.toMatchObject({ code: AI_ERROR_CODE.UNKNOWN, status: 400 });
     });
 
     it('maps overloaded_error type to OVERLOAD even at unexpected status', async () => {

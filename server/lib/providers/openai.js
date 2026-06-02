@@ -13,7 +13,7 @@
  *    → AsyncGenerator<string>
  */
 
-import { AIError, AI_ERROR_CODE, toAIError } from '../ai-provider.js';
+import { AIError, AI_ERROR_CODE, toAIError, extractRetryAfterMs } from '../ai-provider.js';
 import { computeCostUSD } from '../provider-pricing.js';
 
 // ---------------------------------------------------------------------------
@@ -82,15 +82,18 @@ function safeStringify(value) {
  * @param {object} [details] — structured upstream context (e.g. OpenRouter
  *                              `error.metadata` carrying `provider_name` + `raw`).
  *                              Surfaced to the UI by the /test endpoint.
+ * @param {Headers} [headers] — response headers (for Retry-After on 429)
  * @returns {AIError}
  */
-function mapHttpError(status, message, cause, details) {
+function mapHttpError(status, message, cause, details, headers) {
     const opts = { message, status, cause, ...(details ? { details } : {}) };
-    if (status === 401 || status === 403) {
+    if (status === 401) {
         return new AIError({ ...opts, code: AI_ERROR_CODE.AUTH });
     }
+    // 429 is a transient rate limit, NOT a billing quota — retryable, honour Retry-After.
     if (status === 429) {
-        return new AIError({ ...opts, code: AI_ERROR_CODE.QUOTA });
+        const retryAfterMs = extractRetryAfterMs({ headers });
+        return new AIError({ ...opts, code: AI_ERROR_CODE.RATE_LIMITED, ...(retryAfterMs !== null ? { retryAfterMs } : {}) });
     }
     if (status === 404) {
         return new AIError({ ...opts, code: AI_ERROR_CODE.NOT_FOUND });
@@ -98,6 +101,10 @@ function mapHttpError(status, message, cause, details) {
     if (status === 503 || status === 529) {
         return new AIError({ ...opts, code: AI_ERROR_CODE.OVERLOAD });
     }
+    // 403 is NOT necessarily an auth failure on OpenAI-compatible APIs — it also
+    // covers unsupported region/country, content policy, model access and
+    // secondary rate limits. Surface it as UNKNOWN (message carries the detail)
+    // rather than falsely claiming the API key was rejected.
     return new AIError({ ...opts, code: AI_ERROR_CODE.UNKNOWN });
 }
 
@@ -189,7 +196,7 @@ export class OpenAIProvider {
             } catch {
                 // non-JSON body; keep status message
             }
-            throw mapHttpError(res.status, errMessage, undefined, details);
+            throw mapHttpError(res.status, errMessage, undefined, details, res.headers);
         }
 
         return res.json();
@@ -229,7 +236,7 @@ export class OpenAIProvider {
             } catch {
                 // non-JSON body
             }
-            throw mapHttpError(res.status, errMessage, undefined, details);
+            throw mapHttpError(res.status, errMessage, undefined, details, res.headers);
         }
 
         return res;

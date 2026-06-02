@@ -13,7 +13,7 @@
  *    → AsyncGenerator<string>
  */
 
-import { AIError, AI_ERROR_CODE, toAIError } from '../ai-provider.js';
+import { AIError, AI_ERROR_CODE, toAIError, extractRetryAfterMs } from '../ai-provider.js';
 import { computeCostUSD } from '../provider-pricing.js';
 
 const ANTHROPIC_API_BASE = 'https://api.anthropic.com';
@@ -38,24 +38,34 @@ function stripMarkdownFences(text) {
  *
  * Anthropic error codes: https://docs.anthropic.com/en/api/errors
  *  - 401           → AUTH
- *  - 429           → QUOTA (rate limit)
+ *  - 429           → RATE_LIMITED (retryable; honours Retry-After)
  *  - 529           → OVERLOAD (API temporarily overloaded)
  *  - overloaded_error type → OVERLOAD
+ *  - 400           → UNKNOWN (a malformed *request*, not a malformed response)
  *
  * @param {number} status
  * @param {string} message
  * @param {string} [errorType]  — Anthropic error.type field
  * @param {unknown} [cause]
+ * @param {Headers} [headers]   — response headers (for Retry-After on 429)
  * @returns {AIError}
  */
-function mapAnthropicError(status, message, errorType, cause) {
+function mapAnthropicError(status, message, errorType, cause, headers) {
     const details = errorType ? { errorType } : undefined;
     const opts = { message, cause, ...(details ? { details } : {}) };
     if (status === 401 || errorType === 'authentication_error') {
         return new AIError({ ...opts, code: AI_ERROR_CODE.AUTH, status: 401 });
     }
+    // 429 is a transient rate limit, NOT a billing quota — retryable, and we
+    // honour Retry-After so the backoff respects the server's hint.
     if (status === 429 || errorType === 'rate_limit_error') {
-        return new AIError({ ...opts, code: AI_ERROR_CODE.QUOTA, status: 429 });
+        const retryAfterMs = extractRetryAfterMs({ headers });
+        return new AIError({
+            ...opts,
+            code: AI_ERROR_CODE.RATE_LIMITED,
+            status: 429,
+            ...(retryAfterMs !== null ? { retryAfterMs } : {}),
+        });
     }
     if (status === 529 || errorType === 'overloaded_error') {
         return new AIError({ ...opts, code: AI_ERROR_CODE.OVERLOAD, status: 529 });
@@ -63,8 +73,10 @@ function mapAnthropicError(status, message, errorType, cause) {
     if (status === 404 || errorType === 'not_found_error') {
         return new AIError({ ...opts, code: AI_ERROR_CODE.NOT_FOUND, status: 404 });
     }
+    // 400 = invalid request (prompt too long, bad param) — caller's fault, not a
+    // malformed model response. INVALID_RESPONSE is reserved for unparseable output.
     if (status === 400 || errorType === 'invalid_request_error') {
-        return new AIError({ ...opts, code: AI_ERROR_CODE.INVALID_RESPONSE, status: 400 });
+        return new AIError({ ...opts, code: AI_ERROR_CODE.UNKNOWN, status: 400 });
     }
     return new AIError({ ...opts, code: AI_ERROR_CODE.UNKNOWN, status });
 }
@@ -141,7 +153,7 @@ export class AnthropicProvider {
             } catch {
                 // non-JSON body; keep status message
             }
-            throw mapAnthropicError(res.status, errMessage, errType, undefined);
+            throw mapAnthropicError(res.status, errMessage, errType, undefined, res.headers);
         }
 
         return res.json();
@@ -181,7 +193,7 @@ export class AnthropicProvider {
             } catch {
                 // non-JSON body
             }
-            throw mapAnthropicError(res.status, errMessage, errType, undefined);
+            throw mapAnthropicError(res.status, errMessage, errType, undefined, res.headers);
         }
 
         return res;
