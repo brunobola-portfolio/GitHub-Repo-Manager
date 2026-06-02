@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useModal } from './useModal'
+import { openConfirm } from '../utils/openConfirm'
 
 /**
  * useDangerAction — wraps the imperative `openModalWithData('showConfirm', …)`
@@ -37,39 +38,22 @@ import { useModal } from './useModal'
  */
 export function useDangerAction({ title, message, variant = 'danger', requiresInput, confirmText, onConfirm }) {
 	const { openModalWithData, closeModal } = useModal()
-	// Use a ref so the run() callback never closes over a stale onConfirm.
+	// Latest-ref so the stable run() callback never closes over a stale
+	// onConfirm. Written in an effect (run() only fires from event handlers,
+	// well after commit) rather than during render.
 	const onConfirmRef = useRef(onConfirm)
-	onConfirmRef.current = onConfirm
+	useEffect(() => { onConfirmRef.current = onConfirm }, [onConfirm])
 
-	const run = useCallback(() => new Promise((resolve, reject) => {
-		// Idempotent settle so a quick double-fire (e.g. user taps confirm
-		// twice) doesn't resolve the Promise twice — Promises ignore later
-		// calls but explicit guarding keeps reasoning simple.
-		let settled = false
-		const settle = (fn) => { if (settled) return; settled = true; fn() }
-
-		openModalWithData('showConfirm', {
-			title,
-			message,
-			variant,
-			requiresInput,
-			confirmText,
-			onConfirm: async () => {
-				try {
-					await onConfirmRef.current?.()
-					closeModal('showConfirm')
-					settle(() => resolve(true))
-				} catch (err) {
-					closeModal('showConfirm')
-					settle(() => reject(err))
-				}
-			},
-			onClose: () => {
-				closeModal('showConfirm')
-				settle(() => resolve(false))
-			},
-		})
-	}), [title, message, variant, requiresInput, confirmText, openModalWithData, closeModal])
+	// Delegates to the shared openConfirm primitive (settle-once + close-on-every-
+	// path live there). The onConfirm wrapper reads the ref at call time so run()
+	// never invokes a stale handler.
+	const run = useCallback(
+		() => openConfirm(
+			{ openModalWithData, closeModal },
+			{ title, message, variant, requiresInput, confirmText, onConfirm: () => onConfirmRef.current?.() },
+		),
+		[title, message, variant, requiresInput, confirmText, openModalWithData, closeModal],
+	)
 
 	return { run }
 }
