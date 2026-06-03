@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback, memo } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useId, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight } from 'lucide-react'
@@ -37,6 +37,9 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 	const [focusedIndex, setFocusedIndex] = useState(-1)
 	const hoverTimerRef = useRef(null)
 	const itemRefs = useRef([])
+	// Stable per-menu base for description ids so each menuitem can link its
+	// second line via aria-describedby without cross-instance collisions.
+	const descBaseId = useId()
 	const [submenuPos, setSubmenuPos] = useState({ x: 0, y: 0, parentMenuWidth: 0 })
 
 	// Get only actionable items (not separators/headers) for keyboard nav
@@ -299,7 +302,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 					const isHovered = hoveredIndex === index || focusedIndex === index
 					// Keyboard-only focus gets an extra ring so arrow-key navigation is visible
 					// even against a matching hover bg.
-					const isKeyboardFocused = focusedIndex === index && hoveredIndex !== index
+					const isKeyboardFocused = focusedIndex === index
 					const hasChildren = item.children?.length > 0
 					const Icon = item.icon
 
@@ -311,6 +314,8 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 							role="menuitem"
 							aria-disabled={item.disabled ? 'true' : undefined}
 							aria-haspopup={hasChildren ? 'true' : undefined}
+							aria-expanded={hasChildren ? (activeSubmenu === index) : undefined}
+							aria-describedby={item.description ? `${descBaseId}-desc-${index}` : undefined}
 							tabIndex={-1}
 							title={item.disabled ? item.tooltip : undefined}
 							data-testid={item.id ? `menu-item-${item.id}` : undefined}
@@ -353,6 +358,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 								{item.description && (
 									<div
 										data-testid="menu-item-description"
+											id={`${descBaseId}-desc-${index}`}
 										className={`ds-text-meta truncate leading-tight mt-0.5 ${
 											(item.danger || item.intent === 'destructive')
 												? 'text-red-500/80 dark:text-red-400/80'

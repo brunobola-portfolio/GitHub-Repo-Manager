@@ -51,6 +51,7 @@ export function Drawer({
     width = 480,
     mobileOnly = false,
     showCloseButton = true,
+    isBusy = false,
     showDragHandle,
     swipeToDismiss,
     closeOnBackdrop = true,
@@ -89,6 +90,7 @@ export function Drawer({
                         role="dialog"
                         aria-modal="true"
                         aria-label={typeof title === 'string' ? title : undefined}
+                        aria-busy={isBusy || undefined}
                         initial="hidden"
                         animate="show"
                         exit="hidden"
