@@ -11,6 +11,7 @@ import { Spinner } from '../../ui/Spinner'
 import { EmptyState } from '../../ui/EmptyState'
 import { getCsrfToken } from '../../../utils/api'
 import { azureCredPayload } from '../../../utils/azureRequestPayload'
+import { useBranchCache } from '../hooks/useBranchCache'
 import { Select } from '../../ui/Select'
 import { Input, Textarea, Switch } from '../../ui/form'
 import { formatFileSize } from '../../../utils/format'
@@ -51,9 +52,7 @@ function humanizeAIReason(reason = '') {
 export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [], onChangeDestination, onChangeSource, onGoToStep }) {
   const [conflicts, setConflicts] = useState({})
   const debounceTimers = useRef({})
-  const [expandedBranches, setExpandedBranches] = useState({})
-  const [branchCache, setBranchCache] = useState({})
-  const [loadingBranches, setLoadingBranches] = useState({})
+  const { expandedBranches, branchCache, loadingBranches, toggleBranchExpand } = useBranchCache(source)
   const [expandedCards, setExpandedCards] = useState({})
   const [aiAvailable, setAiAvailable] = useState(false)
   const [quotaNotice, setQuotaNotice] = useState('')
@@ -196,39 +195,6 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
       setGeneratingId(null)
     }
   }, [suggest, source, onUpdateRepo])
-
-  const toggleBranchExpand = useCallback(async (repo, _index) => {
-    const key = repo.id || repo.name
-    const isExpanded = expandedBranches[key]
-
-    setExpandedBranches((prev) => ({ ...prev, [key]: !isExpanded }))
-
-    if (!isExpanded && !branchCache[key]) {
-      setLoadingBranches((prev) => ({ ...prev, [key]: true }))
-      try {
-        const csrfToken = await getCsrfToken().catch(() => null)
-        const res = await fetch('/api/azure/branches', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-          },
-          body: JSON.stringify({
-            org: source.org,
-            project: source.project,
-            repoId: repo.id,
-            ...azureCredPayload(source),
-          }),
-        })
-        const data = await res.json()
-        if (res.ok && data.branches) {
-          setBranchCache((prev) => ({ ...prev, [key]: data.branches }))
-        }
-      } catch { /* ignore */ }
-      setLoadingBranches((prev) => ({ ...prev, [key]: false }))
-    }
-  }, [expandedBranches, branchCache, source])
 
   const checkConflict = useCallback(
     (repoName, targetName) => {
