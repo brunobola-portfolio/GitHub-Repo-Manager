@@ -349,6 +349,20 @@ try {
     logger.error({ err }, 'migration-engine: startup recovery failed');
 }
 
+// Recover single-repo import jobs orphaned by a hard crash. Graceful shutdown
+// marks these 'interrupted', but a crash (OOM/SIGKILL) bypasses it — and unlike
+// migration plans these have no task model to resume, so mark any non-terminal
+// job 'interrupted' to unblock re-import (the dedup check skips terminal jobs)
+// and surface the state instead of stalling at 'running' forever.
+try {
+    const r = db.prepare(
+        "UPDATE migration_jobs SET status = 'interrupted', completed_at = datetime('now'), error_message = COALESCE(error_message, 'Interrupted by a server restart') WHERE status IN ('running', 'pending')"
+    ).run();
+    if (r.changes > 0) logger.info({ count: r.changes }, 'recovered orphaned import jobs on startup');
+} catch (err) {
+    logger.error({ err }, 'import-job startup recovery failed');
+}
+
 server.on('error', (e) => {
     if (e.code === 'EADDRINUSE') {
         logger.fatal({ port: config.port }, 'Port is already in use');
@@ -372,8 +386,9 @@ function gracefulShutdown(signal) {
 
     server.close(async () => {
         try {
-            // Mark in-flight import jobs as interrupted
-            db.prepare("UPDATE migration_jobs SET status = 'interrupted' WHERE status = 'in_progress'").run();
+            // Mark in-flight import jobs as interrupted. Jobs use 'running'/'pending'
+            // (not 'in_progress') — the old clause matched nothing and left them stuck.
+            db.prepare("UPDATE migration_jobs SET status = 'interrupted' WHERE status IN ('running', 'pending')").run();
         } catch (e) {
             // Table may not exist in all environments
             logger.warn({ err: e }, 'Could not update migration jobs');
@@ -450,3 +465,11 @@ function gracefulShutdown(signal) {
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Backstop unhandled promise rejections (e.g. a fire-and-forget import/migration
+// write that throws). Since Node 15 the default is to TERMINATE the process on an
+// unhandled rejection — which would drop every in-flight request. Log loudly and
+// keep serving instead; the stray rejection is a bug to fix, not a reason to crash.
+process.on('unhandledRejection', (reason) => {
+    logger.error({ err: reason }, 'Unhandled promise rejection (backstopped — investigate)');
+});

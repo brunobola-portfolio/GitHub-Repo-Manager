@@ -793,6 +793,43 @@ describe('MigrationEngine', () => {
     })
   })
 
+  describe('task robustness', () => {
+    it('fails a task that exceeds its per-type timeout and frees the slot', async () => {
+      engine._taskTimeoutMs = { repo: 30 } // 30ms ceiling for the test
+      engine._executeTask = () => new Promise(() => {}) // never resolves (hang)
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      await engine.executePlan(planId)
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.status).toBe('failed')
+      expect(plan.tasks[0].status).toBe('failed')
+      expect(plan.tasks[0].error_message).toMatch(/timed out/i)
+    })
+
+    it('still emits task-failed (and does not reject) when persisting the failure throws', async () => {
+      engine._executeTask = async () => { throw new Error('boom') }
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const realPrepare = db.prepare.bind(db)
+      const failedEvents = []
+      engine.on('task-failed', e => failedEvents.push(e))
+      // Make ONLY the task failed-status write throw; everything else works.
+      vi.spyOn(engine.db, 'prepare').mockImplementation((sql) => {
+        if (/migration_tasks SET status = 'failed'/.test(sql)) {
+          return { run: () => { throw new Error('db locked') } }
+        }
+        return realPrepare(sql)
+      })
+      await expect(engine.executePlan(planId)).resolves.toBeUndefined()
+      expect(failedEvents).toHaveLength(1)
+      engine.db.prepare.mockRestore()
+    })
+  })
+
   describe('retryTask', () => {
     it('retries failed task and completes it', async () => {
       engine._executeTask = async () => ({})

@@ -200,8 +200,10 @@ export async function runWebhookRetryOnce() {
  */
 export function startWebhookRetryWorker({ intervalMs = DEFAULT_INTERVAL_MS } = {}) {
     if (timer) return;
+    // Startup tick failure is a real signal (the worker may be dead) — log at
+    // ERROR, not WARN, so a non-functional retry worker doesn't go unnoticed.
     runWebhookRetryOnce().catch(err =>
-        logger.warn({ err }, '[webhook-retry] initial tick failed')
+        logger.error({ err }, '[webhook-retry] initial tick failed — retry worker may be unhealthy')
     );
     timer = setInterval(() => {
         runWebhookRetryOnce().catch(err =>
