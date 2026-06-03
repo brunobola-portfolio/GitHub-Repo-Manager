@@ -33,6 +33,7 @@ import { useLicense } from './hooks/useLicense'
 import { useCommandPalette } from './hooks/useCommandPalette'
 import { CommandPalette } from './components/CommandPalette'
 import { useResponsiveLayout } from './hooks/useResponsiveLayout'
+import { BREAKPOINTS } from './hooks/useMediaQuery'
 import CollapsiblePanel from './components/ui/CollapsiblePanel'
 import { SlimSidebar } from './components/Sidebar'
 import { Building2, ChevronRight } from 'lucide-react'
@@ -787,14 +788,16 @@ function AppContent() {
     const handleEscape = (e) => {
       if (e.key === 'Escape') setOrgOverlayOpen(false)
     }
-    const handleResize = () => {
-      if (window.innerWidth >= 1280) setOrgOverlayOpen(false)
-    }
+    // Close the mobile org overlay if the viewport grows to xl (where it no
+    // longer exists). matchMedia 'change' is an event, so the setState is fine,
+    // and we read BREAKPOINTS.xl instead of a raw window.innerWidth literal.
+    const mqlXl = window.matchMedia(`(min-width: ${BREAKPOINTS.xl}px)`)
+    const onReachXl = (e) => { if (e.matches) setOrgOverlayOpen(false) }
     document.addEventListener('keydown', handleEscape)
-    window.addEventListener('resize', handleResize)
+    mqlXl.addEventListener('change', onReachXl)
     return () => {
       document.removeEventListener('keydown', handleEscape)
-      window.removeEventListener('resize', handleResize)
+      mqlXl.removeEventListener('change', onReachXl)
     }
   }, [orgOverlayOpen])
 

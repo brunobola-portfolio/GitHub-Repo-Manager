@@ -1,13 +1,7 @@
-import { useState, useLayoutEffect, useCallback, useRef } from 'react'
-import { BREAKPOINTS } from './useMediaQuery'
+import { useState, useCallback } from 'react'
+import { BREAKPOINTS, useMediaQuery } from './useMediaQuery'
 
 const STORAGE_KEY = 'repo-manager-layout-prefs'
-
-function getDefaultMode(width) {
-  if (width < BREAKPOINTS.md) return 'drawer'
-  if (width < BREAKPOINTS.xl) return 'slim'
-  return 'expanded'
-}
 
 function loadPrefs() {
   if (typeof window === 'undefined' || !window.localStorage) return {}
@@ -28,37 +22,14 @@ function savePrefs(prefs) {
 }
 
 export function useResponsiveLayout() {
-  const initialWidth = typeof window !== 'undefined' ? window.innerWidth : 1280
-  const initialMode = getDefaultMode(initialWidth)
+  // Layout mode is derived from the shared useMediaQuery primitive rather than
+  // reading window.innerWidth / matchMedia here — one breakpoint source of truth
+  // (the BREAKPOINTS table) and no manual listener bookkeeping.
+  const isMdUp = useMediaQuery(`(min-width: ${BREAKPOINTS.md}px)`)
+  const isXlUp = useMediaQuery(`(min-width: ${BREAKPOINTS.xl}px)`)
+  const breakpointMode = !isMdUp ? 'drawer' : !isXlUp ? 'slim' : 'expanded'
 
-  const [breakpointMode, setBreakpointMode] = useState(initialMode)
   const [overrides, setOverrides] = useState(() => loadPrefs())
-  const prevBreakpointMode = useRef(initialMode)
-
-  useLayoutEffect(() => {
-    const mqMd = window.matchMedia(`(min-width: ${BREAKPOINTS.md}px)`)
-    const mqXl = window.matchMedia(`(min-width: ${BREAKPOINTS.xl}px)`)
-
-    function update() {
-      const width = window.innerWidth
-      const mode = getDefaultMode(width)
-      setBreakpointMode(prev => {
-        if (prev !== mode) {
-          prevBreakpointMode.current = prev
-        }
-        return mode
-      })
-    }
-
-    update()
-    mqMd.addEventListener('change', update)
-    mqXl.addEventListener('change', update)
-
-    return () => {
-      mqMd.removeEventListener('change', update)
-      mqXl.removeEventListener('change', update)
-    }
-  }, [])
 
   // Overrides only apply within the expanded breakpoint range
   const leftMode = overrides.left && breakpointMode === 'expanded'
