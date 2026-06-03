@@ -665,7 +665,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, pre
             onClick={onNewMigration}
             className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl
               text-white
-              bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500
+              bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)]
               hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600
               shadow-md
               transition-all duration-200 ml-auto"

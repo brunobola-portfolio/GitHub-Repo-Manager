@@ -101,7 +101,7 @@ export function LandingPage({ onSignIn }) {
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 flex items-center justify-center shadow-md">
+            <div className="w-7 h-7 rounded-lg bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] flex items-center justify-center shadow-md">
               <Github className="w-4 h-4 text-white" />
             </div>
             <span className="font-bold text-slate-800 dark:text-white text-sm ds-font-display">
@@ -123,7 +123,7 @@ export function LandingPage({ onSignIn }) {
             <button
               onClick={onSignIn}
               className="px-4 py-2 rounded-xl text-sm font-semibold text-white
-                bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600
+                bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)]
                 shadow-md
                 transition-colors duration-200
                 ds-focus-ring

@@ -73,6 +73,10 @@
    * makes "change the brand, change every button" actually true. */
   --ds-accent-brand-hover: #4338ca;      /* indigo-700 */
   --ds-accent-brand-hover-dark: #6366f1; /* indigo-500 */
+  /* Solid brand FILL in dark mode (buttons sit a shade lighter than the light
+   * fill so they read on a dark canvas). = indigo-500, a no-op for the existing
+   * `dark:bg-indigo-500` brand buttons. */
+  --ds-accent-brand-fill-dark: #6366f1;  /* indigo-500 */
   /* Subtle brand-tinted background (selected rows, soft chips). */
   --ds-accent-brand-subtle: color-mix(in srgb, var(--ds-accent-brand) 12%, transparent);
   --ds-accent-brand-subtle-dark: color-mix(in srgb, var(--ds-accent-brand-dark) 20%, transparent);

@@ -82,7 +82,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 			{/* Badges — absolute on outer wrapper so they can float above the card body (overflow-visible here) */}
 			{plan.popular && (
 				<div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
-					<div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 shadow-md">
+					<div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] shadow-md">
 						<Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
 						<span className="text-xs font-bold text-white tracking-wide">Most Popular</span>
 					</div>

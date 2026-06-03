@@ -233,7 +233,7 @@ export function CommitTab({ toolkit }) {
                 onClick={handleGenerate}
                 disabled={aiOff || !canGenerate || isStreaming}
                 title={aiOff ? 'Configure AI in Settings → AI to enable generation' : undefined}
-                className="inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600 shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)] shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
                 {isStreaming ? (
                     <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Generating...</>

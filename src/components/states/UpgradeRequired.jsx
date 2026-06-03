@@ -5,7 +5,7 @@ import { twMerge } from 'tailwind-merge'
 const TIER_COPY = {
     pro: {
         eyebrow: 'Pro feature',
-        bg: 'bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500',
+        bg: 'bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)]',
         glow: '',
         ring: 'ring-indigo-500/20 dark:ring-indigo-400/20',
     },

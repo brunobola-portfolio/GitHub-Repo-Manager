@@ -489,7 +489,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
           ref={aiFabRef}
           type="button"
           onClick={() => setAiDrawerOpen(true)}
-          className="group lg:hidden fixed z-[var(--ds-z-floating)] bottom-[calc(152px+env(safe-area-inset-bottom,0px))] right-0 mr-4 w-14 h-14 rounded-full bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600 text-white shadow-lg flex items-center justify-center transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] translate-x-[55%] opacity-90 hover:translate-x-0 hover:opacity-100 focus:translate-x-0 focus:opacity-100 active:translate-x-0"
+          className="group lg:hidden fixed z-[var(--ds-z-floating)] bottom-[calc(152px+env(safe-area-inset-bottom,0px))] right-0 mr-4 w-14 h-14 rounded-full bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)] text-white shadow-lg flex items-center justify-center transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] translate-x-[55%] opacity-90 hover:translate-x-0 hover:opacity-100 focus:translate-x-0 focus:opacity-100 active:translate-x-0"
           aria-label={
             deep.draft?.lineComments?.length
               ? `Open AI insights (${deep.draft.lineComments.length} draft comments)`

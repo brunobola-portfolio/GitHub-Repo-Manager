@@ -227,7 +227,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
 
                     {teams.length === 0 && upgradeRequired && (
                         <div className="col-span-full py-14 px-6 text-center bg-indigo-500/8 dark:bg-indigo-500/12 rounded-3xl ring-1 ring-indigo-500/20">
-                            <div className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-2xl bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 shadow-md">
+                            <div className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-2xl bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] shadow-md">
                                 <Sparkles className="w-7 h-7 text-white" strokeWidth={2.5} />
                             </div>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">

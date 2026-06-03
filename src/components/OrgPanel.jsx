@@ -33,7 +33,7 @@ export function OrgPanel({
 			<div className="p-5 border-b border-slate-200/60 dark:border-slate-700/40">
 				<div className="flex items-center justify-between mb-4">
 					<h2 className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
-						<div className="p-2 rounded-xl bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 text-white shadow-md">
+						<div className="p-2 rounded-xl bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] text-white shadow-md">
 							<Building2 className="w-4 h-4" />
 						</div>
 						Organizations
@@ -228,7 +228,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 
 				{/* Personal Account Badge */}
 				{isPersonal && (
-					<div className="absolute -bottom-1 -right-1 bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-md shadow-md">
+					<div className="absolute -bottom-1 -right-1 bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-md shadow-md">
 						YOU
 					</div>
 				)}

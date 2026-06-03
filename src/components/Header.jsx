@@ -91,7 +91,7 @@ export function Header({
                       </button>
                     )}
                     <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-[4px] sm:pr-3 rounded-[13px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
-                        <div className="bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shadow-md flex-shrink-0 text-white">
+                        <div className="bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shadow-md flex-shrink-0 text-white">
                             <AppLogoIcon className="w-[18px] h-[18px]" />
                         </div>
                         <div className="min-w-0 hidden sm:block">
@@ -277,7 +277,7 @@ export function Header({
                                     type="button"
                                     onClick={onLogin}
                                     className="flex items-center gap-1.5 h-[34px] px-3 sm:px-3.5 rounded-[9px]
-                                        bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600
+                                        bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)]
                                         text-white text-[13px] font-semibold
                                         shadow-sm
                                         hover:shadow-md

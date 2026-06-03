@@ -132,7 +132,7 @@ export function DashboardShell({ anchors, onViewChange, children }) {
                                             aria-current={isActive ? 'true' : undefined}
                                             className={`shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-full ds-text-meta font-semibold whitespace-nowrap ds-focus-ring transition-colors border ${
                                                 isActive
-                                                    ? 'bg-[color:var(--ds-accent-brand)] text-white border-[color:var(--ds-accent-brand)] dark:bg-indigo-500 dark:border-indigo-500 shadow-sm'
+                                                    ? 'bg-[color:var(--ds-accent-brand)] text-white border-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:border-indigo-500 shadow-sm'
                                                     : 'bg-white/70 dark:bg-slate-900/60 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/40'
                                             }`}
                                         >

@@ -109,7 +109,7 @@ function Header({ onAdd }) {
       <button
         type="button"
         onClick={onAdd}
-        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-indigo-500 dark:hover:bg-indigo-400 transition-colors shadow-sm"
+        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:hover:bg-indigo-400 transition-colors shadow-sm"
       >
         <Plus className="w-4 h-4" />
         Adicionar PAT
