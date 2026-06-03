@@ -86,7 +86,7 @@ export function ViewErrorFallback({
         <button
           type="button"
           onClick={handleGoHome}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-100 rounded-xl font-medium text-sm transition-colors focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 focus:outline-none"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-100 rounded-xl font-medium text-sm transition-colors ds-focus-ring"
         >
           <Home className="w-4 h-4" aria-hidden="true" />
           Go to Dashboard
