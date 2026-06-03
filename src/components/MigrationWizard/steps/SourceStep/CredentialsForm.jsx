@@ -7,7 +7,7 @@ import { Skeleton } from '../../../ui/Skeleton'
 import CredCard from './CredCard'
 import PatPasteGuide from './PatPasteGuide'
 import { Button } from '../../../ui/Button'
-import { classifyProvider } from '../../../../utils/azureProvider'
+import { classifyProvider, PROVIDERS } from '../../../../utils/azureProvider'
 
 /**
  * Three credential strategies, with crystal-clear identity for each:
@@ -56,6 +56,11 @@ export default function CredentialsForm({
 
   const provider = classifyProvider(source.host)
   const isCloud = provider.isCloud
+  // Three distinct states — never collapse "nothing detected yet" (UNKNOWN)
+  // into on-prem. `!isCloud` is true for BOTH unknown and on-prem, so any copy
+  // that asserts "TFS on-premises" must gate on `isOnPrem`, not `!isCloud`,
+  // otherwise it fires (with an empty host) before the user pastes a URL.
+  const isOnPrem = provider.type === PROVIDERS.ON_PREM
 
   // "Ready" means: this credential alone is enough to make a successful
   // call. The card with state="active" is BOTH selected AND ready.
@@ -89,9 +94,9 @@ export default function CredentialsForm({
           state={stateFor('serverPat', serverReady, envAuthAvailable)}
           hint={
             envAuthAvailable
-              ? (isCloud
-                  ? 'AZURE_PAT detectado em .env'
-                  : 'AZURE_PAT detectado em .env — atenção: provavelmente cloud, pode falhar contra TFS on-prem')
+              ? (isOnPrem
+                  ? 'AZURE_PAT detectado em .env — atenção: provavelmente cloud, pode falhar contra TFS on-prem'
+                  : 'AZURE_PAT detectado em .env')
               : 'AZURE_PAT não está definido em .env'
           }
           onSelect={handleModeSwitch}
@@ -155,7 +160,9 @@ npm run dev`}</pre>
           label="OAuth / Browser Login"
           subtitle={isCloud
             ? 'Autenticação via Azure AD — abre uma janela do browser para fazer login.'
-            : 'OAuth via Azure AD não está disponível para TFS on-premises. Usa Personal PAT.'}
+            : isOnPrem
+              ? 'OAuth via Azure AD não está disponível para TFS on-premises. Usa Personal PAT.'
+              : 'OAuth via Azure AD só funciona com Azure DevOps cloud. Cola uma URL para detectar o servidor.'}
           state={
             !isCloud
               ? 'unavailable'
@@ -174,7 +181,7 @@ npm run dev`}</pre>
           }
           onSelect={handleModeSwitch}
         >
-          {!isCloud && (
+          {isOnPrem && (
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Para autenticares em <code>{source.host}</code>, usa <strong>Personal Access Token</strong> acima.
             </p>
