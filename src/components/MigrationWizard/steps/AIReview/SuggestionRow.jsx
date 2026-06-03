@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import {
   CheckCircle2, ThumbsUp, ThumbsDown, Sparkles, FolderGit2,
 } from 'lucide-react'
+import { TAP } from '../../../ui/motion'
 
 /* ═══════════════════════════════════════════
    SUGGESTION ROW
@@ -80,7 +81,7 @@ export function SuggestionRow({ suggestion, index, onAccept, onReject }) {
           <motion.button
             type="button"
             onClick={() => onAccept(suggestion.id)}
-            whileTap={{ scale: 0.88 }}
+            whileTap={TAP}
             className={`p-2 rounded-lg transition-all duration-200 ${
               isAccepted
                 ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/25'
@@ -93,7 +94,7 @@ export function SuggestionRow({ suggestion, index, onAccept, onReject }) {
           <motion.button
             type="button"
             onClick={() => onReject(suggestion.id)}
-            whileTap={{ scale: 0.88 }}
+            whileTap={TAP}
             className={`p-2 rounded-lg transition-all duration-200 ${
               isRejected
                 ? 'bg-red-500 text-white shadow-md shadow-red-500/25'

@@ -8,6 +8,7 @@ import {
 import { formatNumber, formatCompact } from '../utils/format'
 import { motion, AnimatePresence } from 'framer-motion'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
+import { TAP } from './ui/motion'
 import { useModal } from '../hooks/useModal'
 import { Input } from './ui/form'
 
@@ -195,7 +196,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 			whileHover={{
 				transition: { duration: 0.2, ease: "easeOut" }
 			}}
-			whileTap={{ scale: 0.98 }}
+			whileTap={TAP}
 			onClick={onClick}
 			title={org.description || org.login}
 			className={`group relative w-full flex items-center gap-3 rounded-xl transition-all duration-300 border ${

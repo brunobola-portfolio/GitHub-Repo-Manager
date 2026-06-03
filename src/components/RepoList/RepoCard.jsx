@@ -12,6 +12,7 @@ import { MigratedPill } from './MigratedPill'
 import { RepoHealthBadge } from '../AI/RepoHealthBadge'
 import { useRepoMetadata } from '../../hooks/useRepoMetadata'
 import { repoActions } from '../../actions/repoActions'
+import { TRANSITION, STAGGER, TAP } from '../ui/motion'
 
 const QUICK_LIMIT = 5
 
@@ -33,7 +34,7 @@ function RepoCardQuickActions({ repo, onAction, onContextMenu }) {
 					<Tooltip key={a.id} label={label}>
 						<motion.button
 							onClick={(e) => { e.stopPropagation(); onAction(a.id, repo) }}
-							whileTap={{ scale: 0.9 }}
+							whileTap={TAP}
 							className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
 							aria-label={label}
 						>
@@ -45,7 +46,7 @@ function RepoCardQuickActions({ repo, onAction, onContextMenu }) {
 			<Tooltip label="More actions">
 				<motion.button
 					onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
-					whileTap={{ scale: 0.9 }}
+					whileTap={TAP}
 					className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
 					aria-label="More actions"
 				>
@@ -78,8 +79,14 @@ export const RepoCard = memo(function RepoCard({
 	onContextMenu,
 	onExplainHealth,
 	onRepoClick,
+	index = 0,
 }) {
 	const isGrid = viewMode === 'grid'
+	// Staggered entrance: each card lands a beat after the previous one. Capped
+	// at 10 slots so a 100-repo grid never waits seconds for the tail — beyond
+	// the cap the remaining cards share the final delay. Standalone usages (no
+	// index) get delay 0, so they still fade in on their own.
+	const entranceDelay = Math.min(index, 10) * STAGGER.fast
 	// Pulls from a module-singleton cache (60s TTL) so 100 cards share one
 	// network round-trip. The `get()` lookup is O(1) on the indexed Map.
 	const { get: getRepoMeta } = useRepoMetadata()
@@ -109,9 +116,9 @@ export const RepoCard = memo(function RepoCard({
 			onClick={onToggle}
 			onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
 			onContextMenu={onContextMenu}
-			initial={{ opacity: 0, y: 20 }}
+			initial={{ opacity: 0, y: 6 }}
 			animate={{ opacity: 1, y: 0 }}
-			transition={{ duration: 0.3 }}
+			transition={{ ...TRANSITION.entrance, delay: entranceDelay }}
 			style={stateStyle}
 			className={`
                 group relative transition-all duration-300 cursor-pointer

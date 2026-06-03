@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { TRANSITION } from './motion';
 
 const VARIANT_CONTAINER = {
     pill: 'flex gap-1 p-1 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/40 dark:border-slate-700/40',
@@ -88,7 +89,7 @@ export function TabBar({ tabs, activeTab, onTabChange, variant = 'pill', layoutI
                             <motion.div
                                 layoutId={layoutId}
                                 className={indicatorClass}
-                                transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
+                                transition={TRANSITION.standard}
                             />
                         )}
                         <span className={indicatorClass ? 'relative z-10 flex items-center gap-1.5' : 'flex items-center gap-1.5'}>

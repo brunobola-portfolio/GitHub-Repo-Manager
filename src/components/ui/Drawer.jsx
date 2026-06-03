@@ -2,9 +2,10 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import { SPRING as MOTION_SPRING, DURATION } from './motion'
 
-const SPRING = { type: 'spring', damping: 28, stiffness: 280, mass: 1 }
-const REDUCED_TRANSITION = { duration: 0.12 }
+const SPRING = MOTION_SPRING.drawer
+const REDUCED_TRANSITION = { duration: DURATION.fast }
 
 const ENTER_VARIANTS = {
     left: { hidden: { x: '-100%' }, show: { x: 0 } },
