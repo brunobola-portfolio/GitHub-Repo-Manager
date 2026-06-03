@@ -21,7 +21,7 @@ describe('Button', () => {
 
     it('falls back to primary for an unknown variant', () => {
         render(<Button variant="bogus">x</Button>)
-        expect(screen.getByRole('button').className).toContain('bg-indigo-600')
+        expect(screen.getByRole('button').className).toContain('bg-[color:var(--ds-accent-brand)]')
     })
 
     it('enforces the WCAG 44px tap target by default (sm/md/lg)', () => {
@@ -50,9 +50,9 @@ describe('Button', () => {
     it('merges className overrides via tailwind-merge', () => {
         render(<Button className="bg-purple-500">x</Button>)
         const cls = screen.getByRole('button').className
-        // tailwind-merge should drop the variant's bg-indigo-600 when overridden.
+        // tailwind-merge should drop the variant's token bg when overridden.
         expect(cls).toContain('bg-purple-500')
-        expect(cls).not.toContain('bg-indigo-600')
+        expect(cls).not.toContain('var(--ds-accent-brand)')
     })
 
     it('renders outline variant with transparent bg + slate border', () => {

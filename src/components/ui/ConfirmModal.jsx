@@ -127,7 +127,7 @@ export function ConfirmModal({
                         type="text"
                         value={inputValue}
                         onChange={(e) => { setInputValue(e.target.value); setInputError(''); }}
-                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[color:var(--ds-accent-brand)] focus:border-[color:var(--ds-accent-brand)]"
                         placeholder={requiresInput}
                         autoComplete="off"
                         aria-describedby={inputError ? 'confirm-input-error' : undefined}

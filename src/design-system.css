@@ -66,8 +66,24 @@
   /* ===== ACCENTS (V3 hybrid) ===== */
   --ds-accent-link: #0969da;
   --ds-accent-link-dark: #4493f8;
-  --ds-accent-brand: #4f46e5;
-  --ds-accent-brand-dark: #818cf8;
+  --ds-accent-brand: #4f46e5;            /* indigo-600 */
+  --ds-accent-brand-dark: #818cf8;       /* indigo-400 */
+  /* Hover/active shade for SOLID brand surfaces (primary buttons). Values equal
+   * the indigo-700/indigo-500 the primitives used before — a visual no-op that
+   * makes "change the brand, change every button" actually true. */
+  --ds-accent-brand-hover: #4338ca;      /* indigo-700 */
+  --ds-accent-brand-hover-dark: #6366f1; /* indigo-500 */
+  /* Subtle brand-tinted background (selected rows, soft chips). */
+  --ds-accent-brand-subtle: color-mix(in srgb, var(--ds-accent-brand) 12%, transparent);
+  --ds-accent-brand-subtle-dark: color-mix(in srgb, var(--ds-accent-brand-dark) 20%, transparent);
+  /* Focus-ring colour — defaults to brand, overridable per-tone (e.g. an emerald
+   * input can set --ds-focus-ring-color locally and keep using .ds-focus-ring). */
+  --ds-focus-ring-color: var(--ds-accent-brand);
+  --ds-focus-ring-color-dark: var(--ds-accent-brand-dark);
+  /* Translucent brand for soft field focus glows (form inputs' ring-4 style).
+   * Referenced as a plain var in Tailwind arbitrary classes so the CI minifier
+   * never has to parse color-mix() inside a utility. */
+  --ds-accent-ring: color-mix(in srgb, var(--ds-accent-brand) 30%, transparent);
 
   /* ===== STATUS ===== */
   --ds-success: #1a7f37;     --ds-success-dark: #3fb950;
@@ -238,13 +254,13 @@
 /* ===== FOCUS RING (premium) ===== */
 .ds-focus-ring { outline: none; transition: box-shadow var(--ds-duration-fast) var(--ds-ease); }
 .ds-focus-ring:focus-visible {
-  outline: 2px solid var(--ds-accent-brand);
+  outline: 2px solid var(--ds-focus-ring-color);
   outline-offset: 2px;
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--ds-accent-brand) 25%, transparent);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--ds-focus-ring-color) 25%, transparent);
 }
 :where(.dark) .ds-focus-ring:focus-visible {
-  outline-color: var(--ds-accent-brand-dark);
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--ds-accent-brand-dark) 25%, transparent);
+  outline-color: var(--ds-focus-ring-color-dark);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--ds-focus-ring-color-dark) 25%, transparent);
 }
 
 /* ===== MODAL BODY (unchanged) ===== */
