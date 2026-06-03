@@ -11,7 +11,7 @@ import AllowlistFixPanel from './AllowlistFixPanel'
 import RestartServerHint from './RestartServerHint'
 import ProviderBadge from '../../ui/ProviderBadge'
 import ConnectionStatusPanel from '../../ui/ConnectionStatusPanel'
-import { classifyProvider } from '../../../../utils/azureProvider'
+import { classifyProvider, PROVIDERS } from '../../../../utils/azureProvider'
 
 /**
  * Azure DevOps source configuration step.
@@ -94,8 +94,12 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
   // Heuristic: a server-side AZURE_PAT is almost always for cloud. When the
   // user pasted an on-prem URL, warn that Server PAT mode probably won't
   // authenticate against their TFS instance and suggest Personal PAT.
+  // Gate on the ON_PREM classification specifically — NOT `!isCloud`, which is
+  // also true for the UNKNOWN (nothing-pasted-yet) provider and would fire the
+  // warning with an empty {source.host}. ON_PREM only ever resolves from a
+  // real, non-empty host, so the message always has a host to show.
   const serverPatLikelyWrong = (
-    !provider.isCloud
+    provider.type === PROVIDERS.ON_PREM
     && source.credentialMode === 'serverPat'
     && envAuthAvailable
   )
