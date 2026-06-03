@@ -370,7 +370,7 @@ function OverviewGrid({ data }) {
                     {needsClamp && !expanded && (
                         <button
                             onClick={() => setExpanded(true)}
-                            className="mt-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                            className="mt-2 text-xs font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
                         >
                             Show more
                         </button>
@@ -568,7 +568,7 @@ function ReadmeGrid({ data, repo }) {
                             key={i}
                             className="flex items-center gap-3 p-3 bg-slate-100/60 dark:bg-white/5 border border-slate-200/50 dark:border-slate-800/40 rounded-lg"
                         >
-                            <FileText className="w-5 h-5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                            <FileText className="w-5 h-5 text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] shrink-0" />
                             <span className="text-slate-700 dark:text-slate-200 text-sm break-words">{section}</span>
                         </div>
                     ))}

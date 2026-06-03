@@ -175,7 +175,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
 
             {/* Left column — gauge + controls */}
             <div className="relative flex flex-col items-center gap-2 min-w-[100px] sm:pl-2 sm:pr-4 sm:border-r sm:border-slate-200/50 sm:dark:border-slate-700/40">
-                <div className="inline-flex items-center gap-1.5 ds-text-micro font-semibold uppercase tracking-[0.18em] text-indigo-500 dark:text-indigo-400 self-start sm:self-center">
+                <div className="inline-flex items-center gap-1.5 ds-text-micro font-semibold uppercase tracking-[0.18em] text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] self-start sm:self-center">
                     <Sparkles className="w-3 h-3" aria-hidden="true" />
                     AI summary
                 </div>

@@ -147,7 +147,7 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
                             <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">{selectedPR.title}</h3>
                             <p className="text-xs text-slate-400">#{selectedPR.number} by {selectedPR.user?.login}</p>
                         </div>
-                        <button type="button" onClick={() => { setSelectedPR(null); setSummary(null); setQaHistory([]); setQaResponses([]) }} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Change PR</button>
+                        <button type="button" onClick={() => { setSelectedPR(null); setSummary(null); setQaHistory([]); setQaResponses([]) }} className="text-xs text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline">Change PR</button>
                     </div>
 
                     <QuickSummary summary={summary} loading={summaryLoading} error={summaryError || streamError} onRetry={() => fetchSummary(selectedPR)} />
@@ -189,7 +189,7 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
                     <button
                         type="button"
                         onClick={handleStartFullReview}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md transition-all"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl text-white bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600 shadow-md transition-all"
                     >
                         <Eye className="w-4 h-4" />
                         Open Full Review

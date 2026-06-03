@@ -62,7 +62,7 @@ export function OversizedFilesPanel({ files, fallback }) {
 
       {/* How to fix */}
       <div className="rounded-lg border border-indigo-500/15 bg-indigo-500/5 dark:bg-indigo-500/5 p-3 space-y-2">
-        <div className="flex items-center gap-2 text-xs font-semibold text-indigo-600 dark:text-indigo-300">
+        <div className="flex items-center gap-2 text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
           <Database className="w-3.5 h-3.5" />
           How to fix
         </div>

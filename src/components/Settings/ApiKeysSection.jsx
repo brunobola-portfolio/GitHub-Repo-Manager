@@ -193,7 +193,7 @@ function NewKeyForm({ onCreated, onCancel }) {
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-colors ds-focus-ring"
+                            className="px-4 py-2 text-sm font-semibold text-white bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-colors ds-focus-ring"
                         >
                             {submitting ? 'Creating…' : 'Create Key'}
                         </button>
@@ -421,7 +421,7 @@ export function ApiKeysSection() {
                     <button
                         onClick={() => setShowForm(true)}
                         disabled={atLimit}
-                        className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-all"
+                        className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-all"
                         title={atLimit ? `Limit reached (${limits.max}). Upgrade your plan.` : 'Create a new API key'}
                     >
                         <Plus className="w-4 h-4" />

@@ -34,7 +34,7 @@ export function CategorySection({
 
     const iconTone = tone === 'neutral'
         ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-        : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+        : 'bg-indigo-500/10 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
 
     const handleAction = (e) => {
         if (!action?.onClick) return
@@ -113,7 +113,7 @@ export function CategorySection({
                     <button
                         type="button"
                         onClick={handleAction}
-                        className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-500/30 ds-focus-ring transition-colors shrink-0"
+                        className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-500/30 ds-focus-ring transition-colors shrink-0"
                     >
                         {action.label}
                         <ActionIcon className="w-3.5 h-3.5" aria-hidden="true" />
@@ -127,7 +127,7 @@ export function CategorySection({
                 <button
                     type="button"
                     onClick={handleAction}
-                    className="sm:hidden mb-4 inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 border border-indigo-200/50 dark:border-indigo-500/20 ds-focus-ring transition-colors"
+                    className="sm:hidden mb-4 inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 border border-indigo-200/50 dark:border-indigo-500/20 ds-focus-ring transition-colors"
                 >
                     {action.label}
                     <ActionIcon className="w-3.5 h-3.5" aria-hidden="true" />

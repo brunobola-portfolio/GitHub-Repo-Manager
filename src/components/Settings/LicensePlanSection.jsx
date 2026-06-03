@@ -241,7 +241,7 @@ function LicenseCard({ license, onChangeLicenseKey }) {
 
                     <button
                         onClick={onChangeLicenseKey}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-colors"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-colors"
                     >
                         <Key className="w-4 h-4" />
                         Change License Key
@@ -449,7 +449,7 @@ export function LicensePlanSection() {
             {/* Activate License Key */}
             <button
                 onClick={() => openModal('showLicenseActivation')}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-colors"
             >
                 <Key className="w-4 h-4" />
                 Activate License Key

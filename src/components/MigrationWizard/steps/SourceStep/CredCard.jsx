@@ -104,7 +104,7 @@ function toneFor(state) {
       return {
         container: 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/60 dark:bg-indigo-900/15',
         iconBg: 'bg-indigo-100 dark:bg-indigo-900/40',
-        iconText: 'text-indigo-600 dark:text-indigo-400',
+        iconText: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]',
         hintText: 'text-indigo-700 dark:text-indigo-300',
       }
     case 'available':

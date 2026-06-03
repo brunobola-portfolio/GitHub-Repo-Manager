@@ -375,7 +375,7 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
                                 className={`
                                     relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors duration-200
                                     ${isActive
-                                        ? 'text-indigo-600 dark:text-indigo-300'
+                                        ? 'text-[color:var(--ds-accent-brand)] dark:text-indigo-300'
                                         : 'text-slate-500 dark:text-slate-400 hover:bg-white/70 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200'
                                     }
                                 `}

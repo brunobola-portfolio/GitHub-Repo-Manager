@@ -108,7 +108,7 @@ function StalePRRow({ pr, idx, isFocused, onFocus, hasAI, onSnooze, onPing }) {
                                 {pr.title || `PR #${pr.prNumber}`}
                             </div>
                             <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                <span className="font-mono text-indigo-600 dark:text-indigo-400">{pr.repoFullName}</span>
+                                <span className="font-mono text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">{pr.repoFullName}</span>
                                 {' '}#{pr.prNumber}
                                 {pr.authorLogin && <> by <strong>{pr.authorLogin}</strong></>}
                             </div>

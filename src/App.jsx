@@ -900,7 +900,7 @@ function AppContent() {
         onClick={() => handleOrgSelect(null)}
         className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all group ${
           !selectedOrg
-            ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/30'
+            ? 'bg-indigo-100 dark:bg-indigo-900/40 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-2 ring-indigo-500/30'
             : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
         }`}
         aria-label="All Organizations"
@@ -925,7 +925,7 @@ function AppContent() {
           {org.avatar_url ? (
             <img src={org.avatar_url} alt={org.login} className="w-8 h-8 rounded-lg" />
           ) : (
-            <span className="w-8 h-8 rounded-lg bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">
+            <span className="w-8 h-8 rounded-lg bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">
               {org.login.charAt(0).toUpperCase()}
             </span>
           )}

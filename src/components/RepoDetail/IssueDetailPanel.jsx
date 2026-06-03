@@ -152,8 +152,8 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                                 onClick={() => setShowPlanner(v => !v)}
                                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                                     showPlanner
-                                        ? 'bg-indigo-600 text-white shadow-sm'
-                                        : 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
+                                        ? 'bg-[color:var(--ds-accent-brand)] text-white shadow-sm'
+                                        : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
                                 }`}
                                 title="Generate an AI implementation plan for this issue"
                             >

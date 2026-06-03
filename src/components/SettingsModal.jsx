@@ -238,7 +238,7 @@ function GeneralTabContent({
                             <div className="space-y-1.5 px-0.5">
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-slate-600 dark:text-slate-400">Cache duration</span>
-                                    <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400 tabular-nums">{cacheSettings.ttl} min</span>
+                                    <span className="text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] tabular-nums">{cacheSettings.ttl} min</span>
                                 </div>
                                 <input
                                     type="range"
@@ -337,7 +337,7 @@ function VisibilityToggleButton({ active, onClick, children }) {
             onClick={onClick}
             className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                 active
-                    ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    ? 'bg-white dark:bg-slate-600 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] shadow-sm'
                     : 'text-slate-500 dark:text-slate-400'
             }`}
         >
@@ -355,7 +355,7 @@ const ThemeOption = ({ value, icon: IconComp, label, currentTheme, setTheme }) =
             onClick={() => setTheme(value)}
             aria-pressed={active}
             className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border transition-all ${active
-                ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/20'
+                ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-2 ring-indigo-500/20'
                 : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-slate-700 dark:hover:text-slate-300'
                 }`}
         >

@@ -149,7 +149,7 @@ function CellValue({ value, colIndex }) {
     <span
       className={`text-sm font-semibold
         ${highlightCol
-          ? 'text-indigo-600 dark:text-indigo-400'
+          ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
           : 'text-slate-700 dark:text-slate-200'
         }`}
     >
@@ -172,7 +172,7 @@ export function FeatureComparison() {
     >
       <div className="text-center mb-10">
         <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white ds-font-display mb-3">
-          Compare all <span className="text-indigo-600 dark:text-indigo-400">features</span>
+          Compare all <span className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">features</span>
         </h2>
         <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-lg mx-auto">
           A full breakdown of what's included in each plan.
@@ -197,7 +197,7 @@ export function FeatureComparison() {
                   key={tier}
                   className={`sticky top-0 z-10 w-1/6 px-4 py-5 text-center text-sm font-bold backdrop-blur-md
                     ${i === 1
-                      ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-500/[0.08]'
+                      ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-indigo-50/80 dark:bg-indigo-500/[0.08]'
                       : 'text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-900/80'
                     }`}
                 >

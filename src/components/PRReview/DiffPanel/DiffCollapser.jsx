@@ -90,7 +90,7 @@ export function DiffCollapser({ filename, additions = 0, deletions = 0, storageK
             <button
                 type="button"
                 onClick={handleExpand}
-                className="inline-flex items-center gap-1 mt-4 px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                className="inline-flex items-center gap-1 mt-4 px-3 py-1.5 text-xs font-medium rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] transition-colors"
             >
                 <ChevronRight className="w-3.5 h-3.5" /> Show diff
             </button>

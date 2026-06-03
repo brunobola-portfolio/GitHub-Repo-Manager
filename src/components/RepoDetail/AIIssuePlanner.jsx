@@ -15,7 +15,7 @@ import { Field, Textarea } from '../ui/form'
 
 const ACTION_META = {
     create: { icon: FilePlus, color: 'text-emerald-600 dark:text-emerald-400', label: 'Create' },
-    modify: { icon: FileEdit, color: 'text-indigo-600 dark:text-indigo-400', label: 'Modify' },
+    modify: { icon: FileEdit, color: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]', label: 'Modify' },
     delete: { icon: FileX, color: 'text-rose-600 dark:text-rose-400', label: 'Delete' },
     rename: { icon: FileCode, color: 'text-amber-600 dark:text-amber-400', label: 'Rename' },
 }

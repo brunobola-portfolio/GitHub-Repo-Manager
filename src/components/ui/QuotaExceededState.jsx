@@ -66,7 +66,7 @@ export function QuotaExceededState({
         <button
           type="button"
           onClick={() => { openAISettings(); onClose?.() }}
-          className="inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+          className="inline-flex items-center gap-2 text-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
         >
           <Key className="w-4 h-4" /> Configure your own AI key (BYOK)
         </button>

@@ -226,7 +226,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                         <div className="flex justify-end mb-4">
                             <button
                                 onClick={() => setShowInvite(!showInvite)}
-                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-md"
+                                className="flex items-center gap-2 px-4 py-2 bg-[color:var(--ds-accent-brand)] text-white rounded-xl hover:bg-[color:var(--ds-accent-brand-hover)] transition-colors shadow-md"
                             >
                                 <UserPlus className="w-4 h-4" />
                                 <span>Add Member</span>
@@ -445,7 +445,7 @@ function MemberCard({ member, currentUserRole, onUpdateRole, onRemove, isMe }) {
                 <h4 className="font-bold text-slate-900 dark:text-slate-100 truncate">{member.username}</h4>
                 <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-slate-400">Joined {new Date(member.joined_at).toLocaleDateString()}</span>
-                    {isMe && <span className="ds-text-micro bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 px-1.5 py-0.5 rounded-full">You</span>}
+                    {isMe && <span className="ds-text-micro bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-[color:var(--ds-accent-brand-dark)] px-1.5 py-0.5 rounded-full">You</span>}
                 </div>
             </div>
 
@@ -564,7 +564,7 @@ function RepoCard({ repo, teamMembers }) {
                     <button
                         onClick={() => setShowCollaborators(!showCollaborators)}
                         className={`text-xs px-2 py-1 rounded-lg border transition-colors flex items-center gap-1 ${showCollaborators
-                            ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-400'
+                            ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-[color:var(--ds-accent-brand-dark)]'
                             : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
                     >
@@ -636,7 +636,7 @@ function RepoCard({ repo, teamMembers }) {
                                                 <button
                                                     onClick={() => handleInvite(m.username)}
                                                     disabled={inviting === m.username}
-                                                    className="px-2 py-0.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400 rounded hover:bg-indigo-200 dark:hover:bg-indigo-900 transition-colors disabled:opacity-50"
+                                                    className="px-2 py-0.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-[color:var(--ds-accent-brand-dark)] rounded hover:bg-indigo-200 dark:hover:bg-indigo-900 transition-colors disabled:opacity-50"
                                                 >
                                                     {inviting === m.username ? <Spinner size="xs" /> : 'Add'}
                                                 </button>
@@ -737,7 +737,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                         key={repo.id}
                         onClick={() => setSelectedRepo(repo.repo_full_name)}
                         className={`w-full text-left p-3 rounded-xl transition-all ${selectedRepo === repo.repo_full_name
-                            ? 'bg-indigo-600 text-white shadow-md'
+                            ? 'bg-[color:var(--ds-accent-brand)] text-white shadow-md'
                             : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
                     >

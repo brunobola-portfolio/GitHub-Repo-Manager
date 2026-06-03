@@ -22,7 +22,7 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
             <div className="rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 space-y-4">
                 <div className="flex items-center gap-2">
                     <Activity className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
-                    <span className="ds-text-micro font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
+                    <span className="ds-text-micro font-semibold uppercase tracking-[0.14em] text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
                         Board status
                     </span>
                 </div>
@@ -74,7 +74,7 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
 
 function StatTile({ label, value, icon: Icon, color }) {
     const colorClass = {
-        indigo: 'bg-indigo-50 text-indigo-600 ring-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-200 dark:ring-indigo-800/60',
+        indigo: 'bg-indigo-50 text-[color:var(--ds-accent-brand)] ring-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-200 dark:ring-indigo-800/60',
         emerald: 'bg-emerald-50 text-emerald-600 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-800/60',
         slate: 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:ring-slate-700',
     }[color] || ''

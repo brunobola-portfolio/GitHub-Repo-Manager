@@ -109,7 +109,7 @@ function Header({ onAdd }) {
       <button
         type="button"
         onClick={onAdd}
-        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 transition-colors shadow-sm"
+        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-indigo-500 dark:hover:bg-indigo-400 transition-colors shadow-sm"
       >
         <Plus className="w-4 h-4" />
         Adicionar PAT
@@ -130,7 +130,7 @@ function EmptyState({ onAdd }) {
       <button
         type="button"
         onClick={onAdd}
-        className="mt-4 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+        className="mt-4 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)]"
       >
         <Plus className="w-4 h-4" />
         Adicionar o primeiro PAT
@@ -467,7 +467,7 @@ function AddCredentialForm({ onClose, onCreated }) {
         <button
           type="submit"
           disabled={!canSubmit || submitting}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
         >
           {submitting
             ? <><SpinnerIcon className="w-3.5 h-3.5" /> A guardar…</>

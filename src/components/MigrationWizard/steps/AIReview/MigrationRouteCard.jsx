@@ -77,13 +77,13 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
           {/* Arrow */}
           <div className="shrink-0 flex flex-col items-center gap-0.5 px-1">
             <motion.div
-              className="w-9 h-9 rounded-full bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center shadow-md"
+              className="w-9 h-9 rounded-full bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 flex items-center justify-center shadow-md"
               animate={{ x: [0, 2, 0] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >
               <ArrowRight className="w-4 h-4 text-white" />
             </motion.div>
-            <span className="ds-text-micro font-bold text-indigo-500 dark:text-indigo-400 tabular-nums">
+            <span className="ds-text-micro font-bold text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] tabular-nums">
               {repoCount} {repoCount === 1 ? 'repo' : 'repos'}
             </span>
           </div>

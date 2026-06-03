@@ -321,7 +321,7 @@ function CapabilitiesCard({ isPersonal }) {
     return (
         <InsightCard tone={isPersonal ? 'info' : 'default'} hover={false}>
             <div className="flex items-start gap-3">
-                <Info className="w-5 h-5 text-indigo-600 dark:text-indigo-300 mt-0.5 flex-shrink-0" />
+                <Info className="w-5 h-5 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-slate-900 dark:text-slate-100">
                         {isPersonal ? 'This is your personal account' : 'Organization workspace'}
@@ -468,7 +468,7 @@ function DetailRow({ label, value, icon: IconComp, isLink }) {
             {IconComp && <IconComp className="w-4 h-4 text-slate-400 dark:text-slate-500" />}
             <span className="text-slate-500 dark:text-slate-400 w-24">{label}:</span>
             {isLink ? (
-                <a href={value} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-300 hover:underline truncate">{value}</a>
+                <a href={value} target="_blank" rel="noopener noreferrer" className="text-[color:var(--ds-accent-brand)] dark:text-indigo-300 hover:underline truncate">{value}</a>
             ) : (
                 <span className="text-slate-900 dark:text-slate-100 truncate">{value}</span>
             )}

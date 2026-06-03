@@ -70,7 +70,7 @@ export function AIQuotaExhaustedCard({
                                 <button
                                     type="button"
                                     onClick={() => navigateToPricing(upgradeTo)}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-[12px] text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-[12px] text-white bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] transition-colors"
                                 >
                                     Upgrade to {upgradeLabel}
                                     <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -79,7 +79,7 @@ export function AIQuotaExhaustedCard({
                             <button
                                 type="button"
                                 onClick={() => openAppSettings('usage')}
-                                className="inline-flex items-center gap-1 text-[12px] text-indigo-600 dark:text-indigo-300 hover:underline"
+                                className="inline-flex items-center gap-1 text-[12px] text-[color:var(--ds-accent-brand)] dark:text-indigo-300 hover:underline"
                             >
                                 <Sparkles className="w-3 h-3" aria-hidden="true" />
                                 Manage usage

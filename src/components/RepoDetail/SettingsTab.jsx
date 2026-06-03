@@ -303,7 +303,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                                 <input type="checkbox" checked={form[feat.key]}
                                     onChange={e => setForm(f => ({ ...f, [feat.key]: e.target.checked }))}
                                     disabled={saving}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500/40" />
+                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500/40" />
                                 <span className="text-sm text-slate-700 dark:text-slate-300">{feat.label}</span>
                             </label>
                         ))}
@@ -327,7 +327,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                                 <input type="checkbox" checked={form[feat.key]}
                                     onChange={e => setForm(f => ({ ...f, [feat.key]: e.target.checked }))}
                                     disabled={saving}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500/40" />
+                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500/40" />
                                 <span className="text-sm text-slate-700 dark:text-slate-300">{feat.label}</span>
                             </label>
                         ))}

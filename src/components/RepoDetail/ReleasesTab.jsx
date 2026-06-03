@@ -122,12 +122,12 @@ export function ReleasesTab({ api }) {
                     <div className="flex items-center gap-4">
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" checked={form.draft} onChange={e => setForm(f => ({ ...f, draft: e.target.checked }))}
-                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600" />
+                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)]" />
                             <span className="text-sm text-slate-700 dark:text-slate-300">Draft</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" checked={form.prerelease} onChange={e => setForm(f => ({ ...f, prerelease: e.target.checked }))}
-                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600" />
+                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)]" />
                             <span className="text-sm text-slate-700 dark:text-slate-300">Pre-release</span>
                         </label>
                     </div>
@@ -161,7 +161,7 @@ export function ReleasesTab({ api }) {
                                     <span>{new Date(r.published_at || r.created_at).toLocaleDateString()}</span>
                                     {r.html_url && (
                                         <a href={r.html_url} target="_blank" rel="noopener noreferrer"
-                                            className="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+                                            className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline flex items-center gap-1">
                                             View <ExternalLink className="w-3 h-3" />
                                         </a>
                                     )}

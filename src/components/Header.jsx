@@ -91,7 +91,7 @@ export function Header({
                       </button>
                     )}
                     <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-[4px] sm:pr-3 rounded-[13px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
-                        <div className="bg-indigo-600 dark:bg-indigo-500 w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shadow-md flex-shrink-0 text-white">
+                        <div className="bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shadow-md flex-shrink-0 text-white">
                             <AppLogoIcon className="w-[18px] h-[18px]" />
                         </div>
                         <div className="min-w-0 hidden sm:block">
@@ -277,7 +277,7 @@ export function Header({
                                     type="button"
                                     onClick={onLogin}
                                     className="flex items-center gap-1.5 h-[34px] px-3 sm:px-3.5 rounded-[9px]
-                                        bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600
+                                        bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600
                                         text-white text-[13px] font-semibold
                                         shadow-sm
                                         hover:shadow-md
@@ -319,7 +319,7 @@ export function Header({
                   onClick={id === 'more' ? () => setMoreOpen(true) : () => onViewChange?.(id)}
                   className={`relative flex flex-col items-center justify-center gap-0.5 min-w-[44px] min-h-[44px] rounded-xl transition-colors ${
                     isActive
-                      ? 'text-indigo-600 dark:text-indigo-400'
+                      ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                   }`}
                   aria-current={isActive ? 'page' : undefined}
@@ -416,7 +416,7 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
                 className={`relative flex items-center justify-center rounded-[9px] transition-all duration-300 ds-focus-ring w-[34px] h-[34px] ${
                     isDark
                         ? 'bg-slate-600/80 text-amber-300 hover:bg-slate-500/80 hover:text-amber-200'
-                        : 'bg-white text-indigo-600 shadow-sm hover:bg-indigo-50 hover:text-indigo-700'
+                        : 'bg-white text-[color:var(--ds-accent-brand)] shadow-sm hover:bg-indigo-50 hover:text-indigo-700'
                 }`}
                 aria-label={label}
             >
@@ -600,7 +600,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
         <div className="absolute right-0 top-full mt-2 w-96 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
             <div className="px-4 pt-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <div className="min-w-0">
-                    <p className="ds-text-micro font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300">
+                    <p className="ds-text-micro font-semibold uppercase tracking-[0.22em] text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
                         {sinceLabel ? `Since ${sinceLabel}` : 'Activity digest'}
                     </p>
                     <h3 className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100 ds-font-display">

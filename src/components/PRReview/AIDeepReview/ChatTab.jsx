@@ -119,7 +119,7 @@ export function ChatTab({ owner, repo, prNumber, headSha }) {
                     <button
                         type="submit"
                         disabled={!input.trim()}
-                        className="px-3 py-1.5 text-xs font-semibold rounded bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 inline-flex items-center gap-1"
+                        className="px-3 py-1.5 text-xs font-semibold rounded bg-[color:var(--ds-accent-brand)] text-white hover:bg-indigo-500 disabled:opacity-50 inline-flex items-center gap-1"
                     >
                         <Send size={12} /> Send
                     </button>

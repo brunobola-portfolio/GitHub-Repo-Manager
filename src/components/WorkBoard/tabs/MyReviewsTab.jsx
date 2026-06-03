@@ -106,7 +106,7 @@ function ReviewRow({ review, isFocused, onFocus, hasAI, onSnooze, onRequestChang
                             {review.title || `PR #${review.prNumber}`}
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            <span className="font-mono text-indigo-600 dark:text-indigo-400">{review.repoFullName}</span>
+                            <span className="font-mono text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">{review.repoFullName}</span>
                             {' '}#{review.prNumber}
                             {review.authorLogin && <> by <strong>{review.authorLogin}</strong></>}
                         </div>

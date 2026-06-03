@@ -21,7 +21,7 @@ export function CTASection({ onSignIn }) {
       {/* Animated orbs */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <motion.div
-          className="absolute rounded-full blur-3xl bg-indigo-600 opacity-10 dark:opacity-20"
+          className="absolute rounded-full blur-3xl bg-[color:var(--ds-accent-brand)] opacity-10 dark:opacity-20"
           style={{ width: 340, height: 340, left: '-8%', top: '10%' }}
           animate={{ y: [0, -24, 0], scale: [1, 1.1, 1] }}
           transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}

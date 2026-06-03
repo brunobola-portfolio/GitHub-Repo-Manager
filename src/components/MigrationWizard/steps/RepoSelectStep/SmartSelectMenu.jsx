@@ -69,7 +69,7 @@ export function SmartSelectMenu({ repos, onSelect }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
-          bg-indigo-600 dark:bg-indigo-500 text-white shadow-md
+          bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 text-white shadow-md
           hover:shadow-lg transition-all"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -97,7 +97,7 @@ export function SmartSelectMenu({ repos, onSelect }) {
                     onClick={() => apply(p)}
                     className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:bg-slate-100 dark:focus:bg-slate-800"
                   >
-                    <Icon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+                    <Icon className="w-3.5 h-3.5 text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]" aria-hidden="true" />
                     <span className="flex-1">{p.label}</span>
                     <span className="ds-text-meta text-slate-500 tabular-nums">{count}</span>
                   </button>
@@ -112,7 +112,7 @@ export function SmartSelectMenu({ repos, onSelect }) {
                 onClick={() => { setPatternOpen(true); setOpen(false) }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:bg-slate-100 dark:focus:bg-slate-800"
               >
-                <Pencil className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+                <Pencil className="w-3.5 h-3.5 text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]" aria-hidden="true" />
                 Select by pattern…
               </button>
             </li>

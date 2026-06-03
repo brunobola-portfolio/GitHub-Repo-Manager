@@ -79,7 +79,7 @@ export function ViewErrorFallback({
         <button
           type="button"
           onClick={handleRetry}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl font-medium text-sm transition-colors ds-focus-ring shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] active:bg-indigo-800 text-white rounded-xl font-medium text-sm transition-colors ds-focus-ring shadow-sm"
         >
           <RotateCcw className="w-4 h-4" aria-hidden="true" />
           Retry

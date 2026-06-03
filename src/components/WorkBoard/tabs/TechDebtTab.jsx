@@ -54,7 +54,7 @@ export function TechDebtTab() {
                                 key={h.repoFullName}
                                 className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/80 dark:bg-slate-900/60 text-xs font-medium text-slate-700 dark:text-slate-200"
                             >
-                                <span className="font-mono text-indigo-600 dark:text-indigo-400">{h.repoFullName}</span>
+                                <span className="font-mono text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">{h.repoFullName}</span>
                                 <span className="text-amber-600 dark:text-amber-400 font-semibold">{h.count}</span>
                                 {h.oldestAgeDays > 0 && (
                                     <span className="text-slate-400 ds-text-micro">· oldest {Math.round(h.oldestAgeDays)}d</span>
@@ -90,7 +90,7 @@ export function TechDebtTab() {
                                             {issue.title || `Issue #${issue.issueNumber}`}
                                         </div>
                                         <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
-                                            <span className="font-mono text-indigo-600 dark:text-indigo-400">{issue.repoFullName}</span>
+                                            <span className="font-mono text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">{issue.repoFullName}</span>
                                             #{issue.issueNumber}
                                             {(issue.labels || []).slice(0, 3).map(label => (
                                                 <span

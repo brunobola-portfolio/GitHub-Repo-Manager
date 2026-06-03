@@ -80,7 +80,7 @@ function LabelEditor({ owner, repo, issue, api, onMutate }) {
                 <button
                     type="button"
                     onClick={() => { setOpen(v => !v); if (!open) loadAvailable() }}
-                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                    className="text-xs text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
                 >
                     {open ? 'Done' : 'Edit'}
                 </button>
@@ -125,7 +125,7 @@ function LabelEditor({ owner, repo, issue, api, onMutate }) {
                                 style={{ backgroundColor: `#${l.color}` }}
                             />
                             <span className="flex-1 truncate text-slate-700 dark:text-slate-300">{l.name}</span>
-                            {selected.has(l.name) && <Check className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />}
+                            {selected.has(l.name) && <Check className="w-3 h-3 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]" />}
                         </button>
                     ))}
                 </div>
@@ -186,7 +186,7 @@ function AssigneePicker({ owner: _owner, repo: _repo, issue, api, onMutate }) {
                 <button
                     type="button"
                     onClick={() => { setOpen(v => !v); if (!open) loadAvailable() }}
-                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                    className="text-xs text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
                 >
                     {open ? 'Done' : 'Edit'}
                 </button>
@@ -225,7 +225,7 @@ function AssigneePicker({ owner: _owner, repo: _repo, issue, api, onMutate }) {
                                 <img src={u.avatar_url} alt="" className="w-5 h-5 rounded-full flex-shrink-0" />
                             )}
                             <span className="flex-1 truncate text-slate-700 dark:text-slate-300">{u.login}</span>
-                            {assigned.has(u.login) && <Check className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />}
+                            {assigned.has(u.login) && <Check className="w-3 h-3 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]" />}
                         </button>
                     ))}
                 </div>
@@ -306,7 +306,7 @@ export function IssueTimeline({ owner: _owner, repo: _repo, number, api }) {
             <button
                 type="button"
                 onClick={() => { setOpen(v => !v); if (!open) load() }}
-                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                className="text-xs text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
             >
                 {open ? 'Hide' : 'Show'} full history
             </button>

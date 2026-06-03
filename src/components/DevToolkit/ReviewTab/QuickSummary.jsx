@@ -22,7 +22,7 @@ export function QuickSummary({ summary, loading, error, onRetry }) {
         return (
             <div className="text-center py-6">
                 <p className="text-sm text-red-500 dark:text-red-400 mb-2">{error}</p>
-                <button type="button" onClick={onRetry} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Retry</button>
+                <button type="button" onClick={onRetry} className="text-xs text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline">Retry</button>
             </div>
         )
     }

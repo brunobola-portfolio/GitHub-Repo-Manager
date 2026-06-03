@@ -64,7 +64,7 @@ const KPI_ACCENTS = {
     purple:  { dot: 'bg-purple-500',  text: 'text-purple-600 dark:text-purple-300',  sparkColor: '#a78bfa' },
     amber:   { dot: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-300',    sparkColor: '#fbbf24' },
     emerald: { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-300', sparkColor: '#34d399' },
-    indigo:  { dot: 'bg-indigo-500',  text: 'text-indigo-600 dark:text-indigo-300',  sparkColor: '#818cf8' },
+    indigo:  { dot: 'bg-indigo-500',  text: 'text-[color:var(--ds-accent-brand)] dark:text-indigo-300',  sparkColor: '#818cf8' },
 }
 
 function KpiTile({ icon: Icon, label, value, hint, loading, accent = 'indigo', onClick, active, history }) {

@@ -50,7 +50,7 @@ export function AINotConfiguredBanner({
                 <button
                     type="button"
                     onClick={openAISettings}
-                    className="inline-flex items-center gap-0.5 text-indigo-600 dark:text-indigo-300 hover:underline"
+                    className="inline-flex items-center gap-0.5 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 hover:underline"
                 >
                     Configure <ArrowRight className="w-3 h-3" aria-hidden="true" />
                 </button>
@@ -70,7 +70,7 @@ export function AINotConfiguredBanner({
         >
             <div className="flex items-start gap-3">
                 <div className="shrink-0 w-10 h-10 rounded-xl bg-indigo-500/20 dark:bg-indigo-500/30 ring-1 ring-inset ring-indigo-500/30 flex items-center justify-center">
-                    <Key className="w-5 h-5 text-indigo-600 dark:text-indigo-300" aria-hidden="true" />
+                    <Key className="w-5 h-5 text-[color:var(--ds-accent-brand)] dark:text-indigo-300" aria-hidden="true" />
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -86,7 +86,7 @@ export function AINotConfiguredBanner({
                         <button
                             type="button"
                             onClick={openAISettings}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-md"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-md"
                         >
                             <Key className="w-3.5 h-3.5" aria-hidden="true" />
                             Configure AI
@@ -96,7 +96,7 @@ export function AINotConfiguredBanner({
                             href="https://aistudio.google.com/app/apikey"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-indigo-600 dark:text-indigo-300 hover:underline"
+                            className="text-xs text-[color:var(--ds-accent-brand)] dark:text-indigo-300 hover:underline"
                         >
                             Get a free Gemini key
                         </a>

@@ -83,7 +83,7 @@ export function ContextPicker({
                                 type="button"
                                 onClick={() => onAddCustomFile?.()}
                                 disabled={customFiles.length >= 5}
-                                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-50"
+                                className="text-xs text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline disabled:opacity-50"
                             >
                                 + Add specific file ({customFiles.length}/5)
                             </button>

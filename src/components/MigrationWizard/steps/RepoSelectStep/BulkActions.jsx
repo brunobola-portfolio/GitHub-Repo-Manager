@@ -18,7 +18,7 @@ export function BulkActions({ selectedCount, filteredCount, totalCount, hasActiv
         Invert
       </Button>
       <span className="ml-auto text-xs text-slate-500 dark:text-slate-400">
-        <span className={selectedCount > 0 ? 'text-indigo-500 dark:text-indigo-400 font-medium' : ''}>
+        <span className={selectedCount > 0 ? 'text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] font-medium' : ''}>
           {selectedCount} selected
         </span>{' '}
         of {totalCount}

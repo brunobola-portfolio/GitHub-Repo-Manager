@@ -70,7 +70,7 @@ export function CurrentConfigSummary({ form }) {
             <div className="rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 space-y-4">
                 <div className="flex items-center gap-2">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
-                    <span className="ds-text-micro font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
+                    <span className="ds-text-micro font-semibold uppercase tracking-[0.14em] text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
                         Current configuration
                     </span>
                 </div>
@@ -179,7 +179,7 @@ function SummaryRow({ label, icon: Icon, value, hint, mono = false, accent }) {
     const accentColor = {
         emerald: 'text-emerald-600 dark:text-emerald-400',
         amber: 'text-amber-600 dark:text-amber-400',
-        indigo: 'text-indigo-600 dark:text-indigo-400',
+        indigo: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]',
     }[accent] || 'text-slate-700 dark:text-slate-200'
 
     return (

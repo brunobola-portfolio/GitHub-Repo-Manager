@@ -19,7 +19,7 @@ export default function RestartServerHint({ host }) {
   return (
     <div className="rounded-2xl border border-indigo-300 dark:border-indigo-700 bg-indigo-50/60 dark:bg-indigo-900/15 overflow-hidden">
       <div className="px-4 py-2.5 flex items-center gap-2 bg-indigo-100/60 dark:bg-indigo-900/30 border-b border-indigo-200 dark:border-indigo-800">
-        <RefreshCw className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+        <RefreshCw className="w-4 h-4 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]" />
         <span className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">
           Backend precisa de reiniciar
         </span>

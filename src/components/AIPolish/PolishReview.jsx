@@ -96,7 +96,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                                     onChange={() => toggleInclude(row.fullName)}
                                     disabled={row.status === 'applying' || row.status === 'done'}
                                     aria-label={`Incluir ${row.fullName}`}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500/40 cursor-pointer"
+                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500/40 cursor-pointer"
                                 />
                             </div>
 
@@ -168,7 +168,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                                         {row.status === 'resolving' ? 'A resolver' : 'A carregar'}
                                     </span>
                                 ) : row.status === 'applying' ? (
-                                    <span className="inline-flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400">
+                                    <span className="inline-flex items-center gap-1.5 text-xs text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
                                         <Spinner size="xs" /> A aplicar
                                     </span>
                                 ) : row.status === 'done' ? (

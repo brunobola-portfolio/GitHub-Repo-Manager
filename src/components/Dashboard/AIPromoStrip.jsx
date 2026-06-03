@@ -74,7 +74,7 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                         <X className="w-4 h-4" />
                     </button>
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-[color:var(--ds-accent-brand)] flex items-center justify-center flex-shrink-0">
                             <Sparkles className="w-4 h-4 text-white" strokeWidth={2.5} />
                         </div>
                         <div className="min-w-0">
@@ -101,7 +101,7 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                         <button
                             type="button"
                             onClick={handleInsights}
-                            className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors whitespace-nowrap"
+                            className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold text-white bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] transition-colors whitespace-nowrap"
                         >
                             <span className="sm:hidden">Insights</span>
                             <span className="hidden sm:inline">Get Insights</span>

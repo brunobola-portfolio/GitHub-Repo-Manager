@@ -168,7 +168,7 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
             <button
               onClick={onNavigatePricing}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm
-                bg-indigo-500/10 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400
+                bg-indigo-500/10 dark:bg-indigo-500/15 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]
                 border border-indigo-500/20 hover:border-indigo-500/40
                 hover:bg-indigo-500/15 dark:hover:bg-indigo-500/20
                 transition-all duration-200"

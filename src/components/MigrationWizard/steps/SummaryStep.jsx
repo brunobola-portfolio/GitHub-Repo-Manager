@@ -18,7 +18,7 @@ import { decodeOversizedError } from '../ui/oversizedError'
    ═══════════════════════════════════════════ */
 
 const TYPE_CONFIG = {
-  repo: { icon: Package, label: 'Git Repository', color: 'text-indigo-500 dark:text-indigo-400' },
+  repo: { icon: Package, label: 'Git Repository', color: 'text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]' },
   'repo-tfvc': { icon: Package, label: 'TFVC Repository', color: 'text-violet-500 dark:text-violet-400' },
   'work-items': { icon: ClipboardList, label: 'Work Items', color: 'text-cyan-500 dark:text-cyan-400' },
   wiki: { icon: BookOpen, label: 'Wiki', color: 'text-amber-500 dark:text-amber-400' },
@@ -212,7 +212,7 @@ function TaskResultRow({ task, index, maxIndex = 10 }) {
           </span>
           {task.metadata?.reusedExistingRepo && (
             <span
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded ds-text-micro font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded ds-text-micro font-medium bg-indigo-500/10 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]"
               title="Pushed into an existing empty repo instead of creating a new one"
             >
               Reused
@@ -569,7 +569,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, pre
                   icon={Clock}
                   label="Duration"
                   value={formatDuration(plan.durationSeconds)}
-                  color="text-indigo-500 dark:text-indigo-400"
+                  color="text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]"
                 />
               )}
             </div>
@@ -665,8 +665,8 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, pre
             onClick={onNewMigration}
             className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl
               text-white
-              bg-indigo-600 dark:bg-indigo-500
-              hover:bg-indigo-700 dark:hover:bg-indigo-600
+              bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500
+              hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600
               shadow-md
               transition-all duration-200 ml-auto"
           >
