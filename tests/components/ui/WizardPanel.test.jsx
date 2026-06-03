@@ -68,3 +68,28 @@ describe('WizardPanel — maximized / mobile (no drag or resize)', () => {
     expect(screen.queryByTestId('wizard-resize-handle')).not.toBeInTheDocument()
   })
 })
+
+describe('WizardPanel — drag-constraints boundary (framer null-ref guard)', () => {
+  // Regression: the boundary that backs dragConstraints={constraintsRef} must
+  // stay mounted in BOTH floating and maximized modes. If it unmounts on a
+  // float→maximize toggle, framer's ResizeObserver measures a null ref and
+  // throws "Cannot read properties of null (reading 'getBoundingClientRect')".
+  it('renders the drag boundary while floating', () => {
+    render(<WizardPanel {...base} isMaximized={false} isMobile={false}>body</WizardPanel>)
+    expect(screen.getByTestId('wizard-drag-boundary')).toBeInTheDocument()
+  })
+
+  it('keeps the drag boundary mounted when maximized (so the ref is never null)', () => {
+    render(<WizardPanel {...base} isMaximized={true} isMobile={false}>body</WizardPanel>)
+    expect(screen.getByTestId('wizard-drag-boundary')).toBeInTheDocument()
+  })
+
+  it('keeps the drag boundary mounted across a floating → maximized toggle', () => {
+    const { rerender } = render(
+      <WizardPanel {...base} isMaximized={false} isMobile={false}>body</WizardPanel>,
+    )
+    expect(screen.getByTestId('wizard-drag-boundary')).toBeInTheDocument()
+    rerender(<WizardPanel {...base} isMaximized={true} isMobile={false}>body</WizardPanel>)
+    expect(screen.getByTestId('wizard-drag-boundary')).toBeInTheDocument()
+  })
+})

@@ -162,10 +162,14 @@ export function WizardPanel({
           />
 
           {/* Drag boundary — keeps the floating panel from being dragged off
-              screen. Pointer-events-none so it never intercepts clicks. */}
-          {floating && (
-            <div ref={constraintsRef} className="fixed inset-0 pointer-events-none z-[var(--ds-z-modal)]" aria-hidden="true" />
-          )}
+              screen. Always mounted while the wizard is open (NOT gated on
+              `floating`) so framer's ref-constraint measurement never reads a
+              null element: on a float→maximize toggle or a window/element resize,
+              framer's ResizeObserver fires scalePositionWithinConstraints →
+              resolveRefConstraints, and a null ref there throws "Cannot read
+              properties of null (reading 'getBoundingClientRect')". It's
+              pointer-events-none + invisible, so it stays inert when not floating. */}
+          <div ref={constraintsRef} data-testid="wizard-drag-boundary" className="fixed inset-0 pointer-events-none z-[var(--ds-z-modal)]" aria-hidden="true" />
 
           {/* Panel */}
           <motion.div
