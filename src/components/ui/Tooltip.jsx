@@ -65,10 +65,18 @@ export const Tooltip = forwardRef(function Tooltip(
         ...triggerProps,
         ref: composedRef,
         'aria-describedby': visible && label ? id : (triggerProps['aria-describedby'] ?? child.props['aria-describedby']),
+        // Mirror the label into aria-label when the trigger has no name of its own,
+        // so icon-only buttons stay labelled for screen readers (and on touch,
+        // where there's no hover) — never override an explicit label.
+        'aria-label': child.props['aria-label'] ?? triggerProps['aria-label'] ??
+          (!child.props['aria-labelledby'] && typeof label === 'string' ? label : undefined),
         onMouseEnter: chain(show, child.props.onMouseEnter, triggerProps.onMouseEnter),
         onMouseLeave: chain(hide, child.props.onMouseLeave, triggerProps.onMouseLeave),
         onFocus:      chain(show, child.props.onFocus,      triggerProps.onFocus),
         onBlur:       chain(hide, child.props.onBlur,       triggerProps.onBlur),
+        // Touch has no hover — reveal the tooltip on touch-start so the label is
+        // discoverable; it hides again on the trigger's blur / next interaction.
+        onTouchStart:   chain(show, child.props.onTouchStart, triggerProps.onTouchStart),
         onClick:        chain(child.props.onClick,        triggerProps.onClick),
         onPointerDown:  chain(child.props.onPointerDown,  triggerProps.onPointerDown),
       })}

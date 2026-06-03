@@ -1,7 +1,11 @@
 import { Keyboard } from 'lucide-react'
 import { Modal } from './ui/Modal'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 
 export function KeyboardShortcutsHelp({ isOpen, onClose, shortcuts }) {
+    // On touch devices these keys aren't reachable — say so instead of listing
+    // them as if they work everywhere.
+    const isCoarsePointer = useMediaQuery('(pointer: coarse)')
     const grouped = {
         global: shortcuts.filter(s => s.scope === 'global'),
         navigation: shortcuts.filter(s => s.scope === 'navigation'),
@@ -17,6 +21,11 @@ export function KeyboardShortcutsHelp({ isOpen, onClose, shortcuts }) {
             icon={Keyboard}
             size="sm"
         >
+            {isCoarsePointer && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mb-3 text-center" role="note">
+                    These shortcuts need a physical keyboard — connect one to use them on this device.
+                </p>
+            )}
             <div className="space-y-4">
                 <ShortcutGroup title="General" items={grouped.global} />
                 <ShortcutGroup title="Navigation" items={grouped.navigation} />
