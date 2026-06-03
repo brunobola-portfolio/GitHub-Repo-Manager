@@ -34,7 +34,7 @@ export function PageHeader({
         <header className={`flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6 ${className}`.trim()}>
             <div className={`min-w-0 ${align === 'center' ? 'text-center mx-auto' : ''}`}>
                 {(eyebrow || Icon) && (
-                    <div className={`flex items-center gap-2 ds-text-micro font-semibold uppercase tracking-[0.22em] text-indigo-600 dark:text-indigo-300 ${align === 'center' ? 'justify-center' : ''}`}>
+                    <div className={`flex items-center gap-2 ds-text-micro font-semibold uppercase tracking-[0.22em] text-[color:var(--ds-accent-brand)] dark:text-indigo-300 ${align === 'center' ? 'justify-center' : ''}`}>
                         {Icon && <Icon className="w-3 h-3" aria-hidden="true" />}
                         {eyebrow && <span>{eyebrow}</span>}
                     </div>

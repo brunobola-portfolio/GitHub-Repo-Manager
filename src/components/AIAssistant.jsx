@@ -478,7 +478,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
                         <button
                             type="button"
                             onClick={onOpenSettings}
-                            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-[color:var(--ds-accent-brand)] text-white hover:bg-indigo-500 transition-colors"
                         >
                             <Key size={12} /> Configure API key
                         </button>

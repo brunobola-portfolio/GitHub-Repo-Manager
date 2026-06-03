@@ -174,7 +174,7 @@ export function TransferModal({
 							onClick={() => setAction('transfer')}
 							className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
 								action === 'transfer'
-									? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+									? 'bg-white dark:bg-slate-600 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] shadow-sm'
 									: 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
 							}`}
 						>
@@ -299,7 +299,7 @@ export function TransferModal({
 											{targetOrg && !hasConflict && (
 												<div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
 													<ArrowRight className="w-4 h-4" />
-													<span className="text-indigo-600 dark:text-indigo-400 font-medium">{targetOrg}/{repo.name}</span>
+													<span className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] font-medium">{targetOrg}/{repo.name}</span>
 												</div>
 											)}
 											{hasConflict && !resolution && (

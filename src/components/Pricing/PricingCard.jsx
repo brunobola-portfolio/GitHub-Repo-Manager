@@ -37,7 +37,7 @@ export function PricingCard({
       {/* Badge — absolute on the outer wrapper (no overflow-hidden here) */}
       {highlighted && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20">
-          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-indigo-600 dark:bg-indigo-500 shadow-md">
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 shadow-md">
             <Zap className="w-3 h-3" />
             Most Popular
           </span>

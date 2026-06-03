@@ -73,7 +73,7 @@ export function OverviewTab({ api, repoData, onUpdate }) {
             <div className="lg:col-span-3">
                 <button
                     onClick={() => openModalWithData('showRepoInsights', { repo: repoData, initialTab: 'quality' })}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 ds-focus-ring transition"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] ds-focus-ring transition"
                 >
                     <Sparkles className="w-4 h-4" />
                     View AI Insights
@@ -153,7 +153,7 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                                     disabled={!canEdit}
                                     onSave={(v) => saveField('homepage', v, 'Website')}
                                     renderValue={(v) => (
-                                        <a href={v} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-indigo-600 dark:text-indigo-400 hover:underline truncate block">{v}</a>
+                                        <a href={v} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline truncate block">{v}</a>
                                     )}
                                 />
                             </dd>

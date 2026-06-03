@@ -262,7 +262,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                 type="checkbox"
                                 checked={form.draft}
                                 onChange={e => setForm(f => ({ ...f, draft: e.target.checked }))}
-                                className="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500"
+                                className="rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500"
                             />
                             Create as draft
                         </label>
@@ -320,7 +320,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                         {pr.html_url && (
                                             <a href={pr.html_url} target="_blank" rel="noopener noreferrer"
                                                 onClick={e => e.stopPropagation()}
-                                                className="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+                                                className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline flex items-center gap-1">
                                                 View <ExternalLink className="w-3 h-3" />
                                             </a>
                                         )}

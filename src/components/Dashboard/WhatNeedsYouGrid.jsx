@@ -31,7 +31,7 @@ const TONE_CLASSES = {
     indigo: {
         iconBg: 'bg-indigo-500/10',
         iconColor: 'text-indigo-500',
-        countActive: 'text-indigo-600 dark:text-indigo-400',
+        countActive: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]',
         hoverBorder: 'hover:border-indigo-300 dark:hover:border-indigo-500/50',
         ring: 'focus-visible:ring-indigo-500',
     },
@@ -99,7 +99,7 @@ function CategoryCard({ category, data, onClick }) {
             {showDelta && (
                 <div className="ds-text-micro text-slate-400 dark:text-slate-500">{deltaContext(data.baselineAt)}</div>
             )}
-            <div className="text-xs font-medium text-indigo-600 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+            <div className="text-xs font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                 Open <ArrowRight className="w-3 h-3" />
             </div>
         </button>
@@ -133,7 +133,7 @@ function EmptyState({ onOpenWorkBoard }) {
             <button
                 type="button"
                 onClick={() => onOpenWorkBoard?.({})}
-                className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+                className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
             >
                 Open Work Board <ArrowRight className="w-3.5 h-3.5" />
             </button>

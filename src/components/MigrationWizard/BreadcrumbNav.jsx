@@ -44,7 +44,7 @@ export default function BreadcrumbNav({ source, currentStep, selectedCount, tota
           <span className={`text-xs px-1.5 py-0.5 rounded-full ml-1 inline-flex items-center gap-1 ${
             totalWarnings > 0
               ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
-              : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+              : 'bg-indigo-100 dark:bg-indigo-900/30 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
           }`}>
             {selectedCount} selected
             {totalWarnings > 0 && <AlertTriangle className="w-3 h-3" />}

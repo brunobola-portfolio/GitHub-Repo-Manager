@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
 
 const TONES = {
-    indigo: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border-indigo-400/40',
+    indigo: 'bg-indigo-500/15 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 border-indigo-400/40',
     amber: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-400/40',
     emerald: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-400/40',
     slate: 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-400/30',

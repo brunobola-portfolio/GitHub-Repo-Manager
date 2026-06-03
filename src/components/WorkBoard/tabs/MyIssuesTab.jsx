@@ -59,7 +59,7 @@ export function MyIssuesTab() {
                                         {issue.title || `Issue #${issue.issueNumber}`}
                                     </div>
                                     <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
-                                        <span className="font-mono text-indigo-600 dark:text-indigo-400">{issue.repoFullName}</span>
+                                        <span className="font-mono text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">{issue.repoFullName}</span>
                                         #{issue.issueNumber}
                                         {(issue.labels || []).map(label => (
                                             <span

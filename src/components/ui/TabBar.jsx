@@ -12,7 +12,7 @@ const VARIANT_BUTTON = {
         inactive: 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300',
     },
     underline: {
-        active: 'text-indigo-600 dark:text-indigo-400',
+        active: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]',
         inactive: 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300',
     },
     segmented: {

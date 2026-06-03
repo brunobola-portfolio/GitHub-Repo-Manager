@@ -82,7 +82,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 			{/* Badges — absolute on outer wrapper so they can float above the card body (overflow-visible here) */}
 			{plan.popular && (
 				<div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
-					<div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-indigo-600 dark:bg-indigo-500 shadow-md">
+					<div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 shadow-md">
 						<Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
 						<span className="text-xs font-bold text-white tracking-wide">Most Popular</span>
 					</div>
@@ -111,7 +111,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 				<div className="flex flex-col gap-6 h-full">
 					{/* Plan header */}
 					<div>
-						<p className={`text-sm font-semibold mb-1 ds-font-display ${plan.popular ? 'text-indigo-200' : plan.enterprise ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400'}`}>
+						<p className={`text-sm font-semibold mb-1 ds-font-display ${plan.popular ? 'text-indigo-200' : plan.enterprise ? 'text-amber-600 dark:text-amber-400' : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'}`}>
 							{plan.name}
 						</p>
 						<div className="flex items-end gap-2 mb-2">
@@ -142,7 +142,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 												: 'bg-indigo-500/10 dark:bg-indigo-500/20'
 										}`}
 								>
-									<Check className={`w-3 h-3 ${plan.popular ? 'text-white' : plan.enterprise ? 'text-amber-600 dark:text-amber-400' : 'text-indigo-600 dark:text-indigo-400'}`} strokeWidth={2.5} />
+									<Check className={`w-3 h-3 ${plan.popular ? 'text-white' : plan.enterprise ? 'text-amber-600 dark:text-amber-400' : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'}`} strokeWidth={2.5} />
 								</div>
 								<span className={`text-sm ds-font-display ${plan.popular ? 'text-indigo-50' : 'text-slate-600 dark:text-slate-300'}`}>
 									{feat}
@@ -199,7 +199,7 @@ export function PricingPreview({ onSignIn }) {
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-14 sm:mb-16"
         >
-          <p className="text-xs font-semibold tracking-widest uppercase text-indigo-500 dark:text-indigo-400 mb-3 ds-font-display">
+          <p className="text-xs font-semibold tracking-widest uppercase text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] mb-3 ds-font-display">
             Pricing
           </p>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 tracking-tight ds-font-display mb-4">

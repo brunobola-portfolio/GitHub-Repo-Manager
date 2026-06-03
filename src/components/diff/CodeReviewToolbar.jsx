@@ -45,7 +45,7 @@ export function CodeReviewToolbar({
                 </span>
                 <span className="text-slate-400">·</span>
                 <span>
-                    <span className="font-semibold text-indigo-600 dark:text-indigo-400">{reviewedCount}</span>/{filesCount} reviewed
+                    <span className="font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">{reviewedCount}</span>/{filesCount} reviewed
                 </span>
             </div>
 

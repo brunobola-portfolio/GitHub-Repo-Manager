@@ -67,7 +67,7 @@ export function RepoRow({ repo, isSelected, isActive, density = 'full', onToggle
               <span className="font-semibold text-slate-900 dark:text-slate-100 truncate">{repo.name}</span>
               {repo.targetName && repo.targetName !== repo.name && (
                 <span
-                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]"
                   title={`Will migrate as ${repo.targetName}`}
                 >
                   <span aria-hidden="true">→</span>

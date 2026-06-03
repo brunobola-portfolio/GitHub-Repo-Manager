@@ -104,7 +104,7 @@ export function ConflictPanel({ conflict, repoName, onResolve, resolution }) {
                         setRenameValue(`${repoName}-2`)
                         onResolve(null)
                     }}
-                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline shrink-0"
+                    className="text-xs text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline shrink-0"
                 >
                     Change
                 </button>
@@ -120,7 +120,7 @@ export function ConflictPanel({ conflict, repoName, onResolve, resolution }) {
                 <div className="px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                     Field
                 </div>
-                <div className="px-3 py-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">
+                <div className="px-3 py-2 text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] uppercase tracking-wide">
                     Source
                 </div>
                 <div className="px-3 py-2 text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">

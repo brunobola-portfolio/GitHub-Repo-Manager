@@ -106,7 +106,7 @@ function TabButton({ active, onClick, children, id, controls }) {
             onClick={onClick}
             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                 active
-                    ? 'bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/15 dark:text-indigo-200'
+                    ? 'bg-indigo-500/10 text-[color:var(--ds-accent-brand)] dark:bg-indigo-400/15 dark:text-indigo-200'
                     : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
             }`}
         >
@@ -202,7 +202,7 @@ function PromptEditor({ entry, onSaved, onReset }) {
                     <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{entry.title}</h4>
                         {entry.hasOverride ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-700/40">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-900/30 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-700/40">
                                 <CheckCircle2 className="w-3 h-3" /> Customized
                             </span>
                         ) : (

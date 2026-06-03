@@ -196,7 +196,7 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 							href={committedResult.prUrl}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+							className="inline-flex items-center gap-1.5 text-sm font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
 						>
 							View PR <ExternalLink className="w-3.5 h-3.5" />
 						</a>

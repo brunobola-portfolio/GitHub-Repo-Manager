@@ -46,7 +46,7 @@ export function WebhookConnectPanel({ tier }) {
                         href={DOCS_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                        className="inline-flex items-center gap-1 text-xs text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
                     >
                         Setup instructions <ExternalLink className="w-3 h-3" />
                     </a>

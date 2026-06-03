@@ -79,7 +79,7 @@ function ModeCard({ active, onClick, icon: Icon, title, desc }) {
           : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
     >
       <div className="flex items-center gap-2 mb-1">
-        <Icon className={`w-4 h-4 ${active ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500'}`} />
+        <Icon className={`w-4 h-4 ${active ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500'}`} />
         <span className={`text-sm font-medium ${active ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'}`}>
           {title}
         </span>
@@ -235,7 +235,7 @@ function NewProjectForm({ source, onChange }) {
         type="button"
         onClick={createProject}
         disabled={creating || !source.azureNewProjectName?.trim()}
-        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
+        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] disabled:bg-slate-300 disabled:cursor-not-allowed"
       >
         {creating ? <Spinner size="md" tone="onPrimary" /> : <Plus className="w-4 h-4" />}
         {creating ? 'A criar projecto…' : 'Criar projecto agora'}

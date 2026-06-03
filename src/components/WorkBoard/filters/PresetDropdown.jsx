@@ -106,7 +106,7 @@ export function PresetDropdown({ currentFilters, onApply }) {
                                 type="button"
                                 onClick={handleSave}
                                 disabled={saving || !name.trim()}
-                                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-40"
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-[color:var(--ds-accent-brand)] text-white hover:bg-indigo-500 disabled:opacity-40"
                             >
                                 <Plus className="w-3 h-3" aria-hidden="true" />
                                 Save

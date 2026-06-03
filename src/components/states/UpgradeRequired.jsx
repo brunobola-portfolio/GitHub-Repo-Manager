@@ -5,7 +5,7 @@ import { twMerge } from 'tailwind-merge'
 const TIER_COPY = {
     pro: {
         eyebrow: 'Pro feature',
-        bg: 'bg-indigo-600 dark:bg-indigo-500',
+        bg: 'bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500',
         glow: '',
         ring: 'ring-indigo-500/20 dark:ring-indigo-400/20',
     },
@@ -199,7 +199,7 @@ function InlineUpgrade({ tier, feature, copy, pricingHref, onPricingClick, class
             <a
                 href={pricingHref}
                 onClick={onPricingClick}
-                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 inline-flex items-center gap-1 ds-focus-ring"
+                className="text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:text-indigo-500 inline-flex items-center gap-1 ds-focus-ring"
             >
                 Upgrade
                 <ArrowRight className="w-3 h-3" />

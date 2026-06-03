@@ -71,7 +71,7 @@ function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRe
         accent
           ? 'bg-[color:var(--ds-accent-brand)] text-white hover:opacity-90 shadow-md'
           : isActive
-            ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400'
+            ? 'bg-indigo-100 dark:bg-indigo-900/40 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
             : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300'
       }`}
       aria-label={label}
@@ -509,7 +509,7 @@ function ActivityListBody({ activity, now }) {
                                 </div>
                                 <div className="mt-1.5 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
-                                        className="ds-text-micro font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                                        className="ds-text-micro font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline flex items-center gap-1"
                                         aria-label="View activity details"
                                         onClick={() => {
                                             const repoName = event.repo?.name

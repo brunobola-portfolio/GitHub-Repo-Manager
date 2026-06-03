@@ -285,8 +285,8 @@ export function PricingPage({ onGetStarted } = {}) {
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-7
               bg-indigo-500/10 dark:bg-indigo-500/15 border border-indigo-500/20 dark:border-indigo-500/25"
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
-            <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 tracking-wide">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]" />
+            <span className="text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] tracking-wide">
               Simple, transparent pricing
             </span>
           </motion.div>
@@ -412,7 +412,7 @@ export function PricingPage({ onGetStarted } = {}) {
             className="text-center mb-10"
           >
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white ds-font-display mb-3">
-              Frequently asked <span className="text-indigo-600 dark:text-indigo-400">questions</span>
+              Frequently asked <span className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">questions</span>
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-lg mx-auto">
               Can't find the answer? Reach us at{' '}
@@ -486,7 +486,7 @@ export function PricingPage({ onGetStarted } = {}) {
           <button
             type="button"
             onClick={() => typeof onGetStarted === 'function' && onGetStarted('roadmap')}
-            className="inline-flex items-center gap-2 px-2 py-1 rounded text-sm font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors duration-200 ds-focus-ring"
+            className="inline-flex items-center gap-2 px-2 py-1 rounded text-sm font-medium text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors duration-200 ds-focus-ring"
           >
             See what&apos;s next on our Roadmap
             <ArrowRight className="w-4 h-4" />

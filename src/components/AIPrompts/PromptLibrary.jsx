@@ -73,7 +73,7 @@ export function PromptLibrary({ presets, loading, onNew, onEdit, onDelete, onSet
                                     <span className="font-medium">{p.name}</span>
                                     {p.builtin ? <span className="ds-text-micro uppercase tracking-wide opacity-50 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">built-in</span> : null}
                                     {isOrgShared ? (
-                                        <span className="ds-text-micro uppercase tracking-wide text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950">
+                                        <span className="ds-text-micro uppercase tracking-wide text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950">
                                             shared · {p.scopeTarget}
                                         </span>
                                     ) : null}

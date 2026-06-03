@@ -95,7 +95,7 @@ export function ManageReposButton({ onOpenSettings }) {
                     <button
                         type="button"
                         onClick={() => { setOpen(false); onOpenSettings?.() }}
-                        className="w-full text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline px-2 py-1"
+                        className="w-full text-xs font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline px-2 py-1"
                     >
                         See all in Settings →
                     </button>
@@ -142,7 +142,7 @@ function IconButton({ active, label, onClick, Icon }) {
             className={clsx(
                 'p-1 rounded-md transition-colors',
                 active
-                    ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30'
+                    ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-indigo-50 dark:bg-indigo-900/30'
                     : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50'
             )}
         >

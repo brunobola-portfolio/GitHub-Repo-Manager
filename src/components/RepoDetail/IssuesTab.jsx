@@ -238,7 +238,7 @@ export function IssuesTab({ api, repoFullName }) {
                                         {issue.html_url && (
                                             <a href={issue.html_url} target="_blank" rel="noopener noreferrer"
                                                 onClick={e => e.stopPropagation()}
-                                                className="text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+                                                className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline flex items-center gap-1">
                                                 View <ExternalLink className="w-3 h-3" />
                                             </a>
                                         )}

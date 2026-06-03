@@ -983,7 +983,7 @@ export function CommandPalette({
         </Command.List>
         <div className={`border-t px-3 py-2 ds-text-meta flex items-center justify-between ${
           askMode
-            ? 'border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-300 bg-indigo-50/40 dark:bg-indigo-950/20'
+            ? 'border-indigo-200 dark:border-indigo-800 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 bg-indigo-50/40 dark:bg-indigo-950/20'
             : 'border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'
         }`}>
           <span>

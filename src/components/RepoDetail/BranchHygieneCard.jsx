@@ -32,7 +32,7 @@ export function BranchHygieneCard({ branches, defaultBranch = 'main', className 
             <div className="rounded-2xl bg-white dark:bg-slate-900 p-4 space-y-4">
                 <div className="flex items-center gap-2">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
-                    <h3 id="branch-hygiene-title" className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">
+                    <h3 id="branch-hygiene-title" className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
                         Branch hygiene
                     </h3>
                 </div>

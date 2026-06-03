@@ -69,11 +69,11 @@ describe('Button', () => {
         expect(cls).toContain('text-red-600')
     })
 
-    it('renders outline-primary with indigo border + indigo text', () => {
+    it('renders outline-primary with indigo border + brand-token text', () => {
         render(<Button variant="outline-primary">x</Button>)
         const cls = screen.getByRole('button').className
         expect(cls).toContain('border-indigo-300')
-        expect(cls).toContain('text-indigo-600')
+        expect(cls).toContain('text-[color:var(--ds-accent-brand)]')
     })
 
     it('renders soft-danger with red-50 bg + red text and no border', () => {

@@ -56,7 +56,7 @@ export function ModelDropdown({
             {sections.length === 0 ? (
                 <div className="px-3 py-4 text-xs text-slate-500 dark:text-slate-400">
                     {activeTier
-                        ? <>No models in this tier. <button type="button" onClick={() => setActiveTier(null)} className="text-indigo-600 dark:text-indigo-300 hover:underline">Clear filter</button>.</>
+                        ? <>No models in this tier. <button type="button" onClick={() => setActiveTier(null)} className="text-[color:var(--ds-accent-brand)] dark:text-indigo-300 hover:underline">Clear filter</button>.</>
                         : <>No match. Press <span className="text-slate-700 dark:text-slate-200 font-medium">Enter</span> to use custom id.</>}
                 </div>
             ) : (
@@ -100,7 +100,7 @@ export function ModelDropdown({
                     href={catalogueHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="sticky bottom-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 px-3 py-2 text-xs flex items-center justify-between text-indigo-600 dark:text-indigo-300 hover:underline"
+                    className="sticky bottom-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 px-3 py-2 text-xs flex items-center justify-between text-[color:var(--ds-accent-brand)] dark:text-indigo-300 hover:underline"
                 >
                     <span>{catalogueLabel || 'Browse full catalogue'}</span>
                     <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />

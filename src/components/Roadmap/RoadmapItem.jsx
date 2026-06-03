@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 
 const TIER_STYLES = {
   Free: 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20',
-  Pro: 'bg-indigo-500/10 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20',
+  Pro: 'bg-indigo-500/10 dark:bg-indigo-500/15 text-indigo-700 dark:text-[color:var(--ds-accent-brand-dark)] border border-indigo-500/20',
   'Pro + Enterprise': 'bg-purple-500/10 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400 border border-purple-500/20',
   Enterprise: 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20',
   All: 'bg-slate-100 dark:bg-white/[0.07] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/[0.10]',

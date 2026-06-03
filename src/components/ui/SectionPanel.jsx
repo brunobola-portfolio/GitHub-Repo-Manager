@@ -51,13 +51,13 @@ export function SectionPanel({
     const headerCommon = (
         <>
             {Icon ? (
-                <span className="shrink-0 w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm">
+                <span className="shrink-0 w-9 h-9 rounded-xl bg-[color:var(--ds-accent-brand)] text-white flex items-center justify-center shadow-sm">
                     <Icon className="w-4 h-4" aria-hidden="true" />
                 </span>
             ) : null}
             <div className="flex-1 min-w-0">
                 {eyebrow ? (
-                    <div className="ds-text-micro uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-400 font-semibold mb-0.5">
+                    <div className="ds-text-micro uppercase tracking-[0.2em] text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] font-semibold mb-0.5">
                         {eyebrow}
                     </div>
                 ) : null}

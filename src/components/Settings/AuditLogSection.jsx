@@ -36,7 +36,7 @@ const ACTION_COLORS = {
 }
 
 function getActionColor(action) {
-    return ACTION_COLORS[action] || 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30'
+    return ACTION_COLORS[action] || 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-indigo-50 dark:bg-indigo-900/30'
 }
 
 function formatDateTime(dateStr) {

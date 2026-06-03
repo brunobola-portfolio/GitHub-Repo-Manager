@@ -7,7 +7,7 @@ const features = [
     title: 'AI-Powered Insights',
     description:
       'Quality reports, code health scoring, migration risk analysis, and actionable suggestions — all powered by Gemini AI.',
-    iconColor: 'text-indigo-500 dark:text-indigo-400',
+    iconColor: 'text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]',
     glow: '',
     iconBg: 'bg-indigo-500/15 dark:bg-indigo-500/25',
     accent: 'bg-indigo-500',
@@ -105,7 +105,7 @@ export function FeaturesSection() {
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-14 sm:mb-16"
         >
-          <p className="text-xs font-semibold tracking-widest uppercase text-indigo-500 dark:text-indigo-400 mb-3 ds-font-display">
+          <p className="text-xs font-semibold tracking-widest uppercase text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] mb-3 ds-font-display">
             Features
           </p>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 tracking-tight ds-font-display mb-4">

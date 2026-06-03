@@ -33,7 +33,7 @@ export function OrganizationSelector({ orgs = [], selectedOrg, onSelectOrg, load
                                     className="w-9 h-9 rounded-xl ring-2 ring-indigo-100 dark:ring-indigo-900/50 shadow-md"
                                 />
                             ) : (
-                                <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                                <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
                                     <Building2 size={20} strokeWidth={2.5} />
                                 </div>
                             )}
@@ -68,7 +68,7 @@ export function OrganizationSelector({ orgs = [], selectedOrg, onSelectOrg, load
                                         : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300'
                                     }`}
                             >
-                                <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                                <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
                                     <Building2 size={18} strokeWidth={2.5} />
                                 </div>
                                 <span className="font-semibold flex-1 text-left">All Organizations</span>

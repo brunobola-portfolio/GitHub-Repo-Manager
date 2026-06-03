@@ -217,7 +217,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                         href="https://github.com/pricing"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 mt-4 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                        className="inline-flex items-center gap-1 mt-4 text-xs font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
                     >
                         See GitHub plans <ExternalLink className="w-3 h-3" />
                     </a>
@@ -251,7 +251,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                             checked={rules.requirePR}
                             onChange={(e) => setRules(r => ({ ...r, requirePR: e.target.checked }))}
                             disabled={archived || saving}
-                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500/40" />
+                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500/40" />
                         <span className="text-sm text-slate-700 dark:text-slate-300">Require pull request reviews before merging</span>
                     </label>
 
@@ -278,7 +278,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                                     checked={rules.dismissStaleReviews}
                                     onChange={(e) => setRules(r => ({ ...r, dismissStaleReviews: e.target.checked }))}
                                     disabled={archived || saving}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500/40" />
+                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500/40" />
                                 <span className="text-sm text-slate-600 dark:text-slate-400">Dismiss stale reviews when new commits are pushed</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -287,7 +287,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                                     checked={rules.requireCodeOwnerReviews}
                                     onChange={(e) => setRules(r => ({ ...r, requireCodeOwnerReviews: e.target.checked }))}
                                     disabled={archived || saving}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500/40" />
+                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500/40" />
                                 <span className="text-sm text-slate-600 dark:text-slate-400">Require review from CODEOWNERS</span>
                             </label>
                         </div>
@@ -299,7 +299,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                             checked={rules.requireConversationResolution}
                             onChange={(e) => setRules(r => ({ ...r, requireConversationResolution: e.target.checked }))}
                             disabled={archived || saving}
-                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500/40" />
+                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500/40" />
                         <span className="text-sm text-slate-700 dark:text-slate-300">Require conversation resolution before merging</span>
                     </label>
 

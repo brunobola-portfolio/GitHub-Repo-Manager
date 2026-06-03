@@ -51,7 +51,7 @@ export function AIAssistantPasteCard({ dialog, onAnswer, onConfirm, onCancel }) 
       <div className="flex items-start gap-2">
         <Wand2 className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="ds-text-meta font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-300">
+          <p className="ds-text-meta font-semibold uppercase tracking-wide text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
             URL detectado
           </p>
           <Preview dialog={dialog} />

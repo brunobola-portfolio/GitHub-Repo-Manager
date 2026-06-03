@@ -78,7 +78,7 @@ class ErrorBoundary extends Component {
             <div className="flex gap-3 justify-center">
               <button
                 onClick={this.handleRetry}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium text-sm transition-colors ds-focus-ring"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] text-white rounded-xl font-medium text-sm transition-colors ds-focus-ring"
               >
                 <RotateCcw className="w-4 h-4" />
                 Try Again

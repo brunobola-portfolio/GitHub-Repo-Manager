@@ -180,7 +180,7 @@ function stepToneClasses(status) {
     case 'loading':
       return {
         bg: 'bg-indigo-100 dark:bg-indigo-900/30',
-        text: 'text-indigo-600 dark:text-indigo-400',
+        text: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]',
         detailText: 'text-indigo-700 dark:text-indigo-300',
       }
     default:

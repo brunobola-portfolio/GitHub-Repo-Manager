@@ -68,7 +68,7 @@ export default function TargetModePicker({ source, selectedRepos, onChange }) {
   )
 }
 
-function ModeCard({ active, onClick, icon: Icon, title, subtitle, tag, accentClass = 'text-indigo-500 dark:text-indigo-400' }) {
+function ModeCard({ active, onClick, icon: Icon, title, subtitle, tag, accentClass = 'text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]' }) {
   return (
     <button
       type="button"

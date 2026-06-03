@@ -91,7 +91,7 @@ export function providerToneClasses(tone) {
         bg: 'bg-indigo-50 dark:bg-indigo-900/20',
         border: 'border-indigo-200 dark:border-indigo-800',
         text: 'text-indigo-700 dark:text-indigo-300',
-        iconText: 'text-indigo-500 dark:text-indigo-400',
+        iconText: 'text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]',
         dot: 'bg-indigo-500',
       }
     case 'sky':

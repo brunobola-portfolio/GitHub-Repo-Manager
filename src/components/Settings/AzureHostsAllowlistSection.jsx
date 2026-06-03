@@ -311,7 +311,7 @@ function AddHostForm({ onAdded }) {
         <button
           type="submit"
           disabled={!pattern.trim() || submitting}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
         >
           {submitting ? <SpinnerIcon className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
           Adicionar

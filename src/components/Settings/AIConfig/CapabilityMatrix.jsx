@@ -34,7 +34,7 @@ export function CapabilityMatrix({ activeProvider }) {
         <div className="rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-md ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 p-4 space-y-3">
             <div className="flex items-center gap-2">
                 <Cpu className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
-                <span className="ds-text-micro font-semibold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
+                <span className="ds-text-micro font-semibold uppercase tracking-[0.14em] text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
                     Provider Capabilities
                 </span>
             </div>

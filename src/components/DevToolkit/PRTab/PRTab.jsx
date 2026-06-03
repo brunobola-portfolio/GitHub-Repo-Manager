@@ -250,7 +250,7 @@ export function PRTab({ toolkit }) {
                 type="button"
                 onClick={handleGenerate}
                 disabled={!canGenerate || loading || isStreaming}
-                className="inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600 shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
                 {loading || isStreaming ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Generating...</> : <><GitPullRequest className="w-3.5 h-3.5" />Generate PR Description</>}
             </button>
@@ -304,7 +304,7 @@ export function PRTab({ toolkit }) {
                     )}
 
                     {prUrl && (
-                        <a href={prUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+                        <a href={prUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline">
                             View PR on GitHub &rarr;
                         </a>
                     )}

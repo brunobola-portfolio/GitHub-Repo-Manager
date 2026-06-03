@@ -158,7 +158,7 @@ function StepDisc({ status, index, icon: Icon }) {
   }
   if (status === 'loading') {
     return (
-      <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-300 dark:ring-indigo-700">
+      <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-2 ring-indigo-300 dark:ring-indigo-700">
         <Spinner size="md" tone="primary" />
       </div>
     )
@@ -247,7 +247,7 @@ function SidebarStepper({
             <button
               type="button"
               onClick={() => onBreadcrumbNavigate('org')}
-              className="ds-text-meta font-semibold text-indigo-500 dark:text-indigo-400 hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors truncate max-w-[60px]"
+              className="ds-text-meta font-semibold text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors truncate max-w-[60px]"
             >
               {source.org}
             </button>
@@ -255,7 +255,7 @@ function SidebarStepper({
             <button
               type="button"
               onClick={() => onBreadcrumbNavigate('project')}
-              className="ds-text-meta font-semibold text-indigo-500 dark:text-indigo-400 hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors truncate max-w-[70px]"
+              className="ds-text-meta font-semibold text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors truncate max-w-[70px]"
             >
               {source.project}
             </button>
@@ -282,7 +282,7 @@ function SidebarStepper({
           <span className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
             Progresso
           </span>
-          <div className="inline-flex items-baseline gap-0.5 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 font-bold tabular-nums">
+          <div className="inline-flex items-baseline gap-0.5 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 font-bold tabular-nums">
             <span className="text-[13px] leading-none">{effectiveCurrent}</span>
             <span className="ds-text-micro leading-none opacity-60">/</span>
             <span className="ds-text-meta leading-none opacity-70">{effectiveTotal}</span>
@@ -417,7 +417,7 @@ function HorizontalStepper({ steps, currentStepIndex, onGoToStep }) {
                   {isCompleted ? <Check className="w-3 h-3" /> : index + 1}
                 </button>
                 <span className={`mt-1 ds-text-micro font-medium truncate max-w-[52px] text-center
-                  ${isActive ? 'text-indigo-600 dark:text-indigo-400' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                  ${isActive ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
                   {label}
                 </span>
               </div>
@@ -442,7 +442,7 @@ function MobileProgressBar({ steps, currentStepIndex }) {
     <div className="px-4 pt-3 pb-2">
       <div className="h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
         <motion.div
-          className="h-full bg-indigo-600 dark:bg-indigo-500 rounded-full"
+          className="h-full bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 rounded-full"
           initial={false}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
@@ -767,7 +767,7 @@ export default function MigrationWizard({
           className={`inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white
             ${blockerCount > 0
               ? 'bg-slate-600 cursor-not-allowed opacity-60'
-              : 'bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600'}
+              : 'bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600'}
             shadow-md transition-all duration-200`}
         >
           Next

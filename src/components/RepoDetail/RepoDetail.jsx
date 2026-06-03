@@ -167,7 +167,7 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
                             <span className="flex items-center gap-1"><CircleDot className="w-3 h-3" /> {r.open_issues_count} open issues</span>
                         )}
                         <a href={r.html_url} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline ml-auto whitespace-nowrap">
+                            className="flex items-center gap-1 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline ml-auto whitespace-nowrap">
                             View on GitHub <ExternalLink className="w-3 h-3" />
                         </a>
                     </div>

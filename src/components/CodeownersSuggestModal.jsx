@@ -208,7 +208,7 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
                                         className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-xs font-medium text-indigo-700 dark:text-indigo-300"
                                     >
                                         <span className="font-mono">{h.pattern}</span>
-                                        <span className="text-indigo-500 dark:text-indigo-400">
+                                        <span className="text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]">
                                             {h.owners.length} {h.owners.length === 1 ? 'owner' : 'owners'}
                                         </span>
                                     </span>

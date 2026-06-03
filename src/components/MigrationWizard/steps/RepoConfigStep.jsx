@@ -1060,7 +1060,7 @@ function DescriptionField({ repo, index, aiAvailable, isGenerating, onChange, on
           className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md ds-text-meta font-medium
             transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed
             ${aiAvailable
-              ? 'text-white bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 shadow-sm hover:shadow-md'
+              ? 'text-white bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600 shadow-sm hover:shadow-md'
               : 'text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600/60'
             }`}
         >

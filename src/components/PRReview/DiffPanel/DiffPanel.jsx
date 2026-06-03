@@ -316,7 +316,7 @@ export function DiffPanel({
             <button
               onClick={handleSubmitComment}
               disabled={submitting || !commentBody.trim()}
-              className="px-3 py-1.5 max-md:min-h-11 text-sm font-semibold rounded-md bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 max-md:min-h-11 text-sm font-semibold rounded-md bg-[color:var(--ds-accent-brand)] text-white shadow-sm hover:bg-[color:var(--ds-accent-brand-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {submitting ? 'Adding…' : 'Add comment'}
             </button>

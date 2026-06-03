@@ -388,7 +388,7 @@ function FileCheckItem({ file, exists, size, onFix }) {
                     <button
                         type="button"
                         onClick={() => onFix(file)}
-                        className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 transition-colors"
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] transition-colors"
                         title={`Generate ${file} with AI and commit it to the repo`}
                         aria-label={`Fix ${file} with AI`}
                     >
@@ -513,7 +513,7 @@ function SkeletonState() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0, transition: { duration: 0.35 } }}
                         exit={{ opacity: 0, y: -8, transition: { duration: 0.25 } }}
-                        className="text-sm font-medium text-indigo-600 dark:text-indigo-400"
+                        className="text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]"
                     >
                         {SKELETON_MESSAGES[messageIndex]}
                     </motion.p>

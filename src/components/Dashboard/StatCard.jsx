@@ -80,7 +80,7 @@ export const StatCard = memo(function StatCard({
                             </p>
                         )}
                         {interactive && hint && (
-                            <p className="mt-3 ds-text-meta font-medium text-indigo-600 dark:text-indigo-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 transition-opacity flex items-center gap-1">
+                            <p className="mt-3 ds-text-meta font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 transition-opacity flex items-center gap-1">
                                 {hint}
                                 <ArrowUpRight className="w-3 h-3" aria-hidden="true" />
                             </p>

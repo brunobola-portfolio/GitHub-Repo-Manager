@@ -549,7 +549,7 @@ function DiscoverCard({ icon: Icon, title, description, href, actionText, onClic
             {(href || actionText) && (
                 <ActionTag
                     {...actionProps}
-                    className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer ds-focus-ring rounded"
+                    className="text-sm font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline cursor-pointer ds-focus-ring rounded"
                 >
                     {actionText || 'Learn More'} →
                 </ActionTag>

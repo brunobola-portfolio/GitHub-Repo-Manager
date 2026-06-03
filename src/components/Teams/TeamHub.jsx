@@ -134,7 +134,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                         }}
                         disabled={upgradeRequired}
                         title={upgradeRequired ? 'Teams require the Pro plan' : undefined}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
+                        className="flex items-center gap-2 px-4 py-2 bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] text-white rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
                     >
                         {upgradeRequired ? <Lock className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
                         <span>Create Team</span>
@@ -185,7 +185,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium"
+                                    className="px-6 py-2 bg-[color:var(--ds-accent-brand)] text-white rounded-xl hover:bg-[color:var(--ds-accent-brand-hover)] font-medium"
                                 >
                                     {isEditing ? 'Save Changes' : 'Create Team'}
                                 </button>
@@ -227,7 +227,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
 
                     {teams.length === 0 && upgradeRequired && (
                         <div className="col-span-full py-14 px-6 text-center bg-indigo-500/8 dark:bg-indigo-500/12 rounded-3xl ring-1 ring-indigo-500/20">
-                            <div className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-2xl bg-indigo-600 dark:bg-indigo-500 shadow-md">
+                            <div className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-2xl bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 shadow-md">
                                 <Sparkles className="w-7 h-7 text-white" strokeWidth={2.5} />
                             </div>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">
@@ -265,7 +265,7 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
         <motion.div layoutId={`team-${team.id}`} onClick={onClick} className="group">
         <Card hover className="relative p-6 hover:shadow-2xl hover:border-indigo-500/50">
             <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
                     <Users className="w-6 h-6" />
                 </div>
 

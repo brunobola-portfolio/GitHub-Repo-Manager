@@ -189,7 +189,7 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
                   href={status.metadata.repoUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                  className="inline-flex items-center gap-2 text-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
                 >
                   <ExternalLink className="w-4 h-4" />
                   View repository
@@ -286,7 +286,7 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
                     href={jobStatus.metadata.repoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                    className="mt-2 inline-flex items-center gap-1.5 text-xs text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
                   >
                     <ExternalLink className="w-3 h-3" />
                     View repository

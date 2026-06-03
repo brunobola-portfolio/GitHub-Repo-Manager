@@ -145,7 +145,7 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
                         : 'Compare requires the full_name (owner/name) of the target repo'
                     }
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold
-                        text-indigo-600 dark:text-indigo-400
+                        text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]
                         bg-indigo-50 dark:bg-indigo-950/40
                         hover:bg-indigo-100 dark:hover:bg-indigo-900/50
                         disabled:opacity-50 disabled:cursor-not-allowed

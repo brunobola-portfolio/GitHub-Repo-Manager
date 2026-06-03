@@ -123,9 +123,9 @@ export function RepoFilterBar({
 							title={allFilteredSelected ? "Deselect All" : "Select All"}
 						>
 							<div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${allFilteredSelected
-								? 'bg-indigo-600 border-indigo-600'
+								? 'bg-[color:var(--ds-accent-brand)] border-[color:var(--ds-accent-brand)]'
 								: someFilteredSelected
-									? 'bg-indigo-600 border-indigo-600'
+									? 'bg-[color:var(--ds-accent-brand)] border-[color:var(--ds-accent-brand)]'
 									: 'border-slate-400 dark:border-slate-500'
 								}`}>
 								{allFilteredSelected && <CheckSquare className="w-3 h-3 text-white" />}
@@ -200,7 +200,7 @@ export function RepoFilterBar({
 						onClick={() => setViewMode('grid')}
 						aria-label="Grid view"
 						aria-pressed={viewMode === 'grid'}
-						className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+						className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 shadow-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
 					>
 						<LayoutGrid className="w-4 h-4" />
 					</button>
@@ -208,7 +208,7 @@ export function RepoFilterBar({
 						onClick={() => setViewMode('list')}
 						aria-label="List view"
 						aria-pressed={viewMode === 'list'}
-						className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+						className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
 					>
 						<ListIcon className="w-4 h-4" />
 					</button>

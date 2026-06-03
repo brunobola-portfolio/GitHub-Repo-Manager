@@ -20,7 +20,7 @@ function SourceBadge({ source }) {
     return (
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wider ${
             isAI
-                ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30'
+                ? 'bg-indigo-500/20 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 border border-indigo-500/30'
                 : 'bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-500/20'
         }`}>
             {isAI ? <Sparkles className="w-3 h-3" /> : <Wand2 className="w-3 h-3" />}

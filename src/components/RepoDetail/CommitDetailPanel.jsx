@@ -69,7 +69,7 @@ export function CommitDetailPanel({ owner, repo, sha, onClose }) {
                     <span className="text-rose-600 dark:text-rose-400">−{stats.deletions}</span>
                     {data?.html_url && (
                         <a href={data.html_url} target="_blank" rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline">
+                            className="inline-flex items-center gap-1 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline">
                             View on GitHub <ExternalLink className="w-3 h-3" />
                         </a>
                     )}
