@@ -1,6 +1,7 @@
 import { Gauge, ArrowRight, Key } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { openAISettings, navigateToPricing } from '../../utils/appEvents'
+import { Heading } from './Heading'
 
 const TIER_LABEL = { pro: 'Pro', enterprise: 'Enterprise', free: 'Free' }
 
@@ -39,7 +40,7 @@ export function QuotaExceededState({
       <div className="w-16 h-16 mb-5 mx-auto rounded-2xl bg-amber-500 flex items-center justify-center">
         <Gauge className="w-8 h-8 text-white" strokeWidth={2.5} />
       </div>
-      <h3 className="text-xl font-bold ds-font-display text-slate-900 dark:text-slate-100 mb-1">Quota reached</h3>
+      <Heading as="h3" className="text-xl font-bold mb-1">Quota reached</Heading>
       <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
         You&apos;ve used your monthly <strong>{feature}</strong> allowance
         {tierLabel ? <> on the <strong>{tierLabel}</strong> tier</> : null}.
@@ -56,7 +57,7 @@ export function QuotaExceededState({
         <button
           type="button"
           onClick={() => { navigateToPricing(upgradeTo); onClose?.() }}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-white bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] transition-colors ds-focus-ring"
         >
           Upgrade to {upgradeLabel} <ArrowRight className="w-4 h-4" />
         </button>

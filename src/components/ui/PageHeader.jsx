@@ -1,3 +1,5 @@
+import { Heading } from './Heading'
+
 /**
  * Shared visual contract for page-level headers.
  *
@@ -24,7 +26,9 @@ export function PageHeader({
     titleAccessory,
     className = '',
 }) {
-    const titleClass = `mt-1 text-xl font-semibold tracking-tight ds-font-display text-slate-900 dark:text-slate-100 ${titleAccessory ? 'truncate' : ''}`.trim()
+    // Display-face + weight + tracking + colour now come from <Heading>; only
+    // the page-header-specific size/margin/truncate stay here.
+    const titleClass = `mt-1 text-xl ${titleAccessory ? 'truncate' : ''}`.trim()
 
     return (
         <header className={`flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6 ${className}`.trim()}>
@@ -37,11 +41,11 @@ export function PageHeader({
                 )}
                 {titleAccessory ? (
                     <div className="mt-1 flex items-center gap-3 flex-wrap min-w-0">
-                        <h1 className={titleClass}>{title}</h1>
+                        <Heading as="h1" className={titleClass}>{title}</Heading>
                         {titleAccessory}
                     </div>
                 ) : (
-                    <h1 className={titleClass}>{title}</h1>
+                    <Heading as="h1" className={titleClass}>{title}</Heading>
                 )}
                 {description && (
                     <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400 max-w-2xl">

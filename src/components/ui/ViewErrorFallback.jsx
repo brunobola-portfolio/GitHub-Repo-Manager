@@ -25,6 +25,7 @@
 import { AlertTriangle, RotateCcw, Home, X } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
+import { Heading } from './Heading'
 
 export function ViewErrorFallback({
   viewName = 'this view',
@@ -67,9 +68,9 @@ export function ViewErrorFallback({
         </div>
       </div>
 
-      <h2 className="text-lg font-semibold ds-font-display text-slate-900 dark:text-slate-100 text-center tracking-tight">
+      <Heading as="h2" className="text-lg text-center">
         Something went wrong in {viewName}
-      </h2>
+      </Heading>
       <p className="mt-1.5 text-slate-500 dark:text-slate-400 text-sm text-center leading-relaxed">
         Try reloading this view or return home.
       </p>
