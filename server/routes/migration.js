@@ -7,6 +7,7 @@ import { MigrationEngine } from '../migration-engine.js';
 import { createPlanSchema, updatePlanSchema } from '../lib/validators.js';
 import { analyzeMigration } from '../migration-planner.js';
 import { validateAzureHost } from '../lib/azure-host-validator.js';
+import { auditLog } from '../lib/audit.js';
 import * as credsVault from '../lib/azure-credentials-manager.js';
 import db from '../db.js';
 import { createMigrationTaggingService } from '../migration-tagging-service.js';
@@ -446,6 +447,7 @@ router.post('/plans/:id/resume', requireAuth, requireProOrDryRunPlan, async (req
       azureOrg: plan.source_org,
       azureProject: plan.source_project
     };
+    auditLog(req, 'migration.plan.resume', 'migration_plan', id, { status: plan.status });
     engine.resumePlan(id, resumeCredentials).catch(err => {
       logger.error({ err, planId: req.params.id }, 'Plan resume error');
     });
@@ -468,6 +470,7 @@ router.post('/plans/:id/tasks/:taskId/retry', requireAuth, requireProOrDryRunPla
       azureOrg: plan.source_org,
       azureProject: plan.source_project
     };
+    auditLog(req, 'migration.task.retry', 'migration_task', parseInt(req.params.taskId), { planId: id });
     engine.retryTask(id, parseInt(req.params.taskId), retryCredentials).catch(err => {
       logger.error({ err, planId: req.params.id, taskId: req.params.taskId }, 'Task retry error');
     });
