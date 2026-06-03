@@ -10,8 +10,8 @@ import {
 import { Spinner } from '../../ui/Spinner'
 import { EmptyState } from '../../ui/EmptyState'
 import { getCsrfToken } from '../../../utils/api'
-import { azureCredPayload } from '../../../utils/azureRequestPayload'
 import { useBranchCache } from '../hooks/useBranchCache'
+import { useAzureProjectData } from '../hooks/useAzureProjectData'
 import { Select } from '../../ui/Select'
 import { Input, Textarea, Switch } from '../../ui/form'
 import { formatFileSize } from '../../../utils/format'
@@ -58,14 +58,13 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
   const [quotaNotice, setQuotaNotice] = useState('')
   const [aiNotice, setAiNotice] = useState('')
   const [generatingId, setGeneratingId] = useState(null)
-  const [azureProjectRepoNames, setAzureProjectRepoNames] = useState(null)
-  const [azureEmptyRepos, setAzureEmptyRepos] = useState([]) // [{ id, name, webUrl }, ...]
-  const [azureProjects, setAzureProjects] = useState([]) // [{ id, name }, ...]
-  const [projectsLoading, setProjectsLoading] = useState(false)
   const { suggest } = useRepoDescriptionSuggestion({ aiAvailable })
 
   const isAzureDevops = source?.azureTargetMode === 'azure-devops'
   const targetProject = source?.targetProject || source?.project || ''
+
+  const { azureProjectRepoNames, azureEmptyRepos, azureProjects, projectsLoading } =
+    useAzureProjectData({ isAzureDevops, source, targetProject })
 
   useEffect(() => {
     let cancelled = false
@@ -97,89 +96,6 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
     })
     return unsub
   }, [])
-
-  // Fetch existing Git repos in the *target* Azure project so we can detect
-  // name conflicts locally (no debounce, no extra API per keystroke) and
-  // populate the "use existing empty repo" dropdown.
-  useEffect(() => {
-    if (!isAzureDevops || !source?.org || !targetProject) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setAzureProjectRepoNames(null)
-      setAzureEmptyRepos([])
-      return
-    }
-    let cancelled = false
-    const load = async () => {
-      try {
-        const csrfToken = await getCsrfToken().catch(() => null)
-        const res = await fetch('/api/azure/repos', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-          },
-          body: JSON.stringify({
-            org: source.org,
-            project: targetProject,
-            ...azureCredPayload(source),
-          }),
-        })
-        const data = await res.json().catch(() => ({}))
-        if (cancelled || !res.ok || !Array.isArray(data.repos)) return
-        const names = new Set(
-          data.repos
-            .filter((r) => !r.isTfvc && r.name)
-            .map((r) => r.name.toLowerCase())
-        )
-        const empty = data.repos
-          .filter((r) => !r.isTfvc && r.isEmpty)
-          .map((r) => ({ id: r.id, name: r.name, webUrl: r.webUrl }))
-        setAzureProjectRepoNames(names)
-        setAzureEmptyRepos(empty)
-      } catch { /* ignore — leaves cache null, conflict status stays idle */ }
-    }
-    load()
-    return () => { cancelled = true }
-    // We depend on individual source fields rather than `source` to avoid
-    // re-fetching when unrelated properties (targetOrg, validated, etc.) change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAzureDevops, source?.org, targetProject, source?.host, source?.credentialMode, source?.savedCredentialId, source?.pat])
-
-  // Fetch the list of Azure DevOps projects on this org (for the target-project picker).
-  useEffect(() => {
-    if (!isAzureDevops || !source?.org) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setAzureProjects([])
-      return
-    }
-    let cancelled = false
-    setProjectsLoading(true)
-    const load = async () => {
-      try {
-        const csrfToken = await getCsrfToken().catch(() => null)
-        const res = await fetch('/api/azure/projects', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-          },
-          body: JSON.stringify({
-            org: source.org,
-            ...azureCredPayload(source),
-          }),
-        })
-        const data = await res.json().catch(() => ({}))
-        if (cancelled || !res.ok || !Array.isArray(data.projects)) return
-        setAzureProjects(data.projects.map((p) => ({ id: p.id, name: p.name })))
-      } catch { /* ignore — picker falls back to source.project only */ }
-      finally { if (!cancelled) setProjectsLoading(false) }
-    }
-    load()
-    return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAzureDevops, source?.org, source?.host, source?.credentialMode, source?.savedCredentialId, source?.pat])
 
   const handleGenerateDescription = useCallback(async (repo, index) => {
     const key = repo.id ?? index
