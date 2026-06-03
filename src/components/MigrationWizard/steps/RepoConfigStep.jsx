@@ -9,9 +9,9 @@ import {
 } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
 import { EmptyState } from '../../ui/EmptyState'
-import { getCsrfToken } from '../../../utils/api'
 import { useBranchCache } from '../hooks/useBranchCache'
 import { useAzureProjectData } from '../hooks/useAzureProjectData'
+import { useRepoNameConflicts } from '../hooks/useRepoNameConflicts'
 import { Select } from '../../ui/Select'
 import { Input, Textarea, Switch } from '../../ui/form'
 import { formatFileSize } from '../../../utils/format'
@@ -50,8 +50,6 @@ function humanizeAIReason(reason = '') {
  *   onChangeDestination - (orgLogin) => void
  */
 export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [], onChangeDestination, onChangeSource, onGoToStep }) {
-  const [conflicts, setConflicts] = useState({})
-  const debounceTimers = useRef({})
   const { expandedBranches, branchCache, loadingBranches, toggleBranchExpand } = useBranchCache(source)
   const [expandedCards, setExpandedCards] = useState({})
   const [aiAvailable, setAiAvailable] = useState(false)
@@ -65,6 +63,9 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
 
   const { azureProjectRepoNames, azureEmptyRepos, azureProjects, projectsLoading } =
     useAzureProjectData({ isAzureDevops, source, targetProject })
+
+  const { conflicts, setConflicts, checkConflict } =
+    useRepoNameConflicts({ source, isAzureDevops, azureProjectRepoNames, repos })
 
   useEffect(() => {
     let cancelled = false
@@ -111,99 +112,6 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
       setGeneratingId(null)
     }
   }, [suggest, source, onUpdateRepo])
-
-  const checkConflict = useCallback(
-    (repoName, targetName) => {
-      if (debounceTimers.current[repoName]) {
-        clearTimeout(debounceTimers.current[repoName])
-      }
-
-      if (!targetName?.trim()) {
-        setConflicts((prev) => ({ ...prev, [repoName]: 'idle' }))
-        return
-      }
-
-      // Azure same-project: validate locally against the project's existing
-      // Git repo list. No API call per keystroke.
-      if (isAzureDevops) {
-        if (!azureProjectRepoNames) {
-          setConflicts((prev) => ({ ...prev, [repoName]: 'idle' }))
-          return
-        }
-        const conflict = azureProjectRepoNames.has(targetName.trim().toLowerCase())
-        setConflicts((prev) => ({ ...prev, [repoName]: conflict ? 'conflict' : 'clear' }))
-        return
-      }
-
-      setConflicts((prev) => ({ ...prev, [repoName]: 'checking' }))
-
-      debounceTimers.current[repoName] = setTimeout(async () => {
-        try {
-          const csrfToken = await getCsrfToken().catch(() => null)
-          const res = await fetch('/api/import/check-duplicates', {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-            },
-            body: JSON.stringify({
-              repos: [targetName],
-              targetOwner: source.targetOrg || source.org,
-            }),
-          })
-          const data = await res.json()
-          if (res.ok && data.duplicates) {
-            setConflicts((prev) => ({
-              ...prev,
-              [repoName]: data.duplicates[targetName] ? 'conflict' : 'clear',
-            }))
-          } else {
-            setConflicts((prev) => ({ ...prev, [repoName]: 'idle' }))
-          }
-        } catch {
-          setConflicts((prev) => ({ ...prev, [repoName]: 'idle' }))
-        }
-      }, 500)
-    },
-    [source.targetOrg, source.org, isAzureDevops, azureProjectRepoNames]
-  )
-
-  // When the Azure project repo list arrives (or changes), re-seed conflict
-  // status for every row in same-project mode.
-  useEffect(() => {
-    if (!isAzureDevops || !azureProjectRepoNames) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setConflicts((prev) => {
-      const next = { ...prev }
-      repos.forEach((repo) => {
-        const tn = repo.targetName?.trim()
-        if (!tn) { next[repo.name] = 'idle'; return }
-        next[repo.name] = azureProjectRepoNames.has(tn.toLowerCase()) ? 'conflict' : 'clear'
-      })
-      return next
-    })
-  }, [azureProjectRepoNames, isAzureDevops, repos])
-
-  useEffect(() => {
-    const timers = debounceTimers.current
-    return () => {
-      Object.values(timers).forEach(clearTimeout)
-    }
-  }, [])
-
-  // Seed conflict state from cached repo.risk flags (set by Select step).
-  // Only run a live check when user edits a targetName (existing debounced logic in handleTargetNameChange).
-  useEffect(() => {
-    const seeded = {}
-    repos.forEach((repo) => {
-      if (repo.risk?.flags?.some((f) => f.type === 'name-conflict')) seeded[repo.name] = 'conflict'
-      else if (repo.targetName?.trim()) seeded[repo.name] = 'clear'
-    })
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setConflicts(seeded)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   const handleTargetNameChange = (repo, index, value) => {
     onUpdateRepo(index, { targetName: value })
@@ -273,7 +181,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
   const handleDestinationChange = useCallback((orgLogin) => {
     onChangeDestination?.(orgLogin)
     setConflicts({})
-  }, [onChangeDestination])
+  }, [onChangeDestination, setConflicts])
 
   const handleTargetProjectChange = useCallback((projectName) => {
     onChangeSource?.({ targetProject: projectName })
@@ -283,7 +191,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
     repos.forEach((_, i) => {
       onUpdateRepo(i, { targetType: 'new', existingRepoId: undefined })
     })
-  }, [onChangeSource, repos, onUpdateRepo])
+  }, [onChangeSource, repos, onUpdateRepo, setConflicts])
 
   // Re-run conflict checks when destination org changes
   const prevTargetOrg = useRef(source.targetOrg)
